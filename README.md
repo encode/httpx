@@ -39,7 +39,7 @@ of it, and exposes only plain datastructures that reflect the network response.
   for it. It's all type annotated, and should be easy to find your way around.
 * I've not yet added corresponding sync API points to the implementation, but
   they will come.
-* There's [a chunk of work towards connection pooling here](https://github.com/encode/requests-async/blob/5ec2aa80bd4499997fa744f3be19a0bdeccbaeed/requests_async/connections.py). I've not had enough time to nail it yet, but it's got the broad brush-strokes.
+* There's [a chunk of implmentation work towards connection pooling in `requests-async`](https://github.com/encode/requests-async/blob/5ec2aa80bd4499997fa744f3be19a0bdeccbaeed/requests_async/connections.py). I've not had enough time to nail it yet, but it's got the broad brush-strokes, and given me enough to get a rough feel for how much work there is to do.
 * We would absolutely want to implement HTTP/2 support.
 * Trio support is something that could *potentially* come later, but it needs to
   be a secondary consideration.
