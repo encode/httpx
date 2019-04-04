@@ -44,8 +44,8 @@ of it, and exposes only plain datastructures that reflect the network response.
 * Trio support is something that could *potentially* come later, but it needs to
   be a secondary consideration.
 * I think all the functionality required is stubbed out in the API, with two exceptions.
-  1. I've not yet added any proxy configuration API. Haven't looked into that enough
-  yet. 2. I've not yet added any retry configuration API, since I havn't really
+  (1) I've not yet added any proxy configuration API. Haven't looked into that enough
+  yet. (2) I've not yet added any retry configuration API, since I havn't really
   looked enough into which side of requests vs. urllib3 that sits on, or exactly how
   urllib3 tackles retries, etc.
 * I'd be planning to prioritize working on this from Mon 15th April. I don't think
