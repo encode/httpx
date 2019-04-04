@@ -1,0 +1,24 @@
+#!/bin/sh -e
+
+# Use the Python executable provided from the `-p` option, or a default.
+[[ $1 = "-p" ]] && PYTHON=$2 || PYTHON="python3"
+
+MIN_VERSION="(3, 6)"
+VERSION_OK=`"$PYTHON" -c "import sys; print(sys.version_info[0:2] >= $MIN_VERSION and '1' or '');"`
+
+if [[ -z "$VERSION_OK" ]] ; then
+    PYTHON_VERSION=`"$PYTHON" -c "import sys; print('%s.%s' % sys.version_info[0:2]);"`
+    DISP_MIN_VERSION=`"$PYTHON" -c "print('%s.%s' % $MIN_VERSION)"`
+    echo "ERROR: Python $PYTHON_VERSION detected, but $DISP_MIN_VERSION+ is required."
+    echo "Please upgrade your Python distribution to install Databases."
+    exit 1
+fi
+
+REQUIREMENTS="requirements.txt"
+VENV="venv"
+PIP="$VENV/bin/pip"
+
+set -x
+"$PYTHON" -m venv "$VENV"
+"$PIP" install -r "$REQUIREMENTS"
+"$PIP" install -e .

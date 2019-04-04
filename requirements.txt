@@ -1,0 +1,11 @@
+h11
+
+# Testing
+autoflake
+black
+codecov
+isort
+mypy
+pytest
+pytest-asyncio
+pytest-cov
