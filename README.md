@@ -43,6 +43,7 @@ class GatewayServer:
         self.pool = httpcore.PoolManager()
 
     async def __call__(self, scope, receive, send):
+        assert scope['type'] == 'http'
         path = scope['path']
         query = scope['query_string']
         method = scope['method']
