@@ -9,6 +9,7 @@ from .config import (
     SSLConfig,
     TimeoutConfig,
 )
+from .decoders import IdentityDecoder
 from .exceptions import ResponseClosed, StreamConsumed
 
 
@@ -86,6 +87,7 @@ class Response:
         self.on_close = on_close
         self.is_closed = False
         self.is_streamed = False
+        self.decoder = IdentityDecoder()
         if isinstance(body, bytes):
             self.is_closed = True
             self.body = body
@@ -93,6 +95,9 @@ class Response:
             self.body_aiter = body
 
     async def read(self) -> bytes:
+        """
+        Read and return the response content.
+        """
         if not hasattr(self, "body"):
             body = b""
             async for part in self.stream():
@@ -100,33 +105,33 @@ class Response:
             self.body = body
         return self.body
 
-    async def stream(self) -> typing.AsyncIterator[bytes]:
+    async def stream(self):
+        """
+        A byte-iterator over the decoded response content.
+        This will allow us to handle gzip, deflate, and brotli encoded responses.
+        """
         if hasattr(self, "body"):
             yield self.body
         else:
-            if self.is_streamed:
-                raise StreamConsumed()
-            if self.is_closed:
-                raise ResponseClosed()
-            self.is_streamed = True
-            async for part in self.body_aiter():
-                yield part
-            await self.close()
+            async for chunk in self.raw():
+                yield self.decoder.decode(chunk)
+            yield self.decoder.flush()
+
+    async def raw(self) -> typing.AsyncIterator[bytes]:
+        """
+        A byte-iterator over the raw response content.
+        """
+        if self.is_streamed:
+            raise StreamConsumed()
+        if self.is_closed:
+            raise ResponseClosed()
+        self.is_streamed = True
+        async for part in self.body_aiter():
+            yield part
+        await self.close()
 
     async def close(self) -> None:
         if not self.is_closed:
             self.is_closed = True
             if self.on_close is not None:
                 await self.on_close()
-
-    async def __aenter__(self) -> "Response":
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        if not self.is_closed:
-            await self.close()
