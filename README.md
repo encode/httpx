@@ -116,14 +116,7 @@ class GatewayServer:
         if query:
             url += '?' + query.decode()
 
-        async def body():
-            nonlocal receive
-
-            while True:
-                message = await receive()
-                yield message.get('body', b'')
-                if not message.get('more_body', False):
-                    break
+        body = self.stream_body(receive)
 
         response = await self.http.request(
             method, url, headers=headers, body=body, stream=True
@@ -142,6 +135,12 @@ class GatewayServer:
             })
         await send({'type': 'http.response.body'})
 
+    async def stream_body(self, receive):
+        while True:
+            message = await receive()
+            yield message.get('body', b'')
+            if not message.get('more_body', False):
+                break
 
 app = GatewayServer('http://example.org')
 ```
