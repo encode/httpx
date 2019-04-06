@@ -32,14 +32,14 @@ of it, and exposes only plain datastructures that reflect the network response.
   We'd position it similarly to how `urllib3` is positioned to `requests` now.
   A focused, low-level networking library, that `requests` then builds the
   developer-focused API on top of.
-* The current implementation includes all the async API points.
-  The `PoolManger.request()` and `PoolManager.close()` methods are currently
-  stubbed-out. All the remaining implementation hangs off of those two points.
+* A big chunk of this is implemented now. Streaming requests and responses are
+  supported. Connection pooling is stubbed-out at the moment, but all in place.
+  GZip decoding is stubbed-out at the moment, but easy to do, and all in place.
+  Theres various stuff around connection closing and error handling still to finesse.
 * Take a quick look over the test cases or the package itself to get a feel
   for it. It's all type annotated, and should be easy to find your way around.
 * I've not yet added corresponding sync API points to the implementation, but
   they will come.
-* There's [a chunk of implmentation work towards connection pooling in `requests-async`](https://github.com/encode/requests-async/blob/5ec2aa80bd4499997fa744f3be19a0bdeccbaeed/requests_async/connections.py). I've not had enough time to nail it yet, but it's got the broad brush-strokes, and given me enough to get a rough feel for how much work there is to do.
 * We would absolutely want to implement HTTP/2 support.
 * Trio support is something that could *potentially* come later, but it needs to
   be a secondary consideration.
