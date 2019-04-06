@@ -1,62 +1,119 @@
-from config import TimeoutConfig
-
 import asyncio
-import h11
 import ssl
+import typing
+
+import h11
+
+from .config import TimeoutConfig
+from .datastructures import Request, Response
+from .exceptions import ConnectTimeout, ReadTimeout
+
+H11Event = typing.Union[
+    h11.Request,
+    h11.Response,
+    h11.InformationalResponse,
+    h11.Data,
+    h11.EndOfMessage,
+    h11.ConnectionClosed,
+]
 
 
 class Connection:
-    def __init__(self):
+    def __init__(self, timeout: TimeoutConfig):
         self.reader = None
         self.writer = None
         self.state = h11.Connection(our_role=h11.CLIENT)
+        self.timeout = timeout
 
-    async def open(self, host: str, port: int, ssl: ssl.SSLContext):
+    async def open(
+        self,
+        hostname: str,
+        port: int,
+        *,
+        ssl: typing.Union[bool, ssl.SSLContext] = False
+    ) -> None:
         try:
-            self.reader, self.writer = await asyncio.wait_for(
-                asyncio.open_connection(host, port, ssl=ssl), timeout
+            self.reader, self.writer = await asyncio.wait_for(  # type: ignore
+                asyncio.open_connection(hostname, port, ssl=ssl),
+                self.timeout.connect_timeout,
             )
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
-    async def send(self, request: Request) -> Response:
-        method = request.method
+    async def send(self, request: Request, stream: bool=False) -> Response:
+        method = request.method.encode()
+        target = request.url.target
+        host_header = (b"host", request.url.netloc.encode("ascii"))
+        if request.is_streaming:
+            content_length = (b"transfer-encoding", b"chunked")
+        else:
+            content_length = (b"content-length", str(len(request.body)).encode())
 
-        target = request.url.path
-        if request.url.query:
-            target += "?" + request.url.query
+        headers = [host_header, content_length] + request.headers
 
-        headers = [
-            ("host", request.url.netloc)
-        ] += request.headers
-
-        # Send the request method, path/query, and headers.
+        #  Start sending the request.
         event = h11.Request(method=method, target=target, headers=headers)
         await self._send_event(event)
 
         # Send the request body.
         if request.is_streaming:
-            async for data in request.raw():
+            async for data in request.stream():
                 event = h11.Data(data=data)
                 await self._send_event(event)
-        else:
+        elif request.body:
             event = h11.Data(data=request.body)
             await self._send_event(event)
 
         # Finalize sending the request.
         event = h11.EndOfMessage()
-        await connection.send_event(event)
+        await self._send_event(event)
 
-    async def _send_event(self, message):
-        data = self.state.send(message)
+        # Start getting the response.
+        event = await self._receive_event()
+        if isinstance(event, h11.InformationalResponse):
+            event = await self._receive_event()
+        assert isinstance(event, h11.Response)
+        status_code = event.status_code
+        headers = event.headers
+
+        if stream:
+            return Response(status_code=status_code, headers=headers, body=self.body_iter())
+
+        #  Get the response body.
+        body = b""
+        event = await self._receive_event()
+        while isinstance(event, h11.Data):
+            body += event.data
+            event = await self._receive_event()
+        assert isinstance(event, h11.EndOfMessage)
+        await self.close()
+
+        return Response(status_code=status_code, headers=headers, body=body)
+
+    async def body_iter(self) -> typing.Iterable[bytes]:
+        event = await self._receive_event()
+        while isinstance(event, h11.Data):
+            yield event.data
+            event = await self._receive_event()
+        assert isinstance(event, h11.EndOfMessage)
+        await self.close()
+
+    async def _send_event(self, event: H11Event) -> None:
+        assert self.writer is not None
+
+        data = self.state.send(event)
         self.writer.write(data)
 
-    async def _receive_event(self, timeout):
+    async def _receive_event(self) -> H11Event:
+        assert self.reader is not None
+
         event = self.state.next_event()
 
-        while type(event) is h11.NEED_DATA:
+        while event is h11.NEED_DATA:
             try:
-                data = await asyncio.wait_for(self.reader.read(2048), timeout)
+                data = await asyncio.wait_for(
+                    self.reader.read(2048), self.timeout.read_timeout
+                )
             except asyncio.TimeoutError:
                 raise ReadTimeout()
             self.state.receive_data(data)
@@ -64,7 +121,8 @@ class Connection:
 
         return event
 
-    async def close(self):
-        self.writer.close()
-        if hasattr(self.writer, "wait_closed"):
-            await self.writer.wait_closed()
+    async def close(self) -> None:
+        if self.writer is not None:
+            self.writer.close()
+            if hasattr(self.writer, "wait_closed"):
+                await self.writer.wait_closed()

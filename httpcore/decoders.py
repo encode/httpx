@@ -8,7 +8,7 @@ class IdentityDecoder:
         return chunk
 
     def flush(self) -> bytes:
-        return b''
+        return b""
 
 
 # class DeflateDecoder:

@@ -63,7 +63,8 @@ of it, and exposes only plain datastructures that reflect the network response.
 ```python
 import httpcore
 
-response = await httpcore.request('GET', 'http://example.com')
+http = httpcore.ConnectionPool()
+response = await http.request('GET', 'http://example.com')
 assert response.status_code == 200
 assert response.body == b'Hello, world'
 ```
@@ -71,20 +72,22 @@ assert response.body == b'Hello, world'
 Top-level API...
 
 ```python
-response = await httpcore.request(method, url, [headers], [body], [stream])
+http = httpcore.ConnectionPool([ssl], [timeout], [limits])
+response = await http.request(method, url, [headers], [body], [stream])
 ```
 
-Explicit PoolManager...
+ConnectionPool as a context-manager...
 
 ```python
-async with httpcore.PoolManager([ssl], [timeout], [limits]) as pool:
-    response = await pool.request(method, url, [headers], [body], [stream])
+async with httpcore.ConnectionPool([ssl], [timeout], [limits]) as http:
+    response = await http.request(method, url, [headers], [body], [stream])
 ```
 
 Streaming...
 
 ```python
-response = await httpcore.request(method, url, stream=True)
+http = httpcore.ConnectionPool()
+response = await http.request(method, url, stream=True)
 async for part in response.stream():
     ...
 ```
@@ -100,7 +103,7 @@ import httpcore
 class GatewayServer:
     def __init__(self, base_url):
         self.base_url = base_url
-        self.pool = httpcore.PoolManager()
+        self.http = httpcore.ConnectionPool()
 
     async def __call__(self, scope, receive, send):
         assert scope['type'] == 'http'
@@ -122,7 +125,7 @@ class GatewayServer:
                 if not message.get('more_body', False):
                     break
 
-        response = await self.pool.request(
+        response = await self.http.request(
             method, url, headers=headers, body=body, stream=True
         )
 

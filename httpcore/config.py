@@ -1,5 +1,7 @@
 import typing
 
+import certifi
+
 
 class SSLConfig:
     """
@@ -52,3 +54,4 @@ class PoolLimits:
 DEFAULT_SSL_CONFIG = SSLConfig(cert=None, verify=True)
 DEFAULT_TIMEOUT_CONFIG = TimeoutConfig(timeout=5.0)
 DEFAULT_POOL_LIMITS = PoolLimits(max_hosts=10, conns_per_host=10, hard_limit=False)
+DEFAULT_CA_BUNDLE_PATH = certifi.where()
