@@ -40,7 +40,7 @@ class Connection:
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
-    async def send(self, request: Request, stream: bool=False) -> Response:
+    async def send(self, request: Request, stream: bool = False) -> Response:
         method = request.method.encode()
         target = request.url.target
         host_header = (b"host", request.url.netloc.encode("ascii"))
@@ -77,7 +77,8 @@ class Connection:
         headers = event.headers
 
         if stream:
-            return Response(status_code=status_code, headers=headers, body=self.body_iter())
+            body_iter = self.body_iter()
+            return Response(status_code=status_code, headers=headers, body=body_iter)
 
         #  Get the response body.
         body = b""
@@ -90,7 +91,7 @@ class Connection:
 
         return Response(status_code=status_code, headers=headers, body=body)
 
-    async def body_iter(self) -> typing.Iterable[bytes]:
+    async def body_iter(self) -> typing.AsyncIterator[bytes]:
         event = await self._receive_event()
         while isinstance(event, h11.Data):
             yield event.data
