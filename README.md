@@ -110,13 +110,22 @@ class GatewayServer:
         path = scope['path']
         query = scope['query_string']
         method = scope['method']
-        headers = scope['headers']
+        headers = [
+            (k, v) for (k, v) in scope['headers']
+            if k not in (b'host', b'content-length', b'transfer-encoding')
+        ]
 
         url = self.base_url + path
         if query:
             url += '?' + query.decode()
 
-        body = self.stream_body(receive)
+        initial_body, more_body = await self.initial_body(receive)
+        if more_body:
+            # Streaming request.
+            body = self.stream_body(receive, initial_body)
+        else:
+            # Standard request.
+            body = initial_body
 
         response = await self.http.request(
             method, url, headers=headers, body=body, stream=True
@@ -127,20 +136,38 @@ class GatewayServer:
             'status': response.status_code,
             'headers': response.headers
         })
-        async for data in response.stream():
-            await send({
-                'type': 'http.response.body',
-                'body': data,
-                'more_body': True
-            })
-        await send({'type': 'http.response.body'})
+        data = b''
+        async for next_data in response.stream():
+            if data:
+                await send({
+                    'type': 'http.response.body',
+                    'body': data,
+                    'more_body': True
+                })
+            data = next_data
+        await send({'type': 'http.response.body', 'body': data})
 
-    async def stream_body(self, receive):
+    async def initial_body(self, receive):
+        """
+        Pull the first body message off the 'receive' channel.
+        Allows us to determine if we should use a streaming request or not.
+        """
+        message = await receive()
+        body = message.get('body', b'')
+        more_body = message.get('more_body', False)
+        return (body, more_body)
+
+    async def stream_body(self, receive, initial_body):
+        """
+        Async iterator returning bytes for the request body.
+        """
+        yield initial_body
         while True:
             message = await receive()
             yield message.get('body', b'')
             if not message.get('more_body', False):
                 break
+
 
 app = GatewayServer('http://example.org')
 ```
