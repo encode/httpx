@@ -1,3 +1,4 @@
+certifi
 h11
 
 # Testing
@@ -9,3 +10,4 @@ mypy
 pytest
 pytest-asyncio
 pytest-cov
+uvicorn
