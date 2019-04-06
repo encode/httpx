@@ -3,4 +3,4 @@ from .datastructures import URL, Request, Response
 from .exceptions import ResponseClosed, StreamConsumed
 from .pool import ConnectionPool
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
