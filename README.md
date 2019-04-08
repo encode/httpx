@@ -1,64 +1,29 @@
 # HTTPCore
 
-I started to dive into implementation and API design here.
+A low-level async HTTP library.
 
-I know this isn't what you were suggesting with `requests-core`, but it'd be
-worth you taking a slow look at this and seeing if there's anything that you
-think is a no-go.
+## Proposed functionality
 
-`httpcore` provides the same proposed *functionality* as requests-core, but at a slightly
-lower abstraction level.
+* Support for streaming requests and responses. (Done)
+* Support for connection pooling. (Not done, but structure in place)
+* gzip, deflate, and brotli decoding. (Not done, but structure in place)
+* SSL verification. (Done)
+* Proxy support. (Not done)
+* Support *both* async and sync operations. (Sync will be lightweight shim on top of async. Not done.)
 
-Rather than returning `Response` models, it returns the minimal possible
-interface. There's no `response.text` or any other cleverness, `response.headers`
-are plain byte-pair lists, rather than a headers datastructure etc...
+## Motivation
 
-**The proposal here is that `httpcore` would be a silent-partner dependency of `requests3`,
-taking the place of the existing `urllib3` dependency.**
+Some of the trickier remaining issues on `requests-async` such as request/response streaming, connection pooling, proxy support, would require a fully async variant of urllib3. I considered and started work on a straight port of `urllib3-async`, but having started to dive into it, my judgement is that a from-scratch implementation will be less overall work to achieve.
 
----
+The intent is that this library could be the low-level implementation, that `requests-async` would then wrap up.
 
-The benefits to my mind of this level of abstraction are that it is as
-agnostic as possible to whatever request/response models are built on top
-of it, and exposes only plain datastructures that reflect the network response.
+## Credit
 
-* An `encode/httpcore` package would be something I'd gladly maintain. The naming
-  makes sense to me, as there's no strictly implied relationship to `requests`,
-  although it would fulfil all the requirements for `requests3` to build on,
-  and would have a strict semver policy.
-* An `encode/httpcore` package is something that would play in well to the
-  collaboratively sponsored OSS story that Encode is pitching. It'd provide what
-  you need for `requests3` without encroaching on the `requests` brand.
-  We'd position it similarly to how `urllib3` is positioned to `requests` now.
-  A focused, low-level networking library, that `requests` then builds the
-  developer-focused API on top of.
-* A big chunk of this is implemented now. Streaming requests and responses are
-  supported. Connection pooling is stubbed-out at the moment, but all in place.
-  GZip decoding is stubbed-out at the moment, but easy to do, and all in place.
-  Theres various stuff around connection closing and error handling still to finesse.
-* Take a quick look over the test cases or the package itself to get a feel
-  for it. It's all type annotated, and should be easy to find your way around.
-* I've not yet added corresponding sync API points to the implementation, but
-  they will come.
-* We would absolutely want to implement HTTP/2 support.
-* Trio support is something that could *potentially* come later, but it needs to
-  be a secondary consideration.
-* I think all the functionality required is stubbed out in the API, with two exceptions.
-  (1) I've not yet added any proxy configuration API. Haven't looked into that enough
-  yet. (2) I've not yet added any retry configuration API, since I havn't really
-  looked enough into which side of requests vs. urllib3 that sits on, or exactly how
-  urllib3 tackles retries, etc.
-* I'd be planning to prioritize working on this from Mon 15th April. I don't think
-  it'd take too long to get it to a feature complete and API stable state.
-  (With the exception of the later HTTP/2 work, which I can't really assess yet.)
-  I probably don't have any time left before then - need to focus on what I'm
-  delivering to DjangoCon Europe over the rest of this week.
-* To my mind the killer app for `requests3`/`httpcore` is a high-performance
-  proxy server / gateway service in Python. Pitching the growing ASGI ecosystem
-  is an important part of that story.
-* I think there's enough headroom before PyCon to have something ready to pitch by then.
-  I could be involved in sprints remotely if there's areas we still need to fill in,
-  anyplace.
+* Some inspiration from the design-work of `urllib3`, but redone from scratch, and built as an async-first library.
+* Dependant on the absolutely excellent `h11` package.
+* Uses the `certifi` package for the default SSL verification.
+
+## Usage
 
 ```python
 import httpcore
@@ -91,6 +56,8 @@ response = await http.request(method, url, stream=True)
 async for part in response.stream():
     ...
 ```
+
+## Building a Gateway Server
 
 The level of abstraction fits in really well if you're just writing at
 the raw ASGI level. Eg. Here's an how an ASGI gateway server looks against the
