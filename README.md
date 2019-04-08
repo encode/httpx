@@ -9,6 +9,7 @@ A low-level async HTTP library.
 * gzip, deflate, and brotli decoding. (Not done, but structure in place)
 * SSL verification. (Done)
 * Proxy support. (Not done)
+* HTTP/2 support. (Not done)
 * Support *both* async and sync operations. (Sync will be lightweight shim on top of async. Not done.)
 
 ## Motivation
