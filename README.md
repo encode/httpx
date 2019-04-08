@@ -23,7 +23,7 @@ The intent is that this library could be the low-level implementation, that `req
 * Dependant on the absolutely excellent `h11` package.
 * Uses the `certifi` package for the default SSL verification.
 
-## Usage
+## Usage
 
 Making a request:
 
