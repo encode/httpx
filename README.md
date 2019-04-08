@@ -25,6 +25,8 @@ The intent is that this library could be the low-level implementation, that `req
 
 ## Usage
 
+Making a request:
+
 ```python
 import httpcore
 
@@ -34,21 +36,21 @@ assert response.status_code == 200
 assert response.body == b'Hello, world'
 ```
 
-Top-level API...
+Top-level API:
 
 ```python
 http = httpcore.ConnectionPool([ssl], [timeout], [limits])
 response = await http.request(method, url, [headers], [body], [stream])
 ```
 
-ConnectionPool as a context-manager...
+ConnectionPool as a context-manager:
 
 ```python
 async with httpcore.ConnectionPool([ssl], [timeout], [limits]) as http:
     response = await http.request(method, url, [headers], [body], [stream])
 ```
 
-Streaming...
+Streaming responses:
 
 ```python
 http = httpcore.ConnectionPool()
