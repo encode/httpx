@@ -1,7 +1,7 @@
 import typing
 from urllib.parse import urlsplit
 
-from .decoders import IdentityDecoder
+from .decoders import SUPPORTED_DECODERS, Decoder, IdentityDecoder, MultiDecoder
 from .exceptions import ResponseClosed, StreamConsumed
 
 
@@ -95,10 +95,25 @@ class Response:
         self.on_close = on_close
         self.is_closed = False
         self.is_streamed = False
-        self.decoder = IdentityDecoder()
+
+        decoders = []  # type: typing.List[Decoder]
+        for header, value in self.headers:
+            if header.strip().lower() == b"content-encoding":
+                for part in value.split(b","):
+                    part = part.strip().lower()
+                    decoder_cls = SUPPORTED_DECODERS[part]
+                    decoders.append(decoder_cls())
+
+        if len(decoders) == 0:
+            self.decoder = IdentityDecoder()  # type: Decoder
+        elif len(decoders) == 1:
+            self.decoder = decoders[0]
+        else:
+            self.decoder = MultiDecoder(decoders)
+
         if isinstance(body, bytes):
             self.is_closed = True
-            self.body = body
+            self.body = self.decoder.decode(body) + self.decoder.flush()
         else:
             self.body_aiter = body
 
