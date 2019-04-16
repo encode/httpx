@@ -22,7 +22,7 @@ def test_content_length_header():
 
 def test_transfer_encoding_header():
     async def streaming_body(data):
-        yield data
+        yield data  # pragma: nocover
 
     body = streaming_body(b"test 123")
 
@@ -56,7 +56,7 @@ def test_override_accept_encoding_header():
 
 def test_override_content_length_header():
     async def streaming_body(data):
-        yield data
+        yield data  # pragma: nocover
 
     body = streaming_body(b"test 123")
     headers = [(b"content-length", b"8")]
