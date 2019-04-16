@@ -1,4 +1,4 @@
 try:
     import brotli
 except ImportError:
-    brotli = None
+    brotli = None  # pragma: nocover

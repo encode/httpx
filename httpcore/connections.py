@@ -43,13 +43,7 @@ class Connection:
     async def send(self, request: Request, stream: bool = False) -> Response:
         method = request.method.encode()
         target = request.url.target
-        host_header = (b"host", request.url.netloc.encode("ascii"))
-        if request.is_streaming:
-            content_length = (b"transfer-encoding", b"chunked")
-        else:
-            content_length = (b"content-length", str(len(request.body)).encode())
-
-        headers = [host_header, content_length] + request.headers
+        headers = request.headers
 
         #  Start sending the request.
         event = h11.Request(method=method, target=target, headers=headers)

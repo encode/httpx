@@ -1,7 +1,13 @@
 import typing
 from urllib.parse import urlsplit
 
-from .decoders import SUPPORTED_DECODERS, Decoder, IdentityDecoder, MultiDecoder
+from .decoders import (
+    ACCEPT_ENCODING,
+    SUPPORTED_DECODERS,
+    Decoder,
+    IdentityDecoder,
+    MultiDecoder,
+)
 from .exceptions import ResponseClosed, StreamConsumed
 
 
@@ -59,13 +65,13 @@ class Request:
     def __init__(
         self,
         method: str,
-        url: URL,
+        url: typing.Union[str, URL],
         *,
         headers: typing.Sequence[typing.Tuple[bytes, bytes]] = (),
         body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
     ):
         self.method = method
-        self.url = url
+        self.url = URL(url) if isinstance(url, str) else url
         self.headers = list(headers)
         if isinstance(body, bytes):
             self.is_streaming = False
@@ -73,6 +79,36 @@ class Request:
         else:
             self.is_streaming = True
             self.body_aiter = body
+        self.headers = self._auto_headers() + self.headers
+
+    def _auto_headers(self) -> typing.List[typing.Tuple[bytes, bytes]]:
+        has_host = False
+        has_content_length = False
+        has_accept_encoding = False
+
+        for header, value in self.headers:
+            header = header.strip().lower()
+            if header == b"host":
+                has_host = True
+            elif header in (b"content-length", b"transfer-encoding"):
+                has_content_length = True
+            elif header == b"accept-encoding":
+                has_accept_encoding = True
+
+        headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
+
+        if not has_host:
+            headers.append((b"host", self.url.netloc.encode("ascii")))
+        if not has_content_length:
+            if self.is_streaming:
+                headers.append((b"transfer-encoding", b"chunked"))
+            elif self.body:
+                content_length = str(len(self.body)).encode()
+                headers.append((b"content-length", content_length))
+        if not has_accept_encoding:
+            headers.append((b"accept-encoding", ACCEPT_ENCODING))
+
+        return headers
 
     async def stream(self) -> typing.AsyncIterator[bytes]:
         assert self.is_streaming
@@ -131,7 +167,7 @@ class Response:
     async def stream(self) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
-        This will allow us to handle gzip, deflate, and brotli encoded responses.
+        This allows us to handle gzip, deflate, and brotli encoded responses.
         """
         if hasattr(self, "body"):
             yield self.body
