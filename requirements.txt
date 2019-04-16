@@ -1,6 +1,10 @@
 certifi
 h11
 
+# Optional
+brotlipy
+
+
 # Testing
 autoflake
 black
