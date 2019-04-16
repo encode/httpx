@@ -43,7 +43,12 @@ class ConnectionPool:
         request = Request(method, parsed_url, headers=headers, body=body)
         ssl_context = await self.get_ssl_context(parsed_url)
         connection = await self.acquire_connection(parsed_url, ssl=ssl_context)
-        response = await connection.send(request, stream=stream)
+        response = await connection.send(request)
+        if not stream:
+            try:
+                await response.read()
+            finally:
+                await response.close()
         return response
 
     async def acquire_connection(
