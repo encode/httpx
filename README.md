@@ -60,6 +60,15 @@ async for part in response.stream():
     ...
 ```
 
+Raw data without gzip/deflate/brotli decompression applied:
+
+```python
+http = httpcore.ConnectionPool()
+response = await http.request(method, url, stream=True)
+async for part in response.raw():
+    ...
+```
+
 ## Building a Gateway Server
 
 The level of abstraction fits in really well if you're just writing at
@@ -82,7 +91,7 @@ class GatewayServer:
         method = scope['method']
         headers = [
             (k, v) for (k, v) in scope['headers']
-            if k not in (b'host', b'content-length', b'transfer-encoding')
+            if k not in (b'host', b'transfer-encoding')
         ]
 
         url = self.base_url + path
@@ -107,7 +116,7 @@ class GatewayServer:
             'headers': response.headers
         })
         data = b''
-        async for next_data in response.stream():
+        async for next_data in response.raw():
             if data:
                 await send({
                     'type': 'http.response.body',
