@@ -34,6 +34,23 @@ async def test_differing_connection_keys(server):
 
 
 @pytest.mark.asyncio
+async def test_soft_limit(server):
+    """
+    The soft_limit config should limit the maximum number of keep-alive connections.
+    """
+    limits = httpcore.PoolLimits(soft_limit=1)
+
+    async with httpcore.ConnectionPool(limits=limits) as http:
+        response = await http.request("GET", "http://127.0.0.1:8000/")
+        assert http.num_active_connections == 0
+        assert http.num_keepalive_connections == 1
+
+        response = await http.request("GET", "http://localhost:8000/")
+        assert http.num_active_connections == 0
+        assert http.num_keepalive_connections == 1
+
+
+@pytest.mark.asyncio
 async def test_streaming_response_holds_connection(server):
     """
     A streaming request should hold the connection open until the response is read.

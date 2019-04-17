@@ -45,13 +45,17 @@ class PoolLimits:
     Limits on the number of connections in a connection pool.
     """
 
-    def __init__(self, *, max_hosts: int, conns_per_host: int, hard_limit: bool):
-        self.max_hosts = max_hosts
-        self.conns_per_host = conns_per_host
+    def __init__(
+        self,
+        *,
+        soft_limit: typing.Optional[int] = None,
+        hard_limit: typing.Optional[int] = None
+    ):
+        self.soft_limit = soft_limit
         self.hard_limit = hard_limit
 
 
 DEFAULT_SSL_CONFIG = SSLConfig(cert=None, verify=True)
 DEFAULT_TIMEOUT_CONFIG = TimeoutConfig(timeout=5.0)
-DEFAULT_POOL_LIMITS = PoolLimits(max_hosts=10, conns_per_host=10, hard_limit=False)
+DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
 DEFAULT_CA_BUNDLE_PATH = certifi.where()

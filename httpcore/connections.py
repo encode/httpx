@@ -111,19 +111,21 @@ class Connection:
         if self.state.our_state is h11.DONE and self.state.their_state is h11.DONE:
             self.state.start_next_cycle()
         else:
-            event = h11.ConnectionClosed()
-            try:
-                # If we're in h11.MUST_CLOSE then we'll end up in h11.CLOSED.
-                self.state.send(event)
-            except h11.ProtocolError:
-                # If we're in some other state then it's a premature close,
-                # and we'll end up in h11.ERROR.
-                pass
-
-        if self.is_closed:
-            self.writer.close()
-            if hasattr(self.writer, "wait_closed"):
-                await self.writer.wait_closed()
+            self.close()
 
         if self.on_release is not None:
             await self.on_release(self)
+
+    def close(self) -> None:
+        assert self.writer is not None
+
+        event = h11.ConnectionClosed()
+        try:
+            # If we're in h11.MUST_CLOSE then we'll end up in h11.CLOSED.
+            self.state.send(event)
+        except h11.ProtocolError:
+            # If we're in some other state then it's a premature close,
+            # and we'll end up in h11.ERROR.
+            pass
+
+        self.writer.close()

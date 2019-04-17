@@ -20,6 +20,20 @@ from .datastructures import URL, Request, Response
 ConnectionKey = typing.Tuple[str, str, int]  # (scheme, host, port)
 
 
+class ConnectionSemaphore:
+    def __init__(self, max_connections: int = None):
+        if max_connections is not None:
+            self.semaphore = asyncio.BoundedSemaphore(value=max_connections)
+
+    async def acquire(self) -> None:
+        if hasattr(self, "semaphore"):
+            await self.semaphore.acquire()
+
+    def release(self) -> None:
+        if hasattr(self, "semaphore"):
+            self.semaphore.release()
+
+
 class ConnectionPool:
     def __init__(
         self,
@@ -37,6 +51,9 @@ class ConnectionPool:
         self._connections = (
             {}
         )  # type: typing.Dict[ConnectionKey, typing.List[Connection]]
+        self._connection_semaphore = ConnectionSemaphore(
+            max_connections=self.limits.hard_limit
+        )
 
     async def request(
         self,
@@ -59,6 +76,10 @@ class ConnectionPool:
                 await response.close()
         return response
 
+    @property
+    def num_connections(self) -> int:
+        return self.num_active_connections + self.num_keepalive_connections
+
     async def acquire_connection(
         self, url: URL, *, ssl: typing.Optional[ssl.SSLContext] = None
     ) -> Connection:
@@ -71,6 +92,7 @@ class ConnectionPool:
             self.num_active_connections += 1
 
         except (KeyError, IndexError):
+            await self._connection_semaphore.acquire()
             release = functools.partial(self.release_connection, key=key)
             connection = Connection(timeout=self.timeout, on_release=release)
             self.num_active_connections += 1
@@ -81,8 +103,18 @@ class ConnectionPool:
     async def release_connection(
         self, connection: Connection, key: ConnectionKey
     ) -> None:
-        self.num_active_connections -= 1
-        if not connection.is_closed:
+        if connection.is_closed:
+            self._connection_semaphore.release()
+            self.num_active_connections -= 1
+        elif (
+            self.limits.soft_limit is not None
+            and self.num_connections > self.limits.soft_limit
+        ):
+            self._connection_semaphore.release()
+            self.num_active_connections -= 1
+            connection.close()
+        else:
+            self.num_active_connections -= 1
             self.num_keepalive_connections += 1
             try:
                 self._connections[key].append(connection)
