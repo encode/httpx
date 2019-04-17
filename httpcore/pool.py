@@ -16,18 +16,23 @@ from .config import (
 )
 from .connections import Connection
 from .datastructures import URL, Request, Response
+from .exceptions import PoolTimeout
 
 ConnectionKey = typing.Tuple[str, str, int]  # (scheme, host, port)
 
 
 class ConnectionSemaphore:
-    def __init__(self, max_connections: int = None):
+    def __init__(self, max_connections: int = None, timeout: float = None):
+        self.timeout = timeout
         if max_connections is not None:
             self.semaphore = asyncio.BoundedSemaphore(value=max_connections)
 
     async def acquire(self) -> None:
         if hasattr(self, "semaphore"):
-            await self.semaphore.acquire()
+            try:
+                await asyncio.wait_for(self.semaphore.acquire(), self.timeout)
+            except asyncio.TimeoutError:
+                raise PoolTimeout()
 
     def release(self) -> None:
         if hasattr(self, "semaphore"):
@@ -52,7 +57,7 @@ class ConnectionPool:
             {}
         )  # type: typing.Dict[ConnectionKey, typing.List[Connection]]
         self._connection_semaphore = ConnectionSemaphore(
-            max_connections=self.limits.hard_limit
+            max_connections=self.limits.hard_limit, timeout=self.timeout.pool_timeout
         )
 
     async def request(

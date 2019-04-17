@@ -7,6 +7,25 @@ from uvicorn.main import Server
 
 async def app(scope, receive, send):
     assert scope["type"] == "http"
+    if scope["path"] == "/slow_response":
+        await slow_response(scope, receive, send)
+    else:
+        await hello_world(scope, receive, send)
+
+
+async def hello_world(scope, receive, send):
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [[b"content-type", b"text/plain"]],
+        }
+    )
+    await send({"type": "http.response.body", "body": b"Hello, world!"})
+
+
+async def slow_response(scope, receive, send):
+    await asyncio.sleep(0.01)
     await send(
         {
             "type": "http.response.start",
@@ -28,5 +47,4 @@ async def server():
         yield server
     finally:
         server.should_exit = True
-        server.force_exit = True
         await task
