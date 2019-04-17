@@ -5,7 +5,7 @@ A low-level async HTTP library.
 ## Proposed functionality
 
 * Support for streaming requests and responses. (Done)
-* Support for connection pooling. (Not done, but structure in place)
+* Support for connection pooling. (Done)
 * gzip, deflate, and brotli decoding. (Done)
 * SSL verification. (Done)
 * Proxy support. (Not done)
