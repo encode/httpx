@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import os
 import ssl
 import typing
@@ -16,6 +17,22 @@ from .config import (
 from .connections import Connection
 from .datastructures import URL, Request, Response
 
+ConnectionKey = typing.Tuple[str, str, int]  # (scheme, host, port)
+
+
+class ConnectionSemaphore:
+    def __init__(self, max_connections: int = None):
+        if max_connections is not None:
+            self.semaphore = asyncio.BoundedSemaphore(value=max_connections)
+
+    async def acquire(self) -> None:
+        if hasattr(self, "semaphore"):
+            await self.semaphore.acquire()
+
+    def release(self) -> None:
+        if hasattr(self, "semaphore"):
+            self.semaphore.release()
+
 
 class ConnectionPool:
     def __init__(
@@ -29,6 +46,14 @@ class ConnectionPool:
         self.timeout = timeout
         self.limits = limits
         self.is_closed = False
+        self.num_active_connections = 0
+        self.num_keepalive_connections = 0
+        self._connections = (
+            {}
+        )  # type: typing.Dict[ConnectionKey, typing.List[Connection]]
+        self._connection_semaphore = ConnectionSemaphore(
+            max_connections=self.limits.hard_limit
+        )
 
     async def request(
         self,
@@ -43,19 +68,62 @@ class ConnectionPool:
         request = Request(method, parsed_url, headers=headers, body=body)
         ssl_context = await self.get_ssl_context(parsed_url)
         connection = await self.acquire_connection(parsed_url, ssl=ssl_context)
-        response = await connection.send(request, stream=stream)
+        response = await connection.send(request)
+        if not stream:
+            try:
+                await response.read()
+            finally:
+                await response.close()
         return response
 
+    @property
+    def num_connections(self) -> int:
+        return self.num_active_connections + self.num_keepalive_connections
+
     async def acquire_connection(
-        self, url: URL, *, ssl: typing.Union[bool, ssl.SSLContext] = False
+        self, url: URL, *, ssl: typing.Optional[ssl.SSLContext] = None
     ) -> Connection:
-        connection = Connection(timeout=self.timeout)
-        await connection.open(url.hostname, url.port, ssl=ssl)
+        key = (url.scheme, url.hostname, url.port)
+        try:
+            connection = self._connections[key].pop()
+            if not self._connections[key]:
+                del self._connections[key]
+            self.num_keepalive_connections -= 1
+            self.num_active_connections += 1
+
+        except (KeyError, IndexError):
+            await self._connection_semaphore.acquire()
+            release = functools.partial(self.release_connection, key=key)
+            connection = Connection(timeout=self.timeout, on_release=release)
+            self.num_active_connections += 1
+            await connection.open(url.hostname, url.port, ssl=ssl)
+
         return connection
 
-    async def get_ssl_context(self, url: URL) -> typing.Union[bool, ssl.SSLContext]:
+    async def release_connection(
+        self, connection: Connection, key: ConnectionKey
+    ) -> None:
+        if connection.is_closed:
+            self._connection_semaphore.release()
+            self.num_active_connections -= 1
+        elif (
+            self.limits.soft_limit is not None
+            and self.num_connections > self.limits.soft_limit
+        ):
+            self._connection_semaphore.release()
+            self.num_active_connections -= 1
+            connection.close()
+        else:
+            self.num_active_connections -= 1
+            self.num_keepalive_connections += 1
+            try:
+                self._connections[key].append(connection)
+            except KeyError:
+                self._connections[key] = [connection]
+
+    async def get_ssl_context(self, url: URL) -> typing.Optional[ssl.SSLContext]:
         if not url.is_secure:
-            return False
+            return None
 
         if not hasattr(self, "ssl_context"):
             if not self.ssl_config.verify:

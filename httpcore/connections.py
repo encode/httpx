@@ -19,18 +19,19 @@ H11Event = typing.Union[
 
 
 class Connection:
-    def __init__(self, timeout: TimeoutConfig):
+    def __init__(self, timeout: TimeoutConfig, on_release: typing.Callable = None):
         self.reader = None
         self.writer = None
         self.state = h11.Connection(our_role=h11.CLIENT)
         self.timeout = timeout
+        self.on_release = on_release
+
+    @property
+    def is_closed(self) -> bool:
+        return self.state.our_state in (h11.CLOSED, h11.ERROR)
 
     async def open(
-        self,
-        hostname: str,
-        port: int,
-        *,
-        ssl: typing.Union[bool, ssl.SSLContext] = False
+        self, hostname: str, port: int, *, ssl: typing.Optional[ssl.SSLContext] = None
     ) -> None:
         try:
             self.reader, self.writer = await asyncio.wait_for(  # type: ignore
@@ -40,7 +41,7 @@ class Connection:
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
-    async def send(self, request: Request, stream: bool = False) -> Response:
+    async def send(self, request: Request) -> Response:
         method = request.method.encode()
         target = request.url.target
         headers = request.headers
@@ -69,29 +70,17 @@ class Connection:
         assert isinstance(event, h11.Response)
         status_code = event.status_code
         headers = event.headers
+        body = self._body_iter()
+        return Response(
+            status_code=status_code, headers=headers, body=body, on_close=self._release
+        )
 
-        if stream:
-            body_iter = self.body_iter()
-            return Response(status_code=status_code, headers=headers, body=body_iter)
-
-        #  Get the response body.
-        body = b""
-        event = await self._receive_event()
-        while isinstance(event, h11.Data):
-            body += event.data
-            event = await self._receive_event()
-        assert isinstance(event, h11.EndOfMessage)
-        await self.close()
-
-        return Response(status_code=status_code, headers=headers, body=body)
-
-    async def body_iter(self) -> typing.AsyncIterator[bytes]:
+    async def _body_iter(self) -> typing.AsyncIterator[bytes]:
         event = await self._receive_event()
         while isinstance(event, h11.Data):
             yield event.data
             event = await self._receive_event()
         assert isinstance(event, h11.EndOfMessage)
-        await self.close()
 
     async def _send_event(self, event: H11Event) -> None:
         assert self.writer is not None
@@ -116,8 +105,27 @@ class Connection:
 
         return event
 
-    async def close(self) -> None:
-        if self.writer is not None:
-            self.writer.close()
-            if hasattr(self.writer, "wait_closed"):
-                await self.writer.wait_closed()
+    async def _release(self) -> None:
+        assert self.writer is not None
+
+        if self.state.our_state is h11.DONE and self.state.their_state is h11.DONE:
+            self.state.start_next_cycle()
+        else:
+            self.close()
+
+        if self.on_release is not None:
+            await self.on_release(self)
+
+    def close(self) -> None:
+        assert self.writer is not None
+
+        event = h11.ConnectionClosed()
+        try:
+            # If we're in h11.MUST_CLOSE then we'll end up in h11.CLOSED.
+            self.state.send(event)
+        except h11.ProtocolError:
+            # If we're in some other state then it's a premature close,
+            # and we'll end up in h11.ERROR.
+            pass
+
+        self.writer.close()
