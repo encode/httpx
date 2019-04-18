@@ -10,4 +10,4 @@ from .exceptions import (
 )
 from .pool import ConnectionPool
 
-__version__ = "0.0.3"
+__version__ = "0.1.0"
