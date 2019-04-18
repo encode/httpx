@@ -13,6 +13,16 @@ async def test_read_timeout(server):
 
 
 @pytest.mark.asyncio
+async def test_connect_timeout(server):
+    timeout = httpcore.TimeoutConfig(connect_timeout=0.0001)
+
+    async with httpcore.ConnectionPool(timeout=timeout) as http:
+        with pytest.raises(httpcore.ConnectTimeout):
+            # See https://stackoverflow.com/questions/100841/
+            await http.request("GET", "http://10.255.255.1/")
+
+
+@pytest.mark.asyncio
 async def test_pool_timeout(server):
     timeout = httpcore.TimeoutConfig(pool_timeout=0.0001)
     limits = httpcore.PoolLimits(hard_limit=1)
