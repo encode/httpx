@@ -1,3 +1,4 @@
+import http
 import typing
 from urllib.parse import urlsplit
 
@@ -122,11 +123,19 @@ class Response:
         self,
         status_code: int,
         *,
+        reason: typing.Optional[str] = None,
         headers: typing.Sequence[typing.Tuple[bytes, bytes]] = (),
         body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
         on_close: typing.Callable = None,
     ):
         self.status_code = status_code
+        if not reason:
+            try:
+                self.reason = http.HTTPStatus(status_code).phrase
+            except ValueError as exc:
+                self.reason = ""
+        else:
+            self.reason = reason
         self.headers = list(headers)
         self.on_close = on_close
         self.is_closed = False

@@ -68,11 +68,12 @@ class Connection:
         if isinstance(event, h11.InformationalResponse):
             event = await self._receive_event()
         assert isinstance(event, h11.Response)
+        reason = event.reason.decode('latin1')
         status_code = event.status_code
         headers = event.headers
         body = self._body_iter()
         return Response(
-            status_code=status_code, headers=headers, body=body, on_close=self._release
+            status_code=status_code, reason=reason, headers=headers, body=body, on_close=self._release
         )
 
     async def _body_iter(self) -> typing.AsyncIterator[bytes]:
