@@ -1,6 +1,7 @@
 from .config import PoolLimits, SSLConfig, TimeoutConfig
 from .datastructures import URL, Request, Response
 from .exceptions import (
+    BadResponse,
     ConnectTimeout,
     PoolTimeout,
     ReadTimeout,
@@ -10,4 +11,4 @@ from .exceptions import (
 )
 from .pool import ConnectionPool
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
