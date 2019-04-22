@@ -1,5 +1,6 @@
 from .config import PoolLimits, SSLConfig, TimeoutConfig
-from .datastructures import URL, Request, Response
+from .connections import Connection
+from .datastructures import URL, Origin, Request, Response
 from .exceptions import (
     BadResponse,
     ConnectTimeout,

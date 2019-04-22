@@ -61,6 +61,34 @@ class URL:
     def is_secure(self) -> bool:
         return self.components.scheme == "https"
 
+    @property
+    def origin(self) -> "Origin":
+        return Origin(self)
+
+
+class Origin:
+    def __init__(self, url: typing.Union[str, URL]) -> None:
+        if isinstance(url, str):
+            url = URL(url)
+        self.scheme = url.scheme
+        self.hostname = url.hostname
+        self.port = url.port
+
+    @property
+    def is_secure(self) -> bool:
+        return self.scheme == "https"
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self.scheme == other.scheme
+            and self.hostname == other.hostname
+            and self.port == other.port
+        )
+
+    def __hash__(self) -> int:
+        return hash((self.scheme, self.hostname, self.port))
+
 
 class Request:
     def __init__(
@@ -207,3 +235,11 @@ class Response:
             self.is_closed = True
             if self.on_close is not None:
                 await self.on_close()
+
+
+class Client:
+    async def send(self, request: Request, **options: typing.Any) -> Response:
+        raise NotImplementedError()  # pragma: nocover
+
+    async def close(self) -> None:
+        raise NotImplementedError()  # pragma: nocover

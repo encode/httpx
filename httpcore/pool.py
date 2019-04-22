@@ -1,7 +1,4 @@
 import asyncio
-import functools
-import os
-import ssl
 import typing
 from types import TracebackType
 
@@ -15,10 +12,8 @@ from .config import (
     TimeoutConfig,
 )
 from .connections import Connection
-from .datastructures import URL, Request, Response
+from .datastructures import Client, Origin, Request, Response
 from .exceptions import PoolTimeout
-
-ConnectionKey = typing.Tuple[str, str, int, SSLConfig, TimeoutConfig]
 
 
 class ConnectionSemaphore:
@@ -43,7 +38,7 @@ class ConnectionPool:
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
         limits: PoolLimits = DEFAULT_POOL_LIMITS,
     ):
-        self.ssl_config = ssl
+        self.ssl = ssl
         self.timeout = timeout
         self.limits = limits
         self.is_closed = False
@@ -51,36 +46,22 @@ class ConnectionPool:
         self.num_keepalive_connections = 0
         self._keepalive_connections = (
             {}
-        )  # type: typing.Dict[ConnectionKey, typing.List[Connection]]
+        )  # type: typing.Dict[Origin, typing.List[Connection]]
         self._max_connections = ConnectionSemaphore(
             max_connections=self.limits.hard_limit
         )
 
-    async def request(
+    async def send(
         self,
-        method: str,
-        url: str,
-        *,
-        headers: typing.Sequence[typing.Tuple[bytes, bytes]] = (),
-        body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
-        stream: bool = False,
+        request: Request,
         ssl: typing.Optional[SSLConfig] = None,
         timeout: typing.Optional[TimeoutConfig] = None,
+        stream: bool = False,
     ) -> Response:
-        if ssl is None:
-            ssl = self.ssl_config
-        if timeout is None:
-            timeout = self.timeout
-
-        parsed_url = URL(url)
-        request = Request(method, parsed_url, headers=headers, body=body)
-        connection = await self.acquire_connection(parsed_url, ssl=ssl, timeout=timeout)
-        response = await connection.send(request)
-        if not stream:
-            try:
-                await response.read()
-            finally:
-                await response.close()
+        connection = await self.acquire_connection(request.url.origin, timeout=timeout)
+        response = await connection.send(
+            request, ssl=ssl, timeout=timeout, stream=stream
+        )
         return response
 
     @property
@@ -88,38 +69,36 @@ class ConnectionPool:
         return self.num_active_connections + self.num_keepalive_connections
 
     async def acquire_connection(
-        self, url: URL, ssl: SSLConfig, timeout: TimeoutConfig
+        self, origin: Origin, timeout: typing.Optional[TimeoutConfig] = None
     ) -> Connection:
-        key = (url.scheme, url.hostname, url.port, ssl, timeout)
         try:
-            connection = self._keepalive_connections[key].pop()
-            if not self._keepalive_connections[key]:
-                del self._keepalive_connections[key]
+            connection = self._keepalive_connections[origin].pop()
+            if not self._keepalive_connections[origin]:
+                del self._keepalive_connections[origin]
             self.num_keepalive_connections -= 1
             self.num_active_connections += 1
 
         except (KeyError, IndexError):
-            if url.is_secure:
-                ssl_context = await ssl.load_ssl_context()
+            if timeout is None:
+                pool_timeout = self.timeout.pool_timeout
             else:
-                ssl_context = None
+                pool_timeout = timeout.pool_timeout
 
             try:
-                await asyncio.wait_for(
-                    self._max_connections.acquire(), timeout.pool_timeout
-                )
+                await asyncio.wait_for(self._max_connections.acquire(), pool_timeout)
             except asyncio.TimeoutError:
                 raise PoolTimeout()
-            release = functools.partial(self.release_connection, key=key)
-            connection = Connection(timeout=timeout, on_release=release)
+            connection = Connection(
+                origin,
+                ssl=self.ssl,
+                timeout=self.timeout,
+                on_release=self.release_connection,
+            )
             self.num_active_connections += 1
-            await connection.open(url.hostname, url.port, ssl=ssl_context)
 
         return connection
 
-    async def release_connection(
-        self, connection: Connection, key: ConnectionKey
-    ) -> None:
+    async def release_connection(self, connection: Connection) -> None:
         if connection.is_closed:
             self._max_connections.release()
             self.num_active_connections -= 1
@@ -129,14 +108,14 @@ class ConnectionPool:
         ):
             self._max_connections.release()
             self.num_active_connections -= 1
-            connection.close()
+            await connection.close()
         else:
             self.num_active_connections -= 1
             self.num_keepalive_connections += 1
             try:
-                self._keepalive_connections[key].append(connection)
+                self._keepalive_connections[connection.origin].append(connection)
             except KeyError:
-                self._keepalive_connections[key] = [connection]
+                self._keepalive_connections[connection.origin] = [connection]
 
     async def close(self) -> None:
         self.is_closed = True
