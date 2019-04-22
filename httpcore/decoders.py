@@ -6,7 +6,10 @@ See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 import typing
 import zlib
 
-from .compat import brotli
+try:
+    import brotli
+except ImportError:  # pragma: nocover
+    brotli = None
 
 
 class Decoder:
