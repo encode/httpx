@@ -2,6 +2,7 @@ import http
 import typing
 from urllib.parse import urlsplit
 
+from .config import SSLConfig, TimeoutConfig
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -238,7 +239,28 @@ class Response:
 
 
 class Client:
-    async def send(self, request: Request, **options: typing.Any) -> Response:
+    async def request(
+        self,
+        method: str,
+        url: typing.Union[str, URL],
+        *,
+        headers: typing.Sequence[typing.Tuple[bytes, bytes]] = (),
+        body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
+        ssl: typing.Optional[SSLConfig] = None,
+        timeout: typing.Optional[TimeoutConfig] = None,
+        stream: bool = False,
+    ) -> Response:
+        request = Request(method, url, headers=headers, body=body)
+        return await self.send(request, ssl=ssl, timeout=timeout, stream=stream)
+
+    async def send(
+        self,
+        request: Request,
+        *,
+        ssl: typing.Optional[SSLConfig] = None,
+        timeout: typing.Optional[TimeoutConfig] = None,
+        stream: bool = False,
+    ) -> Response:
         raise NotImplementedError()  # pragma: nocover
 
     async def close(self) -> None:

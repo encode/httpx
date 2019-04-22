@@ -40,6 +40,7 @@ class Connection:
     async def send(
         self,
         request: Request,
+        *,
         ssl: typing.Optional[SSLConfig] = None,
         timeout: typing.Optional[TimeoutConfig] = None,
         stream: bool = False,
