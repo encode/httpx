@@ -17,7 +17,7 @@ H11Event = typing.Union[
 ]
 
 
-class Connection:
+class Connection(Client):
     def __init__(
         self,
         origin: typing.Union[str, Origin],
@@ -43,7 +43,6 @@ class Connection:
         *,
         ssl: typing.Optional[SSLConfig] = None,
         timeout: typing.Optional[TimeoutConfig] = None,
-        stream: bool = False,
     ) -> Response:
         assert request.url.origin == self.origin
 
@@ -85,22 +84,13 @@ class Connection:
         status_code = event.status_code
         headers = event.headers
         body = self._body_iter(timeout)
-        response = Response(
+        return Response(
             status_code=status_code,
             reason=reason,
             headers=headers,
             body=body,
             on_close=self._release,
         )
-
-        if not stream:
-            # Read the response body.
-            try:
-                await response.read()
-            finally:
-                await response.close()
-
-        return response
 
     async def _connect(self, ssl: SSLConfig, timeout: TimeoutConfig) -> None:
         ssl_context = await ssl.load_ssl_context() if self.origin.is_secure else None

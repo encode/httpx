@@ -1,6 +1,5 @@
 import asyncio
 import typing
-from types import TracebackType
 
 from .config import (
     DEFAULT_CA_BUNDLE_PATH,
@@ -16,21 +15,7 @@ from .datastructures import Client, Origin, Request, Response
 from .exceptions import PoolTimeout
 
 
-class ConnectionSemaphore:
-    def __init__(self, max_connections: int = None):
-        if max_connections is not None:
-            self.semaphore = asyncio.BoundedSemaphore(value=max_connections)
-
-    async def acquire(self) -> None:
-        if hasattr(self, "semaphore"):
-            await self.semaphore.acquire()
-
-    def release(self) -> None:
-        if hasattr(self, "semaphore"):
-            self.semaphore.release()
-
-
-class ConnectionPool:
+class ConnectionPool(Client):
     def __init__(
         self,
         *,
@@ -57,12 +42,9 @@ class ConnectionPool:
         *,
         ssl: typing.Optional[SSLConfig] = None,
         timeout: typing.Optional[TimeoutConfig] = None,
-        stream: bool = False,
     ) -> Response:
         connection = await self.acquire_connection(request.url.origin, timeout=timeout)
-        response = await connection.send(
-            request, ssl=ssl, timeout=timeout, stream=stream
-        )
+        response = await connection.send(request, ssl=ssl, timeout=timeout)
         return response
 
     @property
@@ -121,13 +103,16 @@ class ConnectionPool:
     async def close(self) -> None:
         self.is_closed = True
 
-    async def __aenter__(self) -> "ConnectionPool":
-        return self
 
-    async def __aexit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        await self.close()
+class ConnectionSemaphore:
+    def __init__(self, max_connections: int = None):
+        if max_connections is not None:
+            self.semaphore = asyncio.BoundedSemaphore(value=max_connections)
+
+    async def acquire(self) -> None:
+        if hasattr(self, "semaphore"):
+            await self.semaphore.acquire()
+
+    def release(self) -> None:
+        if hasattr(self, "semaphore"):
+            self.semaphore.release()

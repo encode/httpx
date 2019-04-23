@@ -1,5 +1,6 @@
 import http
 import typing
+from types import TracebackType
 from urllib.parse import urlsplit
 
 from .config import SSLConfig, TimeoutConfig
@@ -251,7 +252,13 @@ class Client:
         stream: bool = False,
     ) -> Response:
         request = Request(method, url, headers=headers, body=body)
-        return await self.send(request, ssl=ssl, timeout=timeout, stream=stream)
+        response = await self.send(request, ssl=ssl, timeout=timeout)
+        if not stream:
+            try:
+                await response.read()
+            finally:
+                await response.close()
+        return response
 
     async def send(
         self,
@@ -259,9 +266,19 @@ class Client:
         *,
         ssl: typing.Optional[SSLConfig] = None,
         timeout: typing.Optional[TimeoutConfig] = None,
-        stream: bool = False,
     ) -> Response:
         raise NotImplementedError()  # pragma: nocover
 
     async def close(self) -> None:
         raise NotImplementedError()  # pragma: nocover
+
+    async def __aenter__(self) -> "Client":
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        await self.close()
