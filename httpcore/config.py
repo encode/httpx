@@ -1,3 +1,6 @@
+import asyncio
+import os
+import ssl
 import typing
 
 import certifi
@@ -31,6 +34,58 @@ class SSLConfig:
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return f"{class_name}(cert={self.cert}, verify={self.verify})"
+
+    async def load_ssl_context(self) -> ssl.SSLContext:
+        if not hasattr(self, "ssl_context"):
+            if not self.verify:
+                self.ssl_context = self.load_ssl_context_no_verify()
+            else:
+                # Run the SSL loading in a threadpool, since it makes disk accesses.
+                loop = asyncio.get_event_loop()
+                self.ssl_context = await loop.run_in_executor(
+                    None, self.load_ssl_context_verify
+                )
+
+        return self.ssl_context
+
+    def load_ssl_context_no_verify(self) -> ssl.SSLContext:
+        """
+        Return an SSL context for unverified connections.
+        """
+        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        context.options |= ssl.OP_NO_SSLv2
+        context.options |= ssl.OP_NO_SSLv3
+        context.options |= ssl.OP_NO_COMPRESSION
+        context.set_default_verify_paths()
+        return context
+
+    def load_ssl_context_verify(self) -> ssl.SSLContext:
+        """
+        Return an SSL context for verified connections.
+        """
+        if isinstance(self.verify, bool):
+            ca_bundle_path = DEFAULT_CA_BUNDLE_PATH
+        elif os.path.exists(self.verify):
+            ca_bundle_path = self.verify
+        else:
+            raise IOError(
+                "Could not find a suitable TLS CA certificate bundle, "
+                "invalid path: {}".format(self.verify)
+            )
+
+        context = ssl.create_default_context()
+        if os.path.isfile(ca_bundle_path):
+            context.load_verify_locations(cafile=ca_bundle_path)
+        elif os.path.isdir(ca_bundle_path):
+            context.load_verify_locations(capath=ca_bundle_path)
+
+        if self.cert is not None:
+            if isinstance(self.cert, str):
+                context.load_cert_chain(certfile=self.cert)
+            else:
+                context.load_cert_chain(certfile=self.cert[0], keyfile=self.cert[1])
+
+        return context
 
 
 class TimeoutConfig:

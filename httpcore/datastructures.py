@@ -1,7 +1,9 @@
 import http
 import typing
+from types import TracebackType
 from urllib.parse import urlsplit
 
+from .config import SSLConfig, TimeoutConfig
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -60,6 +62,34 @@ class URL:
     @property
     def is_secure(self) -> bool:
         return self.components.scheme == "https"
+
+    @property
+    def origin(self) -> "Origin":
+        return Origin(self)
+
+
+class Origin:
+    def __init__(self, url: typing.Union[str, URL]) -> None:
+        if isinstance(url, str):
+            url = URL(url)
+        self.scheme = url.scheme
+        self.hostname = url.hostname
+        self.port = url.port
+
+    @property
+    def is_secure(self) -> bool:
+        return self.scheme == "https"
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self.scheme == other.scheme
+            and self.hostname == other.hostname
+            and self.port == other.port
+        )
+
+    def __hash__(self) -> int:
+        return hash((self.scheme, self.hostname, self.port))
 
 
 class Request:
@@ -207,3 +237,48 @@ class Response:
             self.is_closed = True
             if self.on_close is not None:
                 await self.on_close()
+
+
+class Client:
+    async def request(
+        self,
+        method: str,
+        url: typing.Union[str, URL],
+        *,
+        headers: typing.Sequence[typing.Tuple[bytes, bytes]] = (),
+        body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
+        ssl: typing.Optional[SSLConfig] = None,
+        timeout: typing.Optional[TimeoutConfig] = None,
+        stream: bool = False,
+    ) -> Response:
+        request = Request(method, url, headers=headers, body=body)
+        response = await self.send(request, ssl=ssl, timeout=timeout)
+        if not stream:
+            try:
+                await response.read()
+            finally:
+                await response.close()
+        return response
+
+    async def send(
+        self,
+        request: Request,
+        *,
+        ssl: typing.Optional[SSLConfig] = None,
+        timeout: typing.Optional[TimeoutConfig] = None,
+    ) -> Response:
+        raise NotImplementedError()  # pragma: nocover
+
+    async def close(self) -> None:
+        raise NotImplementedError()  # pragma: nocover
+
+    async def __aenter__(self) -> "Client":
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        await self.close()

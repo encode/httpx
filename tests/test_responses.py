@@ -3,26 +3,13 @@ import pytest
 import httpcore
 
 
-class MockHTTP(httpcore.ConnectionPool):
-    async def request(
-        self, method, url, *, headers=(), body=b"", stream=False
-    ) -> httpcore.Response:
-        if stream:
-
-            async def streaming_body():
-                yield b"Hello, "
-                yield b"world!"
-
-            return httpcore.Response(200, body=streaming_body())
-        return httpcore.Response(200, body=b"Hello, world!")
+async def streaming_body():
+    yield b"Hello, "
+    yield b"world!"
 
 
-http = MockHTTP()
-
-
-@pytest.mark.asyncio
-async def test_request():
-    response = await http.request("GET", "http://example.com")
+def test_response():
+    response = httpcore.Response(200, body=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason == "OK"
     assert response.body == b"Hello, world!"
@@ -31,7 +18,7 @@ async def test_request():
 
 @pytest.mark.asyncio
 async def test_read_response():
-    response = await http.request("GET", "http://example.com")
+    response = httpcore.Response(200, body=b"Hello, world!")
 
     assert response.status_code == 200
     assert response.body == b"Hello, world!"
@@ -45,25 +32,8 @@ async def test_read_response():
 
 
 @pytest.mark.asyncio
-async def test_stream_response():
-    response = await http.request("GET", "http://example.com")
-
-    assert response.status_code == 200
-    assert response.body == b"Hello, world!"
-    assert response.is_closed
-
-    body = b""
-    async for part in response.stream():
-        body += part
-
-    assert body == b"Hello, world!"
-    assert response.body == b"Hello, world!"
-    assert response.is_closed
-
-
-@pytest.mark.asyncio
-async def test_read_streaming_response():
-    response = await http.request("GET", "http://example.com", stream=True)
+async def test_streaming_response():
+    response = httpcore.Response(200, body=streaming_body())
 
     assert response.status_code == 200
     assert not hasattr(response, "body")
@@ -73,29 +43,12 @@ async def test_read_streaming_response():
 
     assert body == b"Hello, world!"
     assert response.body == b"Hello, world!"
-    assert response.is_closed
-
-
-@pytest.mark.asyncio
-async def test_stream_streaming_response():
-    response = await http.request("GET", "http://example.com", stream=True)
-
-    assert response.status_code == 200
-    assert not hasattr(response, "body")
-    assert not response.is_closed
-
-    body = b""
-    async for part in response.stream():
-        body += part
-
-    assert body == b"Hello, world!"
-    assert not hasattr(response, "body")
     assert response.is_closed
 
 
 @pytest.mark.asyncio
 async def test_cannot_read_after_stream_consumed():
-    response = await http.request("GET", "http://example.com", stream=True)
+    response = httpcore.Response(200, body=streaming_body())
 
     body = b""
     async for part in response.stream():
@@ -107,7 +60,7 @@ async def test_cannot_read_after_stream_consumed():
 
 @pytest.mark.asyncio
 async def test_cannot_read_after_response_closed():
-    response = await http.request("GET", "http://example.com", stream=True)
+    response = httpcore.Response(200, body=streaming_body())
 
     await response.close()
 
