@@ -11,5 +11,6 @@ from .exceptions import (
     Timeout,
 )
 from .pool import ConnectionPool
+from .sync import SyncClient, SyncConnectionPool
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"

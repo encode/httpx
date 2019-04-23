@@ -101,7 +101,7 @@ class Request:
         headers: typing.Sequence[typing.Tuple[bytes, bytes]] = (),
         body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
     ):
-        self.method = method
+        self.method = method.upper()
         self.url = URL(url) if isinstance(url, str) else url
         self.headers = list(headers)
         if isinstance(body, bytes):
