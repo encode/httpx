@@ -3,8 +3,8 @@ from types import TracebackType
 
 from .compat import asyncio_run
 from .config import SSLConfig, TimeoutConfig
+from .connectionpool import ConnectionPool
 from .datastructures import URL, Client, Response
-from .pool import ConnectionPool
 
 
 class SyncResponse:

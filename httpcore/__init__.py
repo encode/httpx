@@ -1,5 +1,5 @@
 from .config import PoolLimits, SSLConfig, TimeoutConfig
-from .connections import Connection
+from .connectionpool import ConnectionPool
 from .datastructures import URL, Origin, Request, Response
 from .exceptions import (
     BadResponse,
@@ -10,7 +10,7 @@ from .exceptions import (
     StreamConsumed,
     Timeout,
 )
-from .pool import ConnectionPool
+from .http11 import HTTP11Connection
 from .sync import SyncClient, SyncConnectionPool
 
 __version__ = "0.2.0"

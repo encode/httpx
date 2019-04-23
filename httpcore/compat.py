@@ -2,6 +2,7 @@ import asyncio
 
 if hasattr(asyncio, "run"):
     asyncio_run = asyncio.run
+
 else:  # pragma: nocover
 
     def asyncio_run(main, *, debug=False):  # type: ignore
