@@ -10,7 +10,7 @@ A low-level async HTTP library.
 * SSL verification. (Done)
 * Proxy support. (Not done)
 * HTTP/2 support. (Not done)
-* Support *both* async and sync operations. (Done.)
+* Support *both* async and sync operations. (Done)
 
 ## Motivation
 
