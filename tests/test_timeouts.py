@@ -31,6 +31,6 @@ async def test_pool_timeout(server):
         response = await http.request("GET", "http://127.0.0.1:8000/", stream=True)
 
         with pytest.raises(httpcore.PoolTimeout):
-            await http.request("GET", "http://127.0.0.1:8000/")
+            await http.request("GET", "http://localhost:8000/")
 
         await response.read()
