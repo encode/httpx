@@ -72,24 +72,20 @@ class Origin:
     def __init__(self, url: typing.Union[str, URL]) -> None:
         if isinstance(url, str):
             url = URL(url)
-        self.scheme = url.scheme
-        self.hostname = url.hostname
+        self.is_ssl = url.scheme == "https"
+        self.hostname = url.hostname.lower()
         self.port = url.port
-
-    @property
-    def is_secure(self) -> bool:
-        return self.scheme == "https"
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self.scheme == other.scheme
+            and self.is_ssl == other.is_ssl
             and self.hostname == other.hostname
             and self.port == other.port
         )
 
     def __hash__(self) -> int:
-        return hash((self.scheme, self.hostname, self.port))
+        return hash((self.is_ssl, self.hostname, self.port))
 
 
 class Request:

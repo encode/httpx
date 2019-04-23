@@ -17,7 +17,7 @@ H11Event = typing.Union[
 ]
 
 
-class Connection(Client):
+class HTTP11Connection(Client):
     def __init__(
         self,
         origin: typing.Union[str, Origin],
@@ -93,13 +93,13 @@ class Connection(Client):
         )
 
     async def _connect(self, ssl: SSLConfig, timeout: TimeoutConfig) -> None:
-        ssl_context = await ssl.load_ssl_context() if self.origin.is_secure else None
+        hostname = self.origin.hostname
+        port = self.origin.port
+        ssl_context = await ssl.load_ssl_context() if self.origin.is_ssl else None
 
         try:
             self._reader, self._writer = await asyncio.wait_for(  # type: ignore
-                asyncio.open_connection(
-                    self.origin.hostname, self.origin.port, ssl=ssl_context
-                ),
+                asyncio.open_connection(hostname, port, ssl=ssl_context),
                 timeout.connect_timeout,
             )
         except asyncio.TimeoutError:

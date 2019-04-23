@@ -10,7 +10,7 @@ from .config import (
     SSLConfig,
     TimeoutConfig,
 )
-from .connections import Connection
+from .http11 import HTTP11Connection
 from .datastructures import Client, Origin, Request, Response
 from .exceptions import PoolTimeout
 
@@ -31,7 +31,7 @@ class ConnectionPool(Client):
         self.num_keepalive_connections = 0
         self._keepalive_connections = (
             {}
-        )  # type: typing.Dict[Origin, typing.List[Connection]]
+        )  # type: typing.Dict[Origin, typing.List[HTTP11Connection]]
         self._max_connections = ConnectionSemaphore(
             max_connections=self.limits.hard_limit
         )
@@ -53,7 +53,7 @@ class ConnectionPool(Client):
 
     async def acquire_connection(
         self, origin: Origin, timeout: typing.Optional[TimeoutConfig] = None
-    ) -> Connection:
+    ) -> HTTP11Connection:
         try:
             connection = self._keepalive_connections[origin].pop()
             if not self._keepalive_connections[origin]:
@@ -71,7 +71,7 @@ class ConnectionPool(Client):
                 await asyncio.wait_for(self._max_connections.acquire(), pool_timeout)
             except asyncio.TimeoutError:
                 raise PoolTimeout()
-            connection = Connection(
+            connection = HTTP11Connection(
                 origin,
                 ssl=self.ssl,
                 timeout=self.timeout,
@@ -81,7 +81,7 @@ class ConnectionPool(Client):
 
         return connection
 
-    async def release_connection(self, connection: Connection) -> None:
+    async def release_connection(self, connection: HTTP11Connection) -> None:
         if connection.is_closed:
             self._max_connections.release()
             self.num_active_connections -= 1
