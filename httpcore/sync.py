@@ -30,6 +30,14 @@ class SyncResponse:
     def read(self) -> bytes:
         return asyncio_run(self._response.read())
 
+    def stream(self) -> typing.Iterator[bytes]:
+        inner = self._response.stream()
+        while True:
+            try:
+                yield asyncio_run(inner.__anext__())
+            except StopAsyncIteration as exc:
+                break
+
 
 class SyncClient:
     def __init__(self, client: Client):
