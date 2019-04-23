@@ -38,6 +38,9 @@ class SyncResponse:
             except StopAsyncIteration as exc:
                 break
 
+    def close(self) -> None:
+        return asyncio_run(self._response.close())
+
 
 class SyncClient:
     def __init__(self, client: Client):
