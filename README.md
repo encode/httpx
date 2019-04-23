@@ -10,7 +10,7 @@ A low-level async HTTP library.
 * SSL verification. (Done)
 * Proxy support. (Not done)
 * HTTP/2 support. (Not done)
-* Support *both* async and sync operations. (Sync will be lightweight shim on top of async. Not done.)
+* Support *both* async and sync operations. (Done.)
 
 ## Motivation
 
@@ -67,6 +67,15 @@ http = httpcore.ConnectionPool()
 response = await http.request(method, url, stream=True)
 async for part in response.raw():
     ...
+```
+
+Thread-synchronous requests:
+
+```python
+http = httpcore.SyncConnectionPool()
+response = http.request('GET', 'http://example.com')
+assert response.status_code == 200
+assert response.body == b'Hello, world'
 ```
 
 ## Building a Gateway Server
