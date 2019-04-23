@@ -106,13 +106,21 @@ class ConnectionPool(Client):
 
 class ConnectionSemaphore:
     def __init__(self, max_connections: int = None):
-        if max_connections is not None:
-            self.semaphore = asyncio.BoundedSemaphore(value=max_connections)
+        self.max_connections = max_connections
+
+    @property
+    def semaphore(self) -> typing.Optional[asyncio.BoundedSemaphore]:
+        if not hasattr(self, "_semaphore"):
+            if self.max_connections is None:
+                self._semaphore = None
+            else:
+                self._semaphore = asyncio.BoundedSemaphore(value=self.max_connections)
+        return self._semaphore
 
     async def acquire(self) -> None:
-        if hasattr(self, "semaphore"):
+        if self.semaphore is not None:
             await self.semaphore.acquire()
 
     def release(self) -> None:
-        if hasattr(self, "semaphore"):
+        if self.semaphore is not None:
             self.semaphore.release()
