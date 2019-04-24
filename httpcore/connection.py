@@ -5,10 +5,10 @@ import h2.connection
 import h11
 
 from .config import DEFAULT_SSL_CONFIG, DEFAULT_TIMEOUT_CONFIG, SSLConfig, TimeoutConfig
-from .datastructures import Client, Origin, Request, Response
 from .exceptions import ConnectTimeout
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
+from .models import Client, Origin, Request, Response
 
 
 class HTTPConnection(Client):

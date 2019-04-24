@@ -4,8 +4,8 @@ import typing
 import h11
 
 from .config import DEFAULT_SSL_CONFIG, DEFAULT_TIMEOUT_CONFIG, SSLConfig, TimeoutConfig
-from .datastructures import Client, Origin, Request, Response
 from .exceptions import ConnectTimeout, ReadTimeout
+from .models import Client, Origin, Request, Response
 
 H11Event = typing.Union[
     h11.Request,

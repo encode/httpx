@@ -11,8 +11,8 @@ from .config import (
     TimeoutConfig,
 )
 from .connection import HTTPConnection
-from .datastructures import Client, Origin, Request, Response
 from .exceptions import PoolTimeout
+from .models import Client, Origin, Request, Response
 
 
 class ConnectionPool(Client):

@@ -3,8 +3,8 @@ import typing
 from types import TracebackType
 
 from .config import SSLConfig, TimeoutConfig
-from .connectionpool import ConnectionPool
-from .datastructures import URL, Client, Response
+from .connection_pool import ConnectionPool
+from .models import URL, Client, Response
 
 
 class SyncResponse:
