@@ -10,9 +10,9 @@ from .config import (
     SSLConfig,
     TimeoutConfig,
 )
-from .http11 import HTTP11Connection
 from .datastructures import Client, Origin, Request, Response
 from .exceptions import PoolTimeout
+from .http11 import HTTP11Connection
 
 
 class ConnectionPool(Client):
@@ -102,6 +102,12 @@ class ConnectionPool(Client):
 
     async def close(self) -> None:
         self.is_closed = True
+        all_connections = []
+        for connections in self._keepalive_connections.values():
+            all_connections.extend(list(connections))
+        self._keepalive_connections.clear()
+        for connection in all_connections:
+            await connection.close()
 
 
 class ConnectionSemaphore:

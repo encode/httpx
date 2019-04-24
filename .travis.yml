@@ -1,0 +1,19 @@
+sudo: required
+dist: xenial
+language: python
+
+cache: pip
+
+python:
+    - "3.6"
+    - "3.7"
+
+install:
+    - pip install -U -r requirements.txt
+
+script:
+    - scripts/test
+
+after_script:
+    - pip install codecov
+    - codecov

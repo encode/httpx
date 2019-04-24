@@ -1,15 +1,16 @@
+import asyncio
 import typing
 from types import TracebackType
 
-from .compat import asyncio_run
 from .config import SSLConfig, TimeoutConfig
 from .connectionpool import ConnectionPool
 from .datastructures import URL, Client, Response
 
 
 class SyncResponse:
-    def __init__(self, response: Response):
+    def __init__(self, response: Response, loop: asyncio.AbstractEventLoop):
         self._response = response
+        self._loop = loop
 
     @property
     def status_code(self) -> int:
@@ -28,23 +29,24 @@ class SyncResponse:
         return self._response.body
 
     def read(self) -> bytes:
-        return asyncio_run(self._response.read())
+        return self._loop.run_until_complete(self._response.read())
 
     def stream(self) -> typing.Iterator[bytes]:
         inner = self._response.stream()
         while True:
             try:
-                yield asyncio_run(inner.__anext__())
+                yield self._loop.run_until_complete(inner.__anext__())
             except StopAsyncIteration as exc:
                 break
 
     def close(self) -> None:
-        return asyncio_run(self._response.close())
+        return self._loop.run_until_complete(self._response.close())
 
 
 class SyncClient:
     def __init__(self, client: Client):
         self._client = client
+        self._loop = asyncio.new_event_loop()
 
     def request(
         self,
@@ -57,7 +59,7 @@ class SyncClient:
         timeout: typing.Optional[TimeoutConfig] = None,
         stream: bool = False,
     ) -> SyncResponse:
-        response = asyncio_run(
+        response = self._loop.run_until_complete(
             self._client.request(
                 method,
                 url,
@@ -68,10 +70,10 @@ class SyncClient:
                 stream=stream,
             )
         )
-        return SyncResponse(response)
+        return SyncResponse(response, self._loop)
 
     def close(self) -> None:
-        asyncio_run(self._client.close())
+        self._loop.run_until_complete(self._client.close())
 
     def __enter__(self) -> "SyncClient":
         return self

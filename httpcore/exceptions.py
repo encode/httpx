@@ -22,9 +22,9 @@ class PoolTimeout(Timeout):
     """
 
 
-class BadResponse(Exception):
+class ProtocolError(Exception):
     """
-    A malformed HTTP response.
+    Malformed HTTP.
     """
 
 
