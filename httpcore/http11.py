@@ -161,3 +161,4 @@ class HTTP11Connection(Client):
 
         if self._writer is not None:
             self._writer.close()
+            await self._writer.wait_closed()
