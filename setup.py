@@ -47,7 +47,7 @@ setup(
     author_email="tom@tomchristie.com",
     packages=get_packages("httpcore"),
     data_files=[("", ["LICENSE.md"])],
-    install_requires=["h11", "certifi"],
+    install_requires=["h11", "h2", "certifi"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",
