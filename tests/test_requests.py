@@ -73,12 +73,12 @@ def test_url():
     request = httpcore.Request("GET", "http://example.org")
     assert request.url.scheme == "http"
     assert request.url.port == 80
-    assert request.url.target == "/"
+    assert request.url.full_path == "/"
 
     request = httpcore.Request("GET", "https://example.org/abc?foo=bar")
     assert request.url.scheme == "https"
     assert request.url.port == 443
-    assert request.url.target == "/abc?foo=bar"
+    assert request.url.full_path == "/abc?foo=bar"
 
 
 def test_invalid_urls():

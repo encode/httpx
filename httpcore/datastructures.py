@@ -52,7 +52,7 @@ class URL:
         return port
 
     @property
-    def target(self) -> str:
+    def full_path(self) -> str:
         path = self.path or "/"
         query = self.query
         if query:
@@ -138,10 +138,11 @@ class Request:
         return headers
 
     async def stream(self) -> typing.AsyncIterator[bytes]:
-        assert self.is_streaming
-
-        async for part in self.body_aiter:
-            yield part
+        if self.is_streaming:
+            async for part in self.body_aiter:
+                yield part
+        elif self.body:
+            yield self.body
 
 
 class Response:
@@ -150,6 +151,7 @@ class Response:
         status_code: int,
         *,
         reason: typing.Optional[str] = None,
+        protocol: typing.Optional[str] = None,
         headers: typing.Sequence[typing.Tuple[bytes, bytes]] = (),
         body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
         on_close: typing.Callable = None,
@@ -162,6 +164,7 @@ class Response:
                 self.reason = ""
         else:
             self.reason = reason
+        self.protocol = protocol
         self.headers = list(headers)
         self.on_close = on_close
         self.is_closed = False

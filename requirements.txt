@@ -1,5 +1,6 @@
 certifi
 h11
+h2
 
 # Optional
 brotlipy

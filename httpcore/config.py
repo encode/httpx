@@ -73,7 +73,23 @@ class SSLConfig:
                 "invalid path: {}".format(self.verify)
             )
 
-        context = ssl.create_default_context()
+        context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+
+        context.options |= ssl.OP_NO_SSLv2
+        context.options |= ssl.OP_NO_SSLv3
+        context.options |= ssl.OP_NO_COMPRESSION
+
+        # RFC 7540 Section 9.2.2: "deployments of HTTP/2 that use TLS 1.2 MUST
+        # support TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256". In practice, the
+        # blacklist defined in this section allows only the AES GCM and ChaCha20
+        # cipher suites with ephemeral key negotiation.
+        context.set_ciphers("ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20")
+
+        if ssl.HAS_ALPN:
+            context.set_alpn_protocols(["h2", "http/1.1"])
+        if ssl.HAS_NPN:
+            context.set_npn_protocols(["h2", "http/1.1"])
+
         if os.path.isfile(ca_bundle_path):
             context.load_verify_locations(cafile=ca_bundle_path)
         elif os.path.isdir(ca_bundle_path):
