@@ -45,9 +45,8 @@ class HTTP2Connection(Client):
             self.initiate_connection()
 
         #  Start sending the request.
-        stream_id = self.h2_state.get_next_available_stream_id()
+        stream_id = await self.send_headers(stream_id, request)
         self.events[stream_id] = []
-        await self.send_headers(stream_id, request)
 
         # Send the request body.
         async for data in request.stream():
@@ -85,7 +84,8 @@ class HTTP2Connection(Client):
         self.writer.write(data_to_send)
         self.initialized = True
 
-    async def send_headers(self, stream_id: int, request: Request) -> None:
+    async def send_headers(self, stream_id: int, request: Request) -> int:
+        stream_id = self.h2_state.get_next_available_stream_id()
         headers = [
             (b":method", request.method.encode()),
             (b":authority", request.url.hostname.encode()),
@@ -95,6 +95,7 @@ class HTTP2Connection(Client):
         self.h2_state.send_headers(stream_id, headers)
         data_to_send = self.h2_state.data_to_send()
         self.writer.write(data_to_send)
+        return stream_id
 
     async def send_data(self, stream_id: int, data: bytes) -> None:
         self.h2_state.send_data(stream_id, data)
