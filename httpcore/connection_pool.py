@@ -110,7 +110,12 @@ class ConnectionPool(Client):
         timeout: typing.Optional[TimeoutConfig] = None,
     ) -> Response:
         connection = await self.acquire_connection(request.url.origin, timeout=timeout)
-        response = await connection.send(request, ssl=ssl, timeout=timeout)
+        try:
+            response = await connection.send(request, ssl=ssl, timeout=timeout)
+        except BaseException as exc:
+            self.active_connections.remove(connection)
+            self.max_connections.release()
+            raise exc
         return response
 
     async def acquire_connection(
