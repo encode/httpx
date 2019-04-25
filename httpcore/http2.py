@@ -1,3 +1,4 @@
+import functools
 import typing
 
 import h2.connection
@@ -74,12 +75,14 @@ class HTTP2Connection(Client):
                 headers.append((k, v))
 
         body = self.body_iter(stream_id, timeout)
+        on_close = functools.partial(self.response_closed, stream_id=stream_id)
+
         return Response(
             status_code=status_code,
             protocol="HTTP/2",
             headers=headers,
             body=body,
-            on_close=self.release,
+            on_close=on_close,
         )
 
     def initiate_connection(self) -> None:
@@ -121,7 +124,6 @@ class HTTP2Connection(Client):
             if isinstance(event, h2.events.DataReceived):
                 yield event.data
             elif isinstance(event, h2.events.StreamEnded):
-                del self.events[stream_id]
                 break
 
     async def receive_event(
@@ -139,8 +141,10 @@ class HTTP2Connection(Client):
 
         return self.events[stream_id].pop(0)
 
-    async def release(self) -> None:
-        if self.on_release is not None:
+    async def response_closed(self, stream_id: int) -> None:
+        del self.events[stream_id]
+
+        if not self.events and self.on_release is not None:
             await self.on_release()
 
     async def close(self) -> None:

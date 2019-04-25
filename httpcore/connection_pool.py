@@ -33,13 +33,18 @@ class ConnectionStore(collections.abc.Sequence):
             {}
         )  # type: typing.Dict[Origin, typing.Dict[HTTPConnection, float]]
 
-    def pop_by_origin(self, origin: Origin) -> typing.Optional[HTTPConnection]:
+    def pop_by_origin(
+        self, origin: Origin, http2_only: bool = False
+    ) -> typing.Optional[HTTPConnection]:
         try:
             connections = self.by_origin[origin]
         except KeyError:
             return None
 
         connection = next(reversed(list(connections.keys())))
+        if http2_only and not connection.is_http2:
+            return None
+
         del connections[connection]
         if not connections:
             del self.by_origin[origin]
@@ -111,7 +116,9 @@ class ConnectionPool(Client):
     async def acquire_connection(
         self, origin: Origin, timeout: typing.Optional[TimeoutConfig] = None
     ) -> HTTPConnection:
-        connection = self.keepalive_connections.pop_by_origin(origin)
+        connection = self.active_connections.pop_by_origin(origin, http2_only=True)
+        if connection is None:
+            connection = self.keepalive_connections.pop_by_origin(origin)
 
         if connection is None:
             await self.max_connections.acquire(timeout)

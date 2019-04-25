@@ -35,39 +35,7 @@ class HTTPConnection(Client):
         timeout: typing.Optional[TimeoutConfig] = None,
     ) -> Response:
         if self.h11_connection is None and self.h2_connection is None:
-            if ssl is None:
-                ssl = self.ssl
-            if timeout is None:
-                timeout = self.timeout
-
-            hostname = self.origin.hostname
-            port = self.origin.port
-            ssl_context = await ssl.load_ssl_context() if self.origin.is_ssl else None
-
-            if self.pool_release_func is None:
-                on_release = None
-            else:
-                on_release = functools.partial(self.pool_release_func, self)
-
-            reader, writer, protocol = await connect(
-                hostname, port, ssl_context, timeout
-            )
-            if protocol == Protocol.HTTP_2:
-                self.h2_connection = HTTP2Connection(
-                    reader,
-                    writer,
-                    origin=self.origin,
-                    timeout=self.timeout,
-                    on_release=on_release,
-                )
-            else:
-                self.h11_connection = HTTP11Connection(
-                    reader,
-                    writer,
-                    origin=self.origin,
-                    timeout=self.timeout,
-                    on_release=on_release,
-                )
+            await self.connect(ssl, timeout)
 
         if self.h2_connection is not None:
             response = await self.h2_connection.send(request, ssl=ssl, timeout=timeout)
@@ -77,11 +45,52 @@ class HTTPConnection(Client):
 
         return response
 
+    async def connect(
+        self,
+        ssl: typing.Optional[SSLConfig] = None,
+        timeout: typing.Optional[TimeoutConfig] = None,
+    ) -> None:
+        if ssl is None:
+            ssl = self.ssl
+        if timeout is None:
+            timeout = self.timeout
+
+        hostname = self.origin.hostname
+        port = self.origin.port
+        ssl_context = await ssl.load_ssl_context() if self.origin.is_ssl else None
+
+        if self.pool_release_func is None:
+            on_release = None
+        else:
+            on_release = functools.partial(self.pool_release_func, self)
+
+        reader, writer, protocol = await connect(hostname, port, ssl_context, timeout)
+        if protocol == Protocol.HTTP_2:
+            self.h2_connection = HTTP2Connection(
+                reader,
+                writer,
+                origin=self.origin,
+                timeout=self.timeout,
+                on_release=on_release,
+            )
+        else:
+            self.h11_connection = HTTP11Connection(
+                reader,
+                writer,
+                origin=self.origin,
+                timeout=self.timeout,
+                on_release=on_release,
+            )
+
     async def close(self) -> None:
         if self.h2_connection is not None:
             await self.h2_connection.close()
         elif self.h11_connection is not None:
             await self.h11_connection.close()
+
+    @property
+    def is_http2(self) -> bool:
+        return self.h2_connection is not None
 
     @property
     def is_closed(self) -> bool:
