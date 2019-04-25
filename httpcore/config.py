@@ -115,20 +115,24 @@ class TimeoutConfig:
         *,
         connect_timeout: float = None,
         read_timeout: float = None,
+        write_timeout: float = None,
         pool_timeout: float = None,
     ):
         if timeout is not None:
             # Specified as a single timeout value
             assert connect_timeout is None
             assert read_timeout is None
+            assert write_timeout is None
             assert pool_timeout is None
             connect_timeout = timeout
             read_timeout = timeout
+            write_timeout = timeout
             pool_timeout = timeout
 
         self.timeout = timeout
         self.connect_timeout = connect_timeout
         self.read_timeout = read_timeout
+        self.write_timeout = write_timeout
         self.pool_timeout = pool_timeout
 
     def __eq__(self, other: typing.Any) -> bool:
@@ -136,18 +140,24 @@ class TimeoutConfig:
             isinstance(other, self.__class__)
             and self.connect_timeout == other.connect_timeout
             and self.read_timeout == other.read_timeout
+            and self.write_timeout == other.write_timeout
             and self.pool_timeout == other.pool_timeout
         )
 
     def __hash__(self) -> int:
-        as_tuple = (self.connect_timeout, self.read_timeout, self.pool_timeout)
+        as_tuple = (
+            self.connect_timeout,
+            self.read_timeout,
+            self.write_timeout,
+            self.pool_timeout,
+        )
         return hash(as_tuple)
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         if self.timeout is not None:
             return f"{class_name}(timeout={self.timeout})"
-        return f"{class_name}(connect_timeout={self.connect_timeout}, read_timeout={self.read_timeout}, pool_timeout={self.pool_timeout})"
+        return f"{class_name}(connect_timeout={self.connect_timeout}, read_timeout={self.read_timeout}, write_timeout={self.write_timeout}, pool_timeout={self.pool_timeout})"
 
 
 class PoolLimits:

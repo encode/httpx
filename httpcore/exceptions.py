@@ -16,6 +16,12 @@ class ReadTimeout(Timeout):
     """
 
 
+class WriteTimeout(Timeout):
+    """
+    Timeout while writing request data.
+    """
+
+
 class PoolTimeout(Timeout):
     """
     Timeout while waiting to acquire a connection from the pool.

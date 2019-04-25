@@ -1,4 +1,3 @@
-import asyncio
 import typing
 
 import h2.connection
@@ -9,6 +8,7 @@ from .exceptions import ConnectTimeout
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 from .models import Client, Origin, Request, Response
+from .streams import Protocol, connect
 
 
 class HTTPConnection(Client):
@@ -39,8 +39,14 @@ class HTTPConnection(Client):
             if timeout is None:
                 timeout = self.timeout
 
-            reader, writer, protocol = await self.connect(ssl, timeout)
-            if protocol == "h2":
+            hostname = self.origin.hostname
+            port = self.origin.port
+            ssl_context = await ssl.load_ssl_context() if self.origin.is_ssl else None
+
+            reader, writer, protocol = await connect(
+                hostname, port, ssl_context, timeout
+            )
+            if protocol == Protocol.HTTP_2:
                 self.h2_connection = HTTP2Connection(
                     reader,
                     writer,
@@ -68,8 +74,7 @@ class HTTPConnection(Client):
     async def close(self) -> None:
         if self.h2_connection is not None:
             await self.h2_connection.close()
-        else:
-            assert self.h11_connection is not None
+        elif self.h11_connection is not None:
             await self.h11_connection.close()
 
     @property
@@ -79,28 +84,3 @@ class HTTPConnection(Client):
         else:
             assert self.h11_connection is not None
             return self.h11_connection.is_closed
-
-    async def connect(
-        self, ssl: SSLConfig, timeout: TimeoutConfig
-    ) -> typing.Tuple[asyncio.StreamReader, asyncio.StreamWriter, str]:
-        hostname = self.origin.hostname
-        port = self.origin.port
-        ssl_context = await ssl.load_ssl_context() if self.origin.is_ssl else None
-
-        try:
-            reader, writer = await asyncio.wait_for(  # type: ignore
-                asyncio.open_connection(hostname, port, ssl=ssl_context),
-                timeout.connect_timeout,
-            )
-        except asyncio.TimeoutError:
-            raise ConnectTimeout()
-
-        ssl_object = writer.get_extra_info("ssl_object")
-        if ssl_object is None:
-            protocol = "http/1.1"
-        else:
-            protocol = ssl_object.selected_alpn_protocol()
-        if protocol is None:
-            protocol = ssl_object.selected_npn_protocol()
-
-        return (reader, writer, protocol)

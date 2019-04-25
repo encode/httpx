@@ -1,4 +1,3 @@
-import asyncio
 import typing
 
 import h11
@@ -6,6 +5,7 @@ import h11
 from .config import DEFAULT_SSL_CONFIG, DEFAULT_TIMEOUT_CONFIG, SSLConfig, TimeoutConfig
 from .exceptions import ConnectTimeout, ReadTimeout
 from .models import Client, Origin, Request, Response
+from .streams import BaseReader, BaseWriter
 
 H11Event = typing.Union[
     h11.Request,
@@ -17,11 +17,16 @@ H11Event = typing.Union[
 ]
 
 
+OptionalTimeout = typing.Optional[TimeoutConfig]
+
+
 class HTTP11Connection(Client):
+    READ_NUM_BYTES = 4096
+
     def __init__(
         self,
-        reader: asyncio.StreamReader,
-        writer: asyncio.StreamWriter,
+        reader: BaseReader,
+        writer: BaseWriter,
         origin: Origin,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
         on_release: typing.Callable = None,
@@ -44,24 +49,21 @@ class HTTP11Connection(Client):
         ssl: typing.Optional[SSLConfig] = None,
         timeout: typing.Optional[TimeoutConfig] = None
     ) -> Response:
-        if timeout is None:
-            timeout = self.timeout
-
         #  Start sending the request.
         method = request.method.encode()
         target = request.url.full_path
         headers = request.headers
         event = h11.Request(method=method, target=target, headers=headers)
-        await self._send_event(event)
+        await self._send_event(event, timeout)
 
         # Send the request body.
         async for data in request.stream():
             event = h11.Data(data=data)
-            await self._send_event(event)
+            await self._send_event(event, timeout)
 
         # Finalize sending the request.
         event = h11.EndOfMessage()
-        await self._send_event(event)
+        await self._send_event(event, timeout)
 
         # Start getting the response.
         event = await self._receive_event(timeout)
@@ -83,27 +85,22 @@ class HTTP11Connection(Client):
             on_close=self._release,
         )
 
-    async def _body_iter(self, timeout: TimeoutConfig) -> typing.AsyncIterator[bytes]:
+    async def _body_iter(self, timeout: OptionalTimeout) -> typing.AsyncIterator[bytes]:
         event = await self._receive_event(timeout)
         while isinstance(event, h11.Data):
             yield event.data
             event = await self._receive_event(timeout)
         assert isinstance(event, h11.EndOfMessage)
 
-    async def _send_event(self, event: H11Event) -> None:
+    async def _send_event(self, event: H11Event, timeout: OptionalTimeout) -> None:
         data = self.h11_state.send(event)
-        self.writer.write(data)
+        await self.writer.write(data, timeout)
 
-    async def _receive_event(self, timeout: TimeoutConfig) -> H11Event:
+    async def _receive_event(self, timeout: OptionalTimeout) -> H11Event:
         event = self.h11_state.next_event()
 
         while event is h11.NEED_DATA:
-            try:
-                data = await asyncio.wait_for(
-                    self.reader.read(2048), timeout.read_timeout
-                )
-            except asyncio.TimeoutError:
-                raise ReadTimeout()
+            data = await self.reader.read(self.READ_NUM_BYTES, timeout)
             self.h11_state.receive_data(data)
             event = self.h11_state.next_event()
 
@@ -131,5 +128,4 @@ class HTTP11Connection(Client):
             # and we'll end up in h11.ERROR.
             pass
 
-        if self.writer is not None:
-            self.writer.close()
+        await self.writer.close()
