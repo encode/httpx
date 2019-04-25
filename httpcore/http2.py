@@ -144,4 +144,4 @@ class HTTP2Connection(Client):
             await self.on_release(self)
 
     async def close(self) -> None:
-        self.writer.close()
+        await self.writer.close()

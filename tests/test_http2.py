@@ -2,6 +2,7 @@ import h2.config
 import h2.connection
 import h2.events
 import pytest
+import json
 
 import httpcore
 
@@ -53,24 +54,61 @@ class MockServer(httpcore.BaseReader, httpcore.BaseWriter):
         self.requests[stream_id][-1]["data"] += data
 
     def stream_complete(self, stream_id):
-        requests = self.requests[stream_id].pop(0)
+        request = self.requests[stream_id].pop(0)
         if not self.requests[stream_id]:
             del self.requests[stream_id]
+
+        request_headers = dict(request["headers"])
+        request_data = request["data"]
+
+        response_body = json.dumps({
+            "method": request_headers[b":method"].decode(),
+            "path": request_headers[b":path"].decode(),
+            "body": request_data.decode()
+        }).encode()
 
         response_headers = (
             (b":status", b"200"),
         )
-        response_body = b"Hello, world!"
         self.conn.send_headers(stream_id, response_headers)
         self.conn.send_data(stream_id, response_body, end_stream=True)
         self.buffer += self.conn.data_to_send()
 
 
 @pytest.mark.asyncio
-async def test_http2():
+async def test_http2_get_request():
     server = MockServer()
     origin = httpcore.Origin("http://example.org")
-    client = httpcore.HTTP2Connection(reader=server, writer=server, origin=origin)
-    response = await client.request("GET", "http://example.org")
+    async with httpcore.HTTP2Connection(reader=server, writer=server, origin=origin) as client:
+        response = await client.request("GET", "http://example.org")
     assert response.status_code == 200
-    assert response.body == b"Hello, world!"
+    assert json.loads(response.body) == {"method": "GET", "path": "/", "body": ""}
+
+
+@pytest.mark.asyncio
+async def test_http2_post_request():
+    server = MockServer()
+    origin = httpcore.Origin("http://example.org")
+    async with httpcore.HTTP2Connection(reader=server, writer=server, origin=origin) as client:
+        response = await client.request("POST", "http://example.org", body=b"<data>")
+    assert response.status_code == 200
+    assert json.loads(response.body) == {"method": "POST", "path": "/", "body": "<data>"}
+
+
+@pytest.mark.asyncio
+async def test_http2_multiple_requests():
+    server = MockServer()
+    origin = httpcore.Origin("http://example.org")
+    async with httpcore.HTTP2Connection(reader=server, writer=server, origin=origin) as client:
+        response_1 = await client.request("GET", "http://example.org/1")
+        response_2 = await client.request("GET", "http://example.org/2")
+        response_3 = await client.request("GET", "http://example.org/3")
+
+    assert response_1.status_code == 200
+    assert json.loads(response_1.body) == {"method": "GET", "path": "/1", "body": ""}
+
+    assert response_2.status_code == 200
+    assert json.loads(response_2.body) == {"method": "GET", "path": "/2", "body": ""}
+
+    assert response_3.status_code == 200
+    assert json.loads(response_3.body) == {"method": "GET", "path": "/3", "body": ""}
