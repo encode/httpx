@@ -14,7 +14,7 @@ import ssl
 import typing
 
 from .config import DEFAULT_TIMEOUT_CONFIG, PoolLimits, TimeoutConfig
-from .exceptions import ConnectTimeout, ReadTimeout, PoolTimeout, WriteTimeout
+from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
 

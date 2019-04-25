@@ -1,3 +1,4 @@
+import collections.abc
 import typing
 
 from .config import (
@@ -14,6 +15,66 @@ from .exceptions import PoolTimeout
 from .models import Client, Origin, Request, Response
 from .streams import PoolSemaphore
 
+CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
+
+
+class ConnectionStore(collections.abc.Sequence):
+    """
+    We need to maintain collections of connections in a way that allows us to:
+
+    * Lookup connections by origin.
+    * Iterate over connections by insertion time.
+    * Return the total number of connections.
+    """
+
+    def __init__(self) -> None:
+        self.all = {}  # type: typing.Dict[HTTPConnection, float]
+        self.by_origin = (
+            {}
+        )  # type: typing.Dict[Origin, typing.Dict[HTTPConnection, float]]
+
+    def pop_by_origin(self, origin: Origin) -> typing.Optional[HTTPConnection]:
+        try:
+            connections = self.by_origin[origin]
+        except KeyError:
+            return None
+
+        connection = next(reversed(list(connections.keys())))
+        del connections[connection]
+        if not connections:
+            del self.by_origin[origin]
+        del self.all[connection]
+
+        return connection
+
+    def add(self, connection: HTTPConnection) -> None:
+        self.all[connection] = 0.0
+        try:
+            self.by_origin[connection.origin][connection] = 0.0
+        except KeyError:
+            self.by_origin[connection.origin] = {connection: 0.0}
+
+    def remove(self, connection: HTTPConnection) -> None:
+        del self.all[connection]
+        del self.by_origin[connection.origin][connection]
+        if not self.by_origin[connection.origin]:
+            del self.by_origin[connection.origin]
+
+    def clear(self) -> None:
+        self.all.clear()
+        self.by_origin.clear()
+
+    def __iter__(self) -> typing.Iterator[HTTPConnection]:
+        return iter(self.all.keys())
+
+    def __getitem__(self, key: typing.Any) -> typing.Any:
+        if key in self.all:
+            return key
+        return None
+
+    def __len__(self) -> int:
+        return len(self.all)
+
 
 class ConnectionPool(Client):
     def __init__(
@@ -27,12 +88,14 @@ class ConnectionPool(Client):
         self.timeout = timeout
         self.limits = limits
         self.is_closed = False
-        self.num_active_connections = 0
-        self.num_keepalive_connections = 0
-        self._keepalive_connections = (
-            {}
-        )  # type: typing.Dict[Origin, typing.List[HTTPConnection]]
-        self._max_connections = PoolSemaphore(limits, timeout)
+
+        self.max_connections = PoolSemaphore(limits, timeout)
+        self.keepalive_connections = ConnectionStore()
+        self.active_connections = ConnectionStore()
+
+    @property
+    def num_connections(self) -> int:
+        return len(self.keepalive_connections) + len(self.active_connections)
 
     async def send(
         self,
@@ -45,56 +108,42 @@ class ConnectionPool(Client):
         response = await connection.send(request, ssl=ssl, timeout=timeout)
         return response
 
-    @property
-    def num_connections(self) -> int:
-        return self.num_active_connections + self.num_keepalive_connections
-
     async def acquire_connection(
         self, origin: Origin, timeout: typing.Optional[TimeoutConfig] = None
     ) -> HTTPConnection:
-        try:
-            connection = self._keepalive_connections[origin].pop()
-            if not self._keepalive_connections[origin]:
-                del self._keepalive_connections[origin]
-            self.num_keepalive_connections -= 1
-            self.num_active_connections += 1
+        connection = self.keepalive_connections.pop_by_origin(origin)
 
-        except (KeyError, IndexError):
-            await self._max_connections.acquire(timeout)
+        if connection is None:
+            await self.max_connections.acquire(timeout)
             connection = HTTPConnection(
                 origin,
                 ssl=self.ssl,
                 timeout=self.timeout,
-                on_release=self.release_connection,
+                pool_release_func=self.release_connection,
             )
-            self.num_active_connections += 1
+
+        self.active_connections.add(connection)
 
         return connection
 
     async def release_connection(self, connection: HTTPConnection) -> None:
         if connection.is_closed:
-            self._max_connections.release()
-            self.num_active_connections -= 1
+            self.active_connections.remove(connection)
+            self.max_connections.release()
         elif (
             self.limits.soft_limit is not None
             and self.num_connections > self.limits.soft_limit
         ):
-            self._max_connections.release()
-            self.num_active_connections -= 1
+            self.active_connections.remove(connection)
+            self.max_connections.release()
             await connection.close()
         else:
-            self.num_active_connections -= 1
-            self.num_keepalive_connections += 1
-            try:
-                self._keepalive_connections[connection.origin].append(connection)
-            except KeyError:
-                self._keepalive_connections[connection.origin] = [connection]
+            self.active_connections.remove(connection)
+            self.keepalive_connections.add(connection)
 
     async def close(self) -> None:
         self.is_closed = True
-        all_connections = []
-        for connections in self._keepalive_connections.values():
-            all_connections.extend(list(connections))
-        self._keepalive_connections.clear()
-        for connection in all_connections:
+        connections = list(self.keepalive_connections)
+        self.keepalive_connections.clear()
+        for connection in connections:
             await connection.close()

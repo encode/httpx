@@ -1,3 +1,4 @@
+import functools
 import typing
 
 import h2.connection
@@ -17,12 +18,12 @@ class HTTPConnection(Client):
         origin: typing.Union[str, Origin],
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
-        on_release: typing.Callable = None,
+        pool_release_func: typing.Callable = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = ssl
         self.timeout = timeout
-        self.on_release = on_release
+        self.pool_release_func = pool_release_func
         self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
         self.h2_connection = None  # type: typing.Optional[HTTP2Connection]
 
@@ -43,6 +44,11 @@ class HTTPConnection(Client):
             port = self.origin.port
             ssl_context = await ssl.load_ssl_context() if self.origin.is_ssl else None
 
+            if self.pool_release_func is None:
+                on_release = None
+            else:
+                on_release = functools.partial(self.pool_release_func, self)
+
             reader, writer, protocol = await connect(
                 hostname, port, ssl_context, timeout
             )
@@ -52,7 +58,7 @@ class HTTPConnection(Client):
                     writer,
                     origin=self.origin,
                     timeout=self.timeout,
-                    on_release=self.on_release,
+                    on_release=on_release,
                 )
             else:
                 self.h11_connection = HTTP11Connection(
@@ -60,7 +66,7 @@ class HTTPConnection(Client):
                     writer,
                     origin=self.origin,
                     timeout=self.timeout,
-                    on_release=self.on_release,
+                    on_release=on_release,
                 )
 
         if self.h2_connection is not None:

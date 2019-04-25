@@ -141,7 +141,7 @@ class HTTP2Connection(Client):
 
     async def release(self) -> None:
         if self.on_release is not None:
-            await self.on_release(self)
+            await self.on_release()
 
     async def close(self) -> None:
         await self.writer.close()

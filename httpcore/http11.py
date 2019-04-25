@@ -82,7 +82,7 @@ class HTTP11Connection(Client):
             protocol="HTTP/1.1",
             headers=headers,
             body=body,
-            on_close=self._release,
+            on_close=self.response_closed,
         )
 
     async def _body_iter(self, timeout: OptionalTimeout) -> typing.AsyncIterator[bytes]:
@@ -106,7 +106,7 @@ class HTTP11Connection(Client):
 
         return event
 
-    async def _release(self) -> None:
+    async def response_closed(self) -> None:
         if (
             self.h11_state.our_state is h11.DONE
             and self.h11_state.their_state is h11.DONE
@@ -116,7 +116,7 @@ class HTTP11Connection(Client):
             await self.close()
 
         if self.on_release is not None:
-            await self.on_release(self)
+            await self.on_release()
 
     async def close(self) -> None:
         event = h11.ConnectionClosed()
