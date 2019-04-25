@@ -27,10 +27,6 @@ class SSLConfig:
             and self.verify == other.verify
         )
 
-    def __hash__(self) -> int:
-        as_tuple = (self.cert, self.verify)
-        return hash(as_tuple)
-
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return f"{class_name}(cert={self.cert}, verify={self.verify})"
@@ -144,15 +140,6 @@ class TimeoutConfig:
             and self.pool_timeout == other.pool_timeout
         )
 
-    def __hash__(self) -> int:
-        as_tuple = (
-            self.connect_timeout,
-            self.read_timeout,
-            self.write_timeout,
-            self.pool_timeout,
-        )
-        return hash(as_tuple)
-
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         if self.timeout is not None:
@@ -180,10 +167,6 @@ class PoolLimits:
             and self.soft_limit == other.soft_limit
             and self.hard_limit == other.hard_limit
         )
-
-    def __hash__(self) -> int:
-        as_tuple = (self.soft_limit, self.hard_limit)
-        return hash(as_tuple)
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__

@@ -35,24 +35,3 @@ def test_timeout_eq():
 def test_limits_eq():
     limits = httpcore.PoolLimits(hard_limit=100)
     assert limits == httpcore.PoolLimits(hard_limit=100)
-
-
-def test_ssl_hash():
-    cache = {}
-    ssl = httpcore.SSLConfig(verify=False)
-    cache[ssl] = "example"
-    assert cache[httpcore.SSLConfig(verify=False)] == "example"
-
-
-def test_timeout_hash():
-    cache = {}
-    timeout = httpcore.TimeoutConfig(timeout=5.0)
-    cache[timeout] = "example"
-    assert cache[httpcore.TimeoutConfig(timeout=5.0)] == "example"
-
-
-def test_limits_hash():
-    cache = {}
-    limits = httpcore.PoolLimits(hard_limit=100)
-    cache[limits] = "example"
-    assert cache[httpcore.PoolLimits(hard_limit=100)] == "example"
