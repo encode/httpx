@@ -19,6 +19,11 @@ H11Event = typing.Union[
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
 
+# Callback signature: async def callback() -> None
+# In practice the callback will be a functools partial, which binds
+# the `ConnectionPool.release_connection(conn: HTTPConnection)` method.
+OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
+
 
 class HTTP11Connection(Client):
     READ_NUM_BYTES = 4096
@@ -29,11 +34,11 @@ class HTTP11Connection(Client):
         writer: BaseWriter,
         origin: Origin,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
-        on_release: typing.Callable = None,
+        on_release: typing.Optional[OnReleaseCallback] = None,
     ):
-        self.origin = origin
         self.reader = reader
         self.writer = writer
+        self.origin = origin
         self.timeout = timeout
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)

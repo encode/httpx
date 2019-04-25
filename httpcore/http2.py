@@ -23,9 +23,9 @@ class HTTP2Connection(Client):
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
         on_release: typing.Callable = None,
     ):
-        self.origin = origin
         self.reader = reader
         self.writer = writer
+        self.origin = origin
         self.timeout = timeout
         self.on_release = on_release
         self.h2_state = h2.connection.H2Connection()

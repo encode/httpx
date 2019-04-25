@@ -126,7 +126,7 @@ class ConnectionPool(Client):
                 origin,
                 ssl=self.ssl,
                 timeout=self.timeout,
-                pool_release_func=self.release_connection,
+                release_func=self.release_connection,
             )
 
         self.active_connections.add(connection)

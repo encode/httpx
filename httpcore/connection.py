@@ -11,6 +11,9 @@ from .http11 import HTTP11Connection
 from .models import Client, Origin, Request, Response
 from .streams import Protocol, connect
 
+# Callback signature: async def callback(conn: HTTPConnection) -> None
+ReleaseCallback = typing.Callable[["HTTPConnection"], typing.Awaitable[None]]
+
 
 class HTTPConnection(Client):
     def __init__(
@@ -18,12 +21,12 @@ class HTTPConnection(Client):
         origin: typing.Union[str, Origin],
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
-        pool_release_func: typing.Callable = None,
+        release_func: typing.Optional[ReleaseCallback] = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = ssl
         self.timeout = timeout
-        self.pool_release_func = pool_release_func
+        self.release_func = release_func
         self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
         self.h2_connection = None  # type: typing.Optional[HTTP2Connection]
 
@@ -59,10 +62,10 @@ class HTTPConnection(Client):
         port = self.origin.port
         ssl_context = await ssl.load_ssl_context() if self.origin.is_ssl else None
 
-        if self.pool_release_func is None:
+        if self.release_func is None:
             on_release = None
         else:
-            on_release = functools.partial(self.pool_release_func, self)
+            on_release = functools.partial(self.release_func, self)
 
         reader, writer, protocol = await connect(hostname, port, ssl_context, timeout)
         if protocol == Protocol.HTTP_2:
