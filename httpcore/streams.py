@@ -2,7 +2,9 @@
 The `Reader` and `Writer` classes here provide a lightweight layer over
 `asyncio.StreamReader` and `asyncio.StreamWriter`.
 
-They help encapsulate the timeout logic, make it easier to unit-test
+Similarly `PoolSemaphore` is a lightweight layer over `BoundedSemaphore`.
+
+These classes help encapsulate the timeout logic, make it easier to unit-test
 protocols, and help keep the rest of the package more `async`/`await`
 based, and less strictly `asyncio`-specific.
 """
@@ -11,8 +13,8 @@ import enum
 import ssl
 import typing
 
-from .config import TimeoutConfig, DEFAULT_TIMEOUT_CONFIG
-from .exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
+from .config import DEFAULT_TIMEOUT_CONFIG, PoolLimits, TimeoutConfig
+from .exceptions import ConnectTimeout, ReadTimeout, PoolTimeout, WriteTimeout
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
 
@@ -35,6 +37,17 @@ class BaseWriter:
         raise NotImplementedError()  # pragma: no cover
 
     async def close(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
+class BasePoolSemaphore:
+    def __init__(self, limits: PoolLimits, timeout: TimeoutConfig):
+        raise NotImplementedError()  # pragma: no cover
+
+    async def acquire(self, timeout: OptionalTimeout = None) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    def release(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 
 
@@ -84,6 +97,40 @@ class Writer(BaseWriter):
 
     async def close(self) -> None:
         self.stream_writer.close()
+
+
+class PoolSemaphore(BasePoolSemaphore):
+    def __init__(self, limits: PoolLimits, timeout: TimeoutConfig):
+        self.limits = limits
+        self.timeout = timeout
+
+    @property
+    def semaphore(self) -> typing.Optional[asyncio.BoundedSemaphore]:
+        if not hasattr(self, "_semaphore"):
+            max_connections = self.limits.hard_limit
+            if max_connections is None:
+                self._semaphore = None
+            else:
+                self._semaphore = asyncio.BoundedSemaphore(value=max_connections)
+        return self._semaphore
+
+    async def acquire(self, timeout: OptionalTimeout = None) -> None:
+        if self.semaphore is None:
+            return
+
+        if timeout is None:
+            timeout = self.timeout
+
+        try:
+            await asyncio.wait_for(self.semaphore.acquire(), timeout.pool_timeout)
+        except asyncio.TimeoutError:
+            raise PoolTimeout()
+
+    def release(self) -> None:
+        if self.semaphore is None:
+            return
+
+        self.semaphore.release()
 
 
 async def connect(

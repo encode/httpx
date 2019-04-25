@@ -1,4 +1,3 @@
-import asyncio
 import typing
 
 from .config import (
@@ -13,6 +12,7 @@ from .config import (
 from .connection import HTTPConnection
 from .exceptions import PoolTimeout
 from .models import Client, Origin, Request, Response
+from .streams import PoolSemaphore
 
 
 class ConnectionPool(Client):
@@ -32,9 +32,7 @@ class ConnectionPool(Client):
         self._keepalive_connections = (
             {}
         )  # type: typing.Dict[Origin, typing.List[HTTPConnection]]
-        self._max_connections = ConnectionSemaphore(
-            max_connections=self.limits.hard_limit
-        )
+        self._max_connections = PoolSemaphore(limits, timeout)
 
     async def send(
         self,
@@ -62,15 +60,7 @@ class ConnectionPool(Client):
             self.num_active_connections += 1
 
         except (KeyError, IndexError):
-            if timeout is None:
-                pool_timeout = self.timeout.pool_timeout
-            else:
-                pool_timeout = timeout.pool_timeout
-
-            try:
-                await asyncio.wait_for(self._max_connections.acquire(), pool_timeout)
-            except asyncio.TimeoutError:
-                raise PoolTimeout()
+            await self._max_connections.acquire(timeout)
             connection = HTTPConnection(
                 origin,
                 ssl=self.ssl,
@@ -108,25 +98,3 @@ class ConnectionPool(Client):
         self._keepalive_connections.clear()
         for connection in all_connections:
             await connection.close()
-
-
-class ConnectionSemaphore:
-    def __init__(self, max_connections: int = None):
-        self.max_connections = max_connections
-
-    @property
-    def semaphore(self) -> typing.Optional[asyncio.BoundedSemaphore]:
-        if not hasattr(self, "_semaphore"):
-            if self.max_connections is None:
-                self._semaphore = None
-            else:
-                self._semaphore = asyncio.BoundedSemaphore(value=self.max_connections)
-        return self._semaphore
-
-    async def acquire(self) -> None:
-        if self.semaphore is not None:
-            await self.semaphore.acquire()
-
-    def release(self) -> None:
-        if self.semaphore is not None:
-            self.semaphore.release()
