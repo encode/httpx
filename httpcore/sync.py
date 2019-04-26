@@ -5,7 +5,7 @@ from types import TracebackType
 from .adapters import Adapter
 from .config import SSLConfig, TimeoutConfig
 from .connection_pool import ConnectionPool
-from .models import URL, Response
+from .models import URL, Headers, Response
 
 
 class SyncResponse:
@@ -22,7 +22,7 @@ class SyncResponse:
         return self._response.reason
 
     @property
-    def headers(self) -> typing.List[typing.Tuple[bytes, bytes]]:
+    def headers(self) -> Headers:
         return self._response.headers
 
     @property
@@ -54,7 +54,7 @@ class SyncClient:
         method: str,
         url: typing.Union[str, URL],
         *,
-        headers: typing.Sequence[typing.Tuple[bytes, bytes]] = (),
+        headers: typing.List[typing.Tuple[bytes, bytes]] = [],
         body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
         **options: typing.Any
     ) -> SyncResponse:

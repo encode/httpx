@@ -51,7 +51,7 @@ class HTTP11Connection(Adapter):
         #  Start sending the request.
         method = request.method.encode()
         target = request.url.full_path
-        headers = request.headers
+        headers = request.headers.raw
         event = h11.Request(method=method, target=target, headers=headers)
         await self._send_event(event, timeout)
 

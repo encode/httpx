@@ -52,3 +52,8 @@ class ResponseClosed(Exception):
     Attempted to read or stream response content, but the request has been
     closed without loading the body.
     """
+
+
+class InvalidURL(Exception):
+    """
+    """

@@ -10,7 +10,7 @@ class Adapter:
         method: str,
         url: typing.Union[str, URL],
         *,
-        headers: typing.Sequence[typing.Tuple[bytes, bytes]] = (),
+        headers: typing.List[typing.Tuple[bytes, bytes]] = [],
         body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
         **options: typing.Any,
     ) -> Response:

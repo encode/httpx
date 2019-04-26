@@ -15,4 +15,4 @@ class CookieAdapter(Adapter):
         return await self.dispatch.send(request, **options)
 
     async def close(self) -> None:
-        self.dispatch.close()
+        await self.dispatch.close()
