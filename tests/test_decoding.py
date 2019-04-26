@@ -77,3 +77,18 @@ async def test_streaming():
     response = httpcore.Response(200, headers=headers, body=compress(body))
     assert not hasattr(response, "body")
     assert await response.read() == body
+
+
+@pytest.mark.parametrize(
+    'header_value, expected_exception',
+    [
+        (b"deflate", httpcore.DeflateDecodingError),
+        (b"gzip", httpcore.GzipDecodingError),
+        (b"br", httpcore.BrotliDecodingError),
+    ])
+def test_decoding_errors(header_value, expected_exception):
+    headers = [(b"Content-Encoding", header_value)]
+    body = b"test 123"
+    compressed_body = brotli.compress(body)[3:]
+    with pytest.raises(expected_exception):
+        response = httpcore.Response(200, headers=headers, body=compressed_body)
