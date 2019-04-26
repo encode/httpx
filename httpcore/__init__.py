@@ -1,3 +1,5 @@
+from .adapters import Adapter
+from .client import Client
 from .config import PoolLimits, SSLConfig, TimeoutConfig
 from .connection import HTTPConnection
 from .connection_pool import ConnectionPool

@@ -41,10 +41,7 @@ class BaseWriter:
 
 
 class BasePoolSemaphore:
-    def __init__(self, limits: PoolLimits, timeout: TimeoutConfig):
-        raise NotImplementedError()  # pragma: no cover
-
-    async def acquire(self, timeout: OptionalTimeout = None) -> None:
+    async def acquire(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 
     def release(self) -> None:
@@ -100,9 +97,8 @@ class Writer(BaseWriter):
 
 
 class PoolSemaphore(BasePoolSemaphore):
-    def __init__(self, limits: PoolLimits, timeout: TimeoutConfig):
+    def __init__(self, limits: PoolLimits):
         self.limits = limits
-        self.timeout = timeout
 
     @property
     def semaphore(self) -> typing.Optional[asyncio.BoundedSemaphore]:
@@ -114,15 +110,13 @@ class PoolSemaphore(BasePoolSemaphore):
                 self._semaphore = asyncio.BoundedSemaphore(value=max_connections)
         return self._semaphore
 
-    async def acquire(self, timeout: OptionalTimeout = None) -> None:
+    async def acquire(self) -> None:
         if self.semaphore is None:
             return
 
-        if timeout is None:
-            timeout = self.timeout
-
+        timeout = self.limits.pool_timeout
         try:
-            await asyncio.wait_for(self.semaphore.acquire(), timeout.pool_timeout)
+            await asyncio.wait_for(self.semaphore.acquire(), timeout)
         except asyncio.TimeoutError:
             raise PoolTimeout()
 

@@ -13,13 +13,15 @@ def test_timeout_repr():
     timeout = httpcore.TimeoutConfig(read_timeout=5.0)
     assert (
         repr(timeout)
-        == "TimeoutConfig(connect_timeout=None, read_timeout=5.0, write_timeout=None, pool_timeout=None)"
+        == "TimeoutConfig(connect_timeout=None, read_timeout=5.0, write_timeout=None)"
     )
 
 
 def test_limits_repr():
     limits = httpcore.PoolLimits(hard_limit=100)
-    assert repr(limits) == "PoolLimits(soft_limit=None, hard_limit=100)"
+    assert (
+        repr(limits) == "PoolLimits(soft_limit=None, hard_limit=100, pool_timeout=None)"
+    )
 
 
 def test_ssl_eq():

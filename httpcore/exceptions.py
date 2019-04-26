@@ -28,6 +28,12 @@ class PoolTimeout(Timeout):
     """
 
 
+class TooManyRedirects(Exception):
+    """
+    Too many redirects.
+    """
+
+
 class ProtocolError(Exception):
     """
     Malformed HTTP.

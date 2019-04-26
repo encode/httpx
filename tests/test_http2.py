@@ -79,11 +79,8 @@ class MockServer(httpcore.BaseReader, httpcore.BaseWriter):
 @pytest.mark.asyncio
 async def test_http2_get_request():
     server = MockServer()
-    origin = httpcore.Origin("http://example.org")
-    async with httpcore.HTTP2Connection(
-        reader=server, writer=server, origin=origin
-    ) as client:
-        response = await client.request("GET", "http://example.org")
+    async with httpcore.HTTP2Connection(reader=server, writer=server) as conn:
+        response = await conn.request("GET", "http://example.org")
     assert response.status_code == 200
     assert json.loads(response.body) == {"method": "GET", "path": "/", "body": ""}
 
@@ -91,11 +88,8 @@ async def test_http2_get_request():
 @pytest.mark.asyncio
 async def test_http2_post_request():
     server = MockServer()
-    origin = httpcore.Origin("http://example.org")
-    async with httpcore.HTTP2Connection(
-        reader=server, writer=server, origin=origin
-    ) as client:
-        response = await client.request("POST", "http://example.org", body=b"<data>")
+    async with httpcore.HTTP2Connection(reader=server, writer=server) as conn:
+        response = await conn.request("POST", "http://example.org", body=b"<data>")
     assert response.status_code == 200
     assert json.loads(response.body) == {
         "method": "POST",
@@ -107,13 +101,10 @@ async def test_http2_post_request():
 @pytest.mark.asyncio
 async def test_http2_multiple_requests():
     server = MockServer()
-    origin = httpcore.Origin("http://example.org")
-    async with httpcore.HTTP2Connection(
-        reader=server, writer=server, origin=origin
-    ) as client:
-        response_1 = await client.request("GET", "http://example.org/1")
-        response_2 = await client.request("GET", "http://example.org/2")
-        response_3 = await client.request("GET", "http://example.org/3")
+    async with httpcore.HTTP2Connection(reader=server, writer=server) as conn:
+        response_1 = await conn.request("GET", "http://example.org/1")
+        response_2 = await conn.request("GET", "http://example.org/2")
+        response_3 = await conn.request("GET", "http://example.org/3")
 
     assert response_1.status_code == 200
     assert json.loads(response_1.body) == {"method": "GET", "path": "/1", "body": ""}

@@ -2,9 +2,10 @@ import asyncio
 import typing
 from types import TracebackType
 
+from .adapters import Adapter
 from .config import SSLConfig, TimeoutConfig
 from .connection_pool import ConnectionPool
-from .models import URL, Client, Response
+from .models import URL, Response
 
 
 class SyncResponse:
@@ -44,8 +45,8 @@ class SyncResponse:
 
 
 class SyncClient:
-    def __init__(self, client: Client):
-        self._client = client
+    def __init__(self, adapter: Adapter):
+        self._client = adapter
         self._loop = asyncio.new_event_loop()
 
     def request(
@@ -55,20 +56,10 @@ class SyncClient:
         *,
         headers: typing.Sequence[typing.Tuple[bytes, bytes]] = (),
         body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
-        ssl: typing.Optional[SSLConfig] = None,
-        timeout: typing.Optional[TimeoutConfig] = None,
-        stream: bool = False,
+        **options: typing.Any
     ) -> SyncResponse:
         response = self._loop.run_until_complete(
-            self._client.request(
-                method,
-                url,
-                headers=headers,
-                body=body,
-                ssl=ssl,
-                timeout=timeout,
-                stream=stream,
-            )
+            self._client.request(method, url, headers=headers, body=body, **options)
         )
         return SyncResponse(response, self._loop)
 

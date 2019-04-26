@@ -112,24 +112,20 @@ class TimeoutConfig:
         connect_timeout: float = None,
         read_timeout: float = None,
         write_timeout: float = None,
-        pool_timeout: float = None,
     ):
         if timeout is not None:
             # Specified as a single timeout value
             assert connect_timeout is None
             assert read_timeout is None
             assert write_timeout is None
-            assert pool_timeout is None
             connect_timeout = timeout
             read_timeout = timeout
             write_timeout = timeout
-            pool_timeout = timeout
 
         self.timeout = timeout
         self.connect_timeout = connect_timeout
         self.read_timeout = read_timeout
         self.write_timeout = write_timeout
-        self.pool_timeout = pool_timeout
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -137,14 +133,13 @@ class TimeoutConfig:
             and self.connect_timeout == other.connect_timeout
             and self.read_timeout == other.read_timeout
             and self.write_timeout == other.write_timeout
-            and self.pool_timeout == other.pool_timeout
         )
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         if self.timeout is not None:
             return f"{class_name}(timeout={self.timeout})"
-        return f"{class_name}(connect_timeout={self.connect_timeout}, read_timeout={self.read_timeout}, write_timeout={self.write_timeout}, pool_timeout={self.pool_timeout})"
+        return f"{class_name}(connect_timeout={self.connect_timeout}, read_timeout={self.read_timeout}, write_timeout={self.write_timeout})"
 
 
 class PoolLimits:
@@ -155,27 +150,29 @@ class PoolLimits:
     def __init__(
         self,
         *,
-        soft_limit: typing.Optional[int] = None,
-        hard_limit: typing.Optional[int] = None,
+        soft_limit: int = None,
+        hard_limit: int = None,
+        pool_timeout: float = None,
     ):
         self.soft_limit = soft_limit
         self.hard_limit = hard_limit
+        self.pool_timeout = pool_timeout
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
             and self.soft_limit == other.soft_limit
             and self.hard_limit == other.hard_limit
+            and self.pool_timeout == other.pool_timeout
         )
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        return (
-            f"{class_name}(soft_limit={self.soft_limit}, hard_limit={self.hard_limit})"
-        )
+        return f"{class_name}(soft_limit={self.soft_limit}, hard_limit={self.hard_limit}, pool_timeout={self.pool_timeout})"
 
 
 DEFAULT_SSL_CONFIG = SSLConfig(cert=None, verify=True)
 DEFAULT_TIMEOUT_CONFIG = TimeoutConfig(timeout=5.0)
-DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
+DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100, pool_timeout=5.0)
 DEFAULT_CA_BUNDLE_PATH = certifi.where()
+DEFAULT_MAX_REDIRECTS = 30

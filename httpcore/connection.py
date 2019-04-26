@@ -4,18 +4,19 @@ import typing
 import h2.connection
 import h11
 
+from .adapters import Adapter
 from .config import DEFAULT_SSL_CONFIG, DEFAULT_TIMEOUT_CONFIG, SSLConfig, TimeoutConfig
 from .exceptions import ConnectTimeout
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
-from .models import Client, Origin, Request, Response
+from .models import Origin, Request, Response
 from .streams import Protocol, connect
 
 # Callback signature: async def callback(conn: HTTPConnection) -> None
 ReleaseCallback = typing.Callable[["HTTPConnection"], typing.Awaitable[None]]
 
 
-class HTTPConnection(Client):
+class HTTPConnection(Adapter):
     def __init__(
         self,
         origin: typing.Union[str, Origin],
@@ -30,33 +31,26 @@ class HTTPConnection(Client):
         self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
         self.h2_connection = None  # type: typing.Optional[HTTP2Connection]
 
-    async def send(
-        self,
-        request: Request,
-        *,
-        ssl: typing.Optional[SSLConfig] = None,
-        timeout: typing.Optional[TimeoutConfig] = None,
-    ) -> Response:
+    def prepare_request(self, request: Request) -> None:
+        pass
+
+    async def send(self, request: Request, **options: typing.Any) -> Response:
         if self.h11_connection is None and self.h2_connection is None:
-            await self.connect(ssl, timeout)
+            await self.connect(**options)
 
         if self.h2_connection is not None:
-            response = await self.h2_connection.send(request, ssl=ssl, timeout=timeout)
+            response = await self.h2_connection.send(request, **options)
         else:
             assert self.h11_connection is not None
-            response = await self.h11_connection.send(request, ssl=ssl, timeout=timeout)
+            response = await self.h11_connection.send(request, **options)
 
         return response
 
-    async def connect(
-        self,
-        ssl: typing.Optional[SSLConfig] = None,
-        timeout: typing.Optional[TimeoutConfig] = None,
-    ) -> None:
-        if ssl is None:
-            ssl = self.ssl
-        if timeout is None:
-            timeout = self.timeout
+    async def connect(self, **options: typing.Any) -> None:
+        ssl = options.get("ssl", self.ssl)
+        timeout = options.get("timeout", self.timeout)
+        assert isinstance(ssl, SSLConfig)
+        assert isinstance(timeout, TimeoutConfig)
 
         hostname = self.origin.hostname
         port = self.origin.port
@@ -69,20 +63,10 @@ class HTTPConnection(Client):
 
         reader, writer, protocol = await connect(hostname, port, ssl_context, timeout)
         if protocol == Protocol.HTTP_2:
-            self.h2_connection = HTTP2Connection(
-                reader,
-                writer,
-                origin=self.origin,
-                timeout=self.timeout,
-                on_release=on_release,
-            )
+            self.h2_connection = HTTP2Connection(reader, writer, on_release=on_release)
         else:
             self.h11_connection = HTTP11Connection(
-                reader,
-                writer,
-                origin=self.origin,
-                timeout=self.timeout,
-                on_release=on_release,
+                reader, writer, on_release=on_release
             )
 
     async def close(self) -> None:

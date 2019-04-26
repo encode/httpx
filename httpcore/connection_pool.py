@@ -1,6 +1,7 @@
 import collections.abc
 import typing
 
+from .adapters import Adapter
 from .config import (
     DEFAULT_CA_BUNDLE_PATH,
     DEFAULT_POOL_LIMITS,
@@ -12,7 +13,7 @@ from .config import (
 )
 from .connection import HTTPConnection
 from .exceptions import PoolTimeout
-from .models import Client, Origin, Request, Response
+from .models import Origin, Request, Response
 from .streams import PoolSemaphore
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
@@ -81,7 +82,7 @@ class ConnectionStore(collections.abc.Sequence):
         return len(self.all)
 
 
-class ConnectionPool(Client):
+class ConnectionPool(Adapter):
     def __init__(
         self,
         *,
@@ -94,7 +95,7 @@ class ConnectionPool(Client):
         self.limits = limits
         self.is_closed = False
 
-        self.max_connections = PoolSemaphore(limits, timeout)
+        self.max_connections = PoolSemaphore(limits)
         self.keepalive_connections = ConnectionStore()
         self.active_connections = ConnectionStore()
 
@@ -102,31 +103,26 @@ class ConnectionPool(Client):
     def num_connections(self) -> int:
         return len(self.keepalive_connections) + len(self.active_connections)
 
-    async def send(
-        self,
-        request: Request,
-        *,
-        ssl: typing.Optional[SSLConfig] = None,
-        timeout: typing.Optional[TimeoutConfig] = None,
-    ) -> Response:
-        connection = await self.acquire_connection(request.url.origin, timeout=timeout)
+    def prepare_request(self, request: Request) -> None:
+        pass
+
+    async def send(self, request: Request, **options: typing.Any) -> Response:
+        connection = await self.acquire_connection(request.url.origin)
         try:
-            response = await connection.send(request, ssl=ssl, timeout=timeout)
+            response = await connection.send(request, **options)
         except BaseException as exc:
             self.active_connections.remove(connection)
             self.max_connections.release()
             raise exc
         return response
 
-    async def acquire_connection(
-        self, origin: Origin, timeout: typing.Optional[TimeoutConfig] = None
-    ) -> HTTPConnection:
+    async def acquire_connection(self, origin: Origin) -> HTTPConnection:
         connection = self.active_connections.pop_by_origin(origin, http2_only=True)
         if connection is None:
             connection = self.keepalive_connections.pop_by_origin(origin)
 
         if connection is None:
-            await self.max_connections.acquire(timeout)
+            await self.max_connections.acquire()
             connection = HTTPConnection(
                 origin,
                 ssl=self.ssl,

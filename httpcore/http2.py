@@ -4,52 +4,39 @@ import typing
 import h2.connection
 import h2.events
 
+from .adapters import Adapter
 from .config import DEFAULT_SSL_CONFIG, DEFAULT_TIMEOUT_CONFIG, SSLConfig, TimeoutConfig
 from .exceptions import ConnectTimeout, ReadTimeout
-from .models import Client, Origin, Request, Response
+from .models import Request, Response
 from .streams import BaseReader, BaseWriter
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
 
 
-class HTTP2Connection(Client):
+class HTTP2Connection(Adapter):
     READ_NUM_BYTES = 4096
 
     def __init__(
-        self,
-        reader: BaseReader,
-        writer: BaseWriter,
-        origin: Origin,
-        timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
-        on_release: typing.Callable = None,
+        self, reader: BaseReader, writer: BaseWriter, on_release: typing.Callable = None
     ):
         self.reader = reader
         self.writer = writer
-        self.origin = origin
-        self.timeout = timeout
         self.on_release = on_release
         self.h2_state = h2.connection.H2Connection()
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
         self.initialized = False
 
-    @property
-    def is_closed(self) -> bool:
-        return False
+    def prepare_request(self, request: Request) -> None:
+        pass
 
-    async def send(
-        self,
-        request: Request,
-        *,
-        ssl: typing.Optional[SSLConfig] = None,
-        timeout: typing.Optional[TimeoutConfig] = None
-    ) -> Response:
-        if timeout is None:
-            timeout = self.timeout
-
-        if not self.initialized:
-            self.initiate_connection()
+    async def send(self, request: Request, **options: typing.Any) -> Response:
+        timeout = options.get("timeout")
+        stream = options.get("stream", False)
+        assert timeout is None or isinstance(timeout, TimeoutConfig)
 
         #  Start sending the request.
+        if not self.initialized:
+            self.initiate_connection()
         stream_id = await self.send_headers(request, timeout)
         self.events[stream_id] = []
 
@@ -77,13 +64,24 @@ class HTTP2Connection(Client):
         body = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
 
-        return Response(
+        response = Response(
             status_code=status_code,
             protocol="HTTP/2",
             headers=headers,
             body=body,
             on_close=on_close,
         )
+
+        if not stream:
+            try:
+                await response.read()
+            finally:
+                await response.close()
+
+        return response
+
+    async def close(self) -> None:
+        await self.writer.close()
 
     def initiate_connection(self) -> None:
         self.h2_state.initiate_connection()
@@ -147,5 +145,6 @@ class HTTP2Connection(Client):
         if not self.events and self.on_release is not None:
             await self.on_release()
 
-    async def close(self) -> None:
-        await self.writer.close()
+    @property
+    def is_closed(self) -> bool:
+        return False

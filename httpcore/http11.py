@@ -2,9 +2,10 @@ import typing
 
 import h11
 
+from .adapters import Adapter
 from .config import DEFAULT_SSL_CONFIG, DEFAULT_TIMEOUT_CONFIG, SSLConfig, TimeoutConfig
 from .exceptions import ConnectTimeout, ReadTimeout
-from .models import Client, Origin, Request, Response
+from .models import Request, Response
 from .streams import BaseReader, BaseWriter
 
 H11Event = typing.Union[
@@ -25,35 +26,28 @@ OptionalTimeout = typing.Optional[TimeoutConfig]
 OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
 
 
-class HTTP11Connection(Client):
+class HTTP11Connection(Adapter):
     READ_NUM_BYTES = 4096
 
     def __init__(
         self,
         reader: BaseReader,
         writer: BaseWriter,
-        origin: Origin,
-        timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
         on_release: typing.Optional[OnReleaseCallback] = None,
     ):
         self.reader = reader
         self.writer = writer
-        self.origin = origin
-        self.timeout = timeout
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
 
-    @property
-    def is_closed(self) -> bool:
-        return self.h11_state.our_state in (h11.CLOSED, h11.ERROR)
+    def prepare_request(self, request: Request) -> None:
+        pass
 
-    async def send(
-        self,
-        request: Request,
-        *,
-        ssl: typing.Optional[SSLConfig] = None,
-        timeout: typing.Optional[TimeoutConfig] = None
-    ) -> Response:
+    async def send(self, request: Request, **options: typing.Any) -> Response:
+        timeout = options.get("timeout")
+        stream = options.get("stream", False)
+        assert timeout is None or isinstance(timeout, TimeoutConfig)
+
         #  Start sending the request.
         method = request.method.encode()
         target = request.url.full_path
@@ -81,7 +75,7 @@ class HTTP11Connection(Client):
         headers = event.headers
         body = self._body_iter(timeout)
 
-        return Response(
+        response = Response(
             status_code=status_code,
             reason=reason,
             protocol="HTTP/1.1",
@@ -89,6 +83,26 @@ class HTTP11Connection(Client):
             body=body,
             on_close=self.response_closed,
         )
+
+        if not stream:
+            try:
+                await response.read()
+            finally:
+                await response.close()
+
+        return response
+
+    async def close(self) -> None:
+        event = h11.ConnectionClosed()
+        try:
+            # If we're in h11.MUST_CLOSE then we'll end up in h11.CLOSED.
+            self.h11_state.send(event)
+        except h11.ProtocolError:
+            # If we're in some other state then it's a premature close,
+            # and we'll end up in h11.ERROR.
+            pass
+
+        await self.writer.close()
 
     async def _body_iter(self, timeout: OptionalTimeout) -> typing.AsyncIterator[bytes]:
         event = await self._receive_event(timeout)
@@ -123,14 +137,6 @@ class HTTP11Connection(Client):
         if self.on_release is not None:
             await self.on_release()
 
-    async def close(self) -> None:
-        event = h11.ConnectionClosed()
-        try:
-            # If we're in h11.MUST_CLOSE then we'll end up in h11.CLOSED.
-            self.h11_state.send(event)
-        except h11.ProtocolError:
-            # If we're in some other state then it's a premature close,
-            # and we'll end up in h11.ERROR.
-            pass
-
-        await self.writer.close()
+    @property
+    def is_closed(self) -> bool:
+        return self.h11_state.our_state in (h11.CLOSED, h11.ERROR)
