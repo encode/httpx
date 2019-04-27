@@ -39,6 +39,14 @@ class SyncResponse:
             except StopAsyncIteration as exc:
                 break
 
+    def raw(self) -> typing.Iterator[bytes]:
+        inner = self._response.raw()
+        while True:
+            try:
+                yield self._loop.run_until_complete(inner.__anext__())
+            except StopAsyncIteration as exc:
+                break
+
     def close(self) -> None:
         return self._loop.run_until_complete(self._response.close())
 
