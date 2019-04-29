@@ -109,6 +109,15 @@ async def test_redirect_303():
 
 
 @pytest.mark.asyncio
+async def test_disallow_redirects():
+    client = RedirectAdapter(MockDispatch())
+    response = await client.request("POST", "https://example.org/redirect_303", allow_redirects=False)
+    assert response.status_code == codes.see_other
+    assert response.url == URL("https://example.org/redirect_303")
+    assert len(response.history) == 0
+
+
+@pytest.mark.asyncio
 async def test_relative_redirect():
     client = RedirectAdapter(MockDispatch())
     response = await client.request("GET", "https://example.org/relative_redirect")
