@@ -10,6 +10,7 @@ from ..config import (
     SSLConfig,
     TimeoutConfig,
 )
+from ..decoders import ACCEPT_ENCODING
 from ..exceptions import PoolTimeout
 from ..interfaces import Adapter
 from ..models import Origin, Request, Response
@@ -104,7 +105,7 @@ class ConnectionPool(Adapter):
         return len(self.keepalive_connections) + len(self.active_connections)
 
     def prepare_request(self, request: Request) -> None:
-        pass
+        request.prepare()
 
     async def send(self, request: Request, **options: typing.Any) -> Response:
         connection = await self.acquire_connection(request.url.origin)

@@ -32,7 +32,7 @@ class HTTP2Connection(Adapter):
         self.initialized = False
 
     def prepare_request(self, request: Request) -> None:
-        pass
+        request.prepare()
 
     async def send(self, request: Request, **options: typing.Any) -> Response:
         timeout = options.get("timeout")
@@ -75,6 +75,7 @@ class HTTP2Connection(Adapter):
             headers=headers,
             body=body,
             on_close=on_close,
+            request=request,
         )
 
         if not stream:

@@ -4,7 +4,7 @@ from urllib.parse import urljoin, urlparse
 from ..config import DEFAULT_MAX_REDIRECTS
 from ..exceptions import RedirectLoop, TooManyRedirects
 from ..interfaces import Adapter
-from ..models import URL, Request, Response
+from ..models import URL, Headers, Request, Response
 from ..status_codes import codes
 from ..utils import requote_uri
 
@@ -19,11 +19,12 @@ class RedirectAdapter(Adapter):
 
     async def send(self, request: Request, **options: typing.Any) -> Response:
         allow_redirects = options.pop("allow_redirects", True)
-        history = []
+        history = []  # type: typing.List[Response]
         seen_urls = set((request.url,))
 
         while True:
             response = await self.dispatch.send(request, **options)
+            response.history = list(history)
             if not allow_redirects or not response.is_redirect:
                 break
             history.append(response)
@@ -42,7 +43,8 @@ class RedirectAdapter(Adapter):
     def build_redirect_request(self, request: Request, response: Response) -> Request:
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
-        return Request(method=method, url=url)
+        headers = self.redirect_headers(request, url)
+        return Request(method=method, url=url, headers=headers)
 
     def redirect_method(self, request: Request, response: Response) -> str:
         """
@@ -89,3 +91,9 @@ class RedirectAdapter(Adapter):
             url = requote_uri(url)
 
         return URL(url)
+
+    def redirect_headers(self, request: Request, url: URL) -> Headers:
+        headers = Headers(request.headers)
+        if url.origin != request.url.origin:
+            del headers["Authorization"]
+        return headers

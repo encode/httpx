@@ -46,7 +46,7 @@ class HTTP11Connection(Adapter):
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
 
     def prepare_request(self, request: Request) -> None:
-        pass
+        request.prepare()
 
     async def send(self, request: Request, **options: typing.Any) -> Response:
         timeout = options.get("timeout")
@@ -87,6 +87,7 @@ class HTTP11Connection(Adapter):
             headers=headers,
             body=body,
             on_close=self.response_closed,
+            request=request,
         )
 
         if not stream:

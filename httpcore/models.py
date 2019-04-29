@@ -79,6 +79,11 @@ class URL:
     def __str__(self) -> str:
         return self.components.geturl()
 
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        url_str = str(self)
+        return f"{class_name}({url_str!r})"
+
 
 class Origin:
     def __init__(self, url: typing.Union[str, URL]) -> None:
@@ -100,13 +105,21 @@ class Origin:
         return hash((self.is_ssl, self.hostname, self.port))
 
 
+HeaderTypes = typing.Union["Headers", typing.List[typing.Tuple[bytes, bytes]]]
+
+
 class Headers(typing.MutableMapping[str, str]):
     """
     A case-insensitive multidict.
     """
 
-    def __init__(self, headers: typing.List[typing.Tuple[bytes, bytes]]) -> None:
-        self._list = [(k.lower(), v) for k, v in headers]
+    def __init__(self, headers: HeaderTypes = None) -> None:
+        if headers is None:
+            self._list = []  # type: typing.List[typing.Tuple[bytes, bytes]]
+        elif isinstance(headers, Headers):
+            self._list = list(headers.raw)
+        else:
+            self._list = [(k.lower(), v) for k, v in headers]
 
     @property
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
@@ -213,7 +226,7 @@ class Request:
         method: str,
         url: typing.Union[str, URL],
         *,
-        headers: typing.List[typing.Tuple[bytes, bytes]] = [],
+        headers: HeaderTypes = None,
         body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
     ):
         self.method = method.upper()
@@ -224,25 +237,23 @@ class Request:
         else:
             self.is_streaming = True
             self.body_aiter = body
-        self.headers = self.build_headers(headers)
+        self.headers = Headers(headers)
 
-    def build_headers(
-        self, init_headers: typing.List[typing.Tuple[bytes, bytes]]
-    ) -> Headers:
-        has_host = False
-        has_content_length = False
-        has_accept_encoding = False
+    async def stream(self) -> typing.AsyncIterator[bytes]:
+        if self.is_streaming:
+            async for part in self.body_aiter:
+                yield part
+        elif self.body:
+            yield self.body
 
-        for header, value in init_headers:
-            header = header.strip().lower()
-            if header == b"host":
-                has_host = True
-            elif header in (b"content-length", b"transfer-encoding"):
-                has_content_length = True
-            elif header == b"accept-encoding":
-                has_accept_encoding = True
-
+    def prepare(self) -> None:
         auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
+
+        has_host = "host" in self.headers
+        has_content_length = (
+            "content-length" in self.headers or "transfer-encoding" in self.headers
+        )
+        has_accept_encoding = "accept-encoding" in self.headers
 
         if not has_host:
             auto_headers.append((b"host", self.url.netloc.encode("ascii")))
@@ -255,14 +266,8 @@ class Request:
         if not has_accept_encoding:
             auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
 
-        return Headers(auto_headers + init_headers)
-
-    async def stream(self) -> typing.AsyncIterator[bytes]:
-        if self.is_streaming:
-            async for part in self.body_aiter:
-                yield part
-        elif self.body:
-            yield self.body
+        for item in reversed(auto_headers):
+            self.headers.raw.insert(0, item)
 
 
 class Response:
@@ -275,6 +280,8 @@ class Response:
         headers: typing.List[typing.Tuple[bytes, bytes]] = [],
         body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
         on_close: typing.Callable = None,
+        request: Request = None,
+        history: typing.List["Response"] = None,
     ):
         self.status_code = status_code
         if not reason:
@@ -309,6 +316,13 @@ class Response:
             self.body = self.decoder.decode(body) + self.decoder.flush()
         else:
             self.body_aiter = body
+
+        self.request = request
+        self.history = [] if history is None else list(history)
+
+    @property
+    def url(self) -> typing.Optional[URL]:
+        return None if self.request is None else self.request.url
 
     async def read(self) -> bytes:
         """
@@ -358,4 +372,6 @@ class Response:
 
     @property
     def is_redirect(self) -> bool:
-        return self.status_code in (301, 302, 303, 307, 308)
+        return (
+            self.status_code in (301, 302, 303, 307, 308) and "location" in self.headers
+        )
