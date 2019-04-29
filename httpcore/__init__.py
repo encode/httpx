@@ -7,6 +7,7 @@ from .dispatch.http2 import HTTP2Connection
 from .dispatch.http11 import HTTP11Connection
 from .exceptions import (
     ConnectTimeout,
+    DecodingError,
     PoolTimeout,
     ProtocolError,
     ReadTimeout,
