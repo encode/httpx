@@ -9,9 +9,7 @@ from .exceptions import (
     ResponseClosed,
     StreamConsumed,
     Timeout,
-    DeflateDecodingError,
-    GzipDecodingError,
-    BrotliDecodingError,
+    DecodingError,
 )
 from .http11 import HTTP11Connection
 from .sync import SyncClient, SyncConnectionPool

@@ -45,13 +45,13 @@ class DeflateDecoder(Decoder):
         try:
             return self.decompressor.decompress(data)
         except zlib.error as exc:
-            raise httpcore.exceptions.DeflateDecodingError from exc
+            raise httpcore.exceptions.DecodingError from exc
 
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
         except zlib.error as exc:
-            raise httpcore.exceptions.DeflateDecodingError from exc
+            raise httpcore.exceptions.DecodingError from exc
 
 
 class GZipDecoder(Decoder):
@@ -68,13 +68,13 @@ class GZipDecoder(Decoder):
         try:
             return self.decompressor.decompress(data)
         except zlib.error as exc:
-            raise httpcore.exceptions.GzipDecodingError from exc
+            raise httpcore.exceptions.DecodingError from exc
 
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
         except zlib.error as exc:
-            raise httpcore.exceptions.GzipDecodingError from exc
+            raise httpcore.exceptions.DecodingError from exc
 
 
 class BrotliDecoder(Decoder):
@@ -95,19 +95,19 @@ class BrotliDecoder(Decoder):
         try:
             return self.decompressor.decompress(data)
         except brotli.Error as exc:
-            raise httpcore.exceptions.BrotliDecodingError from exc
+            raise httpcore.exceptions.DecodingError from exc
 
     def flush(self) -> bytes:
         try:
             self.decompressor.finish()
             return b""
         except brotli.Error as exc:
-            raise httpcore.exceptions.BrotliDecodingError from exc
+            raise httpcore.exceptions.DecodingError from exc
 
 
 class MultiDecoder(Decoder):
     """
-    Handle the case where mutiple encodings have been applied.
+    Handle the case where multiple encodings have been applied.
     """
 
     def __init__(self, children: typing.Sequence[Decoder]) -> None:

@@ -46,21 +46,3 @@ class DecodingError(Exception):
     """
     Decoding of the response failed.
     """
-
-
-class DeflateDecodingError(DecodingError):
-    """
-    Decoding of the response using deflate failed.
-    """
-
-
-class GzipDecodingError(DecodingError):
-    """
-    Decoding of the response using gzip failed.
-    """
-
-
-class BrotliDecodingError(DecodingError):
-    """
-    Decoding of the response using brotli failed.
-    """
