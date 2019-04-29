@@ -11,6 +11,7 @@ from .decoders import (
     MultiDecoder,
 )
 from .exceptions import ResponseClosed, StreamConsumed
+from .utils import normalize_header_key, normalize_header_value
 
 
 class URL:
@@ -105,7 +106,11 @@ class Origin:
         return hash((self.is_ssl, self.hostname, self.port))
 
 
-HeaderTypes = typing.Union["Headers", typing.List[typing.Tuple[bytes, bytes]]]
+HeaderTypes = typing.Union[
+    "Headers",
+    typing.Dict[typing.AnyStr, typing.AnyStr],
+    typing.List[typing.Tuple[typing.AnyStr, typing.AnyStr]],
+]
 
 
 class Headers(typing.MutableMapping[str, str]):
@@ -118,8 +123,15 @@ class Headers(typing.MutableMapping[str, str]):
             self._list = []  # type: typing.List[typing.Tuple[bytes, bytes]]
         elif isinstance(headers, Headers):
             self._list = list(headers.raw)
+        elif isinstance(headers, dict):
+            self._list = [
+                (normalize_header_key(k), normalize_header_value(v))
+                for k, v in headers.items()
+            ]
         else:
-            self._list = [(k.lower(), v) for k, v in headers]
+            self._list = [
+                (normalize_header_key(k), normalize_header_value(v)) for k, v in headers
+            ]
 
     @property
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
@@ -238,6 +250,17 @@ class Request:
             self.is_streaming = True
             self.body_aiter = body
         self.headers = Headers(headers)
+
+    async def read(self) -> bytes:
+        """
+        Read and return the response content.
+        """
+        if not hasattr(self, "body"):
+            body = b""
+            async for part in self.stream():
+                body += part
+            self.body = body
+        return self.body
 
     async def stream(self) -> typing.AsyncIterator[bytes]:
         if self.is_streaming:

@@ -1,3 +1,4 @@
+import typing
 from urllib.parse import quote
 
 from .exceptions import InvalidURL
@@ -50,3 +51,21 @@ def requote_uri(uri: str) -> str:
         # there may be unquoted '%'s in the URI. We need to make sure they're
         # properly quoted so they do not cause issues elsewhere.
         return quote(uri, safe=safe_without_percent)
+
+
+def normalize_header_key(value: typing.AnyStr) -> bytes:
+    """
+    Coerce str/bytes into a strictly byte-wise HTTP header key.
+    """
+    if isinstance(value, bytes):
+        return value.lower()
+    return value.encode("latin-1").lower()
+
+
+def normalize_header_value(value: typing.AnyStr) -> bytes:
+    """
+    Coerce str/bytes into a strictly byte-wise HTTP header value.
+    """
+    if isinstance(value, bytes):
+        return value
+    return value.encode("latin-1")

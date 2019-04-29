@@ -21,32 +21,28 @@ class MockDispatch(Adapter):
         pass
 
     async def send(self, request: Request, **options) -> Response:
-        if request.url.path == "/redirect_301":  # "Moved Permanently"
-            return Response(
-                301, headers=[(b"location", b"https://example.org/")], request=request
-            )
+        if request.url.path == "/redirect_301":
+            status_code = codes.moved_permanently
+            headers = {"location": "https://example.org/"}
+            return Response(status_code, headers=headers, request=request)
 
-        elif request.url.path == "/redirect_302":  # "Found"
-            return Response(
-                302, headers=[(b"location", b"https://example.org/")], request=request
-            )
+        elif request.url.path == "/redirect_302":
+            status_code = codes.found
+            headers = {"location": "https://example.org/"}
+            return Response(status_code, headers=headers, request=request)
 
-        elif request.url.path == "/redirect_303":  # "See Other"
-            return Response(
-                303, headers=[(b"location", b"https://example.org/")], request=request
-            )
+        elif request.url.path == "/redirect_303":
+            status_code = codes.see_other
+            headers = {"location": "https://example.org/"}
+            return Response(status_code, headers=headers, request=request)
 
         elif request.url.path == "/relative_redirect":
-            return Response(
-                codes.see_other, headers=[(b"location", b"/")], request=request
-            )
+            headers = {"location": "/"}
+            return Response(codes.see_other, headers=headers, request=request)
 
         elif request.url.path == "/no_scheme_redirect":
-            return Response(
-                codes.see_other,
-                headers=[(b"location", b"//example.org/")],
-                request=request,
-            )
+            headers = {"location": "//example.org/"}
+            return Response(codes.see_other, headers=headers, request=request)
 
         elif request.url.path == "/multiple_redirects":
             params = parse_qs(request.url.query)
@@ -56,31 +52,30 @@ class MockDispatch(Adapter):
             location = "/multiple_redirects"
             if redirect_count:
                 location += "?count=" + str(redirect_count)
-            headers = [(b"location", location.encode())] if count else []
+            headers = {"location": location} if count else {}
             return Response(code, headers=headers, request=request)
 
         if request.url.path == "/redirect_loop":
-            return Response(
-                codes.see_other,
-                headers=[(b"location", b"/redirect_loop")],
-                request=request,
-            )
+            headers = {"location": "/redirect_loop"}
+            return Response(codes.see_other, headers=headers, request=request)
 
         elif request.url.path == "/cross_domain":
-            location = b"https://example.org/cross_domain_target"
-            return Response(301, headers=[(b"location", location)], request=request)
+            headers = {"location": "https://example.org/cross_domain_target"}
+            return Response(codes.see_other, headers=headers, request=request)
 
         elif request.url.path == "/cross_domain_target":
-            headers = {k.decode(): v.decode() for k, v in request.headers.raw}
+            headers = dict(request.headers.items())
             body = json.dumps({"headers": headers}).encode()
             return Response(codes.ok, body=body, request=request)
 
         elif request.url.path == "/redirect_body":
-            headers = [(b"location", b"/redirect_body_target")]
+            body = await request.read()
+            headers = {"location": "/redirect_body_target"}
             return Response(codes.permanent_redirect, headers=headers, request=request)
 
         elif request.url.path == "/redirect_body_target":
-            body = json.dumps({"body": request.body.decode()}).encode()
+            body = await request.read()
+            body = json.dumps({"body": body.decode()}).encode()
             return Response(codes.ok, body=body, request=request)
 
         return Response(codes.ok, body=b"Hello, world!", request=request)
@@ -134,9 +129,8 @@ async def test_no_scheme_redirect():
 @pytest.mark.asyncio
 async def test_fragment_redirect():
     client = RedirectAdapter(MockDispatch())
-    response = await client.request(
-        "GET", "https://example.org/relative_redirect#fragment"
-    )
+    url = "https://example.org/relative_redirect#fragment"
+    response = await client.request("GET", url)
     assert response.status_code == codes.ok
     assert response.url == URL("https://example.org/#fragment")
     assert len(response.history) == 1
@@ -145,9 +139,8 @@ async def test_fragment_redirect():
 @pytest.mark.asyncio
 async def test_multiple_redirects():
     client = RedirectAdapter(MockDispatch())
-    response = await client.request(
-        "GET", "https://example.org/multiple_redirects?count=20"
-    )
+    url = "https://example.org/multiple_redirects?count=20"
+    response = await client.request("GET", url)
     assert response.status_code == codes.ok
     assert response.url == URL("https://example.org/multiple_redirects")
     assert len(response.history) == 20
@@ -170,8 +163,8 @@ async def test_redirect_loop():
 @pytest.mark.asyncio
 async def test_cross_domain_redirect():
     client = RedirectAdapter(MockDispatch())
-    headers = [(b"Authorization", b"abc")]
     url = "https://example.com/cross_domain"
+    headers = {"Authorization": "abc"}
     response = await client.request("GET", url, headers=headers)
     data = json.loads(response.body.decode())
     assert response.url == URL("https://example.org/cross_domain_target")
@@ -181,8 +174,8 @@ async def test_cross_domain_redirect():
 @pytest.mark.asyncio
 async def test_same_domain_redirect():
     client = RedirectAdapter(MockDispatch())
-    headers = [(b"Authorization", b"abc")]
     url = "https://example.org/cross_domain"
+    headers = {"Authorization": "abc"}
     response = await client.request("GET", url, headers=headers)
     data = json.loads(response.body.decode())
     assert response.url == URL("https://example.org/cross_domain_target")
@@ -192,8 +185,8 @@ async def test_same_domain_redirect():
 @pytest.mark.asyncio
 async def test_body_redirect():
     client = RedirectAdapter(MockDispatch())
-    body = b"Example request body"
     url = "https://example.org/redirect_body"
+    body = b"Example request body"
     response = await client.request("POST", url, body=body)
     data = json.loads(response.body.decode())
     assert response.url == URL("https://example.org/redirect_body_target")
