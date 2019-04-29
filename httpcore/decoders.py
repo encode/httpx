@@ -110,17 +110,17 @@ class MultiDecoder(Decoder):
 
 
 SUPPORTED_DECODERS = {
-    b"identity": IdentityDecoder,
-    b"deflate": DeflateDecoder,
-    b"gzip": GZipDecoder,
-    b"br": BrotliDecoder,
+    "identity": IdentityDecoder,
+    "deflate": DeflateDecoder,
+    "gzip": GZipDecoder,
+    "br": BrotliDecoder,
 }
 
 
 if brotli is None:
-    SUPPORTED_DECODERS.pop(b"br")  # pragma: nocover
+    SUPPORTED_DECODERS.pop("br")  # pragma: nocover
 
 
-ACCEPT_ENCODING = b", ".join(
-    [key for key in SUPPORTED_DECODERS.keys() if key != b"identity"]
+ACCEPT_ENCODING = ", ".join(
+    [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
 )
