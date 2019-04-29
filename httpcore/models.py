@@ -70,6 +70,9 @@ class URL:
     def origin(self) -> "Origin":
         return Origin(self)
 
+    def __str__(self) -> str:
+        return self.components.geturl()
+
 
 class Origin:
     def __init__(self, url: typing.Union[str, URL]) -> None:

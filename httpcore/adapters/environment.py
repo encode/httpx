@@ -1,7 +1,7 @@
 import typing
 
-from .adapters import Adapter
-from .models import Request, Response
+from ..interfaces import Adapter
+from ..models import Request, Response
 
 
 class EnvironmentAdapter(Adapter):

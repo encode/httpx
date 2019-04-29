@@ -2,9 +2,9 @@ import asyncio
 import typing
 from types import TracebackType
 
-from .adapters import Adapter
 from .config import SSLConfig, TimeoutConfig
-from .connection_pool import ConnectionPool
+from .dispatch.connection_pool import ConnectionPool
+from .interfaces import Adapter
 from .models import URL, Headers, Response
 
 

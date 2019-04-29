@@ -1,7 +1,10 @@
 import typing
 from types import TracebackType
 
-from .auth import AuthAdapter
+from .adapters.authentication import AuthenticationAdapter
+from .adapters.cookies import CookieAdapter
+from .adapters.environment import EnvironmentAdapter
+from .adapters.redirects import RedirectAdapter
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
@@ -11,11 +14,8 @@ from .config import (
     SSLConfig,
     TimeoutConfig,
 )
-from .connection_pool import ConnectionPool
-from .cookies import CookieAdapter
-from .environment import EnvironmentAdapter
+from .dispatch.connection_pool import ConnectionPool
 from .models import URL, Request, Response
-from .redirects import RedirectAdapter
 
 
 class Client:
@@ -28,7 +28,7 @@ class Client:
     ):
         connection_pool = ConnectionPool(ssl=ssl, timeout=timeout, limits=limits)
         cookie_adapter = CookieAdapter(dispatch=connection_pool)
-        auth_adapter = AuthAdapter(dispatch=cookie_adapter)
+        auth_adapter = AuthenticationAdapter(dispatch=cookie_adapter)
         redirect_adapter = RedirectAdapter(
             dispatch=auth_adapter, max_redirects=max_redirects
         )

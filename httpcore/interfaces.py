@@ -1,7 +1,10 @@
 import typing
 from types import TracebackType
 
+from .config import TimeoutConfig
 from .models import URL, Request, Response
+
+OptionalTimeout = typing.Optional[TimeoutConfig]
 
 
 class Adapter:
@@ -38,3 +41,27 @@ class Adapter:
         traceback: TracebackType = None,
     ) -> None:
         await self.close()
+
+
+class BaseReader:
+    async def read(self, n: int, timeout: OptionalTimeout = None) -> bytes:
+        raise NotImplementedError()  # pragma: no cover
+
+
+class BaseWriter:
+    def write_no_block(self, data: bytes) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def write(self, data: bytes, timeout: OptionalTimeout = None) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def close(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
+class BasePoolSemaphore:
+    async def acquire(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    def release(self) -> None:
+        raise NotImplementedError()  # pragma: no cover

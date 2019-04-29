@@ -1,10 +1,10 @@
 import typing
 
-from .adapters import Adapter
-from .models import Request, Response
+from ..interfaces import Adapter
+from ..models import Request, Response
 
 
-class AuthAdapter(Adapter):
+class CookieAdapter(Adapter):
     def __init__(self, dispatch: Adapter):
         self.dispatch = dispatch
 

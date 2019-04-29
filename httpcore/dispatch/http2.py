@@ -4,11 +4,16 @@ import typing
 import h2.connection
 import h2.events
 
-from .adapters import Adapter
-from .config import DEFAULT_SSL_CONFIG, DEFAULT_TIMEOUT_CONFIG, SSLConfig, TimeoutConfig
-from .exceptions import ConnectTimeout, ReadTimeout
-from .models import Request, Response
-from .streams import BaseReader, BaseWriter
+from ..config import (
+    DEFAULT_SSL_CONFIG,
+    DEFAULT_TIMEOUT_CONFIG,
+    SSLConfig,
+    TimeoutConfig,
+)
+from ..exceptions import ConnectTimeout, ReadTimeout
+from ..interfaces import Adapter
+from ..models import Request, Response
+from ..streams import BaseReader, BaseWriter
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
 

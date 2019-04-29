@@ -175,4 +175,4 @@ DEFAULT_SSL_CONFIG = SSLConfig(cert=None, verify=True)
 DEFAULT_TIMEOUT_CONFIG = TimeoutConfig(timeout=5.0)
 DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100, pool_timeout=5.0)
 DEFAULT_CA_BUNDLE_PATH = certifi.where()
-DEFAULT_MAX_REDIRECTS = 30
+DEFAULT_MAX_REDIRECTS = 20

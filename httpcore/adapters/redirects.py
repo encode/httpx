@@ -1,15 +1,16 @@
 import typing
 from urllib.parse import urljoin, urlparse
 
-from .adapters import Adapter
-from .exceptions import TooManyRedirects
-from .models import URL, Request, Response
-from .status_codes import codes
-from .utils import requote_uri
+from ..config import DEFAULT_MAX_REDIRECTS
+from ..exceptions import TooManyRedirects
+from ..interfaces import Adapter
+from ..models import URL, Request, Response
+from ..status_codes import codes
+from ..utils import requote_uri
 
 
 class RedirectAdapter(Adapter):
-    def __init__(self, dispatch: Adapter, max_redirects: int):
+    def __init__(self, dispatch: Adapter, max_redirects: int = DEFAULT_MAX_REDIRECTS):
         self.dispatch = dispatch
         self.max_redirects = max_redirects
 
@@ -37,7 +38,7 @@ class RedirectAdapter(Adapter):
     def build_redirect_request(self, request: Request, response: Response) -> Request:
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
-        raise NotImplementedError()
+        return Request(method=method, url=url)
 
     def redirect_method(self, request: Request, response: Response) -> str:
         """
@@ -47,17 +48,17 @@ class RedirectAdapter(Adapter):
         method = request.method
 
         # https://tools.ietf.org/html/rfc7231#section-6.4.4
-        if response.status_code == codes["see_other"] and method != "HEAD":
+        if response.status_code == codes.see_other and method != "HEAD":
             method = "GET"
 
         # Do what the browsers do, despite standards...
-        # First, turn 302s into GETs.
-        if response.status_code == codes["found"] and method != "HEAD":
+        # Turn 302s into GETs.
+        if response.status_code == codes.found and method != "HEAD":
             method = "GET"
 
-        # Second, if a POST is responded to with a 301, turn it into a GET.
-        # This bizarre behaviour is explained in Issue 1704.
-        if response.status_code == codes["moved"] and method == "POST":
+        # If a POST is responded to with a 301, turn it into a GET.
+        # This bizarre behaviour is explained in 'requests' issue 1704.
+        if response.status_code == codes.moved_permanently and method == "POST":
             method = "GET"
 
         return method

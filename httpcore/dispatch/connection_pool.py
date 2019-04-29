@@ -1,8 +1,7 @@
 import collections.abc
 import typing
 
-from .adapters import Adapter
-from .config import (
+from ..config import (
     DEFAULT_CA_BUNDLE_PATH,
     DEFAULT_POOL_LIMITS,
     DEFAULT_SSL_CONFIG,
@@ -11,10 +10,11 @@ from .config import (
     SSLConfig,
     TimeoutConfig,
 )
+from ..exceptions import PoolTimeout
+from ..interfaces import Adapter
+from ..models import Origin, Request, Response
+from ..streams import PoolSemaphore
 from .connection import HTTPConnection
-from .exceptions import PoolTimeout
-from .models import Origin, Request, Response
-from .streams import PoolSemaphore
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
 

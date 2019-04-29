@@ -15,6 +15,7 @@ import typing
 
 from .config import DEFAULT_TIMEOUT_CONFIG, PoolLimits, TimeoutConfig
 from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
+from .interfaces import BasePoolSemaphore, BaseReader, BaseWriter
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
 
@@ -22,30 +23,6 @@ OptionalTimeout = typing.Optional[TimeoutConfig]
 class Protocol(enum.Enum):
     HTTP_11 = 1
     HTTP_2 = 2
-
-
-class BaseReader:
-    async def read(self, n: int, timeout: OptionalTimeout = None) -> bytes:
-        raise NotImplementedError()  # pragma: no cover
-
-
-class BaseWriter:
-    def write_no_block(self, data: bytes) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
-    async def write(self, data: bytes, timeout: OptionalTimeout = None) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
-    async def close(self) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
-
-class BasePoolSemaphore:
-    async def acquire(self) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
-    def release(self) -> None:
-        raise NotImplementedError()  # pragma: no cover
 
 
 class Reader(BaseReader):

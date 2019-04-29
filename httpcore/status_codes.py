@@ -1,123 +1,58 @@
-"""
-The ``codes`` object defines a mapping from common names for HTTP statuses
-to their numerical codes, accessible either as attributes or as dictionary
-items.
->>> requests.codes['temporary_redirect']
-307
->>> requests.codes.teapot
-418
-Some codes have multiple names, and both upper- and lower-case versions of
-the names are allowed. For example, ``codes.ok``, ``codes.OK``, and
-``codes.okay`` all correspond to the HTTP status code 200.
-"""
+import enum
 
-import typing
-
-from .structures import LookupDict
-
-_codes = {
-    # Informational.
-    100: ("continue",),
-    101: ("switching_protocols",),
-    102: ("processing",),
-    103: ("checkpoint",),
-    122: ("uri_too_long", "request_uri_too_long"),
-    200: ("ok", "okay", "all_ok", "all_okay", "all_good", "\\o/", "✓"),
-    201: ("created",),
-    202: ("accepted",),
-    203: ("non_authoritative_info", "non_authoritative_information"),
-    204: ("no_content",),
-    205: ("reset_content", "reset"),
-    206: ("partial_content", "partial"),
-    207: ("multi_status", "multiple_status", "multi_stati", "multiple_stati"),
-    208: ("already_reported",),
-    226: ("im_used",),
-    # Redirection.
-    300: ("multiple_choices",),
-    301: ("moved_permanently", "moved", "\\o-"),
-    302: ("found",),
-    303: ("see_other", "other"),
-    304: ("not_modified",),
-    305: ("use_proxy",),
-    306: ("switch_proxy",),
-    307: ("temporary_redirect", "temporary_moved", "temporary"),
-    308: (
-        "permanent_redirect",
-        "resume_incomplete",
-        "resume",
-    ),  # These 2 to be removed in 3.0
-    # Client Error.
-    400: ("bad_request", "bad"),
-    401: ("unauthorized",),
-    402: ("payment_required", "payment"),
-    403: ("forbidden",),
-    404: ("not_found", "-o-"),
-    405: ("method_not_allowed", "not_allowed"),
-    406: ("not_acceptable",),
-    407: ("proxy_authentication_required", "proxy_auth", "proxy_authentication"),
-    408: ("request_timeout", "timeout"),
-    409: ("conflict",),
-    410: ("gone",),
-    411: ("length_required",),
-    412: ("precondition_failed", "precondition"),
-    413: ("request_entity_too_large",),
-    414: ("request_uri_too_large",),
-    415: ("unsupported_media_type", "unsupported_media", "media_type"),
-    416: (
-        "requested_range_not_satisfiable",
-        "requested_range",
-        "range_not_satisfiable",
-    ),
-    417: ("expectation_failed",),
-    418: ("im_a_teapot", "teapot", "i_am_a_teapot"),
-    421: ("misdirected_request",),
-    422: ("unprocessable_entity", "unprocessable"),
-    423: ("locked",),
-    424: ("failed_dependency", "dependency"),
-    425: ("unordered_collection", "unordered"),
-    426: ("upgrade_required", "upgrade"),
-    428: ("precondition_required", "precondition"),
-    429: ("too_many_requests", "too_many"),
-    431: ("header_fields_too_large", "fields_too_large"),
-    444: ("no_response", "none"),
-    449: ("retry_with", "retry"),
-    450: ("blocked_by_windows_parental_controls", "parental_controls"),
-    451: ("unavailable_for_legal_reasons", "legal_reasons"),
-    499: ("client_closed_request",),
-    # Server Error.
-    500: ("internal_server_error", "server_error", "/o\\", "✗"),
-    501: ("not_implemented",),
-    502: ("bad_gateway",),
-    503: ("service_unavailable", "unavailable"),
-    504: ("gateway_timeout",),
-    505: ("http_version_not_supported", "http_version"),
-    506: ("variant_also_negotiates",),
-    507: ("insufficient_storage",),
-    509: ("bandwidth_limit_exceeded", "bandwidth"),
-    510: ("not_extended",),
-    511: ("network_authentication_required", "network_auth", "network_authentication"),
-}  # type: typing.Dict[int, typing.Sequence[str]]
-
-codes = LookupDict(name="status_codes")
-
-
-def _init() -> None:
-    for code, titles in _codes.items():
-        for title in titles:
-            setattr(codes, title, code)
-            if not title.startswith(("\\", "/")):
-                setattr(codes, title.upper(), code)
-
-    def doc(code: int) -> str:
-        names = ", ".join("``%s``" % n for n in _codes[code])
-        return "* %d: %s" % (code, names)
-
-    global __doc__
-    __doc__ = (
-        __doc__ + "\n" + "\n".join(doc(code) for code in sorted(_codes))
-        if __doc__ is not None
-        else None
-    )
-
-
-_init()
+codes = enum.IntEnum(
+    "StatusCode",
+    [
+        ("continue", 100),
+        ("switching_protocols", 101),
+        ("ok", 200),
+        ("created", 201),
+        ("accepted", 202),
+        ("non_authoritative_information", 203),
+        ("no_content", 204),
+        ("reset_content", 205),
+        ("partial_content", 206),
+        ("multi_status", 207),
+        ("multiple_choices", 300),
+        ("moved_permanently", 301),
+        ("found", 302),
+        ("see_other", 303),
+        ("not_modified", 304),
+        ("use_proxy", 305),
+        ("reserved", 306),
+        ("temporary_redirect", 307),
+        ("bad_request", 400),
+        ("unauthorized", 401),
+        ("payment_required", 402),
+        ("forbidden", 403),
+        ("not_found", 404),
+        ("method_not_allowed", 405),
+        ("not_acceptable", 406),
+        ("proxy_authentication_required", 407),
+        ("request_timeout", 408),
+        ("conflict", 409),
+        ("gone", 410),
+        ("length_required", 411),
+        ("precondition_failed", 412),
+        ("request_entity_too_large", 413),
+        ("request_uri_too_long", 414),
+        ("unsupported_media_type", 415),
+        ("requested_range_not_satisfiable", 416),
+        ("expectation_failed", 417),
+        ("unprocessable_entity", 422),
+        ("locked", 423),
+        ("failed_dependency", 424),
+        ("precondition_required", 428),
+        ("too_many_requests", 429),
+        ("request_header_fields_too_large", 431),
+        ("unavailable_for_legal_reasons", 451),
+        ("internal_server_error", 500),
+        ("not_implemented", 501),
+        ("bad_gateway", 502),
+        ("service_unavailable", 503),
+        ("gateway_timeout", 504),
+        ("http_version_not_supported", 505),
+        ("insufficient_storage", 507),
+        ("network_authentication_required", 511),
+    ],
+)
