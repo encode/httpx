@@ -7,6 +7,7 @@ from httpcore import (
     URL,
     Adapter,
     RedirectAdapter,
+    RedirectBodyUnavailable,
     RedirectLoop,
     Request,
     Response,
@@ -72,6 +73,14 @@ class MockDispatch(Adapter):
         elif request.url.path == "/cross_domain_target":
             headers = {k.decode(): v.decode() for k, v in request.headers.raw}
             body = json.dumps({"headers": headers}).encode()
+            return Response(codes.ok, body=body, request=request)
+
+        elif request.url.path == "/redirect_body":
+            headers = [(b"location", b"/redirect_body_target")]
+            return Response(codes.permanent_redirect, headers=headers, request=request)
+
+        elif request.url.path == "/redirect_body_target":
+            body = json.dumps({"body": request.body.decode()}).encode()
             return Response(codes.ok, body=body, request=request)
 
         return Response(codes.ok, body=b"Hello, world!", request=request)
@@ -178,3 +187,26 @@ async def test_same_domain_redirect():
     data = json.loads(response.body.decode())
     assert response.url == URL("https://example.org/cross_domain_target")
     assert data == {"headers": {"authorization": "abc"}}
+
+
+@pytest.mark.asyncio
+async def test_body_redirect():
+    client = RedirectAdapter(MockDispatch())
+    body = b"Example request body"
+    url = "https://example.org/redirect_body"
+    response = await client.request("POST", url, body=body)
+    data = json.loads(response.body.decode())
+    assert response.url == URL("https://example.org/redirect_body_target")
+    assert data == {"body": "Example request body"}
+
+
+@pytest.mark.asyncio
+async def test_cannot_redirect_streaming_body():
+    client = RedirectAdapter(MockDispatch())
+    url = "https://example.org/redirect_body"
+
+    async def body():
+        yield b"Example request body"
+
+    with pytest.raises(RedirectBodyUnavailable):
+        await client.request("POST", url, body=body())

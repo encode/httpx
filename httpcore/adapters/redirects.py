@@ -2,7 +2,7 @@ import typing
 from urllib.parse import urljoin, urlparse
 
 from ..config import DEFAULT_MAX_REDIRECTS
-from ..exceptions import RedirectLoop, TooManyRedirects
+from ..exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from ..interfaces import Adapter
 from ..models import URL, Headers, Request, Response
 from ..status_codes import codes
@@ -44,7 +44,8 @@ class RedirectAdapter(Adapter):
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
         headers = self.redirect_headers(request, url)
-        return Request(method=method, url=url, headers=headers)
+        body = self.redirect_body(request, method)
+        return Request(method=method, url=url, headers=headers, body=body)
 
     def redirect_method(self, request: Request, response: Response) -> str:
         """
@@ -97,3 +98,10 @@ class RedirectAdapter(Adapter):
         if url.origin != request.url.origin:
             del headers["Authorization"]
         return headers
+
+    def redirect_body(self, request: Request, method: str) -> bytes:
+        if method != request.method and method == "GET":
+            return b""
+        if request.is_streaming:
+            raise RedirectBodyUnavailable()
+        return request.body

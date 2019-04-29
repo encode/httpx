@@ -40,6 +40,13 @@ class TooManyRedirects(RedirectError):
     """
 
 
+class RedirectBodyUnavailable(RedirectError):
+    """
+    Got a redirect response, but the request body was streaming, and is
+    no longer available.
+    """
+
+
 class RedirectLoop(RedirectError):
     """
     Infinite redirect loop.
