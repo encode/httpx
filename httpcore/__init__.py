@@ -13,6 +13,7 @@ from .exceptions import (
     ResponseClosed,
     StreamConsumed,
     Timeout,
+    TooManyRedirects
 )
 from .interfaces import Adapter
 from .models import URL, Headers, Origin, Request, Response
