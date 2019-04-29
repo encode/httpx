@@ -116,6 +116,11 @@ async def test_disallow_redirects():
     assert response.url == URL("https://example.org/redirect_303")
     assert len(response.history) == 0
 
+    response = await response.next()
+    assert response.status_code == codes.ok
+    assert response.url == URL("https://example.org/")
+    assert len(response.history) == 1
+
 
 @pytest.mark.asyncio
 async def test_relative_redirect():
