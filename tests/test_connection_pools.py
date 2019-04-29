@@ -10,12 +10,12 @@ async def test_keepalive_connections(server):
     """
     async with httpcore.ConnectionPool() as http:
         response = await http.request("GET", "http://127.0.0.1:8000/")
-        assert http.num_active_connections == 0
-        assert http.num_keepalive_connections == 1
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1
 
         response = await http.request("GET", "http://127.0.0.1:8000/")
-        assert http.num_active_connections == 0
-        assert http.num_keepalive_connections == 1
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1
 
 
 @pytest.mark.asyncio
@@ -25,12 +25,12 @@ async def test_differing_connection_keys(server):
     """
     async with httpcore.ConnectionPool() as http:
         response = await http.request("GET", "http://127.0.0.1:8000/")
-        assert http.num_active_connections == 0
-        assert http.num_keepalive_connections == 1
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1
 
         response = await http.request("GET", "http://localhost:8000/")
-        assert http.num_active_connections == 0
-        assert http.num_keepalive_connections == 2
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 2
 
 
 @pytest.mark.asyncio
@@ -42,12 +42,12 @@ async def test_soft_limit(server):
 
     async with httpcore.ConnectionPool(limits=limits) as http:
         response = await http.request("GET", "http://127.0.0.1:8000/")
-        assert http.num_active_connections == 0
-        assert http.num_keepalive_connections == 1
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1
 
         response = await http.request("GET", "http://localhost:8000/")
-        assert http.num_active_connections == 0
-        assert http.num_keepalive_connections == 1
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1
 
 
 @pytest.mark.asyncio
@@ -57,13 +57,13 @@ async def test_streaming_response_holds_connection(server):
     """
     async with httpcore.ConnectionPool() as http:
         response = await http.request("GET", "http://127.0.0.1:8000/", stream=True)
-        assert http.num_active_connections == 1
-        assert http.num_keepalive_connections == 0
+        assert len(http.active_connections) == 1
+        assert len(http.keepalive_connections) == 0
 
         await response.read()
 
-        assert http.num_active_connections == 0
-        assert http.num_keepalive_connections == 1
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1
 
 
 @pytest.mark.asyncio
@@ -73,20 +73,20 @@ async def test_multiple_concurrent_connections(server):
     """
     async with httpcore.ConnectionPool() as http:
         response_a = await http.request("GET", "http://127.0.0.1:8000/", stream=True)
-        assert http.num_active_connections == 1
-        assert http.num_keepalive_connections == 0
+        assert len(http.active_connections) == 1
+        assert len(http.keepalive_connections) == 0
 
         response_b = await http.request("GET", "http://127.0.0.1:8000/", stream=True)
-        assert http.num_active_connections == 2
-        assert http.num_keepalive_connections == 0
+        assert len(http.active_connections) == 2
+        assert len(http.keepalive_connections) == 0
 
         await response_b.read()
-        assert http.num_active_connections == 1
-        assert http.num_keepalive_connections == 1
+        assert len(http.active_connections) == 1
+        assert len(http.keepalive_connections) == 1
 
         await response_a.read()
-        assert http.num_active_connections == 0
-        assert http.num_keepalive_connections == 2
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 2
 
 
 @pytest.mark.asyncio
@@ -97,8 +97,8 @@ async def test_close_connections(server):
     headers = [(b"connection", b"close")]
     async with httpcore.ConnectionPool() as http:
         response = await http.request("GET", "http://127.0.0.1:8000/", headers=headers)
-        assert http.num_active_connections == 0
-        assert http.num_keepalive_connections == 0
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 0
 
 
 @pytest.mark.asyncio
@@ -110,8 +110,8 @@ async def test_standard_response_close(server):
         response = await http.request("GET", "http://127.0.0.1:8000/", stream=True)
         await response.read()
         await response.close()
-        assert http.num_active_connections == 0
-        assert http.num_keepalive_connections == 1
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1
 
 
 @pytest.mark.asyncio
@@ -122,5 +122,5 @@ async def test_premature_response_close(server):
     async with httpcore.ConnectionPool() as http:
         response = await http.request("GET", "http://127.0.0.1:8000/", stream=True)
         await response.close()
-        assert http.num_active_connections == 0
-        assert http.num_keepalive_connections == 0
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 0
