@@ -10,10 +10,11 @@ from .exceptions import (
     PoolTimeout,
     ProtocolError,
     ReadTimeout,
+    RedirectLoop,
     ResponseClosed,
     StreamConsumed,
     Timeout,
-    TooManyRedirects
+    TooManyRedirects,
 )
 from .interfaces import Adapter
 from .models import URL, Headers, Origin, Request, Response

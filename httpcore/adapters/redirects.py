@@ -2,7 +2,7 @@ import typing
 from urllib.parse import urljoin, urlparse
 
 from ..config import DEFAULT_MAX_REDIRECTS
-from ..exceptions import TooManyRedirects
+from ..exceptions import RedirectLoop, TooManyRedirects
 from ..interfaces import Adapter
 from ..models import URL, Request, Response
 from ..status_codes import codes
@@ -20,6 +20,7 @@ class RedirectAdapter(Adapter):
     async def send(self, request: Request, **options: typing.Any) -> Response:
         allow_redirects = options.pop("allow_redirects", True)
         history = []
+        seen_urls = set((request.url,))
 
         while True:
             response = await self.dispatch.send(request, **options)
@@ -29,6 +30,9 @@ class RedirectAdapter(Adapter):
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
             request = self.build_redirect_request(request, response)
+            if request.url in seen_urls:
+                raise RedirectLoop()
+            seen_urls.add(request.url)
 
         return response
 

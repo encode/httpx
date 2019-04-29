@@ -28,9 +28,21 @@ class PoolTimeout(Timeout):
     """
 
 
-class TooManyRedirects(Exception):
+class RedirectError(Exception):
+    """
+    Base class for HTTP redirect errors.
+    """
+
+
+class TooManyRedirects(RedirectError):
     """
     Too many redirects.
+    """
+
+
+class RedirectLoop(RedirectError):
+    """
+    Infinite redirect loop.
     """
 
 

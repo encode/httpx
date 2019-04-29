@@ -70,6 +70,12 @@ class URL:
     def origin(self) -> "Origin":
         return Origin(self)
 
+    def __hash__(self) -> int:
+        return hash(str(self))
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return isinstance(other, URL) and str(self) == str(other)
+
     def __str__(self) -> str:
         return self.components.geturl()
 
