@@ -78,7 +78,7 @@ class DecodingError(Exception):
     Decoding of the response failed.
     """
 
-    
+
 class InvalidURL(Exception):
     """
     URL was missing a hostname, or was not one of HTTP/HTTPS.

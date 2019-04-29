@@ -6,13 +6,12 @@ See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 import typing
 import zlib
 
+import httpcore.exceptions
+
 try:
     import brotli
 except ImportError:  # pragma: nocover
     brotli = None
-
-
-import httpcore.exceptions
 
 
 class Decoder:

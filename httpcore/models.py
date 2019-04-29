@@ -342,6 +342,7 @@ class Response:
 
         self.request = request
         self.history = [] if history is None else list(history)
+        self.next = None  # typing.Optional[typing.Callable]
 
     @property
     def url(self) -> typing.Optional[URL]:

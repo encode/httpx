@@ -1,4 +1,3 @@
-import functools
 import typing
 from urllib.parse import urljoin, urlparse
 
@@ -19,29 +18,44 @@ class RedirectAdapter(Adapter):
         self.dispatch.prepare_request(request)
 
     async def send(self, request: Request, **options: typing.Any) -> Response:
-        allow_redirects = options.pop("allow_redirects", True)
+        allow_redirects = options.pop("allow_redirects", True)  # type: bool
+
+        # The following will not typically be specified by the end-user developer,
+        # but are included in `response.next()` calls.
         history = options.pop("history", [])  # type: typing.List[Response]
         seen_urls = options.pop("seen_urls", set())  # type: typing.Set[URL]
-        seen_urls.add(request.url)
 
         while True:
-            response = await self.dispatch.send(request, **options)
-            response.history = list(history)
-            if not response.is_redirect:
-                break
-            history.append(response)
-            request = self.build_redirect_request(request, response)
-            if not allow_redirects:
-                next_options = dict(options)
-                next_options["seen_urls"] = seen_urls
-                next_options["history"] = history
-                response.next = functools.partial(self.send, request=request, **next_options)
-                break
+            # We perform these checks here, so that calls to `response.next()`
+            # will raise redirect errors if appropriate.
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
             if request.url in seen_urls:
                 raise RedirectLoop()
+
+            response = await self.dispatch.send(request, **options)
+            response.history = list(history)
+            if not response.is_redirect:
+                break
+
+            history.insert(0, response)
             seen_urls.add(request.url)
+
+            if allow_redirects:
+                request = self.build_redirect_request(request, response)
+            else:
+                next_options = dict(options)
+                next_options["seen_urls"] = seen_urls
+                next_options["history"] = history
+
+                async def send_next() -> Response:
+                    nonlocal request, response, next_options
+                    request = self.build_redirect_request(request, response)
+                    response = await self.send(request, **next_options)
+                    return response
+
+                response.next = send_next  # type: ignore
+                break
 
         return response
 

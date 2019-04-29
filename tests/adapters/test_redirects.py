@@ -111,7 +111,9 @@ async def test_redirect_303():
 @pytest.mark.asyncio
 async def test_disallow_redirects():
     client = RedirectAdapter(MockDispatch())
-    response = await client.request("POST", "https://example.org/redirect_303", allow_redirects=False)
+    response = await client.request(
+        "POST", "https://example.org/redirect_303", allow_redirects=False
+    )
     assert response.status_code == codes.see_other
     assert response.url == URL("https://example.org/redirect_303")
     assert len(response.history) == 0
@@ -168,10 +170,30 @@ async def test_too_many_redirects():
 
 
 @pytest.mark.asyncio
+async def test_too_many_redirects_calling_next():
+    client = RedirectAdapter(MockDispatch())
+    url = "https://example.org/multiple_redirects?count=21"
+    response = await client.request("GET", url, allow_redirects=False)
+    with pytest.raises(TooManyRedirects):
+        while response.is_redirect:
+            response = await response.next()
+
+
+@pytest.mark.asyncio
 async def test_redirect_loop():
     client = RedirectAdapter(MockDispatch())
     with pytest.raises(RedirectLoop):
         await client.request("GET", "https://example.org/redirect_loop")
+
+
+@pytest.mark.asyncio
+async def test_redirect_loop_calling_next():
+    client = RedirectAdapter(MockDispatch())
+    url = "https://example.org/redirect_loop"
+    response = await client.request("GET", url, allow_redirects=False)
+    with pytest.raises(RedirectLoop):
+        while response.is_redirect:
+            response = await response.next()
 
 
 @pytest.mark.asyncio
