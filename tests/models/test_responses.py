@@ -36,6 +36,16 @@ def test_response_default_encoding():
     assert response.encoding == "utf-8"
 
 
+def test_response_set_explicit_encoding():
+    headers = {"Content-Type": "text-plain; charset=utf-8"}  # Deliberately incorrect charset
+    response = httpcore.Response(
+        200, content="Latin 1: ÿ".encode("latin-1"), headers=headers
+    )
+    response.encoding = 'latin-1'
+    assert response.text == "Latin 1: ÿ"
+    assert response.encoding == "latin-1"
+
+
 def test_response_force_encoding():
     response = httpcore.Response(200, content="Snowman: ☃".encode("utf-8"))
     response.encoding = "iso-8859-1"
