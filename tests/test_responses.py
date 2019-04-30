@@ -11,7 +11,7 @@ async def streaming_body():
 def test_response():
     response = httpcore.Response(200, body=b"Hello, world!")
     assert response.status_code == 200
-    assert response.reason == "OK"
+    assert response.reason_phrase == "OK"
     assert response.body == b"Hello, world!"
     assert response.is_closed
 
@@ -71,4 +71,4 @@ async def test_cannot_read_after_response_closed():
 def test_unknown_status_code():
     response = httpcore.Response(600)
     assert response.status_code == 600
-    assert response.reason == ""
+    assert response.reason_phrase == ""

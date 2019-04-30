@@ -75,14 +75,14 @@ class HTTP11Connection(Adapter):
             event = await self._receive_event(timeout)
 
         assert isinstance(event, h11.Response)
-        reason = event.reason.decode("latin1")
+        reason_phrase = event.reason.decode("latin1")
         status_code = event.status_code
         headers = event.headers
         body = self._body_iter(timeout)
 
         response = Response(
             status_code=status_code,
-            reason=reason,
+            reason_phrase=reason_phrase,
             protocol="HTTP/1.1",
             headers=headers,
             body=body,

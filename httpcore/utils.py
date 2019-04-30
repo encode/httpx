@@ -1,3 +1,4 @@
+import http
 import typing
 from urllib.parse import quote
 
@@ -69,3 +70,13 @@ def normalize_header_value(value: typing.AnyStr) -> bytes:
     if isinstance(value, bytes):
         return value
     return value.encode("latin-1")
+
+
+def get_reason_phrase(status_code: int) -> str:
+    """
+    Return an HTTP reason phrase, eg. "OK" for 200, or "Not Found" for 404.
+    """
+    try:
+        return http.HTTPStatus(status_code).phrase
+    except ValueError as exc:
+        return ""

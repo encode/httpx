@@ -1,4 +1,3 @@
-import http
 import typing
 from urllib.parse import urlsplit
 
@@ -11,12 +10,27 @@ from .decoders import (
     MultiDecoder,
 )
 from .exceptions import ResponseClosed, StreamConsumed
-from .utils import normalize_header_key, normalize_header_value
+from .status_codes import codes
+from .utils import get_reason_phrase, normalize_header_key, normalize_header_value
+
+URLTypes = typing.Union["URL", str]
+
+HeaderTypes = typing.Union[
+    "Headers",
+    typing.Dict[typing.AnyStr, typing.AnyStr],
+    typing.List[typing.Tuple[typing.AnyStr, typing.AnyStr]],
+]
+
+BodyTypes = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 
 class URL:
-    def __init__(self, url: str = "") -> None:
-        self.components = urlsplit(url)
+    def __init__(self, url: URLTypes) -> None:
+        if isinstance(url, str):
+            self.components = urlsplit(url)
+        else:
+            self.components = url.components
+
         if not self.components.scheme:
             raise ValueError("No scheme included in URL.")
         if self.components.scheme not in ("http", "https"):
@@ -104,13 +118,6 @@ class Origin:
 
     def __hash__(self) -> int:
         return hash((self.is_ssl, self.hostname, self.port))
-
-
-HeaderTypes = typing.Union[
-    "Headers",
-    typing.Dict[typing.AnyStr, typing.AnyStr],
-    typing.List[typing.Tuple[typing.AnyStr, typing.AnyStr]],
-]
 
 
 class Headers(typing.MutableMapping[str, str]):
@@ -239,7 +246,7 @@ class Request:
         url: typing.Union[str, URL],
         *,
         headers: HeaderTypes = None,
-        body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
+        body: BodyTypes = b"",
     ):
         self.method = method.upper()
         self.url = URL(url) if isinstance(url, str) else url
@@ -298,22 +305,19 @@ class Response:
         self,
         status_code: int,
         *,
-        reason: typing.Optional[str] = None,
-        protocol: typing.Optional[str] = None,
-        headers: typing.List[typing.Tuple[bytes, bytes]] = [],
-        body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
+        reason_phrase: str = None,
+        protocol: str = None,
+        headers: HeaderTypes = None,
+        body: BodyTypes = b"",
         on_close: typing.Callable = None,
         request: Request = None,
         history: typing.List["Response"] = None,
     ):
         self.status_code = status_code
-        if not reason:
-            try:
-                self.reason = http.HTTPStatus(status_code).phrase
-            except ValueError as exc:
-                self.reason = ""
+        if reason_phrase is None:
+            self.reason_phrase = get_reason_phrase(status_code)
         else:
-            self.reason = reason
+            self.reason_phrase = reason_phrase
         self.protocol = protocol
         self.headers = Headers(headers)
         self.on_close = on_close
@@ -397,5 +401,13 @@ class Response:
     @property
     def is_redirect(self) -> bool:
         return (
-            self.status_code in (301, 302, 303, 307, 308) and "location" in self.headers
+            self.status_code
+            in (
+                codes.moved_permanently,
+                codes.found,
+                codes.see_other,
+                codes.temporary_redirect,
+                codes.permanent_redirect,
+            )
+            and "location" in self.headers
         )

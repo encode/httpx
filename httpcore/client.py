@@ -15,7 +15,7 @@ from .config import (
     TimeoutConfig,
 )
 from .dispatch.connection_pool import ConnectionPool
-from .models import URL, Request, Response
+from .models import URL, BodyTypes, HeaderTypes, Request, Response, URLTypes
 
 
 class Client:
@@ -37,14 +37,14 @@ class Client:
     async def request(
         self,
         method: str,
-        url: typing.Union[str, URL],
+        url: URLTypes,
         *,
-        body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
-        headers: typing.List[typing.Tuple[bytes, bytes]] = [],
+        body: BodyTypes = b"",
+        headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
-        ssl: typing.Optional[SSLConfig] = None,
-        timeout: typing.Optional[TimeoutConfig] = None,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
     ) -> Response:
         request = Request(method, url, headers=headers, body=body)
         self.prepare_request(request)
@@ -59,26 +59,74 @@ class Client:
 
     async def get(
         self,
-        url: typing.Union[str, URL],
+        url: URLTypes,
         *,
-        headers: typing.List[typing.Tuple[bytes, bytes]] = [],
+        headers: HeaderTypes = None,
         stream: bool = False,
-        ssl: typing.Optional[SSLConfig] = None,
-        timeout: typing.Optional[TimeoutConfig] = None,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
     ) -> Response:
         return await self.request(
-            "GET", url, headers=headers, stream=stream, ssl=ssl, timeout=timeout
+            "GET",
+            url,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
+
+    async def options(
+        self,
+        url: URLTypes,
+        *,
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> Response:
+        return await self.request(
+            "OPTIONS",
+            url,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
+
+    async def head(
+        self,
+        url: URLTypes,
+        *,
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = False,  #  Note: Differs to usual default.
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> Response:
+        return await self.request(
+            "HEAD",
+            url,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
         )
 
     async def post(
         self,
-        url: typing.Union[str, URL],
+        url: URLTypes,
         *,
-        body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
-        headers: typing.List[typing.Tuple[bytes, bytes]] = [],
+        body: BodyTypes = b"",
+        headers: HeaderTypes = None,
         stream: bool = False,
-        ssl: typing.Optional[SSLConfig] = None,
-        timeout: typing.Optional[TimeoutConfig] = None,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
     ) -> Response:
         return await self.request(
             "POST",
@@ -86,6 +134,73 @@ class Client:
             body=body,
             headers=headers,
             stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
+
+    async def put(
+        self,
+        url: URLTypes,
+        *,
+        body: BodyTypes = b"",
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> Response:
+        return await self.request(
+            "PUT",
+            url,
+            body=body,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
+
+    async def patch(
+        self,
+        url: URLTypes,
+        *,
+        body: BodyTypes = b"",
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> Response:
+        return await self.request(
+            "PATCH",
+            url,
+            body=body,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
+
+    async def delete(
+        self,
+        url: URLTypes,
+        *,
+        body: BodyTypes = b"",
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> Response:
+        return await self.request(
+            "DELETE",
+            url,
+            body=body,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
             ssl=ssl,
             timeout=timeout,
         )
@@ -99,14 +214,19 @@ class Client:
         *,
         stream: bool = False,
         allow_redirects: bool = True,
-        ssl: typing.Optional[SSLConfig] = None,
-        timeout: typing.Optional[TimeoutConfig] = None,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
     ) -> Response:
-        options = {"stream": stream}  # type: typing.Dict[str, typing.Any]
+        options = {
+            "stream": stream,
+            "allow_redirects": allow_redirects,
+        }  # type: typing.Dict[str, typing.Any]
+
         if ssl is not None:
             options["ssl"] = ssl
         if timeout is not None:
             options["timeout"] = timeout
+
         return await self.adapter.send(request, **options)
 
     async def close(self) -> None:

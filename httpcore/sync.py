@@ -18,8 +18,8 @@ class SyncResponse:
         return self._response.status_code
 
     @property
-    def reason(self) -> str:
-        return self._response.reason
+    def reason_phrase(self) -> str:
+        return self._response.reason_phrase
 
     @property
     def headers(self) -> Headers:

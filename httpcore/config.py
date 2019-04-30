@@ -71,6 +71,8 @@ class SSLConfig:
 
         context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
 
+        context.verify_mode = ssl.CERT_REQUIRED
+
         context.options |= ssl.OP_NO_SSLv2
         context.options |= ssl.OP_NO_SSLv3
         context.options |= ssl.OP_NO_COMPRESSION
