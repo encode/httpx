@@ -8,6 +8,7 @@ from .dispatch.http11 import HTTP11Connection
 from .exceptions import (
     ConnectTimeout,
     DecodingError,
+    InvalidURL,
     PoolTimeout,
     ProtocolError,
     ReadTimeout,

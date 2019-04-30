@@ -93,11 +93,11 @@ def test_url():
 
 
 def test_invalid_urls():
-    with pytest.raises(ValueError):
+    with pytest.raises(httpcore.InvalidURL):
         httpcore.Request("GET", "example.org")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(httpcore.InvalidURL):
         httpcore.Request("GET", "invalid://example.org")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(httpcore.InvalidURL):
         httpcore.Request("GET", "http:///foo")

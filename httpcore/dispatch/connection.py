@@ -57,7 +57,7 @@ class HTTPConnection(Adapter):
         assert isinstance(ssl, SSLConfig)
         assert isinstance(timeout, TimeoutConfig)
 
-        hostname = self.origin.hostname
+        host = self.origin.host
         port = self.origin.port
         ssl_context = await ssl.load_ssl_context() if self.origin.is_ssl else None
 
@@ -66,7 +66,7 @@ class HTTPConnection(Adapter):
         else:
             on_release = functools.partial(self.release_func, self)
 
-        reader, writer, protocol = await connect(hostname, port, ssl_context, timeout)
+        reader, writer, protocol = await connect(host, port, ssl_context, timeout)
         if protocol == Protocol.HTTP_2:
             self.h2_connection = HTTP2Connection(reader, writer, on_release=on_release)
         else:

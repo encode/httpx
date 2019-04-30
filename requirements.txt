@@ -2,6 +2,7 @@ certifi
 chardet
 h11
 h2
+rfc3986
 
 # Optional
 brotlipy

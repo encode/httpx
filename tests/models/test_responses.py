@@ -37,11 +37,13 @@ def test_response_default_encoding():
 
 
 def test_response_set_explicit_encoding():
-    headers = {"Content-Type": "text-plain; charset=utf-8"}  # Deliberately incorrect charset
+    headers = {
+        "Content-Type": "text-plain; charset=utf-8"
+    }  # Deliberately incorrect charset
     response = httpcore.Response(
         200, content="Latin 1: ÿ".encode("latin-1"), headers=headers
     )
-    response.encoding = 'latin-1'
+    response.encoding = "latin-1"
     assert response.text == "Latin 1: ÿ"
     assert response.encoding == "latin-1"
 
@@ -69,6 +71,38 @@ async def test_read_response():
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
     assert response.is_closed
+
+
+@pytest.mark.asyncio
+async def test_raw_interface():
+    response = httpcore.Response(200, content=b"Hello, world!")
+
+    raw = b""
+    async for part in response.raw():
+        raw += part
+    assert raw == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_stream_interface():
+    response = httpcore.Response(200, content=b"Hello, world!")
+
+    content = b""
+    async for part in response.stream():
+        content += part
+    assert content == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_stream_interface_after_read():
+    response = httpcore.Response(200, content=b"Hello, world!")
+
+    await response.read()
+
+    content = b""
+    async for part in response.stream():
+        content += part
+    assert content == b"Hello, world!"
 
 
 @pytest.mark.asyncio

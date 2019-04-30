@@ -99,7 +99,7 @@ class HTTP2Connection(Adapter):
         stream_id = self.h2_state.get_next_available_stream_id()
         headers = [
             (b":method", request.method.encode()),
-            (b":authority", request.url.hostname.encode()),
+            (b":authority", request.url.host.encode()),
             (b":scheme", request.url.scheme.encode()),
             (b":path", request.url.full_path.encode()),
         ] + request.headers.raw

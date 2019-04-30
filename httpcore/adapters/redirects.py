@@ -1,12 +1,10 @@
 import typing
-from urllib.parse import urljoin, urlparse
 
 from ..config import DEFAULT_MAX_REDIRECTS
 from ..exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from ..interfaces import Adapter
 from ..models import URL, Headers, Request, Response
 from ..status_codes import codes
-from ..utils import requote_uri
 
 
 class RedirectAdapter(Adapter):
@@ -98,25 +96,19 @@ class RedirectAdapter(Adapter):
         """
         location = response.headers["Location"]
 
-        # Handle redirection without scheme (see: RFC 1808 Section 4)
-        if location.startswith("//"):
-            location = f"{request.url.scheme}:{location}"
-
-        # Normalize url case and attach previous fragment if needed (RFC 7231 7.1.2)
-        parsed = urlparse(location)
-        if parsed.fragment == "" and request.url.fragment:
-            parsed = parsed._replace(fragment=request.url.fragment)
-        url = parsed.geturl()
+        url = URL(location, allow_relative=True)
 
         # Facilitate relative 'location' headers, as allowed by RFC 7231.
         # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
         # Compliant with RFC3986, we percent encode the url.
-        if not parsed.netloc:
-            url = urljoin(str(request.url), requote_uri(url))
-        else:
-            url = requote_uri(url)
+        if not url.is_absolute:
+            url = url.resolve_with(request.url.copy_with(fragment=None))
 
-        return URL(url)
+        # Attach previous fragment if needed (RFC 7231 7.1.2)
+        if request.url.fragment and not url.fragment:
+            url = url.copy_with(fragment=request.url.fragment)
+
+        return url
 
     def redirect_headers(self, request: Request, url: URL) -> Headers:
         """

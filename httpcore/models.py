@@ -1,8 +1,8 @@
 import cgi
 import typing
-from urllib.parse import urlsplit
 
 import chardet
+import rfc3986
 
 from .config import SSLConfig, TimeoutConfig
 from .decoders import (
@@ -12,7 +12,7 @@ from .decoders import (
     IdentityDecoder,
     MultiDecoder,
 )
-from .exceptions import ResponseClosed, ResponseNotRead, StreamConsumed
+from .exceptions import InvalidURL, ResponseClosed, ResponseNotRead, StreamConsumed
 from .status_codes import codes
 from .utils import (
     get_reason_phrase,
@@ -33,42 +33,45 @@ ByteOrByteStream = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 
 class URL:
-    def __init__(self, url: URLTypes) -> None:
+    def __init__(self, url: URLTypes, allow_relative: bool = False) -> None:
         if isinstance(url, str):
-            self.components = urlsplit(url)
+            self.components = rfc3986.api.uri_reference(url).normalize()
+        elif isinstance(url, rfc3986.uri.URIReference):
+            self.components = url
         else:
             self.components = url.components
 
-        if not self.components.scheme:
-            raise ValueError("No scheme included in URL.")
-        if self.components.scheme not in ("http", "https"):
-            raise ValueError('URL scheme must be "http" or "https".')
-        if not self.components.hostname:
-            raise ValueError("No hostname included in URL.")
+        if not allow_relative:
+            if not self.scheme:
+                raise InvalidURL("No scheme included in URL.")
+            if self.scheme not in ("http", "https"):
+                raise InvalidURL('URL scheme must be "http" or "https".')
+            if not self.host:
+                raise InvalidURL("No hostname included in URL.")
 
     @property
     def scheme(self) -> str:
-        return self.components.scheme
+        return self.components.scheme or ""
 
     @property
-    def netloc(self) -> str:
-        return self.components.netloc
+    def authority(self) -> str:
+        return self.components.authority or ""
 
     @property
     def path(self) -> str:
-        return self.components.path
+        return self.components.path or "/"
 
     @property
     def query(self) -> str:
-        return self.components.query
+        return self.components.query or ""
 
     @property
     def fragment(self) -> str:
-        return self.components.fragment
+        return self.components.fragment or ""
 
     @property
-    def hostname(self) -> str:
-        return self.components.hostname
+    def host(self) -> str:
+        return self.components.host or ""
 
     @property
     def port(self) -> int:
@@ -90,8 +93,20 @@ class URL:
         return self.components.scheme == "https"
 
     @property
+    def is_absolute(self) -> bool:
+        return self.components.is_absolute()
+
+    @property
     def origin(self) -> "Origin":
         return Origin(self)
+
+    def copy_with(self, **kwargs: typing.Any) -> "URL":
+        return URL(self.components.copy_with(**kwargs))
+
+    def resolve_with(self, base_url: URLTypes) -> "URL":
+        if isinstance(base_url, URL):
+            base_url = base_url.components
+        return URL(self.components.resolve_with(base_url))
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -100,7 +115,7 @@ class URL:
         return isinstance(other, URL) and str(self) == str(other)
 
     def __str__(self) -> str:
-        return self.components.geturl()
+        return self.components.unsplit()
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
@@ -109,23 +124,23 @@ class URL:
 
 
 class Origin:
-    def __init__(self, url: typing.Union[str, URL]) -> None:
-        if isinstance(url, str):
+    def __init__(self, url: URLTypes) -> None:
+        if not isinstance(url, URL):
             url = URL(url)
         self.is_ssl = url.scheme == "https"
-        self.hostname = url.hostname.lower()
+        self.host = url.host
         self.port = url.port
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
             and self.is_ssl == other.is_ssl
-            and self.hostname == other.hostname
+            and self.host == other.host
             and self.port == other.port
         )
 
     def __hash__(self) -> int:
-        return hash((self.is_ssl, self.hostname, self.port))
+        return hash((self.is_ssl, self.host, self.port))
 
 
 class Headers(typing.MutableMapping[str, str]):
@@ -365,8 +380,8 @@ class Request:
         )
         has_accept_encoding = "accept-encoding" in self.headers
 
-        if not has_host:
-            auto_headers.append((b"host", self.url.netloc.encode("ascii")))
+        if not has_host and self.url.authority:
+            auto_headers.append((b"host", self.url.authority.encode("ascii")))
         if not has_content_length:
             if self.is_streaming:
                 auto_headers.append((b"transfer-encoding", b"chunked"))
