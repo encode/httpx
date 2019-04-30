@@ -1,3 +1,6 @@
+# Timeout exceptions...
+
+
 class Timeout(Exception):
     """
     A base class for all timeouts.
@@ -28,6 +31,18 @@ class PoolTimeout(Timeout):
     """
 
 
+# HTTP exceptions...
+
+
+class ProtocolError(Exception):
+    """
+    Malformed HTTP.
+    """
+
+
+# Redirect exceptions...
+
+
 class RedirectError(Exception):
     """
     Base class for HTTP redirect errors.
@@ -53,10 +68,7 @@ class RedirectLoop(RedirectError):
     """
 
 
-class ProtocolError(Exception):
-    """
-    Malformed HTTP.
-    """
+# Response exceptions...
 
 
 class StreamConsumed(Exception):

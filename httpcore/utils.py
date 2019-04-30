@@ -54,22 +54,22 @@ def requote_uri(uri: str) -> str:
         return quote(uri, safe=safe_without_percent)
 
 
-def normalize_header_key(value: typing.AnyStr) -> bytes:
+def normalize_header_key(value: typing.AnyStr, encoding: str = None) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header key.
     """
     if isinstance(value, bytes):
         return value.lower()
-    return value.encode("latin-1").lower()
+    return value.encode(encoding or "ascii").lower()
 
 
-def normalize_header_value(value: typing.AnyStr) -> bytes:
+def normalize_header_value(value: typing.AnyStr, encoding: str = None) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header value.
     """
     if isinstance(value, bytes):
         return value
-    return value.encode("latin-1")
+    return value.encode(encoding or "ascii")
 
 
 def get_reason_phrase(status_code: int) -> str:

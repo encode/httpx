@@ -125,34 +125,69 @@ class Headers(typing.MutableMapping[str, str]):
     A case-insensitive multidict.
     """
 
-    def __init__(self, headers: HeaderTypes = None) -> None:
+    def __init__(self, headers: HeaderTypes = None, encoding: str = None) -> None:
         if headers is None:
             self._list = []  # type: typing.List[typing.Tuple[bytes, bytes]]
         elif isinstance(headers, Headers):
             self._list = list(headers.raw)
         elif isinstance(headers, dict):
             self._list = [
-                (normalize_header_key(k), normalize_header_value(v))
+                (normalize_header_key(k, encoding), normalize_header_value(v, encoding))
                 for k, v in headers.items()
             ]
         else:
             self._list = [
-                (normalize_header_key(k), normalize_header_value(v)) for k, v in headers
+                (normalize_header_key(k, encoding), normalize_header_value(v, encoding))
+                for k, v in headers
             ]
+        self._encoding = encoding
+
+    @property
+    def encoding(self) -> str:
+        """
+        Header encoding is mandated as ascii, but utf-8 or iso-8859-1 may be
+        seen in the wild.
+        """
+        if self._encoding is None:
+            for encoding in ["ascii", "utf-8"]:
+                for key, value in self.raw:
+                    try:
+                        key.decode(encoding)
+                        value.decode(encoding)
+                    except UnicodeDecodeError:
+                        break
+                else:
+                    # The else block runs if 'break' did not occur, meaning
+                    # all values fitted the encoding.
+                    self._encoding = encoding
+                    break
+            else:
+                # The ISO-8859-1 encoding covers all 256 code points in a byte,
+                # so will never raise decode errors.
+                self._encoding = "iso-8859-1"
+        return self._encoding
+
+    @encoding.setter
+    def encoding(self, value: str) -> None:
+        self._encoding = value
 
     @property
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
+        """
+        Returns a list of the raw header items, as byte pairs.
+        May be mutated in-place.
+        """
         return self._list
 
     def keys(self) -> typing.List[str]:  # type: ignore
-        return [key.decode("latin-1") for key, value in self._list]
+        return [key.decode(self.encoding) for key, value in self._list]
 
     def values(self) -> typing.List[str]:  # type: ignore
-        return [value.decode("latin-1") for key, value in self._list]
+        return [value.decode(self.encoding) for key, value in self._list]
 
     def items(self) -> typing.List[typing.Tuple[str, str]]:  # type: ignore
         return [
-            (key.decode("latin-1"), value.decode("latin-1"))
+            (key.decode(self.encoding), value.decode(self.encoding))
             for key, value in self._list
         ]
 
@@ -162,19 +197,53 @@ class Headers(typing.MutableMapping[str, str]):
         except KeyError:
             return default
 
-    def getlist(self, key: str) -> typing.List[str]:
-        get_header_key = key.lower().encode("latin-1")
-        return [
-            item_value.decode("latin-1")
+    def getlist(self, key: str, default: typing.Any = None, split_commas = None) -> typing.List[str]:
+        """
+        Return multiple header values.
+
+        If there are header values that include commas, then we default to
+        spliting them into multiple results, except for Set-Cookie.
+
+        See: https://tools.ietf.org/html/rfc7230#section-3.2.2
+        """
+        get_header_key = key.lower().encode(self.encoding)
+        if split_commas is None:
+            split_commas = get_header_key != b'set-cookie'
+
+        values = [
+            item_value.decode(self.encoding)
             for item_key, item_value in self._list
             if item_key == get_header_key
         ]
 
+        if not values:
+            return [] if default is None else default
+
+        if not split_commas:
+            return values
+
+        split_values = []
+        for value in values:
+            split_values.extend([item.strip() for item in value.split(",")])
+        return split_values
+
     def __getitem__(self, key: str) -> str:
-        get_header_key = key.lower().encode("latin-1")
+        """
+        Return a single header value.
+
+        If there are multiple headers with the same key, then we concatenate
+        them with commas. See: https://tools.ietf.org/html/rfc7230#section-3.2.2
+        """
+        normalized_key = key.lower().encode(self.encoding)
+
+        items = []
         for header_key, header_value in self._list:
-            if header_key == get_header_key:
-                return header_value.decode("latin-1")
+            if header_key == normalized_key:
+                items.append(header_value.decode(self.encoding))
+
+        if items:
+            return ", ".join(items)
+
         raise KeyError(key)
 
     def __setitem__(self, key: str, value: str) -> None:
@@ -182,8 +251,8 @@ class Headers(typing.MutableMapping[str, str]):
         Set the header `key` to `value`, removing any duplicate entries.
         Retains insertion order.
         """
-        set_key = key.lower().encode("latin-1")
-        set_value = value.encode("latin-1")
+        set_key = key.lower().encode(self.encoding)
+        set_value = value.encode(self.encoding)
 
         found_indexes = []
         for idx, (item_key, item_value) in enumerate(self._list):
@@ -203,7 +272,7 @@ class Headers(typing.MutableMapping[str, str]):
         """
         Remove the header `key`.
         """
-        del_key = key.lower().encode("latin-1")
+        del_key = key.lower().encode(self.encoding)
 
         pop_indexes = []
         for idx, (item_key, item_value) in enumerate(self._list):
@@ -214,7 +283,7 @@ class Headers(typing.MutableMapping[str, str]):
             del self._list[idx]
 
     def __contains__(self, key: typing.Any) -> bool:
-        get_header_key = key.lower().encode("latin-1")
+        get_header_key = key.lower().encode(self.encoding)
         for header_key, header_value in self._list:
             if header_key == get_header_key:
                 return True
@@ -233,10 +302,16 @@ class Headers(typing.MutableMapping[str, str]):
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
+
+        encoding_str = ""
+        if self.encoding != "ascii":
+            encoding_str = f", encoding={self.encoding!r}"
+
         as_dict = dict(self.items())
         if len(as_dict) == len(self):
-            return f"{class_name}({as_dict!r})"
-        return f"{class_name}(raw={self.raw!r})"
+            return f"{class_name}({as_dict!r}{encoding_str})"
+        as_list = self.items()
+        return f"{class_name}({as_list!r}{encoding_str})"
 
 
 class Request:
@@ -351,10 +426,10 @@ class Response:
         """
         if not hasattr(self, "_decoder"):
             decoders = []  # type: typing.List[Decoder]
-            value = self.headers.get("content-encoding", "identity")
-            for part in value.split(","):
-                part = part.strip().lower()
-                decoder_cls = SUPPORTED_DECODERS[part]
+            values = self.headers.getlist("content-encoding", ["identity"])
+            for value in values:
+                value = value.strip().lower()
+                decoder_cls = SUPPORTED_DECODERS[value]
                 decoders.append(decoder_cls())
 
             if len(decoders) == 1:
