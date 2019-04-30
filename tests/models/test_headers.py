@@ -147,8 +147,8 @@ def test_multiple_headers():
     """
     Most headers should split by commas for `getlist`, except 'Set-Cookie'.
     """
-    h = httpcore.Headers([('set-cookie', 'a, b'), ('set-cookie', 'c')])
-    h.getlist('Set-Cookie') == ['a, b', 'b']
+    h = httpcore.Headers([("set-cookie", "a, b"), ("set-cookie", "c")])
+    h.getlist("Set-Cookie") == ["a, b", "b"]
 
-    h = httpcore.Headers([('vary', 'a, b'), ('vary', 'c')])
-    h.getlist('Vary') == ['a', 'b', 'c']
+    h = httpcore.Headers([("vary", "a, b"), ("vary", "c")])
+    h.getlist("Vary") == ["a", "b", "c"]

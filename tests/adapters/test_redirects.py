@@ -66,7 +66,7 @@ class MockDispatch(Adapter):
         elif request.url.path == "/cross_domain_target":
             headers = dict(request.headers.items())
             body = json.dumps({"headers": headers}).encode()
-            return Response(codes.ok, body=body, request=request)
+            return Response(codes.ok, content=body, request=request)
 
         elif request.url.path == "/redirect_body":
             body = await request.read()
@@ -76,9 +76,9 @@ class MockDispatch(Adapter):
         elif request.url.path == "/redirect_body_target":
             body = await request.read()
             body = json.dumps({"body": body.decode()}).encode()
-            return Response(codes.ok, body=body, request=request)
+            return Response(codes.ok, content=body, request=request)
 
-        return Response(codes.ok, body=b"Hello, world!", request=request)
+        return Response(codes.ok, content=b"Hello, world!", request=request)
 
 
 @pytest.mark.asyncio
@@ -202,7 +202,7 @@ async def test_cross_domain_redirect():
     url = "https://example.com/cross_domain"
     headers = {"Authorization": "abc"}
     response = await client.request("GET", url, headers=headers)
-    data = json.loads(response.body.decode())
+    data = json.loads(response.content.decode())
     assert response.url == URL("https://example.org/cross_domain_target")
     assert data == {"headers": {}}
 
@@ -213,7 +213,7 @@ async def test_same_domain_redirect():
     url = "https://example.org/cross_domain"
     headers = {"Authorization": "abc"}
     response = await client.request("GET", url, headers=headers)
-    data = json.loads(response.body.decode())
+    data = json.loads(response.content.decode())
     assert response.url == URL("https://example.org/cross_domain_target")
     assert data == {"headers": {"authorization": "abc"}}
 
@@ -224,7 +224,7 @@ async def test_body_redirect():
     url = "https://example.org/redirect_body"
     body = b"Example request body"
     response = await client.request("POST", url, body=body)
-    data = json.loads(response.body.decode())
+    data = json.loads(response.content.decode())
     assert response.url == URL("https://example.org/redirect_body_target")
     assert data == {"body": "Example request body"}
 

@@ -85,7 +85,7 @@ class HTTP11Connection(Adapter):
             reason_phrase=reason_phrase,
             protocol="HTTP/1.1",
             headers=headers,
-            body=body,
+            content=body,
             on_close=self.response_closed,
             request=request,
         )

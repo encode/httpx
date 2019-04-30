@@ -9,7 +9,7 @@ from .decoders import (
     IdentityDecoder,
     MultiDecoder,
 )
-from .exceptions import ResponseClosed, StreamConsumed
+from .exceptions import ResponseClosed, ResponseNotRead, StreamConsumed
 from .status_codes import codes
 from .utils import get_reason_phrase, normalize_header_key, normalize_header_value
 
@@ -197,7 +197,9 @@ class Headers(typing.MutableMapping[str, str]):
         except KeyError:
             return default
 
-    def getlist(self, key: str, default: typing.Any = None, split_commas = None) -> typing.List[str]:
+    def getlist(
+        self, key: str, split_commas: bool=False
+    ) -> typing.List[str]:
         """
         Return multiple header values.
 
@@ -208,16 +210,13 @@ class Headers(typing.MutableMapping[str, str]):
         """
         get_header_key = key.lower().encode(self.encoding)
         if split_commas is None:
-            split_commas = get_header_key != b'set-cookie'
+            split_commas = get_header_key != b"set-cookie"
 
         values = [
             item_value.decode(self.encoding)
             for item_key, item_value in self._list
             if item_key == get_header_key
         ]
-
-        if not values:
-            return [] if default is None else default
 
         if not split_commas:
             return values
@@ -352,6 +351,13 @@ class Request:
             yield self.body
 
     def prepare(self) -> None:
+        """
+        Adds in any default headers. When using the `Client`, this will
+        end up being called into by the `prepare_request()` stage.
+
+        You can omit this behavior by calling `Client.send()` with an
+        explicitly built `Request` instance.
+        """
         auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
 
         has_host = "host" in self.headers
@@ -383,28 +389,26 @@ class Response:
         reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
-        body: BodyTypes = b"",
+        content: BodyTypes = b"",
         on_close: typing.Callable = None,
         request: Request = None,
         history: typing.List["Response"] = None,
     ):
         self.status_code = status_code
-        if reason_phrase is None:
-            self.reason_phrase = get_reason_phrase(status_code)
-        else:
-            self.reason_phrase = reason_phrase
+        self.reason_phrase = reason_phrase or get_reason_phrase(status_code)
         self.protocol = protocol
         self.headers = Headers(headers)
-        self.on_close = on_close
-        self.is_closed = False
-        self.is_streamed = False
 
-        if isinstance(body, bytes):
+        if isinstance(content, bytes):
             self.is_closed = True
-            self.body = self.decoder.decode(body) + self.decoder.flush()
+            self.is_stream_consumed = True
+            self._raw_content = content
         else:
-            self.body_aiter = body
+            self.is_closed = False
+            self.is_stream_consumed = False
+            self._raw_stream = content
 
+        self.on_close = on_close
         self.request = request
         self.history = [] if history is None else list(history)
         self.next = None  # typing.Optional[typing.Callable]
@@ -419,6 +423,17 @@ class Response:
         return None if self.request is None else self.request.url
 
     @property
+    def content(self) -> bytes:
+        if not hasattr(self, "_content"):
+            if hasattr(self, "_raw_content"):
+                self._content = (
+                    self.decoder.decode(self._raw_content) + self.decoder.flush()
+                )
+            else:
+                raise ResponseNotRead()
+        return self._content
+
+    @property
     def decoder(self) -> Decoder:
         """
         Returns a decoder instance which can be used to decode the raw byte
@@ -426,7 +441,7 @@ class Response:
         """
         if not hasattr(self, "_decoder"):
             decoders = []  # type: typing.List[Decoder]
-            values = self.headers.getlist("content-encoding", ["identity"])
+            values = self.headers.getlist("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
                 decoder_cls = SUPPORTED_DECODERS[value]
@@ -445,20 +460,20 @@ class Response:
         """
         Read and return the response content.
         """
-        if not hasattr(self, "body"):
-            body = b""
+        if not hasattr(self, "_content"):
+            content = b""
             async for part in self.stream():
-                body += part
-            self.body = body
-        return self.body
+                content += part
+            self._content = content
+        return self._content
 
     async def stream(self) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
         """
-        if hasattr(self, "body"):
-            yield self.body
+        if hasattr(self, "_content"):
+            yield self._content
         else:
             async for chunk in self.raw():
                 yield self.decoder.decode(chunk)
@@ -468,14 +483,18 @@ class Response:
         """
         A byte-iterator over the raw response content.
         """
-        if self.is_streamed:
-            raise StreamConsumed()
-        if self.is_closed:
-            raise ResponseClosed()
-        self.is_streamed = True
-        async for part in self.body_aiter:
-            yield part
-        await self.close()
+        if hasattr(self, "_raw_content"):
+            yield self._raw_content
+        else:
+            if self.is_stream_consumed:
+                raise StreamConsumed()
+            if self.is_closed:
+                raise ResponseClosed()
+
+            self.is_stream_consumed = True
+            async for part in self._raw_stream:
+                yield part
+            await self.close()
 
     async def close(self) -> None:
         """

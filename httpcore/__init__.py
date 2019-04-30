@@ -14,6 +14,7 @@ from .exceptions import (
     RedirectBodyUnavailable,
     RedirectLoop,
     ResponseClosed,
+    ResponseNotRead,
     StreamConsumed,
     Timeout,
     TooManyRedirects,

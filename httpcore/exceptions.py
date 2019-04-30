@@ -78,6 +78,13 @@ class StreamConsumed(Exception):
     """
 
 
+class ResponseNotRead(Exception):
+    """
+    Attempted to access response content, without having called `read()`
+    after a streaming response.
+    """
+
+
 class ResponseClosed(Exception):
     """
     Attempted to read or stream response content, but the request has been
@@ -89,6 +96,9 @@ class DecodingError(Exception):
     """
     Decoding of the response failed.
     """
+
+
+# Other cases...
 
 
 class InvalidURL(Exception):

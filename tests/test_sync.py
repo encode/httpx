@@ -28,7 +28,7 @@ def test_get(server):
     with httpcore.SyncConnectionPool() as http:
         response = http.request("GET", "http://127.0.0.1:8000/")
     assert response.status_code == 200
-    assert response.body == b"Hello, world!"
+    assert response.content == b"Hello, world!"
 
 
 @threadpool
@@ -43,9 +43,8 @@ def test_stream_response(server):
     with httpcore.SyncConnectionPool() as http:
         response = http.request("GET", "http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
-    assert not hasattr(response, "body")
-    body = response.read()
-    assert body == b"Hello, world!"
+    content = response.read()
+    assert content == b"Hello, world!"
 
 
 @threadpool
@@ -53,7 +52,7 @@ def test_stream_iterator(server):
     with httpcore.SyncConnectionPool() as http:
         response = http.request("GET", "http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
-    body = b""
+    content = b""
     for chunk in response.stream():
-        body += chunk
-    assert body == b"Hello, world!"
+        content += chunk
+    assert content == b"Hello, world!"

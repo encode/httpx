@@ -26,8 +26,8 @@ class SyncResponse:
         return self._response.headers
 
     @property
-    def body(self) -> bytes:
-        return self._response.body
+    def content(self) -> bytes:
+        return self._response.content
 
     def read(self) -> bytes:
         return self._loop.run_until_complete(self._response.read())

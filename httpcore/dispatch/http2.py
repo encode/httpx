@@ -73,7 +73,7 @@ class HTTP2Connection(Adapter):
             status_code=status_code,
             protocol="HTTP/2",
             headers=headers,
-            body=body,
+            content=body,
             on_close=on_close,
             request=request,
         )

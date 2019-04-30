@@ -82,7 +82,7 @@ async def test_http2_get_request():
     async with httpcore.HTTP2Connection(reader=server, writer=server) as conn:
         response = await conn.request("GET", "http://example.org")
     assert response.status_code == 200
-    assert json.loads(response.body) == {"method": "GET", "path": "/", "body": ""}
+    assert json.loads(response.content) == {"method": "GET", "path": "/", "body": ""}
 
 
 @pytest.mark.asyncio
@@ -91,7 +91,7 @@ async def test_http2_post_request():
     async with httpcore.HTTP2Connection(reader=server, writer=server) as conn:
         response = await conn.request("POST", "http://example.org", body=b"<data>")
     assert response.status_code == 200
-    assert json.loads(response.body) == {
+    assert json.loads(response.content) == {
         "method": "POST",
         "path": "/",
         "body": "<data>",
@@ -107,10 +107,10 @@ async def test_http2_multiple_requests():
         response_3 = await conn.request("GET", "http://example.org/3")
 
     assert response_1.status_code == 200
-    assert json.loads(response_1.body) == {"method": "GET", "path": "/1", "body": ""}
+    assert json.loads(response_1.content) == {"method": "GET", "path": "/1", "body": ""}
 
     assert response_2.status_code == 200
-    assert json.loads(response_2.body) == {"method": "GET", "path": "/2", "body": ""}
+    assert json.loads(response_2.content) == {"method": "GET", "path": "/2", "body": ""}
 
     assert response_3.status_code == 200
-    assert json.loads(response_3.body) == {"method": "GET", "path": "/3", "body": ""}
+    assert json.loads(response_3.content) == {"method": "GET", "path": "/3", "body": ""}
