@@ -66,14 +66,14 @@ class HTTP2Connection(Adapter):
             elif not k.startswith(b":"):
                 headers.append((k, v))
 
-        body = self.body_iter(stream_id, timeout)
+        content = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
 
         response = Response(
             status_code=status_code,
             protocol="HTTP/2",
             headers=headers,
-            content=body,
+            content=content,
             on_close=on_close,
             request=request,
         )

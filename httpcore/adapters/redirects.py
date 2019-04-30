@@ -66,8 +66,8 @@ class RedirectAdapter(Adapter):
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
         headers = self.redirect_headers(request, url)
-        body = self.redirect_body(request, method)
-        return Request(method=method, url=url, headers=headers, body=body)
+        content = self.redirect_content(request, method)
+        return Request(method=method, url=url, headers=headers, content=content)
 
     def redirect_method(self, request: Request, response: Response) -> str:
         """
@@ -128,7 +128,7 @@ class RedirectAdapter(Adapter):
             del headers["Authorization"]
         return headers
 
-    def redirect_body(self, request: Request, method: str) -> bytes:
+    def redirect_content(self, request: Request, method: str) -> bytes:
         """
         Return the body that should be used for the redirect request.
         """
@@ -136,4 +136,4 @@ class RedirectAdapter(Adapter):
             return b""
         if request.is_streaming:
             raise RedirectBodyUnavailable()
-        return request.body
+        return request.content

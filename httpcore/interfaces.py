@@ -2,7 +2,7 @@ import typing
 from types import TracebackType
 
 from .config import TimeoutConfig
-from .models import URL, Request, Response
+from .models import URL, ByteOrByteStream, HeaderTypes, Request, Response, URLTypes
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
 
@@ -11,13 +11,13 @@ class Adapter:
     async def request(
         self,
         method: str,
-        url: typing.Union[str, URL],
+        url: URLTypes,
         *,
-        headers: typing.List[typing.Tuple[bytes, bytes]] = [],
-        body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
+        headers: HeaderTypes = None,
+        content: ByteOrByteStream = b"",
         **options: typing.Any,
     ) -> Response:
-        request = Request(method, url, headers=headers, body=body)
+        request = Request(method, url, headers=headers, content=content)
         self.prepare_request(request)
         response = await self.send(request, **options)
         return response

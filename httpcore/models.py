@@ -21,7 +21,7 @@ HeaderTypes = typing.Union[
     typing.List[typing.Tuple[typing.AnyStr, typing.AnyStr]],
 ]
 
-BodyTypes = typing.Union[bytes, typing.AsyncIterator[bytes]]
+ByteOrByteStream = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 
 class URL:
@@ -197,9 +197,7 @@ class Headers(typing.MutableMapping[str, str]):
         except KeyError:
             return default
 
-    def getlist(
-        self, key: str, split_commas: bool=False
-    ) -> typing.List[str]:
+    def getlist(self, key: str, split_commas: bool = False) -> typing.List[str]:
         """
         Return multiple header values.
 
@@ -320,35 +318,35 @@ class Request:
         url: typing.Union[str, URL],
         *,
         headers: HeaderTypes = None,
-        body: BodyTypes = b"",
+        content: ByteOrByteStream = b"",
     ):
         self.method = method.upper()
         self.url = URL(url) if isinstance(url, str) else url
-        if isinstance(body, bytes):
+        if isinstance(content, bytes):
             self.is_streaming = False
-            self.body = body
+            self.content = content
         else:
             self.is_streaming = True
-            self.body_aiter = body
+            self.content_aiter = content
         self.headers = Headers(headers)
 
     async def read(self) -> bytes:
         """
         Read and return the response content.
         """
-        if not hasattr(self, "body"):
-            body = b""
+        if not hasattr(self, "content"):
+            content = b""
             async for part in self.stream():
-                body += part
-            self.body = body
-        return self.body
+                content += part
+            self.content = content
+        return self.content
 
     async def stream(self) -> typing.AsyncIterator[bytes]:
         if self.is_streaming:
-            async for part in self.body_aiter:
+            async for part in self.content_aiter:
                 yield part
-        elif self.body:
-            yield self.body
+        elif self.content:
+            yield self.content
 
     def prepare(self) -> None:
         """
@@ -371,8 +369,8 @@ class Request:
         if not has_content_length:
             if self.is_streaming:
                 auto_headers.append((b"transfer-encoding", b"chunked"))
-            elif self.body:
-                content_length = str(len(self.body)).encode()
+            elif self.content:
+                content_length = str(len(self.content)).encode()
                 auto_headers.append((b"content-length", content_length))
         if not has_accept_encoding:
             auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
@@ -389,7 +387,7 @@ class Response:
         reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
-        content: BodyTypes = b"",
+        content: ByteOrByteStream = b"",
         on_close: typing.Callable = None,
         request: Request = None,
         history: typing.List["Response"] = None,

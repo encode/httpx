@@ -78,14 +78,14 @@ class HTTP11Connection(Adapter):
         reason_phrase = event.reason.decode("latin1")
         status_code = event.status_code
         headers = event.headers
-        body = self._body_iter(timeout)
+        content = self._body_iter(timeout)
 
         response = Response(
             status_code=status_code,
             reason_phrase=reason_phrase,
             protocol="HTTP/1.1",
             headers=headers,
-            content=body,
+            content=content,
             on_close=self.response_closed,
             request=request,
         )

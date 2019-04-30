@@ -16,7 +16,7 @@ async def test_get(server):
 async def test_post(server):
     url = "http://127.0.0.1:8000/"
     async with httpcore.Client() as client:
-        response = await client.post(url, body=b"Hello, world!")
+        response = await client.post(url, content=b"Hello, world!")
     assert response.status_code == 200
 
 
@@ -47,6 +47,6 @@ async def test_stream_request(server):
 
     async with httpcore.Client() as client:
         response = await client.request(
-            "POST", "http://127.0.0.1:8000/", body=hello_world()
+            "POST", "http://127.0.0.1:8000/", content=hello_world()
         )
     assert response.status_code == 200

@@ -15,7 +15,7 @@ from .config import (
     TimeoutConfig,
 )
 from .dispatch.connection_pool import ConnectionPool
-from .models import URL, BodyTypes, HeaderTypes, Request, Response, URLTypes
+from .models import URL, ByteOrByteStream, HeaderTypes, Request, Response, URLTypes
 
 
 class Client:
@@ -39,14 +39,14 @@ class Client:
         method: str,
         url: URLTypes,
         *,
-        body: BodyTypes = b"",
+        content: ByteOrByteStream = b"",
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
         ssl: SSLConfig = None,
         timeout: TimeoutConfig = None,
     ) -> Response:
-        request = Request(method, url, headers=headers, body=body)
+        request = Request(method, url, headers=headers, content=content)
         self.prepare_request(request)
         response = await self.send(
             request,
@@ -121,7 +121,7 @@ class Client:
         self,
         url: URLTypes,
         *,
-        body: BodyTypes = b"",
+        content: ByteOrByteStream = b"",
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -131,7 +131,7 @@ class Client:
         return await self.request(
             "POST",
             url,
-            body=body,
+            content=content,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -143,7 +143,7 @@ class Client:
         self,
         url: URLTypes,
         *,
-        body: BodyTypes = b"",
+        content: ByteOrByteStream = b"",
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -153,7 +153,7 @@ class Client:
         return await self.request(
             "PUT",
             url,
-            body=body,
+            content=content,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -165,7 +165,7 @@ class Client:
         self,
         url: URLTypes,
         *,
-        body: BodyTypes = b"",
+        content: ByteOrByteStream = b"",
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -175,7 +175,7 @@ class Client:
         return await self.request(
             "PATCH",
             url,
-            body=body,
+            content=content,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -187,7 +187,7 @@ class Client:
         self,
         url: URLTypes,
         *,
-        body: BodyTypes = b"",
+        content: ByteOrByteStream = b"",
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -197,7 +197,7 @@ class Client:
         return await self.request(
             "DELETE",
             url,
-            body=body,
+            content=content,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,

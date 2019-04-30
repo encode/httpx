@@ -65,17 +65,17 @@ class MockDispatch(Adapter):
 
         elif request.url.path == "/cross_domain_target":
             headers = dict(request.headers.items())
-            body = json.dumps({"headers": headers}).encode()
-            return Response(codes.ok, content=body, request=request)
+            content = json.dumps({"headers": headers}).encode()
+            return Response(codes.ok, content=content, request=request)
 
         elif request.url.path == "/redirect_body":
-            body = await request.read()
+            await request.read()
             headers = {"location": "/redirect_body_target"}
             return Response(codes.permanent_redirect, headers=headers, request=request)
 
         elif request.url.path == "/redirect_body_target":
-            body = await request.read()
-            body = json.dumps({"body": body.decode()}).encode()
+            content = await request.read()
+            body = json.dumps({"body": content.decode()}).encode()
             return Response(codes.ok, content=body, request=request)
 
         return Response(codes.ok, content=b"Hello, world!", request=request)
@@ -222,8 +222,8 @@ async def test_same_domain_redirect():
 async def test_body_redirect():
     client = RedirectAdapter(MockDispatch())
     url = "https://example.org/redirect_body"
-    body = b"Example request body"
-    response = await client.request("POST", url, body=body)
+    content = b"Example request body"
+    response = await client.request("POST", url, content=content)
     data = json.loads(response.content.decode())
     assert response.url == URL("https://example.org/redirect_body_target")
     assert data == {"body": "Example request body"}
@@ -234,8 +234,8 @@ async def test_cannot_redirect_streaming_body():
     client = RedirectAdapter(MockDispatch())
     url = "https://example.org/redirect_body"
 
-    async def body():
+    async def streaming_body():
         yield b"Example request body"
 
     with pytest.raises(RedirectBodyUnavailable):
-        await client.request("POST", url, body=body())
+        await client.request("POST", url, content=streaming_body())

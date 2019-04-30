@@ -12,7 +12,7 @@ def test_host_header():
 
 
 def test_content_length_header():
-    request = httpcore.Request("POST", "http://example.org", body=b"test 123")
+    request = httpcore.Request("POST", "http://example.org", content=b"test 123")
     request.prepare()
     assert request.headers == httpcore.Headers(
         [
@@ -27,9 +27,9 @@ def test_transfer_encoding_header():
     async def streaming_body(data):
         yield data  # pragma: nocover
 
-    body = streaming_body(b"test 123")
+    content = streaming_body(b"test 123")
 
-    request = httpcore.Request("POST", "http://example.org", body=body)
+    request = httpcore.Request("POST", "http://example.org", content=content)
     request.prepare()
     assert request.headers == httpcore.Headers(
         [
@@ -64,10 +64,12 @@ def test_override_content_length_header():
     async def streaming_body(data):
         yield data  # pragma: nocover
 
-    body = streaming_body(b"test 123")
+    content = streaming_body(b"test 123")
     headers = [(b"content-length", b"8")]
 
-    request = httpcore.Request("POST", "http://example.org", body=body, headers=headers)
+    request = httpcore.Request(
+        "POST", "http://example.org", content=content, headers=headers
+    )
     request.prepare()
     assert request.headers == httpcore.Headers(
         [
