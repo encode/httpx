@@ -12,8 +12,37 @@ def test_response():
     response = httpcore.Response(200, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
-    assert response.content == b"Hello, world!"
-    assert response.is_closed
+    assert response.text == "Hello, world!"
+
+
+def test_response_content_type_encoding():
+    headers = {"Content-Type": "text-plain; charset=latin-1"}
+    response = httpcore.Response(
+        200, content="Latin 1: ÿ".encode("latin-1"), headers=headers
+    )
+    assert response.text == "Latin 1: ÿ"
+    assert response.encoding == "latin-1"
+
+
+def test_response_autodetect_encoding():
+    response = httpcore.Response(200, content="Snowmen: ☃☃☃".encode("utf-8"))
+    assert response.text == "Snowmen: ☃☃☃"
+    assert response.encoding == "utf-8"
+
+
+def test_response_default_encoding():
+    response = httpcore.Response(200, content=b"")
+    assert response.text == ""
+    assert response.encoding == "utf-8"
+
+
+def test_response_force_encoding():
+    response = httpcore.Response(200, content="Snowman: ☃".encode("utf-8"))
+    response.encoding = "iso-8859-1"
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+    assert response.text == "Snowman: â\x98\x83"
+    assert response.encoding == "iso-8859-1"
 
 
 @pytest.mark.asyncio
@@ -21,7 +50,8 @@ async def test_read_response():
     response = httpcore.Response(200, content=b"Hello, world!")
 
     assert response.status_code == 200
-    assert response.content == b"Hello, world!"
+    assert response.text == "Hello, world!"
+    assert response.encoding == "ascii"
     assert response.is_closed
 
     content = await response.read()
@@ -71,3 +101,4 @@ def test_unknown_status_code():
     response = httpcore.Response(600)
     assert response.status_code == 600
     assert response.reason_phrase == ""
+    assert response.text == ""

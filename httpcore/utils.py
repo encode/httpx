@@ -1,3 +1,4 @@
+import codecs
 import http
 import typing
 from urllib.parse import quote
@@ -80,3 +81,11 @@ def get_reason_phrase(status_code: int) -> str:
         return http.HTTPStatus(status_code).phrase
     except ValueError as exc:
         return ""
+
+
+def is_known_encoding(encoding: str) -> bool:
+    try:
+        codecs.lookup(encoding)
+    except LookupError:
+        return False
+    return True

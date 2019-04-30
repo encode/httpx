@@ -1,4 +1,5 @@
 certifi
+chardet
 h11
 h2
 

@@ -1,5 +1,8 @@
+import cgi
 import typing
 from urllib.parse import urlsplit
+
+import chardet
 
 from .config import SSLConfig, TimeoutConfig
 from .decoders import (
@@ -11,7 +14,12 @@ from .decoders import (
 )
 from .exceptions import ResponseClosed, ResponseNotRead, StreamConsumed
 from .status_codes import codes
-from .utils import get_reason_phrase, normalize_header_key, normalize_header_value
+from .utils import (
+    get_reason_phrase,
+    is_known_encoding,
+    normalize_header_key,
+    normalize_header_value,
+)
 
 URLTypes = typing.Union["URL", str]
 
@@ -200,15 +208,8 @@ class Headers(typing.MutableMapping[str, str]):
     def getlist(self, key: str, split_commas: bool = False) -> typing.List[str]:
         """
         Return multiple header values.
-
-        If there are header values that include commas, then we default to
-        spliting them into multiple results, except for Set-Cookie.
-
-        See: https://tools.ietf.org/html/rfc7230#section-3.2.2
         """
         get_header_key = key.lower().encode(self.encoding)
-        if split_commas is None:
-            split_commas = get_header_key != b"set-cookie"
 
         values = [
             item_value.decode(self.encoding)
@@ -424,12 +425,57 @@ class Response:
     def content(self) -> bytes:
         if not hasattr(self, "_content"):
             if hasattr(self, "_raw_content"):
-                self._content = (
-                    self.decoder.decode(self._raw_content) + self.decoder.flush()
-                )
+                content = self.decoder.decode(self._raw_content)
+                content += self.decoder.flush()
+                self._content = content
             else:
                 raise ResponseNotRead()
         return self._content
+
+    @property
+    def text(self) -> str:
+        if not hasattr(self, "_text"):
+            content = self.content
+            if not content:
+                self._text = ""
+            else:
+                encoding = self.encoding
+                self._text = content.decode(encoding, errors="replace")
+        return self._text
+
+    @property
+    def encoding(self) -> str:
+        if not hasattr(self, "_encoding"):
+            encoding = self.charset_encoding
+            if encoding is None or not is_known_encoding(encoding):
+                encoding = self.apparent_encoding
+                if encoding is None or not is_known_encoding(encoding):
+                    encoding = "utf-8"
+            self._encoding = encoding
+        return self._encoding
+
+    @encoding.setter
+    def encoding(self, value: str) -> None:
+        self._encoding = value
+
+    @property
+    def charset_encoding(self) -> typing.Optional[str]:
+        """
+        Return the encoding, as specified by the Content-Type header.
+        """
+        content_type = self.headers.get("Content-Type")
+        if content_type is None:
+            return None
+
+        parsed = cgi.parse_header(content_type)[-1]
+        return parsed.get("charset")
+
+    @property
+    def apparent_encoding(self) -> typing.Optional[str]:
+        """
+        Return the encoding, as it appears to autodetection.
+        """
+        return chardet.detect(self.content)["encoding"]
 
     @property
     def decoder(self) -> Decoder:

@@ -9,7 +9,7 @@ async def test_get(server):
     async with httpcore.Client() as client:
         response = await client.get(url)
     assert response.status_code == 200
-    assert response.content == b"Hello, world!"
+    assert response.text == "Hello, world!"
 
 
 @pytest.mark.asyncio
