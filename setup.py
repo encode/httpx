@@ -47,7 +47,14 @@ setup(
     author_email="tom@tomchristie.com",
     packages=get_packages("httpcore"),
     data_files=[("", ["LICENSE.md"])],
-    install_requires=["h11", "h2", "certifi", "chardet", "rfc3986"],
+    install_requires=[
+        "certifi",
+        "chardet==3.*",
+        "h11==0.8.*",
+        "h2==3.*",
+        "idna==2.*",
+        "rfc3986==1.*"
+    ],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",

@@ -98,11 +98,10 @@ class RedirectAdapter(Adapter):
 
         url = URL(location, allow_relative=True)
 
-        # Facilitate relative 'location' headers, as allowed by RFC 7231.
+        # Facilitate relative 'Location' headers, as allowed by RFC 7231.
         # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
-        # Compliant with RFC3986, we percent encode the url.
-        if not url.is_absolute:
-            url = url.resolve_with(request.url.copy_with(fragment=None))
+        if url.is_relative_url:
+            url = url.resolve_with(request.url)
 
         # Attach previous fragment if needed (RFC 7231 7.1.2)
         if request.url.fragment and not url.fragment:

@@ -1,11 +1,12 @@
 certifi
-chardet
-h11
-h2
-rfc3986
+chardet==3.*
+h11==0.8.*
+h2==3.*
+idna==2.*
+rfc3986==1.*
 
 # Optional
-brotlipy
+brotlipy==0.7.*
 
 
 # Testing

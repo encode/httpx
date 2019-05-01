@@ -29,6 +29,10 @@ class SyncResponse:
     def content(self) -> bytes:
         return self._response.content
 
+    @property
+    def text(self) -> str:
+        return self._response.text
+
     def read(self) -> bytes:
         return self._loop.run_until_complete(self._response.read())
 

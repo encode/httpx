@@ -2,6 +2,7 @@ import cgi
 import typing
 
 import chardet
+import idna
 import rfc3986
 
 from .config import SSLConfig, TimeoutConfig
@@ -34,20 +35,30 @@ ByteOrByteStream = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 class URL:
     def __init__(self, url: URLTypes, allow_relative: bool = False) -> None:
-        if isinstance(url, str):
-            self.components = rfc3986.api.uri_reference(url).normalize()
-        elif isinstance(url, rfc3986.uri.URIReference):
+        if isinstance(url, rfc3986.uri.URIReference):
             self.components = url
+        elif isinstance(url, str):
+            self.components = rfc3986.api.uri_reference(url)
         else:
             self.components = url.components
 
+        # Handle IDNA domain names.
+        if self.components.authority:
+            idna_authority = self.components.authority.encode("idna").decode("ascii")
+            if idna_authority != self.components.authority:
+                self.components = self.components.copy_with(authority=idna_authority)
+
+        # Normalize schema and domain name.
+        self.components = self.components.normalize()
+
+        # Enforce absolute URLs by default.
         if not allow_relative:
             if not self.scheme:
                 raise InvalidURL("No scheme included in URL.")
             if self.scheme not in ("http", "https"):
                 raise InvalidURL('URL scheme must be "http" or "https".')
             if not self.host:
-                raise InvalidURL("No hostname included in URL.")
+                raise InvalidURL("No host included in URL.")
 
     @property
     def scheme(self) -> str:
@@ -93,8 +104,20 @@ class URL:
         return self.components.scheme == "https"
 
     @property
-    def is_absolute(self) -> bool:
-        return self.components.is_absolute()
+    def is_absolute_url(self) -> bool:
+        """
+        Return `True` for absolute URLs such as 'http://example.com/path',
+        and `False` for relative URLs such as '/path'.
+        """
+        # We don't use rfc3986's `is_absolute` because it treats
+        # URLs with a fragment portion as not absolute.
+        # What we actually care about is if the URL provides
+        # a scheme and hostname to which connections should be made.
+        return self.components.scheme and self.components.host
+
+    @property
+    def is_relative_url(self) -> bool:
+        return not self.is_absolute_url
 
     @property
     def origin(self) -> "Origin":
@@ -104,9 +127,14 @@ class URL:
         return URL(self.components.copy_with(**kwargs))
 
     def resolve_with(self, base_url: URLTypes) -> "URL":
-        if isinstance(base_url, URL):
-            base_url = base_url.components
-        return URL(self.components.resolve_with(base_url))
+        """
+        Return an absolute URL, using base_url as the base.
+        """
+        # We drop any fragment portion, because RFC 3986 strictly
+        # treats URLs with a fragment portion as not being absolute URLs,
+        # but we want to treat them as such for the purposes of
+        base_url = URL(base_url).copy_with(fragment=None)
+        return URL(self.components.resolve_with(base_url.components))
 
     def __hash__(self) -> int:
         return hash(str(self))

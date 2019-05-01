@@ -70,7 +70,10 @@ class MockServer(httpcore.BaseReader, httpcore.BaseWriter):
             }
         ).encode()
 
-        response_headers = ((b":status", b"200"),)
+        response_headers = (
+            (b":status", b"200"),
+            (b"content-length", str(len(response_body)).encode()),
+        )
         self.conn.send_headers(stream_id, response_headers)
         self.conn.send_data(stream_id, response_body, end_stream=True)
         self.buffer += self.conn.data_to_send()
