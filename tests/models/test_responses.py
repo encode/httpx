@@ -16,21 +16,41 @@ def test_response():
 
 
 def test_response_content_type_encoding():
+    """
+    Use the charset encoding in the Content-Type header if possible.
+    """
     headers = {"Content-Type": "text-plain; charset=latin-1"}
-    response = httpcore.Response(
-        200, content="Latin 1: ÿ".encode("latin-1"), headers=headers
-    )
+    content = "Latin 1: ÿ".encode("latin-1")
+    response = httpcore.Response(200, content=content, headers=headers)
     assert response.text == "Latin 1: ÿ"
     assert response.encoding == "latin-1"
 
 
 def test_response_autodetect_encoding():
-    response = httpcore.Response(200, content="Snowmen: ☃☃☃".encode("utf-8"))
-    assert response.text == "Snowmen: ☃☃☃"
-    assert response.encoding == "utf-8"
+    """
+    Autodetect encoding if there is no charset info in a Content-Type header.
+    """
+    content = "おはようございます。".encode("EUC-JP")
+    response = httpcore.Response(200, content=content)
+    assert response.text == "おはようございます。"
+    assert response.encoding == "EUC-JP"
+
+
+def test_response_fallback_to_autodetect():
+    """
+    Fallback to autodetection if we get an invalid charset in the Content-Type header.
+    """
+    headers = {"Content-Type": "text-plain; charset=invalid-codec-name"}
+    content = "おはようございます。".encode("EUC-JP")
+    response = httpcore.Response(200, content=content, headers=headers)
+    assert response.text == "おはようございます。"
+    assert response.encoding == "EUC-JP"
 
 
 def test_response_default_encoding():
+    """
+    Default to utf-8 if all else fails.
+    """
     response = httpcore.Response(200, content=b"")
     assert response.text == ""
     assert response.encoding == "utf-8"

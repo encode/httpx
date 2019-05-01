@@ -89,18 +89,17 @@ class URL:
         port = self.components.port
         if port is None:
             return {"https": 443, "http": 80}[self.scheme]
-        return port
+        return int(port)
 
     @property
     def full_path(self) -> str:
-        path = self.path or "/"
-        query = self.query
-        if query:
-            return path + "?" + query
+        path = self.path
+        if self.query:
+            path += "?" + self.query
         return path
 
     @property
-    def is_secure(self) -> bool:
+    def is_ssl(self) -> bool:
         return self.components.scheme == "https"
 
     @property
@@ -155,7 +154,7 @@ class Origin:
     def __init__(self, url: URLTypes) -> None:
         if not isinstance(url, URL):
             url = URL(url)
-        self.is_ssl = url.scheme == "https"
+        self.is_ssl = url.is_ssl
         self.host = url.host
         self.port = url.port
 

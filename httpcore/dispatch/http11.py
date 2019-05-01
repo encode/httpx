@@ -54,8 +54,8 @@ class HTTP11Connection(Adapter):
         assert timeout is None or isinstance(timeout, TimeoutConfig)
 
         #  Start sending the request.
-        method = request.method.encode()
-        target = request.url.full_path
+        method = request.method.encode('ascii')
+        target = request.url.full_path.encode('ascii')
         headers = request.headers.raw
         event = h11.Request(method=method, target=target, headers=headers)
         await self._send_event(event, timeout)
@@ -75,7 +75,7 @@ class HTTP11Connection(Adapter):
             event = await self._receive_event(timeout)
 
         assert isinstance(event, h11.Response)
-        reason_phrase = event.reason.decode("latin1")
+        reason_phrase = event.reason.decode("ascii", errors="ignore")
         status_code = event.status_code
         headers = event.headers
         content = self._body_iter(timeout)
