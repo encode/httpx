@@ -79,6 +79,13 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 
 #### `Client([ssl], [timeout], [pool_limits], [max_redirects])`
 
+*An HTTP client, with connection pooling, redirects, cookie persistence, etc.*
+
+```python
+>>> client = Client()
+>>> response = await client.get('https://example.org')
+```
+
 * `async def .request(method, url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
 * `async def .get(url, [headers], [stream], [allow_redirects], [ssl], [timeout])`
 * `async def .options(url, [headers], [stream], [allow_redirects], [ssl], [timeout])`
@@ -92,6 +99,8 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 * `async def .close()`
 
 ### Models
+
+*Data-structures for HTTP primitives...*
 
 #### `Response(...)`
 
@@ -123,7 +132,7 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 what gets sent over the wire.*
 
 ```python
->>> request = Request("GET", "http://example.org", headers={'host': 'example.org'})
+>>> request = Request("GET", "https://example.org", headers={'host': 'example.org'})
 >>> response = await client.send(request)
 ```
 
@@ -135,6 +144,12 @@ what gets sent over the wire.*
 #### `URL(url, allow_relative=False)`
 
 *A normalized, IDNA supporting URL.*
+
+```python
+>>> url = URL("https://example.org/")
+>>> url.host
+'example.org'
+```
 
 * `.scheme` - **str**
 * `.authority` - **str**
