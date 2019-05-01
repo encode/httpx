@@ -47,6 +47,19 @@ def test_response_fallback_to_autodetect():
     assert response.encoding == "EUC-JP"
 
 
+def test_response():
+    """
+    A media type of 'text/*' with no charset should default to ISO-8859-1.
+    See: https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.7.1
+    """
+    content = b"Hello, world!"
+    headers = {"Content-Type": "text/plain"}
+    response = httpcore.Response(200, content=content, headers=headers)
+    assert response.status_code == 200
+    assert response.encoding == "iso-8859-1"
+    assert response.text == "Hello, world!"
+
+
 def test_response_default_encoding():
     """
     Default to utf-8 if all else fails.

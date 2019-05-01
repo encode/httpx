@@ -69,18 +69,6 @@ class URL:
         return self.components.authority or ""
 
     @property
-    def path(self) -> str:
-        return self.components.path or "/"
-
-    @property
-    def query(self) -> str:
-        return self.components.query or ""
-
-    @property
-    def fragment(self) -> str:
-        return self.components.fragment or ""
-
-    @property
     def host(self) -> str:
         return self.components.host or ""
 
@@ -92,11 +80,23 @@ class URL:
         return int(port)
 
     @property
+    def path(self) -> str:
+        return self.components.path or "/"
+
+    @property
+    def query(self) -> str:
+        return self.components.query or ""
+
+    @property
     def full_path(self) -> str:
         path = self.path
         if self.query:
             path += "?" + self.query
         return path
+
+    @property
+    def fragment(self) -> str:
+        return self.components.fragment or ""
 
     @property
     def is_ssl(self) -> bool:
@@ -509,8 +509,13 @@ class Response:
         if content_type is None:
             return None
 
-        parsed = cgi.parse_header(content_type)[-1]
-        return parsed.get("charset")
+        # RFC 2616 specifies that 'iso-8859-1' should be used as the default
+        # for 'text/*' media types, if no charset is provided.
+        # See: https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.7.1
+        parsed = cgi.parse_header(content_type)
+        media_type, info = parsed[0], parsed[-1]
+        default = "iso-8859-1" if media_type.startswith("text/") else None
+        return info.get("charset", default)
 
     @property
     def apparent_encoding(self) -> typing.Optional[str]:
