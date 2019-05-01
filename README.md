@@ -13,27 +13,28 @@ Plus all the standard features of requests...
 
 * International Domains and URLs
 * Keep-Alive & Connection Pooling
-* Sessions with Cookie Persistence *TODO*
+* Sessions with Cookie Persistence *TODO - Requires `adapters/cookies.py` implementation.*
 * Browser-style SSL Verification
-* Basic/Digest Authentication *TODO*
+* Basic/Digest Authentication *TODO - Requires `adapters/authentication.py` implementation.*
 * Elegant Key/Value Cookies *TODO*
 * Automatic Decompression
 * Automatic Content Decoding
 * Unicode Response Bodies
-* Multipart File Uploads *TODO*
+* Multipart File Uploads *TODO - Request content currently supports bytes or async byte iterators.*
 * HTTP(S) Proxy Support *TODO*
 * Connection Timeouts
 * Streaming Downloads
-* .netrc Support *TODO*
+* .netrc Support *TODO - Requires `adapters/environment.py` implementation.*
 * Chunked Requests
 
 ## Usage
+
+**Note**: Use `ipython` to try this from the console, since it supports `await`.
 
 Making a request:
 
 ```python
 >>> import httpcore
->>>
 >>> client = httpcore.Client()
 >>> response = await client.get('http://example.com')
 >>> response.status_code
@@ -46,7 +47,6 @@ Alternatively, thread-synchronous requests:
 
 ```python
 >>> import httpcore
->>>
 >>> client = httpcore.SyncClient()
 >>> response = client.get('http://example.com')
 >>> response.status_code
@@ -85,21 +85,27 @@ Alternatively, thread-synchronous requests:
 * `.content` - **bytes**
 * `.text` - **str**
 * `.encoding` - **str**
-* `.json()` - **Any** *TODO*
-* `.read()` - **bytes**
-* `.stream()` - **bytes iterator**
-* `.raw()` - **bytes iterator**
-* `.close()` - **None**
 * `.is_redirect` - **bool**
 * `.request` - **Request**
 * `.cookies` - **Cookies** *TODO*
 * `.history` - **List[Response]**
-* `.raise_for_status()` - **Response** *TODO*
-* `.next()` - **Response**
+
+Methods:
+
+* `def .raise_for_status()` - **Response** *TODO*
+* `def .json()` - **Any** *TODO*
+* `async def .read()` - **bytes**
+* `async def .stream()` - **bytes iterator**
+* `async def .raw()` - **bytes iterator**
+* `async def .close()` - **None**
+* `async def .next()` - **Response**
 
 #### `Request(method, url, content, headers)`
 
-...
+* `.method` - **str** (Uppercased)
+* `.url` - **URL**
+* `.content` - **byte** or **byte async iterator**
+* `.headers` - **Headers**
 
 #### `URL(url, allow_relative=False)`
 
@@ -117,8 +123,11 @@ Alternatively, thread-synchronous requests:
 * `.origin` - **Origin**
 * `.is_absolute_url` - **bool**
 * `.is_relative_url` - **bool**
-* `.copy_with([scheme], [authority], [path], [query], [fragment])` - **URL**
-* `.resolve_with(url)` - **URL**
+
+Methods:
+
+* `def .copy_with([scheme], [authority], [path], [query], [fragment])` - **URL**
+* `def .resolve_with(url)` - **URL**
 
 #### `Origin(url)`
 
