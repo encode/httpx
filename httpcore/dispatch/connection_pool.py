@@ -1,6 +1,7 @@
 import collections.abc
 import typing
 
+from ..backends.default import PoolSemaphore
 from ..config import (
     DEFAULT_CA_BUNDLE_PATH,
     DEFAULT_POOL_LIMITS,
@@ -14,7 +15,6 @@ from ..decoders import ACCEPT_ENCODING
 from ..exceptions import PoolTimeout
 from ..interfaces import Adapter
 from ..models import Origin, Request, Response
-from ..streams import PoolSemaphore
 from .connection import HTTPConnection
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]

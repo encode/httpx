@@ -77,7 +77,7 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 
 ## API Reference
 
-#### Client
+### `Client`
 
 *An HTTP client, with connection pooling, redirects, cookie persistence, etc.*
 
@@ -99,11 +99,7 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 * `async def .send(request, [stream], [allow_redirects], [ssl], [timeout])`
 * `async def .close()`
 
-### Models
-
-*Data-structures for HTTP primitives...*
-
-#### Response
+### `Response`
 
 *An HTTP response.*
 
@@ -128,7 +124,7 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 * `async def .close()` - **None**
 * `async def .next()` - **Response**
 
-#### Request
+### `Request`
 
 *An HTTP request. Can be constructed explicitly for more control over exactly
 what gets sent over the wire.*
@@ -144,7 +140,7 @@ what gets sent over the wire.*
 * `.content` - **byte** or **byte async iterator**
 * `.headers` - **Headers**
 
-#### URL
+### `URL`
 
 *A normalized, IDNA supporting URL.*
 
@@ -170,7 +166,7 @@ what gets sent over the wire.*
 * `def .copy_with([scheme], [authority], [path], [query], [fragment])` - **URL**
 * `def .resolve_with(url)` - **URL**
 
-#### Origin
+### `Origin`
 
 *A normalized, IDNA supporting set of scheme/host/port info.*
 
@@ -184,7 +180,7 @@ True
 * `.host` - **str**
 * `.port` - **int**
 
-#### `Headers`
+### `Headers`
 
 *A case-insensitive multi-dict.*
 

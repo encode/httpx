@@ -6,6 +6,7 @@ import idna
 import rfc3986
 
 from .config import SSLConfig, TimeoutConfig
+from .constants import codes
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -14,7 +15,6 @@ from .decoders import (
     MultiDecoder,
 )
 from .exceptions import InvalidURL, ResponseClosed, ResponseNotRead, StreamConsumed
-from .status_codes import codes
 from .utils import (
     get_reason_phrase,
     is_known_encoding,

@@ -9,20 +9,15 @@ protocols, and help keep the rest of the package more `async`/`await`
 based, and less strictly `asyncio`-specific.
 """
 import asyncio
-import enum
 import ssl
 import typing
 
-from .config import DEFAULT_TIMEOUT_CONFIG, PoolLimits, TimeoutConfig
-from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
-from .interfaces import BasePoolSemaphore, BaseReader, BaseWriter
+from ..config import DEFAULT_TIMEOUT_CONFIG, PoolLimits, TimeoutConfig
+from ..constants import Protocol
+from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
+from ..interfaces import BasePoolSemaphore, BaseReader, BaseWriter
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
-
-
-class Protocol(enum.Enum):
-    HTTP_11 = 1
-    HTTP_2 = 2
 
 
 class Reader(BaseReader):

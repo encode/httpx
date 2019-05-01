@@ -9,9 +9,8 @@ from ..config import (
     TimeoutConfig,
 )
 from ..exceptions import ConnectTimeout, ReadTimeout
-from ..interfaces import Adapter
+from ..interfaces import Adapter, BaseReader, BaseWriter
 from ..models import Request, Response
-from ..streams import BaseReader, BaseWriter
 
 H11Event = typing.Union[
     h11.Request,

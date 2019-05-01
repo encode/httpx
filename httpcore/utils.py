@@ -23,7 +23,7 @@ def normalize_header_value(value: typing.AnyStr, encoding: str = None) -> bytes:
 
 def get_reason_phrase(status_code: int) -> str:
     """
-    Return an HTTP reason phrase, eg. "OK" for 200, or "Not Found" for 404.
+    Return an HTTP reason phrase such as "OK" for 200, or "Not Found" for 404.
     """
     try:
         return http.HTTPStatus(status_code).phrase
@@ -32,6 +32,9 @@ def get_reason_phrase(status_code: int) -> str:
 
 
 def is_known_encoding(encoding: str) -> bool:
+    """
+    Return `True` if `encoding` is a known codec.
+    """
     try:
         codecs.lookup(encoding)
     except LookupError:

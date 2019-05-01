@@ -1,10 +1,10 @@
 import typing
 
 from ..config import DEFAULT_MAX_REDIRECTS
+from ..constants import codes
 from ..exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from ..interfaces import Adapter
 from ..models import URL, Headers, Request, Response
-from ..status_codes import codes
 
 
 class RedirectAdapter(Adapter):

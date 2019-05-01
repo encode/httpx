@@ -2,8 +2,8 @@ import asyncio
 import typing
 from types import TracebackType
 
-from .client import Client
-from .config import (
+from ..client import Client
+from ..config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
     DEFAULT_SSL_CONFIG,
@@ -12,7 +12,7 @@ from .config import (
     SSLConfig,
     TimeoutConfig,
 )
-from .models import (
+from ..models import (
     URL,
     ByteOrByteStream,
     Headers,
