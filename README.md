@@ -77,7 +77,7 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 
 ## API Reference
 
-#### `Client([ssl], [timeout], [pool_limits], [max_redirects])`
+#### Client
 
 *An HTTP client, with connection pooling, redirects, cookie persistence, etc.*
 
@@ -86,6 +86,7 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 >>> response = await client.get('https://example.org')
 ```
 
+* `def __init__([ssl], [timeout], [pool_limits], [max_redirects])`
 * `async def .request(method, url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
 * `async def .get(url, [headers], [stream], [allow_redirects], [ssl], [timeout])`
 * `async def .options(url, [headers], [stream], [allow_redirects], [ssl], [timeout])`
@@ -102,10 +103,11 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 
 *Data-structures for HTTP primitives...*
 
-#### `Response(...)`
+#### Response
 
 *An HTTP response.*
 
+* `def __init__(...)`
 * `.status_code` - **int**
 * `.reason_phrase` - **str**
 * `.protocol` - `"HTTP/2"` or `"HTTP/1.1"`
@@ -126,7 +128,7 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 * `async def .close()` - **None**
 * `async def .next()` - **Response**
 
-#### `Request(method, url, content, headers)`
+#### Request
 
 *An HTTP request. Can be constructed explicitly for more control over exactly
 what gets sent over the wire.*
@@ -136,12 +138,13 @@ what gets sent over the wire.*
 >>> response = await client.send(request)
 ```
 
+* `def __init__(method, url, content, headers)`
 * `.method` - **str** (Uppercased)
 * `.url` - **URL**
 * `.content` - **byte** or **byte async iterator**
 * `.headers` - **Headers**
 
-#### `URL(url, allow_relative=False)`
+#### URL
 
 *A normalized, IDNA supporting URL.*
 
@@ -151,6 +154,7 @@ what gets sent over the wire.*
 'example.org'
 ```
 
+* `def __init__(url, allow_relative=False)`
 * `.scheme` - **str**
 * `.authority` - **str**
 * `.host` - **str**
@@ -166,7 +170,7 @@ what gets sent over the wire.*
 * `def .copy_with([scheme], [authority], [path], [query], [fragment])` - **URL**
 * `def .resolve_with(url)` - **URL**
 
-#### `Origin(url)`
+#### Origin
 
 *A normalized, IDNA supporting set of scheme/host/port info.*
 
@@ -175,11 +179,12 @@ what gets sent over the wire.*
 True
 ```
 
+* `def __init__(url)`
 * `.is_ssl` - **bool**
 * `.host` - **str**
 * `.port` - **int**
 
-#### `Headers(headers)`
+#### `Headers`
 
 *A case-insensitive multi-dict.*
 
@@ -188,6 +193,8 @@ True
 >>> headers['content-type']
 'application/json'
 ```
+
+* `def __init__(headers)`
 
 ___
 
