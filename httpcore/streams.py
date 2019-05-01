@@ -74,13 +74,13 @@ class Writer(BaseWriter):
 
 
 class PoolSemaphore(BasePoolSemaphore):
-    def __init__(self, limits: PoolLimits):
-        self.limits = limits
+    def __init__(self, pool_limits: PoolLimits):
+        self.pool_limits = pool_limits
 
     @property
     def semaphore(self) -> typing.Optional[asyncio.BoundedSemaphore]:
         if not hasattr(self, "_semaphore"):
-            max_connections = self.limits.hard_limit
+            max_connections = self.pool_limits.hard_limit
             if max_connections is None:
                 self._semaphore = None
             else:
@@ -91,7 +91,7 @@ class PoolSemaphore(BasePoolSemaphore):
         if self.semaphore is None:
             return
 
-        timeout = self.limits.pool_timeout
+        timeout = self.pool_limits.pool_timeout
         try:
             await asyncio.wait_for(self.semaphore.acquire(), timeout)
         except asyncio.TimeoutError:

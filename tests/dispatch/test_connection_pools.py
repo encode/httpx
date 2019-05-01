@@ -38,9 +38,9 @@ async def test_soft_limit(server):
     """
     The soft_limit config should limit the maximum number of keep-alive connections.
     """
-    limits = httpcore.PoolLimits(soft_limit=1)
+    pool_limits = httpcore.PoolLimits(soft_limit=1)
 
-    async with httpcore.ConnectionPool(limits=limits) as http:
+    async with httpcore.ConnectionPool(pool_limits=pool_limits) as http:
         response = await http.request("GET", "http://127.0.0.1:8000/")
         assert len(http.active_connections) == 0
         assert len(http.keepalive_connections) == 1

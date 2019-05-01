@@ -24,6 +24,6 @@ from .interfaces import Adapter
 from .models import URL, Headers, Origin, Request, Response
 from .status_codes import codes
 from .streams import BaseReader, BaseWriter, Protocol, Reader, Writer, connect
-from .sync import SyncClient, SyncConnectionPool
+from .sync import SyncClient
 
 __version__ = "0.2.1"

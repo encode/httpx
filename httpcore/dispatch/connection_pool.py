@@ -89,14 +89,14 @@ class ConnectionPool(Adapter):
         *,
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
-        limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
     ):
         self.ssl = ssl
         self.timeout = timeout
-        self.limits = limits
+        self.pool_limits = pool_limits
         self.is_closed = False
 
-        self.max_connections = PoolSemaphore(limits)
+        self.max_connections = PoolSemaphore(pool_limits)
         self.keepalive_connections = ConnectionStore()
         self.active_connections = ConnectionStore()
 
@@ -140,8 +140,8 @@ class ConnectionPool(Adapter):
             self.active_connections.remove(connection)
             self.max_connections.release()
         elif (
-            self.limits.soft_limit is not None
-            and self.num_connections > self.limits.soft_limit
+            self.pool_limits.soft_limit is not None
+            and self.num_connections > self.pool_limits.soft_limit
         ):
             self.active_connections.remove(connection)
             self.max_connections.release()

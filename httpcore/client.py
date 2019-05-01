@@ -23,10 +23,12 @@ class Client:
         self,
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
-        limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
     ):
-        connection_pool = ConnectionPool(ssl=ssl, timeout=timeout, limits=limits)
+        connection_pool = ConnectionPool(
+            ssl=ssl, timeout=timeout, pool_limits=pool_limits
+        )
         cookie_adapter = CookieAdapter(dispatch=connection_pool)
         auth_adapter = AuthenticationAdapter(dispatch=cookie_adapter)
         redirect_adapter = RedirectAdapter(

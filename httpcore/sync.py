@@ -2,10 +2,25 @@ import asyncio
 import typing
 from types import TracebackType
 
-from .config import SSLConfig, TimeoutConfig
-from .dispatch.connection_pool import ConnectionPool
-from .interfaces import Adapter
-from .models import URL, Headers, Response
+from .client import Client
+from .config import (
+    DEFAULT_MAX_REDIRECTS,
+    DEFAULT_POOL_LIMITS,
+    DEFAULT_SSL_CONFIG,
+    DEFAULT_TIMEOUT_CONFIG,
+    PoolLimits,
+    SSLConfig,
+    TimeoutConfig,
+)
+from .models import (
+    URL,
+    ByteOrByteStream,
+    Headers,
+    HeaderTypes,
+    Request,
+    Response,
+    URLTypes,
+)
 
 
 class SyncResponse:
@@ -57,23 +72,194 @@ class SyncResponse:
 
 
 class SyncClient:
-    def __init__(self, adapter: Adapter):
-        self._client = adapter
+    def __init__(
+        self,
+        ssl: SSLConfig = DEFAULT_SSL_CONFIG,
+        timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        max_redirects: int = DEFAULT_MAX_REDIRECTS,
+    ) -> None:
+        self._client = Client(
+            ssl=ssl,
+            timeout=timeout,
+            pool_limits=pool_limits,
+            max_redirects=max_redirects,
+        )
         self._loop = asyncio.new_event_loop()
 
     def request(
         self,
         method: str,
-        url: typing.Union[str, URL],
+        url: URLTypes,
         *,
-        headers: typing.List[typing.Tuple[bytes, bytes]] = [],
-        body: typing.Union[bytes, typing.AsyncIterator[bytes]] = b"",
-        **options: typing.Any
+        content: ByteOrByteStream = b"",
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
     ) -> SyncResponse:
         response = self._loop.run_until_complete(
-            self._client.request(method, url, headers=headers, body=body, **options)
+            self._client.request(
+                method,
+                url,
+                content=content,
+                headers=headers,
+                stream=stream,
+                allow_redirects=allow_redirects,
+                ssl=ssl,
+                timeout=timeout,
+            )
         )
         return SyncResponse(response, self._loop)
+
+    def get(
+        self,
+        url: URLTypes,
+        *,
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> SyncResponse:
+        return self.request(
+            "GET",
+            url,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
+
+    def options(
+        self,
+        url: URLTypes,
+        *,
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> SyncResponse:
+        return self.request(
+            "OPTIONS",
+            url,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
+
+    def head(
+        self,
+        url: URLTypes,
+        *,
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = False,  #  Note: Differs to usual default.
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> SyncResponse:
+        return self.request(
+            "HEAD",
+            url,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
+
+    def post(
+        self,
+        url: URLTypes,
+        *,
+        content: ByteOrByteStream = b"",
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> SyncResponse:
+        return self.request(
+            "POST",
+            url,
+            content=content,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
+
+    def put(
+        self,
+        url: URLTypes,
+        *,
+        content: ByteOrByteStream = b"",
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> SyncResponse:
+        return self.request(
+            "PUT",
+            url,
+            content=content,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
+
+    def patch(
+        self,
+        url: URLTypes,
+        *,
+        content: ByteOrByteStream = b"",
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> SyncResponse:
+        return self.request(
+            "PATCH",
+            url,
+            content=content,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
+
+    def delete(
+        self,
+        url: URLTypes,
+        *,
+        content: ByteOrByteStream = b"",
+        headers: HeaderTypes = None,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> SyncResponse:
+        return self.request(
+            "DELETE",
+            url,
+            content=content,
+            headers=headers,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
+        )
 
     def close(self) -> None:
         self._loop.run_until_complete(self._client.close())
@@ -88,8 +274,3 @@ class SyncClient:
         traceback: TracebackType = None,
     ) -> None:
         self.close()
-
-
-def SyncConnectionPool(*args: typing.Any, **kwargs: typing.Any) -> SyncClient:
-    client = ConnectionPool(*args, **kwargs)  # type: ignore
-    return SyncClient(client)

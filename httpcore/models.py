@@ -435,7 +435,11 @@ class Response:
         request: Request = None,
         history: typing.List["Response"] = None,
     ):
-        self.status_code = status_code
+        try:
+            # Use a StatusCode IntEnum if possible, for a nicer representation.
+            self.status_code = codes(status_code)
+        except ValueError:
+            self.status_code = status_code
         self.reason_phrase = reason_phrase or get_reason_phrase(status_code)
         self.protocol = protocol
         self.headers = Headers(headers)

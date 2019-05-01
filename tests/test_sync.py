@@ -25,8 +25,8 @@ def threadpool(func):
 
 @threadpool
 def test_get(server):
-    with httpcore.SyncConnectionPool() as http:
-        response = http.request("GET", "http://127.0.0.1:8000/")
+    with httpcore.SyncClient() as http:
+        response = http.get("http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.content == b"Hello, world!"
     assert response.text == "Hello, world!"
@@ -34,16 +34,16 @@ def test_get(server):
 
 @threadpool
 def test_post(server):
-    with httpcore.SyncConnectionPool() as http:
-        response = http.request("POST", "http://127.0.0.1:8000/", body=b"Hello, world!")
+    with httpcore.SyncClient() as http:
+        response = http.post("http://127.0.0.1:8000/", content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
 def test_stream_response(server):
-    with httpcore.SyncConnectionPool() as http:
-        response = http.request("GET", "http://127.0.0.1:8000/", stream=True)
+    with httpcore.SyncClient() as http:
+        response = http.get("http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
     content = response.read()
     assert content == b"Hello, world!"
@@ -51,8 +51,8 @@ def test_stream_response(server):
 
 @threadpool
 def test_stream_iterator(server):
-    with httpcore.SyncConnectionPool() as http:
-        response = http.request("GET", "http://127.0.0.1:8000/", stream=True)
+    with httpcore.SyncClient() as http:
+        response = http.get("http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
     body = b""
     for chunk in response.stream():
@@ -62,8 +62,8 @@ def test_stream_iterator(server):
 
 @threadpool
 def test_raw_iterator(server):
-    with httpcore.SyncConnectionPool() as http:
-        response = http.request("GET", "http://127.0.0.1:8000/", stream=True)
+    with httpcore.SyncClient() as http:
+        response = http.get("http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
     body = b""
     for chunk in response.raw():
