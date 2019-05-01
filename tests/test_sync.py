@@ -54,7 +54,18 @@ def test_stream_iterator(server):
     with httpcore.SyncConnectionPool() as http:
         response = http.request("GET", "http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
-    content = b""
+    body = b""
     for chunk in response.stream():
-        content += chunk
-    assert content == b"Hello, world!"
+        body += chunk
+    assert body == b"Hello, world!"
+
+
+@threadpool
+def test_raw_iterator(server):
+    with httpcore.SyncConnectionPool() as http:
+        response = http.request("GET", "http://127.0.0.1:8000/", stream=True)
+    assert response.status_code == 200
+    body = b""
+    for chunk in response.raw():
+        body += chunk
+    assert body == b"Hello, world!"
