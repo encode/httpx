@@ -62,7 +62,7 @@ class HTTP2Connection(Adapter):
         headers = []
         for k, v in event.headers:
             if k == b":status":
-                status_code = int(v.decode('ascii', errors='ignore'))
+                status_code = int(v.decode("ascii", errors="ignore"))
             elif not k.startswith(b":"):
                 headers.append((k, v))
 
@@ -98,10 +98,10 @@ class HTTP2Connection(Adapter):
     async def send_headers(self, request: Request, timeout: OptionalTimeout) -> int:
         stream_id = self.h2_state.get_next_available_stream_id()
         headers = [
-            (b":method", request.method.encode('ascii')),
-            (b":authority", request.url.authority.encode('ascii')),
-            (b":scheme", request.url.scheme.encode('ascii')),
-            (b":path", request.url.full_path.encode('ascii')),
+            (b":method", request.method.encode("ascii")),
+            (b":authority", request.url.authority.encode("ascii")),
+            (b":scheme", request.url.scheme.encode("ascii")),
+            (b":path", request.url.full_path.encode("ascii")),
         ] + request.headers.raw
         self.h2_state.send_headers(stream_id, headers)
         data_to_send = self.h2_state.data_to_send()
