@@ -8,6 +8,14 @@ OptionalTimeout = typing.Optional[TimeoutConfig]
 
 
 class Adapter:
+    """
+    The base class for all adapter or dispatcher classes.
+
+    Stubs out the interface, as well as providing a `.request()` convienence
+    implementation, to make it easy to use or test stand-alone adapters,
+    without requiring a complete `Client` instance.
+    """
+
     async def request(
         self,
         method: str,
@@ -44,11 +52,23 @@ class Adapter:
 
 
 class BaseReader:
+    """
+    A stream reader. Abstracts away any asyncio-specfic interfaces
+    into a more generic base class, that we can use with alternate
+    backend, or for stand-alone test cases.
+    """
+
     async def read(self, n: int, timeout: OptionalTimeout = None) -> bytes:
         raise NotImplementedError()  # pragma: no cover
 
 
 class BaseWriter:
+    """
+    A stream writer. Abstracts away any asyncio-specfic interfaces
+    into a more generic base class, that we can use with alternate
+    backend, or for stand-alone test cases.
+    """
+
     def write_no_block(self, data: bytes) -> None:
         raise NotImplementedError()  # pragma: no cover
 
@@ -60,6 +80,12 @@ class BaseWriter:
 
 
 class BasePoolSemaphore:
+    """
+    A semaphore for use with connection pooling.
+
+    Abstracts away any asyncio-specfic interfaces.
+    """
+
     async def acquire(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 

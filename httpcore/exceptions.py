@@ -40,6 +40,12 @@ class ProtocolError(Exception):
     """
 
 
+class DecodingError(Exception):
+    """
+    Decoding of the response failed.
+    """
+
+
 # Redirect exceptions...
 
 
@@ -68,33 +74,36 @@ class RedirectLoop(RedirectError):
     """
 
 
-# Response exceptions...
+# Stream exceptions...
 
 
-class StreamConsumed(Exception):
+class StreamException(Exception):
+    """
+    The base class for stream exceptions.
+
+    The developer made an error in accessing the request stream in
+    an invalid way.
+    """
+
+
+class StreamConsumed(StreamException):
     """
     Attempted to read or stream response content, but the content has already
     been streamed.
     """
 
 
-class ResponseNotRead(Exception):
+class ResponseNotRead(StreamException):
     """
     Attempted to access response content, without having called `read()`
     after a streaming response.
     """
 
 
-class ResponseClosed(Exception):
+class ResponseClosed(StreamException):
     """
     Attempted to read or stream response content, but the request has been
-    closed without loading the body.
-    """
-
-
-class DecodingError(Exception):
-    """
-    Decoding of the response failed.
+    closed.
     """
 
 

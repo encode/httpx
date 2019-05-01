@@ -23,6 +23,10 @@ class Decoder:
 
 
 class IdentityDecoder(Decoder):
+    """
+    Handle unencoded data.
+    """
+
     def decode(self, data: bytes) -> bytes:
         return data
 
@@ -80,8 +84,7 @@ class BrotliDecoder(Decoder):
     """
     Handle 'brotli' decoding.
 
-    Requires `pip install brotlipy`.
-    See: https://brotlipy.readthedocs.io/
+    Requires `pip install brotlipy`. See: https://brotlipy.readthedocs.io/
     """
 
     def __init__(self) -> None:
@@ -111,7 +114,7 @@ class MultiDecoder(Decoder):
 
     def __init__(self, children: typing.Sequence[Decoder]) -> None:
         """
-        children should be a sequence of decoders in the order in which
+        'children' should be a sequence of decoders in the order in which
         each was applied.
         """
         # Note that we reverse the order for decoding.
