@@ -37,6 +37,10 @@ class SyncResponse:
         return self._response.reason_phrase
 
     @property
+    def protocol(self) -> typing.Optional[str]:
+        return self._response.protocol
+
+    @property
     def headers(self) -> Headers:
         return self._response.headers
 
@@ -70,6 +74,10 @@ class SyncResponse:
     def close(self) -> None:
         return self._loop.run_until_complete(self._response.close())
 
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        return f"<{class_name}(status_code={self.status_code})>"
+
 
 class SyncClient:
     def __init__(
@@ -99,19 +107,16 @@ class SyncClient:
         ssl: SSLConfig = None,
         timeout: TimeoutConfig = None,
     ) -> SyncResponse:
-        response = self._loop.run_until_complete(
-            self._client.request(
-                method,
-                url,
-                content=content,
-                headers=headers,
-                stream=stream,
-                allow_redirects=allow_redirects,
-                ssl=ssl,
-                timeout=timeout,
-            )
+        request = Request(method, url, headers=headers, content=content)
+        self.prepare_request(request)
+        response = self.send(
+            request,
+            stream=stream,
+            allow_redirects=allow_redirects,
+            ssl=ssl,
+            timeout=timeout,
         )
-        return SyncResponse(response, self._loop)
+        return response
 
     def get(
         self,
@@ -260,6 +265,29 @@ class SyncClient:
             ssl=ssl,
             timeout=timeout,
         )
+
+    def prepare_request(self, request: Request) -> None:
+        self._client.prepare_request(request)
+
+    def send(
+        self,
+        request: Request,
+        *,
+        stream: bool = False,
+        allow_redirects: bool = True,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> SyncResponse:
+        response = self._loop.run_until_complete(
+            self._client.send(
+                request,
+                stream=stream,
+                allow_redirects=allow_redirects,
+                ssl=ssl,
+                timeout=timeout,
+            )
+        )
+        return SyncResponse(response, self._loop)
 
     def close(self) -> None:
         self._loop.run_until_complete(self._client.close())

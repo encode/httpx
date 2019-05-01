@@ -421,6 +421,11 @@ class Request:
         for item in reversed(auto_headers):
             self.headers.raw.insert(0, item)
 
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        url = str(self.url)
+        return f"<{class_name}({self.method}, {url})>"
+
 
 class Response:
     def __init__(
@@ -437,7 +442,7 @@ class Response:
     ):
         try:
             # Use a StatusCode IntEnum if possible, for a nicer representation.
-            self.status_code = codes(status_code)
+            self.status_code = codes(status_code)  # type: int
         except ValueError:
             self.status_code = status_code
         self.reason_phrase = reason_phrase or get_reason_phrase(status_code)
@@ -619,3 +624,7 @@ class Response:
             )
             and "location" in self.headers
         )
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        return f"<{class_name}(status_code={self.status_code})>"
