@@ -61,27 +61,41 @@ Alternatively, thread-synchronous requests:
 
 ---
 
+## Dependencies
+
+* `h11` - HTTP/1.1 support.
+* `h2` - HTTP/2 support.
+* `certifi` - SSL certificates.
+* `chardet` - Fallback auto-detection for response encoding.
+* `idna` - Internationalized domain name support.
+* `rfc3986` - URL parsing & normalization.
+* `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
+
+Additionally, credit is due to for `urllib3` for plenty of design inspiration.
+
+---
+
 ## API Reference
 
 #### `Client([ssl], [timeout], [pool_limits], [max_redirects])`
 
-* `async def .request(method, url, ...)`
-* `async def .get(url, ...)`
-* `async def .options(url, ...)`
-* `async def .head(url, ...)`
-* `async def .post(url, ...)`
-* `async def .put(url, ...)`
-* `async def .patch(url, ...)`
-* `async def .delete(url, ...)`
+* `async def .request(method, url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .get(url, [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .options(url, [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .head(url, [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .post(url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .put(url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .patch(url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .delete(url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
 * `def .prepare_request(request)`
-* `async def .send(request, ...)`
+* `async def .send(request, [stream], [allow_redirects], [ssl], [timeout])`
 * `async def .close()`
 
 ### Models
 
 #### `Response(...)`
 
-*An HTTP response.**
+*An HTTP response.*
 
 * `.status_code` - **int**
 * `.reason_phrase` - **str**
