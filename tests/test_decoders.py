@@ -12,8 +12,8 @@ def test_deflate():
     compressed_body = compressor.compress(body) + compressor.flush()
 
     headers = [(b"Content-Encoding", b"deflate")]
-    response = httpcore.Response(200, headers=headers, body=compressed_body)
-    assert response.body == body
+    response = httpcore.Response(200, headers=headers, content=compressed_body)
+    assert response.content == body
 
 
 def test_gzip():
@@ -22,8 +22,8 @@ def test_gzip():
     compressed_body = compressor.compress(body) + compressor.flush()
 
     headers = [(b"Content-Encoding", b"gzip")]
-    response = httpcore.Response(200, headers=headers, body=compressed_body)
-    assert response.body == body
+    response = httpcore.Response(200, headers=headers, content=compressed_body)
+    assert response.content == body
 
 
 def test_brotli():
@@ -31,8 +31,8 @@ def test_brotli():
     compressed_body = brotli.compress(body)
 
     headers = [(b"Content-Encoding", b"br")]
-    response = httpcore.Response(200, headers=headers, body=compressed_body)
-    assert response.body == body
+    response = httpcore.Response(200, headers=headers, content=compressed_body)
+    assert response.content == body
 
 
 def test_multi():
@@ -47,8 +47,8 @@ def test_multi():
     )
 
     headers = [(b"Content-Encoding", b"deflate, gzip")]
-    response = httpcore.Response(200, headers=headers, body=compressed_body)
-    assert response.body == body
+    response = httpcore.Response(200, headers=headers, content=compressed_body)
+    assert response.content == body
 
 
 def test_multi_with_identity():
@@ -56,12 +56,12 @@ def test_multi_with_identity():
     compressed_body = brotli.compress(body)
 
     headers = [(b"Content-Encoding", b"br, identity")]
-    response = httpcore.Response(200, headers=headers, body=compressed_body)
-    assert response.body == body
+    response = httpcore.Response(200, headers=headers, content=compressed_body)
+    assert response.content == body
 
     headers = [(b"Content-Encoding", b"identity, br")]
-    response = httpcore.Response(200, headers=headers, body=compressed_body)
-    assert response.body == body
+    response = httpcore.Response(200, headers=headers, content=compressed_body)
+    assert response.content == body
 
 
 @pytest.mark.asyncio
@@ -74,6 +74,16 @@ async def test_streaming():
         yield compressor.flush()
 
     headers = [(b"Content-Encoding", b"gzip")]
-    response = httpcore.Response(200, headers=headers, body=compress(body))
+    response = httpcore.Response(200, headers=headers, content=compress(body))
     assert not hasattr(response, "body")
     assert await response.read() == body
+
+
+@pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
+def test_decoding_errors(header_value):
+    headers = [(b"Content-Encoding", header_value)]
+    body = b"test 123"
+    compressed_body = brotli.compress(body)[3:]
+    with pytest.raises(httpcore.exceptions.DecodingError):
+        response = httpcore.Response(200, headers=headers, content=compressed_body)
+        response.content

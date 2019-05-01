@@ -6,6 +6,8 @@ See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 import typing
 import zlib
 
+import httpcore.exceptions
+
 try:
     import brotli
 except ImportError:  # pragma: nocover
@@ -39,10 +41,16 @@ class DeflateDecoder(Decoder):
         self.decompressor = zlib.decompressobj(-zlib.MAX_WBITS)
 
     def decode(self, data: bytes) -> bytes:
-        return self.decompressor.decompress(data)
+        try:
+            return self.decompressor.decompress(data)
+        except zlib.error as exc:
+            raise httpcore.exceptions.DecodingError from exc
 
     def flush(self) -> bytes:
-        return self.decompressor.flush()
+        try:
+            return self.decompressor.flush()
+        except zlib.error as exc:
+            raise httpcore.exceptions.DecodingError from exc
 
 
 class GZipDecoder(Decoder):
@@ -56,10 +64,16 @@ class GZipDecoder(Decoder):
         self.decompressor = zlib.decompressobj(zlib.MAX_WBITS | 16)
 
     def decode(self, data: bytes) -> bytes:
-        return self.decompressor.decompress(data)
+        try:
+            return self.decompressor.decompress(data)
+        except zlib.error as exc:
+            raise httpcore.exceptions.DecodingError from exc
 
     def flush(self) -> bytes:
-        return self.decompressor.flush()
+        try:
+            return self.decompressor.flush()
+        except zlib.error as exc:
+            raise httpcore.exceptions.DecodingError from exc
 
 
 class BrotliDecoder(Decoder):
@@ -77,16 +91,22 @@ class BrotliDecoder(Decoder):
         self.decompressor = brotli.Decompressor()
 
     def decode(self, data: bytes) -> bytes:
-        return self.decompressor.decompress(data)
+        try:
+            return self.decompressor.decompress(data)
+        except brotli.Error as exc:
+            raise httpcore.exceptions.DecodingError from exc
 
     def flush(self) -> bytes:
-        self.decompressor.finish()
-        return b""
+        try:
+            self.decompressor.finish()
+            return b""
+        except brotli.Error as exc:
+            raise httpcore.exceptions.DecodingError from exc
 
 
 class MultiDecoder(Decoder):
     """
-    Handle the case where mutliple encodings have been applied.
+    Handle the case where multiple encodings have been applied.
     """
 
     def __init__(self, children: typing.Sequence[Decoder]) -> None:
@@ -110,17 +130,17 @@ class MultiDecoder(Decoder):
 
 
 SUPPORTED_DECODERS = {
-    b"identity": IdentityDecoder,
-    b"deflate": DeflateDecoder,
-    b"gzip": GZipDecoder,
-    b"br": BrotliDecoder,
+    "identity": IdentityDecoder,
+    "deflate": DeflateDecoder,
+    "gzip": GZipDecoder,
+    "br": BrotliDecoder,
 }
 
 
 if brotli is None:
-    SUPPORTED_DECODERS.pop(b"br")  # pragma: nocover
+    SUPPORTED_DECODERS.pop("br")  # pragma: nocover
 
 
-ACCEPT_ENCODING = b", ".join(
-    [key for key in SUPPORTED_DECODERS.keys() if key != b"identity"]
+ACCEPT_ENCODING = ", ".join(
+    [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
 )
