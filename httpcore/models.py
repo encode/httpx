@@ -48,7 +48,7 @@ class URL:
             if idna_authority != self.components.authority:
                 self.components = self.components.copy_with(authority=idna_authority)
 
-        # Normalize schema and domain name.
+        # Normalize scheme and domain name.
         self.components = self.components.normalize()
 
         # Enforce absolute URLs by default.
@@ -130,8 +130,7 @@ class URL:
         Return an absolute URL, using base_url as the base.
         """
         # We drop any fragment portion, because RFC 3986 strictly
-        # treats URLs with a fragment portion as not being absolute URLs,
-        # but we want to treat them as such for the purposes of
+        # treats URLs with a fragment portion as not being absolute URLs.
         base_url = URL(base_url).copy_with(fragment=None)
         return URL(self.components.resolve_with(base_url.components))
 
