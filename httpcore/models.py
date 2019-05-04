@@ -14,7 +14,13 @@ from .decoders import (
     IdentityDecoder,
     MultiDecoder,
 )
-from .exceptions import InvalidURL, ResponseClosed, ResponseNotRead, StreamConsumed
+from .exceptions import (
+    HttpError,
+    InvalidURL,
+    ResponseClosed,
+    ResponseNotRead,
+    StreamConsumed,
+)
 from .utils import (
     get_reason_phrase,
     is_known_encoding,
@@ -627,3 +633,22 @@ class Response:
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return f"<{class_name}(status_code={self.status_code})>"
+
+    def raise_for_status(self) -> None:
+        """
+        Raise the `HttpError` if one occurred.
+        """
+        message = (
+            "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
+            "For more information check: https://httpstatuses.com/{0.status_code}"
+        )
+
+        if 400 <= self.status_code < 500:
+            message = message.format(self, error_type="Client Error")
+        elif 500 <= self.status_code < 600:
+            message = message.format(self, error_type="Server Error")
+        else:
+            message = ""
+
+        if message:
+            raise HttpError(message)
