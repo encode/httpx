@@ -14,10 +14,11 @@ from ..config import (
 )
 from ..models import (
     URL,
-    ByteOrByteStream,
     Headers,
     HeaderTypes,
+    QueryParamTypes,
     Request,
+    RequestData,
     Response,
     URLTypes,
 )
@@ -100,14 +101,17 @@ class SyncClient:
         method: str,
         url: URLTypes,
         *,
-        content: ByteOrByteStream = b"",
+        data: RequestData = b"",
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
         ssl: SSLConfig = None,
         timeout: TimeoutConfig = None,
     ) -> SyncResponse:
-        request = Request(method, url, headers=headers, content=content)
+        request = Request(
+            method, url, data=data, query_params=query_params, headers=headers
+        )
         self.prepare_request(request)
         response = self.send(
             request,
@@ -122,6 +126,7 @@ class SyncClient:
         self,
         url: URLTypes,
         *,
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -142,6 +147,7 @@ class SyncClient:
         self,
         url: URLTypes,
         *,
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -162,6 +168,7 @@ class SyncClient:
         self,
         url: URLTypes,
         *,
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = False,  #  Note: Differs to usual default.
@@ -182,7 +189,8 @@ class SyncClient:
         self,
         url: URLTypes,
         *,
-        content: ByteOrByteStream = b"",
+        data: RequestData = b"",
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -192,7 +200,7 @@ class SyncClient:
         return self.request(
             "POST",
             url,
-            content=content,
+            data=data,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -204,7 +212,8 @@ class SyncClient:
         self,
         url: URLTypes,
         *,
-        content: ByteOrByteStream = b"",
+        data: RequestData = b"",
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -214,7 +223,7 @@ class SyncClient:
         return self.request(
             "PUT",
             url,
-            content=content,
+            data=data,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -226,7 +235,8 @@ class SyncClient:
         self,
         url: URLTypes,
         *,
-        content: ByteOrByteStream = b"",
+        data: RequestData = b"",
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -236,7 +246,7 @@ class SyncClient:
         return self.request(
             "PATCH",
             url,
-            content=content,
+            data=data,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -248,7 +258,8 @@ class SyncClient:
         self,
         url: URLTypes,
         *,
-        content: ByteOrByteStream = b"",
+        data: RequestData = b"",
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -258,7 +269,7 @@ class SyncClient:
         return self.request(
             "DELETE",
             url,
-            content=content,
+            data=data,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,

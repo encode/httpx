@@ -222,8 +222,8 @@ async def test_same_domain_redirect():
 async def test_body_redirect():
     client = RedirectAdapter(MockDispatch())
     url = "https://example.org/redirect_body"
-    content = b"Example request body"
-    response = await client.request("POST", url, content=content)
+    data = b"Example request body"
+    response = await client.request("POST", url, data=data)
     data = json.loads(response.content.decode())
     assert response.url == URL("https://example.org/redirect_body_target")
     assert data == {"body": "Example request body"}
@@ -238,4 +238,4 @@ async def test_cannot_redirect_streaming_body():
         yield b"Example request body"
 
     with pytest.raises(RedirectBodyUnavailable):
-        await client.request("POST", url, content=streaming_body())
+        await client.request("POST", url, data=streaming_body())

@@ -44,7 +44,9 @@ HeaderTypes = typing.Union[
     typing.List[typing.Tuple[typing.AnyStr, typing.AnyStr]],
 ]
 
-ByteOrByteStream = typing.Union[bytes, typing.AsyncIterator[bytes]]
+RequestData = typing.Union[bytes, typing.AsyncIterator[bytes]]
+
+ResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 
 class URL:
@@ -456,18 +458,18 @@ class Request:
         method: str,
         url: typing.Union[str, URL],
         *,
+        data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
-        content: ByteOrByteStream = b"",
     ):
         self.method = method.upper()
         self.url = URL(url, query_params=query_params)
-        if isinstance(content, bytes):
+        if isinstance(data, bytes):
             self.is_streaming = False
-            self.content = content
+            self.content = data
         else:
             self.is_streaming = True
-            self.content_aiter = content
+            self.content_aiter = data
         self.headers = Headers(headers)
 
     async def read(self) -> bytes:
@@ -532,7 +534,7 @@ class Response:
         reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
-        content: ByteOrByteStream = b"",
+        content: ResponseContent = b"",
         on_close: typing.Callable = None,
         request: Request = None,
         history: typing.List["Response"] = None,

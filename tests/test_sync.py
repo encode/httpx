@@ -35,7 +35,7 @@ def test_get(server):
 @threadpool
 def test_post(server):
     with httpcore.SyncClient() as http:
-        response = http.post("http://127.0.0.1:8000/", content=b"Hello, world!")
+        response = http.post("http://127.0.0.1:8000/", data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 

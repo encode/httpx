@@ -65,7 +65,7 @@ class RedirectAdapter(Adapter):
         url = self.redirect_url(request, response)
         headers = self.redirect_headers(request, url)
         content = self.redirect_content(request, method)
-        return Request(method=method, url=url, headers=headers, content=content)
+        return Request(method=method, url=url, headers=headers, data=content)
 
     def redirect_method(self, request: Request, response: Response) -> str:
         """
