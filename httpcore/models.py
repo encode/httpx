@@ -44,7 +44,9 @@ HeaderTypes = typing.Union[
     typing.List[typing.Tuple[typing.AnyStr, typing.AnyStr]],
 ]
 
-ByteOrByteStream = typing.Union[bytes, typing.AsyncIterator[bytes]]
+RequestData = typing.Union[dict, bytes, typing.AsyncIterator[bytes]]
+
+ResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 
 class URL:
@@ -197,7 +199,7 @@ class Origin:
         return hash((self.is_ssl, self.host, self.port))
 
 
-class QueryParams(typing.Mapping):
+class QueryParams(typing.Mapping[str, str]):
     """
     URL query parameters, as a multi-dict.
     """
@@ -456,19 +458,24 @@ class Request:
         method: str,
         url: typing.Union[str, URL],
         *,
+        data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
-        content: ByteOrByteStream = b"",
     ):
         self.method = method.upper()
         self.url = URL(url, query_params=query_params)
-        if isinstance(content, bytes):
+        self.headers = Headers(headers)
+
+        if isinstance(data, bytes):
             self.is_streaming = False
-            self.content = content
+            self.content = data
+        elif isinstance(data, dict):
+            self.is_streaming = False
+            self.content = urlencode(data, doseq=True).encode("utf-8")
+            self.headers["Content-Type"] = "application/x-www-form-urlencoded"
         else:
             self.is_streaming = True
-            self.content_aiter = content
-        self.headers = Headers(headers)
+            self.content_aiter = data
 
     async def read(self) -> bytes:
         """
@@ -532,7 +539,7 @@ class Response:
         reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
-        content: ByteOrByteStream = b"",
+        content: ResponseContent = b"",
         on_close: typing.Callable = None,
         request: Request = None,
         history: typing.List["Response"] = None,

@@ -17,10 +17,10 @@ from .config import (
 from .dispatch.connection_pool import ConnectionPool
 from .models import (
     URL,
-    ByteOrByteStream,
     HeaderTypes,
     QueryParamTypes,
     Request,
+    RequestData,
     Response,
     URLTypes,
 )
@@ -49,7 +49,7 @@ class Client:
         method: str,
         url: URLTypes,
         *,
-        content: ByteOrByteStream = b"",
+        data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
@@ -58,7 +58,7 @@ class Client:
         timeout: TimeoutConfig = None,
     ) -> Response:
         request = Request(
-            method, url, query_params=query_params, headers=headers, content=content
+            method, url, data=data, query_params=query_params, headers=headers
         )
         self.prepare_request(request)
         response = await self.send(
@@ -140,7 +140,7 @@ class Client:
         self,
         url: URLTypes,
         *,
-        content: ByteOrByteStream = b"",
+        data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
@@ -151,7 +151,7 @@ class Client:
         return await self.request(
             "POST",
             url,
-            content=content,
+            data=data,
             query_params=query_params,
             headers=headers,
             stream=stream,
@@ -164,7 +164,7 @@ class Client:
         self,
         url: URLTypes,
         *,
-        content: ByteOrByteStream = b"",
+        data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
@@ -175,7 +175,7 @@ class Client:
         return await self.request(
             "PUT",
             url,
-            content=content,
+            data=data,
             query_params=query_params,
             headers=headers,
             stream=stream,
@@ -188,7 +188,7 @@ class Client:
         self,
         url: URLTypes,
         *,
-        content: ByteOrByteStream = b"",
+        data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
@@ -199,7 +199,7 @@ class Client:
         return await self.request(
             "PATCH",
             url,
-            content=content,
+            data=data,
             query_params=query_params,
             headers=headers,
             stream=stream,
@@ -212,7 +212,7 @@ class Client:
         self,
         url: URLTypes,
         *,
-        content: ByteOrByteStream = b"",
+        data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
@@ -223,7 +223,7 @@ class Client:
         return await self.request(
             "DELETE",
             url,
-            content=content,
+            data=data,
             query_params=query_params,
             headers=headers,
             stream=stream,

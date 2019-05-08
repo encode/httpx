@@ -92,7 +92,7 @@ async def test_http2_get_request():
 async def test_http2_post_request():
     server = MockServer()
     async with httpcore.HTTP2Connection(reader=server, writer=server) as conn:
-        response = await conn.request("POST", "http://example.org", content=b"<data>")
+        response = await conn.request("POST", "http://example.org", data=b"<data>")
     assert response.status_code == 200
     assert json.loads(response.content) == {
         "method": "POST",
