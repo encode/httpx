@@ -31,6 +31,7 @@ from .status_codes import codes
 class AsyncClient:
     def __init__(
         self,
+        base_url: URLTypes = None,
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
@@ -45,6 +46,8 @@ class AsyncClient:
 
         self.max_redirects = max_redirects
         self.dispatch = dispatch
+
+        self.base_url = None if base_url is None else URL(base_url)
 
     async def get(
         self,
@@ -221,6 +224,10 @@ class AsyncClient:
         ssl: SSLConfig = None,
         timeout: TimeoutConfig = None,
     ) -> Response:
+
+        if self.base_url is not None:
+            url = URL(url, allow_relative=True).resolve_with(self.base_url)
+
         request = Request(
             method, url, data=data, query_params=query_params, headers=headers
         )
@@ -375,6 +382,7 @@ class AsyncClient:
 class Client:
     def __init__(
         self,
+        base_url: URLTypes = None,
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
@@ -382,8 +390,11 @@ class Client:
         dispatch: Dispatcher = None,
         backend: ConcurrencyBackend = None,
     ) -> None:
+        self.base_url = None if base_url is None else URL(base_url)
+
         self._client = AsyncClient(
             ssl=ssl,
+            base_url=base_url,
             timeout=timeout,
             pool_limits=pool_limits,
             max_redirects=max_redirects,
@@ -405,6 +416,10 @@ class Client:
         ssl: SSLConfig = None,
         timeout: TimeoutConfig = None,
     ) -> SyncResponse:
+
+        if self.base_url is not None:
+            url = URL(url, allow_relative=True).resolve_with(self.base_url)
+
         request = Request(
             method, url, data=data, query_params=query_params, headers=headers
         )

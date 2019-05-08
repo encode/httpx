@@ -41,6 +41,16 @@ def test_get(server):
 
 
 @threadpool
+def test_get_base_url(server):
+    base_url = "http://127.0.0.1:8000/"
+    with httpcore.Client(base_url=base_url) as client:
+        response = client.get("/hello")
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+    assert str(response.url) == "http://127.0.0.1:8000/hello"
+
+
+@threadpool
 def test_post(server):
     with httpcore.Client() as http:
         response = http.post("http://127.0.0.1:8000/", data=b"Hello, world!")

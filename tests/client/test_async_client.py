@@ -16,6 +16,16 @@ async def test_get(server):
 
 
 @pytest.mark.asyncio
+async def test_get_base_url(server):
+    base_url = "http://127.0.0.1:8000/"
+    async with httpcore.AsyncClient(base_url=base_url) as client:
+        response = await client.get("/hello")
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+    assert str(response.url) == "http://127.0.0.1:8000/hello"
+
+
+@pytest.mark.asyncio
 async def test_post(server):
     url = "http://127.0.0.1:8000/"
     async with httpcore.AsyncClient() as client:
