@@ -1,5 +1,15 @@
 # HTTPCore
 
+<a href="https://travis-ci.org/encode/httpcore">
+    <img src="https://travis-ci.org/encode/httpcore.svg?branch=master" alt="Build Status">
+</a>
+<a href="https://codecov.io/gh/encode/httpcore">
+    <img src="https://codecov.io/gh/encode/httpcore/branch/master/graph/badge.svg" alt="Coverage">
+</a>
+<a href="https://pypi.org/project/httpcore/">
+    <img src="https://badge.fury.io/py/httpcore.svg" alt="Package version">
+</a>
+
 A proposal for [requests III](https://github.com/kennethreitz/requests3).
 
 ## Feature support
