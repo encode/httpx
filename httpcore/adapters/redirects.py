@@ -1,7 +1,7 @@
 import typing
+from http import HTTPStatus
 
 from ..config import DEFAULT_MAX_REDIRECTS
-from ..constants import codes
 from ..exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from ..interfaces import Adapter
 from ..models import URL, Headers, Request, Response
@@ -75,17 +75,17 @@ class RedirectAdapter(Adapter):
         method = request.method
 
         # https://tools.ietf.org/html/rfc7231#section-6.4.4
-        if response.status_code == codes.see_other and method != "HEAD":
+        if response.status_code == HTTPStatus.SEE_OTHER and method != "HEAD":
             method = "GET"
 
         # Do what the browsers do, despite standards...
         # Turn 302s into GETs.
-        if response.status_code == codes.found and method != "HEAD":
+        if response.status_code == HTTPStatus.FOUND and method != "HEAD":
             method = "GET"
 
         # If a POST is responded to with a 301, turn it into a GET.
         # This bizarre behaviour is explained in 'requests' issue 1704.
-        if response.status_code == codes.moved_permanently and method == "POST":
+        if response.status_code == HTTPStatus.MOVED_PERMANENTLY and method == "POST":
             method = "GET"
 
         return method

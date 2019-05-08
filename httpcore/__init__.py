@@ -2,7 +2,7 @@ from .adapters.redirects import RedirectAdapter
 from .backends.sync import SyncClient
 from .client import Client
 from .config import PoolLimits, SSLConfig, TimeoutConfig
-from .constants import Protocol, codes
+from .constants import Protocol
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.http2 import HTTP2Connection

@@ -1,5 +1,6 @@
 import cgi
 import typing
+from http import HTTPStatus
 from urllib.parse import parse_qsl, urlencode
 
 import chardet
@@ -7,7 +8,6 @@ import idna
 import rfc3986
 
 from .config import SSLConfig, TimeoutConfig
-from .constants import codes
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -546,7 +546,7 @@ class Response:
     ):
         try:
             # Use a StatusCode IntEnum if possible, for a nicer representation.
-            self.status_code = codes(status_code)  # type: int
+            self.status_code = HTTPStatus(status_code)  # type: int
         except ValueError:
             self.status_code = status_code
         self.reason_phrase = reason_phrase or get_reason_phrase(status_code)
@@ -720,11 +720,11 @@ class Response:
         return (
             self.status_code
             in (
-                codes.moved_permanently,
-                codes.found,
-                codes.see_other,
-                codes.temporary_redirect,
-                codes.permanent_redirect,
+                HTTPStatus.MOVED_PERMANENTLY,
+                HTTPStatus.FOUND,
+                HTTPStatus.SEE_OTHER,
+                HTTPStatus.TEMPORARY_REDIRECT,
+                HTTPStatus.PERMANENT_REDIRECT,
             )
             and "location" in self.headers
         )
