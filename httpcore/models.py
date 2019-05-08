@@ -198,6 +198,10 @@ class Origin:
 
 
 class QueryParams(typing.Mapping):
+    """
+    URL query parameters, as a multi-dict.
+    """
+
     def __init__(self, *args: QueryParamTypes, **kwargs: typing.Any) -> None:
         assert len(args) < 2, "Too many arguments."
         assert not (args and kwargs), "Cannot mix named and unnamed arguments."
@@ -517,7 +521,7 @@ class Request:
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         url = str(self.url)
-        return f"<{class_name}({self.method}, {url})>"
+        return f"<{class_name}({self.method!r}, {url!r})>"
 
 
 class Response:
@@ -720,7 +724,7 @@ class Response:
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        return f"<{class_name}(status_code={self.status_code})>"
+        return f"<{class_name}({self.status_code}, {self.reason_phrase!r})>"
 
     def raise_for_status(self) -> None:
         """
