@@ -116,7 +116,7 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 * `.request` - **Request**
 * `.cookies` - **Cookies** *TODO*
 * `.history` - **List[Response]**
-* `def .raise_for_status()` - **Response** *TODO*
+* `def .raise_for_status()` - **None**
 * `def .json()` - **Any** *TODO*
 * `async def .read()` - **bytes**
 * `async def .stream()` - **bytes iterator**
