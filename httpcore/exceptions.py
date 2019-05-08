@@ -34,6 +34,12 @@ class PoolTimeout(Timeout):
 # HTTP exceptions...
 
 
+class HttpError(Exception):
+    """
+    An Http error occurred.
+    """
+
+
 class ProtocolError(Exception):
     """
     Malformed HTTP.
