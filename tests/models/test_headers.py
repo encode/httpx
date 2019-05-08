@@ -138,7 +138,6 @@ def test_headers_decode_explicit_encoding():
     raw_headers = [(b"Custom", "Code point: ☃".encode("utf-8"))]
     headers = httpcore.Headers(raw_headers)
     headers.encoding = "iso-8859-1"
-    print(headers)
     assert dict(headers) == {"custom": "Code point: â\x98\x83"}
     assert headers.encoding == "iso-8859-1"
 
