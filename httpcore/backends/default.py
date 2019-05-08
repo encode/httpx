@@ -20,6 +20,23 @@ from ..interfaces import BasePoolSemaphore, BaseReader, BaseWriter
 OptionalTimeout = typing.Optional[TimeoutConfig]
 
 
+# Monky-patch for https://bugs.python.org/issue36709
+#
+# This prevents console errors when outstanding HTTPS connections
+# still exist at the point of exiting.
+#
+# Clients which have been opened using a `with` block, or which have
+# had `close()` closed, will not exhibit this issue in the first place.
+
+_write = asyncio.selector_events._SelectorSocketTransport.write
+
+def _fixed_write(self, exc):
+    if not self._loop.is_closed():
+        _write(self, exc)
+
+asyncio.selector_events._SelectorSocketTransport.write = _fixed_write
+
+
 class Reader(BaseReader):
     def __init__(
         self, stream_reader: asyncio.StreamReader, timeout: TimeoutConfig
@@ -58,7 +75,7 @@ class Writer(BaseWriter):
 
         self.stream_writer.write(data)
         try:
-            data = await asyncio.wait_for(  # type: ignore
+            await asyncio.wait_for(  # type: ignore
                 self.stream_writer.drain(), timeout.write_timeout
             )
         except asyncio.TimeoutError:
@@ -120,6 +137,8 @@ async def connect(
         ident = ssl_object.selected_alpn_protocol()
         if ident is None:
             ident = ssl_object.selected_npn_protocol()
+
+    stream_writer.transport.set_write_buffer_limits(high=0, low=0)
 
     reader = Reader(stream_reader=stream_reader, timeout=timeout)
     writer = Writer(stream_writer=stream_writer, timeout=timeout)
