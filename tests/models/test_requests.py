@@ -3,6 +3,11 @@ import pytest
 import httpcore
 
 
+def test_request_repr():
+    request = httpcore.Request("GET", "http://example.org")
+    assert repr(request) == "<Request('GET', 'http://example.org')>"
+
+
 def test_host_header():
     request = httpcore.Request("GET", "http://example.org")
     request.prepare()

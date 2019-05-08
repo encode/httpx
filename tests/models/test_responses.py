@@ -15,6 +15,11 @@ def test_response():
     assert response.text == "Hello, world!"
 
 
+def test_response_repr():
+    response = httpcore.Response(200, content=b"Hello, world!")
+    assert repr(response) == "<Response(200, 'OK')>"
+
+
 def test_response_content_type_encoding():
     """
     Use the charset encoding in the Content-Type header if possible.
@@ -47,7 +52,7 @@ def test_response_fallback_to_autodetect():
     assert response.encoding == "EUC-JP"
 
 
-def test_response():
+def test_response_default_text_encoding():
     """
     A media type of 'text/*' with no charset should default to ISO-8859-1.
     See: https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.7.1
@@ -67,6 +72,16 @@ def test_response_default_encoding():
     response = httpcore.Response(200, content=b"")
     assert response.text == ""
     assert response.encoding == "utf-8"
+
+
+def test_response_non_text_encoding():
+    """
+    Default to apparent encoding for non-text content-type headers.
+    """
+    headers = {"Content-Type": "image/png"}
+    response = httpcore.Response(200, content=b"xyz", headers=headers)
+    assert response.text == "xyz"
+    assert response.encoding == "ascii"
 
 
 def test_response_set_explicit_encoding():
