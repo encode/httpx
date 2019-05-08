@@ -15,7 +15,15 @@ from .config import (
     TimeoutConfig,
 )
 from .dispatch.connection_pool import ConnectionPool
-from .models import URL, ByteOrByteStream, HeaderTypes, Request, Response, URLTypes
+from .models import (
+    URL,
+    ByteOrByteStream,
+    HeaderTypes,
+    QueryParamTypes,
+    Request,
+    Response,
+    URLTypes,
+)
 
 
 class Client:
@@ -42,13 +50,16 @@ class Client:
         url: URLTypes,
         *,
         content: ByteOrByteStream = b"",
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
         ssl: SSLConfig = None,
         timeout: TimeoutConfig = None,
     ) -> Response:
-        request = Request(method, url, headers=headers, content=content)
+        request = Request(
+            method, url, query_params=query_params, headers=headers, content=content
+        )
         self.prepare_request(request)
         response = await self.send(
             request,
@@ -63,6 +74,7 @@ class Client:
         self,
         url: URLTypes,
         *,
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -72,6 +84,7 @@ class Client:
         return await self.request(
             "GET",
             url,
+            query_params=query_params,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -83,6 +96,7 @@ class Client:
         self,
         url: URLTypes,
         *,
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -92,6 +106,7 @@ class Client:
         return await self.request(
             "OPTIONS",
             url,
+            query_params=query_params,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -103,6 +118,7 @@ class Client:
         self,
         url: URLTypes,
         *,
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = False,  #  Note: Differs to usual default.
@@ -112,6 +128,7 @@ class Client:
         return await self.request(
             "HEAD",
             url,
+            query_params=query_params,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -124,6 +141,7 @@ class Client:
         url: URLTypes,
         *,
         content: ByteOrByteStream = b"",
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -134,6 +152,7 @@ class Client:
             "POST",
             url,
             content=content,
+            query_params=query_params,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -146,6 +165,7 @@ class Client:
         url: URLTypes,
         *,
         content: ByteOrByteStream = b"",
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -156,6 +176,7 @@ class Client:
             "PUT",
             url,
             content=content,
+            query_params=query_params,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -168,6 +189,7 @@ class Client:
         url: URLTypes,
         *,
         content: ByteOrByteStream = b"",
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -178,6 +200,7 @@ class Client:
             "PATCH",
             url,
             content=content,
+            query_params=query_params,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
@@ -190,6 +213,7 @@ class Client:
         url: URLTypes,
         *,
         content: ByteOrByteStream = b"",
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         allow_redirects: bool = True,
@@ -200,6 +224,7 @@ class Client:
             "DELETE",
             url,
             content=content,
+            query_params=query_params,
             headers=headers,
             stream=stream,
             allow_redirects=allow_redirects,
