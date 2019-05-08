@@ -134,7 +134,7 @@ what gets sent over the wire.*
 >>> response = await client.send(request)
 ```
 
-* `def __init__(method, url, content, headers)`
+* `def __init__(method, url, query_params, content, headers)`
 * `.method` - **str** (Uppercased)
 * `.url` - **URL**
 * `.content` - **byte** or **byte async iterator**
@@ -150,7 +150,7 @@ what gets sent over the wire.*
 'example.org'
 ```
 
-* `def __init__(url, allow_relative=False)`
+* `def __init__(url, allow_relative=False, query_params=None)`
 * `.scheme` - **str**
 * `.authority` - **str**
 * `.host` - **str**
