@@ -49,7 +49,10 @@ ByteOrByteStream = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 class URL:
     def __init__(
-        self, url: URLTypes, allow_relative: bool = False, params: QueryParamTypes = None
+        self,
+        url: URLTypes,
+        allow_relative: bool = False,
+        query_params: QueryParamTypes = None,
     ) -> None:
         if isinstance(url, rfc3986.uri.URIReference):
             self.components = url
@@ -66,6 +69,11 @@ class URL:
 
         # Normalize scheme and domain name.
         self.components = self.components.normalize()
+
+        # Add any query parameters.
+        if query_params:
+            query_string = str(QueryParams(query_params))
+            self.components = self.components.copy_with(query=query_string)
 
         # Enforce absolute URLs by default.
         if not allow_relative:
@@ -444,11 +452,12 @@ class Request:
         method: str,
         url: typing.Union[str, URL],
         *,
+        query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         content: ByteOrByteStream = b"",
     ):
         self.method = method.upper()
-        self.url = URL(url) if isinstance(url, str) else url
+        self.url = URL(url, query_params=query_params)
         if isinstance(content, bytes):
             self.is_streaming = False
             self.content = content

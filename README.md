@@ -87,14 +87,14 @@ Additionally, credit is due to for `urllib3` for plenty of design inspiration.
 ```
 
 * `def __init__([ssl], [timeout], [pool_limits], [max_redirects])`
-* `async def .request(method, url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .get(url, [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .options(url, [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .head(url, [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .post(url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .put(url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .patch(url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .delete(url, [content], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .request(method, url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .get(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .options(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .head(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .post(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .put(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .patch(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `async def .delete(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
 * `def .prepare_request(request)`
 * `async def .send(request, [stream], [allow_redirects], [ssl], [timeout])`
 * `async def .close()`
