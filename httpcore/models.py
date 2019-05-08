@@ -1,5 +1,6 @@
 import cgi
 import typing
+from urllib.parse import parse_qsl, urlencode
 
 import chardet
 import idna
@@ -30,6 +31,13 @@ from .utils import (
 
 URLTypes = typing.Union["URL", str]
 
+QueryParamTypes = typing.Union[
+    "QueryParams",
+    typing.Mapping[str, str],
+    typing.List[typing.Tuple[typing.Any, typing.Any]],
+    str,
+]
+
 HeaderTypes = typing.Union[
     "Headers",
     typing.Dict[typing.AnyStr, typing.AnyStr],
@@ -40,7 +48,9 @@ ByteOrByteStream = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 
 class URL:
-    def __init__(self, url: URLTypes, allow_relative: bool = False) -> None:
+    def __init__(
+        self, url: URLTypes, allow_relative: bool = False, params: QueryParamTypes = None
+    ) -> None:
         if isinstance(url, rfc3986.uri.URIReference):
             self.components = url
         elif isinstance(url, str):
@@ -156,6 +166,10 @@ class URL:
 
 
 class Origin:
+    """
+    The URL scheme and authority information, as a comparable, hashable object.
+    """
+
     def __init__(self, url: URLTypes) -> None:
         if not isinstance(url, URL):
             url = URL(url)
@@ -175,9 +189,74 @@ class Origin:
         return hash((self.is_ssl, self.host, self.port))
 
 
+class QueryParams(typing.Mapping):
+    def __init__(self, *args: QueryParamTypes, **kwargs: typing.Any) -> None:
+        assert len(args) < 2, "Too many arguments."
+        assert not (args and kwargs), "Cannot mix named and unnamed arguments."
+
+        value = args[0] if args else kwargs
+
+        if isinstance(value, str):
+            items = parse_qsl(value)
+        elif isinstance(value, QueryParams):
+            items = value.multi_items()
+        elif isinstance(value, list):
+            items = value
+        else:
+            items = value.items()  # type: ignore
+
+        self._list = [(str(k), str(v)) for k, v in items]
+        self._dict = {str(k): str(v) for k, v in items}
+
+    def getlist(self, key: typing.Any) -> typing.List[str]:
+        return [item_value for item_key, item_value in self._list if item_key == key]
+
+    def keys(self) -> typing.KeysView:
+        return self._dict.keys()
+
+    def values(self) -> typing.ValuesView:
+        return self._dict.values()
+
+    def items(self) -> typing.ItemsView:
+        return self._dict.items()
+
+    def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
+        return list(self._list)
+
+    def get(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
+        if key in self._dict:
+            return self._dict[key]
+        return default
+
+    def __getitem__(self, key: typing.Any) -> str:
+        return self._dict[key]
+
+    def __contains__(self, key: typing.Any) -> bool:
+        return key in self._dict
+
+    def __iter__(self) -> typing.Iterator[typing.Any]:
+        return iter(self.keys())
+
+    def __len__(self) -> int:
+        return len(self._dict)
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+        return sorted(self._list) == sorted(other._list)
+
+    def __str__(self) -> str:
+        return urlencode(self._list)
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        query_string = str(self)
+        return f"{class_name}({query_string!r})"
+
+
 class Headers(typing.MutableMapping[str, str]):
     """
-    A case-insensitive multidict.
+    HTTP headers, as a case-insensitive multi-dict.
     """
 
     def __init__(self, headers: HeaderTypes = None, encoding: str = None) -> None:
@@ -200,8 +279,8 @@ class Headers(typing.MutableMapping[str, str]):
     @property
     def encoding(self) -> str:
         """
-        Header encoding is mandated as ascii, but utf-8 or iso-8859-1 may be
-        seen in the wild.
+        Header encoding is mandated as ascii, but we allow fallbacks to utf-8
+        or iso-8859-1.
         """
         if self._encoding is None:
             for encoding in ["ascii", "utf-8"]:

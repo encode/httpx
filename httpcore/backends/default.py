@@ -28,13 +28,16 @@ OptionalTimeout = typing.Optional[TimeoutConfig]
 # Clients which have been opened using a `with` block, or which have
 # had `close()` closed, will not exhibit this issue in the first place.
 
-_write = asyncio.selector_events._SelectorSocketTransport.write
 
-def _fixed_write(self, exc):
+_write = asyncio.selector_events._SelectorSocketTransport.write  # type: ignore
+
+
+def _fixed_write(self, data: bytes) -> None:  # type: ignore
     if not self._loop.is_closed():
-        _write(self, exc)
+        _write(self, data)
 
-asyncio.selector_events._SelectorSocketTransport.write = _fixed_write
+
+asyncio.selector_events._SelectorSocketTransport.write = _fixed_write  # type: ignore
 
 
 class Reader(BaseReader):
@@ -137,8 +140,6 @@ async def connect(
         ident = ssl_object.selected_alpn_protocol()
         if ident is None:
             ident = ssl_object.selected_npn_protocol()
-
-    stream_writer.transport.set_write_buffer_limits(high=0, low=0)
 
     reader = Reader(stream_reader=stream_reader, timeout=timeout)
     writer = Writer(stream_writer=stream_writer, timeout=timeout)
