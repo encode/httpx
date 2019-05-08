@@ -30,7 +30,7 @@ Plus all the standard features of requests...
 * Automatic Decompression
 * Automatic Content Decoding
 * Unicode Response Bodies
-* Multipart File Uploads *TODO - Request content currently supports bytes or async byte iterators.*
+* Multipart File Uploads *TODO - Request content currently supports URL encoded data, bytes, or async byte iterators.*
 * HTTP(S) Proxy Support *TODO*
 * Connection Timeouts
 * Streaming Downloads
