@@ -10,8 +10,6 @@
     <img src="https://badge.fury.io/py/httpcore.svg" alt="Package version">
 </a>
 
-A proposal for [requests III](https://github.com/kennethreitz/requests3).
-
 ## Feature support
 
 * `HTTP/1.1` and `HTTP/2` Support.
