@@ -79,7 +79,9 @@ Alternatively, thread-synchronous requests:
 * `rfc3986` - URL parsing & normalization.
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
 
-Additionally, credit is due to for `urllib3` for plenty of design inspiration.
+A huge amount of credit is due to `requests`, for the API layout that
+much of this work follows, as well as to `urllib3` for plenty of design
+inspiration around the lower level networking details.
 
 ---
 
