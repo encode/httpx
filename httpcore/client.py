@@ -24,6 +24,7 @@ from .models import (
     Response,
     URLTypes,
 )
+from .parallel import Parallel
 
 
 class Client:
@@ -43,6 +44,9 @@ class Client:
             dispatch=auth_adapter, max_redirects=max_redirects
         )
         self.adapter = EnvironmentAdapter(dispatch=redirect_adapter)
+
+    def parallel(self):
+        return Parallel(self)
 
     async def request(
         self,
