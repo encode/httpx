@@ -30,6 +30,9 @@ def test_get(server):
     assert response.status_code == 200
     assert response.content == b"Hello, world!"
     assert response.text == "Hello, world!"
+    assert response.protocol == "HTTP/1.1"
+    assert response.headers
+    assert repr(response) == "<SyncResponse(status_code=200)>"
 
 
 @threadpool
@@ -69,3 +72,46 @@ def test_raw_iterator(server):
     for chunk in response.raw():
         body += chunk
     assert body == b"Hello, world!"
+    response.close()  # TODO: should Response be available as context managers?
+
+
+@threadpool
+def test_options(server):
+    with httpcore.SyncClient() as http:
+        response = http.options("http://127.0.0.1:8000/")
+
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
+@threadpool
+def test_head(server):
+    with httpcore.SyncClient() as http:
+        response = http.head("http://127.0.0.1:8000/")
+
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
+@threadpool
+def test_put(server):
+    with httpcore.SyncClient() as http:
+        response = http.put("http://127.0.0.1:8000/", data=b"Hello, world!")
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
+@threadpool
+def test_patch(server):
+    with httpcore.SyncClient() as http:
+        response = http.patch("http://127.0.0.1:8000/", data=b"Hello, world!")
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
+@threadpool
+def test_delete(server):
+    with httpcore.SyncClient() as http:
+        response = http.delete("http://127.0.0.1:8000/")
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
