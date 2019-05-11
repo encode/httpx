@@ -1,3 +1,4 @@
+from unittest import mock
 import zlib
 
 import brotli
@@ -87,3 +88,32 @@ def test_decoding_errors(header_value):
     with pytest.raises(httpcore.exceptions.DecodingError):
         response = httpcore.Response(200, headers=headers, content=compressed_body)
         response.content
+
+
+@pytest.mark.parametrize("header_value", (b"deflate", b"gzip"))
+def test_zlib_flush_errors(header_value):
+    body = b"test 123"
+    headers = [(b"Content-Encoding", header_value)]
+    mock_decompressor = mock.Mock()
+    mock_decompressor.decompress.return_value = body
+    mock_decompressor.flush.side_effect = zlib.error
+    with mock.patch(
+        "httpcore.decoders.zlib.decompressobj", return_value=mock_decompressor
+    ):
+        with pytest.raises(httpcore.exceptions.DecodingError):
+            response = httpcore.Response(200, headers=headers, content=body)
+            response.content
+
+
+def test_brotli_flush_error():
+    body = b"test 123"
+    headers = [(b"Content-Encoding", b"br")]
+    mock_decompressor = mock.Mock()
+    mock_decompressor.decompress.return_value = body
+    mock_decompressor.finish.side_effect = brotli.Error
+    with mock.patch(
+        "httpcore.decoders.brotli.Decompressor", return_value=mock_decompressor
+    ):
+        with pytest.raises(httpcore.exceptions.DecodingError):
+            response = httpcore.Response(200, headers=headers, content=body)
+            response.content
