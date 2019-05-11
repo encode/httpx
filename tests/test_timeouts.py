@@ -20,13 +20,23 @@ async def test_read_timeout(server):
 
 
 @pytest.mark.asyncio
-async def test_connect_timeout(server):
+async def test_connect_timeout_on_client(server):
     timeout = TimeoutConfig(connect_timeout=0.0001)
 
     async with Client(timeout=timeout) as client:
         with pytest.raises(ConnectTimeout):
             # See https://stackoverflow.com/questions/100841/
             await client.get("http://10.255.255.1/")
+
+
+@pytest.mark.asyncio
+async def test_connect_timeout_on_request_call(server):
+    timeout = TimeoutConfig(connect_timeout=0.0001)
+
+    async with Client() as client:
+        with pytest.raises(ConnectTimeout):
+            # See https://stackoverflow.com/questions/100841/
+            await client.get("http://10.255.255.1/", timeout=timeout)
 
 
 @pytest.mark.asyncio
