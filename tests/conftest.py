@@ -1,6 +1,8 @@
 import asyncio
+import os
 
 import pytest
+import trustme
 from uvicorn.config import Config
 from uvicorn.main import Server
 
@@ -53,6 +55,29 @@ async def status_code(scope, receive, send):
 @pytest.fixture
 async def server():
     config = Config(app=app, lifespan="off")
+    server = Server(config=config)
+    task = asyncio.ensure_future(server.serve())
+    try:
+        while not server.started:
+            await asyncio.sleep(0.0001)
+        yield server
+    finally:
+        server.should_exit = True
+        await task
+
+
+@pytest.fixture
+async def https_server():
+    ca = trustme.CA()
+    server_cert = ca.issue_cert("example.org")
+    with ca.cert_pem.tempfile() as cert_temp_path, ca.private_key_pem.tempfile() as key_temp_path:
+        config = Config(
+            app=app,
+            lifespan="off",
+            ssl_certfile=cert_temp_path,
+            ssl_keyfile=key_temp_path,
+            port=8001,
+        )
     server = Server(config=config)
     task = asyncio.ensure_future(server.serve())
     try:
