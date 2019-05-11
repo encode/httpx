@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 import pytest
 from uvicorn.config import Config
@@ -53,6 +54,27 @@ async def status_code(scope, receive, send):
 @pytest.fixture
 async def server():
     config = Config(app=app, lifespan="off")
+    server = Server(config=config)
+    task = asyncio.ensure_future(server.serve())
+    try:
+        while not server.started:
+            await asyncio.sleep(0.0001)
+        yield server
+    finally:
+        server.should_exit = True
+        await task
+
+
+@pytest.fixture
+async def https_server():
+    here = os.path.dirname(__file__)
+    config = Config(
+        app=app,
+        lifespan="off",
+        ssl_keyfile=os.path.join(here, "assets/server.key"),
+        ssl_certfile=os.path.join(here, "assets/server.crt"),
+        port=8001,
+    )
     server = Server(config=config)
     task = asyncio.ensure_future(server.serve())
     try:
