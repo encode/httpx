@@ -8,5 +8,5 @@ fi
 
 set -x
 
-PYTHONPATH=. ${PREFIX}pytest --ignore venv --cov tests --cov ${PACKAGE} --cov-report= ${@}
-${PREFIX}coverage report
+PYTHONPATH=. ${PREFIX}pytest --ignore venv --cov tests --cov ${PACKAGE} --cov-report= ${@} tests/
+${PREFIX}coverage report -m
