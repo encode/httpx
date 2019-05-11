@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import h2.config
@@ -84,6 +85,23 @@ async def test_http2_get_request():
     server = MockServer()
     async with httpcore.HTTP2Connection(reader=server, writer=server) as conn:
         response = await conn.request("GET", "http://example.org")
+    assert response.status_code == 200
+    assert json.loads(response.content) == {"method": "GET", "path": "/", "body": ""}
+
+
+@pytest.mark.asyncio
+async def test_http2_get_request_calls_on_release():
+    server = MockServer()
+
+    async def release_callback():
+        await asyncio.sleep(0.1)
+        assert True
+
+    async with httpcore.HTTP2Connection(
+        reader=server, writer=server, on_release=release_callback
+    ) as conn:
+        response = await conn.request("GET", "http://example.org")
+        assert conn.is_closed is False
     assert response.status_code == 200
     assert json.loads(response.content) == {"method": "GET", "path": "/", "body": ""}
 
