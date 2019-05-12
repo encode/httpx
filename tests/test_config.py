@@ -47,13 +47,13 @@ async def test_load_ssl_config_cert_and_key():
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
 
 
-@pytest.mark.skip(reason="Self signed certificates raise an SSL error")
-@pytest.mark.asyncio
-async def test_load_ssl_config_cert():
-    cert_path = os.path.join(ASSETS, "server.crt")
-    ssl_config = httpcore.SSLConfig(cert=cert_path)
-    context = await ssl_config.load_ssl_context()
-    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+# @pytest.mark.skip(reason="Self signed certificates raise an SSL error")
+# @pytest.mark.asyncio
+# async def test_load_ssl_config_cert():
+#     cert_path = os.path.join(ASSETS, "server.crt")
+#     ssl_config = httpcore.SSLConfig(cert=cert_path)
+#     context = await ssl_config.load_ssl_context()
+#     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
 
 
 @pytest.mark.asyncio
