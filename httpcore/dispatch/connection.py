@@ -38,7 +38,12 @@ class HTTPConnection(Adapter):
         self.h2_connection = None  # type: typing.Optional[HTTP2Connection]
 
     def prepare_request(self, request: Request) -> None:
-        request.prepare()
+        if self.h11_connection is not None:
+            self.h11_connection.prepare_request(request)
+        elif self.h2_connection is not None:
+            self.h2_connection.prepare_request(request)
+        else:
+            request.prepare()
 
     async def send(self, request: Request, **options: typing.Any) -> Response:
         if self.h11_connection is None and self.h2_connection is None:

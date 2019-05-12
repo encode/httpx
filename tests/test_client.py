@@ -116,3 +116,19 @@ async def test_delete(server):
         response = await client.delete(url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_client_reuses_existing_connections(server):
+    url = "http://127.0.0.1:8000/"
+    async with httpcore.Client() as client:
+        # TODO: eek, should the client expose the connection pool?
+        connection_pool = client.adapter.dispatch.dispatch.dispatch.dispatch
+        assert isinstance(connection_pool, httpcore.ConnectionPool)
+        assert connection_pool.num_connections == 0
+
+        await client.get(url)
+        assert connection_pool.num_connections == 1
+
+        response = await client.get(url)
+        assert connection_pool.num_connections == 1

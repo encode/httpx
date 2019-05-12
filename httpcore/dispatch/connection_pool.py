@@ -1,5 +1,6 @@
 import collections.abc
 import typing
+import itertools
 
 from ..backends.default import PoolSemaphore
 from ..config import (
@@ -105,7 +106,13 @@ class ConnectionPool(Adapter):
         return len(self.keepalive_connections) + len(self.active_connections)
 
     def prepare_request(self, request: Request) -> None:
-        request.prepare()
+        if not self.num_connections:
+            request.prepare()
+        else:
+            conn = next(
+                itertools.chain(self.active_connections, self.keepalive_connections)
+            )
+            conn.prepare_request(request)
 
     async def send(self, request: Request, **options: typing.Any) -> Response:
         connection = await self.acquire_connection(request.url.origin)
