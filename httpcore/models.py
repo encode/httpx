@@ -1,3 +1,4 @@
+import asyncio
 import cgi
 import typing
 from urllib.parse import parse_qsl, urlencode
@@ -723,10 +724,6 @@ class Response:
             and "location" in self.headers
         )
 
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return f"<{class_name}({self.status_code}, {self.reason_phrase!r})>"
-
     def raise_for_status(self) -> None:
         """
         Raise the `HttpError` if one occurred.
@@ -745,3 +742,83 @@ class Response:
 
         if message:
             raise HttpError(message)
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        return f"<{class_name}({self.status_code}, {self.reason_phrase!r})>"
+
+
+class SyncResponse:
+    """
+    A thread-synchronous response. This class proxies onto a `Response`
+    instance, providing standard synchronous interfaces where required.
+    """
+
+    def __init__(self, response: Response, loop: asyncio.AbstractEventLoop):
+        self._response = response
+        self._loop = loop
+
+    @property
+    def status_code(self) -> int:
+        return self._response.status_code
+
+    @property
+    def reason_phrase(self) -> str:
+        return self._response.reason_phrase
+
+    @property
+    def protocol(self) -> typing.Optional[str]:
+        return self._response.protocol
+
+    @property
+    def url(self) -> typing.Optional[URL]:
+        return self._response.url
+
+    @property
+    def request(self) -> typing.Optional[Request]:
+        return self._response.request
+
+    @property
+    def headers(self) -> Headers:
+        return self._response.headers
+
+    @property
+    def content(self) -> bytes:
+        return self._response.content
+
+    @property
+    def text(self) -> str:
+        return self._response.text
+
+    @property
+    def encoding(self) -> str:
+        return self._response.encoding
+
+    @property
+    def is_redirect(self) -> bool:
+        return self._response.is_redirect
+
+    def raise_for_status(self) -> None:
+        return self._response.raise_for_status()
+
+    def read(self) -> bytes:
+        return self._loop.run_until_complete(self._response.read())
+
+    def stream(self) -> typing.Iterator[bytes]:
+        inner = self._response.stream()
+        while True:
+            try:
+                yield self._loop.run_until_complete(inner.__anext__())
+            except StopAsyncIteration as exc:
+                break
+
+    def raw(self) -> typing.Iterator[bytes]:
+        inner = self._response.raw()
+        while True:
+            try:
+                yield self._loop.run_until_complete(inner.__anext__())
+            except StopAsyncIteration as exc:
+                break
+
+    def close(self) -> None:
+        return self._loop.run_until_complete(self._response.close())

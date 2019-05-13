@@ -13,7 +13,8 @@
 ## Feature support
 
 * `HTTP/1.1` and `HTTP/2` Support.
-* `async`/`await` support for non-thread-blocking HTTP requests.
+* `async`/`await` support for non-blocking HTTP requests.
+* Strict timeouts everywhere by default.
 * Fully type annotated.
 * 100% test coverage. *TODO - Almost there.*
 

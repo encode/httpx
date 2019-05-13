@@ -4,7 +4,7 @@ import typing
 import h2.connection
 import h11
 
-from ..backends.default import connect
+from ..concurrency import connect
 from ..config import (
     DEFAULT_SSL_CONFIG,
     DEFAULT_TIMEOUT_CONFIG,
