@@ -1,7 +1,7 @@
 import collections.abc
 import typing
 
-from ..backends.default import PoolSemaphore
+from ..concurrency import PoolSemaphore
 from ..config import (
     DEFAULT_CA_BUNDLE_PATH,
     DEFAULT_POOL_LIMITS,

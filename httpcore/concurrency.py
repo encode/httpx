@@ -12,10 +12,10 @@ import asyncio
 import ssl
 import typing
 
-from ..config import DEFAULT_TIMEOUT_CONFIG, PoolLimits, TimeoutConfig
-from ..constants import Protocol
-from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
-from ..interfaces import BasePoolSemaphore, BaseReader, BaseWriter
+from .config import DEFAULT_TIMEOUT_CONFIG, PoolLimits, TimeoutConfig
+from .constants import Protocol
+from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
+from .interfaces import BasePoolSemaphore, BaseReader, BaseWriter
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
 
