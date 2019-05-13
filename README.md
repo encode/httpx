@@ -142,7 +142,7 @@ what gets sent over the wire.*
 
 ```python
 >>> request = Request("GET", "https://example.org", headers={'host': 'example.org'})
->>> response = await client.send(request)
+>>> response = client.send(request)
 ```
 
 * `def __init__(method, url, query_params, content, headers)`
