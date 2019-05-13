@@ -482,10 +482,7 @@ class Request:
         Read and return the response content.
         """
         if not hasattr(self, "content"):
-            content = b""
-            async for part in self.stream():
-                content += part
-            self.content = content
+            self.content = b"".join([part async for part in self.stream()])
         return self.content
 
     async def stream(self) -> typing.AsyncIterator[bytes]:
@@ -670,10 +667,7 @@ class Response:
         Read and return the response content.
         """
         if not hasattr(self, "_content"):
-            content = b""
-            async for part in self.stream():
-                content += part
-            self._content = content
+            self._content = b"".join([part async for part in self.stream()])
         return self._content
 
     async def stream(self) -> typing.AsyncIterator[bytes]:
