@@ -1,4 +1,3 @@
-from .adapters.redirects import RedirectAdapter
 from .backends.sync import SyncClient
 from .client import Client
 from .config import PoolLimits, SSLConfig, TimeoutConfig
@@ -22,7 +21,7 @@ from .exceptions import (
     Timeout,
     TooManyRedirects,
 )
-from .interfaces import Adapter, BaseReader, BaseWriter
+from .interfaces import BaseReader, BaseWriter, Dispatcher
 from .models import URL, Headers, Origin, QueryParams, Request, Response
 
 __version__ = "0.2.1"

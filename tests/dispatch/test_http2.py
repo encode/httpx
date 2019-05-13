@@ -5,10 +5,10 @@ import h2.connection
 import h2.events
 import pytest
 
-import httpcore
+from httpcore import BaseReader, BaseWriter, HTTP2Connection, Request
 
 
-class MockServer(httpcore.BaseReader, httpcore.BaseWriter):
+class MockServer(BaseReader, BaseWriter):
     """
     This class exposes Reader and Writer style interfaces
     """
@@ -82,8 +82,12 @@ class MockServer(httpcore.BaseReader, httpcore.BaseWriter):
 @pytest.mark.asyncio
 async def test_http2_get_request():
     server = MockServer()
-    async with httpcore.HTTP2Connection(reader=server, writer=server) as conn:
-        response = await conn.request("GET", "http://example.org")
+    conn = HTTP2Connection(reader=server, writer=server)
+    request = Request("GET", "http://example.org")
+    request.prepare()
+
+    response = await conn.send(request)
+
     assert response.status_code == 200
     assert json.loads(response.content) == {"method": "GET", "path": "/", "body": ""}
 
@@ -91,8 +95,12 @@ async def test_http2_get_request():
 @pytest.mark.asyncio
 async def test_http2_post_request():
     server = MockServer()
-    async with httpcore.HTTP2Connection(reader=server, writer=server) as conn:
-        response = await conn.request("POST", "http://example.org", data=b"<data>")
+    conn = HTTP2Connection(reader=server, writer=server)
+    request = Request("POST", "http://example.org", data=b"<data>")
+    request.prepare()
+
+    response = await conn.send(request)
+
     assert response.status_code == 200
     assert json.loads(response.content) == {
         "method": "POST",
@@ -104,10 +112,18 @@ async def test_http2_post_request():
 @pytest.mark.asyncio
 async def test_http2_multiple_requests():
     server = MockServer()
-    async with httpcore.HTTP2Connection(reader=server, writer=server) as conn:
-        response_1 = await conn.request("GET", "http://example.org/1")
-        response_2 = await conn.request("GET", "http://example.org/2")
-        response_3 = await conn.request("GET", "http://example.org/3")
+    conn = HTTP2Connection(reader=server, writer=server)
+    request_1 = Request("GET", "http://example.org/1")
+    request_2 = Request("GET", "http://example.org/2")
+    request_3 = Request("GET", "http://example.org/3")
+
+    request_1.prepare()
+    request_2.prepare()
+    request_3.prepare()
+
+    response_1 = await conn.send(request_1)
+    response_2 = await conn.send(request_2)
+    response_3 = await conn.send(request_3)
 
     assert response_1.status_code == 200
     assert json.loads(response_1.content) == {"method": "GET", "path": "/1", "body": ""}
@@ -117,3 +133,5 @@ async def test_http2_multiple_requests():
 
     assert response_3.status_code == 200
     assert json.loads(response_3.content) == {"method": "GET", "path": "/3", "body": ""}
+
+    await conn.close()

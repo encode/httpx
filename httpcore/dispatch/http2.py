@@ -11,13 +11,13 @@ from ..config import (
     TimeoutConfig,
 )
 from ..exceptions import ConnectTimeout, ReadTimeout
-from ..interfaces import Adapter, BaseReader, BaseWriter
+from ..interfaces import BaseReader, BaseWriter, Dispatcher
 from ..models import Request, Response
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
 
 
-class HTTP2Connection(Adapter):
+class HTTP2Connection:
     READ_NUM_BYTES = 4096
 
     def __init__(
@@ -30,14 +30,9 @@ class HTTP2Connection(Adapter):
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
         self.initialized = False
 
-    def prepare_request(self, request: Request) -> None:
-        request.prepare()
-
-    async def send(self, request: Request, **options: typing.Any) -> Response:
-        timeout = options.get("timeout")
-        stream = options.get("stream", False)
-        assert timeout is None or isinstance(timeout, TimeoutConfig)
-
+    async def send(
+        self, request: Request, stream: bool = False, timeout: TimeoutConfig = None
+    ) -> Response:
         #  Start sending the request.
         if not self.initialized:
             self.initiate_connection()
