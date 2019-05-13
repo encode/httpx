@@ -24,10 +24,10 @@ class Protocol(str, enum.Enum):
 
 class Dispatcher:
     """
-    The base class for all adapter or dispatcher classes.
+    Base class for dispatcher classes, that handle sending the request.
 
     Stubs out the interface, as well as providing a `.request()` convienence
-    implementation, to make it easy to use or test stand-alone adapters,
+    implementation, to make it easy to use or test stand-alone dispatchers,
     without requiring a complete `Client` instance.
     """
 
