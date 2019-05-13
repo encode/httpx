@@ -1,6 +1,5 @@
 from .client import AsyncClient, Client
 from .config import PoolLimits, SSLConfig, TimeoutConfig
-from .constants import Protocol, codes
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.http2 import HTTP2Connection
@@ -20,7 +19,8 @@ from .exceptions import (
     Timeout,
     TooManyRedirects,
 )
-from .interfaces import BaseReader, BaseWriter, Dispatcher
+from .interfaces import BaseReader, BaseWriter, Dispatcher, Protocol
 from .models import URL, Headers, Origin, QueryParams, Request, Response
+from .status_codes import codes
 
 __version__ = "0.2.1"

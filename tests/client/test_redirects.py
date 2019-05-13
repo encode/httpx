@@ -27,33 +27,33 @@ class MockDispatch(Dispatcher):
         timeout: TimeoutConfig = None,
     ) -> Response:
         if request.url.path == "/redirect_301":
-            status_code = codes.moved_permanently
+            status_code = codes.MOVED_PERMANENTLY
             headers = {"location": "https://example.org/"}
             return Response(status_code, headers=headers, request=request)
 
         elif request.url.path == "/redirect_302":
-            status_code = codes.found
+            status_code = codes.FOUND
             headers = {"location": "https://example.org/"}
             return Response(status_code, headers=headers, request=request)
 
         elif request.url.path == "/redirect_303":
-            status_code = codes.see_other
+            status_code = codes.SEE_OTHER
             headers = {"location": "https://example.org/"}
             return Response(status_code, headers=headers, request=request)
 
         elif request.url.path == "/relative_redirect":
             headers = {"location": "/"}
-            return Response(codes.see_other, headers=headers, request=request)
+            return Response(codes.SEE_OTHER, headers=headers, request=request)
 
         elif request.url.path == "/no_scheme_redirect":
             headers = {"location": "//example.org/"}
-            return Response(codes.see_other, headers=headers, request=request)
+            return Response(codes.SEE_OTHER, headers=headers, request=request)
 
         elif request.url.path == "/multiple_redirects":
             params = parse_qs(request.url.query)
             count = int(params.get("count", "0")[0])
             redirect_count = count - 1
-            code = codes.see_other if count else codes.ok
+            code = codes.SEE_OTHER if count else codes.OK
             location = "/multiple_redirects"
             if redirect_count:
                 location += "?count=" + str(redirect_count)
@@ -62,35 +62,35 @@ class MockDispatch(Dispatcher):
 
         if request.url.path == "/redirect_loop":
             headers = {"location": "/redirect_loop"}
-            return Response(codes.see_other, headers=headers, request=request)
+            return Response(codes.SEE_OTHER, headers=headers, request=request)
 
         elif request.url.path == "/cross_domain":
             headers = {"location": "https://example.org/cross_domain_target"}
-            return Response(codes.see_other, headers=headers, request=request)
+            return Response(codes.SEE_OTHER, headers=headers, request=request)
 
         elif request.url.path == "/cross_domain_target":
             headers = dict(request.headers.items())
             content = json.dumps({"headers": headers}).encode()
-            return Response(codes.ok, content=content, request=request)
+            return Response(codes.OK, content=content, request=request)
 
         elif request.url.path == "/redirect_body":
             await request.read()
             headers = {"location": "/redirect_body_target"}
-            return Response(codes.permanent_redirect, headers=headers, request=request)
+            return Response(codes.PERMANENT_REDIRECT, headers=headers, request=request)
 
         elif request.url.path == "/redirect_body_target":
             content = await request.read()
             body = json.dumps({"body": content.decode()}).encode()
-            return Response(codes.ok, content=body, request=request)
+            return Response(codes.OK, content=body, request=request)
 
-        return Response(codes.ok, content=b"Hello, world!", request=request)
+        return Response(codes.OK, content=b"Hello, world!", request=request)
 
 
 @pytest.mark.asyncio
 async def test_redirect_301():
     client = AsyncClient(dispatch=MockDispatch())
     response = await client.request("POST", "https://example.org/redirect_301")
-    assert response.status_code == codes.ok
+    assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
 
@@ -99,7 +99,7 @@ async def test_redirect_301():
 async def test_redirect_302():
     client = AsyncClient(dispatch=MockDispatch())
     response = await client.request("POST", "https://example.org/redirect_302")
-    assert response.status_code == codes.ok
+    assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
 
@@ -108,7 +108,7 @@ async def test_redirect_302():
 async def test_redirect_303():
     client = AsyncClient(dispatch=MockDispatch())
     response = await client.request("GET", "https://example.org/redirect_303")
-    assert response.status_code == codes.ok
+    assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
 
@@ -119,12 +119,12 @@ async def test_disallow_redirects():
     response = await client.request(
         "POST", "https://example.org/redirect_303", allow_redirects=False
     )
-    assert response.status_code == codes.see_other
+    assert response.status_code == codes.SEE_OTHER
     assert response.url == URL("https://example.org/redirect_303")
     assert len(response.history) == 0
 
     response = await response.next()
-    assert response.status_code == codes.ok
+    assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
 
@@ -133,7 +133,7 @@ async def test_disallow_redirects():
 async def test_relative_redirect():
     client = AsyncClient(dispatch=MockDispatch())
     response = await client.request("GET", "https://example.org/relative_redirect")
-    assert response.status_code == codes.ok
+    assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
 
@@ -142,7 +142,7 @@ async def test_relative_redirect():
 async def test_no_scheme_redirect():
     client = AsyncClient(dispatch=MockDispatch())
     response = await client.request("GET", "https://example.org/no_scheme_redirect")
-    assert response.status_code == codes.ok
+    assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
 
@@ -152,7 +152,7 @@ async def test_fragment_redirect():
     client = AsyncClient(dispatch=MockDispatch())
     url = "https://example.org/relative_redirect#fragment"
     response = await client.request("GET", url)
-    assert response.status_code == codes.ok
+    assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/#fragment")
     assert len(response.history) == 1
 
@@ -162,7 +162,7 @@ async def test_multiple_redirects():
     client = AsyncClient(dispatch=MockDispatch())
     url = "https://example.org/multiple_redirects?count=20"
     response = await client.request("GET", url)
-    assert response.status_code == codes.ok
+    assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/multiple_redirects")
     assert len(response.history) == 20
 
