@@ -45,7 +45,7 @@ Making a request:
 >>> client = httpcore.Client()
 >>> response = client.get('https://example.com')
 >>> response.status_code
-<StatusCode.ok: 200>
+<HTTPStatus.OK: 200>
 >>> response.protocol
 'HTTP/2'
 >>> response.text
@@ -61,7 +61,7 @@ Alternatively, async requests:
 >>> client = httpcore.AsyncClient()
 >>> response = await client.get('https://example.com')
 >>> response.status_code
-<StatusCode.ok: 200>
+<HTTPStatus.OK: 200>
 >>> response.protocol
 'HTTP/2'
 >>> response.text
