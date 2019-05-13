@@ -94,7 +94,7 @@ inspiration around the lower level networking details.
 
 ```python
 >>> client = Client()
->>> response = await client.get('https://example.org')
+>>> response = client.get('https://example.org')
 ```
 
 * `def __init__([ssl], [timeout], [pool_limits], [max_redirects], [dispatch])`
