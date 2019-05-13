@@ -1,9 +1,10 @@
 import typing
 from types import TracebackType
 
-from .config import TimeoutConfig
+from .config import SSLConfig, TimeoutConfig
 from .models import (
     URL,
+    Headers,
     HeaderTypes,
     QueryParamTypes,
     Request,
@@ -15,7 +16,7 @@ from .models import (
 OptionalTimeout = typing.Optional[TimeoutConfig]
 
 
-class Adapter:
+class Dispatcher:
     """
     The base class for all adapter or dispatcher classes.
 
@@ -32,25 +33,33 @@ class Adapter:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
-        **options: typing.Any,
+        stream: bool = False,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None
     ) -> Response:
         request = Request(
             method, url, data=data, query_params=query_params, headers=headers
         )
         self.prepare_request(request)
-        response = await self.send(request, **options)
+        response = await self.send(request, stream=stream, ssl=ssl, timeout=timeout)
         return response
 
     def prepare_request(self, request: Request) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        request.prepare()
 
-    async def send(self, request: Request, **options: typing.Any) -> Response:
+    async def send(
+        self,
+        request: Request,
+        stream: bool = False,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> Response:
         raise NotImplementedError()  # pragma: nocover
 
     async def close(self) -> None:
-        raise NotImplementedError()  # pragma: nocover
+        pass  # pragma: nocover
 
-    async def __aenter__(self) -> "Adapter":
+    async def __aenter__(self) -> "Dispatcher":
         return self
 
     async def __aexit__(

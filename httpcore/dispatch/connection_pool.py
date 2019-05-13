@@ -13,7 +13,7 @@ from ..config import (
 )
 from ..decoders import ACCEPT_ENCODING
 from ..exceptions import PoolTimeout
-from ..interfaces import Adapter
+from ..interfaces import Dispatcher
 from ..models import Origin, Request, Response
 from .connection import HTTPConnection
 
@@ -83,7 +83,7 @@ class ConnectionStore(collections.abc.Sequence):
         return len(self.all)
 
 
-class ConnectionPool(Adapter):
+class ConnectionPool(Dispatcher):
     def __init__(
         self,
         *,
@@ -104,13 +104,18 @@ class ConnectionPool(Adapter):
     def num_connections(self) -> int:
         return len(self.keepalive_connections) + len(self.active_connections)
 
-    def prepare_request(self, request: Request) -> None:
-        request.prepare()
-
-    async def send(self, request: Request, **options: typing.Any) -> Response:
+    async def send(
+        self,
+        request: Request,
+        stream: bool = False,
+        ssl: SSLConfig = None,
+        timeout: TimeoutConfig = None,
+    ) -> Response:
         connection = await self.acquire_connection(request.url.origin)
         try:
-            response = await connection.send(request, **options)
+            response = await connection.send(
+                request, stream=stream, ssl=ssl, timeout=timeout
+            )
         except BaseException as exc:
             self.active_connections.remove(connection)
             self.max_connections.release()

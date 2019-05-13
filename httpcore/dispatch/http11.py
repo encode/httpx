@@ -9,7 +9,7 @@ from ..config import (
     TimeoutConfig,
 )
 from ..exceptions import ConnectTimeout, ReadTimeout
-from ..interfaces import Adapter, BaseReader, BaseWriter
+from ..interfaces import BaseReader, BaseWriter, Dispatcher
 from ..models import Request, Response
 
 H11Event = typing.Union[
@@ -30,7 +30,7 @@ OptionalTimeout = typing.Optional[TimeoutConfig]
 OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
 
 
-class HTTP11Connection(Adapter):
+class HTTP11Connection:
     READ_NUM_BYTES = 4096
 
     def __init__(
@@ -44,14 +44,9 @@ class HTTP11Connection(Adapter):
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
 
-    def prepare_request(self, request: Request) -> None:
-        request.prepare()
-
-    async def send(self, request: Request, **options: typing.Any) -> Response:
-        timeout = options.get("timeout")
-        stream = options.get("stream", False)
-        assert timeout is None or isinstance(timeout, TimeoutConfig)
-
+    async def send(
+        self, request: Request, stream: bool = False, timeout: TimeoutConfig = None
+    ) -> Response:
         #  Start sending the request.
         method = request.method.encode("ascii")
         target = request.url.full_path.encode("ascii")
