@@ -22,9 +22,9 @@ Plus all the standard features of requests...
 
 * International Domains and URLs
 * Keep-Alive & Connection Pooling
-* Sessions with Cookie Persistence *TODO - Requires `adapters/cookies.py` implementation.*
+* Sessions with Cookie Persistence *TODO*
 * Browser-style SSL Verification
-* Basic/Digest Authentication *TODO - Requires `adapters/authentication.py` implementation.*
+* Basic/Digest Authentication *TODO*
 * Elegant Key/Value Cookies *TODO*
 * Automatic Decompression
 * Automatic Content Decoding
@@ -33,19 +33,17 @@ Plus all the standard features of requests...
 * HTTP(S) Proxy Support *TODO*
 * Connection Timeouts
 * Streaming Downloads
-* .netrc Support *TODO - Requires `adapters/environment.py` implementation.*
+* .netrc Support *TODO*
 * Chunked Requests
 
 ## Usage
-
-**Note**: Use `ipython` to try this from the console, since it supports `await`.
 
 Making a request:
 
 ```python
 >>> import httpcore
 >>> client = httpcore.Client()
->>> response = await client.get('https://example.com')
+>>> response = client.get('https://example.com')
 >>> response.status_code
 <StatusCode.ok: 200>
 >>> response.protocol
@@ -54,12 +52,14 @@ Making a request:
 '<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>\n...'
 ```
 
-Alternatively, thread-synchronous requests:
+Alternatively, async requests:
+
+**Note**: Use `ipython` to try this from the console, since it supports `await`.
 
 ```python
 >>> import httpcore
->>> client = httpcore.SyncClient()
->>> response = client.get('https://example.com')
+>>> client = httpcore.AsyncClient()
+>>> response = await client.get('https://example.com')
 >>> response.status_code
 <StatusCode.ok: 200>
 >>> response.protocol
@@ -80,7 +80,7 @@ Alternatively, thread-synchronous requests:
 * `rfc3986` - URL parsing & normalization.
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
 
-A huge amount of credit is due to `requests`, for the API layout that
+A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
 inspiration around the lower level networking details.
 
@@ -97,18 +97,18 @@ inspiration around the lower level networking details.
 >>> response = await client.get('https://example.org')
 ```
 
-* `def __init__([ssl], [timeout], [pool_limits], [max_redirects])`
-* `async def .request(method, url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .get(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .options(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .head(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .post(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .put(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .patch(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .delete(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `def __init__([ssl], [timeout], [pool_limits], [max_redirects], [dispatch])`
+* `def .request(method, url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .get(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .options(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .head(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .post(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .put(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .patch(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .delete(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
 * `def .prepare_request(request)`
-* `async def .send(request, [stream], [allow_redirects], [ssl], [timeout])`
-* `async def .close()`
+* `def .send(request, [stream], [allow_redirects], [ssl], [timeout])`
+* `def .close()`
 
 ### `Response`
 
@@ -129,11 +129,11 @@ inspiration around the lower level networking details.
 * `.history` - **List[Response]**
 * `def .raise_for_status()` - **None**
 * `def .json()` - **Any** *TODO*
-* `async def .read()` - **bytes**
-* `async def .stream()` - **bytes iterator**
-* `async def .raw()` - **bytes iterator**
-* `async def .close()` - **None**
-* `async def .next()` - **Response**
+* `def .read()` - **bytes**
+* `def .stream()` - **bytes iterator**
+* `def .raw()` - **bytes iterator**
+* `def .close()` - **None**
+* `def .next()` - **Response**
 
 ### `Request`
 
@@ -207,9 +207,9 @@ ___
 
 ## Alternate backends
 
-### `SyncClient`
+### `AsyncClient`
 
-A thread-synchronous client.
+An asyncio client.
 
 ### `TrioClient`
 
@@ -219,17 +219,12 @@ A thread-synchronous client.
 
 ## The Stack
 
-The `httpcore` client builds up behavior in a modular way.
+There are two main layers in the stack. The client handles redirection,
+cookie persistence (TODO), and authentication (TODO). The dispatcher
+handles sending the actual request and getting the response.
 
-This makes it easier to dig into an understand the behaviour of any one aspect in isolation, as well as making it easier to test or to adapt for custom behaviors.
-
-You can also use lower level components in isolation if required, eg. Use a `ConnectionPool` without providing sessions, redirects etc...
-
-* `RedirectAdapter` - Adds redirect support.
-* `EnvironmentAdapter` - Adds `.netrc` and envvars such as `REQUESTS_CA_BUNDLE`.
-* `CookieAdapter` - Adds cookie persistence.
-* `AuthAdapter` - Adds authentication support.
-* `ConnectionPool` - Connection pooling & keep alive.
+* `Client` - Redirect, authentication, cookies etc.
+* `ConnectionPool(Dispatcher)` - Connection pooling & keep alive.
   * `HTTPConnection` - A single connection.
     * `HTTP11Connection` - A single HTTP/1.1 connection.
     * `HTTP2Connection` - A single HTTP/2 connection, with multiple streams.
