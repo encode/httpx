@@ -822,3 +822,7 @@ class SyncResponse:
 
     def close(self) -> None:
         return self._loop.run_until_complete(self._response.close())
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        return f"<{class_name}({self.status_code}, {self.reason_phrase!r})>"
