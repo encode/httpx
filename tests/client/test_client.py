@@ -1,67 +1,71 @@
+import asyncio
+import functools
+
 import pytest
 
 import httpcore
 
 
-@pytest.mark.asyncio
-async def test_get(server):
-    url = "http://127.0.0.1:8000/"
-    async with httpcore.Client() as client:
-        response = await client.get(url)
+def threadpool(func):
+    """
+    Our sync tests should run in seperate thread to the uvicorn server.
+    """
+
+    @functools.wraps(func)
+    async def wrapped(*args, **kwargs):
+        nonlocal func
+
+        loop = asyncio.get_event_loop()
+        if kwargs:
+            func = functools.partial(func, **kwargs)
+        await loop.run_in_executor(None, func, *args)
+
+    return pytest.mark.asyncio(wrapped)
+
+
+@threadpool
+def test_get(server):
+    with httpcore.Client() as http:
+        response = http.get("http://127.0.0.1:8000/")
     assert response.status_code == 200
+    assert response.content == b"Hello, world!"
     assert response.text == "Hello, world!"
 
 
-@pytest.mark.asyncio
-async def test_post(server):
-    url = "http://127.0.0.1:8000/"
-    async with httpcore.Client() as client:
-        response = await client.post(url, data=b"Hello, world!")
+@threadpool
+def test_post(server):
+    with httpcore.Client() as http:
+        response = http.post("http://127.0.0.1:8000/", data=b"Hello, world!")
     assert response.status_code == 200
+    assert response.reason_phrase == "OK"
 
 
-@pytest.mark.asyncio
-async def test_stream_response(server):
-    async with httpcore.Client() as client:
-        response = await client.request("GET", "http://127.0.0.1:8000/", stream=True)
+@threadpool
+def test_stream_response(server):
+    with httpcore.Client() as http:
+        response = http.get("http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
-    body = await response.read()
+    content = response.read()
+    assert content == b"Hello, world!"
+
+
+@threadpool
+def test_stream_iterator(server):
+    with httpcore.Client() as http:
+        response = http.get("http://127.0.0.1:8000/", stream=True)
+    assert response.status_code == 200
+    body = b""
+    for chunk in response.stream():
+        body += chunk
     assert body == b"Hello, world!"
-    assert response.content == b"Hello, world!"
 
 
-@pytest.mark.asyncio
-async def test_access_content_stream_response(server):
-    async with httpcore.Client() as client:
-        response = await client.request("GET", "http://127.0.0.1:8000/", stream=True)
+@threadpool
+def test_raw_iterator(server):
+    with httpcore.Client() as http:
+        response = http.get("http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
-    with pytest.raises(httpcore.ResponseNotRead):
-        response.content
-
-
-@pytest.mark.asyncio
-async def test_stream_request(server):
-    async def hello_world():
-        yield b"Hello, "
-        yield b"world!"
-
-    async with httpcore.Client() as client:
-        response = await client.request(
-            "POST", "http://127.0.0.1:8000/", data=hello_world()
-        )
-    assert response.status_code == 200
-
-
-@pytest.mark.asyncio
-async def test_raise_for_status(server):
-    async with httpcore.Client() as client:
-        for status_code in (200, 400, 404, 500, 505):
-            response = await client.request(
-                "GET", f"http://127.0.0.1:8000/status/{status_code}"
-            )
-
-            if 400 <= status_code < 600:
-                with pytest.raises(httpcore.exceptions.HttpError):
-                    response.raise_for_status()
-            else:
-                assert response.raise_for_status() is None
+    body = b""
+    for chunk in response.raw():
+        body += chunk
+    assert body == b"Hello, world!"

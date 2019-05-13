@@ -1,5 +1,4 @@
-from .backends.sync import SyncClient
-from .client import Client
+from .client import AsyncClient, Client
 from .config import PoolLimits, SSLConfig, TimeoutConfig
 from .constants import Protocol, codes
 from .dispatch.connection import HTTPConnection
