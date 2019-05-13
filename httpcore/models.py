@@ -8,7 +8,6 @@ import idna
 import rfc3986
 
 from .config import SSLConfig, TimeoutConfig
-from .constants import codes
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -23,6 +22,7 @@ from .exceptions import (
     ResponseNotRead,
     StreamConsumed,
 )
+from .status_codes import codes
 from .utils import (
     get_reason_phrase,
     is_known_encoding,
@@ -715,11 +715,11 @@ class Response:
         return (
             self.status_code
             in (
-                codes.moved_permanently,
-                codes.found,
-                codes.see_other,
-                codes.temporary_redirect,
-                codes.permanent_redirect,
+                codes.MOVED_PERMANENTLY,
+                codes.FOUND,
+                codes.SEE_OTHER,
+                codes.TEMPORARY_REDIRECT,
+                codes.PERMANENT_REDIRECT,
             )
             and "location" in self.headers
         )

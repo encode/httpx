@@ -11,9 +11,8 @@ from ..config import (
     SSLConfig,
     TimeoutConfig,
 )
-from ..constants import Protocol
 from ..exceptions import ConnectTimeout
-from ..interfaces import Dispatcher
+from ..interfaces import Dispatcher, Protocol
 from ..models import Origin, Request, Response
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection

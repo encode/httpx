@@ -1,3 +1,4 @@
+import enum
 import typing
 from types import TracebackType
 
@@ -14,6 +15,11 @@ from .models import (
 )
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
+
+
+class Protocol(str, enum.Enum):
+    HTTP_11 = "HTTP/1.1"
+    HTTP_2 = "HTTP/2"
 
 
 class Dispatcher:
