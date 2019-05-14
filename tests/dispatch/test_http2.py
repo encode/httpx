@@ -3,16 +3,19 @@ import json
 import pytest
 
 from httpcore import Client, Response
+
 from .utils import MockHTTP2Backend
 
 
 def app(request):
-    content = json.dumps({
-        "method": request.method,
-        "path": request.url.path,
-        "body": request.content.decode(),
-    }).encode()
-    headers = {'Content-Length': str(len(content))}
+    content = json.dumps(
+        {
+            "method": request.method,
+            "path": request.url.path,
+            "body": request.content.decode(),
+        }
+    ).encode()
+    headers = {"Content-Length": str(len(content))}
     return Response(200, headers=headers, content=content)
 
 

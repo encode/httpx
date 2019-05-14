@@ -5,7 +5,14 @@ import h2.config
 import h2.connection
 import h2.events
 
-from httpcore import AsyncioBackend, BaseReader, BaseWriter, Protocol, Request, TimeoutConfig
+from httpcore import (
+    AsyncioBackend,
+    BaseReader,
+    BaseWriter,
+    Protocol,
+    Request,
+    TimeoutConfig,
+)
 
 
 class MockHTTP2Backend(AsyncioBackend):
