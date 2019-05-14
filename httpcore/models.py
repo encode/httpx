@@ -744,8 +744,7 @@ class Response:
             raise HttpError(message)
 
     def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return f"<{class_name}({self.status_code}, {self.reason_phrase!r})>"
+        return f"<Response({self.status_code}, {self.reason_phrase!r})>"
 
 
 class SyncResponse:
@@ -824,5 +823,4 @@ class SyncResponse:
         return self._loop.run_until_complete(self._response.close())
 
     def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return f"<{class_name}({self.status_code}, {self.reason_phrase!r})>"
+        return f"<Response({self.status_code}, {self.reason_phrase!r})>"
