@@ -98,15 +98,19 @@ def test_override_content_length_header():
 
 
 def test_url():
-    request = httpcore.Request("GET", "http://example.org")
+    url = "http://example.org"
+    request = httpcore.Request("GET", url)
     assert request.url.scheme == "http"
     assert request.url.port == 80
     assert request.url.full_path == "/"
+    assert hash(request.url) == hash(url)
 
-    request = httpcore.Request("GET", "https://example.org/abc?foo=bar")
+    url = "https://example.org/abc?foo=bar"
+    request = httpcore.Request("GET", url)
     assert request.url.scheme == "https"
     assert request.url.port == 443
     assert request.url.full_path == "/abc?foo=bar"
+    assert hash(request.url) == hash(url)
 
 
 def test_invalid_urls():
