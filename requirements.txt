@@ -17,4 +17,5 @@ mypy
 pytest
 pytest-asyncio
 pytest-cov
+trustme
 uvicorn

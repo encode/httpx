@@ -1,6 +1,6 @@
 import pytest
 
-from httpcore import HTTPConnection, Request
+from httpcore import HTTPConnection, Request, SSLConfig
 
 
 @pytest.mark.asyncio
@@ -9,6 +9,14 @@ async def test_get(server):
     request = Request("GET", "http://127.0.0.1:8000/")
     request.prepare()
     response = await conn.send(request)
+    assert response.status_code == 200
+    assert response.content == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_https_get(https_server):
+    http = HTTPConnection(origin="https://127.0.0.1:8001/", ssl=SSLConfig(verify=False))
+    response = await http.request("GET", "https://127.0.0.1:8001/")
     assert response.status_code == 200
     assert response.content == b"Hello, world!"
 
