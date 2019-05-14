@@ -52,6 +52,14 @@ async def status_code(scope, receive, send):
 
 
 @pytest.fixture
+def cert_and_key_paths():
+    ca = trustme.CA()
+    ca.issue_cert("example.org")
+    with ca.cert_pem.tempfile() as cert_temp_path, ca.private_key_pem.tempfile() as key_temp_path:
+        yield cert_temp_path, key_temp_path
+
+
+@pytest.fixture
 async def server():
     config = Config(app=app, lifespan="off")
     server = Server(config=config)
@@ -66,17 +74,11 @@ async def server():
 
 
 @pytest.fixture
-async def https_server():
-    ca = trustme.CA()
-    server_cert = ca.issue_cert("example.org")
-    with ca.cert_pem.tempfile() as cert_temp_path, ca.private_key_pem.tempfile() as key_temp_path:
-        config = Config(
-            app=app,
-            lifespan="off",
-            ssl_certfile=cert_temp_path,
-            ssl_keyfile=key_temp_path,
-            port=8001,
-        )
+async def https_server(cert_and_key_paths):
+    cert_path, key_path = cert_and_key_paths
+    config = Config(
+        app=app, lifespan="off", ssl_certfile=cert_path, ssl_keyfile=key_path, port=8001
+    )
     server = Server(config=config)
     task = asyncio.ensure_future(server.serve())
     try:

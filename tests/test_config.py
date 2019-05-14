@@ -1,3 +1,4 @@
+import os
 import ssl
 
 import pytest
@@ -10,6 +11,44 @@ async def test_load_ssl_config():
     ssl_config = httpcore.SSLConfig()
     context = await ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+
+
+@pytest.mark.asyncio
+async def test_load_ssl_config_verify_non_existing_path():
+    ssl_config = httpcore.SSLConfig(verify="/path/to/nowhere")
+    with pytest.raises(IOError):
+        await ssl_config.load_ssl_context()
+
+
+@pytest.mark.asyncio
+async def test_load_ssl_config_verify_existing_file():
+    ssl_config = httpcore.SSLConfig(verify=httpcore.config.DEFAULT_CA_BUNDLE_PATH)
+    context = await ssl_config.load_ssl_context()
+    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+
+
+@pytest.mark.asyncio
+async def test_load_ssl_config_verify_directory():
+    path = os.path.dirname(httpcore.config.DEFAULT_CA_BUNDLE_PATH)
+    ssl_config = httpcore.SSLConfig(verify=path)
+    context = await ssl_config.load_ssl_context()
+    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+
+
+@pytest.mark.asyncio
+async def test_load_ssl_config_cert_and_key(cert_and_key_paths):
+    cert_path, key_path = cert_and_key_paths
+    ssl_config = httpcore.SSLConfig(cert=(cert_path, key_path))
+    context = await ssl_config.load_ssl_context()
+    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+
+
+@pytest.mark.asyncio
+async def test_load_ssl_config_cert_without_key_raises(cert_and_key_paths):
+    cert_path, _ = cert_and_key_paths
+    ssl_config = httpcore.SSLConfig(cert=cert_path)
+    with pytest.raises(ssl.SSLError):
+        await ssl_config.load_ssl_context()
 
 
 @pytest.mark.asyncio
