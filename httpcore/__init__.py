@@ -1,4 +1,5 @@
 from .client import AsyncClient, Client
+from .concurrency import AsyncioBackend
 from .config import PoolLimits, SSLConfig, TimeoutConfig
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
@@ -19,7 +20,7 @@ from .exceptions import (
     Timeout,
     TooManyRedirects,
 )
-from .interfaces import BaseReader, BaseWriter, Dispatcher, Protocol
+from .interfaces import BaseReader, BaseWriter, ConcurrencyBackend, Dispatcher, Protocol
 from .models import URL, Headers, Origin, QueryParams, Request, Response
 from .status_codes import codes
 

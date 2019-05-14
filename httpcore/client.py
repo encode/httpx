@@ -13,7 +13,7 @@ from .config import (
 )
 from .dispatch.connection_pool import ConnectionPool
 from .exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
-from .interfaces import Dispatcher
+from .interfaces import ConcurrencyBackend, Dispatcher
 from .models import (
     URL,
     Headers,
@@ -36,9 +36,12 @@ class AsyncClient:
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         dispatch: Dispatcher = None,
+        backend: ConcurrencyBackend = None,
     ):
         if dispatch is None:
-            dispatch = ConnectionPool(ssl=ssl, timeout=timeout, pool_limits=pool_limits)
+            dispatch = ConnectionPool(
+                ssl=ssl, timeout=timeout, pool_limits=pool_limits, backend=backend
+            )
 
         self.max_redirects = max_redirects
         self.dispatch = dispatch
@@ -377,6 +380,7 @@ class Client:
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         dispatch: Dispatcher = None,
+        backend: ConcurrencyBackend = None,
     ) -> None:
         self._client = AsyncClient(
             ssl=ssl,
@@ -384,6 +388,7 @@ class Client:
             pool_limits=pool_limits,
             max_redirects=max_redirects,
             dispatch=dispatch,
+            backend=backend,
         )
         self._loop = asyncio.new_event_loop()
 

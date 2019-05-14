@@ -14,29 +14,39 @@ import typing
 
 from .config import DEFAULT_TIMEOUT_CONFIG, PoolLimits, TimeoutConfig
 from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
-from .interfaces import BasePoolSemaphore, BaseReader, BaseWriter, Protocol
+from .interfaces import (
+    BasePoolSemaphore,
+    BaseReader,
+    BaseWriter,
+    ConcurrencyBackend,
+    Protocol,
+)
 
 OptionalTimeout = typing.Optional[TimeoutConfig]
 
 
-# Monky-patch for https://bugs.python.org/issue36709
-#
-# This prevents console errors when outstanding HTTPS connections
-# still exist at the point of exiting.
-#
-# Clients which have been opened using a `with` block, or which have
-# had `close()` closed, will not exhibit this issue in the first place.
+SSL_MONKEY_PATCH_APPLIED = False
 
 
-_write = asyncio.selector_events._SelectorSocketTransport.write  # type: ignore
+def ssl_monkey_patch() -> None:
+    """
+    Monky-patch for https://bugs.python.org/issue36709
 
+    This prevents console errors when outstanding HTTPS connections
+    still exist at the point of exiting.
 
-def _fixed_write(self, data: bytes) -> None:  # type: ignore
-    if not self._loop.is_closed():
-        _write(self, data)
+    Clients which have been opened using a `with` block, or which have
+    had `close()` closed, will not exhibit this issue in the first place.
+    """
+    MonkeyPatch = asyncio.selector_events._SelectorSocketTransport  # type: ignore
 
+    _write = MonkeyPatch.write
 
-asyncio.selector_events._SelectorSocketTransport.write = _fixed_write  # type: ignore
+    def _fixed_write(self, data: bytes) -> None:  # type: ignore
+        if not self._loop.is_closed():
+            _write(self, data)
+
+    MonkeyPatch.write = _fixed_write
 
 
 class Reader(BaseReader):
@@ -118,30 +128,42 @@ class PoolSemaphore(BasePoolSemaphore):
         self.semaphore.release()
 
 
-async def connect(
-    hostname: str,
-    port: int,
-    ssl_context: typing.Optional[ssl.SSLContext] = None,
-    timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
-) -> typing.Tuple[Reader, Writer, Protocol]:
-    try:
-        stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
-            asyncio.open_connection(hostname, port, ssl=ssl_context),
-            timeout.connect_timeout,
-        )
-    except asyncio.TimeoutError:
-        raise ConnectTimeout()
+class AsyncioBackend(ConcurrencyBackend):
+    def __init__(self) -> None:
+        global SSL_MONKEY_PATCH_APPLIED
 
-    ssl_object = stream_writer.get_extra_info("ssl_object")
-    if ssl_object is None:
-        ident = "http/1.1"
-    else:
-        ident = ssl_object.selected_alpn_protocol()
-        if ident is None:
-            ident = ssl_object.selected_npn_protocol()
+        if not SSL_MONKEY_PATCH_APPLIED:
+            ssl_monkey_patch()
+        SSL_MONKEY_PATCH_APPLIED = True
 
-    reader = Reader(stream_reader=stream_reader, timeout=timeout)
-    writer = Writer(stream_writer=stream_writer, timeout=timeout)
-    protocol = Protocol.HTTP_2 if ident == "h2" else Protocol.HTTP_11
+    async def connect(
+        self,
+        hostname: str,
+        port: int,
+        ssl_context: typing.Optional[ssl.SSLContext],
+        timeout: TimeoutConfig,
+    ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
+        try:
+            stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
+                asyncio.open_connection(hostname, port, ssl=ssl_context),
+                timeout.connect_timeout,
+            )
+        except asyncio.TimeoutError:
+            raise ConnectTimeout()
 
-    return (reader, writer, protocol)
+        ssl_object = stream_writer.get_extra_info("ssl_object")
+        if ssl_object is None:
+            ident = "http/1.1"
+        else:
+            ident = ssl_object.selected_alpn_protocol()
+            if ident is None:
+                ident = ssl_object.selected_npn_protocol()
+
+        reader = Reader(stream_reader=stream_reader, timeout=timeout)
+        writer = Writer(stream_writer=stream_writer, timeout=timeout)
+        protocol = Protocol.HTTP_2 if ident == "h2" else Protocol.HTTP_11
+
+        return (reader, writer, protocol)
+
+    def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
+        return PoolSemaphore(limits)
