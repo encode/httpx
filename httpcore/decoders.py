@@ -53,7 +53,7 @@ class DeflateDecoder(Decoder):
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
-        except zlib.error as exc:
+        except zlib.error as exc:  # pragma: nocover
             raise httpcore.exceptions.DecodingError from exc
 
 
@@ -76,7 +76,7 @@ class GZipDecoder(Decoder):
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
-        except zlib.error as exc:
+        except zlib.error as exc:  # pragma: nocover
             raise httpcore.exceptions.DecodingError from exc
 
 
@@ -103,7 +103,7 @@ class BrotliDecoder(Decoder):
         try:
             self.decompressor.finish()
             return b""
-        except brotli.Error as exc:
+        except brotli.Error as exc:  # pragma: nocover
             raise httpcore.exceptions.DecodingError from exc
 
 
