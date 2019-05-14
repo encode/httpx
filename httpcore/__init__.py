@@ -3,8 +3,6 @@ from .concurrency import AsyncioBackend
 from .config import PoolLimits, SSLConfig, TimeoutConfig
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
-from .dispatch.http2 import HTTP2Connection
-from .dispatch.http11 import HTTP11Connection
 from .exceptions import (
     ConnectTimeout,
     DecodingError,
