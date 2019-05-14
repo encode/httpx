@@ -4,7 +4,7 @@ import typing
 import h2.connection
 import h11
 
-from ..concurrency import connect
+from ..concurrency import AsyncioBackend
 from ..config import (
     DEFAULT_SSL_CONFIG,
     DEFAULT_TIMEOUT_CONFIG,
@@ -12,7 +12,7 @@ from ..config import (
     TimeoutConfig,
 )
 from ..exceptions import ConnectTimeout
-from ..interfaces import Dispatcher, Protocol
+from ..interfaces import ConcurrencyBackend, Dispatcher, Protocol
 from ..models import Origin, Request, Response
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
@@ -27,11 +27,13 @@ class HTTPConnection(Dispatcher):
         origin: typing.Union[str, Origin],
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
+        backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = ssl
         self.timeout = timeout
+        self.backend = AsyncioBackend() if backend is None else backend
         self.release_func = release_func
         self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
         self.h2_connection = None  # type: typing.Optional[HTTP2Connection]
@@ -75,7 +77,9 @@ class HTTPConnection(Dispatcher):
         else:
             on_release = functools.partial(self.release_func, self)
 
-        reader, writer, protocol = await connect(host, port, ssl_context, timeout)
+        reader, writer, protocol = await self.backend.connect(
+            host, port, ssl_context, timeout
+        )
         if protocol == Protocol.HTTP_2:
             self.h2_connection = HTTP2Connection(reader, writer, on_release=on_release)
         else:

@@ -1,8 +1,9 @@
 import enum
+import ssl
 import typing
 from types import TracebackType
 
-from .config import SSLConfig, TimeoutConfig
+from .config import PoolLimits, SSLConfig, TimeoutConfig
 from .models import (
     URL,
     Headers,
@@ -116,4 +117,18 @@ class BasePoolSemaphore:
         raise NotImplementedError()  # pragma: no cover
 
     def release(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
+class ConcurrencyBackend:
+    async def connect(
+        self,
+        hostname: str,
+        port: int,
+        ssl_context: typing.Optional[ssl.SSLContext],
+        timeout: TimeoutConfig,
+    ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
+        raise NotImplementedError()  # pragma: no cover
+
+    def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         raise NotImplementedError()  # pragma: no cover

@@ -1,7 +1,7 @@
 import collections.abc
 import typing
 
-from ..concurrency import PoolSemaphore
+from ..concurrency import AsyncioBackend
 from ..config import (
     DEFAULT_CA_BUNDLE_PATH,
     DEFAULT_POOL_LIMITS,
@@ -13,7 +13,7 @@ from ..config import (
 )
 from ..decoders import ACCEPT_ENCODING
 from ..exceptions import PoolTimeout
-from ..interfaces import Dispatcher
+from ..interfaces import ConcurrencyBackend, Dispatcher
 from ..models import Origin, Request, Response
 from .connection import HTTPConnection
 
@@ -90,15 +90,18 @@ class ConnectionPool(Dispatcher):
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        backend: ConcurrencyBackend = None,
     ):
         self.ssl = ssl
         self.timeout = timeout
         self.pool_limits = pool_limits
         self.is_closed = False
 
-        self.max_connections = PoolSemaphore(pool_limits)
         self.keepalive_connections = ConnectionStore()
         self.active_connections = ConnectionStore()
+
+        self.backend = AsyncioBackend() if backend is None else backend
+        self.max_connections = self.backend.get_semaphore(pool_limits)
 
     @property
     def num_connections(self) -> int:
@@ -133,6 +136,7 @@ class ConnectionPool(Dispatcher):
                 origin,
                 ssl=self.ssl,
                 timeout=self.timeout,
+                backend=self.backend,
                 release_func=self.release_connection,
             )
 
