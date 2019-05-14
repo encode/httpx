@@ -25,11 +25,19 @@ def threadpool(func):
 
 @threadpool
 def test_get(server):
+    url = "http://127.0.0.1:8000/"
     with httpcore.Client() as http:
-        response = http.get("http://127.0.0.1:8000/")
+        response = http.get(url)
     assert response.status_code == 200
+    assert response.url == httpcore.URL(url)
     assert response.content == b"Hello, world!"
     assert response.text == "Hello, world!"
+    assert response.protocol == "HTTP/1.1"
+    assert response.encoding == "iso-8859-1"
+    assert response.request.url == httpcore.URL(url)
+    assert response.headers
+    assert response.is_redirect is False
+    assert repr(response) == "<SyncResponse(200, 'OK')>"
 
 
 @threadpool
@@ -69,3 +77,59 @@ def test_raw_iterator(server):
     for chunk in response.raw():
         body += chunk
     assert body == b"Hello, world!"
+    response.close()  # TODO: should Response be available as context managers?
+
+
+@threadpool
+def test_raise_for_status(server):
+    with httpcore.Client() as client:
+        for status_code in (200, 400, 404, 500, 505):
+            response = client.request(
+                "GET", "http://127.0.0.1:8000/status/{}".format(status_code)
+            )
+
+            if 400 <= status_code < 600:
+                with pytest.raises(httpcore.exceptions.HttpError):
+                    response.raise_for_status()
+            else:
+                assert response.raise_for_status() is None
+
+
+@threadpool
+def test_options(server):
+    with httpcore.Client() as http:
+        response = http.options("http://127.0.0.1:8000/")
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
+@threadpool
+def test_head(server):
+    with httpcore.Client() as http:
+        response = http.head("http://127.0.0.1:8000/")
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
+@threadpool
+def test_put(server):
+    with httpcore.Client() as http:
+        response = http.put("http://127.0.0.1:8000/", data=b"Hello, world!")
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
+@threadpool
+def test_patch(server):
+    with httpcore.Client() as http:
+        response = http.patch("http://127.0.0.1:8000/", data=b"Hello, world!")
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
+@threadpool
+def test_delete(server):
+    with httpcore.Client() as http:
+        response = http.delete("http://127.0.0.1:8000/")
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
