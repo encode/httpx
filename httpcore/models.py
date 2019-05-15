@@ -101,6 +101,16 @@ class URL:
         return self.components.authority or ""
 
     @property
+    def username(self) -> str:
+        userinfo = self.components.userinfo or ""
+        return userinfo.partition(':')[0]
+
+    @property
+    def password(self) -> str:
+        userinfo = self.components.userinfo or ""
+        return userinfo.partition(':')[2]
+
+    @property
     def host(self) -> str:
         return self.components.host or ""
 

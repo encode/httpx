@@ -265,10 +265,15 @@ class AsyncClient:
         timeout: TimeoutConfig = None,
         allow_redirects: bool = True,
     ) -> Response:
+        url = request.url
+        if auth is None and (url.username or url.password):
+            auth = HTTPBasicAuth(username=url.username, password=url.password)
+
         if auth is not None:
             if isinstance(auth, tuple):
                 auth = HTTPBasicAuth(username=auth[0], password=auth[1])
             request = auth(request)
+
         response = await self.send_handling_redirects(
             request,
             stream=stream,
