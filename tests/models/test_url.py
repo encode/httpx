@@ -43,4 +43,4 @@ def test_url_set():
 
     url_set = set(urls)
 
-    assert tuple(url_set) == urls
+    assert all(url in urls for url in url_set)
