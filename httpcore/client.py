@@ -33,6 +33,7 @@ from .status_codes import codes
 class AsyncClient:
     def __init__(
         self,
+        auth: AuthTypes = None,
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
@@ -45,6 +46,7 @@ class AsyncClient:
                 ssl=ssl, timeout=timeout, pool_limits=pool_limits, backend=backend
             )
 
+        self.auth = auth
         self.max_redirects = max_redirects
         self.dispatch = dispatch
 
@@ -265,6 +267,9 @@ class AsyncClient:
         timeout: TimeoutConfig = None,
         allow_redirects: bool = True,
     ) -> Response:
+        if auth is None:
+            auth = self.auth
+
         url = request.url
         if auth is None and (url.username or url.password):
             auth = HTTPBasicAuth(username=url.username, password=url.password)
@@ -421,6 +426,7 @@ class AsyncClient:
 class Client:
     def __init__(
         self,
+        auth: AuthTypes = None,
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
@@ -429,6 +435,7 @@ class Client:
         backend: ConcurrencyBackend = None,
     ) -> None:
         self._client = AsyncClient(
+            auth=auth,
             ssl=ssl,
             timeout=timeout,
             pool_limits=pool_limits,

@@ -47,6 +47,17 @@ def test_basic_auth_in_url():
     assert json.loads(response.text) == {'auth': 'Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM='}
 
 
+def test_basic_auth_on_session():
+    url = "https://example.org/"
+    auth = ('tomchristie', 'password123')
+
+    with Client(dispatch=MockDispatch(), auth=auth) as client:
+        response = client.get(url)
+
+    assert response.status_code == 200
+    assert json.loads(response.text) == {'auth': 'Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM='}
+
+
 def test_custom_auth():
     url = "https://example.org/"
 
