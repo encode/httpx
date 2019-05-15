@@ -103,14 +103,12 @@ def test_url():
     assert request.url.scheme == "http"
     assert request.url.port == 80
     assert request.url.full_path == "/"
-    assert hash(request.url) == hash(url)
 
     url = "https://example.org/abc?foo=bar"
     request = httpcore.Request("GET", url)
     assert request.url.scheme == "https"
     assert request.url.port == 443
     assert request.url.full_path == "/abc?foo=bar"
-    assert hash(request.url) == hash(url)
 
 
 def test_invalid_urls():
