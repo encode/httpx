@@ -2,14 +2,8 @@ import typing
 
 import h11
 
-from ..config import (
-    DEFAULT_SSL_CONFIG,
-    DEFAULT_TIMEOUT_CONFIG,
-    SSLConfig,
-    TimeoutConfig,
-)
-from ..exceptions import ConnectTimeout, ReadTimeout
-from ..interfaces import BaseReader, BaseWriter, Dispatcher
+from ..config import TimeoutConfig
+from ..interfaces import BaseReader, BaseWriter
 from ..models import Request, Response
 
 H11Event = typing.Union[
