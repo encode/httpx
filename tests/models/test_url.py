@@ -33,3 +33,14 @@ def test_url_query_params():
         "https://example.org:123/path/to/somewhere?b=456", query_params={"a": "123"}
     )
     assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
+
+
+def test_url_set():
+    urls = (
+        URL("http://example.org:123/path/to/somewhere"),
+        URL("http://example.org:123/path/to/somewhere/else"),
+    )
+
+    url_set = set(urls)
+
+    assert all(url in urls for url in url_set)

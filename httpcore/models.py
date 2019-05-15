@@ -4,10 +4,8 @@ import typing
 from urllib.parse import parse_qsl, urlencode
 
 import chardet
-import idna
 import rfc3986
 
-from .config import SSLConfig, TimeoutConfig
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -808,7 +806,7 @@ class SyncResponse:
         while True:
             try:
                 yield self._loop.run_until_complete(inner.__anext__())
-            except StopAsyncIteration as exc:
+            except StopAsyncIteration:
                 break
 
     def raw(self) -> typing.Iterator[bytes]:
@@ -816,7 +814,7 @@ class SyncResponse:
         while True:
             try:
                 yield self._loop.run_until_complete(inner.__anext__())
-            except StopAsyncIteration as exc:
+            except StopAsyncIteration:
                 break
 
     def close(self) -> None:
