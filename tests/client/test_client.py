@@ -133,3 +133,14 @@ def test_delete(server):
         response = http.delete("http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
+
+
+@threadpool
+def test_informational(server):
+    with httpcore.Client() as http:
+        response = http.put(
+            "http://127.0.0.1:8000/",
+            headers={"Expect": "100-continue"},
+            data=b"Hello, world!",
+        )
+    assert response.status_code == 100
