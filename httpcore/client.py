@@ -2,6 +2,7 @@ import asyncio
 import typing
 from types import TracebackType
 
+from .auth import HTTPBasicAuth
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
@@ -265,6 +266,8 @@ class AsyncClient:
         allow_redirects: bool = True,
     ) -> Response:
         if auth is not None:
+            if isinstance(auth, tuple):
+                auth = HTTPBasicAuth(username=auth[0], password=auth[1])
             request = auth(request)
         response = await self.send_handling_redirects(
             request,
@@ -451,6 +454,7 @@ class Client:
         response = self.send(
             request,
             stream=stream,
+            auth=auth,
             allow_redirects=allow_redirects,
             ssl=ssl,
             timeout=timeout,
@@ -634,6 +638,7 @@ class Client:
         request: Request,
         *,
         stream: bool = False,
+        auth: AuthTypes = None,
         allow_redirects: bool = True,
         ssl: SSLConfig = None,
         timeout: TimeoutConfig = None,
@@ -642,6 +647,7 @@ class Client:
             self._client.send(
                 request,
                 stream=stream,
+                auth=auth,
                 allow_redirects=allow_redirects,
                 ssl=ssl,
                 timeout=timeout,

@@ -45,7 +45,10 @@ HeaderTypes = typing.Union[
     typing.List[typing.Tuple[typing.AnyStr, typing.AnyStr]],
 ]
 
-AuthTypes = typing.Callable[["Request"], "Request"]
+AuthTypes = typing.Union[
+    typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
+    typing.Callable[["Request"], "Request"]
+]
 
 RequestData = typing.Union[dict, bytes, typing.AsyncIterator[bytes]]
 
