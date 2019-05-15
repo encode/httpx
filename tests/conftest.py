@@ -12,6 +12,8 @@ async def app(scope, receive, send):
         await slow_response(scope, receive, send)
     elif scope["path"].startswith("/status"):
         await status_code(scope, receive, send)
+    elif scope["path"].startswith("/informational"):
+        await informational(scope, receive, send)
     else:
         await hello_world(scope, receive, send)
 
@@ -49,6 +51,17 @@ async def status_code(scope, receive, send):
         }
     )
     await send({"type": "http.response.body", "body": b"Hello, world!"})
+
+
+async def informational(scope, recieve, send):
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 100,
+            "headers": [[b"content-type", b"text/plain"]],
+        }
+    )
+    await send({"type": "http.response.body", "body": b""})
 
 
 @pytest.fixture

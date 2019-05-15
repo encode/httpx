@@ -139,7 +139,7 @@ def test_delete(server):
 def test_informational(server):
     with httpcore.Client() as http:
         response = http.put(
-            "http://127.0.0.1:8000/",
+            "http://127.0.0.1:8000/informational",
             headers={"Expect": "100-continue"},
             data=b"Hello, world!",
         )
