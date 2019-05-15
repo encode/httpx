@@ -6,6 +6,7 @@ from httpcore import (
     PoolLimits,
     PoolTimeout,
     ReadTimeout,
+    WriteTimeout,
     TimeoutConfig,
 )
 
@@ -17,6 +18,16 @@ async def test_read_timeout(server):
     async with AsyncClient(timeout=timeout) as client:
         with pytest.raises(ReadTimeout):
             await client.get("http://127.0.0.1:8000/slow_response")
+
+
+@pytest.mark.asyncio
+async def test_write_timeout(server):
+    timeout = TimeoutConfig(write_timeout=0.0001)
+
+    async with AsyncClient(timeout=timeout) as client:
+        with pytest.raises(WriteTimeout):
+            data = b"*" * 1024 * 1024
+            await client.put("http://127.0.0.1:8000/slow_response", data=data)
 
 
 @pytest.mark.asyncio
