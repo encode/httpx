@@ -24,7 +24,7 @@ Plus all the standard features of requests...
 * Keep-Alive & Connection Pooling
 * Sessions with Cookie Persistence *TODO*
 * Browser-style SSL Verification
-* Basic/Digest Authentication *TODO*
+* Basic/Digest Authentication *TODO - We have Basic, but not Digest yet.*
 * Elegant Key/Value Cookies *TODO*
 * Automatic Decompression
 * Automatic Content Decoding
