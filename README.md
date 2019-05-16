@@ -16,7 +16,7 @@
 * `async`/`await` support for non-blocking HTTP requests.
 * Strict timeouts everywhere by default.
 * Fully type annotated.
-* 100% test coverage. *TODO - Almost there.*
+* 100% test coverage.
 
 Plus all the standard features of requests...
 
