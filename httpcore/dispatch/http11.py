@@ -94,14 +94,7 @@ class HTTP11Connection:
 
     async def close(self) -> None:
         event = h11.ConnectionClosed()
-        try:
-            # If we're in h11.MUST_CLOSE then we'll end up in h11.CLOSED.
-            self.h11_state.send(event)
-        except h11.ProtocolError:
-            # If we're in some other state then it's a premature close,
-            # and we'll end up in h11.ERROR.
-            pass
-
+        self.h11_state.send(event)
         await self.writer.close()
 
     async def _body_iter(self, timeout: OptionalTimeout) -> typing.AsyncIterator[bytes]:
