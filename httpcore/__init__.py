@@ -10,7 +10,6 @@ from .exceptions import (
     PoolTimeout,
     ProtocolError,
     ReadTimeout,
-    WriteTimeout,
     RedirectBodyUnavailable,
     RedirectLoop,
     ResponseClosed,
@@ -18,6 +17,7 @@ from .exceptions import (
     StreamConsumed,
     Timeout,
     TooManyRedirects,
+    WriteTimeout,
 )
 from .interfaces import BaseReader, BaseWriter, ConcurrencyBackend, Dispatcher, Protocol
 from .models import URL, Headers, Origin, QueryParams, Request, Response

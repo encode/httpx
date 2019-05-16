@@ -1,6 +1,10 @@
 import asyncio
 import cgi
+import email.message
+import http.client
 import typing
+import urllib.request
+from http.cookiejar import CookieJar
 from urllib.parse import parse_qsl, urlencode
 
 import chardet
@@ -475,10 +479,13 @@ class Request:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieJar = None,
     ):
         self.method = method.upper()
         self.url = URL(url, query_params=query_params)
         self.headers = Headers(headers)
+        if cookies:
+            cookies.add_cookie_header(self.cookie_compat)
 
         if isinstance(data, bytes):
             self.is_streaming = False
@@ -535,6 +542,10 @@ class Request:
 
         for item in reversed(auto_headers):
             self.headers.raw.insert(0, item)
+
+    @property
+    def cookie_compat(self) -> "CookieCompatRequest":
+        return CookieCompatRequest(self)
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
@@ -756,6 +767,20 @@ class Response:
         if message:
             raise HttpError(message)
 
+    @property
+    def cookies(self) -> CookieJar:
+        if not hasattr(self, "_cookies"):
+            assert self.request is not None
+            self._cookies = CookieJar()
+            self._cookies.extract_cookies(
+                self.cookie_compat, self.request.cookie_compat
+            )
+        return self._cookies
+
+    @property
+    def cookie_compat(self) -> "CookieCompatResponse":
+        return CookieCompatResponse(self)
+
     def __repr__(self) -> str:
         return f"<Response({self.status_code}, {self.reason_phrase!r})>"
 
@@ -835,5 +860,32 @@ class SyncResponse:
     def close(self) -> None:
         return self._loop.run_until_complete(self._response.close())
 
+    @property
+    def cookies(self) -> CookieJar:
+        return self._response.cookies
+
     def __repr__(self) -> str:
         return f"<Response({self.status_code}, {self.reason_phrase!r})>"
+
+
+class CookieCompatRequest(urllib.request.Request):
+    def __init__(self, request: Request) -> None:
+        super().__init__(
+            url=str(request.url), headers=dict(request.headers), method=request.method
+        )
+        self.request = request
+
+    def add_unredirected_header(self, key: str, value: str) -> None:
+        super().add_unredirected_header(key, value)
+        self.request.headers[key] = value
+
+
+class CookieCompatResponse(http.client.HTTPResponse):
+    def __init__(self, response: Response):
+        self.response = response
+
+    def info(self) -> email.message.Message:
+        info = email.message.Message()
+        for key, value in self.response.headers.items():
+            info[key] = value
+        return info
