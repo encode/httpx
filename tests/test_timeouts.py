@@ -26,7 +26,7 @@ async def test_write_timeout(server):
 
     async with AsyncClient(timeout=timeout) as client:
         with pytest.raises(WriteTimeout):
-            data = b"*" * 1024 * 1024
+            data = b"*" * 1024 * 1024 * 10
             await client.put("http://127.0.0.1:8000/slow_response", data=data)
 
 
