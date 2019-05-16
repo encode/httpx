@@ -1,4 +1,3 @@
-import collections.abc
 import typing
 
 from ..concurrency import AsyncioBackend
@@ -20,7 +19,7 @@ from .connection import HTTPConnection
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
 
 
-class ConnectionStore(collections.abc.Sequence):
+class ConnectionStore:
     """
     We need to maintain collections of connections in a way that allows us to:
 
@@ -73,11 +72,6 @@ class ConnectionStore(collections.abc.Sequence):
 
     def __iter__(self) -> typing.Iterator[HTTPConnection]:
         return iter(self.all.keys())
-
-    def __getitem__(self, key: typing.Any) -> typing.Any:
-        if key in self.all:
-            return key
-        return None
 
     def __len__(self) -> int:
         return len(self.all)
