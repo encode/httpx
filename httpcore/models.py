@@ -45,7 +45,7 @@ HeaderTypes = typing.Union[
 
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
-    typing.Callable[["Request"], "Request"]
+    typing.Callable[["Request"], "Request"],
 ]
 
 RequestData = typing.Union[dict, bytes, typing.AsyncIterator[bytes]]
@@ -101,12 +101,12 @@ class URL:
     @property
     def username(self) -> str:
         userinfo = self.components.userinfo or ""
-        return userinfo.partition(':')[0]
+        return userinfo.partition(":")[0]
 
     @property
     def password(self) -> str:
         userinfo = self.components.userinfo or ""
-        return userinfo.partition(':')[2]
+        return userinfo.partition(":")[2]
 
     @property
     def host(self) -> str:

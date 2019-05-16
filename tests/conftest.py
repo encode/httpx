@@ -54,13 +54,13 @@ async def status_code(scope, receive, send):
 
 
 async def echo_body(scope, receive, send):
-    body = b''
+    body = b""
     more_body = True
 
     while more_body:
         message = await receive()
-        body += message.get('body', b'')
-        more_body = message.get('more_body', False)
+        body += message.get("body", b"")
+        more_body = message.get("more_body", False)
 
     await send(
         {
