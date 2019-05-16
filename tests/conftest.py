@@ -12,6 +12,8 @@ async def app(scope, receive, send):
         await slow_response(scope, receive, send)
     elif scope["path"].startswith("/status"):
         await status_code(scope, receive, send)
+    elif scope["path"].startswith("/echo_body"):
+        await echo_body(scope, receive, send)
     else:
         await hello_world(scope, receive, send)
 
@@ -49,6 +51,25 @@ async def status_code(scope, receive, send):
         }
     )
     await send({"type": "http.response.body", "body": b"Hello, world!"})
+
+
+async def echo_body(scope, receive, send):
+    body = b''
+    more_body = True
+
+    while more_body:
+        message = await receive()
+        body += message.get('body', b'')
+        more_body = message.get('more_body', False)
+
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [[b"content-type", b"text/plain"]],
+        }
+    )
+    await send({"type": "http.response.body", "body": body})
 
 
 @pytest.fixture
