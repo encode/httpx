@@ -76,7 +76,7 @@ class Writer(BaseWriter):
         self.timeout = timeout
 
     def write_no_block(self, data: bytes) -> None:
-        self.stream_writer.write(data)
+        self.stream_writer.write(data)  # pragma: nocover
 
     async def write(self, data: bytes, timeout: OptionalTimeout = None) -> None:
         if not data:
