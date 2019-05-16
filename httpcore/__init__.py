@@ -10,6 +10,7 @@ from .exceptions import (
     PoolTimeout,
     ProtocolError,
     ReadTimeout,
+    WriteTimeout,
     RedirectBodyUnavailable,
     RedirectLoop,
     ResponseClosed,
