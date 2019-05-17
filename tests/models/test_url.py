@@ -25,13 +25,11 @@ def test_url():
     assert new.scheme == "http"
 
 
-def test_url_query_params():
-    url = URL("https://example.org:123/path/to/somewhere", query_params={"a": "123"})
+def test_url__params():
+    url = URL("https://example.org:123/path/to/somewhere", params={"a": "123"})
     assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
 
-    url = URL(
-        "https://example.org:123/path/to/somewhere?b=456", query_params={"a": "123"}
-    )
+    url = URL("https://example.org:123/path/to/somewhere?b=456", params={"a": "123"})
     assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
 
 

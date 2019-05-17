@@ -38,15 +38,13 @@ class Dispatcher:
         url: URLTypes,
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
         ssl: SSLConfig = None,
         timeout: TimeoutConfig = None
     ) -> Response:
-        request = Request(
-            method, url, data=data, query_params=query_params, headers=headers
-        )
+        request = Request(method, url, data=data, params=params, headers=headers)
         self.prepare_request(request)
         response = await self.send(request, stream=stream, ssl=ssl, timeout=timeout)
         return response

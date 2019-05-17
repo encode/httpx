@@ -98,14 +98,14 @@ inspiration around the lower level networking details.
 ```
 
 * `def __init__([auth], [cookies], [ssl], [timeout], [pool_limits], [max_redirects], [dispatch])`
-* `def .request(method, url, [content], [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .get(url, [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .options(url, [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .head(url, [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .post(url, [content], [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .put(url, [content], [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .patch(url, [content], [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .delete(url, [content], [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .request(method, url, [content], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .post(url, [content], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .put(url, [content], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .patch(url, [content], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .delete(url, [content], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
 * `def .prepare_request(request)`
 * `def .send(request, [stream], [allow_redirects], [ssl], [timeout])`
 * `def .close()`
@@ -145,7 +145,11 @@ what gets sent over the wire.*
 >>> response = client.send(request)
 ```
 
-* `def __init__(method, url, query_params, [content], [headers], [cookies])`
+<<<<<<< HEAD
+* `def __init__(method, url, params, [content], [headers], [cookies])`
+=======
+* `def __init__(method, url, params, content, headers)`
+>>>>>>> cookies
 * `.method` - **str** (Uppercased)
 * `.url` - **URL**
 * `.content` - **byte** or **byte async iterator**
@@ -162,7 +166,7 @@ what gets sent over the wire.*
 'example.org'
 ```
 
-* `def __init__(url, allow_relative=False, query_params=None)`
+* `def __init__(url, allow_relative=False, params=None)`
 * `.scheme` - **str**
 * `.authority` - **str**
 * `.host` - **str**

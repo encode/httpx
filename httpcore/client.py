@@ -58,7 +58,7 @@ class AsyncClient:
         self,
         url: URLTypes,
         *,
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -70,7 +70,7 @@ class AsyncClient:
         return await self.request(
             "GET",
             url,
-            query_params=query_params,
+            params=params,
             headers=headers,
             cookies=cookies,
             stream=stream,
@@ -84,7 +84,7 @@ class AsyncClient:
         self,
         url: URLTypes,
         *,
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -96,7 +96,7 @@ class AsyncClient:
         return await self.request(
             "OPTIONS",
             url,
-            query_params=query_params,
+            params=params,
             headers=headers,
             cookies=cookies,
             stream=stream,
@@ -110,7 +110,7 @@ class AsyncClient:
         self,
         url: URLTypes,
         *,
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -122,7 +122,7 @@ class AsyncClient:
         return await self.request(
             "HEAD",
             url,
-            query_params=query_params,
+            params=params,
             headers=headers,
             cookies=cookies,
             stream=stream,
@@ -137,7 +137,7 @@ class AsyncClient:
         url: URLTypes,
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -150,7 +150,7 @@ class AsyncClient:
             "POST",
             url,
             data=data,
-            query_params=query_params,
+            params=params,
             headers=headers,
             cookies=cookies,
             stream=stream,
@@ -165,7 +165,7 @@ class AsyncClient:
         url: URLTypes,
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -178,7 +178,7 @@ class AsyncClient:
             "PUT",
             url,
             data=data,
-            query_params=query_params,
+            params=params,
             headers=headers,
             cookies=cookies,
             stream=stream,
@@ -193,7 +193,7 @@ class AsyncClient:
         url: URLTypes,
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -206,7 +206,7 @@ class AsyncClient:
             "PATCH",
             url,
             data=data,
-            query_params=query_params,
+            params=params,
             headers=headers,
             cookies=cookies,
             stream=stream,
@@ -221,7 +221,7 @@ class AsyncClient:
         url: URLTypes,
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -234,7 +234,7 @@ class AsyncClient:
             "DELETE",
             url,
             data=data,
-            query_params=query_params,
+            params=params,
             headers=headers,
             cookies=cookies,
             stream=stream,
@@ -250,7 +250,7 @@ class AsyncClient:
         url: URLTypes,
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -263,7 +263,7 @@ class AsyncClient:
             method,
             url,
             data=data,
-            query_params=query_params,
+            params=params,
             headers=headers,
             cookies=self.merge_cookies(cookies),
         )
@@ -281,7 +281,9 @@ class AsyncClient:
     def prepare_request(self, request: Request) -> None:
         request.prepare()
 
-    def merge_cookies(self, cookies: CookieTypes = None) -> typing.Optional[CookieTypes]:
+    def merge_cookies(
+        self, cookies: CookieTypes = None
+    ) -> typing.Optional[CookieTypes]:
         if cookies or self.cookies:
             merged_cookies = Cookies(self.cookies)
             merged_cookies.update(cookies)
@@ -377,7 +379,9 @@ class AsyncClient:
         headers = self.redirect_headers(request, url)
         content = self.redirect_content(request, method)
         cookies = self.merge_cookies(request.cookies)
-        return Request(method=method, url=url, headers=headers, data=content, cookies=cookies)
+        return Request(
+            method=method, url=url, headers=headers, data=content, cookies=cookies
+        )
 
     def redirect_method(self, request: Request, response: Response) -> str:
         """
@@ -488,7 +492,7 @@ class Client:
         url: URLTypes,
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -501,7 +505,7 @@ class Client:
             method,
             url,
             data=data,
-            query_params=query_params,
+            params=params,
             headers=headers,
             cookies=self._client.merge_cookies(cookies),
         )
@@ -520,7 +524,7 @@ class Client:
         self,
         url: URLTypes,
         *,
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -545,7 +549,7 @@ class Client:
         self,
         url: URLTypes,
         *,
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -570,7 +574,7 @@ class Client:
         self,
         url: URLTypes,
         *,
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -596,7 +600,7 @@ class Client:
         url: URLTypes,
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -623,7 +627,7 @@ class Client:
         url: URLTypes,
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -650,7 +654,7 @@ class Client:
         url: URLTypes,
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
@@ -677,7 +681,7 @@ class Client:
         url: URLTypes,
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         stream: bool = False,
