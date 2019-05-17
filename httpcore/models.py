@@ -65,7 +65,7 @@ class URL:
         self,
         url: URLTypes,
         allow_relative: bool = False,
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
     ) -> None:
         if isinstance(url, rfc3986.uri.URIReference):
             self.components = url
@@ -84,8 +84,8 @@ class URL:
         self.components = self.components.normalize()
 
         # Add any query parameters.
-        if query_params:
-            query_string = str(QueryParams(query_params))
+        if params:
+            query_string = str(QueryParams(params))
             self.components = self.components.copy_with(query=query_string)
 
         # Enforce absolute URLs by default.
@@ -480,12 +480,12 @@ class Request:
         url: typing.Union[str, URL],
         *,
         data: RequestData = b"",
-        query_params: QueryParamTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
     ):
         self.method = method.upper()
-        self.url = URL(url, query_params=query_params)
+        self.url = URL(url, params=params)
         self.headers = Headers(headers)
         if cookies:
             self._cookies = Cookies(cookies)
@@ -981,7 +981,7 @@ class Cookies(MutableMapping):
             args.append(path)
         self.jar.clear(*args)
 
-    def update(self, cookies: CookieTypes) -> None:  # type: ignore
+    def update(self, cookies: CookieTypes = None) -> None:  # type: ignore
         cookies = Cookies(cookies)
         for cookie in cookies.jar:
             self.jar.set_cookie(cookie)
