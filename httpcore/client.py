@@ -18,6 +18,8 @@ from .interfaces import ConcurrencyBackend, Dispatcher
 from .models import (
     URL,
     AuthTypes,
+    Cookies,
+    CookieTypes,
     Headers,
     HeaderTypes,
     QueryParamTypes,
@@ -34,6 +36,7 @@ class AsyncClient:
     def __init__(
         self,
         auth: AuthTypes = None,
+        cookies: CookieTypes = None,
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
         timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
@@ -47,6 +50,7 @@ class AsyncClient:
             )
 
         self.auth = auth
+        self.cookies = Cookies(cookies)
         self.max_redirects = max_redirects
         self.dispatch = dispatch
 
@@ -56,6 +60,7 @@ class AsyncClient:
         *,
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -67,6 +72,7 @@ class AsyncClient:
             url,
             query_params=query_params,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -80,6 +86,7 @@ class AsyncClient:
         *,
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -91,6 +98,7 @@ class AsyncClient:
             url,
             query_params=query_params,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -104,6 +112,7 @@ class AsyncClient:
         *,
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  #  Note: Differs to usual default.
@@ -115,6 +124,7 @@ class AsyncClient:
             url,
             query_params=query_params,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -129,6 +139,7 @@ class AsyncClient:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -141,6 +152,7 @@ class AsyncClient:
             data=data,
             query_params=query_params,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -155,6 +167,7 @@ class AsyncClient:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -167,6 +180,7 @@ class AsyncClient:
             data=data,
             query_params=query_params,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -181,6 +195,7 @@ class AsyncClient:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -193,6 +208,7 @@ class AsyncClient:
             data=data,
             query_params=query_params,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -207,6 +223,7 @@ class AsyncClient:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -219,6 +236,7 @@ class AsyncClient:
             data=data,
             query_params=query_params,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -234,6 +252,7 @@ class AsyncClient:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -241,7 +260,12 @@ class AsyncClient:
         timeout: TimeoutConfig = None,
     ) -> Response:
         request = Request(
-            method, url, data=data, query_params=query_params, headers=headers
+            method,
+            url,
+            data=data,
+            query_params=query_params,
+            headers=headers,
+            cookies=self.merge_cookies(cookies),
         )
         self.prepare_request(request)
         response = await self.send(
@@ -256,6 +280,13 @@ class AsyncClient:
 
     def prepare_request(self, request: Request) -> None:
         request.prepare()
+
+    def merge_cookies(self, cookies: CookieTypes = None) -> typing.Optional[CookieTypes]:
+        if cookies or self.cookies:
+            merged_cookies = Cookies(self.cookies)
+            merged_cookies.update(cookies)
+            return merged_cookies
+        return cookies
 
     async def send(
         self,
@@ -313,6 +344,7 @@ class AsyncClient:
                 request, stream=stream, ssl=ssl, timeout=timeout
             )
             response.history = list(history)
+            self.cookies.extract_cookies(response)
             history = [response] + history
             if not response.is_redirect:
                 break
@@ -344,7 +376,8 @@ class AsyncClient:
         url = self.redirect_url(request, response)
         headers = self.redirect_headers(request, url)
         content = self.redirect_content(request, method)
-        return Request(method=method, url=url, headers=headers, data=content)
+        cookies = self.merge_cookies(request.cookies)
+        return Request(method=method, url=url, headers=headers, data=content, cookies=cookies)
 
     def redirect_method(self, request: Request, response: Response) -> str:
         """
@@ -445,6 +478,10 @@ class Client:
         )
         self._loop = asyncio.new_event_loop()
 
+    @property
+    def cookies(self) -> Cookies:
+        return self._client.cookies
+
     def request(
         self,
         method: str,
@@ -453,6 +490,7 @@ class Client:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -460,7 +498,12 @@ class Client:
         timeout: TimeoutConfig = None,
     ) -> SyncResponse:
         request = Request(
-            method, url, data=data, query_params=query_params, headers=headers
+            method,
+            url,
+            data=data,
+            query_params=query_params,
+            headers=headers,
+            cookies=self._client.merge_cookies(cookies),
         )
         self.prepare_request(request)
         response = self.send(
@@ -479,6 +522,7 @@ class Client:
         *,
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -489,6 +533,7 @@ class Client:
             "GET",
             url,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -502,6 +547,7 @@ class Client:
         *,
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -512,6 +558,7 @@ class Client:
             "OPTIONS",
             url,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -525,6 +572,7 @@ class Client:
         *,
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  #  Note: Differs to usual default.
@@ -535,6 +583,7 @@ class Client:
             "HEAD",
             url,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -549,6 +598,7 @@ class Client:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -560,6 +610,7 @@ class Client:
             url,
             data=data,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -574,6 +625,7 @@ class Client:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -585,6 +637,7 @@ class Client:
             url,
             data=data,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -599,6 +652,7 @@ class Client:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -610,6 +664,7 @@ class Client:
             url,
             data=data,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
@@ -624,6 +679,7 @@ class Client:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
@@ -635,6 +691,7 @@ class Client:
             url,
             data=data,
             headers=headers,
+            cookies=cookies,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,

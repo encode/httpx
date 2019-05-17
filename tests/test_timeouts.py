@@ -6,8 +6,8 @@ from httpcore import (
     PoolLimits,
     PoolTimeout,
     ReadTimeout,
-    WriteTimeout,
     TimeoutConfig,
+    WriteTimeout,
 )
 
 

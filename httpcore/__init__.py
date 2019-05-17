@@ -5,12 +5,12 @@ from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
 from .exceptions import (
     ConnectTimeout,
+    CookieConflict,
     DecodingError,
     InvalidURL,
     PoolTimeout,
     ProtocolError,
     ReadTimeout,
-    WriteTimeout,
     RedirectBodyUnavailable,
     RedirectLoop,
     ResponseClosed,
@@ -18,9 +18,10 @@ from .exceptions import (
     StreamConsumed,
     Timeout,
     TooManyRedirects,
+    WriteTimeout,
 )
 from .interfaces import BaseReader, BaseWriter, ConcurrencyBackend, Dispatcher, Protocol
-from .models import URL, Headers, Origin, QueryParams, Request, Response
+from .models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
 from .status_codes import codes
 
 __version__ = "0.3.0"
