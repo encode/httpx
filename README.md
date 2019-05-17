@@ -214,6 +214,7 @@ True
 ```
 
 * `def __init__(cookies: [dict, Cookies, CookieJar])`
+* `.jar` - **CookieJar**
 * `def extract_cookies(response)`
 * `def set_cookie_header(request)`
 * `def set(name, value, [domain], [path])`
