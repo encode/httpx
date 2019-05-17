@@ -102,10 +102,10 @@ inspiration around the lower level networking details.
 * `def .get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
 * `def .options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
 * `def .head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .post(url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .put(url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .patch(url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .delete(url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .post(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .put(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .patch(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
 * `def .prepare_request(request)`
 * `def .send(request, [stream], [allow_redirects], [ssl], [timeout])`
 * `def .close()`
@@ -145,7 +145,7 @@ what gets sent over the wire.*
 >>> response = client.send(request)
 ```
 
-* `def __init__(method, url, [params], [data], [headers], [cookies])`
+* `def __init__(method, url, [params], [data], [json], [headers], [cookies])`
 * `.method` - **str**
 * `.url` - **URL**
 * `.content` - **byte** or **byte async iterator**

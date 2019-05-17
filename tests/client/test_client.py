@@ -49,6 +49,14 @@ def test_post(server):
 
 
 @threadpool
+def test_post_json(server):
+    with httpcore.Client() as http:
+        response = http.post("http://127.0.0.1:8000/", json={"text": "Hello, world!"})
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
+@threadpool
 def test_stream_response(server):
     with httpcore.Client() as http:
         response = http.get("http://127.0.0.1:8000/", stream=True)

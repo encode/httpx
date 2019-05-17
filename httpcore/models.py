@@ -1,7 +1,7 @@
 import asyncio
 import cgi
 import email.message
-import json
+import json as jsonlib
 import typing
 import urllib.request
 from collections.abc import MutableMapping
@@ -481,6 +481,7 @@ class Request:
         url: typing.Union[str, URL],
         *,
         data: RequestData = b"",
+        json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
@@ -491,6 +492,10 @@ class Request:
         if cookies:
             self._cookies = Cookies(cookies)
             self._cookies.set_cookie_header(self)
+
+        if json is not None:
+            data = jsonlib.dumps(json).encode("utf-8")
+            self.headers["Content-Type"] = "application/json"
 
         if isinstance(data, bytes):
             self.is_streaming = False
@@ -775,7 +780,7 @@ class Response:
             raise HttpError(message)
 
     def json(self) -> typing.Any:
-        return json.loads(self.content.decode("utf-8"))
+        return jsonlib.loads(self.content.decode("utf-8"))
 
     @property
     def cookies(self) -> "Cookies":
