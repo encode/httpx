@@ -12,7 +12,7 @@
 
 ## Feature support
 
-* `HTTP/1.1` and `HTTP/2` Support.
+* `HTTP/2` and `HTTP/1.1` support.
 * `async`/`await` support for non-blocking HTTP requests.
 * Strict timeouts everywhere by default.
 * Fully type annotated.
@@ -22,10 +22,10 @@ Plus all the standard features of requests...
 
 * International Domains and URLs
 * Keep-Alive & Connection Pooling
-* Sessions with Cookie Persistence *TODO*
+* Sessions with Cookie Persistence
 * Browser-style SSL Verification
 * Basic/Digest Authentication *TODO - We have Basic, but not Digest yet.*
-* Elegant Key/Value Cookies *TODO*
+* Elegant Key/Value Cookies
 * Automatic Decompression
 * Automatic Content Decoding
 * Unicode Response Bodies
@@ -72,8 +72,8 @@ Alternatively, async requests:
 
 ## Dependencies
 
-* `h11` - HTTP/1.1 support.
 * `h2` - HTTP/2 support.
+* `h11` - HTTP/1.1 support.
 * `certifi` - SSL certificates.
 * `chardet` - Fallback auto-detection for response encoding.
 * `idna` - Internationalized domain name support.
@@ -97,15 +97,15 @@ inspiration around the lower level networking details.
 >>> response = client.get('https://example.org')
 ```
 
-* `def __init__([ssl], [timeout], [pool_limits], [max_redirects], [dispatch])`
-* `def .request(method, url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .get(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .options(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .head(url, [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .post(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .put(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .patch(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .delete(url, [content], [query_params], [headers], [stream], [allow_redirects], [ssl], [timeout])`
+* `def __init__([auth], [cookies], [ssl], [timeout], [pool_limits], [max_redirects], [dispatch])`
+* `def .request(method, url, [content], [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .get(url, [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .options(url, [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .head(url, [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .post(url, [content], [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .put(url, [content], [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .patch(url, [content], [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def .delete(url, [content], [query_params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
 * `def .prepare_request(request)`
 * `def .send(request, [stream], [allow_redirects], [ssl], [timeout])`
 * `def .close()`
@@ -125,7 +125,7 @@ inspiration around the lower level networking details.
 * `.encoding` - **str**
 * `.is_redirect` - **bool**
 * `.request` - **Request**
-* `.cookies` - **Cookies** *TODO*
+* `.cookies` - **Cookies**
 * `.history` - **List[Response]**
 * `def .raise_for_status()` - **None**
 * `def .json()` - **Any** *TODO*
@@ -145,11 +145,12 @@ what gets sent over the wire.*
 >>> response = client.send(request)
 ```
 
-* `def __init__(method, url, query_params, content, headers)`
+* `def __init__(method, url, query_params, [content], [headers], [cookies])`
 * `.method` - **str** (Uppercased)
 * `.url` - **URL**
 * `.content` - **byte** or **byte async iterator**
 * `.headers` - **Headers**
+* `.cookies` - **Cookies**
 
 ### `URL`
 
@@ -201,7 +202,25 @@ True
 'application/json'
 ```
 
-* `def __init__(headers)`
+* `def __init__(self, headers)`
+
+### `Cookies`
+
+*A dict-like cookie store.*
+
+```python
+>>> cookies = Cookies()
+>>> cookies.set("name", "value", domain="example.org")
+```
+
+* `def __init__(cookies: [dict, Cookies, CookieJar])`
+* `def extract_cookies(response)`
+* `def set_cookie_header(request)`
+* `def set(name, value, [domain], [path])`
+* `def get(name, [domain], [path])`
+* `def delete(name, [domain], [path])`
+* `def clear([domain], [path])`
+* *Standard mutable mapping interface*
 
 ___
 
