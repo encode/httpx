@@ -205,9 +205,8 @@ async def test_cross_domain_redirect():
     url = "https://example.com/cross_domain"
     headers = {"Authorization": "abc"}
     response = await client.get(url, headers=headers)
-    data = json.loads(response.content.decode())
     assert response.url == URL("https://example.org/cross_domain_target")
-    assert "authorization" not in data["headers"]
+    assert "authorization" not in response.json()["headers"]
 
 
 @pytest.mark.asyncio
@@ -216,9 +215,8 @@ async def test_same_domain_redirect():
     url = "https://example.org/cross_domain"
     headers = {"Authorization": "abc"}
     response = await client.get(url, headers=headers)
-    data = json.loads(response.content.decode())
     assert response.url == URL("https://example.org/cross_domain_target")
-    assert data["headers"]["authorization"] == "abc"
+    assert response.json()["headers"]["authorization"] == "abc"
 
 
 @pytest.mark.asyncio
@@ -227,9 +225,8 @@ async def test_body_redirect():
     url = "https://example.org/redirect_body"
     data = b"Example request body"
     response = await client.post(url, data=data)
-    data = json.loads(response.content.decode())
     assert response.url == URL("https://example.org/redirect_body_target")
-    assert data == {"body": "Example request body"}
+    assert response.json() == {"body": "Example request body"}
 
 
 @pytest.mark.asyncio

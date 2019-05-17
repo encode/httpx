@@ -1,6 +1,7 @@
 import asyncio
 import cgi
 import email.message
+import json
 import typing
 import urllib.request
 from collections.abc import MutableMapping
@@ -773,6 +774,9 @@ class Response:
         if message:
             raise HttpError(message)
 
+    def json(self) -> typing.Any:
+        return json.loads(self.content.decode("utf-8"))
+
     @property
     def cookies(self) -> "Cookies":
         if not hasattr(self, "_cookies"):
@@ -837,6 +841,9 @@ class SyncResponse:
 
     def raise_for_status(self) -> None:
         return self._response.raise_for_status()
+
+    def json(self) -> typing.Any:
+        return self._response.json()
 
     def read(self) -> bytes:
         return self._loop.run_until_complete(self._response.read())

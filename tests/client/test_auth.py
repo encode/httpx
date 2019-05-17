@@ -33,9 +33,7 @@ def test_basic_auth():
         response = client.get(url, auth=auth)
 
     assert response.status_code == 200
-    assert json.loads(response.text) == {
-        "auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="
-    }
+    assert response.json() == {"auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="}
 
 
 def test_basic_auth_in_url():
@@ -45,9 +43,7 @@ def test_basic_auth_in_url():
         response = client.get(url)
 
     assert response.status_code == 200
-    assert json.loads(response.text) == {
-        "auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="
-    }
+    assert response.json() == {"auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="}
 
 
 def test_basic_auth_on_session():
@@ -58,9 +54,7 @@ def test_basic_auth_on_session():
         response = client.get(url)
 
     assert response.status_code == 200
-    assert json.loads(response.text) == {
-        "auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="
-    }
+    assert response.json() == {"auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="}
 
 
 def test_custom_auth():
@@ -74,4 +68,4 @@ def test_custom_auth():
         response = client.get(url, auth=auth)
 
     assert response.status_code == 200
-    assert json.loads(response.text) == {"auth": "Token 123"}
+    assert response.json() == {"auth": "Token 123"}

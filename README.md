@@ -128,7 +128,7 @@ inspiration around the lower level networking details.
 * `.cookies` - **Cookies**
 * `.history` - **List[Response]**
 * `def .raise_for_status()` - **None**
-* `def .json()` - **Any** *TODO*
+* `def .json()` - **Any**
 * `def .read()` - **bytes**
 * `def .stream()` - **bytes iterator**
 * `def .raw()` - **bytes iterator**

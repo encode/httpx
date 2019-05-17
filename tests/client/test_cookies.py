@@ -42,7 +42,7 @@ def test_set_cookie():
         response = client.get(url, cookies=cookies)
 
     assert response.status_code == 200
-    assert json.loads(response.text) == {"cookies": "example-name=example-value"}
+    assert response.json() == {"cookies": "example-name=example-value"}
 
 
 def test_set_cookie_with_cookiejar():
@@ -77,7 +77,7 @@ def test_set_cookie_with_cookiejar():
         response = client.get(url, cookies=cookies)
 
     assert response.status_code == 200
-    assert json.loads(response.text) == {"cookies": "example-name=example-value"}
+    assert response.json() == {"cookies": "example-name=example-value"}
 
 
 def test_set_cookie_with_cookies_model():
@@ -93,7 +93,7 @@ def test_set_cookie_with_cookies_model():
         response = client.get(url, cookies=cookies)
 
     assert response.status_code == 200
-    assert json.loads(response.text) == {"cookies": "example-name=example-value"}
+    assert response.json() == {"cookies": "example-name=example-value"}
 
 
 def test_get_cookie():
@@ -114,7 +114,7 @@ def test_cookie_persistence():
     with Client(dispatch=MockDispatch()) as client:
         response = client.get("http://example.org/echo_cookies")
         assert response.status_code == 200
-        assert json.loads(response.text) == {"cookies": None}
+        assert response.json() == {"cookies": None}
 
         response = client.get("http://example.org/set_cookie")
         assert response.status_code == 200
@@ -123,4 +123,4 @@ def test_cookie_persistence():
 
         response = client.get("http://example.org/echo_cookies")
         assert response.status_code == 200
-        assert json.loads(response.text) == {"cookies": "example-name=example-value"}
+        assert response.json() == {"cookies": "example-name=example-value"}
