@@ -104,3 +104,23 @@ def test_get_cookie():
 
     assert response.status_code == 200
     assert response.cookies["example-name"] == "example-value"
+    assert client.cookies["example-name"] == "example-value"
+
+
+def test_cookie_persistence():
+    """
+    Ensure that Client instances persist cookies between requests.
+    """
+    with Client(dispatch=MockDispatch()) as client:
+        response = client.get("http://example.org/echo_cookies")
+        assert response.status_code == 200
+        assert json.loads(response.text) == {"cookies": None}
+
+        response = client.get("http://example.org/set_cookie")
+        assert response.status_code == 200
+        assert response.cookies["example-name"] == "example-value"
+        assert client.cookies["example-name"] == "example-value"
+
+        response = client.get("http://example.org/echo_cookies")
+        assert response.status_code == 200
+        assert json.loads(response.text) == {"cookies": "example-name=example-value"}

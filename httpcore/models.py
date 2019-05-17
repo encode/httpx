@@ -488,8 +488,8 @@ class Request:
         self.url = URL(url, query_params=query_params)
         self.headers = Headers(headers)
         if cookies:
-            cookies = Cookies(cookies)
-            cookies.set_cookie_header(self)
+            self._cookies = Cookies(cookies)
+            self._cookies.set_cookie_header(self)
 
         if isinstance(data, bytes):
             self.is_streaming = False
@@ -546,6 +546,12 @@ class Request:
 
         for item in reversed(auto_headers):
             self.headers.raw.insert(0, item)
+
+    @property
+    def cookies(self) -> "Cookies":
+        if not hasattr(self, "_cookies"):
+            self._cookies = Cookies()
+        return self._cookies
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
@@ -874,7 +880,9 @@ class Cookies(MutableMapping):
                 for key, value in cookies.items():
                     self.set(key, value)
         elif isinstance(cookies, Cookies):
-            self.jar = cookies.jar
+            self.jar = CookieJar()
+            for cookie in cookies.jar:
+                self.jar.set_cookie(cookie)
         else:
             self.jar = cookies
 
