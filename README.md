@@ -145,12 +145,8 @@ what gets sent over the wire.*
 >>> response = client.send(request)
 ```
 
-<<<<<<< HEAD
 * `def __init__(method, url, params, [content], [headers], [cookies])`
-=======
-* `def __init__(method, url, params, content, headers)`
->>>>>>> cookies
-* `.method` - **str** (Uppercased)
+* `.method` - **str**
 * `.url` - **URL**
 * `.content` - **byte** or **byte async iterator**
 * `.headers` - **Headers**
