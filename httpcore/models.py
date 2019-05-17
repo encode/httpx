@@ -3,6 +3,7 @@ import cgi
 import email.message
 import typing
 import urllib.request
+from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
 
@@ -17,6 +18,7 @@ from .decoders import (
     MultiDecoder,
 )
 from .exceptions import (
+    CookieConflict,
     HttpError,
     InvalidURL,
     ResponseClosed,
@@ -487,7 +489,7 @@ class Request:
         self.headers = Headers(headers)
         if cookies:
             cookies = Cookies(cookies)
-            cookies.add_cookie_header(self)
+            cookies.set_cookie_header(self)
 
         if isinstance(data, bytes):
             self.is_streaming = False
@@ -860,8 +862,12 @@ class SyncResponse:
         return f"<Response({self.status_code}, {self.reason_phrase!r})>"
 
 
-class Cookies:
-    def __init__(self, cookies: CookieTypes = None):
+class Cookies(MutableMapping):
+    """
+    HTTP Cookies, as a mutable mapping.
+    """
+
+    def __init__(self, cookies: CookieTypes = None) -> None:
         if cookies is None or isinstance(cookies, dict):
             self.jar = CookieJar()
             if isinstance(cookies, dict):
@@ -882,7 +888,7 @@ class Cookies:
 
         self.jar.extract_cookies(urlib_response, urllib_request)  # type: ignore
 
-    def add_cookie_header(self, request: Request) -> None:
+    def set_cookie_header(self, request: Request) -> None:
         """
         Sets an appropriate 'Cookie:' HTTP header on the `Request`.
         """
@@ -891,7 +897,7 @@ class Cookies:
 
     def set(self, name: str, value: str, domain: str = "", path: str = "/") -> None:
         """
-        Set a cookie.
+        Set a cookie value by name. May optionally include domain and path.
         """
         kwargs = dict(
             version=0,
@@ -915,11 +921,85 @@ class Cookies:
         cookie = Cookie(**kwargs)  # type: ignore
         self.jar.set_cookie(cookie)
 
+    def get(  # type: ignore
+        self, name: str, default: str = None, domain: str = None, path: str = None
+    ) -> typing.Optional[str]:
+        """
+        Get a cookie by name. May optionally include domain and path
+        in order to specify exactly which cookie to retrieve.
+        """
+        value = None
+        for cookie in self.jar:
+            if cookie.name == name:
+                if domain is None or cookie.domain == domain:  # type: ignore
+                    if path is None or cookie.path == path:
+                        if value is not None:
+                            message = f"Multiple cookies exist with name={name}"
+                            raise CookieConflict(message)
+                        value = cookie.value
+
+        if value is None:
+            return default
+        return value
+
+    def delete(self, name: str, domain: str = None, path: str = None) -> None:
+        """
+        Delete a cookie by name. May optionally include domain and path
+        in order to specify exactly which cookie to delete.
+        """
+        if domain is not None and path is not None:
+            return self.jar.clear(domain, path, name)
+
+        remove = []
+        for cookie in self.jar:
+            if cookie.name == name:
+                if domain is None or cookie.domain == domain:  # type: ignore
+                    if path is None or cookie.path == path:
+                        remove.append(cookie)
+
+        for cookie in remove:
+            self.jar.clear(cookie.domain, cookie.path, cookie.name)  # type: ignore
+
+    def clear(self, domain: str = None, path: str = None) -> None:
+        """
+        Delete all cookies. Optionally include a domain and path in
+        order to only delete a subset of all the cookies.
+        """
+        args = []
+        if domain is not None:
+            args.append(domain)
+        if path is not None:
+            assert domain is not None
+            args.append(path)
+        self.jar.clear(*args)
+
+    def update(self, cookies: CookieTypes) -> None:  # type: ignore
+        cookies = Cookies(cookies)
+        for cookie in cookies.jar:
+            self.jar.set_cookie(cookie)
+
     def __setitem__(self, name: str, value: str) -> None:
         return self.set(name, value)
 
-    def __iter__(self) -> typing.Iterable:
-        return iter(self.jar)
+    def __getitem__(self, name: str) -> str:
+        value = self.get(name)
+        if value is None:
+            raise KeyError(name)
+        return value
+
+    def __delitem__(self, name: str) -> None:
+        return self.delete(name)
+
+    def __len__(self) -> int:
+        return len(self.jar)
+
+    def __iter__(self) -> typing.Iterator[str]:
+        return (cookie.name for cookie in self.jar)
+
+    def __bool__(self) -> bool:
+        for cookie in self.jar:
+            return True
+        return False
 
     class _CookieCompatRequest(urllib.request.Request):
         """

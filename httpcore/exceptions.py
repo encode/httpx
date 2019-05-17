@@ -120,3 +120,9 @@ class InvalidURL(Exception):
     """
     URL was missing a hostname, or was not one of HTTP/HTTPS.
     """
+
+
+class CookieConflict(Exception):
+    """
+    Attempted to lookup a cookie by name, but multiple cookies existed.
+    """

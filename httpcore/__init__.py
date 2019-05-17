@@ -5,6 +5,7 @@ from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
 from .exceptions import (
     ConnectTimeout,
+    CookieConflict,
     DecodingError,
     InvalidURL,
     PoolTimeout,

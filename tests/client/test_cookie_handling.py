@@ -103,8 +103,4 @@ def test_get_cookie():
         response = client.get(url)
 
     assert response.status_code == 200
-    cookies = list(response.cookies)
-    assert len(cookies) == 1
-    cookie = cookies[0]
-    assert cookie.name == "example-name"
-    assert cookie.value == "example-value"
+    assert response.cookies["example-name"] == "example-value"
