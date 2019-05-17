@@ -1,10 +1,9 @@
 import asyncio
 import cgi
 import email.message
-import http.client
 import typing
 import urllib.request
-from http.cookiejar import CookieJar
+from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
 
 import chardet
@@ -46,6 +45,8 @@ HeaderTypes = typing.Union[
     typing.Dict[typing.AnyStr, typing.AnyStr],
     typing.List[typing.Tuple[typing.AnyStr, typing.AnyStr]],
 ]
+
+CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
@@ -479,13 +480,14 @@ class Request:
         data: RequestData = b"",
         query_params: QueryParamTypes = None,
         headers: HeaderTypes = None,
-        cookies: CookieJar = None,
+        cookies: CookieTypes = None,
     ):
         self.method = method.upper()
         self.url = URL(url, query_params=query_params)
         self.headers = Headers(headers)
         if cookies:
-            cookies.add_cookie_header(self.cookie_compat)
+            cookies = Cookies(cookies)
+            cookies.add_cookie_header(self)
 
         if isinstance(data, bytes):
             self.is_streaming = False
@@ -542,10 +544,6 @@ class Request:
 
         for item in reversed(auto_headers):
             self.headers.raw.insert(0, item)
-
-    @property
-    def cookie_compat(self) -> "CookieCompatRequest":
-        return CookieCompatRequest(self)
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
@@ -768,18 +766,12 @@ class Response:
             raise HttpError(message)
 
     @property
-    def cookies(self) -> CookieJar:
+    def cookies(self) -> "Cookies":
         if not hasattr(self, "_cookies"):
             assert self.request is not None
-            self._cookies = CookieJar()
-            self._cookies.extract_cookies(
-                self.cookie_compat, self.request.cookie_compat
-            )
+            self._cookies = Cookies()
+            self._cookies.extract_cookies(self)
         return self._cookies
-
-    @property
-    def cookie_compat(self) -> "CookieCompatResponse":
-        return CookieCompatResponse(self)
 
     def __repr__(self) -> str:
         return f"<Response({self.status_code}, {self.reason_phrase!r})>"
@@ -861,31 +853,103 @@ class SyncResponse:
         return self._loop.run_until_complete(self._response.close())
 
     @property
-    def cookies(self) -> CookieJar:
+    def cookies(self) -> "Cookies":
         return self._response.cookies
 
     def __repr__(self) -> str:
         return f"<Response({self.status_code}, {self.reason_phrase!r})>"
 
 
-class CookieCompatRequest(urllib.request.Request):
-    def __init__(self, request: Request) -> None:
-        super().__init__(
-            url=str(request.url), headers=dict(request.headers), method=request.method
+class Cookies:
+    def __init__(self, cookies: CookieTypes = None):
+        if cookies is None or isinstance(cookies, dict):
+            self.jar = CookieJar()
+            if isinstance(cookies, dict):
+                for key, value in cookies.items():
+                    self.set(key, value)
+        elif isinstance(cookies, Cookies):
+            self.jar = cookies.jar
+        else:
+            self.jar = cookies
+
+    def extract_cookies(self, response: Response) -> None:
+        """
+        Loads any cookies based on the response `Set-Cookie` headers.
+        """
+        assert response.request is not None
+        urlib_response = self._CookieCompatResponse(response)
+        urllib_request = self._CookieCompatRequest(response.request)
+
+        self.jar.extract_cookies(urlib_response, urllib_request)  # type: ignore
+
+    def add_cookie_header(self, request: Request) -> None:
+        """
+        Sets an appropriate 'Cookie:' HTTP header on the `Request`.
+        """
+        urllib_request = self._CookieCompatRequest(request)
+        self.jar.add_cookie_header(urllib_request)
+
+    def set(self, name: str, value: str, domain: str = "", path: str = "/") -> None:
+        """
+        Set a cookie.
+        """
+        kwargs = dict(
+            version=0,
+            name=name,
+            value=value,
+            port=None,
+            port_specified=False,
+            domain=domain,
+            domain_specified=bool(domain),
+            domain_initial_dot=domain.startswith("."),
+            path=path,
+            path_specified=bool(path),
+            secure=False,
+            expires=None,
+            discard=True,
+            comment=None,
+            comment_url=None,
+            rest={"HttpOnly": None},
+            rfc2109=False,
         )
-        self.request = request
+        cookie = Cookie(**kwargs)  # type: ignore
+        self.jar.set_cookie(cookie)
 
-    def add_unredirected_header(self, key: str, value: str) -> None:
-        super().add_unredirected_header(key, value)
-        self.request.headers[key] = value
+    def __setitem__(self, name: str, value: str) -> None:
+        return self.set(name, value)
 
+    def __iter__(self) -> typing.Iterable:
+        return iter(self.jar)
 
-class CookieCompatResponse(http.client.HTTPResponse):
-    def __init__(self, response: Response):
-        self.response = response
+    class _CookieCompatRequest(urllib.request.Request):
+        """
+        Wraps a `Request` instance up in a compatability interface suitable
+        for use with `CookieJar` operations.
+        """
 
-    def info(self) -> email.message.Message:
-        info = email.message.Message()
-        for key, value in self.response.headers.items():
-            info[key] = value
-        return info
+        def __init__(self, request: Request) -> None:
+            super().__init__(
+                url=str(request.url),
+                headers=dict(request.headers),
+                method=request.method,
+            )
+            self.request = request
+
+        def add_unredirected_header(self, key: str, value: str) -> None:
+            super().add_unredirected_header(key, value)
+            self.request.headers[key] = value
+
+    class _CookieCompatResponse:
+        """
+        Wraps a `Request` instance up in a compatability interface suitable
+        for use with `CookieJar` operations.
+        """
+
+        def __init__(self, response: Response):
+            self.response = response
+
+        def info(self) -> email.message.Message:
+            info = email.message.Message()
+            for key, value in self.response.headers.items():
+                info[key] = value
+            return info
