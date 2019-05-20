@@ -1,3 +1,4 @@
+from .api import delete, get, head, options, patch, post, put, request
 from .client import AsyncClient, Client
 from .concurrency import AsyncioBackend
 from .config import PoolLimits, SSLConfig, TimeoutConfig
