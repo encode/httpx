@@ -97,17 +97,17 @@ inspiration around the lower level networking details.
 >>> response = client.get('https://example.org')
 ```
 
-* `def __init__([auth], [cookies], [ssl], [timeout], [pool_limits], [max_redirects], [dispatch])`
-* `def .request(method, url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .post(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .put(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .patch(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
-* `def .delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [ssl], [timeout])`
+* `def __init__([auth], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [dispatch])`
+* `def .request(method, url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `def .get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `def .options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `def .head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `def .post(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `def .put(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `def .patch(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `def .delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .prepare_request(request)`
-* `def .send(request, [stream], [allow_redirects], [ssl], [timeout])`
+* `def .send(request, [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .close()`
 
 ### `Response`
