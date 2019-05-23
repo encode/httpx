@@ -4,13 +4,7 @@ import typing
 import h2.connection
 import h2.events
 
-from ..config import (
-    DEFAULT_SSL_CONFIG,
-    DEFAULT_TIMEOUT_CONFIG,
-    SSLConfig,
-    TimeoutConfig,
-    TimeoutTypes,
-)
+from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectTimeout, ReadTimeout
 from ..interfaces import BaseReader, BaseWriter, Dispatcher
 from ..models import Request, Response
