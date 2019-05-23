@@ -6,14 +6,15 @@ import pytest
 from httpcore import (
     URL,
     AsyncClient,
+    CertTypes,
     Dispatcher,
     RedirectBodyUnavailable,
     RedirectLoop,
     Request,
     Response,
-    SSLConfig,
-    TimeoutConfig,
+    TimeoutTypes,
     TooManyRedirects,
+    VerifyTypes,
     codes,
 )
 
@@ -23,8 +24,9 @@ class MockDispatch(Dispatcher):
         self,
         request: Request,
         stream: bool = False,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         if request.url.path == "/redirect_301":
             status_code = codes.MOVED_PERMANENTLY

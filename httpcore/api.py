@@ -1,7 +1,7 @@
 import typing
 
 from .client import Client
-from .config import SSLConfig, TimeoutTypes
+from .config import CertTypes, TimeoutTypes, VerifyTypes
 from .models import (
     AuthTypes,
     CookieTypes,
@@ -27,7 +27,8 @@ def request(
     timeout: TimeoutTypes = None,
     allow_redirects: bool = True,
     # proxies
-    ssl: SSLConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
     stream: bool = False,
 ) -> SyncResponse:
     with Client() as client:
@@ -42,7 +43,8 @@ def request(
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            cert=cert,
+            verify=verify,
             timeout=timeout,
         )
 
@@ -56,7 +58,8 @@ def get(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
@@ -67,7 +70,8 @@ def get(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -81,7 +85,8 @@ def options(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
@@ -92,7 +97,8 @@ def options(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -106,7 +112,8 @@ def head(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = False,  #  Note: Differs to usual default.
-    ssl: SSLConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
@@ -117,7 +124,8 @@ def head(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -133,7 +141,8 @@ def post(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
@@ -146,7 +155,8 @@ def post(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -162,7 +172,8 @@ def put(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
@@ -175,7 +186,8 @@ def put(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -191,7 +203,8 @@ def patch(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
@@ -204,7 +217,8 @@ def patch(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -220,7 +234,8 @@ def delete(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
@@ -233,6 +248,7 @@ def delete(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )

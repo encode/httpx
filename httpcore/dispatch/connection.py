@@ -8,9 +8,11 @@ from ..concurrency import AsyncioBackend
 from ..config import (
     DEFAULT_SSL_CONFIG,
     DEFAULT_TIMEOUT_CONFIG,
+    CertTypes,
     SSLConfig,
     TimeoutConfig,
     TimeoutTypes,
+    VerifyTypes,
 )
 from ..exceptions import ConnectTimeout
 from ..interfaces import ConcurrencyBackend, Dispatcher, Protocol
@@ -26,13 +28,14 @@ class HTTPConnection(Dispatcher):
     def __init__(
         self,
         origin: typing.Union[str, Origin],
-        ssl: SSLConfig = DEFAULT_SSL_CONFIG,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
-        self.ssl = ssl
+        self.ssl = SSLConfig(cert=cert, verify=verify)
         self.timeout = TimeoutConfig(timeout)
         self.backend = AsyncioBackend() if backend is None else backend
         self.release_func = release_func
@@ -43,11 +46,12 @@ class HTTPConnection(Dispatcher):
         self,
         request: Request,
         stream: bool = False,
-        ssl: SSLConfig = None,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> Response:
         if self.h11_connection is None and self.h2_connection is None:
-            await self.connect(ssl=ssl, timeout=timeout)
+            await self.connect(verify=verify, cert=cert, timeout=timeout)
 
         if self.h2_connection is not None:
             response = await self.h2_connection.send(
@@ -62,9 +66,12 @@ class HTTPConnection(Dispatcher):
         return response
 
     async def connect(
-        self, ssl: SSLConfig = None, timeout: TimeoutTypes = None
+        self,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> None:
-        ssl = self.ssl if ssl is None else ssl
+        ssl = self.ssl.with_overrides(verify=verify, cert=cert)
         timeout = self.timeout if timeout is None else TimeoutConfig(timeout)
 
         host = self.origin.host

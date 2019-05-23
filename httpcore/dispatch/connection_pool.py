@@ -4,11 +4,11 @@ from ..concurrency import AsyncioBackend
 from ..config import (
     DEFAULT_CA_BUNDLE_PATH,
     DEFAULT_POOL_LIMITS,
-    DEFAULT_SSL_CONFIG,
     DEFAULT_TIMEOUT_CONFIG,
+    CertTypes,
     PoolLimits,
-    SSLConfig,
     TimeoutTypes,
+    VerifyTypes,
 )
 from ..decoders import ACCEPT_ENCODING
 from ..exceptions import PoolTimeout
@@ -81,12 +81,14 @@ class ConnectionPool(Dispatcher):
     def __init__(
         self,
         *,
-        ssl: SSLConfig = DEFAULT_SSL_CONFIG,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         backend: ConcurrencyBackend = None,
     ):
-        self.ssl = ssl
+        self.verify = verify
+        self.cert = cert
         self.timeout = timeout
         self.pool_limits = pool_limits
         self.is_closed = False
@@ -105,13 +107,14 @@ class ConnectionPool(Dispatcher):
         self,
         request: Request,
         stream: bool = False,
-        ssl: SSLConfig = None,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> Response:
         connection = await self.acquire_connection(request.url.origin)
         try:
             response = await connection.send(
-                request, stream=stream, ssl=ssl, timeout=timeout
+                request, stream=stream, verify=verify, cert=cert, timeout=timeout
             )
         except BaseException as exc:
             self.active_connections.remove(connection)
@@ -128,7 +131,8 @@ class ConnectionPool(Dispatcher):
             await self.max_connections.acquire()
             connection = HTTPConnection(
                 origin,
-                ssl=self.ssl,
+                verify=self.verify,
+                cert=self.cert,
                 timeout=self.timeout,
                 backend=self.backend,
                 release_func=self.release_connection,

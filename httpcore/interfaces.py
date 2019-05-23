@@ -3,7 +3,7 @@ import ssl
 import typing
 from types import TracebackType
 
-from .config import PoolLimits, SSLConfig, TimeoutConfig, TimeoutTypes
+from .config import CertTypes, PoolLimits, TimeoutConfig, TimeoutTypes, VerifyTypes
 from .models import (
     URL,
     Headers,
@@ -39,12 +39,15 @@ class Dispatcher:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
-        ssl: SSLConfig = None,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
         timeout: TimeoutTypes = None
     ) -> Response:
         request = Request(method, url, data=data, params=params, headers=headers)
         self.prepare_request(request)
-        response = await self.send(request, stream=stream, ssl=ssl, timeout=timeout)
+        response = await self.send(
+            request, stream=stream, verify=verify, cert=cert, timeout=timeout
+        )
         return response
 
     def prepare_request(self, request: Request) -> None:
@@ -54,7 +57,8 @@ class Dispatcher:
         self,
         request: Request,
         stream: bool = False,
-        ssl: SSLConfig = None,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> Response:
         raise NotImplementedError()  # pragma: nocover

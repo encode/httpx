@@ -5,6 +5,8 @@ import typing
 
 import certifi
 
+CertTypes = typing.Union[str, typing.Tuple[str, str]]
+VerifyTypes = typing.Union[str, bool]
 TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
 
 
@@ -13,12 +15,7 @@ class SSLConfig:
     SSL Configuration.
     """
 
-    def __init__(
-        self,
-        *,
-        cert: typing.Union[str, typing.Tuple[str, str]] = None,
-        verify: typing.Union[str, bool] = True,
-    ):
+    def __init__(self, *, cert: CertTypes = None, verify: VerifyTypes = True):
         self.cert = cert
         self.verify = verify
 
@@ -32,6 +29,15 @@ class SSLConfig:
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return f"{class_name}(cert={self.cert}, verify={self.verify})"
+
+    def with_overrides(
+        self, cert: CertTypes = None, verify: VerifyTypes = None
+    ) -> "SSLConfig":
+        cert = self.cert if cert is None else cert
+        verify = self.verify if verify is None else verify
+        if (cert == self.cert) and (verify == self.verify):
+            return self
+        return SSLConfig(cert=cert, verify=verify)
 
     async def load_ssl_context(self) -> ssl.SSLContext:
         if not hasattr(self, "ssl_context"):
