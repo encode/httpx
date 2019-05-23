@@ -3,7 +3,7 @@ import ssl
 import typing
 from types import TracebackType
 
-from .config import PoolLimits, SSLConfig, TimeoutConfig
+from .config import PoolLimits, SSLConfig, TimeoutConfig, TimeoutTypes
 from .models import (
     URL,
     Headers,
@@ -14,8 +14,6 @@ from .models import (
     Response,
     URLTypes,
 )
-
-OptionalTimeout = typing.Optional[TimeoutConfig]
 
 
 class Protocol(str, enum.Enum):
@@ -42,7 +40,7 @@ class Dispatcher:
         headers: HeaderTypes = None,
         stream: bool = False,
         ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None
+        timeout: TimeoutTypes = None
     ) -> Response:
         request = Request(method, url, data=data, params=params, headers=headers)
         self.prepare_request(request)
@@ -57,7 +55,7 @@ class Dispatcher:
         request: Request,
         stream: bool = False,
         ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         raise NotImplementedError()  # pragma: nocover
 
@@ -83,7 +81,7 @@ class BaseReader:
     backend, or for stand-alone test cases.
     """
 
-    async def read(self, n: int, timeout: OptionalTimeout = None) -> bytes:
+    async def read(self, n: int, timeout: TimeoutConfig = None) -> bytes:
         raise NotImplementedError()  # pragma: no cover
 
 
@@ -97,7 +95,7 @@ class BaseWriter:
     def write_no_block(self, data: bytes) -> None:
         raise NotImplementedError()  # pragma: no cover
 
-    async def write(self, data: bytes, timeout: OptionalTimeout = None) -> None:
+    async def write(self, data: bytes, timeout: TimeoutConfig = None) -> None:
         raise NotImplementedError()  # pragma: no cover
 
     async def close(self) -> None:

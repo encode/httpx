@@ -7,6 +7,7 @@ from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     SSLConfig,
     TimeoutConfig,
+    TimeoutTypes,
 )
 from ..exceptions import ConnectTimeout, ReadTimeout
 from ..interfaces import BaseReader, BaseWriter, Dispatcher
@@ -21,8 +22,6 @@ H11Event = typing.Union[
     h11.ConnectionClosed,
 ]
 
-
-OptionalTimeout = typing.Optional[TimeoutConfig]
 
 # Callback signature: async def callback() -> None
 # In practice the callback will be a functools partial, which binds
@@ -45,8 +44,10 @@ class HTTP11Connection:
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
 
     async def send(
-        self, request: Request, stream: bool = False, timeout: TimeoutConfig = None
+        self, request: Request, stream: bool = False, timeout: TimeoutTypes = None
     ) -> Response:
+        timeout = None if timeout is None else TimeoutConfig(timeout)
+
         #  Start sending the request.
         method = request.method.encode("ascii")
         target = request.url.full_path.encode("ascii")
@@ -97,18 +98,20 @@ class HTTP11Connection:
         self.h11_state.send(event)
         await self.writer.close()
 
-    async def _body_iter(self, timeout: OptionalTimeout) -> typing.AsyncIterator[bytes]:
+    async def _body_iter(
+        self, timeout: TimeoutConfig = None
+    ) -> typing.AsyncIterator[bytes]:
         event = await self._receive_event(timeout)
         while isinstance(event, h11.Data):
             yield event.data
             event = await self._receive_event(timeout)
         assert isinstance(event, h11.EndOfMessage)
 
-    async def _send_event(self, event: H11Event, timeout: OptionalTimeout) -> None:
+    async def _send_event(self, event: H11Event, timeout: TimeoutConfig = None) -> None:
         data = self.h11_state.send(event)
         await self.writer.write(data, timeout)
 
-    async def _receive_event(self, timeout: OptionalTimeout) -> H11Event:
+    async def _receive_event(self, timeout: TimeoutConfig = None) -> H11Event:
         event = self.h11_state.next_event()
 
         while event is h11.NEED_DATA:

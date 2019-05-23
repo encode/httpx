@@ -8,7 +8,7 @@ from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     PoolLimits,
     SSLConfig,
-    TimeoutConfig,
+    TimeoutTypes,
 )
 from ..decoders import ACCEPT_ENCODING
 from ..exceptions import PoolTimeout
@@ -82,7 +82,7 @@ class ConnectionPool(Dispatcher):
         self,
         *,
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
-        timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
+        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         backend: ConcurrencyBackend = None,
     ):
@@ -106,7 +106,7 @@ class ConnectionPool(Dispatcher):
         request: Request,
         stream: bool = False,
         ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         connection = await self.acquire_connection(request.url.origin)
         try:

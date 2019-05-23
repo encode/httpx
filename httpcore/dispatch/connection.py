@@ -10,6 +10,7 @@ from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     SSLConfig,
     TimeoutConfig,
+    TimeoutTypes,
 )
 from ..exceptions import ConnectTimeout
 from ..interfaces import ConcurrencyBackend, Dispatcher, Protocol
@@ -26,13 +27,13 @@ class HTTPConnection(Dispatcher):
         self,
         origin: typing.Union[str, Origin],
         ssl: SSLConfig = DEFAULT_SSL_CONFIG,
-        timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
+        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = ssl
-        self.timeout = timeout
+        self.timeout = TimeoutConfig(timeout)
         self.backend = AsyncioBackend() if backend is None else backend
         self.release_func = release_func
         self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
@@ -43,7 +44,7 @@ class HTTPConnection(Dispatcher):
         request: Request,
         stream: bool = False,
         ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         if self.h11_connection is None and self.h2_connection is None:
             await self.connect(ssl=ssl, timeout=timeout)
@@ -61,12 +62,10 @@ class HTTPConnection(Dispatcher):
         return response
 
     async def connect(
-        self, ssl: SSLConfig = None, timeout: TimeoutConfig = None
+        self, ssl: SSLConfig = None, timeout: TimeoutTypes = None
     ) -> None:
-        if ssl is None:
-            ssl = self.ssl
-        if timeout is None:
-            timeout = self.timeout
+        ssl = self.ssl if ssl is None else ssl
+        timeout = self.timeout if timeout is None else TimeoutConfig(timeout)
 
         host = self.origin.host
         port = self.origin.port

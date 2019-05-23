@@ -1,7 +1,7 @@
 import typing
 
 from .client import Client
-from .config import SSLConfig, TimeoutConfig
+from .config import SSLConfig, TimeoutTypes
 from .models import (
     AuthTypes,
     CookieTypes,
@@ -17,16 +17,18 @@ def request(
     method: str,
     url: URLTypes,
     *,
+    params: QueryParamTypes = None,
     data: RequestData = b"",
     json: typing.Any = None,
-    params: QueryParamTypes = None,
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
-    stream: bool = False,
+    # files
     auth: AuthTypes = None,
+    timeout: TimeoutTypes = None,
     allow_redirects: bool = True,
+    # proxies
     ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    stream: bool = False,
 ) -> SyncResponse:
     with Client() as client:
         return client.request(
@@ -55,7 +57,7 @@ def get(
     auth: AuthTypes = None,
     allow_redirects: bool = True,
     ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "GET",
@@ -80,7 +82,7 @@ def options(
     auth: AuthTypes = None,
     allow_redirects: bool = True,
     ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "OPTIONS",
@@ -105,7 +107,7 @@ def head(
     auth: AuthTypes = None,
     allow_redirects: bool = False,  #  Note: Differs to usual default.
     ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "HEAD",
@@ -132,7 +134,7 @@ def post(
     auth: AuthTypes = None,
     allow_redirects: bool = True,
     ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "POST",
@@ -161,7 +163,7 @@ def put(
     auth: AuthTypes = None,
     allow_redirects: bool = True,
     ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "PUT",
@@ -190,7 +192,7 @@ def patch(
     auth: AuthTypes = None,
     allow_redirects: bool = True,
     ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "PATCH",
@@ -219,7 +221,7 @@ def delete(
     auth: AuthTypes = None,
     allow_redirects: bool = True,
     ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "DELETE",
