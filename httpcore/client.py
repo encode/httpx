@@ -6,11 +6,11 @@ from .auth import HTTPBasicAuth
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
-    DEFAULT_SSL_CONFIG,
     DEFAULT_TIMEOUT_CONFIG,
+    CertTypes,
     PoolLimits,
-    SSLConfig,
-    TimeoutConfig,
+    TimeoutTypes,
+    VerifyTypes,
 )
 from .dispatch.connection_pool import ConnectionPool
 from .exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
@@ -37,8 +37,9 @@ class AsyncClient:
         self,
         auth: AuthTypes = None,
         cookies: CookieTypes = None,
-        ssl: SSLConfig = DEFAULT_SSL_CONFIG,
-        timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         dispatch: Dispatcher = None,
@@ -46,7 +47,11 @@ class AsyncClient:
     ):
         if dispatch is None:
             dispatch = ConnectionPool(
-                ssl=ssl, timeout=timeout, pool_limits=pool_limits, backend=backend
+                verify=verify,
+                cert=cert,
+                timeout=timeout,
+                pool_limits=pool_limits,
+                backend=backend,
             )
 
         self.auth = auth
@@ -64,8 +69,9 @@ class AsyncClient:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         return await self.request(
             "GET",
@@ -76,7 +82,8 @@ class AsyncClient:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -90,8 +97,9 @@ class AsyncClient:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         return await self.request(
             "OPTIONS",
@@ -102,7 +110,8 @@ class AsyncClient:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -116,8 +125,9 @@ class AsyncClient:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  #  Note: Differs to usual default.
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         return await self.request(
             "HEAD",
@@ -128,7 +138,8 @@ class AsyncClient:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -144,8 +155,9 @@ class AsyncClient:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         return await self.request(
             "POST",
@@ -158,7 +170,8 @@ class AsyncClient:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -174,8 +187,9 @@ class AsyncClient:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         return await self.request(
             "PUT",
@@ -188,7 +202,8 @@ class AsyncClient:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -204,8 +219,9 @@ class AsyncClient:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         return await self.request(
             "PATCH",
@@ -218,7 +234,8 @@ class AsyncClient:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -234,8 +251,9 @@ class AsyncClient:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         return await self.request(
             "DELETE",
@@ -248,7 +266,8 @@ class AsyncClient:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -265,8 +284,9 @@ class AsyncClient:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         request = Request(
             method,
@@ -283,7 +303,8 @@ class AsyncClient:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
         return response
@@ -306,9 +327,10 @@ class AsyncClient:
         *,
         stream: bool = False,
         auth: AuthTypes = None,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
         allow_redirects: bool = True,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         if auth is None:
             auth = self.auth
@@ -325,7 +347,8 @@ class AsyncClient:
         response = await self.send_handling_redirects(
             request,
             stream=stream,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
             allow_redirects=allow_redirects,
         )
@@ -336,8 +359,9 @@ class AsyncClient:
         request: Request,
         *,
         stream: bool = False,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
         allow_redirects: bool = True,
         history: typing.List[Response] = None,
     ) -> Response:
@@ -353,7 +377,7 @@ class AsyncClient:
                 raise RedirectLoop()
 
             response = await self.dispatch.send(
-                request, stream=stream, ssl=ssl, timeout=timeout
+                request, stream=stream, verify=verify, cert=cert, timeout=timeout
             )
             response.history = list(history)
             self.cookies.extract_cookies(response)
@@ -366,13 +390,14 @@ class AsyncClient:
             else:
 
                 async def send_next() -> Response:
-                    nonlocal request, response, ssl, allow_redirects, timeout, history
+                    nonlocal request, response, verify, cert, allow_redirects, timeout, history
                     request = self.build_redirect_request(request, response)
                     response = await self.send_handling_redirects(
                         request,
                         stream=stream,
                         allow_redirects=allow_redirects,
-                        ssl=ssl,
+                        verify=verify,
+                        cert=cert,
                         timeout=timeout,
                         history=history,
                     )
@@ -474,8 +499,9 @@ class Client:
     def __init__(
         self,
         auth: AuthTypes = None,
-        ssl: SSLConfig = DEFAULT_SSL_CONFIG,
-        timeout: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG,
+        cert: CertTypes = None,
+        verify: VerifyTypes = True,
+        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         dispatch: Dispatcher = None,
@@ -483,7 +509,8 @@ class Client:
     ) -> None:
         self._client = AsyncClient(
             auth=auth,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
             pool_limits=pool_limits,
             max_redirects=max_redirects,
@@ -509,8 +536,9 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> SyncResponse:
         request = Request(
             method,
@@ -527,7 +555,8 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
         return response
@@ -542,8 +571,9 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> SyncResponse:
         return self.request(
             "GET",
@@ -553,7 +583,8 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -567,8 +598,9 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> SyncResponse:
         return self.request(
             "OPTIONS",
@@ -578,7 +610,8 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -592,8 +625,9 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  #  Note: Differs to usual default.
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> SyncResponse:
         return self.request(
             "HEAD",
@@ -603,7 +637,8 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -619,8 +654,9 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> SyncResponse:
         return self.request(
             "POST",
@@ -632,7 +668,8 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -648,8 +685,9 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> SyncResponse:
         return self.request(
             "PUT",
@@ -661,7 +699,8 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -677,8 +716,9 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> SyncResponse:
         return self.request(
             "PATCH",
@@ -690,7 +730,8 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -706,8 +747,9 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> SyncResponse:
         return self.request(
             "DELETE",
@@ -719,7 +761,8 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
         )
 
@@ -733,8 +776,9 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> SyncResponse:
         response = self._loop.run_until_complete(
             self._client.send(
@@ -742,7 +786,8 @@ class Client:
                 stream=stream,
                 auth=auth,
                 allow_redirects=allow_redirects,
-                ssl=ssl,
+                verify=verify,
+                cert=cert,
                 timeout=timeout,
             )
         )

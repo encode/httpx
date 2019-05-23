@@ -1,7 +1,7 @@
 import typing
 
 from .client import Client
-from .config import SSLConfig, TimeoutConfig
+from .config import CertTypes, TimeoutTypes, VerifyTypes
 from .models import (
     AuthTypes,
     CookieTypes,
@@ -17,16 +17,19 @@ def request(
     method: str,
     url: URLTypes,
     *,
+    params: QueryParamTypes = None,
     data: RequestData = b"",
     json: typing.Any = None,
-    params: QueryParamTypes = None,
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
-    stream: bool = False,
+    # files
     auth: AuthTypes = None,
+    timeout: TimeoutTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    # proxies
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    stream: bool = False,
 ) -> SyncResponse:
     with Client() as client:
         return client.request(
@@ -40,7 +43,8 @@ def request(
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            ssl=ssl,
+            cert=cert,
+            verify=verify,
             timeout=timeout,
         )
 
@@ -54,8 +58,9 @@ def get(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "GET",
@@ -65,7 +70,8 @@ def get(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -79,8 +85,9 @@ def options(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "OPTIONS",
@@ -90,7 +97,8 @@ def options(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -104,8 +112,9 @@ def head(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = False,  #  Note: Differs to usual default.
-    ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "HEAD",
@@ -115,7 +124,8 @@ def head(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -131,8 +141,9 @@ def post(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "POST",
@@ -144,7 +155,8 @@ def post(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -160,8 +172,9 @@ def put(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "PUT",
@@ -173,7 +186,8 @@ def put(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -189,8 +203,9 @@ def patch(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "PATCH",
@@ -202,7 +217,8 @@ def patch(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )
 
@@ -218,8 +234,9 @@ def delete(
     stream: bool = False,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
-    ssl: SSLConfig = None,
-    timeout: TimeoutConfig = None,
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    timeout: TimeoutTypes = None,
 ) -> SyncResponse:
     return request(
         "DELETE",
@@ -231,6 +248,7 @@ def delete(
         stream=stream,
         auth=auth,
         allow_redirects=allow_redirects,
-        ssl=ssl,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
     )

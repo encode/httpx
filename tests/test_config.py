@@ -94,3 +94,13 @@ def test_timeout_eq():
 def test_limits_eq():
     limits = httpcore.PoolLimits(hard_limit=100)
     assert limits == httpcore.PoolLimits(hard_limit=100)
+
+
+def test_timeout_from_tuple():
+    timeout = httpcore.TimeoutConfig(timeout=(5.0, 5.0, 5.0))
+    assert timeout == httpcore.TimeoutConfig(timeout=5.0)
+
+
+def test_timeout_from_config_instance():
+    timeout = httpcore.TimeoutConfig(timeout=(5.0))
+    assert httpcore.TimeoutConfig(timeout) == httpcore.TimeoutConfig(timeout=5.0)

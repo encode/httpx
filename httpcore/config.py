@@ -5,18 +5,17 @@ import typing
 
 import certifi
 
+CertTypes = typing.Union[str, typing.Tuple[str, str]]
+VerifyTypes = typing.Union[str, bool]
+TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
+
 
 class SSLConfig:
     """
     SSL Configuration.
     """
 
-    def __init__(
-        self,
-        *,
-        cert: typing.Union[None, str, typing.Tuple[str, str]] = None,
-        verify: typing.Union[str, bool] = True,
-    ):
+    def __init__(self, *, cert: CertTypes = None, verify: VerifyTypes = True):
         self.cert = cert
         self.verify = verify
 
@@ -30,6 +29,15 @@ class SSLConfig:
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return f"{class_name}(cert={self.cert}, verify={self.verify})"
+
+    def with_overrides(
+        self, cert: CertTypes = None, verify: VerifyTypes = None
+    ) -> "SSLConfig":
+        cert = self.cert if cert is None else cert
+        verify = self.verify if verify is None else verify
+        if (cert == self.cert) and (verify == self.verify):
+            return self
+        return SSLConfig(cert=cert, verify=verify)
 
     async def load_ssl_context(self) -> ssl.SSLContext:
         if not hasattr(self, "ssl_context"):
@@ -109,25 +117,33 @@ class TimeoutConfig:
 
     def __init__(
         self,
-        timeout: float = None,
+        timeout: TimeoutTypes = None,
         *,
         connect_timeout: float = None,
         read_timeout: float = None,
         write_timeout: float = None,
     ):
-        if timeout is not None:
+        if timeout is None:
+            self.connect_timeout = connect_timeout
+            self.read_timeout = read_timeout
+            self.write_timeout = write_timeout
+        else:
             # Specified as a single timeout value
             assert connect_timeout is None
             assert read_timeout is None
             assert write_timeout is None
-            connect_timeout = timeout
-            read_timeout = timeout
-            write_timeout = timeout
-
-        self.timeout = timeout
-        self.connect_timeout = connect_timeout
-        self.read_timeout = read_timeout
-        self.write_timeout = write_timeout
+            if isinstance(timeout, TimeoutConfig):
+                self.connect_timeout = timeout.connect_timeout
+                self.read_timeout = timeout.read_timeout
+                self.write_timeout = timeout.write_timeout
+            elif isinstance(timeout, tuple):
+                self.connect_timeout = timeout[0]
+                self.read_timeout = timeout[1]
+                self.write_timeout = timeout[2]
+            else:
+                self.connect_timeout = timeout
+                self.read_timeout = timeout
+                self.write_timeout = timeout
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -139,8 +155,8 @@ class TimeoutConfig:
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        if self.timeout is not None:
-            return f"{class_name}(timeout={self.timeout})"
+        if len(set([self.connect_timeout, self.read_timeout, self.write_timeout])) == 1:
+            return f"{class_name}(timeout={self.connect_timeout})"
         return f"{class_name}(connect_timeout={self.connect_timeout}, read_timeout={self.read_timeout}, write_timeout={self.write_timeout})"
 
 
