@@ -22,9 +22,6 @@ from .interfaces import (
     Protocol,
 )
 
-OptionalTimeout = typing.Optional[TimeoutConfig]
-
-
 SSL_MONKEY_PATCH_APPLIED = False
 
 
@@ -56,7 +53,7 @@ class Reader(BaseReader):
         self.stream_reader = stream_reader
         self.timeout = timeout
 
-    async def read(self, n: int, timeout: OptionalTimeout = None) -> bytes:
+    async def read(self, n: int, timeout: TimeoutConfig = None) -> bytes:
         if timeout is None:
             timeout = self.timeout
 
@@ -78,7 +75,7 @@ class Writer(BaseWriter):
     def write_no_block(self, data: bytes) -> None:
         self.stream_writer.write(data)  # pragma: nocover
 
-    async def write(self, data: bytes, timeout: OptionalTimeout = None) -> None:
+    async def write(self, data: bytes, timeout: TimeoutConfig = None) -> None:
         if not data:
             return
 

@@ -4,12 +4,13 @@ import pytest
 
 from httpcore import (
     URL,
+    CertTypes,
     Client,
     Dispatcher,
     Request,
     Response,
-    SSLConfig,
-    TimeoutConfig,
+    TimeoutTypes,
+    VerifyTypes,
 )
 
 
@@ -18,8 +19,9 @@ class MockDispatch(Dispatcher):
         self,
         request: Request,
         stream: bool = False,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         body = json.dumps({"auth": request.headers.get("Authorization")}).encode()
         return Response(200, content=body, request=request)

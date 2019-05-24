@@ -1,7 +1,14 @@
 from .api import delete, get, head, options, patch, post, put, request
 from .client import AsyncClient, Client
 from .concurrency import AsyncioBackend
-from .config import PoolLimits, SSLConfig, TimeoutConfig
+from .config import (
+    CertTypes,
+    PoolLimits,
+    SSLConfig,
+    TimeoutConfig,
+    TimeoutTypes,
+    VerifyTypes,
+)
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
 from .exceptions import (

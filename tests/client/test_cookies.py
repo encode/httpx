@@ -5,13 +5,14 @@ import pytest
 
 from httpcore import (
     URL,
+    CertTypes,
     Client,
     Cookies,
     Dispatcher,
     Request,
     Response,
-    SSLConfig,
-    TimeoutConfig,
+    TimeoutTypes,
+    VerifyTypes,
 )
 
 
@@ -20,8 +21,9 @@ class MockDispatch(Dispatcher):
         self,
         request: Request,
         stream: bool = False,
-        ssl: SSLConfig = None,
-        timeout: TimeoutConfig = None,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
     ) -> Response:
         if request.url.path.startswith("/echo_cookies"):
             body = json.dumps({"cookies": request.headers.get("Cookie")}).encode()

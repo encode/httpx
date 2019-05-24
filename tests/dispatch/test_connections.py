@@ -6,17 +6,7 @@ from httpcore import HTTPConnection, Request, SSLConfig
 @pytest.mark.asyncio
 async def test_get(server):
     conn = HTTPConnection(origin="http://127.0.0.1:8000/")
-    request = Request("GET", "http://127.0.0.1:8000/")
-    request.prepare()
-    response = await conn.send(request)
-    assert response.status_code == 200
-    assert response.content == b"Hello, world!"
-
-
-@pytest.mark.asyncio
-async def test_https_get(https_server):
-    http = HTTPConnection(origin="https://127.0.0.1:8001/", ssl=SSLConfig(verify=False))
-    response = await http.request("GET", "https://127.0.0.1:8001/")
+    response = await conn.request("GET", "http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.content == b"Hello, world!"
 
@@ -24,7 +14,29 @@ async def test_https_get(https_server):
 @pytest.mark.asyncio
 async def test_post(server):
     conn = HTTPConnection(origin="http://127.0.0.1:8000/")
-    request = Request("GET", "http://127.0.0.1:8000/", data=b"Hello, world!")
-    request.prepare()
-    response = await conn.send(request)
+    response = await conn.request(
+        "GET", "http://127.0.0.1:8000/", data=b"Hello, world!"
+    )
     assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_https_get_with_ssl_defaults(https_server):
+    """
+    An HTTPS request, with default SSL configuration set on the client.
+    """
+    conn = HTTPConnection(origin="https://127.0.0.1:8001/", verify=False)
+    response = await conn.request("GET", "https://127.0.0.1:8001/")
+    assert response.status_code == 200
+    assert response.content == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_https_get_with_sll_overrides(https_server):
+    """
+    An HTTPS request, with SSL configuration set on the request.
+    """
+    conn = HTTPConnection(origin="https://127.0.0.1:8001/")
+    response = await conn.request("GET", "https://127.0.0.1:8001/", verify=False)
+    assert response.status_code == 200
+    assert response.content == b"Hello, world!"

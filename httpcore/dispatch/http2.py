@@ -4,17 +4,10 @@ import typing
 import h2.connection
 import h2.events
 
-from ..config import (
-    DEFAULT_SSL_CONFIG,
-    DEFAULT_TIMEOUT_CONFIG,
-    SSLConfig,
-    TimeoutConfig,
-)
+from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectTimeout, ReadTimeout
 from ..interfaces import BaseReader, BaseWriter, Dispatcher
 from ..models import Request, Response
-
-OptionalTimeout = typing.Optional[TimeoutConfig]
 
 
 class HTTP2Connection:
@@ -31,8 +24,10 @@ class HTTP2Connection:
         self.initialized = False
 
     async def send(
-        self, request: Request, stream: bool = False, timeout: TimeoutConfig = None
+        self, request: Request, stream: bool = False, timeout: TimeoutTypes = None
     ) -> Response:
+        timeout = None if timeout is None else TimeoutConfig(timeout)
+
         #  Start sending the request.
         if not self.initialized:
             self.initiate_connection()
@@ -89,7 +84,9 @@ class HTTP2Connection:
         self.writer.write_no_block(data_to_send)
         self.initialized = True
 
-    async def send_headers(self, request: Request, timeout: OptionalTimeout) -> int:
+    async def send_headers(
+        self, request: Request, timeout: TimeoutConfig = None
+    ) -> int:
         stream_id = self.h2_state.get_next_available_stream_id()
         headers = [
             (b":method", request.method.encode("ascii")),
@@ -103,19 +100,19 @@ class HTTP2Connection:
         return stream_id
 
     async def send_data(
-        self, stream_id: int, data: bytes, timeout: OptionalTimeout
+        self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
     ) -> None:
         self.h2_state.send_data(stream_id, data)
         data_to_send = self.h2_state.data_to_send()
         await self.writer.write(data_to_send, timeout)
 
-    async def end_stream(self, stream_id: int, timeout: OptionalTimeout) -> None:
+    async def end_stream(self, stream_id: int, timeout: TimeoutConfig = None) -> None:
         self.h2_state.end_stream(stream_id)
         data_to_send = self.h2_state.data_to_send()
         await self.writer.write(data_to_send, timeout)
 
     async def body_iter(
-        self, stream_id: int, timeout: OptionalTimeout
+        self, stream_id: int, timeout: TimeoutConfig = None
     ) -> typing.AsyncIterator[bytes]:
         while True:
             event = await self.receive_event(stream_id, timeout)
@@ -125,7 +122,7 @@ class HTTP2Connection:
                 break
 
     async def receive_event(
-        self, stream_id: int, timeout: OptionalTimeout
+        self, stream_id: int, timeout: TimeoutConfig = None
     ) -> h2.events.Event:
         while not self.events[stream_id]:
             data = await self.reader.read(self.READ_NUM_BYTES, timeout)
