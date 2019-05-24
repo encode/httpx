@@ -7,7 +7,7 @@ from httpcore import (
     URL,
     AsyncClient,
     CertTypes,
-    Dispatcher,
+    AsyncDispatcher,
     RedirectBodyUnavailable,
     RedirectLoop,
     Request,
@@ -19,7 +19,7 @@ from httpcore import (
 )
 
 
-class MockDispatch(Dispatcher):
+class MockDispatch(AsyncDispatcher):
     async def send(
         self,
         request: Request,

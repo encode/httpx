@@ -3,6 +3,7 @@ import typing
 from types import TracebackType
 
 from .auth import HTTPBasicAuth
+from .concurrency import AsyncioBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
@@ -13,8 +14,9 @@ from .config import (
     VerifyTypes,
 )
 from .dispatch.connection_pool import ConnectionPool
+from .dispatch.threaded import ThreadedDispatcher
 from .exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
-from .interfaces import ConcurrencyBackend, Dispatcher
+from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from .models import (
     URL,
     AuthTypes,
@@ -42,22 +44,29 @@ class AsyncClient:
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        dispatch: Dispatcher = None,
+        dispatch: typing.Union[AsyncDispatcher, Dispatcher] = None,
         backend: ConcurrencyBackend = None,
     ):
+        if backend is None:
+            backend = AsyncioBackend()
+
         if dispatch is None:
-            dispatch = ConnectionPool(
+            async_dispatch = ConnectionPool(
                 verify=verify,
                 cert=cert,
                 timeout=timeout,
                 pool_limits=pool_limits,
                 backend=backend,
-            )
+            )  # type: AsyncDispatcher
+        elif isinstance(dispatch, Dispatcher):
+            async_dispatch = ThreadedDispatcher(dispatch, backend)
+        else:
+            async_dispatch = dispatch
 
         self.auth = auth
         self.cookies = Cookies(cookies)
         self.max_redirects = max_redirects
-        self.dispatch = dispatch
+        self.dispatch = async_dispatch
 
     async def get(
         self,
@@ -500,7 +509,7 @@ class Client:
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        dispatch: Dispatcher = None,
+        dispatch: typing.Union[Dispatcher, AsyncDispatcher] = None,
         backend: ConcurrencyBackend = None,
     ) -> None:
         self._client = AsyncClient(

@@ -12,7 +12,7 @@ from ..config import (
 )
 from ..decoders import ACCEPT_ENCODING
 from ..exceptions import PoolTimeout
-from ..interfaces import ConcurrencyBackend, Dispatcher
+from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import Origin, Request, Response
 from .connection import HTTPConnection
 
@@ -77,7 +77,7 @@ class ConnectionStore:
         return len(self.all)
 
 
-class ConnectionPool(Dispatcher):
+class ConnectionPool(AsyncDispatcher):
     def __init__(
         self,
         *,

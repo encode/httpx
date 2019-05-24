@@ -4,7 +4,7 @@ import h11
 
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectTimeout, ReadTimeout
-from ..interfaces import BaseReader, BaseWriter, Dispatcher
+from ..interfaces import BaseReader, BaseWriter
 from ..models import Request, Response
 
 H11Event = typing.Union[

@@ -15,7 +15,7 @@ from ..config import (
     VerifyTypes,
 )
 from ..exceptions import ConnectTimeout
-from ..interfaces import ConcurrencyBackend, Dispatcher, Protocol
+from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Protocol
 from ..models import Origin, Request, Response
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
@@ -24,7 +24,7 @@ from .http11 import HTTP11Connection
 ReleaseCallback = typing.Callable[["HTTPConnection"], typing.Awaitable[None]]
 
 
-class HTTPConnection(Dispatcher):
+class HTTPConnection(AsyncDispatcher):
     def __init__(
         self,
         origin: typing.Union[str, Origin],

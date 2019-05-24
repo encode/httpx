@@ -9,6 +9,7 @@ protocols, and help keep the rest of the package more `async`/`await`
 based, and less strictly `asyncio`-specific.
 """
 import asyncio
+import functools
 import ssl
 import typing
 
@@ -133,6 +134,12 @@ class AsyncioBackend(ConcurrencyBackend):
             ssl_monkey_patch()
         SSL_MONKEY_PATCH_APPLIED = True
 
+    @property
+    def loop(self) -> asyncio.BaseEventLoop:
+        if not hasattr(self, '_loop'):
+            self._loop = asyncio.get_event_loop()
+        return self._loop
+
     async def connect(
         self,
         hostname: str,
@@ -161,6 +168,12 @@ class AsyncioBackend(ConcurrencyBackend):
         protocol = Protocol.HTTP_2 if ident == "h2" else Protocol.HTTP_11
 
         return (reader, writer, protocol)
+
+    async def run_in_threadpool(self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+        if kwargs:
+            # loop.run_in_executor doesn't accept 'kwargs', so bind them in here
+            func = functools.partial(func, **kwargs)
+        return await self.loop.run_in_executor(None, func, *args)
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)

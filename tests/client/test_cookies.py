@@ -8,7 +8,7 @@ from httpcore import (
     CertTypes,
     Client,
     Cookies,
-    Dispatcher,
+    AsyncDispatcher,
     Request,
     Response,
     TimeoutTypes,
@@ -16,7 +16,7 @@ from httpcore import (
 )
 
 
-class MockDispatch(Dispatcher):
+class MockDispatch(AsyncDispatcher):
     async def send(
         self,
         request: Request,

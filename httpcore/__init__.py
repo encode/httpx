@@ -28,7 +28,14 @@ from .exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
-from .interfaces import BaseReader, BaseWriter, ConcurrencyBackend, Dispatcher, Protocol
+from .interfaces import (
+    AsyncDispatcher,
+    BaseReader,
+    BaseWriter,
+    ConcurrencyBackend,
+    Dispatcher,
+    Protocol,
+)
 from .models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
 from .status_codes import StatusCode, codes
 
