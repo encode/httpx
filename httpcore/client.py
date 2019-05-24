@@ -541,18 +541,7 @@ class Client:
             return data
 
         assert hasattr(data, "__iter__")
-
-        async def async_iterator(backend, data):  # type: ignore
-            while True:
-                try:
-                    chunk = await self.concurrency_backend.run_in_threadpool(
-                        data.__next__
-                    )
-                except StopIteration:
-                    raise StopAsyncIteration()
-                yield chunk
-
-        return async_iterator(self.concurrency_backend, data)
+        return self.concurrency_backend.iterate_in_threadpool(data)
 
     def request(
         self,

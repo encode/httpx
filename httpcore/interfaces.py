@@ -186,6 +186,22 @@ class ConcurrencyBackend:
     ) -> typing.Any:
         raise NotImplementedError()  # pragma: no cover
 
+    async def iterate_in_threadpool(self, iterator):  # type: ignore
+        class IterationComplete(Exception):
+            pass
+
+        def next_wrapper(iterator):  # type: ignore
+            try:
+                return next(iterator)
+            except StopIteration:
+                raise IterationComplete()
+
+        while True:
+            try:
+                yield await self.run_in_threadpool(next_wrapper, iterator)
+            except IterationComplete:
+                break
+
     def run(
         self, coroutine: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
