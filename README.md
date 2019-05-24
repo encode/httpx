@@ -106,7 +106,6 @@ inspiration around the lower level networking details.
 * `def .put(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .patch(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
-* `def .prepare_request(request)`
 * `def .send(request, [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .close()`
 
