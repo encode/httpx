@@ -26,13 +26,8 @@ from .exceptions import (
     ResponseNotRead,
     StreamConsumed,
 )
-from .status_codes import codes
-from .utils import (
-    get_reason_phrase,
-    is_known_encoding,
-    normalize_header_key,
-    normalize_header_value,
-)
+from .status_codes import StatusCode
+from .utils import is_known_encoding, normalize_header_key, normalize_header_value
 
 URLTypes = typing.Union["URL", str]
 
@@ -578,12 +573,8 @@ class Response:
         request: Request = None,
         history: typing.List["Response"] = None,
     ):
-        try:
-            # Use a StatusCode IntEnum if possible, for a nicer representation.
-            self.status_code = codes(status_code)  # type: int
-        except ValueError:
-            self.status_code = status_code
-        self.reason_phrase = reason_phrase or get_reason_phrase(status_code)
+        self.status_code = StatusCode.enum_or_int(status_code)
+        self.reason_phrase = StatusCode.get_reason_phrase(status_code)
         self.protocol = protocol
         self.headers = Headers(headers)
 
@@ -748,17 +739,7 @@ class Response:
 
     @property
     def is_redirect(self) -> bool:
-        return (
-            self.status_code
-            in (
-                codes.MOVED_PERMANENTLY,
-                codes.FOUND,
-                codes.SEE_OTHER,
-                codes.TEMPORARY_REDIRECT,
-                codes.PERMANENT_REDIRECT,
-            )
-            and "location" in self.headers
-        )
+        return StatusCode.is_redirect(self.status_code) and "location" in self.headers
 
     def raise_for_status(self) -> None:
         """
@@ -769,9 +750,9 @@ class Response:
             "For more information check: https://httpstatuses.com/{0.status_code}"
         )
 
-        if 400 <= self.status_code < 500:
+        if StatusCode.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
-        elif 500 <= self.status_code < 600:
+        elif StatusCode.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
         else:
             message = ""

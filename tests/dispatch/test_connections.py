@@ -14,7 +14,9 @@ async def test_get(server):
 @pytest.mark.asyncio
 async def test_post(server):
     conn = HTTPConnection(origin="http://127.0.0.1:8000/")
-    response = await conn.request("GET", "http://127.0.0.1:8000/", data=b"Hello, world!")
+    response = await conn.request(
+        "GET", "http://127.0.0.1:8000/", data=b"Hello, world!"
+    )
     assert response.status_code == 200
 
 
