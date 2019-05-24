@@ -544,13 +544,13 @@ class Client:
 
         async def async_iterator(backend, data):  # type: ignore
             while True:
-                print(123)
                 try:
-                    yield await self.concurrency_backend.run_in_threadpool(
+                    chunk = await self.concurrency_backend.run_in_threadpool(
                         data.__next__
                     )
                 except StopIteration:
                     raise StopAsyncIteration()
+                yield chunk
 
         return async_iterator(self.concurrency_backend, data)
 
