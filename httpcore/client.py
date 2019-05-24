@@ -1,4 +1,3 @@
-import asyncio
 import typing
 from types import TracebackType
 
@@ -67,6 +66,7 @@ class AsyncClient:
         self.cookies = Cookies(cookies)
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
+        self.concurrency_backend = backend
 
     async def get(
         self,
@@ -522,11 +522,14 @@ class Client:
             dispatch=dispatch,
             backend=backend,
         )
-        self._loop = asyncio.new_event_loop()
 
     @property
     def cookies(self) -> Cookies:
         return self._client.cookies
+
+    @property
+    def concurrency_backend(self) -> ConcurrencyBackend:
+        return self._client.concurrency_backend
 
     def request(
         self,
@@ -781,21 +784,22 @@ class Client:
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> SyncResponse:
-        response = self._loop.run_until_complete(
-            self._client.send(
-                request,
-                stream=stream,
-                auth=auth,
-                allow_redirects=allow_redirects,
-                verify=verify,
-                cert=cert,
-                timeout=timeout,
-            )
+        coroutine = self._client.send
+        args = [request]
+        kwargs = dict(
+            stream=stream,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
         )
-        return SyncResponse(response, self._loop)
+        response = self.concurrency_backend.run(coroutine, *args, **kwargs)
+        return SyncResponse(response, self.concurrency_backend)
 
     def close(self) -> None:
-        self._loop.run_until_complete(self._client.close())
+        coroutine = self._client.close
+        self.concurrency_backend.run(coroutine)
 
     def __enter__(self) -> "Client":
         return self

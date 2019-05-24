@@ -4,9 +4,9 @@ import pytest
 
 from httpcore import (
     URL,
+    AsyncDispatcher,
     CertTypes,
     Client,
-    AsyncDispatcher,
     Request,
     Response,
     TimeoutTypes,

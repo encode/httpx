@@ -5,10 +5,10 @@ import pytest
 
 from httpcore import (
     URL,
+    AsyncDispatcher,
     CertTypes,
     Client,
     Cookies,
-    AsyncDispatcher,
     Request,
     Response,
     TimeoutTypes,

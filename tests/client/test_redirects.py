@@ -6,8 +6,8 @@ import pytest
 from httpcore import (
     URL,
     AsyncClient,
-    CertTypes,
     AsyncDispatcher,
+    CertTypes,
     RedirectBodyUnavailable,
     RedirectLoop,
     Request,

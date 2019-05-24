@@ -1,4 +1,3 @@
-import asyncio
 import cgi
 import email.message
 import json as jsonlib
@@ -776,9 +775,9 @@ class SyncResponse:
     instance, providing standard synchronous interfaces where required.
     """
 
-    def __init__(self, response: Response, loop: asyncio.AbstractEventLoop):
+    def __init__(self, response: Response, backend: "ConcurrencyBackend"):
         self._response = response
-        self._loop = loop
+        self._backend = backend
 
     @property
     def status_code(self) -> int:
@@ -827,13 +826,13 @@ class SyncResponse:
         return self._response.json()
 
     def read(self) -> bytes:
-        return self._loop.run_until_complete(self._response.read())
+        return self._backend.run(self._response.read)
 
     def stream(self) -> typing.Iterator[bytes]:
         inner = self._response.stream()
         while True:
             try:
-                yield self._loop.run_until_complete(inner.__anext__())
+                yield self._backend.run(inner.__anext__)
             except StopAsyncIteration:
                 break
 
@@ -841,12 +840,12 @@ class SyncResponse:
         inner = self._response.raw()
         while True:
             try:
-                yield self._loop.run_until_complete(inner.__anext__())
+                yield self._backend.run(inner.__anext__)
             except StopAsyncIteration:
                 break
 
     def close(self) -> None:
-        return self._loop.run_until_complete(self._response.close())
+        return self._backend.run(self._response.close)
 
     @property
     def cookies(self) -> "Cookies":
@@ -1029,3 +1028,7 @@ class Cookies(MutableMapping):
             for key, value in self.response.headers.items():
                 info[key] = value
             return info
+
+
+if True:
+    from .interfaces import ConcurrencyBackend

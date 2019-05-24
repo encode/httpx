@@ -184,3 +184,8 @@ class ConcurrencyBackend:
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
         raise NotImplementedError()  # pragma: no cover
+
+    def run(
+        self, coroutine: typing.Callable, *args: typing.Any, **kwargs: typing.Any
+    ) -> typing.Any:
+        raise NotImplementedError()  # pragma: no cover
