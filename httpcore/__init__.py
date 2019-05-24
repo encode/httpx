@@ -23,6 +23,6 @@ from .exceptions import (
 )
 from .interfaces import BaseReader, BaseWriter, ConcurrencyBackend, Dispatcher, Protocol
 from .models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
-from .status_codes import codes
+from .status_codes import StatusCode, codes
 
 __version__ = "0.3.0"

@@ -107,7 +107,7 @@ class MockHTTP2Server(BaseReader, BaseWriter):
         response = self.app(request)
 
         # Write the response to the buffer.
-        status_code_bytes = str(int(response.status_code)).encode("ascii")
+        status_code_bytes = str(response.status_code).encode("ascii")
         response_headers = [(b":status", status_code_bytes)] + response.headers.raw
 
         self.conn.send_headers(stream_id, response_headers)
