@@ -50,7 +50,9 @@ AuthTypes = typing.Union[
     typing.Callable[["Request"], "Request"],
 ]
 
-RequestData = typing.Union[dict, bytes, typing.AsyncIterator[bytes]]
+AsyncRequestData = typing.Union[dict, bytes, typing.AsyncIterator[bytes]]
+
+RequestData = typing.Union[dict, bytes, typing.Iterator[bytes]]
 
 ResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
@@ -474,7 +476,7 @@ class Request:
         method: str,
         url: typing.Union[str, URL],
         *,
-        data: RequestData = b"",
+        data: AsyncRequestData = b"",
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -499,6 +501,7 @@ class Request:
             self.content = urlencode(data, doseq=True).encode("utf-8")
             self.headers["Content-Type"] = "application/x-www-form-urlencoded"
         else:
+            assert hasattr(data, "__aiter__")
             self.is_streaming = True
             self.content_aiter = data
 

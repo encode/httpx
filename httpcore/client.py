@@ -18,6 +18,7 @@ from .exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from .models import (
     URL,
+    AsyncRequestData,
     AuthTypes,
     Cookies,
     CookieTypes,
@@ -156,7 +157,7 @@ class AsyncClient:
         self,
         url: URLTypes,
         *,
-        data: RequestData = b"",
+        data: AsyncRequestData = b"",
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -188,7 +189,7 @@ class AsyncClient:
         self,
         url: URLTypes,
         *,
-        data: RequestData = b"",
+        data: AsyncRequestData = b"",
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -220,7 +221,7 @@ class AsyncClient:
         self,
         url: URLTypes,
         *,
-        data: RequestData = b"",
+        data: AsyncRequestData = b"",
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -252,7 +253,7 @@ class AsyncClient:
         self,
         url: URLTypes,
         *,
-        data: RequestData = b"",
+        data: AsyncRequestData = b"",
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -285,7 +286,7 @@ class AsyncClient:
         method: str,
         url: URLTypes,
         *,
-        data: RequestData = b"",
+        data: AsyncRequestData = b"",
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -531,6 +532,28 @@ class Client:
     def concurrency_backend(self) -> ConcurrencyBackend:
         return self._client.concurrency_backend
 
+    def _async_request_data(self, data: RequestData) -> AsyncRequestData:
+        """
+        If the request data is an bytes iterator then return an async bytes
+        iterator onto the request data.
+        """
+        if isinstance(data, (bytes, dict)):
+            return data
+
+        assert hasattr(data, "__iter__")
+
+        async def async_iterator(backend, data):  # type: ignore
+            while True:
+                print(123)
+                try:
+                    yield await self.concurrency_backend.run_in_threadpool(
+                        data.__next__
+                    )
+                except StopIteration:
+                    raise StopAsyncIteration()
+
+        return async_iterator(self.concurrency_backend, data)
+
     def request(
         self,
         method: str,
@@ -551,7 +574,7 @@ class Client:
         request = Request(
             method,
             url,
-            data=data,
+            data=self._async_request_data(data),
             json=json,
             params=params,
             headers=headers,

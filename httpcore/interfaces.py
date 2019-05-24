@@ -6,6 +6,7 @@ from types import TracebackType
 from .config import CertTypes, PoolLimits, TimeoutConfig, TimeoutTypes, VerifyTypes
 from .models import (
     URL,
+    AsyncRequestData,
     Headers,
     HeaderTypes,
     QueryParamTypes,
@@ -35,7 +36,7 @@ class AsyncDispatcher:
         method: str,
         url: URLTypes,
         *,
-        data: RequestData = b"",
+        data: AsyncRequestData = b"",
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         stream: bool = False,
@@ -180,7 +181,7 @@ class ConcurrencyBackend:
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         raise NotImplementedError()  # pragma: no cover
 
-    def run_in_threadpool(
+    async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
         raise NotImplementedError()  # pragma: no cover
