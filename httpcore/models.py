@@ -503,6 +503,8 @@ class Request:
             self.is_streaming = True
             self.content_aiter = data
 
+        self.prepare()
+
     async def read(self) -> bytes:
         """
         Read and return the response content.
@@ -519,13 +521,6 @@ class Request:
             yield self.content
 
     def prepare(self) -> None:
-        """
-        Adds in any default headers. When using the `Client`, this will
-        end up being called into by the `prepare_request()` stage.
-
-        You can omit this behavior by calling `Client.send()` with an
-        explicitly built `Request` instance.
-        """
         auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
 
         has_host = "host" in self.headers

@@ -44,14 +44,10 @@ class Dispatcher:
         timeout: TimeoutTypes = None
     ) -> Response:
         request = Request(method, url, data=data, params=params, headers=headers)
-        self.prepare_request(request)
         response = await self.send(
             request, stream=stream, verify=verify, cert=cert, timeout=timeout
         )
         return response
-
-    def prepare_request(self, request: Request) -> None:
-        request.prepare()
 
     async def send(
         self,

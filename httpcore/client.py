@@ -297,7 +297,6 @@ class AsyncClient:
             headers=headers,
             cookies=self.merge_cookies(cookies),
         )
-        self.prepare_request(request)
         response = await self.send(
             request,
             stream=stream,
@@ -308,9 +307,6 @@ class AsyncClient:
             timeout=timeout,
         )
         return response
-
-    def prepare_request(self, request: Request) -> None:
-        request.prepare()
 
     def merge_cookies(
         self, cookies: CookieTypes = None
@@ -549,7 +545,6 @@ class Client:
             headers=headers,
             cookies=self._client.merge_cookies(cookies),
         )
-        self.prepare_request(request)
         response = self.send(
             request,
             stream=stream,
@@ -765,9 +760,6 @@ class Client:
             cert=cert,
             timeout=timeout,
         )
-
-    def prepare_request(self, request: Request) -> None:
-        self._client.prepare_request(request)
 
     def send(
         self,
