@@ -61,7 +61,7 @@ Alternatively, async requests:
 >>> client = httpcore.AsyncClient()
 >>> response = await client.get('https://example.com')
 >>> response.status_code
-<HTTPStatus.OK: 200>
+<StatusCode.OK: 200>
 >>> response.protocol
 'HTTP/2'
 >>> response.text
@@ -115,7 +115,7 @@ inspiration around the lower level networking details.
 *An HTTP response.*
 
 * `def __init__(...)`
-* `.status_code` - **int**
+* `.status_code` - **int** (Usually an instance of the `StatusCode` IntEnum.)
 * `.reason_phrase` - **str**
 * `.protocol` - `"HTTP/2"` or `"HTTP/1.1"`
 * `.url` - **URL**
