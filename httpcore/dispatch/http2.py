@@ -31,6 +31,7 @@ class HTTP2Connection:
         #  Start sending the request.
         if not self.initialized:
             self.initiate_connection()
+
         stream_id = await self.send_headers(request, timeout)
         self.events[stream_id] = []
 
@@ -117,8 +118,9 @@ class HTTP2Connection:
         while True:
             event = await self.receive_event(stream_id, timeout)
             if isinstance(event, h2.events.DataReceived):
+                self.h2_state.acknowledge_received_data(len(event.data), stream_id)
                 yield event.data
-            elif isinstance(event, h2.events.StreamEnded):
+            elif isinstance(event, (h2.events.StreamEnded, h2.events.StreamReset)):
                 break
 
     async def receive_event(
