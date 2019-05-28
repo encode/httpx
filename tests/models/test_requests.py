@@ -8,11 +8,11 @@ def test_request_repr():
     assert repr(request) == "<Request('GET', 'http://example.org')>"
 
 
-def test_host_header():
+def test_no_content():
     request = httpcore.Request("GET", "http://example.org")
     request.prepare()
     assert request.headers == httpcore.Headers(
-        [(b"host", b"example.org"), (b"accept-encoding", b"deflate, gzip, br")]
+        [(b"accept-encoding", b"deflate, gzip, br")]
     )
 
 
@@ -21,7 +21,6 @@ def test_content_length_header():
     request.prepare()
     assert request.headers == httpcore.Headers(
         [
-            (b"host", b"example.org"),
             (b"content-length", b"8"),
             (b"accept-encoding", b"deflate, gzip, br"),
         ]
@@ -33,7 +32,6 @@ def test_url_encoded_data():
     request.prepare()
     assert request.headers == httpcore.Headers(
         [
-            (b"host", b"example.org"),
             (b"content-length", b"8"),
             (b"accept-encoding", b"deflate, gzip, br"),
             (b"content-type", b"application/x-www-form-urlencoded"),
@@ -52,7 +50,6 @@ def test_transfer_encoding_header():
     request.prepare()
     assert request.headers == httpcore.Headers(
         [
-            (b"host", b"example.org"),
             (b"transfer-encoding", b"chunked"),
             (b"accept-encoding", b"deflate, gzip, br"),
         ]
@@ -75,7 +72,7 @@ def test_override_accept_encoding_header():
     request = httpcore.Request("GET", "http://example.org", headers=headers)
     request.prepare()
     assert request.headers == httpcore.Headers(
-        [(b"host", b"example.org"), (b"accept-encoding", b"identity")]
+        [(b"accept-encoding", b"identity")]
     )
 
 
@@ -90,7 +87,6 @@ def test_override_content_length_header():
     request.prepare()
     assert request.headers == httpcore.Headers(
         [
-            (b"host", b"example.org"),
             (b"accept-encoding", b"deflate, gzip, br"),
             (b"content-length", b"8"),
         ]

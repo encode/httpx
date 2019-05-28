@@ -523,14 +523,11 @@ class Request:
     def prepare(self) -> None:
         auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
 
-        has_host = "host" in self.headers
         has_content_length = (
             "content-length" in self.headers or "transfer-encoding" in self.headers
         )
         has_accept_encoding = "accept-encoding" in self.headers
 
-        if not has_host and self.url.authority:
-            auto_headers.append((b"host", self.url.authority.encode("ascii")))
         if not has_content_length:
             if self.is_streaming:
                 auto_headers.append((b"transfer-encoding", b"chunked"))
