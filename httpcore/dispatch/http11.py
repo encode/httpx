@@ -46,7 +46,7 @@ class HTTP11Connection:
         method = request.method.encode("ascii")
         target = request.url.full_path.encode("ascii")
         headers = request.headers.raw
-        if 'Host' not in request.headers:
+        if "Host" not in request.headers:
             host = request.url.authority.encode("ascii")
             headers = [(b"host", host)] + headers
         event = h11.Request(method=method, target=target, headers=headers)

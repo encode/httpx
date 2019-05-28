@@ -554,7 +554,7 @@ class Request:
         return f"<{class_name}({self.method!r}, {url!r})>"
 
 
-class Response:
+class BaseResponse:
     def __init__(
         self,
         status_code: int,
@@ -571,15 +571,6 @@ class Response:
         self.reason_phrase = StatusCode.get_reason_phrase(status_code)
         self.protocol = protocol
         self.headers = Headers(headers)
-
-        if isinstance(content, bytes):
-            self.is_closed = True
-            self.is_stream_consumed = True
-            self._raw_content = content
-        else:
-            self.is_closed = False
-            self.is_stream_consumed = False
-            self._raw_stream = content
 
         self.on_close = on_close
         self.request = request
@@ -684,6 +675,77 @@ class Response:
 
         return self._decoder
 
+
+    @property
+    def is_redirect(self) -> bool:
+        return StatusCode.is_redirect(self.status_code) and "location" in self.headers
+
+    def raise_for_status(self) -> None:
+        """
+        Raise the `HttpError` if one occurred.
+        """
+        message = (
+            "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
+            "For more information check: https://httpstatuses.com/{0.status_code}"
+        )
+
+        if StatusCode.is_client_error(self.status_code):
+            message = message.format(self, error_type="Client Error")
+        elif StatusCode.is_server_error(self.status_code):
+            message = message.format(self, error_type="Server Error")
+        else:
+            message = ""
+
+        if message:
+            raise HttpError(message)
+
+    def json(self) -> typing.Any:
+        return jsonlib.loads(self.content.decode("utf-8"))
+
+    @property
+    def cookies(self) -> "Cookies":
+        if not hasattr(self, "_cookies"):
+            assert self.request is not None
+            self._cookies = Cookies()
+            self._cookies.extract_cookies(self)
+        return self._cookies
+
+    def __repr__(self) -> str:
+        return f"<Response({self.status_code}, {self.reason_phrase!r})>"
+
+
+class Response(BaseResponse):
+    def __init__(
+        self,
+        status_code: int,
+        *,
+        reason_phrase: str = None,
+        protocol: str = None,
+        headers: HeaderTypes = None,
+        content: ResponseContent = b"",
+        on_close: typing.Callable = None,
+        request: Request = None,
+        history: typing.List["Response"] = None,
+    ):
+        super().__init__(
+            status_code=status_code,
+            reason_phrase=reason_phrase,
+            protocol=protocol,
+            headers=headers,
+            on_close=on_close,
+            request=request,
+            history=history,
+        )
+
+        if isinstance(content, bytes):
+            self.is_closed = True
+            self.is_stream_consumed = True
+            self._raw_content = content
+        else:
+            self.is_closed = False
+            self.is_stream_consumed = False
+            self._raw_stream = content
+
     async def read(self) -> bytes:
         """
         Read and return the response content.
@@ -730,43 +792,6 @@ class Response:
             self.is_closed = True
             if self.on_close is not None:
                 await self.on_close()
-
-    @property
-    def is_redirect(self) -> bool:
-        return StatusCode.is_redirect(self.status_code) and "location" in self.headers
-
-    def raise_for_status(self) -> None:
-        """
-        Raise the `HttpError` if one occurred.
-        """
-        message = (
-            "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
-            "For more information check: https://httpstatuses.com/{0.status_code}"
-        )
-
-        if StatusCode.is_client_error(self.status_code):
-            message = message.format(self, error_type="Client Error")
-        elif StatusCode.is_server_error(self.status_code):
-            message = message.format(self, error_type="Server Error")
-        else:
-            message = ""
-
-        if message:
-            raise HttpError(message)
-
-    def json(self) -> typing.Any:
-        return jsonlib.loads(self.content.decode("utf-8"))
-
-    @property
-    def cookies(self) -> "Cookies":
-        if not hasattr(self, "_cookies"):
-            assert self.request is not None
-            self._cookies = Cookies()
-            self._cookies.extract_cookies(self)
-        return self._cookies
-
-    def __repr__(self) -> str:
-        return f"<Response({self.status_code}, {self.reason_phrase!r})>"
 
 
 class SyncResponse:
