@@ -34,7 +34,7 @@ from .models import (
 from .status_codes import codes
 
 
-class AsyncClient:
+class BaseClient:
     def __init__(
         self,
         auth: AuthTypes = None,
@@ -69,6 +69,176 @@ class AsyncClient:
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
 
+    def merge_cookies(
+        self, cookies: CookieTypes = None
+    ) -> typing.Optional[CookieTypes]:
+        if cookies or self.cookies:
+            merged_cookies = Cookies(self.cookies)
+            merged_cookies.update(cookies)
+            return merged_cookies
+        return cookies
+
+    async def send(
+        self,
+        request: Request,
+        *,
+        stream: bool = False,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+    ) -> Response:
+        if auth is None:
+            auth = self.auth
+
+        url = request.url
+        if auth is None and (url.username or url.password):
+            auth = HTTPBasicAuth(username=url.username, password=url.password)
+
+        if auth is not None:
+            if isinstance(auth, tuple):
+                auth = HTTPBasicAuth(username=auth[0], password=auth[1])
+            request = auth(request)
+
+        response = await self.send_handling_redirects(
+            request,
+            stream=stream,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
+        )
+        return response
+
+    async def send_handling_redirects(
+        self,
+        request: Request,
+        *,
+        stream: bool = False,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
+        allow_redirects: bool = True,
+        history: typing.List[Response] = None,
+    ) -> Response:
+        if history is None:
+            history = []
+
+        while True:
+            # We perform these checks here, so that calls to `response.next()`
+            # will raise redirect errors if appropriate.
+            if len(history) > self.max_redirects:
+                raise TooManyRedirects()
+            if request.url in [response.url for response in history]:
+                raise RedirectLoop()
+
+            response = await self.dispatch.send(
+                request, stream=stream, verify=verify, cert=cert, timeout=timeout
+            )
+            response.history = list(history)
+            self.cookies.extract_cookies(response)
+            history = [response] + history
+            if not response.is_redirect:
+                break
+
+            if allow_redirects:
+                request = self.build_redirect_request(request, response)
+            else:
+
+                async def send_next() -> Response:
+                    nonlocal request, response, verify, cert, allow_redirects, timeout, history
+                    request = self.build_redirect_request(request, response)
+                    response = await self.send_handling_redirects(
+                        request,
+                        stream=stream,
+                        allow_redirects=allow_redirects,
+                        verify=verify,
+                        cert=cert,
+                        timeout=timeout,
+                        history=history,
+                    )
+                    return response
+
+                response.next = send_next  # type: ignore
+                break
+
+        return response
+
+    def build_redirect_request(self, request: Request, response: Response) -> Request:
+        method = self.redirect_method(request, response)
+        url = self.redirect_url(request, response)
+        headers = self.redirect_headers(request, url)
+        content = self.redirect_content(request, method)
+        cookies = self.merge_cookies(request.cookies)
+        return Request(
+            method=method, url=url, headers=headers, data=content, cookies=cookies
+        )
+
+    def redirect_method(self, request: Request, response: Response) -> str:
+        """
+        When being redirected we may want to change the method of the request
+        based on certain specs or browser behavior.
+        """
+        method = request.method
+
+        # https://tools.ietf.org/html/rfc7231#section-6.4.4
+        if response.status_code == codes.SEE_OTHER and method != "HEAD":
+            method = "GET"
+
+        # Do what the browsers do, despite standards...
+        # Turn 302s into GETs.
+        if response.status_code == codes.FOUND and method != "HEAD":
+            method = "GET"
+
+        # If a POST is responded to with a 301, turn it into a GET.
+        # This bizarre behaviour is explained in 'requests' issue 1704.
+        if response.status_code == codes.MOVED_PERMANENTLY and method == "POST":
+            method = "GET"
+
+        return method
+
+    def redirect_url(self, request: Request, response: Response) -> URL:
+        """
+        Return the URL for the redirect to follow.
+        """
+        location = response.headers["Location"]
+
+        url = URL(location, allow_relative=True)
+
+        # Facilitate relative 'Location' headers, as allowed by RFC 7231.
+        # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
+        if url.is_relative_url:
+            url = url.resolve_with(request.url)
+
+        # Attach previous fragment if needed (RFC 7231 7.1.2)
+        if request.url.fragment and not url.fragment:
+            url = url.copy_with(fragment=request.url.fragment)
+
+        return url
+
+    def redirect_headers(self, request: Request, url: URL) -> Headers:
+        """
+        Strip Authorization headers when responses are redirected away from
+        the origin.
+        """
+        headers = Headers(request.headers)
+        if url.origin != request.url.origin:
+            del headers["Authorization"]
+        return headers
+
+    def redirect_content(self, request: Request, method: str) -> bytes:
+        """
+        Return the body that should be used for the redirect request.
+        """
+        if method != request.method and method == "GET":
+            return b""
+        if request.is_streaming:
+            raise RedirectBodyUnavailable()
+        return request.content
+
+
+class AsyncClient(BaseClient):
     async def get(
         self,
         url: URLTypes,
@@ -318,174 +488,6 @@ class AsyncClient:
         )
         return response
 
-    def merge_cookies(
-        self, cookies: CookieTypes = None
-    ) -> typing.Optional[CookieTypes]:
-        if cookies or self.cookies:
-            merged_cookies = Cookies(self.cookies)
-            merged_cookies.update(cookies)
-            return merged_cookies
-        return cookies
-
-    async def send(
-        self,
-        request: Request,
-        *,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-    ) -> Response:
-        if auth is None:
-            auth = self.auth
-
-        url = request.url
-        if auth is None and (url.username or url.password):
-            auth = HTTPBasicAuth(username=url.username, password=url.password)
-
-        if auth is not None:
-            if isinstance(auth, tuple):
-                auth = HTTPBasicAuth(username=auth[0], password=auth[1])
-            request = auth(request)
-
-        response = await self.send_handling_redirects(
-            request,
-            stream=stream,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            allow_redirects=allow_redirects,
-        )
-        return response
-
-    async def send_handling_redirects(
-        self,
-        request: Request,
-        *,
-        stream: bool = False,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        allow_redirects: bool = True,
-        history: typing.List[Response] = None,
-    ) -> Response:
-        if history is None:
-            history = []
-
-        while True:
-            # We perform these checks here, so that calls to `response.next()`
-            # will raise redirect errors if appropriate.
-            if len(history) > self.max_redirects:
-                raise TooManyRedirects()
-            if request.url in [response.url for response in history]:
-                raise RedirectLoop()
-
-            response = await self.dispatch.send(
-                request, stream=stream, verify=verify, cert=cert, timeout=timeout
-            )
-            response.history = list(history)
-            self.cookies.extract_cookies(response)
-            history = [response] + history
-            if not response.is_redirect:
-                break
-
-            if allow_redirects:
-                request = self.build_redirect_request(request, response)
-            else:
-
-                async def send_next() -> Response:
-                    nonlocal request, response, verify, cert, allow_redirects, timeout, history
-                    request = self.build_redirect_request(request, response)
-                    response = await self.send_handling_redirects(
-                        request,
-                        stream=stream,
-                        allow_redirects=allow_redirects,
-                        verify=verify,
-                        cert=cert,
-                        timeout=timeout,
-                        history=history,
-                    )
-                    return response
-
-                response.next = send_next  # type: ignore
-                break
-
-        return response
-
-    def build_redirect_request(self, request: Request, response: Response) -> Request:
-        method = self.redirect_method(request, response)
-        url = self.redirect_url(request, response)
-        headers = self.redirect_headers(request, url)
-        content = self.redirect_content(request, method)
-        cookies = self.merge_cookies(request.cookies)
-        return Request(
-            method=method, url=url, headers=headers, data=content, cookies=cookies
-        )
-
-    def redirect_method(self, request: Request, response: Response) -> str:
-        """
-        When being redirected we may want to change the method of the request
-        based on certain specs or browser behavior.
-        """
-        method = request.method
-
-        # https://tools.ietf.org/html/rfc7231#section-6.4.4
-        if response.status_code == codes.SEE_OTHER and method != "HEAD":
-            method = "GET"
-
-        # Do what the browsers do, despite standards...
-        # Turn 302s into GETs.
-        if response.status_code == codes.FOUND and method != "HEAD":
-            method = "GET"
-
-        # If a POST is responded to with a 301, turn it into a GET.
-        # This bizarre behaviour is explained in 'requests' issue 1704.
-        if response.status_code == codes.MOVED_PERMANENTLY and method == "POST":
-            method = "GET"
-
-        return method
-
-    def redirect_url(self, request: Request, response: Response) -> URL:
-        """
-        Return the URL for the redirect to follow.
-        """
-        location = response.headers["Location"]
-
-        url = URL(location, allow_relative=True)
-
-        # Facilitate relative 'Location' headers, as allowed by RFC 7231.
-        # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
-        if url.is_relative_url:
-            url = url.resolve_with(request.url)
-
-        # Attach previous fragment if needed (RFC 7231 7.1.2)
-        if request.url.fragment and not url.fragment:
-            url = url.copy_with(fragment=request.url.fragment)
-
-        return url
-
-    def redirect_headers(self, request: Request, url: URL) -> Headers:
-        """
-        Strip Authorization headers when responses are redirected away from
-        the origin.
-        """
-        headers = Headers(request.headers)
-        if url.origin != request.url.origin:
-            del headers["Authorization"]
-        return headers
-
-    def redirect_content(self, request: Request, method: str) -> bytes:
-        """
-        Return the body that should be used for the redirect request.
-        """
-        if method != request.method and method == "GET":
-            return b""
-        if request.is_streaming:
-            raise RedirectBodyUnavailable()
-        return request.content
-
     async def close(self) -> None:
         await self.dispatch.close()
 
@@ -501,37 +503,7 @@ class AsyncClient:
         await self.close()
 
 
-class Client:
-    def __init__(
-        self,
-        auth: AuthTypes = None,
-        cert: CertTypes = None,
-        verify: VerifyTypes = True,
-        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        dispatch: typing.Union[Dispatcher, AsyncDispatcher] = None,
-        backend: ConcurrencyBackend = None,
-    ) -> None:
-        self._client = AsyncClient(
-            auth=auth,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            pool_limits=pool_limits,
-            max_redirects=max_redirects,
-            dispatch=dispatch,
-            backend=backend,
-        )
-
-    @property
-    def cookies(self) -> Cookies:
-        return self._client.cookies
-
-    @property
-    def concurrency_backend(self) -> ConcurrencyBackend:
-        return self._client.concurrency_backend
-
+class Client(BaseClient):
     def _async_request_data(self, data: RequestData) -> AsyncRequestData:
         """
         If the request data is an bytes iterator then return an async bytes
@@ -553,7 +525,6 @@ class Client:
         # iteration run within the event loop.
         assert hasattr(data, "__aiter__")
         return self.concurrency_backend.iterate(data)
-
 
     def request(
         self,
@@ -579,18 +550,45 @@ class Client:
             json=json,
             params=params,
             headers=headers,
-            cookies=self._client.merge_cookies(cookies),
+            cookies=self.merge_cookies(cookies),
         )
-        response = self.send(
-            request,
-            stream=stream,
+        concurrency_backend = self.concurrency_backend
+
+        coroutine = self.send
+        args = [request]
+        kwargs = dict(
+            stream=True,
             auth=auth,
             allow_redirects=allow_redirects,
             verify=verify,
             cert=cert,
             timeout=timeout,
         )
-        return response
+        response = concurrency_backend.run(coroutine, *args, **kwargs)
+
+        content = getattr(
+            response, "_raw_content", getattr(response, "_raw_stream", None)
+        )
+
+        sync_content = self._sync_data(content)
+
+        def sync_on_close():
+            nonlocal concurrency_backend, response
+            return concurrency_backend.run(response.on_close)
+
+        sync_response = SyncResponse(
+            status_code=response.status_code,
+            reason_phrase=response.reason_phrase,
+            protocol=response.protocol,
+            headers=response.headers,
+            content=sync_content,
+            on_close=sync_on_close,
+            request=response.request,
+            history=response.history,
+        )
+        if not stream:
+            sync_response.read()
+        return sync_response
 
     def get(
         self,
@@ -797,55 +795,8 @@ class Client:
             timeout=timeout,
         )
 
-    def send(
-        self,
-        request: Request,
-        *,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-    ) -> SyncResponse:
-        concurrency_backend = self.concurrency_backend
-
-        coroutine = self._client.send
-        args = [request]
-        kwargs = dict(
-            stream=True,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-        )
-        response = concurrency_backend.run(coroutine, *args, **kwargs)
-
-        content = getattr(response, '_raw_content', getattr(response, '_raw_stream', None))
-
-        sync_content = self._sync_data(content)
-
-        def sync_on_close():
-            nonlocal concurrency_backend, response
-            return concurrency_backend.run(response.on_close)
-
-        sync_response = SyncResponse(
-            status_code=response.status_code,
-            reason_phrase=response.reason_phrase,
-            protocol=response.protocol,
-            headers=response.headers,
-            content=sync_content,
-            on_close=sync_on_close,
-            request=response.request,
-            history=response.history,
-        )
-        if not stream:
-            sync_response.read()
-        return sync_response
-
     def close(self) -> None:
-        coroutine = self._client.close
+        coroutine = self.dispatch.close
         self.concurrency_backend.run(coroutine)
 
     def __enter__(self) -> "Client":
