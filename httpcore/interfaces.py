@@ -206,3 +206,10 @@ class ConcurrencyBackend:
         self, coroutine: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
         raise NotImplementedError()  # pragma: no cover
+
+    def iterate(self, async_iterator):  # type: ignore
+        while True:
+            try:
+                yield self.run(async_iterator.__anext__)
+            except StopAsyncIteration:
+                break

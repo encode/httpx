@@ -675,7 +675,6 @@ class BaseResponse:
 
         return self._decoder
 
-
     @property
     def is_redirect(self) -> bool:
         return StatusCode.is_redirect(self.status_code) and "location" in self.headers
@@ -794,90 +793,89 @@ class Response(BaseResponse):
                 await self.on_close()
 
 
-class SyncResponse:
+class SyncResponse(BaseResponse):
     """
     A thread-synchronous response. This class proxies onto a `Response`
     instance, providing standard synchronous interfaces where required.
     """
 
-    def __init__(self, response: Response, backend: "ConcurrencyBackend"):
-        self._response = response
-        self._backend = backend
+    def __init__(
+        self,
+        status_code: int,
+        *,
+        reason_phrase: str = None,
+        protocol: str = None,
+        headers: HeaderTypes = None,
+        content: ResponseContent = b"",
+        on_close: typing.Callable = None,
+        request: Request = None,
+        history: typing.List["Response"] = None,
+    ):
+        super().__init__(
+            status_code=status_code,
+            reason_phrase=reason_phrase,
+            protocol=protocol,
+            headers=headers,
+            on_close=on_close,
+            request=request,
+            history=history,
+        )
 
-    @property
-    def status_code(self) -> int:
-        return self._response.status_code
-
-    @property
-    def reason_phrase(self) -> str:
-        return self._response.reason_phrase
-
-    @property
-    def protocol(self) -> typing.Optional[str]:
-        return self._response.protocol
-
-    @property
-    def url(self) -> typing.Optional[URL]:
-        return self._response.url
-
-    @property
-    def request(self) -> typing.Optional[Request]:
-        return self._response.request
-
-    @property
-    def headers(self) -> Headers:
-        return self._response.headers
-
-    @property
-    def content(self) -> bytes:
-        return self._response.content
-
-    @property
-    def text(self) -> str:
-        return self._response.text
-
-    @property
-    def encoding(self) -> str:
-        return self._response.encoding
-
-    @property
-    def is_redirect(self) -> bool:
-        return self._response.is_redirect
-
-    def raise_for_status(self) -> None:
-        return self._response.raise_for_status()
-
-    def json(self) -> typing.Any:
-        return self._response.json()
+        if isinstance(content, bytes):
+            self.is_closed = True
+            self.is_stream_consumed = True
+            self._raw_content = content
+        else:
+            self.is_closed = False
+            self.is_stream_consumed = False
+            self._raw_stream = content
 
     def read(self) -> bytes:
-        return self._backend.run(self._response.read)
+        """
+        Read and return the response content.
+        """
+        if not hasattr(self, "_content"):
+            self._content = b"".join([part for part in self.stream()])
+        return self._content
 
     def stream(self) -> typing.Iterator[bytes]:
-        inner = self._response.stream()
-        while True:
-            try:
-                yield self._backend.run(inner.__anext__)
-            except StopAsyncIteration:
-                break
+        """
+        A byte-iterator over the decoded response content.
+        This allows us to handle gzip, deflate, and brotli encoded responses.
+        """
+        if hasattr(self, "_content"):
+            yield self._content
+        else:
+            for chunk in self.raw():
+                yield self.decoder.decode(chunk)
+            yield self.decoder.flush()
 
     def raw(self) -> typing.Iterator[bytes]:
-        inner = self._response.raw()
-        while True:
-            try:
-                yield self._backend.run(inner.__anext__)
-            except StopAsyncIteration:
-                break
+        """
+        A byte-iterator over the raw response content.
+        """
+        if hasattr(self, "_raw_content"):
+            yield self._raw_content
+        else:
+            if self.is_stream_consumed:
+                raise StreamConsumed()
+            if self.is_closed:
+                raise ResponseClosed()
+
+            self.is_stream_consumed = True
+            for part in self._raw_stream:
+                yield part
+            self.close()
 
     def close(self) -> None:
-        return self._backend.run(self._response.close)
-
-    @property
-    def cookies(self) -> "Cookies":
-        return self._response.cookies
-
-    def __repr__(self) -> str:
-        return f"<Response({self.status_code}, {self.reason_phrase!r})>"
+        """
+        Close the response and release the connection.
+        Automatically called if the response body is read to completion.
+        """
+        if not self.is_closed:
+            self.is_closed = True
+            if self.on_close is not None:
+                self.on_close()
 
 
 class Cookies(MutableMapping):
@@ -898,7 +896,7 @@ class Cookies(MutableMapping):
         else:
             self.jar = cookies
 
-    def extract_cookies(self, response: Response) -> None:
+    def extract_cookies(self, response: BaseResponse) -> None:
         """
         Loads any cookies based on the response `Set-Cookie` headers.
         """
@@ -1045,7 +1043,7 @@ class Cookies(MutableMapping):
         for use with `CookieJar` operations.
         """
 
-        def __init__(self, response: Response):
+        def __init__(self, response: BaseResponse):
             self.response = response
 
         def info(self) -> email.message.Message:
@@ -1053,7 +1051,3 @@ class Cookies(MutableMapping):
             for key, value in self.response.headers.items():
                 info[key] = value
             return info
-
-
-if True:
-    from .interfaces import ConcurrencyBackend

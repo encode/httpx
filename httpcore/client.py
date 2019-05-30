@@ -540,8 +540,20 @@ class Client:
         if isinstance(data, (bytes, dict)):
             return data
 
+        # Coerce an iterator into an async iterator, with each item in the
+        # iteration running as a thread-pooled operation.
         assert hasattr(data, "__iter__")
         return self.concurrency_backend.iterate_in_threadpool(data)
+
+    def _sync_data(self, data):
+        if isinstance(data, (bytes, dict)):
+            return data
+
+        # Coerce an async iterator into an iterator, with each item in the
+        # iteration run within the event loop.
+        assert hasattr(data, "__aiter__")
+        return self.concurrency_backend.iterate(data)
+
 
     def request(
         self,
@@ -796,18 +808,41 @@ class Client:
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> SyncResponse:
+        concurrency_backend = self.concurrency_backend
+
         coroutine = self._client.send
         args = [request]
         kwargs = dict(
-            stream=stream,
+            stream=True,
             auth=auth,
             allow_redirects=allow_redirects,
             verify=verify,
             cert=cert,
             timeout=timeout,
         )
-        response = self.concurrency_backend.run(coroutine, *args, **kwargs)
-        return SyncResponse(response, self.concurrency_backend)
+        response = concurrency_backend.run(coroutine, *args, **kwargs)
+
+        content = getattr(response, '_raw_content', getattr(response, '_raw_stream', None))
+
+        sync_content = self._sync_data(content)
+
+        def sync_on_close():
+            nonlocal concurrency_backend, response
+            return concurrency_backend.run(response.on_close)
+
+        sync_response = SyncResponse(
+            status_code=response.status_code,
+            reason_phrase=response.reason_phrase,
+            protocol=response.protocol,
+            headers=response.headers,
+            content=sync_content,
+            on_close=sync_on_close,
+            request=response.request,
+            history=response.history,
+        )
+        if not stream:
+            sync_response.read()
+        return sync_response
 
     def close(self) -> None:
         coroutine = self._client.close
