@@ -7,7 +7,7 @@ import h2.events
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectTimeout, ReadTimeout
 from ..interfaces import BaseReader, BaseWriter
-from ..models import Request, Response
+from ..models import AsyncResponse, Request
 
 
 class HTTP2Connection:
@@ -25,7 +25,7 @@ class HTTP2Connection:
 
     async def send(
         self, request: Request, stream: bool = False, timeout: TimeoutTypes = None
-    ) -> Response:
+    ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
         #  Start sending the request.
@@ -59,7 +59,7 @@ class HTTP2Connection:
         content = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
 
-        response = Response(
+        response = AsyncResponse(
             status_code=status_code,
             protocol="HTTP/2",
             headers=headers,

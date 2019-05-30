@@ -713,7 +713,7 @@ class BaseResponse:
         return f"<Response({self.status_code}, {self.reason_phrase!r})>"
 
 
-class Response(BaseResponse):
+class AsyncResponse(BaseResponse):
     def __init__(
         self,
         status_code: int,
@@ -793,12 +793,7 @@ class Response(BaseResponse):
                 await self.on_close()
 
 
-class SyncResponse(BaseResponse):
-    """
-    A thread-synchronous response. This class proxies onto a `Response`
-    instance, providing standard synchronous interfaces where required.
-    """
-
+class Response(BaseResponse):
     def __init__(
         self,
         status_code: int,

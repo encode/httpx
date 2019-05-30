@@ -16,7 +16,7 @@ from ..config import (
 )
 from ..exceptions import ConnectTimeout
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Protocol
-from ..models import Origin, Request, Response
+from ..models import AsyncResponse, Origin, Request
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
@@ -49,7 +49,7 @@ class HTTPConnection(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         if self.h11_connection is None and self.h2_connection is None:
             await self.connect(verify=verify, cert=cert, timeout=timeout)
 

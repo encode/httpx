@@ -13,7 +13,7 @@ from ..config import (
 from ..decoders import ACCEPT_ENCODING
 from ..exceptions import PoolTimeout
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend
-from ..models import Origin, Request, Response
+from ..models import AsyncResponse, Origin, Request
 from .connection import HTTPConnection
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
@@ -110,7 +110,7 @@ class ConnectionPool(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         connection = await self.acquire_connection(request.url.origin)
         try:
             response = await connection.send(

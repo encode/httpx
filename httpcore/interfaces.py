@@ -7,6 +7,7 @@ from .config import CertTypes, PoolLimits, TimeoutConfig, TimeoutTypes, VerifyTy
 from .models import (
     URL,
     AsyncRequestData,
+    AsyncResponse,
     Headers,
     HeaderTypes,
     QueryParamTypes,
@@ -43,7 +44,7 @@ class AsyncDispatcher:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None
-    ) -> Response:
+    ) -> AsyncResponse:
         request = Request(method, url, data=data, params=params, headers=headers)
         return await self.send(
             request, stream=stream, verify=verify, cert=cert, timeout=timeout
@@ -56,7 +57,7 @@ class AsyncDispatcher:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         raise NotImplementedError()  # pragma: nocover
 
     async def close(self) -> None:

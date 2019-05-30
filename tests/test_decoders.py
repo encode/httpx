@@ -64,19 +64,18 @@ def test_multi_with_identity():
     assert response.content == body
 
 
-@pytest.mark.asyncio
-async def test_streaming():
+def test_streaming():
     body = b"test 123"
     compressor = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
 
-    async def compress(body):
+    def compress(body):
         yield compressor.compress(body)
         yield compressor.flush()
 
     headers = [(b"Content-Encoding", b"gzip")]
     response = httpcore.Response(200, headers=headers, content=compress(body))
     assert not hasattr(response, "body")
-    assert await response.read() == body
+    assert response.read() == body
 
 
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))

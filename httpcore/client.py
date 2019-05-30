@@ -19,6 +19,7 @@ from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from .models import (
     URL,
     AsyncRequestData,
+    AsyncResponse,
     AuthTypes,
     Cookies,
     CookieTypes,
@@ -28,7 +29,6 @@ from .models import (
     Request,
     RequestData,
     Response,
-    SyncResponse,
     URLTypes,
 )
 from .status_codes import codes
@@ -88,7 +88,7 @@ class BaseClient:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         if auth is None:
             auth = self.auth
 
@@ -542,7 +542,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> SyncResponse:
+    ) -> Response:
         request = Request(
             method,
             url,
@@ -564,31 +564,31 @@ class Client(BaseClient):
             cert=cert,
             timeout=timeout,
         )
-        response = concurrency_backend.run(coroutine, *args, **kwargs)
+        async_response = concurrency_backend.run(coroutine, *args, **kwargs)
 
         content = getattr(
-            response, "_raw_content", getattr(response, "_raw_stream", None)
+            async_response, "_raw_content", getattr(async_response, "_raw_stream", None)
         )
 
         sync_content = self._sync_data(content)
 
         def sync_on_close():
-            nonlocal concurrency_backend, response
-            return concurrency_backend.run(response.on_close)
+            nonlocal concurrency_backend, async_response
+            return concurrency_backend.run(async_response.on_close)
 
-        sync_response = SyncResponse(
-            status_code=response.status_code,
-            reason_phrase=response.reason_phrase,
-            protocol=response.protocol,
-            headers=response.headers,
+        response = Response(
+            status_code=async_response.status_code,
+            reason_phrase=async_response.reason_phrase,
+            protocol=async_response.protocol,
+            headers=async_response.headers,
             content=sync_content,
             on_close=sync_on_close,
-            request=response.request,
-            history=response.history,
+            request=async_response.request,
+            history=async_response.history,
         )
         if not stream:
-            sync_response.read()
-        return sync_response
+            response.read()
+        return response
 
     def get(
         self,
@@ -603,7 +603,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> SyncResponse:
+    ) -> Response:
         return self.request(
             "GET",
             url,
@@ -630,7 +630,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> SyncResponse:
+    ) -> Response:
         return self.request(
             "OPTIONS",
             url,
@@ -657,7 +657,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> SyncResponse:
+    ) -> Response:
         return self.request(
             "HEAD",
             url,
@@ -686,7 +686,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> SyncResponse:
+    ) -> Response:
         return self.request(
             "POST",
             url,
@@ -717,7 +717,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> SyncResponse:
+    ) -> Response:
         return self.request(
             "PUT",
             url,
@@ -748,7 +748,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> SyncResponse:
+    ) -> Response:
         return self.request(
             "PATCH",
             url,
@@ -779,7 +779,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> SyncResponse:
+    ) -> Response:
         return self.request(
             "DELETE",
             url,

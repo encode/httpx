@@ -1,6 +1,6 @@
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
-from ..models import Request, Response
+from ..models import AsyncResponse, Request, Response
 
 
 class ThreadedDispatcher(AsyncDispatcher):
@@ -15,7 +15,7 @@ class ThreadedDispatcher(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         func = self.sync_dispatcher.send
         kwargs = {
             "request": request,
