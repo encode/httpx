@@ -54,7 +54,9 @@ AsyncRequestData = typing.Union[dict, bytes, typing.AsyncIterator[bytes]]
 
 RequestData = typing.Union[dict, bytes, typing.Iterator[bytes]]
 
-ResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
+AsyncResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
+
+ResponseContent = typing.Union[bytes, typing.Iterator[bytes]]
 
 
 class URL:
@@ -562,10 +564,8 @@ class BaseResponse:
         reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
-        content: ResponseContent = b"",
         on_close: typing.Callable = None,
         request: Request = None,
-        history: typing.List["Response"] = None,
     ):
         self.status_code = StatusCode.enum_or_int(status_code)
         self.reason_phrase = StatusCode.get_reason_phrase(status_code)
@@ -574,7 +574,6 @@ class BaseResponse:
 
         self.on_close = on_close
         self.request = request
-        self.history = [] if history is None else list(history)
         self.next = None  # typing.Optional[typing.Callable]
 
     @property
@@ -590,7 +589,8 @@ class BaseResponse:
     def content(self) -> bytes:
         if not hasattr(self, "_content"):
             if hasattr(self, "_raw_content"):
-                content = self.decoder.decode(self._raw_content)
+                raw_content = getattr(self, "_raw_content")  # type: bytes
+                content = self.decoder.decode(raw_content)
                 content += self.decoder.flush()
                 self._content = content
             else:
@@ -721,10 +721,10 @@ class AsyncResponse(BaseResponse):
         reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
-        content: ResponseContent = b"",
+        content: AsyncResponseContent = b"",
         on_close: typing.Callable = None,
         request: Request = None,
-        history: typing.List["Response"] = None,
+        history: typing.List["AsyncResponse"] = None,
     ):
         super().__init__(
             status_code=status_code,
@@ -733,8 +733,9 @@ class AsyncResponse(BaseResponse):
             headers=headers,
             on_close=on_close,
             request=request,
-            history=history,
         )
+
+        self.history = [] if history is None else list(history)
 
         if isinstance(content, bytes):
             self.is_closed = True
@@ -813,8 +814,9 @@ class Response(BaseResponse):
             headers=headers,
             on_close=on_close,
             request=request,
-            history=history,
         )
+
+        self.history = [] if history is None else list(history)
 
         if isinstance(content, bytes):
             self.is_closed = True

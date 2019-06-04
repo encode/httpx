@@ -20,6 +20,7 @@ from .models import (
     URL,
     AsyncRequestData,
     AsyncResponse,
+    AsyncResponseContent,
     AuthTypes,
     Cookies,
     CookieTypes,
@@ -29,6 +30,7 @@ from .models import (
     Request,
     RequestData,
     Response,
+    ResponseContent,
     URLTypes,
 )
 from .status_codes import codes
@@ -120,8 +122,8 @@ class BaseClient:
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         allow_redirects: bool = True,
-        history: typing.List[Response] = None,
-    ) -> Response:
+        history: typing.List[AsyncResponse] = None,
+    ) -> AsyncResponse:
         if history is None:
             history = []
 
@@ -146,7 +148,7 @@ class BaseClient:
                 request = self.build_redirect_request(request, response)
             else:
 
-                async def send_next() -> Response:
+                async def send_next() -> AsyncResponse:
                     nonlocal request, response, verify, cert, allow_redirects, timeout, history
                     request = self.build_redirect_request(request, response)
                     response = await self.send_handling_redirects(
@@ -165,7 +167,9 @@ class BaseClient:
 
         return response
 
-    def build_redirect_request(self, request: Request, response: Response) -> Request:
+    def build_redirect_request(
+        self, request: Request, response: AsyncResponse
+    ) -> Request:
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
         headers = self.redirect_headers(request, url)
@@ -175,7 +179,7 @@ class BaseClient:
             method=method, url=url, headers=headers, data=content, cookies=cookies
         )
 
-    def redirect_method(self, request: Request, response: Response) -> str:
+    def redirect_method(self, request: Request, response: AsyncResponse) -> str:
         """
         When being redirected we may want to change the method of the request
         based on certain specs or browser behavior.
@@ -198,7 +202,7 @@ class BaseClient:
 
         return method
 
-    def redirect_url(self, request: Request, response: Response) -> URL:
+    def redirect_url(self, request: Request, response: AsyncResponse) -> URL:
         """
         Return the URL for the redirect to follow.
         """
@@ -252,7 +256,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         return await self.request(
             "GET",
             url,
@@ -280,7 +284,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         return await self.request(
             "OPTIONS",
             url,
@@ -308,7 +312,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         return await self.request(
             "HEAD",
             url,
@@ -338,7 +342,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         return await self.request(
             "POST",
             url,
@@ -370,7 +374,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         return await self.request(
             "PUT",
             url,
@@ -402,7 +406,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         return await self.request(
             "PATCH",
             url,
@@ -434,7 +438,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         return await self.request(
             "DELETE",
             url,
@@ -467,7 +471,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         request = Request(
             method,
             url,
@@ -517,8 +521,8 @@ class Client(BaseClient):
         assert hasattr(data, "__iter__")
         return self.concurrency_backend.iterate_in_threadpool(data)
 
-    def _sync_data(self, data):
-        if isinstance(data, (bytes, dict)):
+    def _sync_data(self, data: AsyncResponseContent) -> ResponseContent:
+        if isinstance(data, bytes):
             return data
 
         # Coerce an async iterator into an iterator, with each item in the
@@ -572,9 +576,9 @@ class Client(BaseClient):
 
         sync_content = self._sync_data(content)
 
-        def sync_on_close():
+        def sync_on_close() -> None:
             nonlocal concurrency_backend, async_response
-            return concurrency_backend.run(async_response.on_close)
+            concurrency_backend.run(async_response.on_close)
 
         response = Response(
             status_code=async_response.status_code,
