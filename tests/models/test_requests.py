@@ -38,7 +38,7 @@ def test_url_encoded_data():
 
 
 def test_transfer_encoding_header():
-    async def streaming_body(data):
+    def streaming_body(data):
         yield data  # pragma: nocover
 
     data = streaming_body(b"test 123")
@@ -69,7 +69,7 @@ def test_override_accept_encoding_header():
 
 
 def test_override_content_length_header():
-    async def streaming_body(data):
+    def streaming_body(data):
         yield data  # pragma: nocover
 
     data = streaming_body(b"test 123")

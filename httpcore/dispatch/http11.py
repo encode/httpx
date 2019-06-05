@@ -5,7 +5,7 @@ import h11
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectTimeout, ReadTimeout
 from ..interfaces import BaseReader, BaseWriter
-from ..models import AsyncResponse, Request
+from ..models import AsyncRequest, AsyncResponse
 
 H11Event = typing.Union[
     h11.Request,
@@ -38,7 +38,7 @@ class HTTP11Connection:
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
 
     async def send(
-        self, request: Request, stream: bool = False, timeout: TimeoutTypes = None
+        self, request: AsyncRequest, stream: bool = False, timeout: TimeoutTypes = None
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 

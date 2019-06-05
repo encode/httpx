@@ -18,6 +18,7 @@ from .exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from .models import (
     URL,
+    AsyncRequest,
     AsyncRequestData,
     AsyncResponse,
     AsyncResponseContent,
@@ -82,7 +83,7 @@ class BaseClient:
 
     async def send(
         self,
-        request: Request,
+        request: AsyncRequest,
         *,
         stream: bool = False,
         auth: AuthTypes = None,
@@ -115,7 +116,7 @@ class BaseClient:
 
     async def send_handling_redirects(
         self,
-        request: Request,
+        request: AsyncRequest,
         *,
         stream: bool = False,
         cert: CertTypes = None,
@@ -168,18 +169,18 @@ class BaseClient:
         return response
 
     def build_redirect_request(
-        self, request: Request, response: AsyncResponse
-    ) -> Request:
+        self, request: AsyncRequest, response: AsyncResponse
+    ) -> AsyncRequest:
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
         headers = self.redirect_headers(request, url)
         content = self.redirect_content(request, method)
         cookies = self.merge_cookies(request.cookies)
-        return Request(
+        return AsyncRequest(
             method=method, url=url, headers=headers, data=content, cookies=cookies
         )
 
-    def redirect_method(self, request: Request, response: AsyncResponse) -> str:
+    def redirect_method(self, request: AsyncRequest, response: AsyncResponse) -> str:
         """
         When being redirected we may want to change the method of the request
         based on certain specs or browser behavior.
@@ -202,7 +203,7 @@ class BaseClient:
 
         return method
 
-    def redirect_url(self, request: Request, response: AsyncResponse) -> URL:
+    def redirect_url(self, request: AsyncRequest, response: AsyncResponse) -> URL:
         """
         Return the URL for the redirect to follow.
         """
@@ -221,7 +222,7 @@ class BaseClient:
 
         return url
 
-    def redirect_headers(self, request: Request, url: URL) -> Headers:
+    def redirect_headers(self, request: AsyncRequest, url: URL) -> Headers:
         """
         Strip Authorization headers when responses are redirected away from
         the origin.
@@ -231,7 +232,7 @@ class BaseClient:
             del headers["Authorization"]
         return headers
 
-    def redirect_content(self, request: Request, method: str) -> bytes:
+    def redirect_content(self, request: AsyncRequest, method: str) -> bytes:
         """
         Return the body that should be used for the redirect request.
         """
@@ -472,7 +473,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
-        request = Request(
+        request = AsyncRequest(
             method,
             url,
             data=data,
@@ -547,7 +548,7 @@ class Client(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
     ) -> Response:
-        request = Request(
+        request = AsyncRequest(
             method,
             url,
             data=self._async_request_data(data),

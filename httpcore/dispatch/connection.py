@@ -16,7 +16,7 @@ from ..config import (
 )
 from ..exceptions import ConnectTimeout
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Protocol
-from ..models import AsyncResponse, Origin, Request
+from ..models import AsyncRequest, AsyncResponse, Origin
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
@@ -44,7 +44,7 @@ class HTTPConnection(AsyncDispatcher):
 
     async def send(
         self,
-        request: Request,
+        request: AsyncRequest,
         stream: bool = False,
         verify: VerifyTypes = None,
         cert: CertTypes = None,

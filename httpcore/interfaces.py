@@ -6,6 +6,7 @@ from types import TracebackType
 from .config import CertTypes, PoolLimits, TimeoutConfig, TimeoutTypes, VerifyTypes
 from .models import (
     URL,
+    AsyncRequest,
     AsyncRequestData,
     AsyncResponse,
     Headers,
@@ -45,14 +46,14 @@ class AsyncDispatcher:
         cert: CertTypes = None,
         timeout: TimeoutTypes = None
     ) -> AsyncResponse:
-        request = Request(method, url, data=data, params=params, headers=headers)
+        request = AsyncRequest(method, url, data=data, params=params, headers=headers)
         return await self.send(
             request, stream=stream, verify=verify, cert=cert, timeout=timeout
         )
 
     async def send(
         self,
-        request: Request,
+        request: AsyncRequest,
         stream: bool = False,
         verify: VerifyTypes = None,
         cert: CertTypes = None,

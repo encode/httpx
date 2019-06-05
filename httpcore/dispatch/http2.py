@@ -7,7 +7,7 @@ import h2.events
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectTimeout, ReadTimeout
 from ..interfaces import BaseReader, BaseWriter
-from ..models import AsyncResponse, Request
+from ..models import AsyncRequest, AsyncResponse
 
 
 class HTTP2Connection:
@@ -24,7 +24,7 @@ class HTTP2Connection:
         self.initialized = False
 
     async def send(
-        self, request: Request, stream: bool = False, timeout: TimeoutTypes = None
+        self, request: AsyncRequest, stream: bool = False, timeout: TimeoutTypes = None
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
@@ -86,7 +86,7 @@ class HTTP2Connection:
         self.initialized = True
 
     async def send_headers(
-        self, request: Request, timeout: TimeoutConfig = None
+        self, request: AsyncRequest, timeout: TimeoutConfig = None
     ) -> int:
         stream_id = self.h2_state.get_next_available_stream_id()
         headers = [

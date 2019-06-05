@@ -1,6 +1,6 @@
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
-from ..models import AsyncResponse, Request, Response
+from ..models import AsyncRequest, AsyncResponse, Request, Response
 
 
 class ThreadedDispatcher(AsyncDispatcher):
@@ -10,7 +10,7 @@ class ThreadedDispatcher(AsyncDispatcher):
 
     async def send(
         self,
-        request: Request,
+        request: AsyncRequest,
         stream: bool = False,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
