@@ -489,9 +489,6 @@ class BaseRequest:
             self._cookies = Cookies(cookies)
             self._cookies.set_cookie_header(self)
 
-        self.content = b""
-        self.is_streaming = False
-
     def encode_json(self, json: typing.Any) -> bytes:
         return jsonlib.dumps(json).encode("utf-8")
 
@@ -499,6 +496,9 @@ class BaseRequest:
         return urlencode(data, doseq=True).encode("utf-8")
 
     def prepare(self) -> None:
+        content = getattr(self, "content", None)  # type: bytes
+        is_streaming = getattr(self, "is_streaming", False)
+
         auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
 
         has_content_length = (
@@ -507,10 +507,10 @@ class BaseRequest:
         has_accept_encoding = "accept-encoding" in self.headers
 
         if not has_content_length:
-            if self.is_streaming:
+            if is_streaming:
                 auto_headers.append((b"transfer-encoding", b"chunked"))
-            elif self.content:
-                content_length = str(len(self.content)).encode()
+            elif content:
+                content_length = str(len(content)).encode()
                 auto_headers.append((b"content-length", content_length))
         if not has_accept_encoding:
             auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
