@@ -597,7 +597,10 @@ class Client(BaseClient):
             history=async_response.history,
         )
         if not stream:
-            response.read()
+            try:
+                response.read()
+            finally:
+                response.close()
         return response
 
     def get(
