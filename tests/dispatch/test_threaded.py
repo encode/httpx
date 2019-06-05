@@ -17,7 +17,6 @@ class MockDispatch(Dispatcher):
     def send(
         self,
         request: Request,
-        stream: bool = False,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,

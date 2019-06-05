@@ -45,7 +45,6 @@ class HTTPConnection(AsyncDispatcher):
     async def send(
         self,
         request: AsyncRequest,
-        stream: bool = False,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
@@ -54,14 +53,10 @@ class HTTPConnection(AsyncDispatcher):
             await self.connect(verify=verify, cert=cert, timeout=timeout)
 
         if self.h2_connection is not None:
-            response = await self.h2_connection.send(
-                request, stream=stream, timeout=timeout
-            )
+            response = await self.h2_connection.send(request, timeout=timeout)
         else:
             assert self.h11_connection is not None
-            response = await self.h11_connection.send(
-                request, stream=stream, timeout=timeout
-            )
+            response = await self.h11_connection.send(request, timeout=timeout)
 
         return response
 

@@ -36,7 +36,17 @@ from .interfaces import (
     Dispatcher,
     Protocol,
 )
-from .models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
+from .models import (
+    URL,
+    AsyncRequest,
+    AsyncResponse,
+    Cookies,
+    Headers,
+    Origin,
+    QueryParams,
+    Request,
+    Response,
+)
 from .status_codes import StatusCode, codes
 
 __version__ = "0.3.0"

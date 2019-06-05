@@ -6,11 +6,11 @@ import pytest
 from httpcore import (
     URL,
     AsyncDispatcher,
+    AsyncRequest,
+    AsyncResponse,
     CertTypes,
     Client,
     Cookies,
-    Request,
-    Response,
     TimeoutTypes,
     VerifyTypes,
 )
@@ -19,18 +19,17 @@ from httpcore import (
 class MockDispatch(AsyncDispatcher):
     async def send(
         self,
-        request: Request,
-        stream: bool = False,
+        request: AsyncRequest,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         if request.url.path.startswith("/echo_cookies"):
             body = json.dumps({"cookies": request.headers.get("Cookie")}).encode()
-            return Response(200, content=body, request=request)
+            return AsyncResponse(200, content=body, request=request)
         elif request.url.path.startswith("/set_cookie"):
             headers = {"set-cookie": "example-name=example-value"}
-            return Response(200, headers=headers, request=request)
+            return AsyncResponse(200, headers=headers, request=request)
 
 
 def test_set_cookie():

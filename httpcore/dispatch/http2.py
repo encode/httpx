@@ -24,7 +24,7 @@ class HTTP2Connection:
         self.initialized = False
 
     async def send(
-        self, request: AsyncRequest, stream: bool = False, timeout: TimeoutTypes = None
+        self, request: AsyncRequest, timeout: TimeoutTypes = None
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
@@ -59,7 +59,7 @@ class HTTP2Connection:
         content = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
 
-        response = AsyncResponse(
+        return AsyncResponse(
             status_code=status_code,
             protocol="HTTP/2",
             headers=headers,
@@ -67,14 +67,6 @@ class HTTP2Connection:
             on_close=on_close,
             request=request,
         )
-
-        if not stream:
-            try:
-                await response.read()
-            finally:
-                await response.close()
-
-        return response
 
     async def close(self) -> None:
         await self.writer.close()

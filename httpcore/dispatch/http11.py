@@ -38,7 +38,7 @@ class HTTP11Connection:
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
 
     async def send(
-        self, request: AsyncRequest, stream: bool = False, timeout: TimeoutTypes = None
+        self, request: AsyncRequest, timeout: TimeoutTypes = None
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
@@ -72,7 +72,7 @@ class HTTP11Connection:
         headers = event.headers
         content = self._body_iter(timeout)
 
-        response = AsyncResponse(
+        return AsyncResponse(
             status_code=status_code,
             reason_phrase=reason_phrase,
             protocol="HTTP/1.1",
@@ -81,14 +81,6 @@ class HTTP11Connection:
             on_close=self.response_closed,
             request=request,
         )
-
-        if not stream:
-            try:
-                await response.read()
-            finally:
-                await response.close()
-
-        return response
 
     async def close(self) -> None:
         event = h11.ConnectionClosed()

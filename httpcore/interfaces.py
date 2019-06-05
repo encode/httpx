@@ -41,20 +41,16 @@ class AsyncDispatcher:
         data: AsyncRequestData = b"",
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
-        stream: bool = False,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None
     ) -> AsyncResponse:
         request = AsyncRequest(method, url, data=data, params=params, headers=headers)
-        return await self.send(
-            request, stream=stream, verify=verify, cert=cert, timeout=timeout
-        )
+        return await self.send(request, verify=verify, cert=cert, timeout=timeout)
 
     async def send(
         self,
         request: AsyncRequest,
-        stream: bool = False,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
@@ -93,20 +89,16 @@ class Dispatcher:
         data: RequestData = b"",
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
-        stream: bool = False,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None
     ) -> Response:
         request = Request(method, url, data=data, params=params, headers=headers)
-        return self.send(
-            request, stream=stream, verify=verify, cert=cert, timeout=timeout
-        )
+        return self.send(request, verify=verify, cert=cert, timeout=timeout)
 
     def send(
         self,
         request: Request,
-        stream: bool = False,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,

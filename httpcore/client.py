@@ -106,19 +106,24 @@ class BaseClient:
 
         response = await self.send_handling_redirects(
             request,
-            stream=stream,
             verify=verify,
             cert=cert,
             timeout=timeout,
             allow_redirects=allow_redirects,
         )
+
+        if not stream:
+            try:
+                await response.read()
+            finally:
+                await response.close()
+
         return response
 
     async def send_handling_redirects(
         self,
         request: AsyncRequest,
         *,
-        stream: bool = False,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
@@ -137,8 +142,9 @@ class BaseClient:
                 raise RedirectLoop()
 
             response = await self.dispatch.send(
-                request, stream=stream, verify=verify, cert=cert, timeout=timeout
+                request, verify=verify, cert=cert, timeout=timeout
             )
+            assert isinstance(response, AsyncResponse)
             response.history = list(history)
             self.cookies.extract_cookies(response)
             history = [response] + history
@@ -154,7 +160,6 @@ class BaseClient:
                     request = self.build_redirect_request(request, response)
                     response = await self.send_handling_redirects(
                         request,
-                        stream=stream,
                         allow_redirects=allow_redirects,
                         verify=verify,
                         cert=cert,

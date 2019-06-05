@@ -7,6 +7,8 @@ from httpcore import (
     URL,
     AsyncClient,
     AsyncDispatcher,
+    AsyncRequest,
+    AsyncResponse,
     CertTypes,
     RedirectBodyUnavailable,
     RedirectLoop,
@@ -22,34 +24,33 @@ from httpcore import (
 class MockDispatch(AsyncDispatcher):
     async def send(
         self,
-        request: Request,
-        stream: bool = False,
+        request: AsyncRequest,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         if request.url.path == "/redirect_301":
             status_code = codes.MOVED_PERMANENTLY
             headers = {"location": "https://example.org/"}
-            return Response(status_code, headers=headers, request=request)
+            return AsyncResponse(status_code, headers=headers, request=request)
 
         elif request.url.path == "/redirect_302":
             status_code = codes.FOUND
             headers = {"location": "https://example.org/"}
-            return Response(status_code, headers=headers, request=request)
+            return AsyncResponse(status_code, headers=headers, request=request)
 
         elif request.url.path == "/redirect_303":
             status_code = codes.SEE_OTHER
             headers = {"location": "https://example.org/"}
-            return Response(status_code, headers=headers, request=request)
+            return AsyncResponse(status_code, headers=headers, request=request)
 
         elif request.url.path == "/relative_redirect":
             headers = {"location": "/"}
-            return Response(codes.SEE_OTHER, headers=headers, request=request)
+            return AsyncResponse(codes.SEE_OTHER, headers=headers, request=request)
 
         elif request.url.path == "/no_scheme_redirect":
             headers = {"location": "//example.org/"}
-            return Response(codes.SEE_OTHER, headers=headers, request=request)
+            return AsyncResponse(codes.SEE_OTHER, headers=headers, request=request)
 
         elif request.url.path == "/multiple_redirects":
             params = parse_qs(request.url.query)
@@ -60,32 +61,34 @@ class MockDispatch(AsyncDispatcher):
             if redirect_count:
                 location += "?count=" + str(redirect_count)
             headers = {"location": location} if count else {}
-            return Response(code, headers=headers, request=request)
+            return AsyncResponse(code, headers=headers, request=request)
 
         if request.url.path == "/redirect_loop":
             headers = {"location": "/redirect_loop"}
-            return Response(codes.SEE_OTHER, headers=headers, request=request)
+            return AsyncResponse(codes.SEE_OTHER, headers=headers, request=request)
 
         elif request.url.path == "/cross_domain":
             headers = {"location": "https://example.org/cross_domain_target"}
-            return Response(codes.SEE_OTHER, headers=headers, request=request)
+            return AsyncResponse(codes.SEE_OTHER, headers=headers, request=request)
 
         elif request.url.path == "/cross_domain_target":
             headers = dict(request.headers.items())
             content = json.dumps({"headers": headers}).encode()
-            return Response(codes.OK, content=content, request=request)
+            return AsyncResponse(codes.OK, content=content, request=request)
 
         elif request.url.path == "/redirect_body":
             await request.read()
             headers = {"location": "/redirect_body_target"}
-            return Response(codes.PERMANENT_REDIRECT, headers=headers, request=request)
+            return AsyncResponse(
+                codes.PERMANENT_REDIRECT, headers=headers, request=request
+            )
 
         elif request.url.path == "/redirect_body_target":
             content = await request.read()
             body = json.dumps({"body": content.decode()}).encode()
-            return Response(codes.OK, content=body, request=request)
+            return AsyncResponse(codes.OK, content=body, request=request)
 
-        return Response(codes.OK, content=b"Hello, world!", request=request)
+        return AsyncResponse(codes.OK, content=b"Hello, world!", request=request)
 
 
 @pytest.mark.asyncio

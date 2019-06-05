@@ -106,7 +106,6 @@ class ConnectionPool(AsyncDispatcher):
     async def send(
         self,
         request: AsyncRequest,
-        stream: bool = False,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
@@ -114,7 +113,7 @@ class ConnectionPool(AsyncDispatcher):
         connection = await self.acquire_connection(request.url.origin)
         try:
             response = await connection.send(
-                request, stream=stream, verify=verify, cert=cert, timeout=timeout
+                request, verify=verify, cert=cert, timeout=timeout
             )
         except BaseException as exc:
             self.active_connections.remove(connection)
