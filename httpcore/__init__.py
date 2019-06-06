@@ -32,4 +32,4 @@ from .interfaces import BaseReader, BaseWriter, ConcurrencyBackend, Dispatcher, 
 from .models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
 from .status_codes import StatusCode, codes
 
-__version__ = "0.3.1"
+__version__ = "0.4.0"
