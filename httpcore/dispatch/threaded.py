@@ -46,9 +46,9 @@ class ThreadedDispatcher(AsyncDispatcher):
 
         async_content = self._async_data(content)
 
-        def async_on_close() -> None:
+        async def async_on_close() -> None:
             nonlocal concurrency_backend, sync_response
-            concurrency_backend.run_in_threadpool(sync_response.on_close)
+            await concurrency_backend.run_in_threadpool(sync_response.close)
 
         return AsyncResponse(
             status_code=sync_response.status_code,

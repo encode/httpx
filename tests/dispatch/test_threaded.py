@@ -13,6 +13,11 @@ from httpcore import (
 )
 
 
+def streaming_body():
+    for part in [b"Hello", b", ", b"world!"]:
+        yield part
+
+
 class MockDispatch(Dispatcher):
     def send(
         self,
@@ -21,8 +26,11 @@ class MockDispatch(Dispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> Response:
-        body = json.dumps({"hello": "world"}).encode()
-        return Response(200, content=body, request=request)
+        if request.url.path == "/streaming_response":
+            return Response(200, content=streaming_body(), request=request)
+        else:
+            body = json.dumps({"hello": "world"}).encode()
+            return Response(200, content=body, request=request)
 
 
 def test_threaded_dispatch():
@@ -36,6 +44,15 @@ def test_threaded_dispatch():
 
     assert response.status_code == 200
     assert response.json() == {"hello": "world"}
+
+
+def test_threaded_streaming_response():
+    url = "https://example.org/streaming_response"
+    with Client(dispatch=MockDispatch()) as client:
+        response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
 
 
 def test_dispatch_class():
