@@ -28,8 +28,11 @@ class MockDispatch(Dispatcher):
     ) -> Response:
         if request.url.path == "/streaming_response":
             return Response(200, content=streaming_body(), request=request)
-        if request.url.path == "/streaming_request":
+        elif request.url.path == "/echo_request_body":
             content = request.read()
+            return Response(200, content=content, request=request)
+        elif request.url.path == "/echo_request_body_streaming":
+            content = b"".join([part for part in request.stream()])
             return Response(200, content=content, request=request)
         else:
             body = json.dumps({"hello": "world"}).encode()
@@ -59,9 +62,27 @@ def test_threaded_streaming_response():
 
 
 def test_threaded_streaming_request():
-    url = "https://example.org/streaming_request"
+    url = "https://example.org/echo_request_body"
     with Client(dispatch=MockDispatch()) as client:
         response = client.post(url, data=streaming_body())
+
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+
+
+def test_threaded_request_body():
+    url = "https://example.org/echo_request_body"
+    with Client(dispatch=MockDispatch()) as client:
+        response = client.post(url, data=b"Hello, world!")
+
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+
+
+def test_threaded_request_body_streaming():
+    url = "https://example.org/echo_request_body_streaming"
+    with Client(dispatch=MockDispatch()) as client:
+        response = client.post(url, data=b"Hello, world!")
 
     assert response.status_code == 200
     assert response.text == "Hello, world!"
