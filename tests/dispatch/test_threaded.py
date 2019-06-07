@@ -28,6 +28,9 @@ class MockDispatch(Dispatcher):
     ) -> Response:
         if request.url.path == "/streaming_response":
             return Response(200, content=streaming_body(), request=request)
+        if request.url.path == "/streaming_request":
+            content = request.read()
+            return Response(200, content=content, request=request)
         else:
             body = json.dumps({"hello": "world"}).encode()
             return Response(200, content=body, request=request)
@@ -50,6 +53,15 @@ def test_threaded_streaming_response():
     url = "https://example.org/streaming_response"
     with Client(dispatch=MockDispatch()) as client:
         response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+
+
+def test_threaded_streaming_request():
+    url = "https://example.org/streaming_request"
+    with Client(dispatch=MockDispatch()) as client:
+        response = client.post(url, data=streaming_body())
 
     assert response.status_code == 200
     assert response.text == "Hello, world!"

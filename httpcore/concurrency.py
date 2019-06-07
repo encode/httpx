@@ -183,7 +183,13 @@ class AsyncioBackend(ConcurrencyBackend):
     def run(
         self, coroutine: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
-        return self.loop.run_until_complete(coroutine(*args, **kwargs))
+        loop = self.loop
+        if loop.is_running():
+            self._loop = asyncio.new_event_loop()
+        try:
+            return self.loop.run_until_complete(coroutine(*args, **kwargs))
+        finally:
+            self._loop = loop
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)

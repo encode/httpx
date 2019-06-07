@@ -2,9 +2,11 @@ from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from ..models import (
     AsyncRequest,
+    AsyncRequestData,
     AsyncResponse,
     AsyncResponseContent,
     Request,
+    RequestData,
     Response,
     ResponseContent,
 )
@@ -30,9 +32,19 @@ class ThreadedDispatcher(AsyncDispatcher):
     ) -> AsyncResponse:
         concurrency_backend = self.backend
 
+        data = getattr(request, "content", getattr(request, "content_aiter", None))
+        sync_data = self._sync_request_data(data)
+
+        sync_request = Request(
+            method=request.method,
+            url=request.url,
+            headers=request.headers,
+            data=sync_data,
+        )
+
         func = self.sync_dispatcher.send
         kwargs = {
-            "request": request,
+            "request": sync_request,
             "verify": verify,
             "cert": cert,
             "timeout": timeout,
@@ -44,7 +56,7 @@ class ThreadedDispatcher(AsyncDispatcher):
             sync_response, "_raw_content", getattr(sync_response, "_raw_stream", None)
         )
 
-        async_content = self._async_data(content)
+        async_content = self._async_response_content(content)
 
         async def async_on_close() -> None:
             nonlocal concurrency_backend, sync_response
@@ -69,11 +81,17 @@ class ThreadedDispatcher(AsyncDispatcher):
         func = self.sync_dispatcher.close
         await self.backend.run_in_threadpool(func)
 
-    def _async_data(self, data: ResponseContent) -> AsyncResponseContent:
-        if isinstance(data, bytes):
-            return data
+    def _async_response_content(self, content: ResponseContent) -> AsyncResponseContent:
+        if isinstance(content, bytes):
+            return content
 
         # Coerce an async iterator into an iterator, with each item in the
         # iteration run within the event loop.
-        assert hasattr(data, "__iter__")
-        return self.backend.iterate_in_threadpool(data)
+        assert hasattr(content, "__iter__")
+        return self.backend.iterate_in_threadpool(content)
+
+    def _sync_request_data(self, data: AsyncRequestData) -> RequestData:
+        if isinstance(data, bytes):
+            return data
+
+        return self.backend.iterate(data)
