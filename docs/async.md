@@ -20,7 +20,7 @@ To make asynchronous requests, you'll need an `AsyncClient`.
 >>> r = await client.get('https://www.example.com/')
 ```
 
-## API differences
+## API Differences
 
 If you're using streaming responses then there are a few bits of API that
 use async methods:

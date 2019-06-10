@@ -39,6 +39,9 @@ LiveWire builds on the well-established usability of `requests`, and gives you:
 
 ## User Guide
 
+This part of the documentation will walk you through all of the functionality
+in LiveWire:
+
 * QuickStart
   * Make a Request
   * Passing Parameters in URLs
@@ -62,7 +65,34 @@ LiveWire builds on the well-established usability of `requests`, and gives you:
   * Async parallel requests
 * Async Client
   * Making Async requests
-  * API differences
+  * API Differences
 * Requests Compatibility Guide
   * Overview
   * API Differences
+
+## Developer Interface
+
+This part of the documentation provides a complete API reference:
+
+* Main API
+* Exceptions
+* Client
+* Response
+* Request
+* Data Structures
+  * URL
+  * Origin
+  * Headers
+  * Cookies
+* Parallel Requests
+  * ParallelManager
+  * PendingResponse
+* Custom Dispatch
+  * Dispatcher
+* Async API
+  * AsyncClient
+  * AsyncResponse
+  * AsyncRequest
+  * AsyncParallelManager
+  * AsyncPendingResponse
+  * AsyncDispatcher
