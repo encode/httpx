@@ -795,7 +795,7 @@ class AsyncResponse(BaseResponse):
         content: AsyncResponseContent = b"",
         on_close: typing.Callable = None,
         request: AsyncRequest = None,
-        history: typing.List["AsyncResponse"] = None,
+        history: typing.List["BaseResponse"] = None,
     ):
         super().__init__(
             status_code=status_code,
@@ -876,7 +876,7 @@ class Response(BaseResponse):
         content: ResponseContent = b"",
         on_close: typing.Callable = None,
         request: Request = None,
-        history: typing.List["Response"] = None,
+        history: typing.List["BaseResponse"] = None,
     ):
         super().__init__(
             status_code=status_code,
