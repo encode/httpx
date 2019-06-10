@@ -12,8 +12,8 @@ from ..config import (
 )
 from ..decoders import ACCEPT_ENCODING
 from ..exceptions import PoolTimeout
-from ..interfaces import ConcurrencyBackend, Dispatcher
-from ..models import Origin, Request, Response
+from ..interfaces import AsyncDispatcher, ConcurrencyBackend
+from ..models import AsyncRequest, AsyncResponse, Origin
 from .connection import HTTPConnection
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
@@ -77,7 +77,7 @@ class ConnectionStore:
         return len(self.all)
 
 
-class ConnectionPool(Dispatcher):
+class ConnectionPool(AsyncDispatcher):
     def __init__(
         self,
         *,
@@ -105,16 +105,15 @@ class ConnectionPool(Dispatcher):
 
     async def send(
         self,
-        request: Request,
-        stream: bool = False,
+        request: AsyncRequest,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         connection = await self.acquire_connection(request.url.origin)
         try:
             response = await connection.send(
-                request, stream=stream, verify=verify, cert=cert, timeout=timeout
+                request, verify=verify, cert=cert, timeout=timeout
             )
         except BaseException as exc:
             self.active_connections.remove(connection)

@@ -39,6 +39,18 @@ def test_post(server):
 
 
 @threadpool
+def test_post_byte_iterator(server):
+    def data():
+        yield b"Hello"
+        yield b", "
+        yield b"world!"
+
+    response = httpcore.post("http://127.0.0.1:8000/", data=data())
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
+@threadpool
 def test_options(server):
     response = httpcore.options("http://127.0.0.1:8000/")
     assert response.status_code == 200

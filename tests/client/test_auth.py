@@ -4,27 +4,26 @@ import pytest
 
 from httpcore import (
     URL,
+    AsyncDispatcher,
+    AsyncRequest,
+    AsyncResponse,
     CertTypes,
     Client,
-    Dispatcher,
-    Request,
-    Response,
     TimeoutTypes,
     VerifyTypes,
 )
 
 
-class MockDispatch(Dispatcher):
+class MockDispatch(AsyncDispatcher):
     async def send(
         self,
-        request: Request,
-        stream: bool = False,
+        request: AsyncRequest,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         body = json.dumps({"auth": request.headers.get("Authorization")}).encode()
-        return Response(200, content=body, request=request)
+        return AsyncResponse(200, content=body, request=request)
 
 
 def test_basic_auth():

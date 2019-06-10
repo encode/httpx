@@ -28,8 +28,25 @@ from .exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
-from .interfaces import BaseReader, BaseWriter, ConcurrencyBackend, Dispatcher, Protocol
-from .models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
+from .interfaces import (
+    AsyncDispatcher,
+    BaseReader,
+    BaseWriter,
+    ConcurrencyBackend,
+    Dispatcher,
+    Protocol,
+)
+from .models import (
+    URL,
+    AsyncRequest,
+    AsyncResponse,
+    Cookies,
+    Headers,
+    Origin,
+    QueryParams,
+    Request,
+    Response,
+)
 from .status_codes import StatusCode, codes
 
 __version__ = "0.4.0"

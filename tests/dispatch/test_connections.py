@@ -7,6 +7,7 @@ from httpcore import HTTPConnection, Request, SSLConfig
 async def test_get(server):
     conn = HTTPConnection(origin="http://127.0.0.1:8000/")
     response = await conn.request("GET", "http://127.0.0.1:8000/")
+    await response.read()
     assert response.status_code == 200
     assert response.content == b"Hello, world!"
 
@@ -27,6 +28,7 @@ async def test_https_get_with_ssl_defaults(https_server):
     """
     conn = HTTPConnection(origin="https://127.0.0.1:8001/", verify=False)
     response = await conn.request("GET", "https://127.0.0.1:8001/")
+    await response.read()
     assert response.status_code == 200
     assert response.content == b"Hello, world!"
 
@@ -38,5 +40,6 @@ async def test_https_get_with_sll_overrides(https_server):
     """
     conn = HTTPConnection(origin="https://127.0.0.1:8001/")
     response = await conn.request("GET", "https://127.0.0.1:8001/", verify=False)
+    await response.read()
     assert response.status_code == 200
     assert response.content == b"Hello, world!"

@@ -1,4 +1,3 @@
-import asyncio
 import cgi
 import email.message
 import json as jsonlib
@@ -48,12 +47,16 @@ CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
-    typing.Callable[["Request"], "Request"],
+    typing.Callable[["AsyncRequest"], "AsyncRequest"],
 ]
 
-RequestData = typing.Union[dict, bytes, typing.AsyncIterator[bytes]]
+AsyncRequestData = typing.Union[dict, bytes, typing.AsyncIterator[bytes]]
 
-ResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
+RequestData = typing.Union[dict, bytes, typing.Iterator[bytes]]
+
+AsyncResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
+
+ResponseContent = typing.Union[bytes, typing.Iterator[bytes]]
 
 
 class URL:
@@ -469,14 +472,12 @@ class Headers(typing.MutableMapping[str, str]):
         return f"{class_name}({as_list!r}{encoding_str})"
 
 
-class Request:
+class BaseRequest:
     def __init__(
         self,
         method: str,
         url: typing.Union[str, URL],
         *,
-        data: RequestData = b"",
-        json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
@@ -488,18 +489,82 @@ class Request:
             self._cookies = Cookies(cookies)
             self._cookies.set_cookie_header(self)
 
-        if json is not None:
-            data = jsonlib.dumps(json).encode("utf-8")
-            self.headers["Content-Type"] = "application/json"
+    def encode_json(self, json: typing.Any) -> bytes:
+        return jsonlib.dumps(json).encode("utf-8")
 
-        if isinstance(data, bytes):
+    def urlencode_data(self, data: dict) -> bytes:
+        return urlencode(data, doseq=True).encode("utf-8")
+
+    def prepare(self) -> None:
+        content = getattr(self, "content", None)  # type: bytes
+        is_streaming = getattr(self, "is_streaming", False)
+
+        auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
+
+        has_user_agent = "user-agent" in self.headers
+        has_accept = "accept" in self.headers
+        has_content_length = (
+            "content-length" in self.headers or "transfer-encoding" in self.headers
+        )
+        has_accept_encoding = "accept-encoding" in self.headers
+
+        if not has_user_agent:
+            auto_headers.append((b"user-agent", b"httpcore"))
+        if not has_accept:
+            auto_headers.append((b"accept", b"*/*"))
+        if not has_content_length:
+            if is_streaming:
+                auto_headers.append((b"transfer-encoding", b"chunked"))
+            elif content:
+                content_length = str(len(content)).encode()
+                auto_headers.append((b"content-length", content_length))
+        if not has_accept_encoding:
+            auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
+
+        for item in reversed(auto_headers):
+            self.headers.raw.insert(0, item)
+
+    @property
+    def cookies(self) -> "Cookies":
+        if not hasattr(self, "_cookies"):
+            self._cookies = Cookies()
+        return self._cookies
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        url = str(self.url)
+        return f"<{class_name}({self.method!r}, {url!r})>"
+
+
+class AsyncRequest(BaseRequest):
+    def __init__(
+        self,
+        method: str,
+        url: typing.Union[str, URL],
+        *,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        data: AsyncRequestData = b"",
+        json: typing.Any = None,
+    ):
+        super().__init__(
+            method=method, url=url, params=params, headers=headers, cookies=cookies
+        )
+
+        if json is not None:
+            self.is_streaming = False
+            self.content = self.encode_json(json)
+            self.headers["Content-Type"] = "application/json"
+        elif isinstance(data, bytes):
             self.is_streaming = False
             self.content = data
         elif isinstance(data, dict):
             self.is_streaming = False
-            self.content = urlencode(data, doseq=True).encode("utf-8")
+            self.content = self.urlencode_data(data)
             self.headers["Content-Type"] = "application/x-www-form-urlencoded"
         else:
+            assert hasattr(data, "__aiter__")
             self.is_streaming = True
             self.content_aiter = data
 
@@ -520,39 +585,55 @@ class Request:
         elif self.content:
             yield self.content
 
-    def prepare(self) -> None:
-        auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
 
-        has_content_length = (
-            "content-length" in self.headers or "transfer-encoding" in self.headers
+class Request(BaseRequest):
+    def __init__(
+        self,
+        method: str,
+        url: typing.Union[str, URL],
+        *,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        data: RequestData = b"",
+        json: typing.Any = None,
+    ):
+        super().__init__(
+            method=method, url=url, params=params, headers=headers, cookies=cookies
         )
-        has_accept_encoding = "accept-encoding" in self.headers
 
-        if not has_content_length:
-            if self.is_streaming:
-                auto_headers.append((b"transfer-encoding", b"chunked"))
-            elif self.content:
-                content_length = str(len(self.content)).encode()
-                auto_headers.append((b"content-length", content_length))
-        if not has_accept_encoding:
-            auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
+        if json is not None:
+            self.is_streaming = False
+            self.content = self.encode_json(json)
+            self.headers["Content-Type"] = "application/json"
+        elif isinstance(data, bytes):
+            self.is_streaming = False
+            self.content = data
+        elif isinstance(data, dict):
+            self.is_streaming = False
+            self.content = self.urlencode_data(data)
+            self.headers["Content-Type"] = "application/x-www-form-urlencoded"
+        else:
+            assert hasattr(data, "__iter__")
+            self.is_streaming = True
+            self.content_iter = data
 
-        for item in reversed(auto_headers):
-            self.headers.raw.insert(0, item)
+        self.prepare()
 
-    @property
-    def cookies(self) -> "Cookies":
-        if not hasattr(self, "_cookies"):
-            self._cookies = Cookies()
-        return self._cookies
+    def read(self) -> bytes:
+        if not hasattr(self, "content"):
+            self.content = b"".join([part for part in self.stream()])
+        return self.content
 
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        url = str(self.url)
-        return f"<{class_name}({self.method!r}, {url!r})>"
+    def stream(self) -> typing.Iterator[bytes]:
+        if self.is_streaming:
+            for part in self.content_iter:
+                yield part
+        elif self.content:
+            yield self.content
 
 
-class Response:
+class BaseResponse:
     def __init__(
         self,
         status_code: int,
@@ -560,28 +641,16 @@ class Response:
         reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
-        content: ResponseContent = b"",
+        request: BaseRequest = None,
         on_close: typing.Callable = None,
-        request: Request = None,
-        history: typing.List["Response"] = None,
     ):
         self.status_code = StatusCode.enum_or_int(status_code)
         self.reason_phrase = StatusCode.get_reason_phrase(status_code)
         self.protocol = protocol
         self.headers = Headers(headers)
 
-        if isinstance(content, bytes):
-            self.is_closed = True
-            self.is_stream_consumed = True
-            self._raw_content = content
-        else:
-            self.is_closed = False
-            self.is_stream_consumed = False
-            self._raw_stream = content
-
-        self.on_close = on_close
         self.request = request
-        self.history = [] if history is None else list(history)
+        self.on_close = on_close
         self.next = None  # typing.Optional[typing.Callable]
 
     @property
@@ -597,7 +666,8 @@ class Response:
     def content(self) -> bytes:
         if not hasattr(self, "_content"):
             if hasattr(self, "_raw_content"):
-                content = self.decoder.decode(self._raw_content)
+                raw_content = getattr(self, "_raw_content")  # type: bytes
+                content = self.decoder.decode(raw_content)
                 content += self.decoder.flush()
                 self._content = content
             else:
@@ -682,6 +752,77 @@ class Response:
 
         return self._decoder
 
+    @property
+    def is_redirect(self) -> bool:
+        return StatusCode.is_redirect(self.status_code) and "location" in self.headers
+
+    def raise_for_status(self) -> None:
+        """
+        Raise the `HttpError` if one occurred.
+        """
+        message = (
+            "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
+            "For more information check: https://httpstatuses.com/{0.status_code}"
+        )
+
+        if StatusCode.is_client_error(self.status_code):
+            message = message.format(self, error_type="Client Error")
+        elif StatusCode.is_server_error(self.status_code):
+            message = message.format(self, error_type="Server Error")
+        else:
+            message = ""
+
+        if message:
+            raise HttpError(message)
+
+    def json(self) -> typing.Any:
+        return jsonlib.loads(self.content.decode("utf-8"))
+
+    @property
+    def cookies(self) -> "Cookies":
+        if not hasattr(self, "_cookies"):
+            assert self.request is not None
+            self._cookies = Cookies()
+            self._cookies.extract_cookies(self)
+        return self._cookies
+
+    def __repr__(self) -> str:
+        return f"<Response({self.status_code}, {self.reason_phrase!r})>"
+
+
+class AsyncResponse(BaseResponse):
+    def __init__(
+        self,
+        status_code: int,
+        *,
+        reason_phrase: str = None,
+        protocol: str = None,
+        headers: HeaderTypes = None,
+        content: AsyncResponseContent = b"",
+        on_close: typing.Callable = None,
+        request: AsyncRequest = None,
+        history: typing.List["BaseResponse"] = None,
+    ):
+        super().__init__(
+            status_code=status_code,
+            reason_phrase=reason_phrase,
+            protocol=protocol,
+            headers=headers,
+            request=request,
+            on_close=on_close,
+        )
+
+        self.history = [] if history is None else list(history)
+
+        if isinstance(content, bytes):
+            self.is_closed = True
+            self.is_stream_consumed = True
+            self._raw_content = content
+        else:
+            self.is_closed = False
+            self.is_stream_consumed = False
+            self._raw_stream = content
+
     async def read(self) -> bytes:
         """
         Read and return the response content.
@@ -729,128 +870,86 @@ class Response:
             if self.on_close is not None:
                 await self.on_close()
 
-    @property
-    def is_redirect(self) -> bool:
-        return StatusCode.is_redirect(self.status_code) and "location" in self.headers
 
-    def raise_for_status(self) -> None:
-        """
-        Raise the `HttpError` if one occurred.
-        """
-        message = (
-            "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
-            "For more information check: https://httpstatuses.com/{0.status_code}"
+class Response(BaseResponse):
+    def __init__(
+        self,
+        status_code: int,
+        *,
+        reason_phrase: str = None,
+        protocol: str = None,
+        headers: HeaderTypes = None,
+        content: ResponseContent = b"",
+        on_close: typing.Callable = None,
+        request: Request = None,
+        history: typing.List["BaseResponse"] = None,
+    ):
+        super().__init__(
+            status_code=status_code,
+            reason_phrase=reason_phrase,
+            protocol=protocol,
+            headers=headers,
+            request=request,
+            on_close=on_close,
         )
 
-        if StatusCode.is_client_error(self.status_code):
-            message = message.format(self, error_type="Client Error")
-        elif StatusCode.is_server_error(self.status_code):
-            message = message.format(self, error_type="Server Error")
+        self.history = [] if history is None else list(history)
+
+        if isinstance(content, bytes):
+            self.is_closed = True
+            self.is_stream_consumed = True
+            self._raw_content = content
         else:
-            message = ""
-
-        if message:
-            raise HttpError(message)
-
-    def json(self) -> typing.Any:
-        return jsonlib.loads(self.content.decode("utf-8"))
-
-    @property
-    def cookies(self) -> "Cookies":
-        if not hasattr(self, "_cookies"):
-            assert self.request is not None
-            self._cookies = Cookies()
-            self._cookies.extract_cookies(self)
-        return self._cookies
-
-    def __repr__(self) -> str:
-        return f"<Response({self.status_code}, {self.reason_phrase!r})>"
-
-
-class SyncResponse:
-    """
-    A thread-synchronous response. This class proxies onto a `Response`
-    instance, providing standard synchronous interfaces where required.
-    """
-
-    def __init__(self, response: Response, loop: asyncio.AbstractEventLoop):
-        self._response = response
-        self._loop = loop
-
-    @property
-    def status_code(self) -> int:
-        return self._response.status_code
-
-    @property
-    def reason_phrase(self) -> str:
-        return self._response.reason_phrase
-
-    @property
-    def protocol(self) -> typing.Optional[str]:
-        return self._response.protocol
-
-    @property
-    def url(self) -> typing.Optional[URL]:
-        return self._response.url
-
-    @property
-    def request(self) -> typing.Optional[Request]:
-        return self._response.request
-
-    @property
-    def headers(self) -> Headers:
-        return self._response.headers
-
-    @property
-    def content(self) -> bytes:
-        return self._response.content
-
-    @property
-    def text(self) -> str:
-        return self._response.text
-
-    @property
-    def encoding(self) -> str:
-        return self._response.encoding
-
-    @property
-    def is_redirect(self) -> bool:
-        return self._response.is_redirect
-
-    def raise_for_status(self) -> None:
-        return self._response.raise_for_status()
-
-    def json(self) -> typing.Any:
-        return self._response.json()
+            self.is_closed = False
+            self.is_stream_consumed = False
+            self._raw_stream = content
 
     def read(self) -> bytes:
-        return self._loop.run_until_complete(self._response.read())
+        """
+        Read and return the response content.
+        """
+        if not hasattr(self, "_content"):
+            self._content = b"".join([part for part in self.stream()])
+        return self._content
 
     def stream(self) -> typing.Iterator[bytes]:
-        inner = self._response.stream()
-        while True:
-            try:
-                yield self._loop.run_until_complete(inner.__anext__())
-            except StopAsyncIteration:
-                break
+        """
+        A byte-iterator over the decoded response content.
+        This allows us to handle gzip, deflate, and brotli encoded responses.
+        """
+        if hasattr(self, "_content"):
+            yield self._content
+        else:
+            for chunk in self.raw():
+                yield self.decoder.decode(chunk)
+            yield self.decoder.flush()
 
     def raw(self) -> typing.Iterator[bytes]:
-        inner = self._response.raw()
-        while True:
-            try:
-                yield self._loop.run_until_complete(inner.__anext__())
-            except StopAsyncIteration:
-                break
+        """
+        A byte-iterator over the raw response content.
+        """
+        if hasattr(self, "_raw_content"):
+            yield self._raw_content
+        else:
+            if self.is_stream_consumed:
+                raise StreamConsumed()
+            if self.is_closed:
+                raise ResponseClosed()
+
+            self.is_stream_consumed = True
+            for part in self._raw_stream:
+                yield part
+            self.close()
 
     def close(self) -> None:
-        return self._loop.run_until_complete(self._response.close())
-
-    @property
-    def cookies(self) -> "Cookies":
-        return self._response.cookies
-
-    def __repr__(self) -> str:
-        return f"<Response({self.status_code}, {self.reason_phrase!r})>"
+        """
+        Close the response and release the connection.
+        Automatically called if the response body is read to completion.
+        """
+        if not self.is_closed:
+            self.is_closed = True
+            if self.on_close is not None:
+                self.on_close()
 
 
 class Cookies(MutableMapping):
@@ -871,7 +970,7 @@ class Cookies(MutableMapping):
         else:
             self.jar = cookies
 
-    def extract_cookies(self, response: Response) -> None:
+    def extract_cookies(self, response: BaseResponse) -> None:
         """
         Loads any cookies based on the response `Set-Cookie` headers.
         """
@@ -881,7 +980,7 @@ class Cookies(MutableMapping):
 
         self.jar.extract_cookies(urlib_response, urllib_request)  # type: ignore
 
-    def set_cookie_header(self, request: Request) -> None:
+    def set_cookie_header(self, request: BaseRequest) -> None:
         """
         Sets an appropriate 'Cookie:' HTTP header on the `Request`.
         """
@@ -1000,7 +1099,7 @@ class Cookies(MutableMapping):
         for use with `CookieJar` operations.
         """
 
-        def __init__(self, request: Request) -> None:
+        def __init__(self, request: BaseRequest) -> None:
             super().__init__(
                 url=str(request.url),
                 headers=dict(request.headers),
@@ -1018,7 +1117,7 @@ class Cookies(MutableMapping):
         for use with `CookieJar` operations.
         """
 
-        def __init__(self, response: Response):
+        def __init__(self, response: BaseResponse):
             self.response = response
 
         def info(self) -> email.message.Message:

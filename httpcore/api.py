@@ -8,7 +8,7 @@ from .models import (
     HeaderTypes,
     QueryParamTypes,
     RequestData,
-    SyncResponse,
+    Response,
     URLTypes,
 )
 
@@ -30,7 +30,7 @@ def request(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     stream: bool = False,
-) -> SyncResponse:
+) -> Response:
     with Client() as client:
         return client.request(
             method=method,
@@ -61,7 +61,7 @@ def get(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-) -> SyncResponse:
+) -> Response:
     return request(
         "GET",
         url,
@@ -88,7 +88,7 @@ def options(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-) -> SyncResponse:
+) -> Response:
     return request(
         "OPTIONS",
         url,
@@ -115,7 +115,7 @@ def head(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-) -> SyncResponse:
+) -> Response:
     return request(
         "HEAD",
         url,
@@ -144,7 +144,7 @@ def post(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-) -> SyncResponse:
+) -> Response:
     return request(
         "POST",
         url,
@@ -175,7 +175,7 @@ def put(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-) -> SyncResponse:
+) -> Response:
     return request(
         "PUT",
         url,
@@ -206,7 +206,7 @@ def patch(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-) -> SyncResponse:
+) -> Response:
     return request(
         "PATCH",
         url,
@@ -237,7 +237,7 @@ def delete(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-) -> SyncResponse:
+) -> Response:
     return request(
         "DELETE",
         url,

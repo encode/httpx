@@ -15,8 +15,8 @@ from ..config import (
     VerifyTypes,
 )
 from ..exceptions import ConnectTimeout
-from ..interfaces import ConcurrencyBackend, Dispatcher, Protocol
-from ..models import Origin, Request, Response
+from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Protocol
+from ..models import AsyncRequest, AsyncResponse, Origin
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
@@ -24,7 +24,7 @@ from .http11 import HTTP11Connection
 ReleaseCallback = typing.Callable[["HTTPConnection"], typing.Awaitable[None]]
 
 
-class HTTPConnection(Dispatcher):
+class HTTPConnection(AsyncDispatcher):
     def __init__(
         self,
         origin: typing.Union[str, Origin],
@@ -44,24 +44,19 @@ class HTTPConnection(Dispatcher):
 
     async def send(
         self,
-        request: Request,
-        stream: bool = False,
+        request: AsyncRequest,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> AsyncResponse:
         if self.h11_connection is None and self.h2_connection is None:
             await self.connect(verify=verify, cert=cert, timeout=timeout)
 
         if self.h2_connection is not None:
-            response = await self.h2_connection.send(
-                request, stream=stream, timeout=timeout
-            )
+            response = await self.h2_connection.send(request, timeout=timeout)
         else:
             assert self.h11_connection is not None
-            response = await self.h11_connection.send(
-                request, stream=stream, timeout=timeout
-            )
+            response = await self.h11_connection.send(request, timeout=timeout)
 
         return response
 

@@ -4,8 +4,8 @@ import h11
 
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectTimeout, ReadTimeout
-from ..interfaces import BaseReader, BaseWriter, Dispatcher
-from ..models import Request, Response
+from ..interfaces import BaseReader, BaseWriter
+from ..models import AsyncRequest, AsyncResponse
 
 H11Event = typing.Union[
     h11.Request,
@@ -38,15 +38,15 @@ class HTTP11Connection:
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
 
     async def send(
-        self, request: Request, stream: bool = False, timeout: TimeoutTypes = None
-    ) -> Response:
+        self, request: AsyncRequest, timeout: TimeoutTypes = None
+    ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
         #  Start sending the request.
         method = request.method.encode("ascii")
         target = request.url.full_path.encode("ascii")
         headers = request.headers.raw
-        if 'Host' not in request.headers:
+        if "Host" not in request.headers:
             host = request.url.authority.encode("ascii")
             headers = [(b"host", host)] + headers
         event = h11.Request(method=method, target=target, headers=headers)
@@ -72,7 +72,7 @@ class HTTP11Connection:
         headers = event.headers
         content = self._body_iter(timeout)
 
-        response = Response(
+        return AsyncResponse(
             status_code=status_code,
             reason_phrase=reason_phrase,
             protocol="HTTP/1.1",
@@ -81,14 +81,6 @@ class HTTP11Connection:
             on_close=self.response_closed,
             request=request,
         )
-
-        if not stream:
-            try:
-                await response.read()
-            finally:
-                await response.close()
-
-        return response
 
     async def close(self) -> None:
         event = h11.ConnectionClosed()

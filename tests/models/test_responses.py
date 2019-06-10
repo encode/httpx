@@ -3,7 +3,12 @@ import pytest
 import httpcore
 
 
-async def streaming_body():
+def streaming_body():
+    yield b"Hello, "
+    yield b"world!"
+
+
+async def async_streaming_body():
     yield b"Hello, "
     yield b"world!"
 
@@ -105,8 +110,7 @@ def test_response_force_encoding():
     assert response.encoding == "iso-8859-1"
 
 
-@pytest.mark.asyncio
-async def test_read_response():
+def test_read_response():
     response = httpcore.Response(200, content=b"Hello, world!")
 
     assert response.status_code == 200
@@ -114,26 +118,34 @@ async def test_read_response():
     assert response.encoding == "ascii"
     assert response.is_closed
 
-    content = await response.read()
+    content = response.read()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
     assert response.is_closed
 
 
-@pytest.mark.asyncio
-async def test_raw_interface():
+def test_raw_interface():
     response = httpcore.Response(200, content=b"Hello, world!")
 
     raw = b""
-    async for part in response.raw():
+    for part in response.raw():
         raw += part
     assert raw == b"Hello, world!"
 
 
-@pytest.mark.asyncio
-async def test_stream_interface():
+def test_stream_interface():
     response = httpcore.Response(200, content=b"Hello, world!")
+
+    content = b""
+    for part in response.stream():
+        content += part
+    assert content == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_async_stream_interface():
+    response = httpcore.AsyncResponse(200, content=b"Hello, world!")
 
     content = b""
     async for part in response.stream():
@@ -141,9 +153,20 @@ async def test_stream_interface():
     assert content == b"Hello, world!"
 
 
-@pytest.mark.asyncio
-async def test_stream_interface_after_read():
+def test_stream_interface_after_read():
     response = httpcore.Response(200, content=b"Hello, world!")
+
+    response.read()
+
+    content = b""
+    for part in response.stream():
+        content += part
+    assert content == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_async_stream_interface_after_read():
+    response = httpcore.AsyncResponse(200, content=b"Hello, world!")
 
     await response.read()
 
@@ -153,9 +176,22 @@ async def test_stream_interface_after_read():
     assert content == b"Hello, world!"
 
 
-@pytest.mark.asyncio
-async def test_streaming_response():
+def test_streaming_response():
     response = httpcore.Response(200, content=streaming_body())
+
+    assert response.status_code == 200
+    assert not response.is_closed
+
+    content = response.read()
+
+    assert content == b"Hello, world!"
+    assert response.content == b"Hello, world!"
+    assert response.is_closed
+
+
+@pytest.mark.asyncio
+async def test_async_streaming_response():
+    response = httpcore.AsyncResponse(200, content=async_streaming_body())
 
     assert response.status_code == 200
     assert not response.is_closed
@@ -167,9 +203,20 @@ async def test_streaming_response():
     assert response.is_closed
 
 
-@pytest.mark.asyncio
-async def test_cannot_read_after_stream_consumed():
+def test_cannot_read_after_stream_consumed():
     response = httpcore.Response(200, content=streaming_body())
+
+    content = b""
+    for part in response.stream():
+        content += part
+
+    with pytest.raises(httpcore.StreamConsumed):
+        response.read()
+
+
+@pytest.mark.asyncio
+async def test_async_cannot_read_after_stream_consumed():
+    response = httpcore.AsyncResponse(200, content=async_streaming_body())
 
     content = b""
     async for part in response.stream():
@@ -179,9 +226,18 @@ async def test_cannot_read_after_stream_consumed():
         await response.read()
 
 
-@pytest.mark.asyncio
-async def test_cannot_read_after_response_closed():
+def test_cannot_read_after_response_closed():
     response = httpcore.Response(200, content=streaming_body())
+
+    response.close()
+
+    with pytest.raises(httpcore.ResponseClosed):
+        response.read()
+
+
+@pytest.mark.asyncio
+async def test_async_cannot_read_after_response_closed():
+    response = httpcore.AsyncResponse(200, content=async_streaming_body())
 
     await response.close()
 
