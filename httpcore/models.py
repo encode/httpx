@@ -501,11 +501,17 @@ class BaseRequest:
 
         auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
 
+        has_user_agent = "user-agent" in self.headers
+        has_accept = "accept" in self.headers
         has_content_length = (
             "content-length" in self.headers or "transfer-encoding" in self.headers
         )
         has_accept_encoding = "accept-encoding" in self.headers
 
+        if not has_user_agent:
+            auto_headers.append((b"user-agent", b"httpcore"))
+        if not has_accept:
+            auto_headers.append((b"accept", b"*/*"))
         if not has_content_length:
             if is_streaming:
                 auto_headers.append((b"transfer-encoding", b"chunked"))
