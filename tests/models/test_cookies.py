@@ -1,6 +1,6 @@
 import pytest
 
-from httpcore import CookieConflict, Cookies
+from http3 import CookieConflict, Cookies
 
 
 def test_cookies():

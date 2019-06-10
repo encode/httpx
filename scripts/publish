@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-export PACKAGE="httpcore"
+export PACKAGE="http3"
 export VERSION=`cat ${PACKAGE}/__init__.py | grep __version__ | sed "s/__version__ = //" | sed "s/'//g"`
 export PREFIX=""
 if [ -d 'venv' ] ; then

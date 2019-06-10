@@ -1,6 +1,6 @@
 # Parallel Requests
 
-LiveWire allows you to make HTTP requests in parallel in a highly efficient way,
+HTTP3 allows you to make HTTP requests in parallel in a highly efficient way,
 using async under the hood, while still presenting a standard threaded interface.
 
 This has the huge benefit of allowing you to efficiently make parallel HTTP
@@ -11,7 +11,7 @@ requests without having to switch out to using async all the way through.
 Let's make two outgoing HTTP requests in parallel:
 
 ```python
->>> with livewire.parallel() as parallel:
+>>> with http3.parallel() as parallel:
 >>>     pending_one = parallel.get('https://example.com/1')
 >>>     pending_two = parallel.get('https://example.com/2')
 >>>     response_one = pending_one.get_response()
@@ -23,7 +23,7 @@ responses sequentially, but rather deal with each response that comes back
 as soon as it's available:
 
 ```python
->>> with livewire.parallel() as parallel:
+>>> with http3.parallel() as parallel:
 >>>     for counter in range(1, 10):
 >>>         parallel.get(f'https://example.com/{counter}')
 >>>     while parallel.has_pending_responses:
@@ -44,7 +44,7 @@ control the authentication or dispatch behaviour for all requests within the
 block.
 
 ```python
->>> client = livewire.Client()
+>>> client = http3.Client()
 >>> with client.parallel() as parallel:
 >>>     ...
 ```
@@ -55,7 +55,7 @@ If you're working within an async framework, then you'll want to use a fully
 async API for making requests.
 
 ```python
->>> client = livewire.AsyncClient()
+>>> client = http3.AsyncClient()
 >>> async with client.parallel() as parallel:
 >>>     pending_one = await parallel.get('https://example.com/1')
 >>>     pending_two = await parallel.get('https://example.com/2')

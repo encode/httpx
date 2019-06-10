@@ -5,7 +5,7 @@ import h2.config
 import h2.connection
 import h2.events
 
-from httpcore import (
+from http3 import (
     AsyncioBackend,
     BaseReader,
     BaseWriter,

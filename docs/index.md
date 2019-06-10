@@ -1,21 +1,21 @@
-# LiveWire
+# HTTP3
 
-<a href="https://travis-ci.org/encode/httpcore">
-    <img src="https://travis-ci.org/encode/httpcore.svg?branch=master" alt="Build Status">
+<a href="https://travis-ci.org/encode/http3">
+    <img src="https://travis-ci.org/encode/http3.svg?branch=master" alt="Build Status">
 </a>
-<a href="https://codecov.io/gh/encode/httpcore">
-    <img src="https://codecov.io/gh/encode/httpcore/branch/master/graph/badge.svg" alt="Coverage">
+<a href="https://codecov.io/gh/encode/http3">
+    <img src="https://codecov.io/gh/encode/http3/branch/master/graph/badge.svg" alt="Coverage">
 </a>
-<a href="https://pypi.org/project/httpcore/">
-    <img src="https://badge.fury.io/py/httpcore.svg" alt="Package version">
+<a href="https://pypi.org/project/http3/">
+    <img src="https://badge.fury.io/py/http3.svg" alt="Package version">
 </a>
 
-LiveWire is a next-generation HTTP client for Python.
+HTTP3 is a next-generation HTTP client for Python.
 
 ---
 
 ```python
->>> r = livewire.get('https://www.example.org/')
+>>> r = http3.get('https://www.example.org/')
 >>> r.status_code
 <StatusCode.OK: 200>
 >>> r.protocol
@@ -28,7 +28,7 @@ LiveWire is a next-generation HTTP client for Python.
 
 ## Features
 
-LiveWire builds on the well-established usability of `requests`, and gives you:
+HTTP3 builds on the well-established usability of `requests`, and gives you:
 
 * A requests-compatible API.
 * HTTP/2 and HTTP/1.1 support.
@@ -40,7 +40,7 @@ LiveWire builds on the well-established usability of `requests`, and gives you:
 ## User Guide
 
 This part of the documentation will walk you through all of the functionality
-in LiveWire:
+in HTTP3:
 
 * QuickStart
   * Make a Request

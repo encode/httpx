@@ -1,13 +1,13 @@
-# HTTPCore
+# http3
 
-<a href="https://travis-ci.org/encode/httpcore">
-    <img src="https://travis-ci.org/encode/httpcore.svg?branch=master" alt="Build Status">
+<a href="https://travis-ci.org/encode/http3">
+    <img src="https://travis-ci.org/encode/http3.svg?branch=master" alt="Build Status">
 </a>
-<a href="https://codecov.io/gh/encode/httpcore">
-    <img src="https://codecov.io/gh/encode/httpcore/branch/master/graph/badge.svg" alt="Coverage">
+<a href="https://codecov.io/gh/encode/http3">
+    <img src="https://codecov.io/gh/encode/http3/branch/master/graph/badge.svg" alt="Coverage">
 </a>
-<a href="https://pypi.org/project/httpcore/">
-    <img src="https://badge.fury.io/py/httpcore.svg" alt="Package version">
+<a href="https://pypi.org/project/http3/">
+    <img src="https://badge.fury.io/py/http3.svg" alt="Package version">
 </a>
 
 ## Feature support
@@ -41,8 +41,8 @@ Plus all the standard features of requests...
 Making a request:
 
 ```python
->>> import httpcore
->>> client = httpcore.Client()
+>>> import http3
+>>> client = http3.Client()
 >>> response = client.get('https://example.com')
 >>> response.status_code
 <HTTPStatus.OK: 200>
@@ -57,8 +57,8 @@ Alternatively, async requests:
 **Note**: Use `ipython` to try this from the console, since it supports `await`.
 
 ```python
->>> import httpcore
->>> client = httpcore.AsyncClient()
+>>> import http3
+>>> client = http3.AsyncClient()
 >>> response = await client.get('https://example.com')
 >>> response.status_code
 <StatusCode.OK: 200>

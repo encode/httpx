@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-export PACKAGE="httpcore"
+export PACKAGE="http3"
 export PREFIX=""
 if [ -d 'venv' ] ; then
     export PREFIX="venv/bin/"

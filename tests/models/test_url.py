@@ -1,4 +1,4 @@
-from httpcore import URL
+from http3 import URL
 
 
 def test_idna_url():

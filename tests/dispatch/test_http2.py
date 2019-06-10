@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from httpcore import Client, Response
+from http3 import Client, Response
 
 from .utils import MockHTTP2Backend
 

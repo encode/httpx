@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from httpcore import (
+from http3 import (
     CertTypes,
     Client,
     Dispatcher,
