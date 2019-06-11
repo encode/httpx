@@ -14,7 +14,10 @@ HTTP3 is a next-generation HTTP client for Python.
 
 ---
 
+Let's get started...
+
 ```python
+>>> import http3
 >>> r = http3.get('https://www.example.org/')
 >>> r.status_code
 <StatusCode.OK: 200>
@@ -23,7 +26,7 @@ HTTP3 is a next-generation HTTP client for Python.
 >>> r.headers['content-type']
 'text/html; charset=UTF-8'
 >>> r.text
-'<!doctype html>\n<html>\n<head>\n    <title>Example Domain</title>...'
+'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 ```
 
 ## Features
@@ -37,62 +40,28 @@ HTTP3 builds on the well-established usability of `requests`, and gives you:
 * Fully type annotated.
 * 100% test coverage.
 
-## User Guide
+Plus all the standard features of `requests`...
 
-This part of the documentation will walk you through all of the functionality
-in HTTP3:
+* International Domains and URLs
+* Keep-Alive & Connection Pooling
+* Sessions with Cookie Persistence
+* Browser-style SSL Verification
+* Basic/Digest Authentication *Digest is still TODO*
+* Elegant Key/Value Cookies
+* Automatic Decompression
+* Automatic Content Decoding
+* Unicode Response Bodies
+* Multipart File Uploads *TODO*
+* HTTP(S) Proxy Support *TODO*
+* Connection Timeouts
+* Streaming Downloads
+* .netrc Support *TODO*
+* Chunked Requests
 
-* QuickStart
-  * Make a Request
-  * Passing Parameters in URLs
-  * Response Content
-  * Binary Response Content
-  * JSON Response Content
-  * Raw Response Content
-  * Custom Headers
-  * More complicated POST requests
-  * POST a Multipart-Encoded File
-  * Response Status Codes
-  * Response Headers
-  * Cookies
-  * Redirection and History
-  * Timeouts
-  * Errors and Exceptions
-* Parallel Requests
-  * Making Parallel Requests
-  * Exceptions and Cancellations
-  * Parallel requests with a Client
-  * Async parallel requests
-* Async Client
-  * Making Async requests
-  * API Differences
-* Requests Compatibility Guide
-  * Overview
-  * API Differences
+## Documentation
 
-## Developer Interface
+For a run-through of all the basics, head over to the [QuickStart](quickstart.md).
 
-This part of the documentation provides a complete API reference:
+For more advanced topics, see the [Parallel Requests](parallel.md) or [Async Client](async.md) documentation.
 
-* Main API
-* Exceptions
-* Client
-* Response
-* Request
-* Data Structures
-  * URL
-  * Origin
-  * Headers
-  * Cookies
-* Parallel Requests
-  * ParallelManager
-  * PendingResponse
-* Custom Dispatch
-  * Dispatcher
-* Async API
-  * AsyncClient
-  * AsyncResponse
-  * AsyncRequest
-  * AsyncParallelManager
-  * AsyncPendingResponse
-  * AsyncDispatcher
+The [Developer Interface](api.md) provides a comprehensive API reference.

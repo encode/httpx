@@ -1,4 +1,4 @@
-# http3
+# HTTP3
 
 <a href="https://travis-ci.org/encode/http3">
     <img src="https://travis-ci.org/encode/http3.svg?branch=master" alt="Build Status">
@@ -93,7 +93,7 @@ inspiration around the lower level networking details.
 *An HTTP client, with connection pooling, redirects, cookie persistence, etc.*
 
 ```python
->>> client = Client()
+>>> client = http3.Client()
 >>> response = client.get('https://example.org')
 ```
 
@@ -140,7 +140,7 @@ inspiration around the lower level networking details.
 what gets sent over the wire.*
 
 ```python
->>> request = Request("GET", "https://example.org", headers={'host': 'example.org'})
+>>> request = http3.Request("GET", "https://example.org", headers={'host': 'example.org'})
 >>> response = client.send(request)
 ```
 
