@@ -1,4 +1,4 @@
-# HTTP3
+<h1 style="margin: 0">HTTP3</h1>
 
 <a href="https://travis-ci.org/encode/http3">
     <img src="https://travis-ci.org/encode/http3.svg?branch=master" alt="Build Status">
@@ -86,3 +86,13 @@ The HTTP3 project relies on these excellent libraries:
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
 inspiration around the lower level networking details.
+
+## Installation
+
+Install with pip:
+
+```shell
+$ pip install http3
+```
+
+HTTP3 requires Python 3.6+

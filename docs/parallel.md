@@ -1,5 +1,10 @@
 # Parallel Requests
 
+!!! warning
+    This page documents some proposed functionality that is not yet released.
+    See [pull request #52](https://github.com/encode/http3/pull/52) for the
+    first-pass of an implementation.
+
 HTTP3 allows you to make HTTP requests in parallel in a highly efficient way,
 using async under the hood, while still presenting a standard threaded interface.
 

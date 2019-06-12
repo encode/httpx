@@ -61,6 +61,16 @@ Plus all the standard features of `requests`...
 * .netrc Support *TODO*
 * Chunked Requests
 
+## Installation
+
+Install with pip:
+
+```shell
+$ pip install http3
+```
+
+HTTP3 requires Python 3.6+
+
 ## Documentation
 
 For a run-through of all the basics, head over to the [QuickStart](quickstart.md).
@@ -84,3 +94,6 @@ The HTTP3 project relies on these excellent libraries:
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
 inspiration around the lower level networking details.
+
+<p align="center">&mdash; ⭐️ &mdash;</p>
+<p align="center"><i>HTTP3 is <a href="https://github.com/encode/http3/blob/master/LICENSE.md">BSD licensed</a> code. Designed & built in Brighton, England.</i></p>
