@@ -10,7 +10,7 @@
     <img src="https://badge.fury.io/py/http3.svg" alt="Package version">
 </a>
 
-HTTP3 is a next-generation HTTP client for Python.
+HTTP3 is a next-generation HTTP client for Python 3.
 
 !!! warning
     This project should be considered as an "alpha" release. It is substantially
