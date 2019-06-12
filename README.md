@@ -13,6 +13,7 @@
 HTTP3 is a next-generation HTTP client for Python.
 
 **Note**: *This project should be considered as an "alpha" release. It is substantially API complete, but there are still some areas that need more work.*
+
 ---
 
 Let's get started...
