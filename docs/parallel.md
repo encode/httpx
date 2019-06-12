@@ -34,8 +34,8 @@ as soon as it's available:
 
 The style of using `parallel` blocks ensures that you'll always have well
 defined exception and cancellation behaviours. Request exceptions are only ever
-raised when calling either and either `get_response` or `next_response`, and
-any pending requests are cancelled on exiting the block.
+raised when calling either `get_response` or `next_response`, and any pending
+requests are cancelled on exiting the block.
 
 ## Parallel requests with a Client
 

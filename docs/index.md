@@ -14,7 +14,7 @@ HTTP3 is a next-generation HTTP client for Python.
 
 !!! warning
     This project should be considered as an "alpha" release. It is substantially
-    API complete, but there are still a few areas that need remaining work.
+    API complete, but there are still some areas that need more work.
 
 ---
 
