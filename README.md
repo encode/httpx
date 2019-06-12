@@ -10,67 +10,67 @@
     <img src="https://badge.fury.io/py/http3.svg" alt="Package version">
 </a>
 
-## Feature support
+HTTP3 is a next-generation HTTP client for Python.
 
-* `HTTP/2` and `HTTP/1.1` support.
-* `async`/`await` support for non-blocking HTTP requests.
-* Strict timeouts everywhere by default.
+**Note**: *This project should be considered as an "alpha" release. It is substantially API complete, but there are still some areas that need more work.*
+---
+
+Let's get started...
+
+```python
+>>> import http3
+>>> r = http3.get('https://www.example.org/')
+>>> r.status_code
+<StatusCode.OK: 200>
+>>> r.protocol
+'HTTP/2'
+>>> r.headers['content-type']
+'text/html; charset=UTF-8'
+>>> r.text
+'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
+```
+
+## Features
+
+HTTP3 builds on the well-established usability of `requests`, and gives you:
+
+* A requests-compatible API.
+* HTTP/2 and HTTP/1.1 support.
+* Support for issuing HTTP requests in parallel.
+* Standard synchronous interface, but with `async`/`await` support if you need it.
+* Strict timeouts everywhere.
 * Fully type annotated.
 * 100% test coverage.
 
-Plus all the standard features of requests...
+Plus all the standard features of `requests`...
 
 * International Domains and URLs
 * Keep-Alive & Connection Pooling
 * Sessions with Cookie Persistence
 * Browser-style SSL Verification
-* Basic/Digest Authentication *TODO - We have Basic, but not Digest yet.*
+* Basic/Digest Authentication *Digest is still TODO*
 * Elegant Key/Value Cookies
 * Automatic Decompression
 * Automatic Content Decoding
 * Unicode Response Bodies
-* Multipart File Uploads *TODO - Request content currently supports URL encoded data, JSON, bytes, or async byte iterators.*
+* Multipart File Uploads *TODO*
 * HTTP(S) Proxy Support *TODO*
 * Connection Timeouts
 * Streaming Downloads
 * .netrc Support *TODO*
 * Chunked Requests
 
-## Usage
+## Documentation
 
-Making a request:
+For a run-through of all the basics, head over to the [QuickStart](quickstart.md).
 
-```python
->>> import http3
->>> client = http3.Client()
->>> response = client.get('https://example.com')
->>> response.status_code
-<HTTPStatus.OK: 200>
->>> response.protocol
-'HTTP/2'
->>> response.text
-'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>\n...'
-```
+For more advanced topics, see the [Parallel Requests](parallel.md) or [Async Client](async.md) documentation.
 
-Alternatively, async requests:
-
-**Note**: Use `ipython` to try this from the console, since it supports `await`.
-
-```python
->>> import http3
->>> client = http3.AsyncClient()
->>> response = await client.get('https://example.com')
->>> response.status_code
-<StatusCode.OK: 200>
->>> response.protocol
-'HTTP/2'
->>> response.text
-'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>\n...'
-```
-
----
+The [Developer Interface](api.md) provides a comprehensive API reference.
 
 ## Dependencies
+
+The HTTP3 project relies on these excellent libraries:
 
 * `h2` - HTTP/2 support.
 * `h11` - HTTP/1.1 support.
@@ -83,167 +83,3 @@ Alternatively, async requests:
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
 inspiration around the lower level networking details.
-
----
-
-## API Reference
-
-### `Client`
-
-*An HTTP client, with connection pooling, redirects, cookie persistence, etc.*
-
-```python
->>> client = http3.Client()
->>> response = client.get('https://example.org')
-```
-
-* `def __init__([auth], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [dispatch])`
-* `def .request(method, url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
-* `def .get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
-* `def .options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
-* `def .head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
-* `def .post(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
-* `def .put(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
-* `def .patch(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
-* `def .delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
-* `def .send(request, [stream], [allow_redirects], [verify], [cert], [timeout])`
-* `def .close()`
-
-### `Response`
-
-*An HTTP response.*
-
-* `def __init__(...)`
-* `.status_code` - **int** *(Typically a `StatusCode` IntEnum.)*
-* `.reason_phrase` - **str**
-* `.protocol` - `"HTTP/2"` or `"HTTP/1.1"`
-* `.url` - **URL**
-* `.headers` - **Headers**
-* `.content` - **bytes**
-* `.text` - **str**
-* `.encoding` - **str**
-* `.is_redirect` - **bool**
-* `.request` - **Request**
-* `.cookies` - **Cookies**
-* `.history` - **List[Response]**
-* `def .raise_for_status()` - **None**
-* `def .json()` - **Any**
-* `def .read()` - **bytes**
-* `def .stream()` - **bytes iterator**
-* `def .raw()` - **bytes iterator**
-* `def .close()` - **None**
-* `def .next()` - **Response**
-
-### `Request`
-
-*An HTTP request. Can be constructed explicitly for more control over exactly
-what gets sent over the wire.*
-
-```python
->>> request = http3.Request("GET", "https://example.org", headers={'host': 'example.org'})
->>> response = client.send(request)
-```
-
-* `def __init__(method, url, [params], [data], [json], [headers], [cookies])`
-* `.method` - **str**
-* `.url` - **URL**
-* `.content` - **byte** or **byte async iterator**
-* `.headers` - **Headers**
-* `.cookies` - **Cookies**
-
-### `URL`
-
-*A normalized, IDNA supporting URL.*
-
-```python
->>> url = URL("https://example.org/")
->>> url.host
-'example.org'
-```
-
-* `def __init__(url, allow_relative=False, params=None)`
-* `.scheme` - **str**
-* `.authority` - **str**
-* `.host` - **str**
-* `.port` - **int**
-* `.path` - **str**
-* `.query` - **str**
-* `.full_path` - **str**
-* `.fragment` - **str**
-* `.is_ssl` - **bool**
-* `.origin` - **Origin**
-* `.is_absolute_url` - **bool**
-* `.is_relative_url` - **bool**
-* `def .copy_with([scheme], [authority], [path], [query], [fragment])` - **URL**
-* `def .resolve_with(url)` - **URL**
-
-### `Origin`
-
-*A normalized, IDNA supporting set of scheme/host/port info.*
-
-```python
->>> Origin('https://example.org') == Origin('HTTPS://EXAMPLE.ORG:443')
-True
-```
-
-* `def __init__(url)`
-* `.is_ssl` - **bool**
-* `.host` - **str**
-* `.port` - **int**
-
-### `Headers`
-
-*A case-insensitive multi-dict.*
-
-```python
->>> headers = Headers({'Content-Type': 'application/json'})
->>> headers['content-type']
-'application/json'
-```
-
-* `def __init__(self, headers)`
-
-### `Cookies`
-
-*A dict-like cookie store.*
-
-```python
->>> cookies = Cookies()
->>> cookies.set("name", "value", domain="example.org")
-```
-
-* `def __init__(cookies: [dict, Cookies, CookieJar])`
-* `.jar` - **CookieJar**
-* `def extract_cookies(response)`
-* `def set_cookie_header(request)`
-* `def set(name, value, [domain], [path])`
-* `def get(name, [domain], [path])`
-* `def delete(name, [domain], [path])`
-* `def clear([domain], [path])`
-* *Standard mutable mapping interface*
-
-___
-
-## Alternate backends
-
-### `AsyncClient`
-
-An asyncio client.
-
-### `TrioClient`
-
-*TODO*
-
----
-
-## The Stack
-
-There are two main layers in the stack. The client handles redirection,
-cookie persistence (TODO), and authentication (TODO). The dispatcher
-handles sending the actual request and getting the response.
-
-* `Client` - Redirect, authentication, cookies etc.
-* `ConnectionPool(Dispatcher)` - Connection pooling & keep alive.
-  * `HTTPConnection` - A single connection.
-    * `HTTP11Connection` - A single HTTP/1.1 connection.
-    * `HTTP2Connection` - A single HTTP/2 connection, with multiple streams.
