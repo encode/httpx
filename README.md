@@ -73,11 +73,13 @@ HTTP3 requires Python 3.6+
 
 ## Documentation
 
-For a run-through of all the basics, head over to the [QuickStart](quickstart.md).
+Project documentation is available at [www.encode.io/http3/](https://www.encode.io/http3/).
 
-For more advanced topics, see the [Parallel Requests](parallel.md) or [Async Client](async.md) documentation.
+For a run-through of all the basics, head over to the [QuickStart](https://www.encode.io/http3/quickstart/).
 
-The [Developer Interface](api.md) provides a comprehensive API reference.
+For more advanced topics, see the [Parallel Requests](https://www.encode.io/http3/parallel/) or [Async Client](https://www.encode.io/http3/async/) documentation.
+
+The [Developer Interface](https://www.encode.io/http3/api/) provides a comprehensive API reference.
 
 ## Dependencies
 
