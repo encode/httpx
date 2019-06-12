@@ -1,5 +1,10 @@
 # QuickStart
 
+!!! note
+    This page closely follows the layout of the `requests` QuickStart documentation.
+    The `http3` library is designed to be API compatible with `requests` wherever
+    possible.
+
 First start by importing HTTP3:
 
 ```

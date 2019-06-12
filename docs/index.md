@@ -12,6 +12,10 @@
 
 HTTP3 is a next-generation HTTP client for Python.
 
+!!! warning
+    This project should be considered as an "alpha" release. It is substantially
+    API complete, but there are still a few areas that need remaining work.
+
 ---
 
 Let's get started...
@@ -35,6 +39,7 @@ HTTP3 builds on the well-established usability of `requests`, and gives you:
 
 * A requests-compatible API.
 * HTTP/2 and HTTP/1.1 support.
+* Support for issuing HTTP requests in parallel.
 * Standard synchronous interface, but with `async`/`await` support if you need it.
 * Strict timeouts everywhere.
 * Fully type annotated.
@@ -65,3 +70,19 @@ For a run-through of all the basics, head over to the [QuickStart](quickstart.md
 For more advanced topics, see the [Parallel Requests](parallel.md) or [Async Client](async.md) documentation.
 
 The [Developer Interface](api.md) provides a comprehensive API reference.
+
+## Dependencies
+
+The HTTP3 project relies on these excellent libraries:
+
+* `h2` - HTTP/2 support.
+* `h11` - HTTP/1.1 support.
+* `certifi` - SSL certificates.
+* `chardet` - Fallback auto-detection for response encoding.
+* `idna` - Internationalized domain name support.
+* `rfc3986` - URL parsing & normalization.
+* `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
+
+A huge amount of credit is due to `requests` for the API layout that
+much of this work follows, as well as to `urllib3` for plenty of design
+inspiration around the lower level networking details.

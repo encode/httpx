@@ -17,5 +17,5 @@ nav:
     - Developer Interface: 'api.md'
 
 markdown_extensions:
-  - markdown.extensions.codehilite:
-      guess_lang: false
+  - admonition
+  - codehilite
