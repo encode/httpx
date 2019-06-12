@@ -9,6 +9,6 @@ fi
 if [ -d 'htmlcov' ] ; then
     rm -r htmlcov
 fi
-if [ -d 'httpcore.egg-info' ] ; then
-    rm -r httpcore.egg-info
+if [ -d 'http3.egg-info' ] ; then
+    rm -r http3.egg-info
 fi

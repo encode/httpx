@@ -1,4 +1,4 @@
-from httpcore import QueryParams
+from http3 import QueryParams
 
 
 def test_queryparams():

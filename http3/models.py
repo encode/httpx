@@ -509,7 +509,7 @@ class BaseRequest:
         has_accept_encoding = "accept-encoding" in self.headers
 
         if not has_user_agent:
-            auto_headers.append((b"user-agent", b"httpcore"))
+            auto_headers.append((b"user-agent", b"http3"))
         if not has_accept:
             auto_headers.append((b"accept", b"*/*"))
         if not has_content_length:

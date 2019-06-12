@@ -3,7 +3,7 @@ from urllib.parse import parse_qs
 
 import pytest
 
-from httpcore import (
+from http3 import (
     URL,
     AsyncClient,
     AsyncDispatcher,

@@ -1,6 +1,6 @@
 import pytest
 
-from httpcore import HTTPConnection, Request, SSLConfig
+from http3 import HTTPConnection, Request, SSLConfig
 
 
 @pytest.mark.asyncio

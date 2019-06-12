@@ -1,94 +1,17 @@
-# HTTP3
+# Developer Interface
 
-<a href="https://travis-ci.org/encode/http3">
-    <img src="https://travis-ci.org/encode/http3.svg?branch=master" alt="Build Status">
-</a>
-<a href="https://codecov.io/gh/encode/http3">
-    <img src="https://codecov.io/gh/encode/http3/branch/master/graph/badge.svg" alt="Coverage">
-</a>
-<a href="https://pypi.org/project/http3/">
-    <img src="https://badge.fury.io/py/http3.svg" alt="Package version">
-</a>
+## Main Interface
 
-## Feature support
+* `get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `post(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `put(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `patch(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `request(method, url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 
-* `HTTP/2` and `HTTP/1.1` support.
-* `async`/`await` support for non-blocking HTTP requests.
-* Strict timeouts everywhere by default.
-* Fully type annotated.
-* 100% test coverage.
-
-Plus all the standard features of requests...
-
-* International Domains and URLs
-* Keep-Alive & Connection Pooling
-* Sessions with Cookie Persistence
-* Browser-style SSL Verification
-* Basic/Digest Authentication *TODO - We have Basic, but not Digest yet.*
-* Elegant Key/Value Cookies
-* Automatic Decompression
-* Automatic Content Decoding
-* Unicode Response Bodies
-* Multipart File Uploads *TODO - Request content currently supports URL encoded data, JSON, bytes, or async byte iterators.*
-* HTTP(S) Proxy Support *TODO*
-* Connection Timeouts
-* Streaming Downloads
-* .netrc Support *TODO*
-* Chunked Requests
-
-## Usage
-
-Making a request:
-
-```python
->>> import http3
->>> client = http3.Client()
->>> response = client.get('https://example.com')
->>> response.status_code
-<HTTPStatus.OK: 200>
->>> response.protocol
-'HTTP/2'
->>> response.text
-'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>\n...'
-```
-
-Alternatively, async requests:
-
-**Note**: Use `ipython` to try this from the console, since it supports `await`.
-
-```python
->>> import http3
->>> client = http3.AsyncClient()
->>> response = await client.get('https://example.com')
->>> response.status_code
-<StatusCode.OK: 200>
->>> response.protocol
-'HTTP/2'
->>> response.text
-'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>\n...'
-```
-
----
-
-## Dependencies
-
-* `h2` - HTTP/2 support.
-* `h11` - HTTP/1.1 support.
-* `certifi` - SSL certificates.
-* `chardet` - Fallback auto-detection for response encoding.
-* `idna` - Internationalized domain name support.
-* `rfc3986` - URL parsing & normalization.
-* `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
-
-A huge amount of credit is due to `requests` for the API layout that
-much of this work follows, as well as to `urllib3` for plenty of design
-inspiration around the lower level networking details.
-
----
-
-## API Reference
-
-### `Client`
+## `Client`
 
 *An HTTP client, with connection pooling, redirects, cookie persistence, etc.*
 
@@ -98,7 +21,6 @@ inspiration around the lower level networking details.
 ```
 
 * `def __init__([auth], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [dispatch])`
-* `def .request(method, url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
@@ -106,10 +28,11 @@ inspiration around the lower level networking details.
 * `def .put(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .patch(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `def .request(method, url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .send(request, [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .close()`
 
-### `Response`
+## `Response`
 
 *An HTTP response.*
 
@@ -134,7 +57,7 @@ inspiration around the lower level networking details.
 * `def .close()` - **None**
 * `def .next()` - **Response**
 
-### `Request`
+## `Request`
 
 *An HTTP request. Can be constructed explicitly for more control over exactly
 what gets sent over the wire.*
@@ -151,7 +74,7 @@ what gets sent over the wire.*
 * `.headers` - **Headers**
 * `.cookies` - **Cookies**
 
-### `URL`
+## `URL`
 
 *A normalized, IDNA supporting URL.*
 
@@ -177,7 +100,7 @@ what gets sent over the wire.*
 * `def .copy_with([scheme], [authority], [path], [query], [fragment])` - **URL**
 * `def .resolve_with(url)` - **URL**
 
-### `Origin`
+## `Origin`
 
 *A normalized, IDNA supporting set of scheme/host/port info.*
 
@@ -191,7 +114,7 @@ True
 * `.host` - **str**
 * `.port` - **int**
 
-### `Headers`
+## `Headers`
 
 *A case-insensitive multi-dict.*
 
@@ -203,7 +126,7 @@ True
 
 * `def __init__(self, headers)`
 
-### `Cookies`
+## `Cookies`
 
 *A dict-like cookie store.*
 
@@ -221,29 +144,3 @@ True
 * `def delete(name, [domain], [path])`
 * `def clear([domain], [path])`
 * *Standard mutable mapping interface*
-
-___
-
-## Alternate backends
-
-### `AsyncClient`
-
-An asyncio client.
-
-### `TrioClient`
-
-*TODO*
-
----
-
-## The Stack
-
-There are two main layers in the stack. The client handles redirection,
-cookie persistence (TODO), and authentication (TODO). The dispatcher
-handles sending the actual request and getting the response.
-
-* `Client` - Redirect, authentication, cookies etc.
-* `ConnectionPool(Dispatcher)` - Connection pooling & keep alive.
-  * `HTTPConnection` - A single connection.
-    * `HTTP11Connection` - A single HTTP/1.1 connection.
-    * `HTTP2Connection` - A single HTTP/2 connection, with multiple streams.

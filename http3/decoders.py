@@ -6,7 +6,7 @@ See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 import typing
 import zlib
 
-import httpcore.exceptions
+from .exceptions import DecodingError
 
 try:
     import brotli
@@ -48,13 +48,13 @@ class DeflateDecoder(Decoder):
         try:
             return self.decompressor.decompress(data)
         except zlib.error as exc:
-            raise httpcore.exceptions.DecodingError from exc
+            raise DecodingError from exc
 
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
         except zlib.error as exc:  # pragma: nocover
-            raise httpcore.exceptions.DecodingError from exc
+            raise DecodingError from exc
 
 
 class GZipDecoder(Decoder):
@@ -71,13 +71,13 @@ class GZipDecoder(Decoder):
         try:
             return self.decompressor.decompress(data)
         except zlib.error as exc:
-            raise httpcore.exceptions.DecodingError from exc
+            raise DecodingError from exc
 
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
         except zlib.error as exc:  # pragma: nocover
-            raise httpcore.exceptions.DecodingError from exc
+            raise DecodingError from exc
 
 
 class BrotliDecoder(Decoder):
@@ -97,14 +97,14 @@ class BrotliDecoder(Decoder):
         try:
             return self.decompressor.decompress(data)
         except brotli.Error as exc:
-            raise httpcore.exceptions.DecodingError from exc
+            raise DecodingError from exc
 
     def flush(self) -> bytes:
         try:
             self.decompressor.finish()
             return b""
         except brotli.Error as exc:  # pragma: nocover
-            raise httpcore.exceptions.DecodingError from exc
+            raise DecodingError from exc
 
 
 class MultiDecoder(Decoder):

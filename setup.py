@@ -35,17 +35,17 @@ def get_packages(package):
 
 
 setup(
-    name="httpcore",
+    name="http3",
     python_requires=">=3.6",
-    version=get_version("httpcore"),
-    url="https://github.com/encode/httpcore",
+    version=get_version("http3"),
+    url="https://github.com/encode/http3",
     license="BSD",
-    description="...",
+    description="The next generation HTTP client.",
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
     author="Tom Christie",
     author_email="tom@tomchristie.com",
-    packages=get_packages("httpcore"),
+    packages=get_packages("http3"),
     data_files=[("", ["LICENSE.md"])],
     install_requires=[
         "certifi",

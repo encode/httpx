@@ -3,7 +3,7 @@ import functools
 
 import pytest
 
-import httpcore
+import http3
 
 
 def threadpool(func):
@@ -25,7 +25,7 @@ def threadpool(func):
 
 @threadpool
 def test_get(server):
-    response = httpcore.get("http://127.0.0.1:8000/")
+    response = http3.get("http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
@@ -33,7 +33,7 @@ def test_get(server):
 
 @threadpool
 def test_post(server):
-    response = httpcore.post("http://127.0.0.1:8000/", data=b"Hello, world!")
+    response = http3.post("http://127.0.0.1:8000/", data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
@@ -45,41 +45,41 @@ def test_post_byte_iterator(server):
         yield b", "
         yield b"world!"
 
-    response = httpcore.post("http://127.0.0.1:8000/", data=data())
+    response = http3.post("http://127.0.0.1:8000/", data=data())
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
 def test_options(server):
-    response = httpcore.options("http://127.0.0.1:8000/")
+    response = http3.options("http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
 def test_head(server):
-    response = httpcore.head("http://127.0.0.1:8000/")
+    response = http3.head("http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
 def test_put(server):
-    response = httpcore.put("http://127.0.0.1:8000/", data=b"Hello, world!")
+    response = http3.put("http://127.0.0.1:8000/", data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
 def test_patch(server):
-    response = httpcore.patch("http://127.0.0.1:8000/", data=b"Hello, world!")
+    response = http3.patch("http://127.0.0.1:8000/", data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
 def test_delete(server):
-    response = httpcore.delete("http://127.0.0.1:8000/")
+    response = http3.delete("http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
