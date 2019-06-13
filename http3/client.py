@@ -149,7 +149,7 @@ class BaseClient:
                 assert isinstance(response, AsyncResponse)
                 response.history = list(history)
                 self.cookies.extract_cookies(response)
-                history = [response] + history
+                history = history + [response]
 
                 if allow_redirects and response.is_redirect:
                     request = self.build_redirect_request(request, response)
