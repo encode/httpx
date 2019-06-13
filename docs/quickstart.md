@@ -11,10 +11,10 @@ First start by importing HTTP3:
 >>> import http3
 ```
 
-Now, let’s try to get a webpage. For this example, let’s get GitHub’s public timeline:
+Now, let’s try to get a webpage.
 
 ```python
->>> r = http3.get('https://api.github.com/events')
+>>> r = http3.get('https://httpbin.org/get')
 ```
 
 Similarly, to make an HTTP POST request:
@@ -268,3 +268,34 @@ Multiple values for a single response header are represented as a single comma s
 value, as per [RFC 7230](https://tools.ietf.org/html/rfc7230#section-3.2):
 
 > A recipient MAY combine multiple header fields with the same field name into one “field-name: field-value” pair, without changing the semantics of the message, by appending each subsequent field value to the combined field value in order, separated by a comma.
+
+## Cookies
+
+Any cookies that are set on the response can be easily accessed:
+
+```python
+>>> r = http3.get('http://httpbin.org/cookies/set?chocolate=chip', allow_redirects=False)
+>>> r.cookies['chocolate']
+'chip'
+```
+
+To include cookies in an outgoing request, use the `cookies` parameter:
+
+```python
+>>> cookies = {"peanut": "butter"}
+>>> r = http3.get('http://httpbin.org/cookies', cookies=cookies)
+>>> r.json()
+{'cookies': {'peanut': 'butter'}}
+```
+
+Cookies are returned in a `Cookies` instance, which is a dict-like data structure
+but with additional API for accessing cookies by their domain or path.
+
+```python
+>>> cookies = http3.Cookies()
+>>> cookies.set('cookie_on_domain', 'hello, there!', domain='httpbin.org')
+>>> cookies.set('cookie_off_domain', 'nope.', domain='example.org')
+>>> r = http3.get('http://httpbin.org/cookies', cookies=cookies)
+>>> r.json()
+{'cookies': {'cookie_on_domain': 'hello, there!'}}
+```
