@@ -144,32 +144,37 @@ class BaseClient:
             response = await self.dispatch.send(
                 request, verify=verify, cert=cert, timeout=timeout
             )
-            assert isinstance(response, AsyncResponse)
-            response.history = list(history)
-            self.cookies.extract_cookies(response)
-            history = [response] + history
-            if not response.is_redirect:
-                break
+            should_close_response = True
+            try:
+                assert isinstance(response, AsyncResponse)
+                response.history = list(history)
+                self.cookies.extract_cookies(response)
+                history = [response] + history
 
-            if allow_redirects:
-                request = self.build_redirect_request(request, response)
-            else:
-
-                async def send_next() -> AsyncResponse:
-                    nonlocal request, response, verify, cert, allow_redirects, timeout, history
+                if allow_redirects and response.is_redirect:
                     request = self.build_redirect_request(request, response)
-                    response = await self.send_handling_redirects(
-                        request,
-                        allow_redirects=allow_redirects,
-                        verify=verify,
-                        cert=cert,
-                        timeout=timeout,
-                        history=history,
-                    )
-                    return response
+                else:
+                    should_close_response = False
+                    break
+            finally:
+                if should_close_response:
+                    await response.close()
 
-                response.next = send_next  # type: ignore
-                break
+        if response.is_redirect:
+            async def send_next() -> AsyncResponse:
+                nonlocal request, response, verify, cert, allow_redirects, timeout, history
+                request = self.build_redirect_request(request, response)
+                response = await self.send_handling_redirects(
+                    request,
+                    allow_redirects=allow_redirects,
+                    verify=verify,
+                    cert=cert,
+                    timeout=timeout,
+                    history=history,
+                )
+                return response
+
+            response.next = send_next  # type: ignore
 
         return response
 
