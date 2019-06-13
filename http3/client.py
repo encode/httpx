@@ -14,6 +14,7 @@ from .config import (
 )
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
+from .dispatch.wsgi import WSGIDispatch
 from .exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from .models import (
@@ -48,10 +49,14 @@ class BaseClient:
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         dispatch: typing.Union[AsyncDispatcher, Dispatcher] = None,
+        app: typing.Callable = None,
         backend: ConcurrencyBackend = None,
     ):
         if backend is None:
             backend = AsyncioBackend()
+
+        if app is not None:
+            dispatch = WSGIDispatch(app=app)
 
         if dispatch is None:
             async_dispatch = ConnectionPool(
@@ -161,6 +166,7 @@ class BaseClient:
                     await response.close()
 
         if response.is_redirect:
+
             async def send_next() -> AsyncResponse:
                 nonlocal request, response, verify, cert, allow_redirects, timeout, history
                 request = self.build_redirect_request(request, response)
