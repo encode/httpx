@@ -289,7 +289,7 @@ To include cookies in an outgoing request, use the `cookies` parameter:
 ```
 
 Cookies are returned in a `Cookies` instance, which is a dict-like data structure
-but with additional API for accessing cookies by their domain or path.
+with additional API for accessing cookies by their domain or path.
 
 ```python
 >>> cookies = http3.Cookies()
@@ -298,4 +298,57 @@ but with additional API for accessing cookies by their domain or path.
 >>> r = http3.get('http://httpbin.org/cookies', cookies=cookies)
 >>> r.json()
 {'cookies': {'cookie_on_domain': 'hello, there!'}}
+```
+
+## Redirection and History
+
+By default HTTP3 will follow redirects for anything except `HEAD` requests.
+
+The `history` property of the response can be used to inspect any followed redirects.
+It contains a list of all any redirect responses that were followed, in the order
+in which they were made.
+
+For example, GitHub redirects all HTTP requests to HTTPS.
+
+```python
+>>> r = http3.get('http://github.com/')
+>>> r.url
+URL('https://github.com/')
+>>> r.status_code
+<StatusCode.OK: 200>
+>>> r.history
+[<Response [301]>]
+```
+
+You can modify the default redirection handling with the allow_redirects parameter:
+
+```python
+>>> r = http3.get('http://github.com/', allow_redirects=False)
+>>> r.status_code
+301
+>>> r.history
+[]
+```
+
+If you’re making a `HEAD` request, you can use this to enable redirection:
+
+```python
+>>> r = http3.head('http://github.com/', allow_redirects=True)
+>>> r.url
+'https://github.com/'
+>>> r.history
+[<Response [301]>]
+```
+
+## Timeouts
+
+HTTP3 defaults to including reasonable timeouts for all network operations,
+meaning that if a connection is not properly established then it should always
+raise an error rather than hanging indefinitely.
+
+The default timeout for network inactivity is five seconds. You can modify the
+value to be more or less strict:
+
+```python
+>>> http3.get('https://github.com/', timeout=0.001)
 ```

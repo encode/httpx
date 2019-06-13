@@ -168,6 +168,10 @@ async def test_multiple_redirects():
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/multiple_redirects")
     assert len(response.history) == 20
+    assert response.history[0].url == URL("https://example.org/multiple_redirects?count=20")
+    assert response.history[1].url == URL("https://example.org/multiple_redirects?count=19")
+    assert len(response.history[0].history) == 0
+    assert len(response.history[1].history) == 1
 
 
 @pytest.mark.asyncio
