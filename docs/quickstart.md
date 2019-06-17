@@ -161,6 +161,39 @@ Form encoded data can also include multiple values form a given key.
 }
 ```
 
+## Sending Multipart File Uploads
+
+You can also upload files, using HTTP multipart encoding:
+
+```python
+>>> files = {'upload-file': open('report.xls', 'rb')}
+>>> r = http3.post("https://httpbin.org/post", files=files)
+>>> print(r.text)
+{
+  ...
+  "files": {
+    "upload-file": "<... binary content ...>"
+  },
+  ...
+}
+```
+
+You can also explicitly set the filename and content type, by using a tuple
+of items for the file value:
+
+```python
+>>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
+>>> r = http3.post("https://httpbin.org/post", files=files)
+>>> print(r.text)
+{
+  ...
+  "files": {
+    "upload-file": "<... binary content ...>"
+  },
+  ...
+}
+```
+
 ## Sending JSON Encoded Data
 
 Form encoded data is okay if all you need is simple key-value data structure.

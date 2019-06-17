@@ -54,7 +54,7 @@ Plus all the standard features of `requests`...
 * Automatic Decompression
 * Automatic Content Decoding
 * Unicode Response Bodies
-* Multipart File Uploads *TODO*
+* Multipart File Uploads
 * HTTP(S) Proxy Support *TODO*
 * Connection Timeouts
 * Streaming Downloads
