@@ -37,7 +37,7 @@ def test_get(server):
     assert response.request.url == http3.URL(url)
     assert response.headers
     assert response.is_redirect is False
-    assert repr(response) == "<Response(200, 'OK')>"
+    assert repr(response) == "<Response [200 OK])>"
 
 
 @threadpool

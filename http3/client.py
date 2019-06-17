@@ -609,7 +609,6 @@ class Client(BaseClient):
 
         response = Response(
             status_code=async_response.status_code,
-            reason_phrase=async_response.reason_phrase,
             protocol=async_response.protocol,
             headers=async_response.headers,
             content=sync_content,

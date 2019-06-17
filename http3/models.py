@@ -658,20 +658,22 @@ class BaseResponse:
         self,
         status_code: int,
         *,
-        reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
         request: BaseRequest = None,
         on_close: typing.Callable = None,
     ):
-        self.status_code = StatusCode.enum_or_int(status_code)
-        self.reason_phrase = StatusCode.get_reason_phrase(status_code)
+        self.status_code = status_code
         self.protocol = protocol
         self.headers = Headers(headers)
 
         self.request = request
         self.on_close = on_close
         self.next = None  # typing.Optional[typing.Callable]
+
+    @property
+    def reason_phrase(self) -> str:
+        return StatusCode.get_reason_phrase(self.status_code)
 
     @property
     def url(self) -> typing.Optional[URL]:
@@ -807,7 +809,7 @@ class BaseResponse:
         return self._cookies
 
     def __repr__(self) -> str:
-        return f"<Response({self.status_code}, {self.reason_phrase!r})>"
+        return f"<Response [{self.status_code} {self.reason_phrase}])>"
 
 
 class AsyncResponse(BaseResponse):
@@ -815,7 +817,6 @@ class AsyncResponse(BaseResponse):
         self,
         status_code: int,
         *,
-        reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
         content: AsyncResponseContent = None,
@@ -825,7 +826,6 @@ class AsyncResponse(BaseResponse):
     ):
         super().__init__(
             status_code=status_code,
-            reason_phrase=reason_phrase,
             protocol=protocol,
             headers=headers,
             request=request,
@@ -896,7 +896,6 @@ class Response(BaseResponse):
         self,
         status_code: int,
         *,
-        reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
         content: ResponseContent = None,
@@ -906,7 +905,6 @@ class Response(BaseResponse):
     ):
         super().__init__(
             status_code=status_code,
-            reason_phrase=reason_phrase,
             protocol=protocol,
             headers=headers,
             request=request,
