@@ -67,14 +67,12 @@ class HTTP11Connection:
             event = await self._receive_event(timeout)
 
         assert isinstance(event, h11.Response)
-        reason_phrase = event.reason.decode("ascii", errors="ignore")
         status_code = event.status_code
         headers = event.headers
         content = self._body_iter(timeout)
 
         return AsyncResponse(
             status_code=status_code,
-            reason_phrase=reason_phrase,
             protocol="HTTP/1.1",
             headers=headers,
             content=content,

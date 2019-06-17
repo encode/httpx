@@ -15,6 +15,8 @@ Now, let’s try to get a webpage.
 
 ```python
 >>> r = http3.get('https://httpbin.org/get')
+>>> r
+<Response [200 OK]>
 ```
 
 Similarly, to make an HTTP POST request:
@@ -233,21 +235,13 @@ We can inspect the HTTP status code of the response:
 ```python
 >>> r = http3.get('https://httpbin.org/get')
 >>> r.status_code
-<StatusCode.OK: 200>
-```
-
-The status code is an integer enum, meaning that the Python representation gives
-use some descriptive information, but the value itself can be used as a regular integer.
-
-```python
->>> r.status_code == 200
-True
+200
 ```
 
 HTTP3 also includes an easy shortcut for accessing status codes by their text phrase.
 
 ```python
->>> r.status_code == requests.codes.OK
+>>> r.status_code == http3.codes.OK
 True
 ```
 
@@ -256,7 +250,7 @@ We can raise an exception for any Client or Server error responses (4xx or 5xx s
 ```python
 >>> not_found = http3.get('https://httpbin.org/status/404')
 >>> not_found.status_code
-<StatusCode.NOT_FOUND: 404>
+404
 >>> not_found.raise_for_status()
 Traceback (most recent call last):
   File "/Users/tomchristie/GitHub/encode/httpcore/http3/models.py", line 776, in raise_for_status
@@ -348,9 +342,9 @@ For example, GitHub redirects all HTTP requests to HTTPS.
 >>> r.url
 URL('https://github.com/')
 >>> r.status_code
-<StatusCode.OK: 200>
+200
 >>> r.history
-[<Response [301]>]
+[<Response [301 Moved Permanently]>]
 ```
 
 You can modify the default redirection handling with the allow_redirects parameter:
@@ -370,7 +364,7 @@ If you’re making a `HEAD` request, you can use this to enable redirection:
 >>> r.url
 'https://github.com/'
 >>> r.history
-[<Response [301]>]
+[<Response [301 Moved Permanently]>]
 ```
 
 ## Timeouts

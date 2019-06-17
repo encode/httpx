@@ -26,13 +26,6 @@ class StatusCode(IntEnum):
         return str(self.value)
 
     @classmethod
-    def enum_or_int(cls, value: int) -> int:
-        try:
-            return StatusCode(value)
-        except ValueError:
-            return value
-
-    @classmethod
     def get_reason_phrase(cls, value: int) -> str:
         try:
             return StatusCode(value).phrase  # type: ignore
