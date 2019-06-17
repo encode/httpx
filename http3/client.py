@@ -30,6 +30,7 @@ from .models import (
     QueryParamTypes,
     Request,
     RequestData,
+    RequestFiles,
     Response,
     ResponseContent,
     URLTypes,
@@ -161,6 +162,7 @@ class BaseClient:
                     await response.close()
 
         if response.is_redirect:
+
             async def send_next() -> AsyncResponse:
                 nonlocal request, response, verify, cert, allow_redirects, timeout, history
                 request = self.build_redirect_request(request, response)
@@ -342,7 +344,8 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: AsyncRequestData = b"",
+        data: AsyncRequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -358,6 +361,7 @@ class AsyncClient(BaseClient):
             "POST",
             url,
             data=data,
+            files=files,
             json=json,
             params=params,
             headers=headers,
@@ -374,7 +378,8 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: AsyncRequestData = b"",
+        data: AsyncRequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -390,6 +395,7 @@ class AsyncClient(BaseClient):
             "PUT",
             url,
             data=data,
+            files=files,
             json=json,
             params=params,
             headers=headers,
@@ -406,7 +412,8 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: AsyncRequestData = b"",
+        data: AsyncRequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -422,6 +429,7 @@ class AsyncClient(BaseClient):
             "PATCH",
             url,
             data=data,
+            files=files,
             json=json,
             params=params,
             headers=headers,
@@ -438,7 +446,8 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: AsyncRequestData = b"",
+        data: AsyncRequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -454,6 +463,7 @@ class AsyncClient(BaseClient):
             "DELETE",
             url,
             data=data,
+            files=files,
             json=json,
             params=params,
             headers=headers,
@@ -471,7 +481,8 @@ class AsyncClient(BaseClient):
         method: str,
         url: URLTypes,
         *,
-        data: AsyncRequestData = b"",
+        data: AsyncRequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -487,6 +498,7 @@ class AsyncClient(BaseClient):
             method,
             url,
             data=data,
+            files=files,
             json=json,
             params=params,
             headers=headers,
@@ -519,12 +531,14 @@ class AsyncClient(BaseClient):
 
 
 class Client(BaseClient):
-    def _async_request_data(self, data: RequestData) -> AsyncRequestData:
+    def _async_request_data(
+        self, data: RequestData = None
+    ) -> typing.Optional[AsyncRequestData]:
         """
         If the request data is an bytes iterator then return an async bytes
         iterator onto the request data.
         """
-        if isinstance(data, (bytes, dict)):
+        if data is None or isinstance(data, (bytes, dict)):
             return data
 
         # Coerce an iterator into an async iterator, with each item in the
@@ -546,7 +560,8 @@ class Client(BaseClient):
         method: str,
         url: URLTypes,
         *,
-        data: RequestData = b"",
+        data: RequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -562,6 +577,7 @@ class Client(BaseClient):
             method,
             url,
             data=self._async_request_data(data),
+            files=files,
             json=json,
             params=params,
             headers=headers,
@@ -696,7 +712,8 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: RequestData = b"",
+        data: RequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -712,6 +729,7 @@ class Client(BaseClient):
             "POST",
             url,
             data=data,
+            files=files,
             json=json,
             params=params,
             headers=headers,
@@ -728,7 +746,8 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: RequestData = b"",
+        data: RequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -744,6 +763,7 @@ class Client(BaseClient):
             "PUT",
             url,
             data=data,
+            files=files,
             json=json,
             params=params,
             headers=headers,
@@ -760,7 +780,8 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: RequestData = b"",
+        data: RequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -776,6 +797,7 @@ class Client(BaseClient):
             "PATCH",
             url,
             data=data,
+            files=files,
             json=json,
             params=params,
             headers=headers,
@@ -792,7 +814,8 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: RequestData = b"",
+        data: RequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -808,6 +831,7 @@ class Client(BaseClient):
             "DELETE",
             url,
             data=data,
+            files=files,
             json=json,
             params=params,
             headers=headers,
