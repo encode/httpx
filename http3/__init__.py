@@ -49,4 +49,4 @@ from .models import (
 )
 from .status_codes import StatusCode, codes
 
-__version__ = "0.1.1"
+__version__ = "0.5.0"
