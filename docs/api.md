@@ -20,7 +20,7 @@
 >>> response = client.get('https://example.org')
 ```
 
-* `def __init__([auth], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [dispatch])`
+* `def __init__([auth], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [app], [dispatch])`
 * `def .get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`

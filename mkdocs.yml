@@ -11,6 +11,7 @@ edit_uri: ""
 nav:
     - Introduction: 'index.md'
     - QuickStart: 'quickstart.md'
+    - Advanced Usage: 'advanced.md'
     - Parallel Requests: 'parallel.md'
     - Async Client: 'async.md'
     - Requests Compatibility: 'compatibility.md'
