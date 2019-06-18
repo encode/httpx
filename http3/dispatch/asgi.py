@@ -6,6 +6,28 @@ from ..interfaces import AsyncDispatcher
 from ..models import AsyncRequest, AsyncResponse
 
 
+class BodyIterator:
+    def __init__(self) -> None:
+        self._queue = asyncio.Queue(
+            maxsize=1
+        )  # type: asyncio.Queue[typing.Union[bytes, object]]
+        self._done = object()
+
+    async def iterate(self) -> typing.AsyncIterator[bytes]:
+        while True:
+            data = await self._queue.get()
+            if data is self._done:
+                break
+            assert isinstance(data, bytes)
+            yield data
+
+    async def put(self, data: bytes) -> None:
+        await self._queue.put(data)
+
+    async def done(self) -> None:
+        await self._queue.put(self._done)
+
+
 class ASGIDispatch(AsyncDispatcher):
     def __init__(self, app: typing.Callable) -> None:
         self.app = app
@@ -18,13 +40,22 @@ class ASGIDispatch(AsyncDispatcher):
         timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
 
-        scope = {"method": request.method}
+        scope = {
+            "type": "http",
+            "asgi": {"version": "3.0"},
+            "method": request.method,
+            "headers": request.headers.raw,
+            "scheme": request.url.scheme,
+            "path": request.url.path,
+            "query": request.url.query.encode('ascii'),
+            "server": request.url.host,
+        }
+        app = self.app
+        app_exc = None
         status_code = None
         headers = None
-        complete = asyncio.Event()
-        body_messages = asyncio.Queue(
-            maxsize=3
-        )  # type: asyncio.Queue[typing.Optional[bytes]]
+        response_started = asyncio.Event()
+        response_body = BodyIterator()
         request_stream = request.stream()
 
         async def receive() -> dict:
@@ -37,50 +68,56 @@ class ASGIDispatch(AsyncDispatcher):
             return {"type": "http.request", "body": body, "more_body": True}
 
         async def send(message: dict) -> None:
-            nonlocal complete, status_code, headers
+            nonlocal status_code, headers, response_started, response_body
 
             if message["type"] == "http.response.start":
                 status_code = message["status"]
                 headers = message.get("headers", [])
-                complete.set()
+                response_started.set()
             elif message["type"] == "http.response.body":
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
                 if body:
-                    await body_messages.put(body)
+                    await response_body.put(body)
                 if not more_body:
-                    await body_messages.put(None)
+                    await response_body.done()
+
+        async def run_app() -> None:
+            nonlocal app, scope, receive, send, app_exc, response_body
+
+            try:
+                await app(scope, receive, send)
+            except Exception as exc:
+                app_exc = exc
+            finally:
+                await response_body.done()
 
         loop = asyncio.get_event_loop()
-        run_app = loop.create_task(self.app(scope, receive, send))
-        wait_response = loop.create_task(complete.wait())
+        app_task = loop.create_task(run_app())
+        response_task = loop.create_task(response_started.wait())
 
         await asyncio.wait(
-            {run_app, wait_response}, return_when=asyncio.FIRST_COMPLETED
+            {app_task, response_task}, return_when=asyncio.FIRST_COMPLETED
         )
 
-        assert complete.is_set, "application did not return a response."
+        if app_exc is not None:
+            raise app_exc
+
+        assert response_started.is_set, "application did not return a response."
         assert status_code is not None
         assert headers is not None
 
         async def on_close() -> None:
-            nonlocal run_app
-            await run_app
+            nonlocal app_task
+            await app_task
+            if app_exc is not None:
+                raise app_exc
 
         return AsyncResponse(
             status_code=status_code,
             protocol="HTTP/1.1",
             headers=headers,
-            content=self.response_content(body_messages),
+            content=response_body.iterate(),
             on_close=on_close,
             request=request,
         )
-
-    async def response_content(
-        self, queue: asyncio.Queue
-    ) -> typing.AsyncIterator[bytes]:
-        while True:
-            body = await queue.get()
-            if body is None:
-                break
-            yield body
