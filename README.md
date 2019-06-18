@@ -80,7 +80,9 @@ Project documentation is available at [www.encode.io/http3/](https://www.encode.
 
 For a run-through of all the basics, head over to the [QuickStart](https://www.encode.io/http3/quickstart/).
 
-For more advanced topics, see the [Parallel Requests](https://www.encode.io/http3/parallel/) or [Async Client](https://www.encode.io/http3/async/) documentation.
+For more advanced topics, see the [Advanced Usage](https://www.encode.io/http3/advanced/) section, or
+the specific topics on making [Parallel Requests](https://www.encode.io/http3/parallel/) or using the
+[Async Client](https://www.encode.io/http3/async/).
 
 The [Developer Interface](https://www.encode.io/http3/api/) provides a comprehensive API reference.
 
