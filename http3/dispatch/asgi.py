@@ -47,7 +47,7 @@ class ASGIDispatch(AsyncDispatcher):
             "headers": request.headers.raw,
             "scheme": request.url.scheme,
             "path": request.url.path,
-            "query": request.url.query.encode('ascii'),
+            "query": request.url.query.encode("ascii"),
             "server": request.url.host,
         }
         app = self.app
@@ -96,9 +96,9 @@ class ASGIDispatch(AsyncDispatcher):
         app_task = loop.create_task(run_app())
         response_task = loop.create_task(response_started.wait())
 
-        await asyncio.wait(
-            {app_task, response_task}, return_when=asyncio.FIRST_COMPLETED
-        )
+        tasks = [app_task, response_task]
+
+        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
         if app_exc is not None:
             raise app_exc

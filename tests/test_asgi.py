@@ -1,5 +1,6 @@
-import http3
 import pytest
+
+import http3
 
 
 async def hello_world(scope, receive, send):

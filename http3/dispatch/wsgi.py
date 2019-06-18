@@ -54,6 +54,8 @@ class WSGIDispatch(Dispatcher):
 
         assert seen_status is not None
         assert seen_response_headers is not None
+        if seen_exc_info:
+            raise seen_exc_info[1]
 
         return Response(
             status_code=int(seen_status.split()[0]),
