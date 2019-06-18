@@ -25,6 +25,7 @@ from .exceptions import (
     ResponseNotRead,
     StreamConsumed,
 )
+from .multipart import multipart_encode
 from .status_codes import StatusCode
 from .utils import is_known_encoding, normalize_header_key, normalize_header_value
 
@@ -53,6 +54,17 @@ AuthTypes = typing.Union[
 AsyncRequestData = typing.Union[dict, bytes, typing.AsyncIterator[bytes]]
 
 RequestData = typing.Union[dict, bytes, typing.Iterator[bytes]]
+
+RequestFiles = typing.Dict[
+    str,
+    typing.Union[
+        typing.IO[typing.AnyStr],  # file
+        typing.Tuple[str, typing.IO[typing.AnyStr]],  # (filename, file)
+        typing.Tuple[
+            str, typing.IO[typing.AnyStr], str
+        ],  # (filename, file, content_type)
+    ],
+]
 
 AsyncResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
@@ -489,11 +501,21 @@ class BaseRequest:
             self._cookies = Cookies(cookies)
             self._cookies.set_cookie_header(self)
 
-    def encode_json(self, json: typing.Any) -> bytes:
-        return jsonlib.dumps(json).encode("utf-8")
-
-    def urlencode_data(self, data: dict) -> bytes:
-        return urlencode(data, doseq=True).encode("utf-8")
+    def encode_data(
+        self, data: dict = None, files: RequestFiles = None, json: typing.Any = None
+    ) -> typing.Tuple[bytes, str]:
+        if json is not None:
+            content = jsonlib.dumps(json).encode("utf-8")
+            content_type = "application/json"
+        elif files is not None:
+            content, content_type = multipart_encode(data or {}, files)
+        elif data is not None:
+            content = urlencode(data, doseq=True).encode("utf-8")
+            content_type = "application/x-www-form-urlencoded"
+        else:
+            content = b""
+            content_type = ""
+        return content, content_type
 
     def prepare(self) -> None:
         content = getattr(self, "content", None)  # type: bytes
@@ -545,24 +567,23 @@ class AsyncRequest(BaseRequest):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        data: AsyncRequestData = b"",
+        data: AsyncRequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
     ):
         super().__init__(
             method=method, url=url, params=params, headers=headers, cookies=cookies
         )
 
-        if json is not None:
+        if data is None or isinstance(data, dict):
+            content, content_type = self.encode_data(data, files, json)
             self.is_streaming = False
-            self.content = self.encode_json(json)
-            self.headers["Content-Type"] = "application/json"
+            self.content = content
+            if content_type:
+                self.headers["Content-Type"] = content_type
         elif isinstance(data, bytes):
             self.is_streaming = False
             self.content = data
-        elif isinstance(data, dict):
-            self.is_streaming = False
-            self.content = self.urlencode_data(data)
-            self.headers["Content-Type"] = "application/x-www-form-urlencoded"
         else:
             assert hasattr(data, "__aiter__")
             self.is_streaming = True
@@ -595,24 +616,23 @@ class Request(BaseRequest):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        data: RequestData = b"",
+        data: RequestData = None,
+        files: RequestFiles = None,
         json: typing.Any = None,
     ):
         super().__init__(
             method=method, url=url, params=params, headers=headers, cookies=cookies
         )
 
-        if json is not None:
+        if data is None or isinstance(data, dict):
+            content, content_type = self.encode_data(data, files, json)
             self.is_streaming = False
-            self.content = self.encode_json(json)
-            self.headers["Content-Type"] = "application/json"
+            self.content = content
+            if content_type:
+                self.headers["Content-Type"] = content_type
         elif isinstance(data, bytes):
             self.is_streaming = False
             self.content = data
-        elif isinstance(data, dict):
-            self.is_streaming = False
-            self.content = self.urlencode_data(data)
-            self.headers["Content-Type"] = "application/x-www-form-urlencoded"
         else:
             assert hasattr(data, "__iter__")
             self.is_streaming = True
@@ -638,20 +658,22 @@ class BaseResponse:
         self,
         status_code: int,
         *,
-        reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
         request: BaseRequest = None,
         on_close: typing.Callable = None,
     ):
-        self.status_code = StatusCode.enum_or_int(status_code)
-        self.reason_phrase = StatusCode.get_reason_phrase(status_code)
+        self.status_code = status_code
         self.protocol = protocol
         self.headers = Headers(headers)
 
         self.request = request
         self.on_close = on_close
         self.next = None  # typing.Optional[typing.Callable]
+
+    @property
+    def reason_phrase(self) -> str:
+        return StatusCode.get_reason_phrase(self.status_code)
 
     @property
     def url(self) -> typing.Optional[URL]:
@@ -787,7 +809,7 @@ class BaseResponse:
         return self._cookies
 
     def __repr__(self) -> str:
-        return f"<Response({self.status_code}, {self.reason_phrase!r})>"
+        return f"<Response [{self.status_code} {self.reason_phrase}])>"
 
 
 class AsyncResponse(BaseResponse):
@@ -795,17 +817,15 @@ class AsyncResponse(BaseResponse):
         self,
         status_code: int,
         *,
-        reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
-        content: AsyncResponseContent = b"",
+        content: AsyncResponseContent = None,
         on_close: typing.Callable = None,
         request: AsyncRequest = None,
         history: typing.List["BaseResponse"] = None,
     ):
         super().__init__(
             status_code=status_code,
-            reason_phrase=reason_phrase,
             protocol=protocol,
             headers=headers,
             request=request,
@@ -814,10 +834,10 @@ class AsyncResponse(BaseResponse):
 
         self.history = [] if history is None else list(history)
 
-        if isinstance(content, bytes):
+        if content is None or isinstance(content, bytes):
             self.is_closed = True
             self.is_stream_consumed = True
-            self._raw_content = content
+            self._raw_content = content or b""
         else:
             self.is_closed = False
             self.is_stream_consumed = False
@@ -876,17 +896,15 @@ class Response(BaseResponse):
         self,
         status_code: int,
         *,
-        reason_phrase: str = None,
         protocol: str = None,
         headers: HeaderTypes = None,
-        content: ResponseContent = b"",
+        content: ResponseContent = None,
         on_close: typing.Callable = None,
         request: Request = None,
         history: typing.List["BaseResponse"] = None,
     ):
         super().__init__(
             status_code=status_code,
-            reason_phrase=reason_phrase,
             protocol=protocol,
             headers=headers,
             request=request,
@@ -895,10 +913,10 @@ class Response(BaseResponse):
 
         self.history = [] if history is None else list(history)
 
-        if isinstance(content, bytes):
+        if content is None or isinstance(content, bytes):
             self.is_closed = True
             self.is_stream_consumed = True
-            self._raw_content = content
+            self._raw_content = content or b""
         else:
             self.is_closed = False
             self.is_stream_consumed = False

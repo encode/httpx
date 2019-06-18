@@ -64,7 +64,6 @@ class ThreadedDispatcher(AsyncDispatcher):
 
         return AsyncResponse(
             status_code=sync_response.status_code,
-            reason_phrase=sync_response.reason_phrase,
             protocol=sync_response.protocol,
             headers=sync_response.headers,
             content=async_content,

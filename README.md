@@ -21,8 +21,10 @@ Let's get started...
 ```python
 >>> import http3
 >>> r = http3.get('https://www.example.org/')
+>>> r
+<Response [200 OK]>
 >>> r.status_code
-<StatusCode.OK: 200>
+200
 >>> r.protocol
 'HTTP/2'
 >>> r.headers['content-type']
@@ -54,7 +56,7 @@ Plus all the standard features of `requests`...
 * Automatic Decompression
 * Automatic Content Decoding
 * Unicode Response Bodies
-* Multipart File Uploads *TODO*
+* Multipart File Uploads
 * HTTP(S) Proxy Support *TODO*
 * Connection Timeouts
 * Streaming Downloads

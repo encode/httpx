@@ -37,7 +37,7 @@
 *An HTTP response.*
 
 * `def __init__(...)`
-* `.status_code` - **int** *(Typically a `StatusCode` IntEnum.)*
+* `.status_code` - **int**
 * `.reason_phrase` - **str**
 * `.protocol` - `"HTTP/2"` or `"HTTP/1.1"`
 * `.url` - **URL**
