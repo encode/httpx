@@ -1,3 +1,4 @@
+import inspect
 import typing
 from types import TracebackType
 
@@ -12,6 +13,7 @@ from .config import (
     TimeoutTypes,
     VerifyTypes,
 )
+from .dispatch.asgi import ASGIDispatch
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
@@ -56,7 +58,12 @@ class BaseClient:
             backend = AsyncioBackend()
 
         if app is not None:
-            dispatch = WSGIDispatch(app=app)
+            param_count = len(inspect.signature(app).parameters)
+            assert param_count in (2, 3)
+            if param_count == 2:
+                dispatch = WSGIDispatch(app=app)
+            else:
+                dispatch = ASGIDispatch(app=app)
 
         if dispatch is None:
             async_dispatch = ConnectionPool(
