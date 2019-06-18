@@ -6,31 +6,41 @@ from ..interfaces import AsyncDispatcher
 from ..models import AsyncRequest, AsyncResponse
 
 
-class BodyIterator:
-    def __init__(self) -> None:
-        self._queue = asyncio.Queue(
-            maxsize=1
-        )  # type: asyncio.Queue[typing.Union[bytes, object]]
-        self._done = object()
-
-    async def iterate(self) -> typing.AsyncIterator[bytes]:
-        while True:
-            data = await self._queue.get()
-            if data is self._done:
-                break
-            assert isinstance(data, bytes)
-            yield data
-
-    async def put(self, data: bytes) -> None:
-        await self._queue.put(data)
-
-    async def done(self) -> None:
-        await self._queue.put(self._done)
-
-
 class ASGIDispatch(AsyncDispatcher):
-    def __init__(self, app: typing.Callable) -> None:
+    """
+    A custom dispatcher that handles sending requests directly to an ASGI app.
+
+    The simplest way to use this functionality is to use the `app`argument.
+    This will automatically infer if 'app' is a WSGI or an ASGI application,
+    and will setup an appropriate dispatch class:
+
+    ```
+    client = http3.Client(app=app)
+    ```
+
+    Alternatively, you can setup the dispatch instance explicitly.
+    This allows you to include any additional configuration arguments specific
+    to the ASGIDispatch class:
+
+    ```
+    dispatch = http3.ASGIDispatch(
+        app=app,
+        root_path="/submount",
+        client=("1.2.3.4", 123)
+    )
+    client = http3.Client(dispatch=dispatch)
+    ```
+    """
+
+    def __init__(
+        self,
+        app: typing.Callable,
+        root_path: str = "",
+        client: typing.Tuple[str, int] = ("127.0.0.1", 123),
+    ) -> None:
         self.app = app
+        self.root_path = root_path
+        self.client = client
 
     async def send(
         self,
@@ -49,6 +59,8 @@ class ASGIDispatch(AsyncDispatcher):
             "path": request.url.path,
             "query": request.url.query.encode("ascii"),
             "server": request.url.host,
+            "client": self.client,
+            "root_path": self.root_path,
         }
         app = self.app
         app_exc = None
@@ -92,11 +104,16 @@ class ASGIDispatch(AsyncDispatcher):
             finally:
                 await response_body.done()
 
+        # Really we'd like to push all `asyncio` logic into concurrency.py,
+        # with a standardized interface, so that we can support other event
+        # loop implementations, such as Trio and Curio.
+        # That's a bit fiddly here, so we're not yet supporting using a custom
+        # `ConcurrencyBackend` with the `Client(app=asgi_app)` case.
         loop = asyncio.get_event_loop()
         app_task = loop.create_task(run_app())
         response_task = loop.create_task(response_started.wait())
 
-        tasks = [app_task, response_task]
+        tasks = {app_task, response_task}  # type: typing.Set[asyncio.Task]
 
         await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
@@ -121,3 +138,39 @@ class ASGIDispatch(AsyncDispatcher):
             on_close=on_close,
             request=request,
         )
+
+
+class BodyIterator:
+    """
+    Provides a byte-iterator interface that the client can use to
+    ingest the response content from.
+    """
+
+    def __init__(self) -> None:
+        self._queue = asyncio.Queue(
+            maxsize=1
+        )  # type: asyncio.Queue[typing.Union[bytes, object]]
+        self._done = object()
+
+    async def iterate(self) -> typing.AsyncIterator[bytes]:
+        """
+        A byte-iterator, used by the client to consume the response body.
+        """
+        while True:
+            data = await self._queue.get()
+            if data is self._done:
+                break
+            assert isinstance(data, bytes)
+            yield data
+
+    async def put(self, data: bytes) -> None:
+        """
+        Used by the server to add data to the response body.
+        """
+        await self._queue.put(data)
+
+    async def done(self) -> None:
+        """
+        Used by the server to signal the end of the response body.
+        """
+        await self._queue.put(self._done)
