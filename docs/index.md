@@ -41,8 +41,9 @@ HTTP3 builds on the well-established usability of `requests`, and gives you:
 
 * A requests-compatible API.
 * HTTP/2 and HTTP/1.1 support.
-* Support for issuing HTTP requests in parallel.
-* Standard synchronous interface, but with `async`/`await` support if you need it.
+* Support for [issuing HTTP requests in parallel](parallel.md). *(Coming soon)*
+* Standard synchronous interface, but [with `async`/`await` support if you need it](async.md).
+* Ability to [make requests directly to WSGI or ASGI applications](advanced.md#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 100% test coverage.
@@ -53,23 +54,25 @@ Plus all the standard features of `requests`...
 * Keep-Alive & Connection Pooling
 * Sessions with Cookie Persistence
 * Browser-style SSL Verification
-* Basic/Digest Authentication *Digest is still TODO*
+* Basic/Digest Authentication *(Digest is still TODO)*
 * Elegant Key/Value Cookies
 * Automatic Decompression
 * Automatic Content Decoding
 * Unicode Response Bodies
 * Multipart File Uploads
-* HTTP(S) Proxy Support *TODO*
+* HTTP(S) Proxy Support *(TODO)*
 * Connection Timeouts
 * Streaming Downloads
-* .netrc Support *TODO*
+* .netrc Support *(TODO)*
 * Chunked Requests
 
 ## Documentation
 
 For a run-through of all the basics, head over to the [QuickStart](quickstart.md).
 
-For more advanced topics, see the [Parallel Requests](parallel.md) or [Async Client](async.md) documentation.
+For more advanced topics, see the [Advanced Usage](advanced.md) section, or
+the specific topics on making [Parallel Requests](parallel.md) or using the
+[Async Client](async.md).
 
 The [Developer Interface](api.md) provides a comprehensive API reference.
 

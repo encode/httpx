@@ -39,8 +39,9 @@ HTTP3 builds on the well-established usability of `requests`, and gives you:
 
 * A requests-compatible API.
 * HTTP/2 and HTTP/1.1 support.
-* Support for issuing HTTP requests in parallel.
-* Standard synchronous interface, but with `async`/`await` support if you need it.
+* Support for [issuing HTTP requests in parallel](https://www.encode.io/http3/parallel/). *(Coming soon)*
+* Standard synchronous interface, but [with `async`/`await` support if you need it](https://www.encode.io/http3/async/).
+* Ability to [make requests directly to WSGI or ASGI applications](https://www.encode.io/http3/advanced/#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 100% test coverage.
@@ -51,16 +52,16 @@ Plus all the standard features of `requests`...
 * Keep-Alive & Connection Pooling
 * Sessions with Cookie Persistence
 * Browser-style SSL Verification
-* Basic/Digest Authentication *Digest is still TODO*
+* Basic/Digest Authentication *(Digest is still TODO)*
 * Elegant Key/Value Cookies
 * Automatic Decompression
 * Automatic Content Decoding
 * Unicode Response Bodies
 * Multipart File Uploads
-* HTTP(S) Proxy Support *TODO*
+* HTTP(S) Proxy Support *(TODO)*
 * Connection Timeouts
 * Streaming Downloads
-* .netrc Support *TODO*
+* .netrc Support *(TODO)*
 * Chunked Requests
 
 ## Installation

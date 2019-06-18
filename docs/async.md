@@ -7,9 +7,8 @@ Async is a concurrency model that is far more efficient than multi-threading,
 and can provide significant performance benefits and enable the use of
 long-lived network connections such as WebSockets.
 
-If you're working with an async web framework such as Sanic, Starlette, FastAPI,
-Responder or Bocadillo, then you'll also want to use an async client for sending
-outgoing HTTP requests.
+If you're working with an async web framework then you'll also want to use an
+async client for sending outgoing HTTP requests.
 
 ## Making Async requests
 
