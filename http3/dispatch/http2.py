@@ -95,9 +95,13 @@ class HTTP2Connection:
     async def send_data(
         self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
     ) -> None:
-        self.h2_state.send_data(stream_id, data)
-        data_to_send = self.h2_state.data_to_send()
-        await self.writer.write(data_to_send, timeout)
+        flow_control = self.h2_state.local_flow_control_window(stream_id)
+        chunk_size = min(len(data), flow_control)
+        for idx in range(0, len(data), chunk_size):
+            chunk = data[idx:idx+chunk_size]
+            self.h2_state.send_data(stream_id, chunk)
+            data_to_send = self.h2_state.data_to_send()
+            await self.writer.write(data_to_send, timeout)
 
     async def end_stream(self, stream_id: int, timeout: TimeoutConfig = None) -> None:
         self.h2_state.end_stream(stream_id)
