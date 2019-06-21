@@ -51,6 +51,7 @@ class BaseClient:
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        base_url: URLTypes = None,
         dispatch: typing.Union[AsyncDispatcher, Dispatcher] = None,
         app: typing.Callable = None,
         backend: ConcurrencyBackend = None,
@@ -78,6 +79,11 @@ class BaseClient:
             async_dispatch = ThreadedDispatcher(dispatch, backend)
         else:
             async_dispatch = dispatch
+
+        if base_url is None:
+            self.base_url = URL('', allow_relative=True)
+        else:
+            self.base_url = URL(base_url)
 
         self.auth = auth
         self.cookies = Cookies(cookies)
@@ -238,7 +244,7 @@ class BaseClient:
         # Facilitate relative 'Location' headers, as allowed by RFC 7231.
         # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
         if url.is_relative_url:
-            url = url.resolve_with(request.url)
+            url = request.url.join(url)
 
         # Attach previous fragment if needed (RFC 7231 7.1.2)
         if request.url.fragment and not url.fragment:
@@ -506,6 +512,8 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
+        url = self.base_url.join(url)
+        cookies = self.merge_cookies(cookies)
         request = AsyncRequest(
             method,
             url,
@@ -514,7 +522,7 @@ class AsyncClient(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=self.merge_cookies(cookies),
+            cookies=cookies,
         )
         response = await self.send(
             request,
@@ -585,6 +593,8 @@ class Client(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
     ) -> Response:
+        url = self.base_url.join(url)
+        cookies = self.merge_cookies(cookies)
         request = AsyncRequest(
             method,
             url,
@@ -593,7 +603,7 @@ class Client(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=self.merge_cookies(cookies),
+            cookies=cookies,
         )
         concurrency_backend = self.concurrency_backend
 
