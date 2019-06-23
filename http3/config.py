@@ -10,6 +10,26 @@ VerifyTypes = typing.Union[str, bool]
 TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
 
 
+DEFAULT_CIPHERS = ":".join(
+    [
+        "ECDHE+AESGCM",
+        "ECDHE+CHACHA20",
+        "DHE+AESGCM",
+        "DHE+CHACHA20",
+        "ECDH+AESGCM",
+        "DH+AESGCM",
+        "ECDH+AES",
+        "DH+AES",
+        "RSA+AESGCM",
+        "RSA+AES",
+        "!aNULL",
+        "!eNULL",
+        "!MD5",
+        "!DSS",
+    ]
+)
+
+
 class SSLConfig:
     """
     SSL Configuration.
@@ -85,11 +105,7 @@ class SSLConfig:
         context.options |= ssl.OP_NO_SSLv3
         context.options |= ssl.OP_NO_COMPRESSION
 
-        # RFC 7540 Section 9.2.2: "deployments of HTTP/2 that use TLS 1.2 MUST
-        # support TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256". In practice, the
-        # blacklist defined in this section allows only the AES GCM and ChaCha20
-        # cipher suites with ephemeral key negotiation.
-        context.set_ciphers("ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20")
+        context.set_ciphers(DEFAULT_CIPHERS)
 
         if ssl.HAS_ALPN:
             context.set_alpn_protocols(["h2", "http/1.1"])
