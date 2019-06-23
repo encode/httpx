@@ -1,9 +1,6 @@
 import json
 
-import pytest
-
 from http3 import (
-    URL,
     AsyncDispatcher,
     AsyncRequest,
     AsyncResponse,
@@ -12,6 +9,7 @@ from http3 import (
     TimeoutTypes,
     VerifyTypes,
 )
+from http3.auth import HTTPBearerAuth
 
 
 class MockDispatch(AsyncDispatcher):
@@ -70,3 +68,25 @@ def test_custom_auth():
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Token 123"}
+
+
+def test_bearer_auth():
+    url = "https://example.org/"
+
+    auth = HTTPBearerAuth("token")
+    with Client(dispatch=MockDispatch()) as client:
+        response = client.get(url, auth=auth)
+
+    assert response.status_code == 200
+    assert response.json() == {"auth": "Bearer token"}
+
+
+def test_bearer_auth_on_session():
+    url = "https://example.org/"
+
+    auth = HTTPBearerAuth("token")
+    with Client(dispatch=MockDispatch(), auth=auth) as client:
+        response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {"auth": "Bearer token"}

@@ -36,3 +36,15 @@ class HTTPBasicAuth(AuthBase):
         userpass = b":".join((username, password))
         token = b64encode(userpass).decode().strip()
         return f"Basic {token}"
+
+
+class HTTPBearerAuth(AuthBase):
+    def __init__(self, token: str) -> None:
+        self.token = token
+
+    def __call__(self, request: AsyncRequest) -> AsyncRequest:
+        request.headers["Authorization"] = self.build_auth_header()
+        return request
+
+    def build_auth_header(self) -> str:
+        return f'Bearer {self.token}'
