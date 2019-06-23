@@ -12,7 +12,7 @@ async def test_get(server):
     assert response.text == "Hello, world!"
     assert response.protocol == "HTTP/1.1"
     assert response.headers
-    assert repr(response) == "<Response [200 OK])>"
+    assert repr(response) == "<Response [200 OK]>"
 
 
 @pytest.mark.asyncio
