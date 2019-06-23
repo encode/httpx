@@ -813,7 +813,7 @@ class BaseResponse:
         return self._cookies
 
     def __repr__(self) -> str:
-        return f"<Response [{self.status_code} {self.reason_phrase}])>"
+        return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
 
 class AsyncResponse(BaseResponse):
