@@ -37,7 +37,7 @@ def test_get(server):
     assert response.request.url == http3.URL(url)
     assert response.headers
     assert response.is_redirect is False
-    assert repr(response) == "<Response [200 OK])>"
+    assert repr(response) == "<Response [200 OK]>"
 
 
 @threadpool
@@ -141,3 +141,12 @@ def test_delete(server):
         response = http.delete("http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
+
+
+@threadpool
+def test_base_url(server):
+    base_url = "http://127.0.0.1:8000/"
+    with http3.Client(base_url=base_url) as http:
+        response = http.get('/')
+    assert response.status_code == 200
+    assert str(response.url) == base_url

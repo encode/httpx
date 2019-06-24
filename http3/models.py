@@ -183,14 +183,18 @@ class URL:
     def copy_with(self, **kwargs: typing.Any) -> "URL":
         return URL(self.components.copy_with(**kwargs))
 
-    def resolve_with(self, base_url: URLTypes) -> "URL":
+    def join(self, relative_url: URLTypes) -> "URL":
         """
-        Return an absolute URL, using base_url as the base.
+        Return an absolute URL, using given this URL as the base.
         """
+        if self.is_relative_url:
+            return URL(relative_url)
+
         # We drop any fragment portion, because RFC 3986 strictly
         # treats URLs with a fragment portion as not being absolute URLs.
-        base_url = URL(base_url).copy_with(fragment=None)
-        return URL(self.components.resolve_with(base_url.components))
+        base_components = self.components.copy_with(fragment=None)
+        relative_url = URL(relative_url, allow_relative=True)
+        return URL(relative_url.components.resolve_with(base_components))
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -809,7 +813,7 @@ class BaseResponse:
         return self._cookies
 
     def __repr__(self) -> str:
-        return f"<Response [{self.status_code} {self.reason_phrase}])>"
+        return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
 
 class AsyncResponse(BaseResponse):
