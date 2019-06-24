@@ -41,7 +41,7 @@ def ssl_monkey_patch() -> None:
     _write = MonkeyPatch.write
 
     def _fixed_write(self, data: bytes) -> None:  # type: ignore
-        if not self._loop.is_closed():
+        if self._loop and not self._loop.is_closed():
             _write(self, data)
 
     MonkeyPatch.write = _fixed_write

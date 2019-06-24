@@ -1,3 +1,4 @@
+import asyncio
 import typing
 
 import h11
@@ -43,7 +44,10 @@ class HTTP11Connection:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
         await self._send_request(request, timeout)
-        await self._send_request_data(request.stream(), timeout)
+        loop = asyncio.get_event_loop()
+        self.sender_task = loop.create_task(
+            self._send_request_data(request.stream(), timeout)
+        )
         status_code, headers = await self._receive_response(timeout)
         content = self._receive_response_data(timeout)
 
@@ -58,7 +62,11 @@ class HTTP11Connection:
 
     async def close(self) -> None:
         event = h11.ConnectionClosed()
-        self.h11_state.send(event)
+        try:
+            self.h11_state.send(event)
+        except h11.LocalProtocolError as exc:  # pragma: no cover
+            # Premature client disconnect
+            pass
         await self.writer.close()
 
     async def _send_request(
@@ -82,14 +90,19 @@ class HTTP11Connection:
         """
         Send the request body to the network.
         """
-        # Send the request body.
-        async for chunk in data:
-            event = h11.Data(data=chunk)
-            await self._send_event(event, timeout)
+        try:
+            # Send the request body.
+            async for chunk in data:
+                event = h11.Data(data=chunk)
+                await self._send_event(event, timeout)
 
-        # Finalize sending the request.
-        event = h11.EndOfMessage()
-        await self._send_event(event, timeout)
+            # Finalize sending the request.
+            event = h11.EndOfMessage()
+            await self._send_event(event, timeout)
+        except OSError:  # pragma: nocover
+            # We don't actually care about connection errors when sending the
+            # request body. Defer to exceptions in the response, if any.
+            pass
 
     async def _send_event(self, event: H11Event, timeout: TimeoutConfig = None) -> None:
         """
@@ -135,13 +148,19 @@ class HTTP11Connection:
         while True:
             event = self.h11_state.next_event()
             if event is h11.NEED_DATA:
-                data = await self.reader.read(self.READ_NUM_BYTES, timeout)
+                try:
+                    data = await self.reader.read(self.READ_NUM_BYTES, timeout)
+                except OSError:  # pragma: nocover
+                    data = b""
                 self.h11_state.receive_data(data)
             else:
                 break
         return event
 
     async def response_closed(self) -> None:
+        await self.sender_task
+        self.sender_task.result()
+
         if (
             self.h11_state.our_state is h11.DONE
             and self.h11_state.their_state is h11.DONE
