@@ -42,34 +42,10 @@ class HTTP11Connection:
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
-        #  Start sending the request.
-        method = request.method.encode("ascii")
-        target = request.url.full_path.encode("ascii")
-        headers = request.headers.raw
-        if "Host" not in request.headers:
-            host = request.url.authority.encode("ascii")
-            headers = [(b"host", host)] + headers
-        event = h11.Request(method=method, target=target, headers=headers)
-        await self._send_event(event, timeout)
-
-        # Send the request body.
-        async for data in request.stream():
-            event = h11.Data(data=data)
-            await self._send_event(event, timeout)
-
-        # Finalize sending the request.
-        event = h11.EndOfMessage()
-        await self._send_event(event, timeout)
-
-        # Start getting the response.
-        event = await self._receive_event(timeout)
-        if isinstance(event, h11.InformationalResponse):
-            event = await self._receive_event(timeout)
-
-        assert isinstance(event, h11.Response)
-        status_code = event.status_code
-        headers = event.headers
-        content = self._body_iter(timeout)
+        await self._send_request(request, timeout)
+        await self._send_request_data(request.stream(), timeout)
+        status_code, headers = await self._receive_response(timeout)
+        content = self._receive_response_data(timeout)
 
         return AsyncResponse(
             status_code=status_code,
@@ -85,28 +61,71 @@ class HTTP11Connection:
         self.h11_state.send(event)
         await self.writer.close()
 
-    async def _body_iter(
+    async def _send_request(
+        self, request: AsyncRequest, timeout: TimeoutConfig = None
+    ) -> None:
+        """
+        Send the request method, URL, and headers to the network.
+        """
+        method = request.method.encode("ascii")
+        target = request.url.full_path.encode("ascii")
+        headers = request.headers.raw
+        if "Host" not in request.headers:
+            host = request.url.authority.encode("ascii")
+            headers = [(b"host", host)] + headers
+        event = h11.Request(method=method, target=target, headers=headers)
+        bytes_to_send = self.h11_state.send(event)
+        await self.writer.write(bytes_to_send, timeout)
+
+    async def _send_request_data(
+        self, data: typing.AsyncIterator[bytes], timeout: TimeoutConfig = None
+    ) -> None:
+        """
+        Send the request body to the network.
+        """
+        # Send the request body.
+        async for chunk in data:
+            event = h11.Data(data=chunk)
+            bytes_to_send = self.h11_state.send(event)
+            await self.writer.write(bytes_to_send, timeout)
+
+        # Finalize sending the request.
+        event = h11.EndOfMessage()
+        bytes_to_send = self.h11_state.send(event)
+        await self.writer.write(bytes_to_send, timeout)
+
+    async def _receive_response(
+        self, timeout: TimeoutConfig = None
+    ) -> typing.Tuple[int, typing.List[typing.Tuple[bytes, bytes]]]:
+        """
+        Read the response status and headers from the network.
+        """
+        while True:
+            event = self.h11_state.next_event()
+            if event is h11.NEED_DATA:
+                data = await self.reader.read(self.READ_NUM_BYTES, timeout)
+                self.h11_state.receive_data(data)
+            elif isinstance(event, h11.InformationalResponse):
+                continue
+            elif isinstance(event, h11.Response):
+                break
+        return (event.status_code, event.headers)
+
+    async def _receive_response_data(
         self, timeout: TimeoutConfig = None
     ) -> typing.AsyncIterator[bytes]:
-        event = await self._receive_event(timeout)
-        while isinstance(event, h11.Data):
-            yield event.data
-            event = await self._receive_event(timeout)
-        assert isinstance(event, h11.EndOfMessage)
-
-    async def _send_event(self, event: H11Event, timeout: TimeoutConfig = None) -> None:
-        data = self.h11_state.send(event)
-        await self.writer.write(data, timeout)
-
-    async def _receive_event(self, timeout: TimeoutConfig = None) -> H11Event:
-        event = self.h11_state.next_event()
-
-        while event is h11.NEED_DATA:
-            data = await self.reader.read(self.READ_NUM_BYTES, timeout)
-            self.h11_state.receive_data(data)
+        """
+        Read the response data from the network.
+        """
+        while True:
             event = self.h11_state.next_event()
-
-        return event
+            if event is h11.NEED_DATA:
+                data = await self.reader.read(self.READ_NUM_BYTES, timeout)
+                self.h11_state.receive_data(data)
+            elif isinstance(event, h11.Data):
+                yield event.data
+            elif isinstance(event, h11.EndOfMessage):
+                break
 
     async def response_closed(self) -> None:
         if (
