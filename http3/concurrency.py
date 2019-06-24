@@ -12,10 +12,12 @@ import asyncio
 import functools
 import ssl
 import typing
+from types import TracebackType
 
 from .config import DEFAULT_TIMEOUT_CONFIG, PoolLimits, TimeoutConfig
 from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .interfaces import (
+    BaseBackgroundManager,
     BasePoolSemaphore,
     BaseReader,
     BaseWriter,
@@ -193,3 +195,29 @@ class AsyncioBackend(ConcurrencyBackend):
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
+
+    def background_manager(
+        self, coroutine: typing.Callable, args: typing.Any
+    ) -> "BackgroundManager":
+        return BackgroundManager(coroutine, args)
+
+
+class BackgroundManager(BaseBackgroundManager):
+    def __init__(self, coroutine: typing.Callable, args: typing.Any) -> None:
+        self.coroutine = coroutine
+        self.args = args
+
+    async def __aenter__(self) -> "BackgroundManager":
+        loop = asyncio.get_event_loop()
+        self.task = loop.create_task(self.coroutine(*self.args))
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        await self.task
+        if exc_type is None:
+            self.task.result()

@@ -207,3 +207,21 @@ class ConcurrencyBackend:
                 yield self.run(async_iterator.__anext__)
             except StopAsyncIteration:
                 break
+
+    def background_manager(
+        self, coroutine: typing.Callable, args: typing.Any
+    ) -> "BaseBackgroundManager":
+        raise NotImplementedError()  # pragma: no cover
+
+
+class BaseBackgroundManager:
+    async def __aenter__(self) -> "BaseBackgroundManager":
+        raise NotImplementedError()  # pragma: no cover
+
+    async def __aexit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        raise NotImplementedError()  # pragma: no cover

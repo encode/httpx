@@ -1,4 +1,3 @@
-import asyncio
 import functools
 import typing
 
@@ -7,7 +6,7 @@ import h2.events
 
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectTimeout, ReadTimeout
-from ..interfaces import BaseReader, BaseWriter
+from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
 
@@ -15,10 +14,15 @@ class HTTP2Connection:
     READ_NUM_BYTES = 4096
 
     def __init__(
-        self, reader: BaseReader, writer: BaseWriter, on_release: typing.Callable = None
+        self,
+        reader: BaseReader,
+        writer: BaseWriter,
+        backend: ConcurrencyBackend,
+        on_release: typing.Callable = None,
     ):
         self.reader = reader
         self.writer = writer
+        self.backend = backend
         self.on_release = on_release
         self.h2_state = h2.connection.H2Connection()
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
@@ -36,13 +40,9 @@ class HTTP2Connection:
         stream_id = await self.send_headers(request, timeout)
         self.events[stream_id] = []
 
-        loop = asyncio.get_event_loop()
-        sender_task = loop.create_task(
-            self.send_request_data(stream_id, request.stream(), timeout)
-        )
-        status_code, headers = await self.receive_response(stream_id, timeout)
-        await sender_task
-        sender_task.result()
+        task, args = self.send_request_data, [stream_id, request.stream(), timeout]
+        async with self.backend.background_manager(task, args=args):
+            status_code, headers = await self.receive_response(stream_id, timeout)
         content = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
 

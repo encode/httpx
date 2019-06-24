@@ -1,11 +1,10 @@
-import asyncio
 import typing
 
 import h11
 
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectTimeout, ReadTimeout
-from ..interfaces import BaseReader, BaseWriter
+from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
 H11Event = typing.Union[
@@ -31,10 +30,12 @@ class HTTP11Connection:
         self,
         reader: BaseReader,
         writer: BaseWriter,
+        backend: ConcurrencyBackend,
         on_release: typing.Optional[OnReleaseCallback] = None,
     ):
         self.reader = reader
         self.writer = writer
+        self.backend = backend
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
 
@@ -44,13 +45,9 @@ class HTTP11Connection:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
         await self._send_request(request, timeout)
-        loop = asyncio.get_event_loop()
-        sender_task = loop.create_task(
-            self._send_request_data(request.stream(), timeout)
-        )
-        status_code, headers = await self._receive_response(timeout)
-        await sender_task
-        sender_task.result()
+        task, args = self._send_request_data, [request.stream(), timeout]
+        async with self.backend.background_manager(task, args=args):
+            status_code, headers = await self._receive_response(timeout)
         content = self._receive_response_data(timeout)
 
         return AsyncResponse(
