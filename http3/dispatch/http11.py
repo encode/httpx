@@ -100,8 +100,9 @@ class HTTP11Connection:
             event = h11.EndOfMessage()
             await self._send_event(event, timeout)
         except OSError:  # pragma: nocover
-            # We don't actually care about connection errors when sending the
-            # request body. Defer to exceptions in the response, if any.
+            # Once we've sent the initial part of the request we don't actually
+            # care about connection errors that occur when sending the body.
+            # Ignore these, and defer to any exceptions on reading the response.
             pass
 
     async def _send_event(self, event: H11Event, timeout: TimeoutConfig = None) -> None:
