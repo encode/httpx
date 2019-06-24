@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import typing
 
@@ -35,27 +36,13 @@ class HTTP2Connection:
         stream_id = await self.send_headers(request, timeout)
         self.events[stream_id] = []
 
-        # Send the request body.
-        async for data in request.stream():
-            await self.send_data(stream_id, data, timeout)
-
-        # Finalize sending the request.
-        await self.end_stream(stream_id, timeout)
-
-        # Start getting the response.
-        while True:
-            event = await self.receive_event(stream_id, timeout)
-            if isinstance(event, h2.events.ResponseReceived):
-                break
-
-        status_code = 200
-        headers = []
-        for k, v in event.headers:
-            if k == b":status":
-                status_code = int(v.decode("ascii", errors="ignore"))
-            elif not k.startswith(b":"):
-                headers.append((k, v))
-
+        loop = asyncio.get_event_loop()
+        sender_task = loop.create_task(
+            self.send_request_data(stream_id, request.stream(), timeout)
+        )
+        status_code, headers = await self.receive_response(stream_id, timeout)
+        await sender_task
+        sender_task.result()
         content = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
 
@@ -92,13 +79,23 @@ class HTTP2Connection:
         await self.writer.write(data_to_send, timeout)
         return stream_id
 
+    async def send_request_data(
+        self,
+        stream_id: int,
+        stream: typing.AsyncIterator[bytes],
+        timeout: TimeoutConfig = None,
+    ) -> None:
+        async for data in stream:
+            await self.send_data(stream_id, data, timeout)
+        await self.end_stream(stream_id, timeout)
+
     async def send_data(
         self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
     ) -> None:
         flow_control = self.h2_state.local_flow_control_window(stream_id)
         chunk_size = min(len(data), flow_control)
         for idx in range(0, len(data), chunk_size):
-            chunk = data[idx:idx+chunk_size]
+            chunk = data[idx : idx + chunk_size]
             self.h2_state.send_data(stream_id, chunk)
             data_to_send = self.h2_state.data_to_send()
             await self.writer.write(data_to_send, timeout)
@@ -107,6 +104,26 @@ class HTTP2Connection:
         self.h2_state.end_stream(stream_id)
         data_to_send = self.h2_state.data_to_send()
         await self.writer.write(data_to_send, timeout)
+
+    async def receive_response(
+        self, stream_id: int, timeout: TimeoutConfig = None
+    ) -> typing.Tuple[int, typing.List[typing.Tuple[bytes, bytes]]]:
+        """
+        Read the response status and headers from the network.
+        """
+        while True:
+            event = await self.receive_event(stream_id, timeout)
+            if isinstance(event, h2.events.ResponseReceived):
+                break
+
+        status_code = 200
+        headers = []
+        for k, v in event.headers:
+            if k == b":status":
+                status_code = int(v.decode("ascii", errors="ignore"))
+            elif not k.startswith(b":"):
+                headers.append((k, v))
+        return (status_code, headers)
 
     async def body_iter(
         self, stream_id: int, timeout: TimeoutConfig = None
