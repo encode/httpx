@@ -4,7 +4,7 @@ import typing
 import h11
 
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
-from ..exceptions import ConnectTimeout, ReadTimeout
+from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
 from ..interfaces import BaseReader, BaseWriter
 from ..models import AsyncRequest, AsyncResponse
 
@@ -45,10 +45,12 @@ class HTTP11Connection:
 
         await self._send_request(request, timeout)
         loop = asyncio.get_event_loop()
-        self.sender_task = loop.create_task(
+        sender_task = loop.create_task(
             self._send_request_data(request.stream(), timeout)
         )
         status_code, headers = await self._receive_response(timeout)
+        await sender_task
+        sender_task.result()
         content = self._receive_response_data(timeout)
 
         return AsyncResponse(
@@ -99,11 +101,11 @@ class HTTP11Connection:
             # Finalize sending the request.
             event = h11.EndOfMessage()
             await self._send_event(event, timeout)
-        except OSError:  # pragma: nocover
+        except (OSError, WriteTimeout):  # pragma: nocover
             # Once we've sent the initial part of the request we don't actually
             # care about connection errors that occur when sending the body.
             # Ignore these, and defer to any exceptions on reading the response.
-            pass
+            self.h11_state.send_failed()
 
     async def _send_event(self, event: H11Event, timeout: TimeoutConfig = None) -> None:
         """
@@ -159,9 +161,6 @@ class HTTP11Connection:
         return event
 
     async def response_closed(self) -> None:
-        await self.sender_task
-        self.sender_task.result()
-
         if (
             self.h11_state.our_state is h11.DONE
             and self.h11_state.their_state is h11.DONE
