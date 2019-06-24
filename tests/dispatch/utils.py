@@ -1,3 +1,4 @@
+import asyncio
 import ssl
 import typing
 
@@ -45,6 +46,7 @@ class MockHTTP2Server(BaseReader, BaseWriter):
     # BaseReader interface
 
     async def read(self, n, timeout) -> bytes:
+        await asyncio.sleep(0)
         send, self.buffer = self.buffer[:n], self.buffer[n:]
         return send
 

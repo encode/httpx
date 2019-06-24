@@ -82,10 +82,12 @@ class HTTPConnection(AsyncDispatcher):
             host, port, ssl_context, timeout
         )
         if protocol == Protocol.HTTP_2:
-            self.h2_connection = HTTP2Connection(reader, writer, on_release=on_release)
+            self.h2_connection = HTTP2Connection(
+                reader, writer, self.backend, on_release=on_release
+            )
         else:
             self.h11_connection = HTTP11Connection(
-                reader, writer, on_release=on_release
+                reader, writer, self.backend, on_release=on_release
             )
 
     async def close(self) -> None:
