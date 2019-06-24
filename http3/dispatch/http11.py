@@ -4,7 +4,7 @@ import typing
 import h11
 
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
-from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
+from ..exceptions import ConnectTimeout, ReadTimeout
 from ..interfaces import BaseReader, BaseWriter
 from ..models import AsyncRequest, AsyncResponse
 
@@ -101,7 +101,7 @@ class HTTP11Connection:
             # Finalize sending the request.
             event = h11.EndOfMessage()
             await self._send_event(event, timeout)
-        except (OSError, WriteTimeout):  # pragma: nocover
+        except OSError:  # pragma: nocover
             # Once we've sent the initial part of the request we don't actually
             # care about connection errors that occur when sending the body.
             # Ignore these, and defer to any exceptions on reading the response.
@@ -122,7 +122,7 @@ class HTTP11Connection:
         Read the response status and headers from the network.
         """
         while True:
-            event = await self._recieve_event(timeout)
+            event = await self._receive_event(timeout)
             if isinstance(event, h11.InformationalResponse):
                 continue
             else:
@@ -137,14 +137,14 @@ class HTTP11Connection:
         Read the response data from the network.
         """
         while True:
-            event = await self._recieve_event(timeout)
+            event = await self._receive_event(timeout)
             if isinstance(event, h11.Data):
                 yield event.data
             else:
                 assert isinstance(event, h11.EndOfMessage)
                 break
 
-    async def _recieve_event(self, timeout: TimeoutConfig = None) -> H11Event:
+    async def _receive_event(self, timeout: TimeoutConfig = None) -> H11Event:
         """
         Read a single `h11` event, reading more data from the network if needed.
         """
