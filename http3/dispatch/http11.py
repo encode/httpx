@@ -74,8 +74,7 @@ class HTTP11Connection:
             host = request.url.authority.encode("ascii")
             headers = [(b"host", host)] + headers
         event = h11.Request(method=method, target=target, headers=headers)
-        bytes_to_send = self.h11_state.send(event)
-        await self.writer.write(bytes_to_send, timeout)
+        await self._send_event(event, timeout)
 
     async def _send_request_data(
         self, data: typing.AsyncIterator[bytes], timeout: TimeoutConfig = None
@@ -86,11 +85,17 @@ class HTTP11Connection:
         # Send the request body.
         async for chunk in data:
             event = h11.Data(data=chunk)
-            bytes_to_send = self.h11_state.send(event)
-            await self.writer.write(bytes_to_send, timeout)
+            await self._send_event(event, timeout)
 
         # Finalize sending the request.
         event = h11.EndOfMessage()
+        await self._send_event(event, timeout)
+
+    async def _send_event(self, event: H11Event, timeout: TimeoutConfig = None) -> None:
+        """
+        Send a single `h11` event to the network, waiting for the data to
+        drain before returning.
+        """
         bytes_to_send = self.h11_state.send(event)
         await self.writer.write(bytes_to_send, timeout)
 
@@ -101,13 +106,11 @@ class HTTP11Connection:
         Read the response status and headers from the network.
         """
         while True:
-            event = self.h11_state.next_event()
-            if event is h11.NEED_DATA:
-                data = await self.reader.read(self.READ_NUM_BYTES, timeout)
-                self.h11_state.receive_data(data)
-            elif isinstance(event, h11.InformationalResponse):
+            event = await self._recieve_event(timeout)
+            if isinstance(event, h11.InformationalResponse):
                 continue
-            elif isinstance(event, h11.Response):
+            else:
+                assert isinstance(event, h11.Response)
                 break
         return (event.status_code, event.headers)
 
@@ -118,14 +121,25 @@ class HTTP11Connection:
         Read the response data from the network.
         """
         while True:
+            event = await self._recieve_event(timeout)
+            if isinstance(event, h11.Data):
+                yield event.data
+            else:
+                assert isinstance(event, h11.EndOfMessage)
+                break
+
+    async def _recieve_event(self, timeout: TimeoutConfig = None) -> H11Event:
+        """
+        Read a single `h11` event, reading more data from the network if needed.
+        """
+        while True:
             event = self.h11_state.next_event()
             if event is h11.NEED_DATA:
                 data = await self.reader.read(self.READ_NUM_BYTES, timeout)
                 self.h11_state.receive_data(data)
-            elif isinstance(event, h11.Data):
-                yield event.data
-            elif isinstance(event, h11.EndOfMessage):
+            else:
                 break
+        return event
 
     async def response_closed(self) -> None:
         if (
