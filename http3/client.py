@@ -81,7 +81,7 @@ class BaseClient:
             async_dispatch = dispatch
 
         if base_url is None:
-            self.base_url = URL('', allow_relative=True)
+            self.base_url = URL("", allow_relative=True)
         else:
             self.base_url = URL(base_url)
 
