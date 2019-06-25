@@ -39,9 +39,7 @@ class HTTP11Connection:
         self.backend = backend
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
-        # Don't enable read timeouts until we've sent the request,
-        # or until an early response is seen.
-        self.read_timeouts = TimeoutFlag()
+        self.timeout_flag = TimeoutFlag()
 
     async def send(
         self, request: AsyncRequest, timeout: TimeoutTypes = None
@@ -109,7 +107,7 @@ class HTTP11Connection:
             self.h11_state.send_failed()
         finally:
             # Once we've sent the request, we enable read timeouts.
-            self.read_timeouts.enable()
+            self.timeout_flag.set_read_timeouts()
 
     async def _send_event(self, event: H11Event, timeout: TimeoutConfig = None) -> None:
         """
@@ -129,7 +127,7 @@ class HTTP11Connection:
             event = await self._receive_event(timeout)
             # As soon as we start seeing response events, we should enable
             # read timeouts, if we haven't already.
-            self.read_timeouts.enable()
+            self.timeout_flag.set_read_timeouts()
             if isinstance(event, h11.InformationalResponse):
                 continue
             else:
@@ -159,7 +157,9 @@ class HTTP11Connection:
             event = self.h11_state.next_event()
             if event is h11.NEED_DATA:
                 try:
-                    data = await self.reader.read(self.READ_NUM_BYTES, timeout, flag=self.read_timeouts)
+                    data = await self.reader.read(
+                        self.READ_NUM_BYTES, timeout, flag=self.timeout_flag
+                    )
                 except OSError:  # pragma: nocover
                     data = b""
                 self.h11_state.receive_data(data)
@@ -174,7 +174,7 @@ class HTTP11Connection:
         ):
             # Get ready for another request/response cycle.
             self.h11_state.start_next_cycle()
-            self.read_timeouts.disable()
+            self.timeout_flag.set_write_timeouts()
         else:
             await self.close()
 

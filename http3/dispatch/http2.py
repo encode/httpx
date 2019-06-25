@@ -27,7 +27,7 @@ class HTTP2Connection:
         self.on_release = on_release
         self.h2_state = h2.connection.H2Connection()
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
-        self.read_timeouts = {}  # type: typing.Dict[int, TimeoutFlag]
+        self.timeout_flags = {}  # type: typing.Dict[int, TimeoutFlag]
         self.initialized = False
 
     async def send(
@@ -41,7 +41,7 @@ class HTTP2Connection:
 
         stream_id = await self.send_headers(request, timeout)
         self.events[stream_id] = []
-        self.read_timeouts[stream_id] = TimeoutFlag()
+        self.timeout_flags[stream_id] = TimeoutFlag()
 
         task, args = self.send_request_data, [stream_id, request.stream(), timeout]
         async with self.backend.background_manager(task, args=args):
@@ -94,7 +94,7 @@ class HTTP2Connection:
             await self.end_stream(stream_id, timeout)
         finally:
             # Once we've sent the request we should enable read timeouts.
-            self.read_timeouts[stream_id].enable()
+            self.timeout_flags[stream_id].set_read_timeouts()
 
     async def send_data(
         self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
@@ -122,7 +122,7 @@ class HTTP2Connection:
             event = await self.receive_event(stream_id, timeout)
             # As soon as we start seeing response events, we should enable
             # read timeouts, if we haven't already.
-            self.read_timeouts[stream_id].enable()
+            self.timeout_flags[stream_id].set_read_timeouts()
             if isinstance(event, h2.events.ResponseReceived):
                 break
 
@@ -150,7 +150,7 @@ class HTTP2Connection:
         self, stream_id: int, timeout: TimeoutConfig = None
     ) -> h2.events.Event:
         while not self.events[stream_id]:
-            flag = self.read_timeouts[stream_id]
+            flag = self.timeout_flags[stream_id]
             data = await self.reader.read(self.READ_NUM_BYTES, timeout, flag=flag)
             events = self.h2_state.receive_data(data)
             for event in events:
@@ -164,7 +164,7 @@ class HTTP2Connection:
 
     async def response_closed(self, stream_id: int) -> None:
         del self.events[stream_id]
-        del self.read_timeouts[stream_id]
+        del self.timeout_flags[stream_id]
 
         if not self.events and self.on_release is not None:
             await self.on_release()
