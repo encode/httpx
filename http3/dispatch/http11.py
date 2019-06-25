@@ -49,12 +49,12 @@ class HTTP11Connection:
         await self._send_request(request, timeout)
         task, args = self._send_request_data, [request.stream(), timeout]
         async with self.backend.background_manager(task, args=args):
-            status_code, headers = await self._receive_response(timeout)
+            http_version, status_code, headers = await self._receive_response(timeout)
         content = self._receive_response_data(timeout)
 
         return AsyncResponse(
             status_code=status_code,
-            protocol="HTTP/1.1",
+            protocol=http_version,
             headers=headers,
             content=content,
             on_close=self.response_closed,
@@ -119,7 +119,7 @@ class HTTP11Connection:
 
     async def _receive_response(
         self, timeout: TimeoutConfig = None
-    ) -> typing.Tuple[int, typing.List[typing.Tuple[bytes, bytes]]]:
+    ) -> typing.Tuple[str, int, typing.List[typing.Tuple[bytes, bytes]]]:
         """
         Read the response status and headers from the network.
         """
@@ -133,7 +133,8 @@ class HTTP11Connection:
             else:
                 assert isinstance(event, h11.Response)
                 break
-        return (event.status_code, event.headers)
+        http_version = "HTTP/%s" % event.http_version.decode("latin-1", errors="ignore")
+        return (http_version, event.status_code, event.headers)
 
     async def _receive_response_data(
         self, timeout: TimeoutConfig = None
