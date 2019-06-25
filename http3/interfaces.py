@@ -127,7 +127,7 @@ class BaseReader:
     backend, or for stand-alone test cases.
     """
 
-    async def read(self, n: int, timeout: TimeoutConfig = None) -> bytes:
+    async def read(self, n: int, timeout: TimeoutConfig = None, flag: typing.Any = None) -> bytes:
         raise NotImplementedError()  # pragma: no cover
 
 

@@ -2,6 +2,7 @@ import typing
 
 import h11
 
+from ..concurrency import TimeoutFlag
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectTimeout, ReadTimeout
 from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
@@ -38,6 +39,9 @@ class HTTP11Connection:
         self.backend = backend
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
+        # Don't enable read timeouts until we've sent the request,
+        # or until an early response is seen.
+        self.read_timeouts = TimeoutFlag()
 
     async def send(
         self, request: AsyncRequest, timeout: TimeoutTypes = None
@@ -103,6 +107,9 @@ class HTTP11Connection:
             # care about connection errors that occur when sending the body.
             # Ignore these, and defer to any exceptions on reading the response.
             self.h11_state.send_failed()
+        finally:
+            # Once we've sent the request, we enable read timeouts.
+            self.read_timeouts.enable()
 
     async def _send_event(self, event: H11Event, timeout: TimeoutConfig = None) -> None:
         """
@@ -120,6 +127,9 @@ class HTTP11Connection:
         """
         while True:
             event = await self._receive_event(timeout)
+            # As soon as we start seeing response events, we should enable
+            # read timeouts, if we haven't already.
+            self.read_timeouts.enable()
             if isinstance(event, h11.InformationalResponse):
                 continue
             else:
@@ -149,7 +159,7 @@ class HTTP11Connection:
             event = self.h11_state.next_event()
             if event is h11.NEED_DATA:
                 try:
-                    data = await self.reader.read(self.READ_NUM_BYTES, timeout)
+                    data = await self.reader.read(self.READ_NUM_BYTES, timeout, flag=self.read_timeouts)
                 except OSError:  # pragma: nocover
                     data = b""
                 self.h11_state.receive_data(data)
@@ -162,7 +172,9 @@ class HTTP11Connection:
             self.h11_state.our_state is h11.DONE
             and self.h11_state.their_state is h11.DONE
         ):
+            # Get ready for another request/response cycle.
             self.h11_state.start_next_cycle()
+            self.read_timeouts.disable()
         else:
             await self.close()
 

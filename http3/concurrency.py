@@ -49,6 +49,17 @@ def ssl_monkey_patch() -> None:
     MonkeyPatch.write = _fixed_write
 
 
+class TimeoutFlag:
+    def __init__(self):
+        self.is_set = False
+
+    def enable(self) -> None:
+        self.is_set = True
+
+    def disable(self) -> None:
+        self.is_set = False
+
+
 class Reader(BaseReader):
     def __init__(
         self, stream_reader: asyncio.StreamReader, timeout: TimeoutConfig
@@ -56,16 +67,21 @@ class Reader(BaseReader):
         self.stream_reader = stream_reader
         self.timeout = timeout
 
-    async def read(self, n: int, timeout: TimeoutConfig = None) -> bytes:
+    async def read(self, n: int, timeout: TimeoutConfig = None, flag: TimeoutFlag = None) -> bytes:
         if timeout is None:
             timeout = self.timeout
 
-        try:
-            data = await asyncio.wait_for(
-                self.stream_reader.read(n), timeout.read_timeout
-            )
-        except asyncio.TimeoutError:
-            raise ReadTimeout()
+        while True:
+            should_raise = flag is None or not flag.is_set
+            try:
+                data = await asyncio.wait_for(
+                    self.stream_reader.read(n), timeout.read_timeout
+                )
+                break
+            except asyncio.TimeoutError:
+                if should_raise:
+                    raise ReadTimeout()
+                continue  # pragma: nocover
 
         return data
 
