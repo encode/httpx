@@ -4,6 +4,7 @@ import typing
 import h2.connection
 import h2.events
 
+from ..concurrency import TimeoutFlag
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectTimeout, ReadTimeout
 from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
@@ -26,6 +27,7 @@ class HTTP2Connection:
         self.on_release = on_release
         self.h2_state = h2.connection.H2Connection()
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
+        self.timeout_flags = {}  # type: typing.Dict[int, TimeoutFlag]
         self.initialized = False
 
     async def send(
@@ -39,6 +41,7 @@ class HTTP2Connection:
 
         stream_id = await self.send_headers(request, timeout)
         self.events[stream_id] = []
+        self.timeout_flags[stream_id] = TimeoutFlag()
 
         task, args = self.send_request_data, [stream_id, request.stream(), timeout]
         async with self.backend.background_manager(task, args=args):
@@ -85,9 +88,13 @@ class HTTP2Connection:
         stream: typing.AsyncIterator[bytes],
         timeout: TimeoutConfig = None,
     ) -> None:
-        async for data in stream:
-            await self.send_data(stream_id, data, timeout)
-        await self.end_stream(stream_id, timeout)
+        try:
+            async for data in stream:
+                await self.send_data(stream_id, data, timeout)
+            await self.end_stream(stream_id, timeout)
+        finally:
+            # Once we've sent the request we should enable read timeouts.
+            self.timeout_flags[stream_id].set_read_timeouts()
 
     async def send_data(
         self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
@@ -113,6 +120,9 @@ class HTTP2Connection:
         """
         while True:
             event = await self.receive_event(stream_id, timeout)
+            # As soon as we start seeing response events, we should enable
+            # read timeouts, if we haven't already.
+            self.timeout_flags[stream_id].set_read_timeouts()
             if isinstance(event, h2.events.ResponseReceived):
                 break
 
@@ -140,7 +150,8 @@ class HTTP2Connection:
         self, stream_id: int, timeout: TimeoutConfig = None
     ) -> h2.events.Event:
         while not self.events[stream_id]:
-            data = await self.reader.read(self.READ_NUM_BYTES, timeout)
+            flag = self.timeout_flags[stream_id]
+            data = await self.reader.read(self.READ_NUM_BYTES, timeout, flag=flag)
             events = self.h2_state.receive_data(data)
             for event in events:
                 if getattr(event, "stream_id", 0):
@@ -153,6 +164,7 @@ class HTTP2Connection:
 
     async def response_closed(self, stream_id: int) -> None:
         del self.events[stream_id]
+        del self.timeout_flags[stream_id]
 
         if not self.events and self.on_release is not None:
             await self.on_release()

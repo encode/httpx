@@ -49,6 +49,38 @@ def ssl_monkey_patch() -> None:
     MonkeyPatch.write = _fixed_write
 
 
+class TimeoutFlag:
+    """
+    A timeout flag holds a state of either read-timeout or write-timeout mode.
+
+    We use this so that we can attempt both reads and writes concurrently, while
+    only enforcing timeouts in one direction.
+
+    During a request/response cycle we start in write-timeout mode.
+
+    Once we've sent a request fully, or once we start seeing a response,
+    then we switch to read-timeout mode instead.
+    """
+
+    def __init__(self) -> None:
+        self.raise_on_read_timeout = False
+        self.raise_on_write_timeout = True
+
+    def set_read_timeouts(self) -> None:
+        """
+        Set the flag to read-timeout mode.
+        """
+        self.raise_on_read_timeout = True
+        self.raise_on_write_timeout = False
+
+    def set_write_timeouts(self) -> None:
+        """
+        Set the flag to write-timeout mode.
+        """
+        self.raise_on_read_timeout = False
+        self.raise_on_write_timeout = True
+
+
 class Reader(BaseReader):
     def __init__(
         self, stream_reader: asyncio.StreamReader, timeout: TimeoutConfig
@@ -56,16 +88,22 @@ class Reader(BaseReader):
         self.stream_reader = stream_reader
         self.timeout = timeout
 
-    async def read(self, n: int, timeout: TimeoutConfig = None) -> bytes:
+    async def read(
+        self, n: int, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
+    ) -> bytes:
         if timeout is None:
             timeout = self.timeout
 
-        try:
-            data = await asyncio.wait_for(
-                self.stream_reader.read(n), timeout.read_timeout
-            )
-        except asyncio.TimeoutError:
-            raise ReadTimeout()
+        while True:
+            should_raise = flag is None or flag.raise_on_read_timeout
+            try:
+                data = await asyncio.wait_for(
+                    self.stream_reader.read(n), timeout.read_timeout
+                )
+                break
+            except asyncio.TimeoutError:
+                if should_raise:
+                    raise ReadTimeout()
 
         return data
 
@@ -78,7 +116,9 @@ class Writer(BaseWriter):
     def write_no_block(self, data: bytes) -> None:
         self.stream_writer.write(data)  # pragma: nocover
 
-    async def write(self, data: bytes, timeout: TimeoutConfig = None) -> None:
+    async def write(
+        self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
+    ) -> None:
         if not data:
             return
 
@@ -86,12 +126,16 @@ class Writer(BaseWriter):
             timeout = self.timeout
 
         self.stream_writer.write(data)
-        try:
-            await asyncio.wait_for(  # type: ignore
-                self.stream_writer.drain(), timeout.write_timeout
-            )
-        except asyncio.TimeoutError:
-            raise WriteTimeout()
+        while True:
+            try:
+                await asyncio.wait_for(  # type: ignore
+                    self.stream_writer.drain(), timeout.write_timeout
+                )
+                break
+            except asyncio.TimeoutError:
+                should_raise = flag is None or flag.raise_on_write_timeout
+                if should_raise:
+                    raise WriteTimeout()
 
     async def close(self) -> None:
         self.stream_writer.close()
