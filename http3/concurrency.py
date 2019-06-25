@@ -95,15 +95,16 @@ class Reader(BaseReader):
             timeout = self.timeout
 
         while True:
+            # Check our flag at the first possible moment, and use a fine
+            # grained retry loop if we're not yet in read-timeout mode.
             should_raise = flag is None or flag.raise_on_read_timeout
+            read_timeout = timeout.read_timeout if should_raise else 0.01
             try:
-                data = await asyncio.wait_for(
-                    self.stream_reader.read(n), timeout.read_timeout
-                )
+                data = await asyncio.wait_for(self.stream_reader.read(n), read_timeout)
                 break
             except asyncio.TimeoutError:
                 if should_raise:
-                    raise ReadTimeout()
+                    raise ReadTimeout() from None
 
         return data
 
@@ -133,9 +134,12 @@ class Writer(BaseWriter):
                 )
                 break
             except asyncio.TimeoutError:
+                # We check our flag at the possible moment, in order to
+                # allow us to suppress write timeouts, if we've since
+                # switched over to read-timeout mode.
                 should_raise = flag is None or flag.raise_on_write_timeout
                 if should_raise:
-                    raise WriteTimeout()
+                    raise WriteTimeout() from None
 
     async def close(self) -> None:
         self.stream_writer.close()

@@ -30,7 +30,7 @@ async def hello_world(scope, receive, send):
 
 
 async def slow_response(scope, receive, send):
-    await asyncio.sleep(0.01)
+    await asyncio.sleep(0.1)
     await send(
         {
             "type": "http.response.start",
