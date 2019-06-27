@@ -527,6 +527,7 @@ class BaseRequest:
 
         auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
 
+        has_host = "host" in self.headers
         has_user_agent = "user-agent" in self.headers
         has_accept = "accept" in self.headers
         has_content_length = (
@@ -534,6 +535,8 @@ class BaseRequest:
         )
         has_accept_encoding = "accept-encoding" in self.headers
 
+        if not has_host:
+            auto_headers.append((b"host", self.url.authority.encode("ascii")))
         if not has_user_agent:
             auto_headers.append((b"user-agent", b"http3"))
         if not has_accept:

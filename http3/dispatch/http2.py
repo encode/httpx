@@ -76,7 +76,9 @@ class HTTP2Connection:
             (b":authority", request.url.authority.encode("ascii")),
             (b":scheme", request.url.scheme.encode("ascii")),
             (b":path", request.url.full_path.encode("ascii")),
-        ] + request.headers.raw
+        ] + [
+            (k, v) for k, v in request.headers.raw if k != b"host"
+        ]
         self.h2_state.send_headers(stream_id, headers)
         data_to_send = self.h2_state.data_to_send()
         await self.writer.write(data_to_send, timeout)
