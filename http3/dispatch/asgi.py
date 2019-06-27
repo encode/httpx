@@ -55,6 +55,7 @@ class ASGIDispatch(AsyncDispatcher):
         scope = {
             "type": "http",
             "asgi": {"version": "3.0"},
+            "http_version": "1.1",
             "method": request.method,
             "headers": request.headers.raw,
             "scheme": request.url.scheme,
@@ -98,7 +99,6 @@ class ASGIDispatch(AsyncDispatcher):
 
         async def run_app() -> None:
             nonlocal app, scope, receive, send, app_exc, response_body
-
             try:
                 await app(scope, receive, send)
             except Exception as exc:
@@ -122,12 +122,16 @@ class ASGIDispatch(AsyncDispatcher):
         if app_exc is not None and self.raise_app_exceptions:
             raise app_exc
 
-        assert response_started.is_set, "application did not return a response."
+        assert response_started.is_set(), "application did not return a response."
         assert status_code is not None
         assert headers is not None
 
         async def on_close() -> None:
-            nonlocal app_task
+            nonlocal app_task, response_body
+            # Pull any remaining body from the response, in order to
+            # allow any blocked `send()` calls to complete.
+            async for chunk in response_body.iterate():
+                pass
             await app_task
             if app_exc is not None and self.raise_app_exceptions:
                 raise app_exc
