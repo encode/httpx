@@ -64,9 +64,13 @@ class BaseClient:
             param_count = len(inspect.signature(app).parameters)
             assert param_count in (2, 3)
             if param_count == 2:
-                dispatch = WSGIDispatch(app=app, raise_app_exceptions=raise_app_exceptions)
+                dispatch = WSGIDispatch(
+                    app=app, raise_app_exceptions=raise_app_exceptions
+                )
             else:
-                dispatch = ASGIDispatch(app=app, raise_app_exceptions=raise_app_exceptions)
+                dispatch = ASGIDispatch(
+                    app=app, raise_app_exceptions=raise_app_exceptions
+                )
 
         if dispatch is None:
             async_dispatch = ConnectionPool(

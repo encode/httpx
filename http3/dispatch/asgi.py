@@ -128,10 +128,7 @@ class ASGIDispatch(AsyncDispatcher):
 
         async def on_close() -> None:
             nonlocal app_task, response_body
-            # Pull any remaining body from the response, in order to
-            # allow any blocked `send()` calls to complete.
-            async for chunk in response_body.iterate():
-                pass
+            await response_body.drain()
             await app_task
             if app_exc is not None and self.raise_app_exceptions:
                 raise app_exc
@@ -168,6 +165,14 @@ class BodyIterator:
                 break
             assert isinstance(data, bytes)
             yield data
+
+    async def drain(self) -> None:
+        """
+        Drain any remaining body, in order to allow any blocked `put()` calls
+        to complete.
+        """
+        async for chunk in self.iterate():
+            pass  # pragma: no cover
 
     async def put(self, data: bytes) -> None:
         """
