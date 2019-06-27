@@ -35,10 +35,12 @@ class ASGIDispatch(AsyncDispatcher):
     def __init__(
         self,
         app: typing.Callable,
+        raise_app_exceptions: bool = True,
         root_path: str = "",
         client: typing.Tuple[str, int] = ("127.0.0.1", 123),
     ) -> None:
         self.app = app
+        self.raise_app_exceptions = raise_app_exceptions
         self.root_path = root_path
         self.client = client
 
@@ -57,7 +59,7 @@ class ASGIDispatch(AsyncDispatcher):
             "headers": request.headers.raw,
             "scheme": request.url.scheme,
             "path": request.url.path,
-            "query": request.url.query.encode("ascii"),
+            "query_string": request.url.query.encode("ascii"),
             "server": request.url.host,
             "client": self.client,
             "root_path": self.root_path,
@@ -117,7 +119,7 @@ class ASGIDispatch(AsyncDispatcher):
 
         await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
-        if app_exc is not None:
+        if app_exc is not None and self.raise_app_exceptions:
             raise app_exc
 
         assert response_started.is_set, "application did not return a response."
@@ -127,7 +129,7 @@ class ASGIDispatch(AsyncDispatcher):
         async def on_close() -> None:
             nonlocal app_task
             await app_task
-            if app_exc is not None:
+            if app_exc is not None and self.raise_app_exceptions:
                 raise app_exc
 
         return AsyncResponse(
