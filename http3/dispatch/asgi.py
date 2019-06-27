@@ -35,10 +35,12 @@ class ASGIDispatch(AsyncDispatcher):
     def __init__(
         self,
         app: typing.Callable,
+        raise_app_exceptions: bool = True,
         root_path: str = "",
         client: typing.Tuple[str, int] = ("127.0.0.1", 123),
     ) -> None:
         self.app = app
+        self.raise_app_exceptions = raise_app_exceptions
         self.root_path = root_path
         self.client = client
 
@@ -53,11 +55,12 @@ class ASGIDispatch(AsyncDispatcher):
         scope = {
             "type": "http",
             "asgi": {"version": "3.0"},
+            "http_version": "1.1",
             "method": request.method,
             "headers": request.headers.raw,
             "scheme": request.url.scheme,
             "path": request.url.path,
-            "query": request.url.query.encode("ascii"),
+            "query_string": request.url.query.encode("ascii"),
             "server": request.url.host,
             "client": self.client,
             "root_path": self.root_path,
@@ -80,7 +83,7 @@ class ASGIDispatch(AsyncDispatcher):
             return {"type": "http.request", "body": body, "more_body": True}
 
         async def send(message: dict) -> None:
-            nonlocal status_code, headers, response_started, response_body
+            nonlocal status_code, headers, response_started, response_body, request
 
             if message["type"] == "http.response.start":
                 status_code = message["status"]
@@ -89,14 +92,13 @@ class ASGIDispatch(AsyncDispatcher):
             elif message["type"] == "http.response.body":
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
-                if body:
+                if body and request.method != "HEAD":
                     await response_body.put(body)
                 if not more_body:
                     await response_body.done()
 
         async def run_app() -> None:
             nonlocal app, scope, receive, send, app_exc, response_body
-
             try:
                 await app(scope, receive, send)
             except Exception as exc:
@@ -117,17 +119,18 @@ class ASGIDispatch(AsyncDispatcher):
 
         await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
-        if app_exc is not None:
+        if app_exc is not None and self.raise_app_exceptions:
             raise app_exc
 
-        assert response_started.is_set, "application did not return a response."
+        assert response_started.is_set(), "application did not return a response."
         assert status_code is not None
         assert headers is not None
 
         async def on_close() -> None:
-            nonlocal app_task
+            nonlocal app_task, response_body
+            await response_body.drain()
             await app_task
-            if app_exc is not None:
+            if app_exc is not None and self.raise_app_exceptions:
                 raise app_exc
 
         return AsyncResponse(
@@ -162,6 +165,14 @@ class BodyIterator:
                 break
             assert isinstance(data, bytes)
             yield data
+
+    async def drain(self) -> None:
+        """
+        Drain any remaining body, in order to allow any blocked `put()` calls
+        to complete.
+        """
+        async for chunk in self.iterate():
+            pass  # pragma: no cover
 
     async def put(self, data: bytes) -> None:
         """

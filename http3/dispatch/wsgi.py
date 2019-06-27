@@ -35,10 +35,12 @@ class WSGIDispatch(Dispatcher):
     def __init__(
         self,
         app: typing.Callable,
+        raise_app_exceptions: bool = True,
         script_name: str = "",
         remote_addr: str = "127.0.0.1",
     ) -> None:
         self.app = app
+        self.raise_app_exceptions = raise_app_exceptions
         self.script_name = script_name
         self.remote_addr = remote_addr
 
@@ -87,7 +89,7 @@ class WSGIDispatch(Dispatcher):
 
         assert seen_status is not None
         assert seen_response_headers is not None
-        if seen_exc_info:
+        if seen_exc_info and self.raise_app_exceptions:
             raise seen_exc_info[1]
 
         return Response(

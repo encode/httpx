@@ -54,6 +54,7 @@ class BaseClient:
         base_url: URLTypes = None,
         dispatch: typing.Union[AsyncDispatcher, Dispatcher] = None,
         app: typing.Callable = None,
+        raise_app_exceptions: bool = True,
         backend: ConcurrencyBackend = None,
     ):
         if backend is None:
@@ -63,9 +64,13 @@ class BaseClient:
             param_count = len(inspect.signature(app).parameters)
             assert param_count in (2, 3)
             if param_count == 2:
-                dispatch = WSGIDispatch(app=app)
+                dispatch = WSGIDispatch(
+                    app=app, raise_app_exceptions=raise_app_exceptions
+                )
             else:
-                dispatch = ASGIDispatch(app=app)
+                dispatch = ASGIDispatch(
+                    app=app, raise_app_exceptions=raise_app_exceptions
+                )
 
         if dispatch is None:
             async_dispatch = ConnectionPool(
@@ -558,7 +563,7 @@ class Client(BaseClient):
         If the request data is an bytes iterator then return an async bytes
         iterator onto the request data.
         """
-        if data is None or isinstance(data, (bytes, dict)):
+        if data is None or isinstance(data, (str, bytes, dict)):
             return data
 
         # Coerce an iterator into an async iterator, with each item in the

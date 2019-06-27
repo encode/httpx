@@ -134,8 +134,8 @@ class MultiDecoder(Decoder):
 
 SUPPORTED_DECODERS = {
     "identity": IdentityDecoder,
-    "deflate": DeflateDecoder,
     "gzip": GZipDecoder,
+    "deflate": DeflateDecoder,
     "br": BrotliDecoder,
 }
 

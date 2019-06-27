@@ -3,7 +3,7 @@ import mimetypes
 import os
 import typing
 from io import BytesIO
-from urllib.parse import quote_plus
+from urllib.parse import quote
 
 
 class Field:
@@ -20,13 +20,13 @@ class DataField(Field):
         self.value = value
 
     def render_headers(self) -> bytes:
-        name = quote_plus(self.name, encoding="utf-8").encode("ascii")
+        name = quote(self.name, encoding="utf-8").encode("ascii")
         return b"".join(
             [b'Content-Disposition: form-data; name="', name, b'"\r\n' b"\r\n"]
         )
 
     def render_data(self) -> bytes:
-        return quote_plus(self.value, encoding="utf-8").encode("ascii")
+        return self.value.encode("utf-8")
 
 
 class FileField(Field):
@@ -49,8 +49,8 @@ class FileField(Field):
         return mimetypes.guess_type(self.filename)[0] or "application/octet-stream"
 
     def render_headers(self) -> bytes:
-        name = quote_plus(self.name, encoding="utf-8").encode("ascii")
-        filename = quote_plus(self.filename, encoding="utf-8").encode("ascii")
+        name = quote(self.name, encoding="utf-8").encode("ascii")
+        filename = quote(self.filename, encoding="utf-8").encode("ascii")
         content_type = self.content_type.encode("ascii")
         return b"".join(
             [
