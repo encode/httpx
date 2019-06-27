@@ -51,9 +51,9 @@ AuthTypes = typing.Union[
     typing.Callable[["AsyncRequest"], "AsyncRequest"],
 ]
 
-AsyncRequestData = typing.Union[dict, bytes, typing.AsyncIterator[bytes]]
+AsyncRequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
 
-RequestData = typing.Union[dict, bytes, typing.Iterator[bytes]]
+RequestData = typing.Union[dict, str, bytes, typing.Iterator[bytes]]
 
 RequestFiles = typing.Dict[
     str,
@@ -588,7 +588,8 @@ class AsyncRequest(BaseRequest):
             self.content = content
             if content_type:
                 self.headers["Content-Type"] = content_type
-        elif isinstance(data, bytes):
+        elif isinstance(data, (str, bytes)):
+            data = data.encode("utf-8") if isinstance(data, str) else data
             self.is_streaming = False
             self.content = data
         else:
@@ -637,7 +638,8 @@ class Request(BaseRequest):
             self.content = content
             if content_type:
                 self.headers["Content-Type"] = content_type
-        elif isinstance(data, bytes):
+        elif isinstance(data, (str, bytes)):
+            data = data.encode("utf-8") if isinstance(data, str) else data
             self.is_streaming = False
             self.content = data
         else:

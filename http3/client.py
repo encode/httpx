@@ -563,7 +563,7 @@ class Client(BaseClient):
         If the request data is an bytes iterator then return an async bytes
         iterator onto the request data.
         """
-        if data is None or isinstance(data, (bytes, dict)):
+        if data is None or isinstance(data, (str, bytes, dict)):
             return data
 
         # Coerce an iterator into an async iterator, with each item in the
