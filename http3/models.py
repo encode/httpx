@@ -10,6 +10,7 @@ from urllib.parse import parse_qsl, urlencode
 import chardet
 import rfc3986
 
+from .config import USER_AGENT
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -103,8 +104,6 @@ class URL:
         if not allow_relative:
             if not self.scheme:
                 raise InvalidURL("No scheme included in URL.")
-            if self.scheme not in ("http", "https"):
-                raise InvalidURL('URL scheme must be "http" or "https".')
             if not self.host:
                 raise InvalidURL("No host included in URL.")
 
@@ -534,11 +533,12 @@ class BaseRequest:
             "content-length" in self.headers or "transfer-encoding" in self.headers
         )
         has_accept_encoding = "accept-encoding" in self.headers
+        has_connection = "connection" in self.headers
 
         if not has_host:
             auto_headers.append((b"host", self.url.authority.encode("ascii")))
         if not has_user_agent:
-            auto_headers.append((b"user-agent", b"http3"))
+            auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
         if not has_accept:
             auto_headers.append((b"accept", b"*/*"))
         if not has_content_length:
@@ -549,6 +549,8 @@ class BaseRequest:
                 auto_headers.append((b"content-length", content_length))
         if not has_accept_encoding:
             auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
+        if not has_connection:
+            auto_headers.append((b"connection", b"keep-alive"))
 
         for item in reversed(auto_headers):
             self.headers.raw.insert(0, item)

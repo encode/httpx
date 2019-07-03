@@ -87,7 +87,4 @@ def test_invalid_urls():
         http3.Request("GET", "example.org")
 
     with pytest.raises(http3.InvalidURL):
-        http3.Request("GET", "invalid://example.org")
-
-    with pytest.raises(http3.InvalidURL):
         http3.Request("GET", "http:///foo")
