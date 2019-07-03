@@ -5,10 +5,14 @@ import typing
 
 import certifi
 
+from .__version__ import __version__
+
 CertTypes = typing.Union[str, typing.Tuple[str, str]]
 VerifyTypes = typing.Union[str, bool]
 TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
 
+
+USER_AGENT = f"python-http3/{__version__}"
 
 DEFAULT_CIPHERS = ":".join(
     [

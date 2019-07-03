@@ -83,3 +83,9 @@ def test_delete(server):
     response = http3.delete("http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
+
+
+@threadpool
+def test_get_invalid_url(server):
+    with pytest.raises(http3.InvalidURL):
+        http3.get("invalid://example.org")
