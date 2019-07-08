@@ -39,10 +39,7 @@ class HTTP2Connection:
         if not self.initialized:
             self.initiate_connection()
 
-        try:
-            stream_id = await self.send_headers(request, timeout)
-        except ConnectionResetError:
-            raise NotConnected() from None
+        stream_id = await self.send_headers(request, timeout)
 
         self.events[stream_id] = []
         self.timeout_flags[stream_id] = TimeoutFlag()

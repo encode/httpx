@@ -46,12 +46,7 @@ class HTTP11Connection:
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
-        try:
-            await self._send_request(request, timeout)
-        except ConnectionResetError:  # pragma: nocover
-            # We're currently testing this case in HTTP/2.
-            # Really we should test it here too, but this'll do in the meantime.
-            raise NotConnected() from None
+        await self._send_request(request, timeout)
 
         task, args = self._send_request_data, [request.stream(), timeout]
         async with self.backend.background_manager(task, args=args):

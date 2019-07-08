@@ -14,6 +14,7 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
+from ..decorators import safe_connection_error
 from ..exceptions import ConnectTimeout
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Protocol
 from ..models import AsyncRequest, AsyncResponse, Origin
@@ -42,6 +43,7 @@ class HTTPConnection(AsyncDispatcher):
         self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
         self.h2_connection = None  # type: typing.Optional[HTTP2Connection]
 
+    @safe_connection_error
     async def send(
         self,
         request: AsyncRequest,
