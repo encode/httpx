@@ -48,7 +48,9 @@ class HTTP11Connection:
 
         try:
             await self._send_request(request, timeout)
-        except ConnectionResetError:
+        except ConnectionResetError:  # pragma: nocover
+            # We're currently testing this case in HTTP/2.
+            # Really we should test it here too, but this'll do in the meantime.
             raise NotConnected() from None
 
         task, args = self._send_request_data, [request.stream(), timeout]
