@@ -13,6 +13,11 @@ def test_no_content():
     assert "Content-Length" not in request.headers
 
 
+def test_connection():
+    request = http3.Request("GET", "http://example.org")
+    assert request.headers["Connection"] == "keep-alive"
+
+
 def test_content_length_header():
     request = http3.Request("POST", "http://example.org", data=b"test 123")
     assert request.headers["Content-Length"] == "8"
