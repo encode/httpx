@@ -124,6 +124,7 @@ class ConnectionPool(AsyncDispatcher):
                 self.active_connections.remove(connection)
                 self.max_connections.release()
                 if isinstance(exc, NotConnected) and allow_connection_reuse:
+                    connection = None
                     allow_connection_reuse = False
                 else:
                     raise exc
@@ -133,6 +134,7 @@ class ConnectionPool(AsyncDispatcher):
     async def acquire_connection(
         self, origin: Origin, allow_connection_reuse: bool = True
     ) -> HTTPConnection:
+        connection = None
         if allow_connection_reuse:
             connection = self.active_connections.pop_by_origin(origin, http2_only=True)
             if connection is None:

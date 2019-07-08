@@ -59,3 +59,22 @@ def test_http2_multiple_requests():
 
     assert response_3.status_code == 200
     assert json.loads(response_3.content) == {"method": "GET", "path": "/3", "body": ""}
+
+
+def test_http2_reconnect():
+    """
+    If a connection has been dropped between requests, then we should
+    be seemlessly reconnected.
+    """
+    backend = MockHTTP2Backend(app=app)
+
+    with Client(backend=backend) as client:
+        response_1 = client.get("http://example.org/1")
+        backend.server.raise_disconnect = True
+        response_2 = client.get("http://example.org/2")
+
+    assert response_1.status_code == 200
+    assert json.loads(response_1.content) == {"method": "GET", "path": "/1", "body": ""}
+
+    assert response_2.status_code == 200
+    assert json.loads(response_2.content) == {"method": "GET", "path": "/2", "body": ""}
