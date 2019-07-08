@@ -4,7 +4,7 @@ import h11
 
 from ..concurrency import TimeoutFlag
 from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
-from ..exceptions import ConnectTimeout, ReadTimeout
+from ..exceptions import ConnectTimeout, NotConnected, ReadTimeout
 from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
@@ -46,7 +46,11 @@ class HTTP11Connection:
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
-        await self._send_request(request, timeout)
+        try:
+            await self._send_request(request, timeout)
+        except ConnectionResetError:
+            raise NotConnected() from None
+
         task, args = self._send_request_data, [request.stream(), timeout]
         async with self.backend.background_manager(task, args=args):
             http_version, status_code, headers = await self._receive_response(timeout)
