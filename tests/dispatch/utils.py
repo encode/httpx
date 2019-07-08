@@ -19,6 +19,7 @@ from http3 import (
 class MockHTTP2Backend(AsyncioBackend):
     def __init__(self, app):
         self.app = app
+        self.server = None
 
     async def connect(
         self,
@@ -27,8 +28,8 @@ class MockHTTP2Backend(AsyncioBackend):
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
     ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
-        server = MockHTTP2Server(self.app)
-        return (server, server, Protocol.HTTP_2)
+        self.server = MockHTTP2Server(self.app)
+        return (self.server, self.server, Protocol.HTTP_2)
 
 
 class MockHTTP2Server(BaseReader, BaseWriter):
@@ -42,6 +43,7 @@ class MockHTTP2Server(BaseReader, BaseWriter):
         self.app = app
         self.buffer = b""
         self.requests = {}
+        self.raise_disconnect = False
 
     # BaseReader interface
 
@@ -53,6 +55,9 @@ class MockHTTP2Server(BaseReader, BaseWriter):
     # BaseWriter interface
 
     def write_no_block(self, data: bytes) -> None:
+        if self.raise_disconnect:
+            self.raise_disconnect = False
+            raise ConnectionResetError()
         events = self.conn.receive_data(data)
         self.buffer += self.conn.data_to_send()
         for event in events:

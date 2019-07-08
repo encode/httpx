@@ -11,7 +11,7 @@ from ..config import (
     VerifyTypes,
 )
 from ..decoders import ACCEPT_ENCODING
-from ..exceptions import PoolTimeout
+from ..exceptions import NotConnected, PoolTimeout
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse, Origin
 from .connection import HTTPConnection
@@ -110,21 +110,35 @@ class ConnectionPool(AsyncDispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
-        connection = await self.acquire_connection(request.url.origin)
-        try:
-            response = await connection.send(
-                request, verify=verify, cert=cert, timeout=timeout
+        allow_connection_reuse = True
+        connection = None
+        while connection is None:
+            connection = await self.acquire_connection(
+                origin=request.url.origin, allow_connection_reuse=allow_connection_reuse
             )
-        except BaseException as exc:
-            self.active_connections.remove(connection)
-            self.max_connections.release()
-            raise exc
+            try:
+                response = await connection.send(
+                    request, verify=verify, cert=cert, timeout=timeout
+                )
+            except BaseException as exc:
+                self.active_connections.remove(connection)
+                self.max_connections.release()
+                if isinstance(exc, NotConnected) and allow_connection_reuse:
+                    connection = None
+                    allow_connection_reuse = False
+                else:
+                    raise exc
+
         return response
 
-    async def acquire_connection(self, origin: Origin) -> HTTPConnection:
-        connection = self.active_connections.pop_by_origin(origin, http2_only=True)
-        if connection is None:
-            connection = self.keepalive_connections.pop_by_origin(origin)
+    async def acquire_connection(
+        self, origin: Origin, allow_connection_reuse: bool = True
+    ) -> HTTPConnection:
+        connection = None
+        if allow_connection_reuse:
+            connection = self.active_connections.pop_by_origin(origin, http2_only=True)
+            if connection is None:
+                connection = self.keepalive_connections.pop_by_origin(origin)
 
         if connection is None:
             await self.max_connections.acquire()

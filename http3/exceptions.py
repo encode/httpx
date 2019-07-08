@@ -34,9 +34,16 @@ class PoolTimeout(Timeout):
 # HTTP exceptions...
 
 
+class NotConnected(Exception):
+    """
+    A connection was lost at the point of starting a request,
+    prior to any writes succeeding.
+    """
+
+
 class HttpError(Exception):
     """
-    An Http error occurred.
+    An HTTP error occurred.
     """
 
 
