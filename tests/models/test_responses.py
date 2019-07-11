@@ -1,4 +1,5 @@
 import json
+from unittest import mock
 
 import pytest
 
@@ -276,3 +277,14 @@ def test_json_without_specified_encoding():
     headers = {"Content-Type": "application/json"}
     response = http3.Response(200, content=content, headers=headers)
     assert response.json() == data
+
+
+def test_json_without_specified_encoding_decode_error():
+    data = dict(greeting="hello", recipient="world")
+    content = json.dumps(data).encode("utf-32-be")
+    headers = {"Content-Type": "application/json"}
+    # force incorrect guess from `guess_json_utf` to trigger error
+    with mock.patch("http3.models.guess_json_utf", return_value="utf-32"):
+        response = http3.Response(200, content=content, headers=headers)
+        with pytest.raises(json.JSONDecodeError):
+            response.json()
