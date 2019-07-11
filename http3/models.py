@@ -808,8 +808,8 @@ class BaseResponse:
         if message:
             raise HttpError(message)
 
-    def json(self) -> typing.Any:
-        return jsonlib.loads(self.content.decode("utf-8"))
+    def json(self, **kwargs) -> typing.Union[dict, list]:
+        return jsonlib.loads(self.text, **kwargs)
 
     @property
     def cookies(self) -> "Cookies":

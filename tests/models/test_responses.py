@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 import http3
@@ -250,3 +252,19 @@ def test_unknown_status_code():
     assert response.status_code == 600
     assert response.reason_phrase == ""
     assert response.text == ""
+
+
+def test_json_with_specified_encoding():
+    data = dict(greeting="hello", recipient="world")
+    content = json.dumps(data).encode("utf-16")
+    headers = {"Content-Type": "application/json, charset=utf-16"}
+    response = http3.Response(200, content=content, headers=headers)
+    assert response.json() == data
+
+
+def test_json_with_options():
+    data = dict(greeting="hello", recipient="world", amount=1)
+    content = json.dumps(data).encode("utf-16")
+    headers = {"Content-Type": "application/json, charset=utf-16"}
+    response = http3.Response(200, content=content, headers=headers)
+    assert response.json(parse_int=str)["amount"] == "1"
