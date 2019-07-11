@@ -268,3 +268,11 @@ def test_json_with_options():
     headers = {"Content-Type": "application/json, charset=utf-16"}
     response = http3.Response(200, content=content, headers=headers)
     assert response.json(parse_int=str)["amount"] == "1"
+
+
+def test_json_without_specified_encoding():
+    data = dict(greeting="hello", recipient="world")
+    content = json.dumps(data).encode("utf-32-be")
+    headers = {"Content-Type": "application/json"}
+    response = http3.Response(200, content=content, headers=headers)
+    assert response.json() == data
