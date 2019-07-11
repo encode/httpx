@@ -29,10 +29,10 @@ from .exceptions import (
 from .multipart import multipart_encode
 from .status_codes import StatusCode
 from .utils import (
+    guess_json_utf,
     is_known_encoding,
     normalize_header_key,
     normalize_header_value,
-    guess_json_utf,
 )
 
 URLTypes = typing.Union["URL", str]
@@ -813,7 +813,7 @@ class BaseResponse:
         if message:
             raise HttpError(message)
 
-    def json(self, **kwargs) -> typing.Union[dict, list]:
+    def json(self, **kwargs: typing.Any) -> typing.Union[dict, list]:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
