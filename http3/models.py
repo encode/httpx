@@ -28,7 +28,14 @@ from .exceptions import (
 )
 from .multipart import multipart_encode
 from .status_codes import StatusCode
-from .utils import is_known_encoding, normalize_header_key, normalize_header_value
+from .utils import (
+    async_streamify,
+    get_content_length,
+    is_known_encoding,
+    normalize_header_key,
+    normalize_header_value,
+    streamify,
+)
 
 URLTypes = typing.Union["URL", str]
 
@@ -545,7 +552,7 @@ class BaseRequest:
             if is_streaming:
                 auto_headers.append((b"transfer-encoding", b"chunked"))
             elif content:
-                content_length = str(len(content)).encode()
+                content_length = str(get_content_length(content)).encode()
                 auto_headers.append((b"content-length", content_length))
         if not has_accept_encoding:
             auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
@@ -595,9 +602,9 @@ class AsyncRequest(BaseRequest):
             self.is_streaming = False
             self.content = data
         else:
-            assert hasattr(data, "__aiter__")
+            assert hasattr(data, "__aiter__") or hasattr(data, "__iter__")
             self.is_streaming = True
-            self.content_aiter = data
+            self.content_aiter = async_streamify(data)
 
         self.prepare()
 
@@ -614,7 +621,8 @@ class AsyncRequest(BaseRequest):
             async for part in self.content_aiter:
                 yield part
         elif self.content:
-            yield self.content
+            async for part in async_streamify(self.content):
+                yield part
 
 
 class Request(BaseRequest):
@@ -647,7 +655,7 @@ class Request(BaseRequest):
         else:
             assert hasattr(data, "__iter__")
             self.is_streaming = True
-            self.content_iter = data
+            self.content_iter = streamify(data)
 
         self.prepare()
 
@@ -661,7 +669,8 @@ class Request(BaseRequest):
             for part in self.content_iter:
                 yield part
         elif self.content:
-            yield self.content
+            for part in streamify(self.content):
+                yield part
 
 
 class BaseResponse:

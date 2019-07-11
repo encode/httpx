@@ -1,3 +1,5 @@
+import io
+
 import pytest
 
 import http3
@@ -61,6 +63,17 @@ async def test_stream_request(server):
             "POST", "http://127.0.0.1:8000/", data=hello_world()
         )
     assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_file_as_data(server):
+    async with http3.AsyncClient() as client:
+        response = await client.request(
+            "POST", "http://127.0.0.1:8000/echo_body", data=io.BytesIO(b"Hello")
+        )
+
+        assert response.status_code == 200
+        assert response.content == b"Hello"
 
 
 @pytest.mark.asyncio

@@ -17,6 +17,7 @@ from .models import (
     Response,
     URLTypes,
 )
+from .utils import async_streamify
 
 
 class Protocol(str, enum.Enum):
@@ -204,6 +205,7 @@ class ConcurrencyBackend:
         raise NotImplementedError()  # pragma: no cover
 
     def iterate(self, async_iterator):  # type: ignore
+        async_iterator = async_streamify(async_iterator)
         while True:
             try:
                 yield self.run(async_iterator.__anext__)

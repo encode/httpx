@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import io
 
 import pytest
 
@@ -74,6 +75,17 @@ def test_stream_iterator(server):
     for chunk in response.stream():
         body += chunk
     assert body == b"Hello, world!"
+
+
+@threadpool
+def test_file_as_data(server):
+    with http3.Client() as client:
+        response = client.request(
+            "POST", "http://127.0.0.1:8000/echo_body", data=io.BytesIO(b"Hello")
+        )
+
+        assert response.status_code == 200
+        assert response.content == b"Hello"
 
 
 @threadpool
