@@ -1,3 +1,6 @@
+import json
+from unittest import mock
+
 import pytest
 
 import http3
@@ -250,3 +253,38 @@ def test_unknown_status_code():
     assert response.status_code == 600
     assert response.reason_phrase == ""
     assert response.text == ""
+
+
+def test_json_with_specified_encoding():
+    data = dict(greeting="hello", recipient="world")
+    content = json.dumps(data).encode("utf-16")
+    headers = {"Content-Type": "application/json, charset=utf-16"}
+    response = http3.Response(200, content=content, headers=headers)
+    assert response.json() == data
+
+
+def test_json_with_options():
+    data = dict(greeting="hello", recipient="world", amount=1)
+    content = json.dumps(data).encode("utf-16")
+    headers = {"Content-Type": "application/json, charset=utf-16"}
+    response = http3.Response(200, content=content, headers=headers)
+    assert response.json(parse_int=str)["amount"] == "1"
+
+
+def test_json_without_specified_encoding():
+    data = dict(greeting="hello", recipient="world")
+    content = json.dumps(data).encode("utf-32-be")
+    headers = {"Content-Type": "application/json"}
+    response = http3.Response(200, content=content, headers=headers)
+    assert response.json() == data
+
+
+def test_json_without_specified_encoding_decode_error():
+    data = dict(greeting="hello", recipient="world")
+    content = json.dumps(data).encode("utf-32-be")
+    headers = {"Content-Type": "application/json"}
+    # force incorrect guess from `guess_json_utf` to trigger error
+    with mock.patch("http3.models.guess_json_utf", return_value="utf-32"):
+        response = http3.Response(200, content=content, headers=headers)
+        with pytest.raises(json.JSONDecodeError):
+            response.json()
