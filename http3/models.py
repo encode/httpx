@@ -604,7 +604,7 @@ class AsyncRequest(BaseRequest):
         else:
             assert hasattr(data, "__aiter__") or hasattr(data, "__iter__")
             self.is_streaming = True
-            self.content_aiter = async_streamify(data)
+            self.content = data
 
         self.prepare()
 
@@ -617,12 +617,8 @@ class AsyncRequest(BaseRequest):
         return self.content
 
     async def stream(self) -> typing.AsyncIterator[bytes]:
-        if self.is_streaming:
-            async for part in self.content_aiter:
-                yield part
-        elif self.content:
-            async for part in async_streamify(self.content):
-                yield part
+        async for part in async_streamify(self.content):
+            yield part
 
 
 class Request(BaseRequest):
@@ -655,7 +651,7 @@ class Request(BaseRequest):
         else:
             assert hasattr(data, "__iter__")
             self.is_streaming = True
-            self.content_iter = streamify(data)
+            self.content = data
 
         self.prepare()
 
@@ -665,12 +661,8 @@ class Request(BaseRequest):
         return self.content
 
     def stream(self) -> typing.Iterator[bytes]:
-        if self.is_streaming:
-            for part in self.content_iter:
-                yield part
-        elif self.content:
-            for part in streamify(self.content):
-                yield part
+        for part in streamify(self.content):
+            yield part
 
 
 class BaseResponse:

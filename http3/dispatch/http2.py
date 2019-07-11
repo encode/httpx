@@ -103,6 +103,8 @@ class HTTP2Connection:
     async def send_data(
         self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
     ) -> None:
+        if data == b"":
+            return
         flow_control = self.h2_state.local_flow_control_window(stream_id)
         chunk_size = min(len(data), flow_control)
         for idx in range(0, len(data), chunk_size):
