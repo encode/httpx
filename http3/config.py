@@ -108,9 +108,12 @@ class SSLConfig:
         context.check_hostname = True
         context.load_default_certs(purpose=ssl.Purpose.SERVER_AUTH)
 
-        # Signal to server support for PHA in TLS 1.3
-        if hasattr(context, "post_handshake_auth"):
+        # Signal to server support for PHA in TLS 1.3. Raises an
+        # AttributeError if only read-only access is implemented.
+        try:
             context.post_handshake_auth = True
+        except AttributeError:
+            pass
 
         # Disable using 'commonName' for SSLContext.check_hostname
         # when the 'subjectAltName' extension isn't available.
