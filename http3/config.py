@@ -117,8 +117,10 @@ class SSLConfig:
 
         # Disable using 'commonName' for SSLContext.check_hostname
         # when the 'subjectAltName' extension isn't available.
-        if hasattr(context, "hostname_checks_common_name"):
+        try:
             context.hostname_checks_common_name = False
+        except AttributeError:
+            pass
 
         if os.path.isfile(ca_bundle_path):
             context.load_verify_locations(cafile=ca_bundle_path)
