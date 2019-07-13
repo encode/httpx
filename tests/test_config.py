@@ -48,6 +48,24 @@ async def test_load_ssl_config_cert_and_key(cert_and_key_paths):
 
 
 @pytest.mark.asyncio
+async def test_load_ssl_config_cert_and_key(cert_and_encrypted_key_paths):
+    cert_path, key_path = cert_and_encrypted_key_paths
+    ssl_config = http3.SSLConfig(cert=(cert_path, key_path, "password"))
+    context = await ssl_config.load_ssl_context()
+    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+    assert context.check_hostname is True
+
+
+@pytest.mark.asyncio
+async def test_load_ssl_config_cert_and_key_invalid_password(cert_and_encrypted_key_paths):
+    cert_path, key_path = cert_and_encrypted_key_paths
+    ssl_config = http3.SSLConfig(cert=(cert_path, key_path, "password1"))
+
+    with pytest.raises(ssl.SSLError):
+        await ssl_config.load_ssl_context()
+
+
+@pytest.mark.asyncio
 async def test_load_ssl_config_cert_without_key_raises(cert_and_key_paths):
     cert_path, _ = cert_and_key_paths
     ssl_config = http3.SSLConfig(cert=cert_path)

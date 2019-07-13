@@ -4,6 +4,10 @@ import pytest
 import trustme
 from uvicorn.config import Config
 from uvicorn.main import Server
+from cryptography.hazmat.primitives.serialization import (
+    PrivateFormat, BestAvailableEncryption
+)
+from cryptography.hazmat.primitives.serialization import Encoding
 
 
 async def app(scope, receive, send):
@@ -75,6 +79,29 @@ async def echo_body(scope, receive, send):
 @pytest.fixture
 def cert_and_key_paths():
     ca = trustme.CA()
+    ca.issue_cert("example.org")
+    with ca.cert_pem.tempfile() as cert_temp_path, ca.private_key_pem.tempfile() as key_temp_path:
+        yield cert_temp_path, key_temp_path
+
+
+class CAWithPKEncryption(trustme.CA):
+    """Implementation of trustme.CA() that emits private keys
+    that are encrypted with a password.
+    """
+    @property
+    def private_key_pem(self):
+        return trustme.Blob(
+            self._private_key.private_bytes(
+                Encoding.PEM,
+                PrivateFormat.TraditionalOpenSSL,
+                BestAvailableEncryption(password=b"password")
+            )
+        )
+
+
+@pytest.fixture
+def cert_and_encrypted_key_paths():
+    ca = CAWithPKEncryption()
     ca.issue_cert("example.org")
     with ca.cert_pem.tempfile() as cert_temp_path, ca.private_key_pem.tempfile() as key_temp_path:
         yield cert_temp_path, key_temp_path
