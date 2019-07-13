@@ -48,7 +48,7 @@ async def test_load_ssl_config_cert_and_key(cert_and_key_paths):
 
 
 @pytest.mark.asyncio
-async def test_load_ssl_config_cert_and_key(cert_and_encrypted_key_paths):
+async def test_load_ssl_config_cert_and_encrypted_key(cert_and_encrypted_key_paths):
     cert_path, key_path = cert_and_encrypted_key_paths
     ssl_config = http3.SSLConfig(cert=(cert_path, key_path, "password"))
     context = await ssl_config.load_ssl_context()
