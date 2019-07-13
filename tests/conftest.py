@@ -2,12 +2,13 @@ import asyncio
 
 import pytest
 import trustme
+from cryptography.hazmat.primitives.serialization import (
+    BestAvailableEncryption,
+    Encoding,
+    PrivateFormat,
+)
 from uvicorn.config import Config
 from uvicorn.main import Server
-from cryptography.hazmat.primitives.serialization import (
-    PrivateFormat, BestAvailableEncryption
-)
-from cryptography.hazmat.primitives.serialization import Encoding
 
 
 async def app(scope, receive, send):
@@ -88,13 +89,14 @@ class CAWithPKEncryption(trustme.CA):
     """Implementation of trustme.CA() that emits private keys
     that are encrypted with a password.
     """
+
     @property
     def private_key_pem(self):
         return trustme.Blob(
             self._private_key.private_bytes(
                 Encoding.PEM,
                 PrivateFormat.TraditionalOpenSSL,
-                BestAvailableEncryption(password=b"password")
+                BestAvailableEncryption(password=b"password"),
             )
         )
 
