@@ -15,7 +15,11 @@ class Field:
 
 
 class DataField(Field):
-    def __init__(self, name: str, value: str) -> None:
+    def __init__(self, name: str, value: typing.Union[str, bytes]) -> None:
+        if not isinstance(name, str):
+            raise TypeError("Invalid type for name. Expected str.")
+        if not isinstance(value, (str, bytes)):
+            raise TypeError("Invalid type for value. Expected str or bytes.")
         self.name = name
         self.value = value
 
@@ -26,7 +30,9 @@ class DataField(Field):
         )
 
     def render_data(self) -> bytes:
-        return self.value.encode("utf-8")
+        return (
+            self.value if isinstance(self.value, bytes) else self.value.encode("utf-8")
+        )
 
 
 class FileField(Field):
@@ -73,7 +79,7 @@ class FileField(Field):
 
 def iter_fields(data: dict, files: dict) -> typing.Iterator[Field]:
     for name, value in data.items():
-        if isinstance(value, list):
+        if isinstance(value, (list, dict)):
             for item in value:
                 yield DataField(name=name, value=item)
         else:
