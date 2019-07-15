@@ -59,7 +59,12 @@ AuthTypes = typing.Union[
 ]
 
 AsyncRequestData = typing.Union[
-    dict, str, bytes, typing.Iterator[typing.AnyStr], typing.AsyncIterator[typing.AnyStr], typing.IO[typing.AnyStr]
+    dict,
+    str,
+    bytes,
+    typing.Iterator[typing.AnyStr],
+    typing.AsyncIterator[typing.AnyStr],
+    typing.IO[typing.AnyStr],
 ]
 
 RequestData = typing.Union[

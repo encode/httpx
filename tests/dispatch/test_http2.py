@@ -12,7 +12,7 @@ def app(request):
         {
             "method": request.method,
             "path": request.url.path,
-            "body": request.content.decode(),
+            "body": request.read().decode(),
         }
     ).encode()
     headers = {"Content-Length": str(len(content))}
