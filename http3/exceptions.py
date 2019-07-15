@@ -76,8 +76,8 @@ class TooManyRedirects(RedirectError):
 
 class RedirectBodyUnavailable(RedirectError):
     """
-    Got a redirect response, but the request body was streaming, and is
-    no longer available.
+    Got a redirect response, but the request body was streaming or
+    could not be rewound, and is no longer available.
     """
 
 

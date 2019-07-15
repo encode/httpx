@@ -22,6 +22,7 @@ from .exceptions import (
     CookieConflict,
     HttpError,
     InvalidURL,
+    RedirectBodyUnavailable,
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
@@ -57,9 +58,13 @@ AuthTypes = typing.Union[
     typing.Callable[["AsyncRequest"], "AsyncRequest"],
 ]
 
-AsyncRequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
+AsyncRequestData = typing.Union[
+    dict, str, bytes, typing.Iterator[typing.AnyStr], typing.AsyncIterator[typing.AnyStr], typing.IO[typing.AnyStr]
+]
 
-RequestData = typing.Union[dict, str, bytes, typing.Iterator[bytes]]
+RequestData = typing.Union[
+    dict, str, bytes, typing.Iterator[typing.AnyStr], typing.IO[typing.AnyStr]
+]
 
 RequestFiles = typing.Dict[
     str,
@@ -592,34 +597,30 @@ class AsyncRequest(BaseRequest):
         if data is None or isinstance(data, dict):
             content, content_type = self.encode_data(data, files, json)
             self.is_streaming = False
-            self.content = content
+            self.content = RequestDataIter(content)
             if content_type:
                 self.headers["Content-Type"] = content_type
         elif isinstance(data, (str, bytes)):
             data = data.encode("utf-8") if isinstance(data, str) else data
             self.is_streaming = False
-            self.content = data
+            self.content = RequestDataIter(data)
         else:
-            assert hasattr(data, "__aiter__")
             self.is_streaming = True
-            self.content_aiter = data
+            self.content = RequestDataIter(data)
 
         self.prepare()
 
     async def read(self) -> bytes:
         """
-        Read and return the response content.
+        Read and return the request content.
         """
-        if not hasattr(self, "content"):
-            self.content = b"".join([part async for part in self.stream()])
-        return self.content
+        return b"".join([part async for part in self.stream()])
 
     async def stream(self) -> typing.AsyncIterator[bytes]:
-        if self.is_streaming:
-            async for part in self.content_aiter:
-                yield part
-        elif self.content:
-            yield self.content
+        chunk = await self.content.async_chunk()
+        while chunk:
+            yield chunk
+            chunk = await self.content.async_chunk()
 
 
 class Request(BaseRequest):
@@ -642,31 +643,27 @@ class Request(BaseRequest):
         if data is None or isinstance(data, dict):
             content, content_type = self.encode_data(data, files, json)
             self.is_streaming = False
-            self.content = content
+            self.content = RequestDataIter(content)
             if content_type:
                 self.headers["Content-Type"] = content_type
         elif isinstance(data, (str, bytes)):
             data = data.encode("utf-8") if isinstance(data, str) else data
             self.is_streaming = False
-            self.content = data
+            self.content = RequestDataIter(data)
         else:
-            assert hasattr(data, "__iter__")
             self.is_streaming = True
-            self.content_iter = data
+            self.content = RequestDataIter(data)
 
         self.prepare()
 
     def read(self) -> bytes:
-        if not hasattr(self, "content"):
-            self.content = b"".join([part for part in self.stream()])
-        return self.content
+        return b"".join([part for part in self.stream()])
 
     def stream(self) -> typing.Iterator[bytes]:
-        if self.is_streaming:
-            for part in self.content_iter:
-                yield part
-        elif self.content:
-            yield self.content
+        chunk = self.content.chunk()
+        while chunk:
+            yield chunk
+            chunk = self.content.chunk()
 
 
 class BaseResponse:
@@ -775,9 +772,13 @@ class BaseResponse:
         """
         if not hasattr(self, "_decoder"):
             decoders = []  # type: typing.List[Decoder]
-            values = self.headers.getlist("content-encoding", split_commas=True)
+            values = [
+                val.strip().lower()
+                for val in self.headers.getlist("content-encoding", split_commas=True)
+            ]
+            if "identity" in values and len(set(values)) > 1:
+                values = [val for val in values if val != "identity"]
             for value in values:
-                value = value.strip().lower()
                 decoder_cls = SUPPORTED_DECODERS[value]
                 decoders.append(decoder_cls())
 
@@ -1130,13 +1131,13 @@ class Cookies(MutableMapping):
         return (cookie.name for cookie in self.jar)
 
     def __bool__(self) -> bool:
-        for cookie in self.jar:
+        for _ in self.jar:
             return True
         return False
 
     class _CookieCompatRequest(urllib.request.Request):
         """
-        Wraps a `Request` instance up in a compatability interface suitable
+        Wraps a `Request` instance up in a compatibility interface suitable
         for use with `CookieJar` operations.
         """
 
@@ -1154,7 +1155,7 @@ class Cookies(MutableMapping):
 
     class _CookieCompatResponse:
         """
-        Wraps a `Request` instance up in a compatability interface suitable
+        Wraps a `Response` instance up in a compatibility interface suitable
         for use with `CookieJar` operations.
         """
 
@@ -1166,3 +1167,106 @@ class Cookies(MutableMapping):
             for key, value in self.response.headers.items():
                 info[key] = value
             return info
+
+
+class RequestDataIter:
+    def __init__(
+        self,
+        wrapped: typing.Union[
+            bytes, str, typing.IO[typing.AnyStr], typing.Iterator[typing.AnyStr]
+        ],
+    ):
+        self._is_stream = False
+        self._is_sync_iterator = False
+        self._is_async_iterator = False
+
+        if isinstance(wrapped, str):
+            wrapped = wrapped.encode("utf-8")
+        elif hasattr(wrapped, "read"):
+            self._is_stream = True
+        elif hasattr(wrapped, "__next__"):
+            self._is_sync_iterator = True
+        elif hasattr(wrapped, "__anext__"):
+            self._is_async_iterator = True
+        elif not isinstance(wrapped, bytes):  # pragma: nocover
+            raise ValueError("Unsupported data type")
+
+        self._wrapped = wrapped
+        self._done = False
+
+    def chunk(self) -> bytes:
+        def encode(value: typing.Union[bytes, str]) -> bytes:
+            return value if isinstance(value, bytes) else value.encode("utf-8")
+
+        if self._done:
+            return b""
+
+        elif self._is_stream:
+            data = encode(self._wrapped.read(16384))
+            if data == b"":
+                self._done = True
+            return data
+        elif self._is_sync_iterator:
+            try:
+                return encode(next(self._wrapped))
+            except StopIteration:
+                self._done = True
+                return b""
+        else:
+            self._done = True
+            return self._wrapped
+
+    async def async_chunk(self) -> bytes:
+        if self._done:
+            return b""
+        elif self._is_async_iterator:
+            try:
+                return await self._wrapped.__anext__()
+            except StopAsyncIteration:
+                self._done = True
+                return b""
+        else:
+            return self.chunk()
+
+    def rewind(self) -> typing.Union[bytes, typing.IO[typing.AnyStr]]:
+        if self._is_stream:
+            if hasattr(self._wrapped, "seek"):
+                try:
+                    self._wrapped.seek(0, 0)
+                    self._done = False
+                    return self._wrapped
+                except (OSError, IOError):
+                    pass
+        elif not self._is_sync_iterator and not self._is_async_iterator:
+            self._done = False
+            return self._wrapped
+        raise RedirectBodyUnavailable()
+
+    def __len__(self) -> int:
+        if (
+            self._is_stream
+            and hasattr(self._wrapped, "seek")
+            and hasattr(self._wrapped, "tell")
+        ):
+            start = self._wrapped.tell()
+            self._wrapped.seek(0, 2)
+            end = self._wrapped.tell()
+            self._wrapped.seek(0, start)
+            return end - start
+        return len(self._wrapped)
+
+    async def __aiter__(self):
+        return self
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._done:
+            raise StopIteration()
+        return self.chunk()
+
+    async def __anext__(self):
+        if self._done:
+            raise StopAsyncIteration()
+        return await self.async_chunk()

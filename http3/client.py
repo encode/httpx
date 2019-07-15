@@ -276,15 +276,15 @@ class BaseClient:
             del headers["Authorization"]
         return headers
 
-    def redirect_content(self, request: AsyncRequest, method: str) -> bytes:
+    def redirect_content(
+        self, request: AsyncRequest, method: str
+    ) -> typing.Union[bytes, typing.IO[typing.AnyStr]]:
         """
         Return the body that should be used for the redirect request.
         """
         if method != request.method and method == "GET":
             return b""
-        if request.is_streaming:
-            raise RedirectBodyUnavailable()
-        return request.content
+        return request.content.rewind()
 
 
 class AsyncClient(BaseClient):
