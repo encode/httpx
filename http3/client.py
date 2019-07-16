@@ -284,7 +284,9 @@ class BaseClient:
         """
         if method != request.method and method == "GET":
             return b""
-        return request.content.rewind()
+        if request.content.seekable:
+            request.content.seek(0, 0)
+        return request.content.data()
 
 
 class AsyncClient(BaseClient):

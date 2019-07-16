@@ -64,3 +64,14 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
             return "utf-32-le"
         # Did not detect a valid UTF-32 ascii-range character
     return None
+
+
+def get_content_length(value: typing.Union[bytes, typing.IO[typing.AnyStr]]) -> int:
+    if isinstance(value, bytes):
+        return len(value)
+    else:
+        start = value.tell()
+        value.seek(0, 2)
+        end = value.tell()
+        value.seek(start, 0)
+        return end - start

@@ -22,14 +22,14 @@ def test_url_encoded_data():
     for RequestClass in (http3.Request, http3.AsyncRequest):
         request = RequestClass("POST", "http://example.org", data={"test": "123"})
         assert request.headers["Content-Type"] == "application/x-www-form-urlencoded"
-        assert request.content.chunk() == b"test=123"
+        assert request.content._wrapped.read() == b"test=123"
 
 
 def test_json_encoded_data():
     for RequestClass in (http3.Request, http3.AsyncRequest):
         request = RequestClass("POST", "http://example.org", json={"test": 123})
         assert request.headers["Content-Type"] == "application/json"
-        assert request.content.chunk() == b'{"test": 123}'
+        assert request.content._wrapped.read() == b'{"test": 123}'
 
 
 def test_transfer_encoding_header():
