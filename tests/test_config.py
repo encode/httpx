@@ -39,18 +39,21 @@ async def test_load_ssl_config_verify_directory():
 
 
 @pytest.mark.asyncio
-async def test_load_ssl_config_cert_and_key(cert_and_key_paths):
-    cert_path, key_path = cert_and_key_paths
-    ssl_config = http3.SSLConfig(cert=(cert_path, key_path))
+async def test_load_ssl_config_cert_and_key(cert_pem_file, cert_private_key_file):
+    ssl_config = http3.SSLConfig(cert=(cert_pem_file, cert_private_key_file))
     context = await ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
 
 @pytest.mark.asyncio
-async def test_load_ssl_config_cert_and_encrypted_key(cert_and_encrypted_key_paths):
-    cert_path, key_path = cert_and_encrypted_key_paths
-    ssl_config = http3.SSLConfig(cert=(cert_path, key_path, "password"))
+@pytest.mark.parametrize("password", [b"password", "password"])
+async def test_load_ssl_config_cert_and_encrypted_key(
+    cert_pem_file, cert_encrypted_private_key_file, password
+):
+    ssl_config = http3.SSLConfig(
+        cert=(cert_pem_file, cert_encrypted_private_key_file, password)
+    )
     context = await ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
@@ -58,19 +61,19 @@ async def test_load_ssl_config_cert_and_encrypted_key(cert_and_encrypted_key_pat
 
 @pytest.mark.asyncio
 async def test_load_ssl_config_cert_and_key_invalid_password(
-    cert_and_encrypted_key_paths
+    cert_pem_file, cert_encrypted_private_key_file
 ):
-    cert_path, key_path = cert_and_encrypted_key_paths
-    ssl_config = http3.SSLConfig(cert=(cert_path, key_path, "password1"))
+    ssl_config = http3.SSLConfig(
+        cert=(cert_pem_file, cert_encrypted_private_key_file, "password1")
+    )
 
     with pytest.raises(ssl.SSLError):
         await ssl_config.load_ssl_context()
 
 
 @pytest.mark.asyncio
-async def test_load_ssl_config_cert_without_key_raises(cert_and_key_paths):
-    cert_path, _ = cert_and_key_paths
-    ssl_config = http3.SSLConfig(cert=cert_path)
+async def test_load_ssl_config_cert_without_key_raises(cert_pem_file):
+    ssl_config = http3.SSLConfig(cert=cert_pem_file)
     with pytest.raises(ssl.SSLError):
         await ssl_config.load_ssl_context()
 

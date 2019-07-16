@@ -39,8 +39,6 @@ class SSLConfig:
     SSL Configuration.
     """
 
-    __slots__ = ("cert", "verify", "ssl_context")
-
     def __init__(self, *, cert: CertTypes = None, verify: VerifyTypes = True):
         self.cert = cert
         self.verify = verify
@@ -106,7 +104,6 @@ class SSLConfig:
         context = self._create_default_ssl_context()
         context.verify_mode = ssl.CERT_REQUIRED
         context.check_hostname = True
-        context.load_default_certs(purpose=ssl.Purpose.SERVER_AUTH)
 
         # Signal to server support for PHA in TLS 1.3. Raises an
         # AttributeError if only read-only access is implemented.
@@ -126,6 +123,8 @@ class SSLConfig:
             context.load_verify_locations(cafile=ca_bundle_path)
         elif os.path.isdir(ca_bundle_path):
             context.load_verify_locations(capath=ca_bundle_path)
+        else:
+            context.load_default_certs(purpose=ssl.Purpose.SERVER_AUTH)
 
         if self.cert is not None:
             if isinstance(self.cert, str):
@@ -162,8 +161,6 @@ class TimeoutConfig:
     """
     Timeout values.
     """
-
-    __slots__ = ("connect_timeout", "read_timeout", "write_timeout")
 
     def __init__(
         self,
@@ -214,8 +211,6 @@ class PoolLimits:
     """
     Limits on the number of connections in a connection pool.
     """
-
-    __slots__ = ("soft_limit", "hard_limit", "pool_timeout")
 
     def __init__(
         self,
