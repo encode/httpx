@@ -32,11 +32,11 @@ from .exceptions import (
 from .multipart import multipart_encode
 from .status_codes import StatusCode
 from .utils import (
+    get_content_length,
     guess_json_utf,
     is_known_encoding,
     normalize_header_key,
     normalize_header_value,
-get_content_length
 )
 
 URLTypes = typing.Union["URL", str]
@@ -565,7 +565,9 @@ class BaseRequest:
             else:
                 content_length = get_content_length(content)
                 if content_length:
-                    auto_headers.append((b"content-length", str(content_length).encode()))
+                    auto_headers.append(
+                        (b"content-length", str(content_length).encode())
+                    )
         if not has_accept_encoding:
             auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
         if not has_connection:
