@@ -1,19 +1,31 @@
 sudo: required
 dist: xenial
 language: python
-
 cache: pip
 
-python:
-    - "3.6"
-    - "3.7"
+matrix:
+  include:
+    - python: 3.7
+      env: NOXENV=lint
+    - python: 3.7
+      env: NOXENV=docs
+
+    - python: 3.6
+      env: NOXENV=test-3.6
+    - python: 3.7
+      env: NOXENV=test-3.7
+    - python: 3.8-dev
+      env: NOXENV=test-3.8
 
 install:
-    - pip install -U -r requirements.txt
+    - python -m pip install nox
 
 script:
-    - scripts/test
+    - python -m nox -s ${NOXENV}
 
 after_script:
-    - pip install codecov
+    - python -m pip install codecov
     - codecov
+
+allow_failures:
+  - python: 3.8-dev

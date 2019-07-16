@@ -1,6 +1,5 @@
-import pytest
-
 import http3
+import pytest
 
 
 async def hello_world(scope, receive, send):
@@ -56,10 +55,10 @@ def test_asgi_upload():
 def test_asgi_exc():
     client = http3.Client(app=raise_exc)
     with pytest.raises(ValueError):
-        response = client.get("http://www.example.org/")
+        client.get("http://www.example.org/")
 
 
 def test_asgi_exc_after_response():
     client = http3.Client(app=raise_exc_after_response)
     with pytest.raises(ValueError):
-        response = client.get("http://www.example.org/")
+        client.get("http://www.example.org/")

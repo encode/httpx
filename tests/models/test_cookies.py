@@ -1,5 +1,4 @@
 import pytest
-
 from http3 import CookieConflict, Cookies
 
 

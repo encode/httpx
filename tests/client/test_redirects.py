@@ -2,7 +2,6 @@ import json
 from urllib.parse import parse_qs
 
 import pytest
-
 from http3 import (
     URL,
     AsyncClient,
@@ -12,8 +11,6 @@ from http3 import (
     CertTypes,
     RedirectBodyUnavailable,
     RedirectLoop,
-    Request,
-    Response,
     TimeoutTypes,
     TooManyRedirects,
     VerifyTypes,

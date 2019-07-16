@@ -5,8 +5,8 @@ import h2.connection
 import h2.events
 
 from ..concurrency import TimeoutFlag
-from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
-from ..exceptions import ConnectTimeout, NotConnected, ReadTimeout
+from ..config import TimeoutConfig, TimeoutTypes
+from ..exceptions import NotConnected
 from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 

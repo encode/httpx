@@ -1,6 +1,5 @@
-import pytest
-
 import http3
+import pytest
 
 
 def test_request_repr():

@@ -1,9 +1,8 @@
 import json
 from unittest import mock
 
-import pytest
-
 import http3
+import pytest
 
 
 def streaming_body():

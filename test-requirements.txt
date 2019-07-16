@@ -1,0 +1,7 @@
+cryptography
+pytest
+pytest-asyncio
+pytest-cov
+trustme
+uvicorn
+brotlipy

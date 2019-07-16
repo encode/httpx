@@ -3,8 +3,8 @@ import typing
 import h11
 
 from ..concurrency import TimeoutFlag
-from ..config import DEFAULT_TIMEOUT_CONFIG, TimeoutConfig, TimeoutTypes
-from ..exceptions import ConnectTimeout, NotConnected, ReadTimeout
+from ..config import TimeoutConfig, TimeoutTypes
+from ..exceptions import NotConnected
 from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
@@ -71,7 +71,7 @@ class HTTP11Connection:
         event = h11.ConnectionClosed()
         try:
             self.h11_state.send(event)
-        except h11.LocalProtocolError as exc:  # pragma: no cover
+        except h11.LocalProtocolError:  # pragma: nocover
             # Premature client disconnect
             pass
         await self.writer.close()

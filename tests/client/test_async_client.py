@@ -1,6 +1,5 @@
-import pytest
-
 import http3
+import pytest
 
 
 @pytest.mark.asyncio
