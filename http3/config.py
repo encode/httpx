@@ -7,7 +7,7 @@ import certifi
 
 from .__version__ import __version__
 
-CertTypes = typing.Union[str, typing.Tuple[str, str]]
+CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool]
 TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
 
@@ -43,6 +43,8 @@ class SSLConfig:
         self.cert = cert
         self.verify = verify
 
+        self.ssl_context: typing.Optional[ssl.SSLContext] = None
+
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
@@ -64,7 +66,7 @@ class SSLConfig:
         return SSLConfig(cert=cert, verify=verify)
 
     async def load_ssl_context(self) -> ssl.SSLContext:
-        if not hasattr(self, "ssl_context"):
+        if self.ssl_context is None:
             if not self.verify:
                 self.ssl_context = self.load_ssl_context_no_verify()
             else:
@@ -80,11 +82,9 @@ class SSLConfig:
         """
         Return an SSL context for unverified connections.
         """
-        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-        context.options |= ssl.OP_NO_SSLv2
-        context.options |= ssl.OP_NO_SSLv3
-        context.options |= ssl.OP_NO_COMPRESSION
-        context.set_default_verify_paths()
+        context = self._create_default_ssl_context()
+        context.verify_mode = ssl.CERT_NONE
+        context.check_hostname = False
         return context
 
     def load_ssl_context_verify(self) -> ssl.SSLContext:
@@ -101,20 +101,23 @@ class SSLConfig:
                 "invalid path: {}".format(self.verify)
             )
 
-        context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
-
+        context = self._create_default_ssl_context()
         context.verify_mode = ssl.CERT_REQUIRED
+        context.check_hostname = True
 
-        context.options |= ssl.OP_NO_SSLv2
-        context.options |= ssl.OP_NO_SSLv3
-        context.options |= ssl.OP_NO_COMPRESSION
+        # Signal to server support for PHA in TLS 1.3. Raises an
+        # AttributeError if only read-only access is implemented.
+        try:
+            context.post_handshake_auth = True
+        except AttributeError:
+            pass
 
-        context.set_ciphers(DEFAULT_CIPHERS)
-
-        if ssl.HAS_ALPN:
-            context.set_alpn_protocols(["h2", "http/1.1"])
-        if ssl.HAS_NPN:
-            context.set_npn_protocols(["h2", "http/1.1"])
+        # Disable using 'commonName' for SSLContext.check_hostname
+        # when the 'subjectAltName' extension isn't available.
+        try:
+            context.hostname_checks_common_name = False
+        except AttributeError:
+            pass
 
         if os.path.isfile(ca_bundle_path):
             context.load_verify_locations(cafile=ca_bundle_path)
@@ -124,8 +127,30 @@ class SSLConfig:
         if self.cert is not None:
             if isinstance(self.cert, str):
                 context.load_cert_chain(certfile=self.cert)
-            else:
+            elif isinstance(self.cert, tuple) and len(self.cert) == 2:
                 context.load_cert_chain(certfile=self.cert[0], keyfile=self.cert[1])
+            else:
+                context.load_cert_chain(
+                    certfile=self.cert[0], keyfile=self.cert[1], password=self.cert[2]
+                )
+
+        return context
+
+    def _create_default_ssl_context(self) -> ssl.SSLContext:
+        """
+        Creates the default SSLContext object that's used for both verified
+        and unverified connections.
+        """
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        context.options |= ssl.OP_NO_SSLv2
+        context.options |= ssl.OP_NO_SSLv3
+        context.options |= ssl.OP_NO_COMPRESSION
+        context.set_ciphers(DEFAULT_CIPHERS)
+
+        if ssl.HAS_ALPN:
+            context.set_alpn_protocols(["h2", "http/1.1"])
+        if ssl.HAS_NPN:
+            context.set_npn_protocols(["h2", "http/1.1"])
 
         return context
 
@@ -175,7 +200,7 @@ class TimeoutConfig:
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        if len(set([self.connect_timeout, self.read_timeout, self.write_timeout])) == 1:
+        if len({self.connect_timeout, self.read_timeout, self.write_timeout}) == 1:
             return f"{class_name}(timeout={self.connect_timeout})"
         return f"{class_name}(connect_timeout={self.connect_timeout}, read_timeout={self.read_timeout}, write_timeout={self.write_timeout})"
 

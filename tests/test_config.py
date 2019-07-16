@@ -11,6 +11,7 @@ async def test_load_ssl_config():
     ssl_config = http3.SSLConfig()
     context = await ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+    assert context.check_hostname is True
 
 
 @pytest.mark.asyncio
@@ -25,6 +26,7 @@ async def test_load_ssl_config_verify_existing_file():
     ssl_config = http3.SSLConfig(verify=http3.config.DEFAULT_CA_BUNDLE_PATH)
     context = await ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+    assert context.check_hostname is True
 
 
 @pytest.mark.asyncio
@@ -33,29 +35,55 @@ async def test_load_ssl_config_verify_directory():
     ssl_config = http3.SSLConfig(verify=path)
     context = await ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+    assert context.check_hostname is True
 
 
 @pytest.mark.asyncio
-async def test_load_ssl_config_cert_and_key(cert_and_key_paths):
-    cert_path, key_path = cert_and_key_paths
-    ssl_config = http3.SSLConfig(cert=(cert_path, key_path))
+async def test_load_ssl_config_cert_and_key(cert_pem_file, cert_private_key_file):
+    ssl_config = http3.SSLConfig(cert=(cert_pem_file, cert_private_key_file))
     context = await ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+    assert context.check_hostname is True
 
 
 @pytest.mark.asyncio
-async def test_load_ssl_config_cert_without_key_raises(cert_and_key_paths):
-    cert_path, _ = cert_and_key_paths
-    ssl_config = http3.SSLConfig(cert=cert_path)
+@pytest.mark.parametrize("password", [b"password", "password"])
+async def test_load_ssl_config_cert_and_encrypted_key(
+    cert_pem_file, cert_encrypted_private_key_file, password
+):
+    ssl_config = http3.SSLConfig(
+        cert=(cert_pem_file, cert_encrypted_private_key_file, password)
+    )
+    context = await ssl_config.load_ssl_context()
+    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+    assert context.check_hostname is True
+
+
+@pytest.mark.asyncio
+async def test_load_ssl_config_cert_and_key_invalid_password(
+    cert_pem_file, cert_encrypted_private_key_file
+):
+    ssl_config = http3.SSLConfig(
+        cert=(cert_pem_file, cert_encrypted_private_key_file, "password1")
+    )
+
     with pytest.raises(ssl.SSLError):
         await ssl_config.load_ssl_context()
 
 
 @pytest.mark.asyncio
-async def test_load_ssl_config_no_verify(verify=False):
+async def test_load_ssl_config_cert_without_key_raises(cert_pem_file):
+    ssl_config = http3.SSLConfig(cert=cert_pem_file)
+    with pytest.raises(ssl.SSLError):
+        await ssl_config.load_ssl_context()
+
+
+@pytest.mark.asyncio
+async def test_load_ssl_config_no_verify():
     ssl_config = http3.SSLConfig(verify=False)
     context = await ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_NONE
+    assert context.check_hostname is False
 
 
 def test_ssl_repr():
@@ -102,5 +130,5 @@ def test_timeout_from_tuple():
 
 
 def test_timeout_from_config_instance():
-    timeout = http3.TimeoutConfig(timeout=(5.0))
+    timeout = http3.TimeoutConfig(timeout=5.0)
     assert http3.TimeoutConfig(timeout) == http3.TimeoutConfig(timeout=5.0)

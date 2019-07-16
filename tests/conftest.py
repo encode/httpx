@@ -2,6 +2,11 @@ import asyncio
 
 import pytest
 import trustme
+from cryptography.hazmat.primitives.serialization import (
+    BestAvailableEncryption,
+    Encoding,
+    PrivateFormat,
+)
 from uvicorn.config import Config
 from uvicorn.main import Server
 
@@ -72,12 +77,45 @@ async def echo_body(scope, receive, send):
     await send({"type": "http.response.body", "body": body})
 
 
+class CAWithPKEncryption(trustme.CA):
+    """Implementation of trustme.CA() that can emit
+    private keys that are encrypted with a password.
+    """
+
+    @property
+    def encrypted_private_key_pem(self):
+        return trustme.Blob(
+            self._private_key.private_bytes(
+                Encoding.PEM,
+                PrivateFormat.TraditionalOpenSSL,
+                BestAvailableEncryption(password=b"password"),
+            )
+        )
+
+
 @pytest.fixture
-def cert_and_key_paths():
-    ca = trustme.CA()
+def example_cert():
+    ca = CAWithPKEncryption()
     ca.issue_cert("example.org")
-    with ca.cert_pem.tempfile() as cert_temp_path, ca.private_key_pem.tempfile() as key_temp_path:
-        yield cert_temp_path, key_temp_path
+    return ca
+
+
+@pytest.fixture
+def cert_pem_file(example_cert):
+    with example_cert.cert_pem.tempfile() as tmp:
+        yield tmp
+
+
+@pytest.fixture
+def cert_private_key_file(example_cert):
+    with example_cert.private_key_pem.tempfile() as tmp:
+        yield tmp
+
+
+@pytest.fixture
+def cert_encrypted_private_key_file(example_cert):
+    with example_cert.encrypted_private_key_pem.tempfile() as tmp:
+        yield tmp
 
 
 @pytest.fixture
@@ -95,10 +133,13 @@ async def server():
 
 
 @pytest.fixture
-async def https_server(cert_and_key_paths):
-    cert_path, key_path = cert_and_key_paths
+async def https_server(cert_pem_file, cert_private_key_file):
     config = Config(
-        app=app, lifespan="off", ssl_certfile=cert_path, ssl_keyfile=key_path, port=8001
+        app=app,
+        lifespan="off",
+        ssl_certfile=cert_pem_file,
+        ssl_keyfile=cert_private_key_file,
+        port=8001,
     )
     server = Server(config=config)
     task = asyncio.ensure_future(server.serve())
