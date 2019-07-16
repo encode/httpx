@@ -17,6 +17,9 @@ matrix:
     - python: 3.8-dev
       env: NOXENV=test-3.8
 
+  allow_failures:
+    - python: 3.8-dev
+
 install:
   - python -m pip install nox
 
@@ -26,6 +29,3 @@ script:
 after_script:
   - python -m pip install codecov
   - codecov
-
-allow_failures:
-  - python: 3.8-dev
