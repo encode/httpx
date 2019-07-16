@@ -123,8 +123,6 @@ class SSLConfig:
             context.load_verify_locations(cafile=ca_bundle_path)
         elif os.path.isdir(ca_bundle_path):
             context.load_verify_locations(capath=ca_bundle_path)
-        else:
-            context.load_default_certs(purpose=ssl.Purpose.SERVER_AUTH)
 
         if self.cert is not None:
             if isinstance(self.cert, str):
