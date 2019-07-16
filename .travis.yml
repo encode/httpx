@@ -6,7 +6,7 @@ cache: pip
 matrix:
   include:
     - python: 3.7
-      env: NOXENV=lint
+      env: NOXENV=check
     - python: 3.7
       env: NOXENV=docs
 
@@ -18,14 +18,14 @@ matrix:
       env: NOXENV=test-3.8
 
 install:
-    - python -m pip install nox
+  - python -m pip install nox
 
 script:
-    - python -m nox -s ${NOXENV}
+  - python -m nox -s ${NOXENV}
 
 after_script:
-    - python -m pip install codecov
-    - codecov
+  - python -m pip install codecov
+  - codecov
 
 allow_failures:
   - python: 3.8-dev
