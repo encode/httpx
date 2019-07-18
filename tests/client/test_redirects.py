@@ -12,8 +12,6 @@ from http3 import (
     CertTypes,
     RedirectBodyUnavailable,
     RedirectLoop,
-    Request,
-    Response,
     TimeoutTypes,
     TooManyRedirects,
     VerifyTypes,

@@ -76,6 +76,7 @@ class SSLConfig:
                     None, self.load_ssl_context_verify
                 )
 
+        assert self.ssl_context is not None
         return self.ssl_context
 
     def load_ssl_context_no_verify(self) -> ssl.SSLContext:
@@ -108,15 +109,15 @@ class SSLConfig:
         # Signal to server support for PHA in TLS 1.3. Raises an
         # AttributeError if only read-only access is implemented.
         try:
-            context.post_handshake_auth = True
-        except AttributeError:
+            context.post_handshake_auth = True  # type: ignore
+        except AttributeError:  # pragma: nocover
             pass
 
         # Disable using 'commonName' for SSLContext.check_hostname
         # when the 'subjectAltName' extension isn't available.
         try:
-            context.hostname_checks_common_name = False
-        except AttributeError:
+            context.hostname_checks_common_name = False  # type: ignore
+        except AttributeError:  # pragma: nocover
             pass
 
         if os.path.isfile(ca_bundle_path):
@@ -129,9 +130,11 @@ class SSLConfig:
                 context.load_cert_chain(certfile=self.cert)
             elif isinstance(self.cert, tuple) and len(self.cert) == 2:
                 context.load_cert_chain(certfile=self.cert[0], keyfile=self.cert[1])
-            else:
+            elif isinstance(self.cert, tuple) and len(self.cert) == 3:
                 context.load_cert_chain(
-                    certfile=self.cert[0], keyfile=self.cert[1], password=self.cert[2]
+                    certfile=self.cert[0],
+                    keyfile=self.cert[1],
+                    password=self.cert[2],  # type: ignore
                 )
 
         return context
@@ -202,7 +205,10 @@ class TimeoutConfig:
         class_name = self.__class__.__name__
         if len({self.connect_timeout, self.read_timeout, self.write_timeout}) == 1:
             return f"{class_name}(timeout={self.connect_timeout})"
-        return f"{class_name}(connect_timeout={self.connect_timeout}, read_timeout={self.read_timeout}, write_timeout={self.write_timeout})"
+        return (
+            f"{class_name}(connect_timeout={self.connect_timeout}, "
+            f"read_timeout={self.read_timeout}, write_timeout={self.write_timeout})"
+        )
 
 
 class PoolLimits:
@@ -231,7 +237,10 @@ class PoolLimits:
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        return f"{class_name}(soft_limit={self.soft_limit}, hard_limit={self.hard_limit}, pool_timeout={self.pool_timeout})"
+        return (
+            f"{class_name}(soft_limit={self.soft_limit}, "
+            f"hard_limit={self.hard_limit}, pool_timeout={self.pool_timeout})"
+        )
 
 
 DEFAULT_SSL_CONFIG = SSLConfig(cert=None, verify=True)

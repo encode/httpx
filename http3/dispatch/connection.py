@@ -1,12 +1,8 @@
 import functools
 import typing
 
-import h2.connection
-import h11
-
 from ..concurrency import AsyncioBackend
 from ..config import (
-    DEFAULT_SSL_CONFIG,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
     SSLConfig,
@@ -14,7 +10,6 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..exceptions import ConnectTimeout
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Protocol
 from ..models import AsyncRequest, AsyncResponse, Origin
 from .http2 import HTTP2Connection
