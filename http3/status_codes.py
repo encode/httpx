@@ -35,11 +35,16 @@ class StatusCode(IntEnum):
     @classmethod
     def is_redirect(cls, value: int) -> bool:
         return value in (
-            StatusCode.MOVED_PERMANENTLY,  # 301 (Cacheable redirect. Method may change to GET.)
-            StatusCode.FOUND,  # 302 (Uncacheable redirect. Method may change to GET.)
-            StatusCode.SEE_OTHER,  # 303 (Client should make a GET or HEAD request.)
-            StatusCode.TEMPORARY_REDIRECT,  # 307 (Equiv. 302, but retain method)
-            StatusCode.PERMANENT_REDIRECT,  # 308 (Equiv. 301, but retain method)
+            # 301 (Cacheable redirect. Method may change to GET.)
+            StatusCode.MOVED_PERMANENTLY,
+            # 302 (Uncacheable redirect. Method may change to GET.)
+            StatusCode.FOUND,
+            # 303 (Client should make a GET or HEAD request.)
+            StatusCode.SEE_OTHER,
+            # 307 (Equiv. 302, but retain method)
+            StatusCode.TEMPORARY_REDIRECT,
+            # 308 (Equiv. 301, but retain method)
+            StatusCode.PERMANENT_REDIRECT,
         )
 
     @classmethod

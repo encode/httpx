@@ -36,7 +36,6 @@ from .models import (
     Headers,
     HeaderTypes,
     QueryParamTypes,
-    Request,
     RequestData,
     RequestFiles,
     Response,
@@ -196,7 +195,8 @@ class BaseClient:
         if response.is_redirect:
 
             async def send_next() -> AsyncResponse:
-                nonlocal request, response, verify, cert, allow_redirects, timeout, history
+                nonlocal request, response, verify, cert
+                nonlocal allow_redirects, timeout, history
                 request = self.build_redirect_request(request, response)
                 response = await self.send_handling_redirects(
                     request,

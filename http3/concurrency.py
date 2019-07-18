@@ -14,7 +14,7 @@ import ssl
 import typing
 from types import TracebackType
 
-from .config import DEFAULT_TIMEOUT_CONFIG, PoolLimits, TimeoutConfig
+from .config import PoolLimits, TimeoutConfig
 from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .interfaces import (
     BaseBackgroundManager,

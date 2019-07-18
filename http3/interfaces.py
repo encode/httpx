@@ -5,11 +5,9 @@ from types import TracebackType
 
 from .config import CertTypes, PoolLimits, TimeoutConfig, TimeoutTypes, VerifyTypes
 from .models import (
-    URL,
     AsyncRequest,
     AsyncRequestData,
     AsyncResponse,
-    Headers,
     HeaderTypes,
     QueryParamTypes,
     Request,

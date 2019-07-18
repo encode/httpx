@@ -1,10 +1,7 @@
 import json
 from http.cookiejar import Cookie, CookieJar
 
-import pytest
-
 from http3 import (
-    URL,
     AsyncDispatcher,
     AsyncRequest,
     AsyncResponse,

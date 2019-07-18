@@ -1,7 +1,5 @@
 import json
 
-import pytest
-
 from http3 import Client, Response
 
 from .utils import MockHTTP2Backend

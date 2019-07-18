@@ -7,9 +7,10 @@ fi
 
 set -x
 
-${PREFIX}autoflake --in-place --recursive http3 tests
-${PREFIX}black http3 tests
-${PREFIX}isort --multi-line=3 --trailing-comma --force-grid-wrap=0 --combine-as --line-width 88 --recursive --apply http3 tests
+${PREFIX}autoflake --in-place --recursive http3 tests setup.py
+${PREFIX}isort --multi-line=3 --trailing-comma --force-grid-wrap=0 --combine-as --line-width 88 --recursive --apply http3 tests setup.py
+${PREFIX}black http3 tests setup.py
+${PREFIX}flake8 --max-line-length=88 --ignore=W503,E203 http3 tests setup.py
 ${PREFIX}mypy http3 --ignore-missing-imports --disallow-untyped-defs
 
 scripts/clean

@@ -16,6 +16,7 @@ mkdocs-material
 autoflake
 black
 cryptography
+flake8
 isort
 mypy
 pytest
