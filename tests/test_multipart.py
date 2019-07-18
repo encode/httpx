@@ -4,6 +4,8 @@ import io
 import os
 from unittest import mock
 
+import pytest
+
 from http3 import (
     CertTypes,
     Client,
