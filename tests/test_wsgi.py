@@ -61,7 +61,7 @@ def raise_exc(environ, start_response):
 
     try:
         raise ValueError()
-    except:
+    except ValueError:
         exc_info = sys.exc_info()
         start_response(status, response_headers, exc_info=exc_info)
 
@@ -92,4 +92,4 @@ def test_wsgi_upload_with_response_stream():
 def test_wsgi_exc():
     client = http3.Client(app=raise_exc)
     with pytest.raises(ValueError):
-        response = client.get("http://www.example.org/")
+        client.get("http://www.example.org/")

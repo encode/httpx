@@ -4,8 +4,6 @@ import io
 import os
 from unittest import mock
 
-import pytest
-
 from http3 import (
     CertTypes,
     Client,
@@ -46,7 +44,8 @@ def test_multipart(value, output):
     pdict = {"boundary": boundary.encode("ascii"), "CONTENT-LENGTH": content_length}
     multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
 
-    # Note that the expected return type for text fields appears to differs from 3.6 to 3.7+
+    # Note that the expected return type for text fields
+    # appears to differs from 3.6 to 3.7+
     assert multipart["text"] == [output.decode()] or multipart["text"] == [output]
     assert multipart["file"] == [b"<file content>"]
 
@@ -87,7 +86,8 @@ def test_multipart_file_tuple():
     pdict = {"boundary": boundary.encode("ascii"), "CONTENT-LENGTH": content_length}
     multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
 
-    # Note that the expected return type for text fields appears to differs from 3.6 to 3.7+
+    # Note that the expected return type for text fields
+    # appears to differs from 3.6 to 3.7+
     assert multipart["text"] == ["abc"] or multipart["text"] == [b"abc"]
     assert multipart["file"] == [b"<file content>"]
 

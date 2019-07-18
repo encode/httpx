@@ -53,7 +53,7 @@ setup(
         "h11==0.8.*",
         "h2==3.*",
         "idna==2.*",
-        "rfc3986==1.*"
+        "rfc3986==1.*",
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",

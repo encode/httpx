@@ -1,9 +1,6 @@
 import json
 
-import pytest
-
 from http3 import (
-    URL,
     AsyncDispatcher,
     AsyncRequest,
     AsyncResponse,

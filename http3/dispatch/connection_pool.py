@@ -2,7 +2,6 @@ import typing
 
 from ..concurrency import AsyncioBackend
 from ..config import (
-    DEFAULT_CA_BUNDLE_PATH,
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
@@ -10,8 +9,7 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..decoders import ACCEPT_ENCODING
-from ..exceptions import NotConnected, PoolTimeout
+from ..exceptions import NotConnected
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse, Origin
 from .connection import HTTPConnection
