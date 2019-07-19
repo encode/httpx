@@ -1,5 +1,5 @@
 <p align="center" style="margin: 0 0 10px">
-  <img width="350" height="208" src="http://127.0.0.1:8000/img/logo.jpg" alt='HTTPX'>
+  <img width="350" height="208" src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/logo.jpg" alt='HTTPX'>
 </p>
 
 <h1 align="center" style="font-size: 3rem; margin: -15px 0">
@@ -10,14 +10,14 @@ HTTPX
 
 <div align="center">
 <p>
-<a href="https://travis-ci.org/encode/http3">
-    <img src="https://travis-ci.org/encode/http3.svg?branch=master" alt="Build Status">
+<a href="https://travis-ci.org/encode/httpx">
+    <img src="https://travis-ci.org/encode/httpx.svg?branch=master" alt="Build Status">
 </a>
-<a href="https://codecov.io/gh/encode/http3">
-    <img src="https://codecov.io/gh/encode/http3/branch/master/graph/badge.svg" alt="Coverage">
+<a href="https://codecov.io/gh/encode/httpx">
+    <img src="https://codecov.io/gh/encode/httpx/branch/master/graph/badge.svg" alt="Coverage">
 </a>
-<a href="https://pypi.org/project/http3/">
-    <img src="https://badge.fury.io/py/http3.svg" alt="Package version">
+<a href="https://pypi.org/project/httpx/">
+    <img src="https://badge.fury.io/py/httpx.svg" alt="Package version">
 </a>
 </p>
 

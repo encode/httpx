@@ -1,4 +1,10 @@
-# HTTPX
+<p align="center">
+  <img width="350" height="208" src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/logo.jpg" alt='HTTPX'>
+</p>
+
+<p align="center">
+<h1>HTTPX</h1>
+</p>
 
 <a href="https://travis-ci.org/encode/httpx">
     <img src="https://travis-ci.org/encode/httpx.svg?branch=master" alt="Build Status">
@@ -10,7 +16,7 @@
     <img src="https://badge.fury.io/py/httpx.svg" alt="Package version">
 </a>
 
-HTTPX is a next-generation HTTP client for Python 3.
+<em>A next-generation HTTP client for Python.</em>
 
 **Note**: *This project should be considered as an "alpha" release. It is substantially API complete, but there are still some areas that need more work.*
 
