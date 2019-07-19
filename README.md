@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="350" height="208" src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/logo.jpg" alt='HTTPX'>
+  <a href="https://www.encode.io/httpx/"><img width="350" height="208" src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/logo.jpg" alt='HTTPX'></a>
 </p>
 
 <p align="center"><strong>HTTPX</strong> <em>- A next-generation HTTP client for Python.</em></p>
