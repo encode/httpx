@@ -8,17 +8,7 @@ rfc3986==1.*
 # Optional
 brotlipy==0.7.*
 
-# Documentation
-mkdocs
-mkdocs-material
-
-# Testing
-autoflake
-black
 cryptography
-flake8
-isort
-mypy
 pytest
 pytest-asyncio
 pytest-cov

@@ -35,5 +35,5 @@ def test_bad_utf_like_encoding():
     ),
 )
 def test_guess_by_bom(encoding, expected):
-    data = u"\ufeff{}".encode(encoding)
+    data = "\ufeff{}".encode(encoding)
     assert guess_json_utf(data) == expected

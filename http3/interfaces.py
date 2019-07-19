@@ -41,7 +41,7 @@ class AsyncDispatcher:
         headers: HeaderTypes = None,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None
+        timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
         request = AsyncRequest(method, url, data=data, params=params, headers=headers)
         return await self.send(request, verify=verify, cert=cert, timeout=timeout)
@@ -89,7 +89,7 @@ class Dispatcher:
         headers: HeaderTypes = None,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None
+        timeout: TimeoutTypes = None,
     ) -> Response:
         request = Request(method, url, data=data, params=params, headers=headers)
         return self.send(request, verify=verify, cert=cert, timeout=timeout)

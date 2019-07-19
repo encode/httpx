@@ -154,7 +154,9 @@ class ConnectionPool(AsyncDispatcher):
         return connection
 
     async def release_connection(self, connection: HTTPConnection) -> None:
-        if connection.is_closed:
+        if self.is_closed:
+            return
+        elif connection.is_closed:
             self.active_connections.remove(connection)
             self.max_connections.release()
         elif (
@@ -172,5 +174,9 @@ class ConnectionPool(AsyncDispatcher):
         self.is_closed = True
         connections = list(self.keepalive_connections)
         self.keepalive_connections.clear()
+        for connection in connections:
+            await connection.close()
+        connections = list(self.active_connections)
+        self.active_connections.clear()
         for connection in connections:
             await connection.close()

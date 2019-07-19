@@ -1,0 +1,49 @@
+import nox
+
+source_files = ("http3", "tests", "setup.py", "noxfile.py")
+
+
+@nox.session(reuse_venv=True)
+def lint(session):
+    session.install("autoflake", "black", "flake8", "isort")
+
+    session.run("autoflake", "--in-place", "--recursive", *source_files)
+    session.run(
+        "isort",
+        "--multi-line=3",
+        "--trailing-comma",
+        "--force-grid-wrap=0",
+        "--combine-as",
+        "--line-width=88",
+        "--recursive",
+        "--apply",
+        *source_files,
+    )
+    session.run("black", "--target-version=py36", *source_files)
+
+    check(session)
+
+
+@nox.session(reuse_venv=True)
+def check(session):
+    session.install("black", "flake8", "mypy")
+
+    session.run("black", "--check", "--target-version=py36", *source_files)
+    session.run("flake8", "--max-line-length=88", "--ignore=W503,E203", *source_files)
+    session.run(
+        "mypy", *source_files, "--ignore-missing-imports", "--disallow-untyped-defs"
+    )
+
+
+@nox.session(reuse_venv=True)
+def docs(session):
+    session.install("mkdocs", "mkdocs-material")
+
+    session.run("mkdocs", "build")
+
+
+@nox.session(python=["3.6", "3.7", "3.8"])
+def test(session):
+    session.install("-r", "test-test-requirements.txt")
+
+    session.run("coverage", "run", "--omit=\'*\'", "-m", "pytest", "--cov=http3", "--cov=tests", "--cov-report=term-missing")
