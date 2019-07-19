@@ -1,8 +1,8 @@
+<h1 align="center">HTTPX</h1>
+
 <p align="center">
   <img width="350" height="208" src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/logo.jpg" alt='HTTPX'>
 </p>
-
-<h1 align="center">HTTPX</h1>
 
 <p align="center"><em>A next-generation HTTP client for Python.</em></p>
 
