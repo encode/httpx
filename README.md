@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-<h1>HTTPX</h1>
+HTTPX
 </p>
 
 <a href="https://travis-ci.org/encode/httpx">
