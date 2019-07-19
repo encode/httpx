@@ -30,9 +30,7 @@ def check(session):
 
     session.run("black", "--check", "--target-version=py36", *source_files)
     session.run("flake8", "--max-line-length=88", "--ignore=W503,E203", *source_files)
-    session.run(
-        "mypy", "http3", "--ignore-missing-imports", "--disallow-untyped-defs"
-    )
+    session.run("mypy", "http3", "--ignore-missing-imports", "--disallow-untyped-defs")
 
 
 @nox.session(reuse_venv=True)
