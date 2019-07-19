@@ -15,7 +15,7 @@ class ASGIDispatch(AsyncDispatcher):
     and will setup an appropriate dispatch class:
 
     ```
-    client = http3.Client(app=app)
+    client = httpx.Client(app=app)
     ```
 
     Alternatively, you can setup the dispatch instance explicitly.
@@ -23,12 +23,12 @@ class ASGIDispatch(AsyncDispatcher):
     to the ASGIDispatch class:
 
     ```
-    dispatch = http3.ASGIDispatch(
+    dispatch = httpx.ASGIDispatch(
         app=app,
         root_path="/submount",
         client=("1.2.3.4", 123)
     )
-    client = http3.Client(dispatch=dispatch)
+    client = httpx.Client(dispatch=dispatch)
     ```
     """
 

@@ -1,5 +1,15 @@
-<h1 style="margin: 0">HTTP3</h1>
+<p align="center" style="margin: 0 0 10px">
+  <img width="350" height="208" src="http://127.0.0.1:8000/img/logo.jpg" alt='HTTPX'>
+</p>
 
+<h1 align="center" style="font-size: 3rem; margin: -15px 0">
+HTTPX
+</h1>
+
+---
+
+<div align="center">
+<p>
 <a href="https://travis-ci.org/encode/http3">
     <img src="https://travis-ci.org/encode/http3.svg?branch=master" alt="Build Status">
 </a>
@@ -9,8 +19,10 @@
 <a href="https://pypi.org/project/http3/">
     <img src="https://badge.fury.io/py/http3.svg" alt="Package version">
 </a>
+</p>
 
-HTTP3 is a next-generation HTTP client for Python 3.
+<em>A next-generation HTTP client for Python.</em>
+</div>
 
 !!! warning
     This project should be considered as an "alpha" release. It is substantially
@@ -21,8 +33,8 @@ HTTP3 is a next-generation HTTP client for Python 3.
 Let's get started...
 
 ```python
->>> import http3
->>> r = http3.get('https://www.example.org/')
+>>> import httpx
+>>> r = httpx.get('https://www.example.org/')
 >>> r
 <Response [200 OK]>
 >>> r.status_code
@@ -37,7 +49,7 @@ Let's get started...
 
 ## Features
 
-HTTP3 builds on the well-established usability of `requests`, and gives you:
+HTTPX builds on the well-established usability of `requests`, and gives you:
 
 * A requests-compatible API.
 * HTTP/2 and HTTP/1.1 support.
@@ -78,7 +90,7 @@ The [Developer Interface](api.md) provides a comprehensive API reference.
 
 ## Dependencies
 
-The HTTP3 project relies on these excellent libraries:
+The HTTPX project relies on these excellent libraries:
 
 * `h2` - HTTP/2 support.
 * `h11` - HTTP/1.1 support.
@@ -97,7 +109,7 @@ inspiration around the lower level networking details.
 Install with pip:
 
 ```shell
-$ pip install http3
+$ pip install httpx
 ```
 
-HTTP3 requires Python 3.6+
+HTTPX requires Python 3.6+

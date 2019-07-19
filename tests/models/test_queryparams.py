@@ -1,4 +1,4 @@
-from http3 import QueryParams
+from httpx import QueryParams
 
 
 def test_queryparams():

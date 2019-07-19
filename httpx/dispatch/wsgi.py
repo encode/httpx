@@ -15,7 +15,7 @@ class WSGIDispatch(Dispatcher):
     and will setup an appropriate dispatch class:
 
     ```
-    client = http3.Client(app=app)
+    client = httpx.Client(app=app)
     ```
 
     Alternatively, you can setup the dispatch instance explicitly.
@@ -23,12 +23,12 @@ class WSGIDispatch(Dispatcher):
     to the WSGIDispatch class:
 
     ```
-    dispatch = http3.WSGIDispatch(
+    dispatch = httpx.WSGIDispatch(
         app=app,
         script_name="/submount",
         remote_addr="1.2.3.4"
     )
-    client = http3.Client(dispatch=dispatch)
+    client = httpx.Client(dispatch=dispatch)
     ```
     """
 

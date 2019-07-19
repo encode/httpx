@@ -1,6 +1,6 @@
 import pytest
 
-from http3.utils import guess_json_utf
+from httpx.utils import guess_json_utf
 
 
 @pytest.mark.parametrize(

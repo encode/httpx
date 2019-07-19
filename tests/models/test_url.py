@@ -1,4 +1,4 @@
-from http3 import URL
+from httpx import URL
 
 
 def test_idna_url():
