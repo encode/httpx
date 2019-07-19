@@ -2,9 +2,7 @@
   <img width="350" height="208" src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/logo.jpg" alt='HTTPX'>
 </p>
 
-<p align="center">
-HTTPX
-</p>
+<h1 align="center">HTTPX</h1>
 
 <a href="https://travis-ci.org/encode/httpx">
     <img src="https://travis-ci.org/encode/httpx.svg?branch=master" alt="Build Status">
