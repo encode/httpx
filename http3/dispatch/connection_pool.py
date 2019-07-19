@@ -176,7 +176,3 @@ class ConnectionPool(AsyncDispatcher):
         self.keepalive_connections.clear()
         for connection in connections:
             await connection.close()
-        connections = list(self.active_connections)
-        self.active_connections.clear()
-        for connection in connections:
-            await connection.close()
