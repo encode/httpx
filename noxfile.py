@@ -44,6 +44,15 @@ def docs(session):
 
 @nox.session(python=["3.6", "3.7", "3.8"])
 def test(session):
-    session.install("-r", "test-test-requirements.txt")
+    session.install("-r", "test-requirements.txt")
 
-    session.run("coverage", "run", "--omit=\'*\'", "-m", "pytest", "--cov=http3", "--cov=tests", "--cov-report=term-missing")
+    session.run(
+        "coverage",
+        "run",
+        "--omit='*'",
+        "-m",
+        "pytest",
+        "--cov=http3",
+        "--cov=tests",
+        "--cov-report=term-missing",
+    )
