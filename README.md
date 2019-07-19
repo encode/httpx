@@ -107,4 +107,4 @@ much of this work follows, as well as to `urllib3` for plenty of design
 inspiration around the lower level networking details.
 
 <p align="center">&mdash; ⭐️ &mdash;</p>
-<p align="center"><i>httpx is <a href="https://github.com/encode/httpx/blob/master/LICENSE.md">BSD licensed</a> code. Designed & built in Brighton, England.</i></p>
+<p align="center"><i>HTTPX is <a href="https://github.com/encode/httpx/blob/master/LICENSE.md">BSD licensed</a> code. Designed & built in Brighton, England.</i></p>
