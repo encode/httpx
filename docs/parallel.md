@@ -2,10 +2,10 @@
 
 !!! warning
     This page documents some proposed functionality that is not yet released.
-    See [pull request #52](https://github.com/encode/http3/pull/52) for the
+    See [pull request #52](https://github.com/encode/httpx/pull/52) for the
     first-pass of an implementation.
 
-HTTP3 allows you to make HTTP requests in parallel in a highly efficient way,
+HTTPX allows you to make HTTP requests in parallel in a highly efficient way,
 using async under the hood, while still presenting a standard threaded interface.
 
 This has the huge benefit of allowing you to efficiently make parallel HTTP
@@ -16,7 +16,7 @@ requests without having to switch out to using async all the way through.
 Let's make two outgoing HTTP requests in parallel:
 
 ```python
->>> with http3.parallel() as parallel:
+>>> with httpx.parallel() as parallel:
 >>>     pending_one = parallel.get('https://example.com/1')
 >>>     pending_two = parallel.get('https://example.com/2')
 >>>     response_one = pending_one.get_response()
@@ -28,7 +28,7 @@ responses sequentially, but rather deal with each response that comes back
 as soon as it's available:
 
 ```python
->>> with http3.parallel() as parallel:
+>>> with httpx.parallel() as parallel:
 >>>     for counter in range(1, 10):
 >>>         parallel.get(f'https://example.com/{counter}')
 >>>     while parallel.has_pending_responses:
@@ -49,7 +49,7 @@ control the authentication or dispatch behaviour for all requests within the
 block.
 
 ```python
->>> client = http3.Client()
+>>> client = httpx.Client()
 >>> with client.parallel() as parallel:
 >>>     ...
 ```
@@ -60,7 +60,7 @@ If you're working within an async framework, then you'll want to use a fully
 async API for making requests.
 
 ```python
->>> client = http3.AsyncClient()
+>>> client = httpx.AsyncClient()
 >>> async with client.parallel() as parallel:
 >>>     pending_one = await parallel.get('https://example.com/1')
 >>>     pending_two = await parallel.get('https://example.com/2')

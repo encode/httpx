@@ -1,6 +1,6 @@
 import pytest
 
-from http3 import (
+from httpx import (
     AsyncClient,
     ConnectTimeout,
     PoolLimits,

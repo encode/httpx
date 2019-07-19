@@ -1,5 +1,5 @@
 <p align="center" style="margin: 0 0 10px">
-  <img width="350" height="208" src="https://raw.githubusercontent.com/encode/http3/master/docs/logo.jpg" alt='HTTPX'>
+  <img width="350" height="208" src="http://127.0.0.1:8000/img/logo.jpg" alt='HTTPX'>
 </p>
 
 <h1 align="center" style="font-size: 3rem; margin: -15px 0">

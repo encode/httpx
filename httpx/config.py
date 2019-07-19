@@ -12,7 +12,7 @@ VerifyTypes = typing.Union[str, bool]
 TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
 
 
-USER_AGENT = f"python-http3/{__version__}"
+USER_AGENT = f"python-httpx/{__version__}"
 
 DEFAULT_CIPHERS = ":".join(
     [

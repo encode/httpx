@@ -1,6 +1,6 @@
 import json
 
-from http3 import Client, Response
+from httpx import Client, Response
 
 from .utils import MockHTTP2Backend
 

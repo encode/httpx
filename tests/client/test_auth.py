@@ -1,6 +1,6 @@
 import json
 
-from http3 import (
+from httpx import (
     AsyncDispatcher,
     AsyncRequest,
     AsyncResponse,

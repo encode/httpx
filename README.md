@@ -1,16 +1,16 @@
-# HTTP3
+# HTTPX
 
-<a href="https://travis-ci.org/encode/http3">
-    <img src="https://travis-ci.org/encode/http3.svg?branch=master" alt="Build Status">
+<a href="https://travis-ci.org/encode/httpx">
+    <img src="https://travis-ci.org/encode/httpx.svg?branch=master" alt="Build Status">
 </a>
-<a href="https://codecov.io/gh/encode/http3">
-    <img src="https://codecov.io/gh/encode/http3/branch/master/graph/badge.svg" alt="Coverage">
+<a href="https://codecov.io/gh/encode/httpx">
+    <img src="https://codecov.io/gh/encode/httpx/branch/master/graph/badge.svg" alt="Coverage">
 </a>
-<a href="https://pypi.org/project/http3/">
-    <img src="https://badge.fury.io/py/http3.svg" alt="Package version">
+<a href="https://pypi.org/project/httpx/">
+    <img src="https://badge.fury.io/py/httpx.svg" alt="Package version">
 </a>
 
-HTTP3 is a next-generation HTTP client for Python 3.
+HTTPX is a next-generation HTTP client for Python 3.
 
 **Note**: *This project should be considered as an "alpha" release. It is substantially API complete, but there are still some areas that need more work.*
 
@@ -19,8 +19,8 @@ HTTP3 is a next-generation HTTP client for Python 3.
 Let's get started...
 
 ```python
->>> import http3
->>> r = http3.get('https://www.example.org/')
+>>> import httpx
+>>> r = httpx.get('https://www.example.org/')
 >>> r
 <Response [200 OK]>
 >>> r.status_code
@@ -35,13 +35,13 @@ Let's get started...
 
 ## Features
 
-HTTP3 builds on the well-established usability of `requests`, and gives you:
+HTTPX builds on the well-established usability of `requests`, and gives you:
 
 * A requests-compatible API.
 * HTTP/2 and HTTP/1.1 support.
-* Support for [issuing HTTP requests in parallel](https://www.encode.io/http3/parallel/). *(Coming soon)*
-* Standard synchronous interface, but [with `async`/`await` support if you need it](https://www.encode.io/http3/async/).
-* Ability to [make requests directly to WSGI or ASGI applications](https://www.encode.io/http3/advanced/#calling-into-python-web-apps).
+* Support for [issuing HTTP requests in parallel](https://www.encode.io/httpx/parallel/). *(Coming soon)*
+* Standard synchronous interface, but [with `async`/`await` support if you need it](https://www.encode.io/httpx/async/).
+* Ability to [make requests directly to WSGI or ASGI applications](https://www.encode.io/httpx/advanced/#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 100% test coverage.
@@ -69,26 +69,26 @@ Plus all the standard features of `requests`...
 Install with pip:
 
 ```shell
-$ pip install http3
+$ pip install httpx
 ```
 
-HTTP3 requires Python 3.6+
+httpx requires Python 3.6+
 
 ## Documentation
 
-Project documentation is available at [www.encode.io/http3/](https://www.encode.io/http3/).
+Project documentation is available at [www.encode.io/httpx/](https://www.encode.io/httpx/).
 
-For a run-through of all the basics, head over to the [QuickStart](https://www.encode.io/http3/quickstart/).
+For a run-through of all the basics, head over to the [QuickStart](https://www.encode.io/httpx/quickstart/).
 
-For more advanced topics, see the [Advanced Usage](https://www.encode.io/http3/advanced/) section, or
-the specific topics on making [Parallel Requests](https://www.encode.io/http3/parallel/) or using the
-[Async Client](https://www.encode.io/http3/async/).
+For more advanced topics, see the [Advanced Usage](https://www.encode.io/httpx/advanced/) section, or
+the specific topics on making [Parallel Requests](https://www.encode.io/httpx/parallel/) or using the
+[Async Client](https://www.encode.io/httpx/async/).
 
-The [Developer Interface](https://www.encode.io/http3/api/) provides a comprehensive API reference.
+The [Developer Interface](https://www.encode.io/httpx/api/) provides a comprehensive API reference.
 
 ## Dependencies
 
-The HTTP3 project relies on these excellent libraries:
+The httpx project relies on these excellent libraries:
 
 * `h2` - HTTP/2 support.
 * `h11` - HTTP/1.1 support.
@@ -103,4 +103,4 @@ much of this work follows, as well as to `urllib3` for plenty of design
 inspiration around the lower level networking details.
 
 <p align="center">&mdash; ⭐️ &mdash;</p>
-<p align="center"><i>HTTP3 is <a href="https://github.com/encode/http3/blob/master/LICENSE.md">BSD licensed</a> code. Designed & built in Brighton, England.</i></p>
+<p align="center"><i>httpx is <a href="https://github.com/encode/httpx/blob/master/LICENSE.md">BSD licensed</a> code. Designed & built in Brighton, England.</i></p>

@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-import http3
+import httpx
 
 
 def hello_world(environ, start_response):
@@ -69,27 +69,27 @@ def raise_exc(environ, start_response):
 
 
 def test_wsgi():
-    client = http3.Client(app=hello_world)
+    client = httpx.Client(app=hello_world)
     response = client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == "Hello, World!"
 
 
 def test_wsgi_upload():
-    client = http3.Client(app=echo_body)
+    client = httpx.Client(app=echo_body)
     response = client.post("http://www.example.org/", data=b"example")
     assert response.status_code == 200
     assert response.text == "example"
 
 
 def test_wsgi_upload_with_response_stream():
-    client = http3.Client(app=echo_body_with_response_stream)
+    client = httpx.Client(app=echo_body_with_response_stream)
     response = client.post("http://www.example.org/", data=b"example")
     assert response.status_code == 200
     assert response.text == "example"
 
 
 def test_wsgi_exc():
-    client = http3.Client(app=raise_exc)
+    client = httpx.Client(app=raise_exc)
     with pytest.raises(ValueError):
         client.get("http://www.example.org/")

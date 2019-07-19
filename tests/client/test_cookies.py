@@ -1,7 +1,7 @@
 import json
 from http.cookiejar import Cookie, CookieJar
 
-from http3 import (
+from httpx import (
     AsyncDispatcher,
     AsyncRequest,
     AsyncResponse,
