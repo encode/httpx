@@ -1,6 +1,6 @@
 import pytest
 
-from http3 import HTTPConnection
+from httpx import HTTPConnection
 
 
 @pytest.mark.asyncio

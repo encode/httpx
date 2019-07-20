@@ -35,18 +35,17 @@ def get_packages(package):
 
 
 setup(
-    name="http3",
+    name="httpx",
     python_requires=">=3.6",
-    version=get_version("http3"),
-    url="https://github.com/encode/http3",
+    version=get_version("httpx"),
+    url="https://github.com/encode/httpx",
     license="BSD",
     description="The next generation HTTP client.",
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
     author="Tom Christie",
     author_email="tom@tomchristie.com",
-    packages=get_packages("http3"),
-    data_files=[("", ["LICENSE.md"])],
+    packages=get_packages("httpx"),
     install_requires=[
         "certifi",
         "chardet==3.*",

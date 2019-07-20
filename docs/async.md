@@ -1,6 +1,6 @@
 # Async Client
 
-HTTP3 offers a standard synchronous API by default, but also gives you
+HTTPX offers a standard synchronous API by default, but also gives you
 the option of an async client if you need it.
 
 Async is a concurrency model that is far more efficient than multi-threading,
@@ -15,7 +15,7 @@ async client for sending outgoing HTTP requests.
 To make asynchronous requests, you'll need an `AsyncClient`.
 
 ```python
->>> client = http3.AsyncClient()
+>>> client = httpx.AsyncClient()
 >>> r = await client.get('https://www.example.com/')
 ```
 
@@ -25,7 +25,7 @@ If you're using streaming responses then there are a few bits of API that
 use async methods:
 
 ```python
->>> client = http3.AsyncClient()
+>>> client = httpx.AsyncClient()
 >>> r = await client.get('https://www.example.com/', stream=True)
 >>> try:
 >>>     async for chunk in r.stream():
@@ -44,7 +44,7 @@ The async response methods are:
 If you're making parallel requests, then you'll also need to use an async API:
 
 ```python
->>> client = http3.AsyncClient()
+>>> client = httpx.AsyncClient()
 >>> async with client.parallel() as parallel:
 >>>     pending_one = parallel.get('https://example.com/1')
 >>>     pending_two = parallel.get('https://example.com/2')

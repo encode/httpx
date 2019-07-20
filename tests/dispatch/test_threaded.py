@@ -1,6 +1,6 @@
 import json
 
-from http3 import (
+from httpx import (
     CertTypes,
     Client,
     Dispatcher,

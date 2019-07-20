@@ -16,7 +16,7 @@
 *An HTTP client, with connection pooling, redirects, cookie persistence, etc.*
 
 ```python
->>> client = http3.Client()
+>>> client = httpx.Client()
 >>> response = client.get('https://example.org')
 ```
 
@@ -63,7 +63,7 @@
 what gets sent over the wire.*
 
 ```python
->>> request = http3.Request("GET", "https://example.org", headers={'host': 'example.org'})
+>>> request = httpx.Request("GET", "https://example.org", headers={'host': 'example.org'})
 >>> response = client.send(request)
 ```
 

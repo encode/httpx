@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 
-from http3 import (
+from httpx import (
     CertTypes,
     Client,
     Dispatcher,

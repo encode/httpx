@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-export PACKAGE="http3"
+export PACKAGE="httpx"
 export VERSION=`cat ${PACKAGE}/__version__.py | grep __version__ | sed "s/__version__ = //" | sed "s/'//g"`
 export PREFIX=""
 if [ -d 'venv' ] ; then
