@@ -1,9 +1,8 @@
 import os
 import ssl
 
-import pytest
-
 import httpx
+import pytest
 
 
 @pytest.mark.asyncio

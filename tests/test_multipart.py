@@ -5,7 +5,6 @@ import os
 from unittest import mock
 
 import pytest
-
 from httpx import (
     CertTypes,
     Client,

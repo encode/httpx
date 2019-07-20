@@ -1,5 +1,4 @@
 import pytest
-
 from httpx.utils import guess_json_utf
 
 

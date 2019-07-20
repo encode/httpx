@@ -1,9 +1,8 @@
 import zlib
 
 import brotli
-import pytest
-
 import httpx
+import pytest
 
 
 def test_deflate():

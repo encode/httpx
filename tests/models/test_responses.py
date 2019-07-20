@@ -1,9 +1,8 @@
 import json
 from unittest import mock
 
-import pytest
-
 import httpx
+import pytest
 
 
 def streaming_body():
