@@ -10,7 +10,7 @@ from urllib.parse import parse_qsl, urlencode
 import chardet
 import rfc3986
 
-from .config import USER_AGENT
+from .__version__ import __version__
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -75,6 +75,9 @@ RequestFiles = typing.Dict[
 AsyncResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 ResponseContent = typing.Union[bytes, typing.Iterator[bytes]]
+
+
+USER_AGENT = f"python-httpx/{__version__}"
 
 
 class URL:

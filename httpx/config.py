@@ -1,18 +1,23 @@
 import asyncio
+import email.utils
+import enum
 import os
+import random
+import re
 import ssl
+import time
 import typing
 
 import certifi
 
-from .__version__ import __version__
+from .exceptions import HttpError, TooManyRetries
+from .models import AsyncRequest, AsyncResponse
+from .status_codes import StatusCode
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool]
 TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
-
-
-USER_AGENT = f"python-httpx/{__version__}"
+StatusCodeTypes = typing.Union[int, StatusCode]
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -243,8 +248,203 @@ class PoolLimits:
         )
 
 
+class RetryCause(enum.IntEnum):
+    UNKNOWN = 0
+    READ = 1
+    CONNECT = 2
+    RESPONSE = 3
+    ERROR = 4
+
+
+class RetryHistory:
+    def __init__(self, cause: RetryCause, request, response=None, error=None):
+        self.cause = cause
+        self.request = request
+        self.response = response
+        self.error = error
+
+    def __hash__(self):
+        return hash((self.cause, self.request, self.response, self.error))
+
+    def __repr__(self) -> str:
+        retry_history = f"RetryHistory(cause={self.cause}, request={self.request}"
+        if self.response is not None:
+            retry_history += f", response={self.response}"
+        if self.error is not None:
+            retry_history += f", error={self.error}"
+        return retry_history + ")"
+
+
+class RetryConfig:
+    """
+    Retry values
+    """
+
+    def __init__(
+        self,
+        total_retries=None,
+        *,
+        read_retries: int = None,
+        connect_retries: int = None,
+        retryable_status_codes: typing.Optional[typing.Iterable[StatusCodeTypes]] = (
+            413,
+            429,
+            503,
+        ),
+        retryable_methods: typing.Optional[typing.Iterable[str]] = (
+            "HEAD",
+            "GET",
+            "PUT",
+            "DELETE",
+            "OPTIONS",
+            "TRACE",
+        ),
+        retry_after_max: int = 0,
+        backoff_factor: float = 0.1,
+        backoff_max: float = 10.0,
+        backoff_jitter: float = 0.0,
+        history: typing.Tuple[RetryHistory, ...] = (),
+    ):
+        self.total_retries = total_retries
+        self.read_retries = read_retries
+        self.connect_retries = connect_retries
+
+        self.retryable_methods = retryable_methods
+        self.retryable_status_codes = retryable_status_codes
+
+        self.retry_after_max = retry_after_max
+
+        self.backoff_factor = backoff_factor
+        self.backoff_max = backoff_max
+        self.backoff_jitter = backoff_jitter
+
+        self.history = history
+
+    def should_retry(
+        self, request: AsyncRequest, response: AsyncResponse
+    ) -> typing.Optional[AsyncRequest]:
+
+        """Method to be re-implemented by users in case they'd like to modify the request
+        that'll be used on the """
+
+        if request.method not in self.retryable_methods:
+            return None
+        elif response.status_code not in self.retryable_status_codes:
+            return None
+
+        return request
+
+    def increment(
+        self,
+        cause: RetryCause,
+        request: AsyncRequest,
+        response: typing.Optional[AsyncResponse] = None,
+        error: typing.Optional[Exception] = None,
+    ) -> "RetryConfig":
+        if cause == RetryCause.READ and self.read_retries is not None:
+            self.read_retries -= 1
+        elif cause == RetryCause.CONNECT and self.connect_retries is not None:
+            self.connect_retries -= 1
+        if self.total_retries is not None:
+            self.total_retries -= 1
+
+        history_entry = RetryHistory(
+            cause=cause, request=request, response=response, error=error
+        )
+        new_history = (history_entry,) + self.history
+        if self.is_exhausted():
+            raise TooManyRetries(history=new_history)
+
+        return RetryConfig(
+            total_retries=self.total_retries,
+            read_retries=self.read_retries,
+            connect_retries=self.connect_retries,
+            retryable_methods=self.retryable_methods,
+            retryable_status_codes=self.retryable_status_codes,
+            retry_after_max=self.retry_after_max,
+            backoff_factor=self.backoff_factor,
+            backoff_max=self.backoff_max,
+            backoff_jitter=self.backoff_jitter,
+            history=new_history,
+        )
+
+    def sleep_for_retry(self, response: AsyncResponse) -> float:
+        number_of_retries = 0
+        backoff = max(
+            min(self.backoff_max, self.backoff_factor * (2 ** (number_of_retries - 1))),
+            0.0,
+        )
+
+        if self.backoff_jitter:
+            backoff *= 1.0 - (random.SystemRandom().random() * self.backoff_jitter)
+
+        return backoff + self.get_retry_after(response)
+
+    def get_retry_after(self, response: AsyncResponse) -> int:
+        retry_after_header = response.headers.get(b"retry-after", None)
+        seconds = 0
+        if retry_after_header is not None:
+            if re.match(r"^\s*[0-9]+\s*$", retry_after_header):
+                seconds = int(retry_after_header.strip())
+            else:
+                retry_after_date = email.utils.parsedate(retry_after_header)
+                if retry_after_date is None:
+                    raise HttpError(
+                        f"'Retry-After' header is invalid: {retry_after_header}"
+                    )
+                seconds = int(time.time() - time.mktime(retry_after_date))
+
+        return max(min(int(self.retry_after_max), seconds), 0)
+
+    def is_exhausted(self) -> bool:
+        retries = [
+            x
+            for x in (self.read_retries, self.connect_retries, self.total_retries)
+            if x is not None
+        ]
+        return min(retries) < 0
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return (
+            isinstance(other, RetryConfig)
+            and self.total_retries == other.total_retries
+            and self.read_retries == other.read_retries
+            and self.connect_retries == other.connect_retries
+            and self.retryable_methods == other.retryable_methods
+            and self.retryable_status_codes == other.retryable_status_codes
+            and self.retry_after_max == other.retry_after_max
+            and self.backoff_factor == other.backoff_factor
+            and self.backoff_max == other.backoff_max
+            and self.backoff_jitter == other.backoff_jitter
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self.total_retries,
+                self.read_retries,
+                self.connect_retries,
+                self.retryable_methods,
+                self.retryable_status_codes,
+                self.retry_after_max,
+                self.backoff_factor,
+                self.backoff_max,
+                self.backoff_jitter,
+            )
+        )
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        return (
+            f"{class_name}(read_retries={self.read_retries}, "
+            f"write_retries={self.write_retries}, "
+            f"connect_retries={self.connect_retries})"
+        )
+
+
 DEFAULT_SSL_CONFIG = SSLConfig(cert=None, verify=True)
 DEFAULT_TIMEOUT_CONFIG = TimeoutConfig(timeout=5.0)
 DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100, pool_timeout=5.0)
+DEFAULT_RETRY_CONFIG = RetryConfig(5)
 DEFAULT_CA_BUNDLE_PATH = certifi.where()
 DEFAULT_MAX_REDIRECTS = 20

@@ -31,6 +31,15 @@ class PoolTimeout(Timeout):
     """
 
 
+# Retry exceptions
+
+
+class TooManyRetries(Exception):
+    """
+    Too many retries occurred while attempting a request
+    """
+
+
 # HTTP exceptions...
 
 
