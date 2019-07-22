@@ -2,7 +2,7 @@ import inspect
 import typing
 from types import TracebackType
 
-from .auth import HTTPBasicAuth
+from .auth import HTTPBasicAuth, HTTPDigestAuth
 from .concurrency import AsyncioBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
@@ -143,9 +143,12 @@ class BaseClient:
             auth = HTTPBasicAuth(username=url.username, password=url.password)
 
         if auth is not None:
-            if isinstance(auth, tuple):
-                auth = HTTPBasicAuth(username=auth[0], password=auth[1])
-            request = auth(request)
+            if isinstance(auth, HTTPDigestAuth):
+                self.auth = auth
+            else:
+                if isinstance(auth, tuple):
+                    auth = HTTPBasicAuth(username=auth[0], password=auth[1])
+                request = auth(request)
 
         response = await self.send_handling_redirects(
             request,
@@ -187,6 +190,13 @@ class BaseClient:
             response = await self.dispatch.send(
                 request, verify=verify, cert=cert, timeout=timeout
             )
+            # TODO: requests also checks for number of 401 calls < 2
+            if response.is_client_error and response.expects_digest_auth:
+                request = self.auth(request, response)  # TODO: remove dependency on self.auth
+                response = await self.dispatch.send(
+                    request, verify=verify, cert=cert, timeout=timeout
+                )
+
             should_close_response = True
             try:
                 assert isinstance(response, AsyncResponse)
