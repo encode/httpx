@@ -13,6 +13,8 @@ class StatusCode(IntEnum):
         * RFC 2295: Transparent Content Negotiation in HTTP
         * RFC 2774: An HTTP Extension Framework
         * RFC 7540: Hypertext Transfer Protocol Version 2 (HTTP/2)
+        * RFC 2324: Hyper Text Coffee Pot Control Protocol (HTCPCP/1.0)
+        * RFC 7725: An HTTP Status Code to Report Legal Obstacles
     """
 
     def __new__(cls, value: int, phrase: str = "") -> "StatusCode":
@@ -101,6 +103,7 @@ class StatusCode(IntEnum):
     UNSUPPORTED_MEDIA_TYPE = 415, "Unsupported Media Type"
     REQUESTED_RANGE_NOT_SATISFIABLE = 416, "Requested Range Not Satisfiable"
     EXPECTATION_FAILED = 417, "Expectation Failed"
+    IM_A_TEAPOT = 418, "I'm a teapot"
     MISDIRECTED_REQUEST = 421, "Misdirected Request"
     UNPROCESSABLE_ENTITY = 422, "Unprocessable Entity"
     LOCKED = 423, "Locked"
@@ -109,6 +112,7 @@ class StatusCode(IntEnum):
     PRECONDITION_REQUIRED = 428, "Precondition Required"
     TOO_MANY_REQUESTS = 429, "Too Many Requests"
     REQUEST_HEADER_FIELDS_TOO_LARGE = 431, "Request Header Fields Too Large"
+    UNAVAILABLE_FOR_LEGAL_REASONS = 451, "Unavailable For Legal Reasons"
 
     # server errors
     INTERNAL_SERVER_ERROR = 500, "Internal Server Error"
