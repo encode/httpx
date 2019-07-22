@@ -103,7 +103,7 @@ class StatusCode(IntEnum):
     UNSUPPORTED_MEDIA_TYPE = 415, "Unsupported Media Type"
     REQUESTED_RANGE_NOT_SATISFIABLE = 416, "Requested Range Not Satisfiable"
     EXPECTATION_FAILED = 417, "Expectation Failed"
-    I_AM_A_TEAPOT = 418, "I'm a teapot"
+    IM_A_TEAPOT = 418, "I'm a teapot"
     MISDIRECTED_REQUEST = 421, "Misdirected Request"
     UNPROCESSABLE_ENTITY = 422, "Unprocessable Entity"
     LOCKED = 423, "Locked"
