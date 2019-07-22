@@ -50,7 +50,7 @@ def test(session):
         "--omit='*'",
         "-m",
         "pytest",
-        "--cov=http3",
+        "--cov=httpx",
         "--cov=tests",
         "--cov-report=term-missing",
     )
