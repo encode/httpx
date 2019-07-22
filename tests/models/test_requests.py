@@ -1,5 +1,6 @@
-import httpx
 import pytest
+
+import httpx
 
 
 def test_request_repr():

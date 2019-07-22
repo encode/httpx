@@ -5,6 +5,7 @@ import typing
 import h2.config
 import h2.connection
 import h2.events
+
 from httpx import (
     AsyncioBackend,
     BaseReader,

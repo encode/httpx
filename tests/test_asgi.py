@@ -1,5 +1,6 @@
-import httpx
 import pytest
+
+import httpx
 
 
 async def hello_world(scope, receive, send):

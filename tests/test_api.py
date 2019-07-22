@@ -1,8 +1,9 @@
 import asyncio
 import functools
 
-import httpx
 import pytest
+
+import httpx
 
 
 def threadpool(func):

@@ -5,11 +5,13 @@ source_files = ("httpx", "tests", "setup.py", "noxfile.py")
 
 @nox.session(reuse_venv=True)
 def lint(session):
-    session.install("autoflake", "black", "flake8", "isort")
+    session.install("autoflake", "black", "flake8", "isort", "seed-isort-config")
 
     session.run("autoflake", "--in-place", "--recursive", *source_files)
+    session.run("seed-isort-config", "--application-directories=httpx")
     session.run(
         "isort",
+        "--project=httpx",
         "--multi-line=3",
         "--trailing-comma",
         "--force-grid-wrap=0",

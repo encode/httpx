@@ -1,7 +1,8 @@
 import sys
 
-import httpx
 import pytest
+
+import httpx
 
 
 def hello_world(environ, start_response):
