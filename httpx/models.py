@@ -214,6 +214,12 @@ class URL:
         url_str = str(self)
         return f"{class_name}({url_str!r})"
 
+    def __truediv__(self, right):
+        return self.join(URL(right, allow_relative=True))
+
+    def __rtruediv__(self, left):
+        return URL(left).join(self)
+
 
 class Origin:
     """
