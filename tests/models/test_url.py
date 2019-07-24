@@ -25,6 +25,12 @@ def test_url():
     assert new.scheme == "http"
 
 
+def test_url_eq_str():
+    url = URL("https://example.org:123/path/to/somewhere?abc=123#anchor")
+    assert url == "https://example.org:123/path/to/somewhere?abc=123#anchor"
+    assert str(url) == url
+
+
 def test_url__params():
     url = URL("https://example.org:123/path/to/somewhere", params={"a": "123"})
     assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
