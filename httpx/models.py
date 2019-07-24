@@ -204,7 +204,7 @@ class URL:
         return hash(str(self))
 
     def __eq__(self, other: typing.Any) -> bool:
-        return isinstance(other, URL) and str(self) == str(other)
+        return isinstance(other, (URL, str)) and str(self) == str(other)
 
     def __str__(self) -> str:
         return self.components.unsplit()
