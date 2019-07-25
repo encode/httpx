@@ -157,6 +157,8 @@ class HTTP11Connection:
         """
         Read a single `h11` event, reading more data from the network if needed.
         """
+        if self.reader.is_connection_dropped():
+            raise NotConnected
         while True:
             event = self.h11_state.next_event()
             if event is h11.NEED_DATA:
@@ -166,9 +168,6 @@ class HTTP11Connection:
                     )
                 except OSError:  # pragma: nocover
                     data = b""
-                if self.h11_state.their_state == h11.SEND_RESPONSE and data == b"":
-                    # the server closed a keep-alive connection
-                    raise NotConnected
                 self.h11_state.receive_data(data)
             else:
                 break
