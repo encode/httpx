@@ -107,37 +107,27 @@ class ConnectionPool(AsyncDispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
-        allow_connection_reuse = True
-        connection = None
-        while connection is None:
-            connection = await self.acquire_connection(
-                origin=request.url.origin, allow_connection_reuse=allow_connection_reuse
+        connection = await self.acquire_connection(origin=request.url.origin)
+        try:
+            response = await connection.send(
+                request, verify=verify, cert=cert, timeout=timeout
             )
-            try:
-                response = await connection.send(
-                    request, verify=verify, cert=cert, timeout=timeout
-                )
-            except BaseException as exc:
-                self.active_connections.remove(connection)
-                self.max_connections.release()
-                if allow_connection_reuse:
-                    connection = None
-                    allow_connection_reuse = False
-                else:
-                    raise exc
+        except BaseException as exc:
+            self.active_connections.remove(connection)
+            self.max_connections.release()
+            raise exc
 
         return response
 
-    async def acquire_connection(
-        self, origin: Origin, allow_connection_reuse: bool = True
-    ) -> HTTPConnection:
-        connection = None
-        if allow_connection_reuse:
-            connection = self.active_connections.pop_by_origin(origin, http2_only=True)
-            if connection is None:
-                connection = self.keepalive_connections.pop_by_origin(origin)
+    async def acquire_connection(self, origin: Origin) -> HTTPConnection:
+        connection = self.active_connections.pop_by_origin(origin, http2_only=True)
+        if connection is None:
+            connection = self.keepalive_connections.pop_by_origin(origin)
 
-        if connection is None or connection.is_connection_dropped():
+        if connection is not None and connection.is_connection_dropped():
+            connection = None
+
+        if connection is None:
             await self.max_connections.acquire()
             connection = HTTPConnection(
                 origin,
