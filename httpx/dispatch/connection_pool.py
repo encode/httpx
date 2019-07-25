@@ -9,7 +9,7 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..exceptions import ConnectionClosedByRemote, NotConnected
+from ..exceptions import NotConnected
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse, Origin
 from .connection import HTTPConnection
@@ -121,10 +121,7 @@ class ConnectionPool(AsyncDispatcher):
             except BaseException as exc:
                 self.active_connections.remove(connection)
                 self.max_connections.release()
-                if (
-                    isinstance(exc, (NotConnected, ConnectionClosedByRemote))
-                    and allow_connection_reuse
-                ):
+                if isinstance(exc, NotConnected) and allow_connection_reuse:
                     connection = None
                     allow_connection_reuse = False
                 else:

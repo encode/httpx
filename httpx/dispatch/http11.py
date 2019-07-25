@@ -4,7 +4,7 @@ import h11
 
 from ..concurrency import TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
-from ..exceptions import ConnectionClosedByRemote, NotConnected
+from ..exceptions import NotConnected
 from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
@@ -168,7 +168,7 @@ class HTTP11Connection:
                     data = b""
                 if self.h11_state.their_state == h11.SEND_RESPONSE and data == b"":
                     # the server closed a keep-alive connection
-                    raise ConnectionClosedByRemote
+                    raise NotConnected
                 self.h11_state.receive_data(data)
             else:
                 break

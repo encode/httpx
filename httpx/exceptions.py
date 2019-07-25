@@ -120,12 +120,6 @@ class ResponseClosed(StreamException):
     """
 
 
-class ConnectionClosedByRemote(StreamException):
-    """
-    The remote server closed the connection, typically after a timeout.
-    """
-
-
 # Other cases...
 
 
