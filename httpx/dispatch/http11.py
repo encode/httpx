@@ -4,7 +4,6 @@ import h11
 
 from ..concurrency import TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
-from ..exceptions import NotConnected
 from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
@@ -46,12 +45,7 @@ class HTTP11Connection:
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
-        try:
-            await self._send_request(request, timeout)
-        except ConnectionResetError:  # pragma: nocover
-            # We're currently testing this case in HTTP/2.
-            # Really we should test it here too, but this'll do in the meantime.
-            raise NotConnected() from None
+        await self._send_request(request, timeout)
 
         task, args = self._send_request_data, [request.stream(), timeout]
         async with self.backend.background_manager(task, args=args):
@@ -117,8 +111,6 @@ class HTTP11Connection:
         Send a single `h11` event to the network, waiting for the data to
         drain before returning.
         """
-        if self.reader.is_connection_dropped():
-            raise NotConnected
         bytes_to_send = self.h11_state.send(event)
         await self.writer.write(bytes_to_send, timeout)
 
@@ -159,8 +151,6 @@ class HTTP11Connection:
         """
         Read a single `h11` event, reading more data from the network if needed.
         """
-        if self.reader.is_connection_dropped():
-            raise NotConnected
         while True:
             event = self.h11_state.next_event()
             if event is h11.NEED_DATA:
@@ -192,3 +182,6 @@ class HTTP11Connection:
     @property
     def is_closed(self) -> bool:
         return self.h11_state.our_state in (h11.CLOSED, h11.ERROR)
+
+    def is_connection_dropped(self) -> bool:
+        return self.reader.is_connection_dropped()

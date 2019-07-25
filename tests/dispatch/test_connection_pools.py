@@ -152,14 +152,18 @@ async def test_keepalive_connection_closed_by_server_is_reestablished(server):
 
 
 @pytest.mark.asyncio
-async def test_connection_closed_by_server_before_receiving_data(server):
+async def test_keepalive_http2_connection_closed_by_server_is_reestablished(server):
     """
-    If the server closes the connection after sending the response but before reading the data
-    a disconnect error is raised.
+    Upon keep-alive connection closed by remote a new connection should be reestablished.
     """
     async with httpx.ConnectionPool() as http:
         response = await http.request("GET", "http://127.0.0.1:8000/")
-        await server.shutdown()  # shutdown the server to close the connection before receiving the data
+        await response.read()
 
-        with pytest.raises(httpx.exceptions.NotConnected):
-            await response.read()
+        await server.shutdown()  # shutdown the server to close the keep-alive connection
+        await server.startup()
+
+        response = await http.request("GET", "http://127.0.0.1:8000/")
+        await response.read()
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1

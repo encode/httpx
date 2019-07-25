@@ -102,3 +102,10 @@ class HTTPConnection(AsyncDispatcher):
         else:
             assert self.h11_connection is not None
             return self.h11_connection.is_closed
+
+    def is_connection_dropped(self) -> bool:
+        if self.h2_connection is not None:
+            return self.h2_connection.is_connection_dropped()
+        else:
+            assert self.h11_connection is not None
+            return self.h11_connection.is_connection_dropped()

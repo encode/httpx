@@ -6,7 +6,6 @@ import h2.events
 
 from ..concurrency import TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
-from ..exceptions import NotConnected
 from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
@@ -39,10 +38,7 @@ class HTTP2Connection:
         if not self.initialized:
             self.initiate_connection()
 
-        try:
-            stream_id = await self.send_headers(request, timeout)
-        except ConnectionResetError:
-            raise NotConnected() from None
+        stream_id = await self.send_headers(request, timeout)
 
         self.events[stream_id] = []
         self.timeout_flags[stream_id] = TimeoutFlag()
@@ -176,3 +172,6 @@ class HTTP2Connection:
     @property
     def is_closed(self) -> bool:
         return False
+
+    def is_connection_dropped(self) -> bool:
+        return self.reader.is_connection_dropped()
