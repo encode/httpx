@@ -98,7 +98,8 @@ class URL:
                 self.components = self.components.copy_with(authority=idna_authority)
 
         # Normalize scheme and domain name.
-        self.components = self.components.normalize()
+        if self.is_absolute_url:
+            self.components = self.components.normalize()
 
         # Add any query parameters.
         if params:
@@ -170,7 +171,7 @@ class URL:
         Return `True` for absolute URLs such as 'http://example.com/path',
         and `False` for relative URLs such as '/path'.
         """
-        # We don't use rfc3986's `is_absolute` because it treats
+        # We don't use `.is_absolute` from `rfc3986` because it treats
         # URLs with a fragment portion as not absolute.
         # What we actually care about is if the URL provides
         # a scheme and hostname to which connections should be made.
