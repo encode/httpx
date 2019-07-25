@@ -117,6 +117,8 @@ class HTTP11Connection:
         Send a single `h11` event to the network, waiting for the data to
         drain before returning.
         """
+        if self.reader.is_connection_dropped():
+            raise NotConnected
         bytes_to_send = self.h11_state.send(event)
         await self.writer.write(bytes_to_send, timeout)
 
