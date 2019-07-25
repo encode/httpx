@@ -31,12 +31,26 @@ def test_url_eq_str():
     assert str(url) == url
 
 
-def test_url__params():
+def test_url_params():
     url = URL("https://example.org:123/path/to/somewhere", params={"a": "123"})
     assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
 
     url = URL("https://example.org:123/path/to/somewhere?b=456", params={"a": "123"})
     assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
+
+
+def test_url_join():
+    url = URL("https://example.org:123/path/to/somewhere")
+    assert url.join('/somewhere-else') == "https://example.org:123/somewhere-else"
+
+    url = URL("https://example.org:123/path/to/somewhere")
+    assert url.join('somewhere-else') == "https://example.org:123/path/to/somewhere-else"
+
+    url = URL("https://example.org:123/path/to/somewhere")
+    assert url.join('../somewhere-else') == "https://example.org:123/path/somewhere-else"
+
+    url = URL("https://example.org:123/path/to/somewhere")
+    assert url.join('../../somewhere-else') == "https://example.org:123/somewhere-else"
 
 
 def test_url_set():
