@@ -130,6 +130,9 @@ class BaseReader:
     ) -> bytes:
         raise NotImplementedError()  # pragma: no cover
 
+    def is_connection_dropped(self) -> bool:
+        raise NotImplementedError()  # pragma: no cover
+
 
 class BaseWriter:
     """

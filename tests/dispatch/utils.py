@@ -43,7 +43,7 @@ class MockHTTP2Server(BaseReader, BaseWriter):
         self.app = app
         self.buffer = b""
         self.requests = {}
-        self.raise_disconnect = False
+        self.close_connection = False
 
     # BaseReader interface
 
@@ -55,9 +55,6 @@ class MockHTTP2Server(BaseReader, BaseWriter):
     # BaseWriter interface
 
     def write_no_block(self, data: bytes) -> None:
-        if self.raise_disconnect:
-            self.raise_disconnect = False
-            raise ConnectionResetError()
         events = self.conn.receive_data(data)
         self.buffer += self.conn.data_to_send()
         for event in events:
@@ -73,6 +70,9 @@ class MockHTTP2Server(BaseReader, BaseWriter):
 
     async def close(self) -> None:
         pass
+
+    def is_connection_dropped(self) -> bool:
+        return self.close_connection
 
     # Server implementation
 

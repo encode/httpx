@@ -4,7 +4,6 @@ import h11
 
 from ..concurrency import TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
-from ..exceptions import NotConnected
 from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
@@ -46,12 +45,7 @@ class HTTP11Connection:
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
-        try:
-            await self._send_request(request, timeout)
-        except ConnectionResetError:  # pragma: nocover
-            # We're currently testing this case in HTTP/2.
-            # Really we should test it here too, but this'll do in the meantime.
-            raise NotConnected() from None
+        await self._send_request(request, timeout)
 
         task, args = self._send_request_data, [request.stream(), timeout]
         async with self.backend.background_manager(task, args=args):
@@ -188,3 +182,6 @@ class HTTP11Connection:
     @property
     def is_closed(self) -> bool:
         return self.h11_state.our_state in (h11.CLOSED, h11.ERROR)
+
+    def is_connection_dropped(self) -> bool:
+        return self.reader.is_connection_dropped()
