@@ -98,7 +98,7 @@ class URL:
                 self.components = self.components.copy_with(authority=idna_authority)
 
         # Normalize scheme and domain name.
-        if self.scheme or self.host:
+        if self.is_absolute:
             self.components = self.components.normalize()
 
         # Add any query parameters.
