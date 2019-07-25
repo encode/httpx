@@ -9,7 +9,7 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..exceptions import NotConnected, ConnectionClosedByRemote
+from ..exceptions import ConnectionClosedByRemote, NotConnected
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse, Origin
 from .connection import HTTPConnection

@@ -10,11 +10,11 @@ from httpx import (
     CertTypes,
     Client,
     Dispatcher,
-    multipart,
     Request,
     Response,
     TimeoutTypes,
     VerifyTypes,
+    multipart,
 )
 
 
