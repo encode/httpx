@@ -100,7 +100,7 @@ class HTTP2Connection:
         self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
     ) -> None:
         flow_control = self.h2_state.local_flow_control_window(stream_id)
-        chunk_size = min(len(data), flow_control)
+        chunk_size = min(len(data), flow_control, self.h2_state.max_outbound_frame_size)
         for idx in range(0, len(data), chunk_size):
             chunk = data[idx : idx + chunk_size]
             self.h2_state.send_data(stream_id, chunk)
