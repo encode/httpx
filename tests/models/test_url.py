@@ -1,6 +1,7 @@
+import pytest
+
 from httpx import URL
 from httpx.exceptions import InvalidURL
-import pytest
 
 
 def test_idna_url():
@@ -46,10 +47,14 @@ def test_url_join():
     Some basic URL joining tests.
     """
     url = URL("https://example.org:123/path/to/somewhere")
-    assert url.join('/somewhere-else') == "https://example.org:123/somewhere-else"
-    assert url.join('somewhere-else') == "https://example.org:123/path/to/somewhere-else"
-    assert url.join('../somewhere-else') == "https://example.org:123/path/somewhere-else"
-    assert url.join('../../somewhere-else') == "https://example.org:123/somewhere-else"
+    assert url.join("/somewhere-else") == "https://example.org:123/somewhere-else"
+    assert (
+        url.join("somewhere-else") == "https://example.org:123/path/to/somewhere-else"
+    )
+    assert (
+        url.join("../somewhere-else") == "https://example.org:123/path/somewhere-else"
+    )
+    assert url.join("../../somewhere-else") == "https://example.org:123/somewhere-else"
 
 
 def test_url_join_rfc3986():
@@ -119,3 +124,11 @@ def test_url_set():
     url_set = set(urls)
 
     assert all(url in urls for url in url_set)
+
+
+def test_hsts_preload_converted_to_https():
+    url = URL("http://www.paypal.com")
+
+    assert url.is_ssl
+    assert url.scheme == "https"
+    assert url == "https://www.paypal.com"
