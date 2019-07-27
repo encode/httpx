@@ -318,7 +318,7 @@ class QueryParams(typing.Mapping[str, str]):
         return f"{class_name}({query_string!r})"
 
 
-class Headers(typing.MutableMapping[str, str]):
+class Headers(typing.MutableMapping[str, str], MutableMapping):
     """
     HTTP headers, as a case-insensitive multi-dict.
     """
