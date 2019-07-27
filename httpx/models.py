@@ -6,6 +6,7 @@ import urllib.request
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
+import idna
 
 import chardet
 import rfc3986
@@ -93,8 +94,11 @@ class URL:
 
         # Handle IDNA domain names.
         if self.components.authority:
-            idna_authority = self.components.authority.encode("idna").decode("ascii")
-            if idna_authority != self.components.authority:
+            host, port = self.components.authority.split(":") if ":" in self.components.authority else (self.components.authority, None)
+            idna_authority = idna.encode(host, uts46=True).decode("ascii")
+            if idna_authority != host:
+                if port:
+                    idna_authority = "{}:{}".format(idna_authority, port)
                 self.components = self.components.copy_with(authority=idna_authority)
 
         # Normalize scheme and domain name.
