@@ -9,6 +9,28 @@ def test_idna_url():
     assert url.host == "xn--fiqs8s.icom.museum"
 
 
+def test_idna_2008_url_without_port():
+    """ Under idna 2003 ß is replaced with 'ss' """
+    url = URL("http://faß.de/")
+    assert url == URL("http://xn--fa-hia.de/")
+    assert url.host == "xn--fa-hia.de"
+
+
+def test_idna_2008_url_with_port():
+    """ Explicit test of portname on idna url """
+    url = URL("https://faß.de:443/")
+    assert url == URL("https://xn--fa-hia.de:443/")
+    assert url.host == "xn--fa-hia.de"
+    assert url.port == 443
+
+
+def test_idna_2008_url_compat():
+    """ Tests Unicode TR#46 compatability mode """
+    url = URL("https://Königsgäßchen.com")
+    assert url == URL("https://xn--knigsgchen-b4a3dun.com")
+    assert url.host == "xn--knigsgchen-b4a3dun.com"
+
+
 def test_url():
     url = URL("https://example.org:123/path/to/somewhere?abc=123#anchor")
     assert url.scheme == "https"
