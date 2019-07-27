@@ -623,14 +623,14 @@ class Client(BaseClient):
 
         coroutine = self.send
         args = [request]
-        kwargs = dict(
-            stream=True,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-        )
+        kwargs = {
+            "stream": True,
+            "auth": auth,
+            "allow_redirects": allow_redirects,
+            "verify": verify,
+            "cert": cert,
+            "timeout": timeout,
+        }
         async_response = concurrency_backend.run(coroutine, *args, **kwargs)
 
         content = getattr(

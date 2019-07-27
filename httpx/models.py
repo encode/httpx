@@ -434,7 +434,7 @@ class Headers(typing.MutableMapping[str, str]):
         set_value = value.encode(self.encoding)
 
         found_indexes = []
-        for idx, (item_key, item_value) in enumerate(self._list):
+        for idx, (item_key, _) in enumerate(self._list):
             if item_key == set_key:
                 found_indexes.append(idx)
 
@@ -454,7 +454,7 @@ class Headers(typing.MutableMapping[str, str]):
         del_key = key.lower().encode(self.encoding)
 
         pop_indexes = []
-        for idx, (item_key, item_value) in enumerate(self._list):
+        for idx, (item_key, _) in enumerate(self._list):
             if item_key == del_key:
                 pop_indexes.append(idx)
 
@@ -463,7 +463,7 @@ class Headers(typing.MutableMapping[str, str]):
 
     def __contains__(self, key: typing.Any) -> bool:
         get_header_key = key.lower().encode(self.encoding)
-        for header_key, header_value in self._list:
+        for header_key, _ in self._list:
             if header_key == get_header_key:
                 return True
         return False
@@ -705,7 +705,7 @@ class BaseResponse:
     def content(self) -> bytes:
         if not hasattr(self, "_content"):
             if hasattr(self, "_raw_content"):
-                raw_content = getattr(self, "_raw_content")  # type: bytes
+                raw_content = self._raw_content  # type: ignore
                 content = self.decoder.decode(raw_content)
                 content += self.decoder.flush()
                 self._content = content
@@ -1033,25 +1033,25 @@ class Cookies(MutableMapping):
         """
         Set a cookie value by name. May optionally include domain and path.
         """
-        kwargs = dict(
-            version=0,
-            name=name,
-            value=value,
-            port=None,
-            port_specified=False,
-            domain=domain,
-            domain_specified=bool(domain),
-            domain_initial_dot=domain.startswith("."),
-            path=path,
-            path_specified=bool(path),
-            secure=False,
-            expires=None,
-            discard=True,
-            comment=None,
-            comment_url=None,
-            rest={"HttpOnly": None},
-            rfc2109=False,
-        )
+        kwargs = {
+            "version": 0,
+            "name": name,
+            "value": value,
+            "port": None,
+            "port_specified": False,
+            "domain": domain,
+            "domain_specified": bool(domain),
+            "domain_initial_dot": domain.startswith("."),
+            "path": path,
+            "path_specified": bool(path),
+            "secure": False,
+            "expires": None,
+            "discard": True,
+            "comment": None,
+            "comment_url": None,
+            "rest": {"HttpOnly": None},
+            "rfc2109": False,
+        }
         cookie = Cookie(**kwargs)  # type: ignore
         self.jar.set_cookie(cookie)
 
@@ -1131,7 +1131,7 @@ class Cookies(MutableMapping):
         return (cookie.name for cookie in self.jar)
 
     def __bool__(self) -> bool:
-        for cookie in self.jar:
+        for _ in self.jar:
             return True
         return False
 
