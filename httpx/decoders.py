@@ -100,7 +100,7 @@ class BrotliDecoder(Decoder):
         try:
             if hasattr(self.decompressor, "decompress"):
                 return self.decompressor.decompress(data)
-            return self.decompressor.process(data)
+            return self.decompressor.process(data)  # pragma: nocover
         except brotli.error as exc:
             raise DecodingError from exc
 
