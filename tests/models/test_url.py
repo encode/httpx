@@ -10,6 +10,11 @@ def test_idna_url():
     assert url.host == "xn--fiqs8s.icom.museum"
     assert url.port == 80
 
+    url = URL("http://Königsgäßchen.de")
+    assert url == URL("http://xn--knigsgchen-b4a3dun.de") # IDNA 2008
+    assert url.host == "xn--knigsgchen-b4a3dun.de"
+    assert url.port == 80
+
     url = URL("https://faß.de")
     assert url == URL("https://xn--fa-hia.de") # IDNA 2008
     assert url.host == "xn--fa-hia.de"

@@ -98,7 +98,7 @@ class URL:
             # idna.encode raises InvalidCodepoint when encountering a colon, so split
             # host and port in case the latter is specified and rejoin after encoding
             host_port = self.components.authority.split(":")
-            host_port[0] = idna.encode(host_port[0]).decode("ascii")
+            host_port[0] = idna.encode(host_port[0], uts46=True).decode("ascii")
             idna_authority = ":".join(host_port)
             if idna_authority != self.components.authority:
                 self.components = self.components.copy_with(authority=idna_authority)
