@@ -93,7 +93,7 @@ class BrotliDecoder(Decoder):
     def __init__(self) -> None:
         assert (
             brotli is not None
-        ), "The 'brotlipy' library must be installed to use 'BrotliDecoder'"
+        ), "The 'brotlipy' or 'brotli' library must be installed to use 'BrotliDecoder'"
         self.decompressor = brotli.Decompressor()
 
     def decode(self, data: bytes) -> bytes:
