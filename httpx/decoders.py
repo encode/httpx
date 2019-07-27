@@ -85,6 +85,9 @@ class BrotliDecoder(Decoder):
     Handle 'brotli' decoding.
 
     Requires `pip install brotlipy`. See: https://brotlipy.readthedocs.io/
+        or   `pip install brotli`. See https://github.com/google/brotli
+    Supports both 'brotlipy' and 'Brotli' packages since they share an import
+    name. The top branches are for 'brotlipy' and bottom branches for 'Brotli'
     """
 
     def __init__(self) -> None:
@@ -95,15 +98,18 @@ class BrotliDecoder(Decoder):
 
     def decode(self, data: bytes) -> bytes:
         try:
-            return self.decompressor.decompress(data)
-        except brotli.Error as exc:
+            if hasattr(self.decompressor, "decompress"):
+                return self.decompressor.decompress(data)
+            return self.decompressor.process(data)
+        except brotli.error as exc:
             raise DecodingError from exc
 
     def flush(self) -> bytes:
         try:
-            self.decompressor.finish()
+            if hasattr(self.decompressor, "finish"):
+                self.decompressor.finish()
             return b""
-        except brotli.Error as exc:  # pragma: nocover
+        except brotli.error as exc:  # pragma: nocover
             raise DecodingError from exc
 
 
