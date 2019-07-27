@@ -8,6 +8,29 @@ def test_idna_url():
     url = URL("http://中国.icom.museum:80/")
     assert url == URL("http://xn--fiqs8s.icom.museum:80/")
     assert url.host == "xn--fiqs8s.icom.museum"
+    assert url.port == 80
+
+    url = URL("https://faß.de")
+    assert url == URL("https://xn--fa-hia.de") # IDNA 2008
+    assert url.host == "xn--fa-hia.de"
+    assert url.port == 443
+
+    url = URL("https://βόλος.com:443")
+    assert url == URL("https://xn--nxasmm1c.com:443") # IDNA 2008
+    assert url.host == "xn--nxasmm1c.com"
+    assert url.port == 443
+
+    url = URL("http://ශ්‍රී.com:444")
+    assert url == URL("http://xn--10cl1a0b660p.com:444") # IDNA 2008
+    assert url.host == "xn--10cl1a0b660p.com"
+    assert url.scheme == "http"
+    assert url.port == 444
+
+    url = URL("https://نامه‌ای.com:4433")
+    assert url == URL("https://xn--mgba3gch31f060k.com:4433") # IDNA 2008
+    assert url.host == "xn--mgba3gch31f060k.com"
+    assert url.scheme == "https"
+    assert url.port == 4433
 
 
 def test_url():
