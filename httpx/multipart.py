@@ -1,9 +1,39 @@
 import binascii
 import mimetypes
 import os
+import re
 import typing
 from io import BytesIO
-from urllib.parse import quote
+
+_HTML5_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
+
+_HTML5_REPLACEMENTS.update(
+    {chr(cc): "%{:02X}".format(cc) for cc in range(0x00, 0x1F + 1) if cc not in (0x1B,)}
+)
+
+
+def _replace_multiple(
+    value: str, needles_and_replacements: typing.Dict[str, str]
+) -> str:
+    def replacer(match: typing.Match[str]) -> str:
+        return needles_and_replacements[match.group(0)]
+
+    pattern = re.compile(
+        r"|".join([re.escape(needle) for needle in needles_and_replacements.keys()])
+    )
+
+    result = pattern.sub(replacer, value)
+
+    return result
+
+
+def format_header_param_html5(name: str, value: typing.Union[str, bytes]) -> str:
+    if isinstance(value, bytes):
+        value = value.decode()
+
+    value = _replace_multiple(value, _HTML5_REPLACEMENTS)
+
+    return f'{name}="{value}"'
 
 
 class Field:
@@ -24,10 +54,8 @@ class DataField(Field):
         self.value = value
 
     def render_headers(self) -> bytes:
-        name = quote(self.name, encoding="utf-8").encode("ascii")
-        return b"".join(
-            [b'Content-Disposition: form-data; name="', name, b'"\r\n' b"\r\n"]
-        )
+        name = format_header_param_html5("name", self.name).encode()
+        return b"".join([b"Content-Disposition: form-data; ", name, b"\r\n", b"\r\n"])
 
     def render_data(self) -> bytes:
         return (
@@ -55,16 +83,16 @@ class FileField(Field):
         return mimetypes.guess_type(self.filename)[0] or "application/octet-stream"
 
     def render_headers(self) -> bytes:
-        name = quote(self.name, encoding="utf-8").encode("ascii")
-        filename = quote(self.filename, encoding="utf-8").encode("ascii")
-        content_type = self.content_type.encode("ascii")
+        name = format_header_param_html5("name", self.name).encode()
+        filename = format_header_param_html5("filename", self.filename).encode()
+        content_type = self.content_type.encode()
         return b"".join(
             [
-                b'Content-Disposition: form-data; name="',
+                b"Content-Disposition: form-data; ",
                 name,
-                b'"; filename="',
+                b"; ",
                 filename,
-                b'"\r\n',
+                b"\r\n",
                 b"Content-Type: ",
                 content_type,
                 b"\r\n",
