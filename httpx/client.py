@@ -17,12 +17,7 @@ from .dispatch.asgi import ASGIDispatch
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
-from .exceptions import (
-    InvalidURL,
-    RedirectBodyUnavailable,
-    RedirectLoop,
-    TooManyRedirects,
-)
+from .exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from .models import (
     URL,
@@ -125,8 +120,7 @@ class BaseClient:
 
         url = request.url
 
-        if url.scheme not in ("http", "https"):
-            raise InvalidURL('URL scheme must be "http" or "https".')
+        url.validate()
 
         if auth is None and (url.username or url.password):
             auth = HTTPBasicAuth(username=url.username, password=url.password)

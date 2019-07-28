@@ -87,5 +87,9 @@ def test_delete(server):
 
 @threadpool
 def test_get_invalid_url(server):
-    with pytest.raises(httpx.InvalidURL):
+    with pytest.raises(
+        httpx.InvalidURL,
+        match=r".*scheme was required to be one of "
+        r"\['http', 'https'\] but was 'invalid'.*",
+    ):
         httpx.get("invalid://example.org")

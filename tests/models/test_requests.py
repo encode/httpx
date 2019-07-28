@@ -83,8 +83,8 @@ def test_url():
 
 
 def test_invalid_urls():
-    with pytest.raises(httpx.InvalidURL):
+    with pytest.raises(httpx.InvalidURL, match=r".*scheme were required but missing.*"):
         httpx.Request("GET", "example.org")
 
-    with pytest.raises(httpx.InvalidURL):
+    with pytest.raises(httpx.InvalidURL, match=r".*host was required but missing.*"):
         httpx.Request("GET", "http:///foo")

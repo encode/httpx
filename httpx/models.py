@@ -9,6 +9,7 @@ from urllib.parse import parse_qsl, urlencode
 
 import chardet
 import rfc3986
+from rfc3986.exceptions import MissingComponentError, UnpermittedComponentError
 
 from .config import USER_AGENT
 from .decoders import (
@@ -108,10 +109,7 @@ class URL:
 
         # Enforce absolute URLs by default.
         if not allow_relative:
-            if not self.scheme:
-                raise InvalidURL("No scheme included in URL.")
-            if not self.host:
-                raise InvalidURL("No host included in URL.")
+            self.validate()
 
     @property
     def scheme(self) -> str:
@@ -184,6 +182,19 @@ class URL:
     @property
     def origin(self) -> "Origin":
         return Origin(self)
+
+    def validate(self) -> None:
+        validator = (
+            rfc3986.validators.Validator()
+            .require_presence_of("scheme", "host")
+            .allow_schemes("http", "https")
+        )
+        try:
+            validator.validate(self.components)
+        except UnpermittedComponentError as e:
+            raise InvalidURL(str(e))
+        except MissingComponentError as e:
+            raise InvalidURL(str(e))
 
     def copy_with(self, **kwargs: typing.Any) -> "URL":
         return URL(self.components.copy_with(**kwargs))
