@@ -8,7 +8,6 @@ from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
 
 import chardet
-import idna
 import hstspreload
 import rfc3986
 
@@ -88,20 +87,13 @@ class URL:
     ) -> None:
         if isinstance(url, rfc3986.uri.URIReference):
             self.components = url
+        elif isinstance(url, rfc3986.iri.IRIReference):
+            self.components = url.encode()
         elif isinstance(url, str):
-            self.components = rfc3986.api.uri_reference(url)
+            # Handle IDNA domain names.
+            self.components = rfc3986.api.iri_reference(url).encode()
         else:
             self.components = url.components
-
-        # Handle IDNA domain names.
-        if self.components.authority:
-            # idna.encode raises InvalidCodepoint when encountering a colon, so split
-            # host and port in case the latter is specified and rejoin after encoding
-            host_port = self.components.authority.split(":")
-            host_port[0] = idna.encode(host_port[0], uts46=True).decode("ascii")
-            idna_authority = ":".join(host_port)
-            if idna_authority != self.components.authority:
-                self.components = self.components.copy_with(authority=idna_authority)
 
         # Normalize scheme and domain name.
         if self.is_absolute_url:
