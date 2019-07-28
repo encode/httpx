@@ -318,7 +318,7 @@ class QueryParams(typing.Mapping[str, str]):
         return f"{class_name}({query_string!r})"
 
 
-class Headers(typing.MutableMapping[str, str], MutableMapping):
+class Headers(typing.MutableMapping[str, str]):
     """
     HTTP headers, as a case-insensitive multi-dict.
     """
@@ -414,6 +414,11 @@ class Headers(typing.MutableMapping[str, str], MutableMapping):
         for value in values:
             split_values.extend([item.strip() for item in value.split(",")])
         return split_values
+
+    def update(self, headers: HeaderTypes = None) -> None:  # type: ignore
+        headers = Headers(headers)
+        for header, value in headers.items():
+            self.headers[header] = value
 
     def __getitem__(self, key: str) -> str:
         """

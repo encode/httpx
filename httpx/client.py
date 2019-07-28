@@ -114,11 +114,11 @@ class BaseClient:
     def merge_headers(
         self, headers: HeaderTypes = None
     ) -> typing.Optional[HeaderTypes]:
-        if headers and self.headers:
+        if headers or self.headers:
             merged_headers = Headers(self.headers)
             merged_headers.update(headers)
             return merged_headers
-        return headers or self.headers
+        return headers
 
     async def send(
         self,
