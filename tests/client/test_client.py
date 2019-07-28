@@ -95,10 +95,10 @@ def test_raise_for_status(server):
             response = client.request(
                 "GET", "http://127.0.0.1:8000/status/{}".format(status_code)
             )
-
             if 400 <= status_code < 600:
-                with pytest.raises(httpx.exceptions.HttpError):
+                with pytest.raises(httpx.exceptions.HTTPError) as exc_info:
                     response.raise_for_status()
+                assert exc_info.value.response == response
             else:
                 assert response.raise_for_status() is None
 

@@ -22,6 +22,7 @@ from .exceptions import (
     RedirectBodyUnavailable,
     RedirectLoop,
     TooManyRedirects,
+    HTTPError,
 )
 from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from .models import (
@@ -78,13 +79,13 @@ class BaseClient:
                 )
 
         if dispatch is None:
-            async_dispatch = ConnectionPool(
+            async_dispatch: AsyncDispatcher = ConnectionPool(
                 verify=verify,
                 cert=cert,
                 timeout=timeout,
                 pool_limits=pool_limits,
                 backend=backend,
-            )  # type: AsyncDispatcher
+            )
         elif isinstance(dispatch, Dispatcher):
             async_dispatch = ThreadedDispatcher(dispatch, backend)
         else:
@@ -147,13 +148,18 @@ class BaseClient:
                 auth = HTTPBasicAuth(username=auth[0], password=auth[1])
             request = auth(request)
 
-        response = await self.send_handling_redirects(
-            request,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            allow_redirects=allow_redirects,
-        )
+        try:
+            response = await self.send_handling_redirects(
+                request,
+                verify=verify,
+                cert=cert,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+            )
+        except HTTPError as exc:
+            # Add the original request to any HTTPError
+            exc.request = request
+            raise
 
         if not stream:
             try:
@@ -180,19 +186,20 @@ class BaseClient:
             # We perform these checks here, so that calls to `response.next()`
             # will raise redirect errors if appropriate.
             if len(history) > self.max_redirects:
-                raise TooManyRedirects()
+                raise TooManyRedirects(response=history[-1])
             if request.url in [response.url for response in history]:
-                raise RedirectLoop()
+                raise RedirectLoop(response=history[-1])
 
             response = await self.dispatch.send(
                 request, verify=verify, cert=cert, timeout=timeout
             )
+
             should_close_response = True
             try:
                 assert isinstance(response, AsyncResponse)
                 response.history = list(history)
                 self.cookies.extract_cookies(response)
-                history = history + [response]
+                history.append(response)
 
                 if allow_redirects and response.is_redirect:
                     request = self.build_redirect_request(request, response)
@@ -229,7 +236,7 @@ class BaseClient:
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
         headers = self.redirect_headers(request, url)
-        content = self.redirect_content(request, method)
+        content = self.redirect_content(request, method, response)
         cookies = self.merge_cookies(request.cookies)
         return AsyncRequest(
             method=method, url=url, headers=headers, data=content, cookies=cookies
@@ -287,14 +294,16 @@ class BaseClient:
             del headers["Authorization"]
         return headers
 
-    def redirect_content(self, request: AsyncRequest, method: str) -> bytes:
+    def redirect_content(
+        self, request: AsyncRequest, method: str, response: AsyncResponse
+    ) -> bytes:
         """
         Return the body that should be used for the redirect request.
         """
         if method != request.method and method == "GET":
             return b""
         if request.is_streaming:
-            raise RedirectBodyUnavailable()
+            raise RedirectBodyUnavailable(response=response)
         return request.content
 
 
