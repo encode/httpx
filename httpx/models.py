@@ -417,8 +417,8 @@ class Headers(typing.MutableMapping[str, str]):
 
     def update(self, headers: HeaderTypes = None) -> None:  # type: ignore
         headers = Headers(headers)
-        for header, value in headers.items():
-            self.headers[header] = value
+        for header in headers:
+            self[header] = headers[header]
 
     def __getitem__(self, key: str) -> str:
         """
