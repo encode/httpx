@@ -117,7 +117,8 @@ def test_multipart_encode():
             '--{0}\r\nContent-Disposition: form-data; name="d"\r\n\r\nff\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="d"\r\n\r\nfff\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="f"\r\n\r\n\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="file"; filename="name.txt"\r\n'
+            '--{0}\r\nContent-Disposition: form-data; name="file";'
+            ' filename="name.txt"\r\n'
             "Content-Type: text/plain\r\n\r\n<file content>\r\n"
             "--{0}--\r\n"
             "".format(boundary).encode("ascii")
