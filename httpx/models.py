@@ -85,9 +85,7 @@ class URL:
         allow_relative: bool = False,
         params: QueryParamTypes = None,
     ) -> None:
-        if isinstance(url, rfc3986.uri.URIReference):
-            self.components = url
-        elif isinstance(url, str):
+        if isinstance(url, str):
             self.components = rfc3986.api.uri_reference(url)
         else:
             self.components = url.components
@@ -195,7 +193,7 @@ class URL:
         return Origin(self)
 
     def copy_with(self, **kwargs: typing.Any) -> "URL":
-        return URL(self.components.copy_with(**kwargs))
+        return URL(self.components.copy_with(**kwargs).unsplit())
 
     def join(self, relative_url: URLTypes) -> "URL":
         """
@@ -208,7 +206,7 @@ class URL:
         # treats URLs with a fragment portion as not being absolute URLs.
         base_components = self.components.copy_with(fragment=None)
         relative_url = URL(relative_url, allow_relative=True)
-        return URL(relative_url.components.resolve_with(base_components))
+        return URL(relative_url.components.resolve_with(base_components).unsplit())
 
     def __hash__(self) -> int:
         return hash(str(self))
