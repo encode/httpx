@@ -127,17 +127,17 @@ def test_multipart_encode():
 
 class TestHeaderParamHTML5Formatting:
     def test_unicode(self):
-        param = multipart.format_header_param_html5("filename", "n\u00e4me")
+        param = multipart._format_param("filename", "n\u00e4me")
         assert param == 'filename="n\u00e4me"'
 
     def test_ascii(self):
-        param = multipart.format_header_param_html5("filename", b"name")
+        param = multipart._format_param("filename", b"name")
         assert param == 'filename="name"'
 
     def test_unicode_escape(self):
-        param = multipart.format_header_param_html5("filename", "hello\\world\u0022")
+        param = multipart._format_param("filename", "hello\\world\u0022")
         assert param == 'filename="hello\\\\world%22"'
 
     def test_unicode_with_control_character(self):
-        param = multipart.format_header_param_html5("filename", "hello\x1A\x1B\x1C")
+        param = multipart._format_param("filename", "hello\x1A\x1B\x1C")
         assert param == 'filename="hello%1A\x1B%1C"'
