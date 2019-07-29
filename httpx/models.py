@@ -415,6 +415,11 @@ class Headers(typing.MutableMapping[str, str]):
             split_values.extend([item.strip() for item in value.split(",")])
         return split_values
 
+    def update(self, headers: HeaderTypes = None) -> None:  # type: ignore
+        headers = Headers(headers)
+        for header in headers:
+            self[header] = headers[header]
+
     def __getitem__(self, key: str) -> str:
         """
         Return a single header value.
