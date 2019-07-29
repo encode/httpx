@@ -13,16 +13,21 @@ class AuthBase:
         raise NotImplementedError("Auth hooks must be callable.")  # pragma: nocover
 
 
-class HTTPBasicAuth(AuthBase):
+class BasicAuthBase(AuthBase):
+    def __call__(self, request: AsyncRequest) -> AsyncRequest:
+        request.headers["Authorization"] = self.build_auth_header()
+        return request
+
+    def build_auth_header(self) -> str:
+        raise NotImplementedError()  # pragma: nocover
+
+
+class HTTPBasicAuth(BasicAuthBase):
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ) -> None:
         self.username = username
         self.password = password
-
-    def __call__(self, request: AsyncRequest) -> AsyncRequest:
-        request.headers["Authorization"] = self.build_auth_header()
-        return request
 
     def build_auth_header(self) -> str:
         username, password = self.username, self.password

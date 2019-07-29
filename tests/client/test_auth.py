@@ -1,9 +1,12 @@
 import json
 
+import pytest
+
 from httpx import (
     AsyncDispatcher,
     AsyncRequest,
     AsyncResponse,
+    BasicAuthBase,
     CertTypes,
     Client,
     TimeoutTypes,
@@ -56,14 +59,29 @@ def test_basic_auth_on_session():
 
 
 def test_custom_auth():
-    url = "https://example.org/"
+    class CustomBasicAuth(BasicAuthBase):
+        def build_auth_header(self) -> str:
+            return "Token 123"
 
-    def auth(request):
-        request.headers["Authorization"] = "Token 123"
-        return request
+    url = "https://example.org/"
+    auth = CustomBasicAuth()
 
     with Client(dispatch=MockDispatch()) as client:
         response = client.get(url, auth=auth)
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Token 123"}
+
+
+def test_bad_custom_basic_auth():
+    class BadAuth:
+        pass
+
+    url = "https://example.org/"
+    auth = BadAuth()
+
+    with Client(dispatch=MockDispatch()) as client:
+        with pytest.raises(
+            TypeError, match="Invalid type for auth. Expected: BasicAuthBase."
+        ):
+            client.get(url, auth=auth)

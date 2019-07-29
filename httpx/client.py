@@ -2,7 +2,7 @@ import inspect
 import typing
 from types import TracebackType
 
-from .auth import HTTPBasicAuth
+from .auth import BasicAuthBase, HTTPBasicAuth
 from .concurrency import AsyncioBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
@@ -145,6 +145,8 @@ class BaseClient:
         if auth is not None:
             if isinstance(auth, tuple):
                 auth = HTTPBasicAuth(username=auth[0], password=auth[1])
+            elif not isinstance(auth, BasicAuthBase):
+                raise TypeError("Invalid type for auth. Expected: BasicAuthBase.")
             request = auth(request)
 
         response = await self.send_handling_redirects(
