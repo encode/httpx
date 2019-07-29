@@ -128,7 +128,7 @@ def test_multipart_encode():
 class TestHeaderParamHTML5Formatting:
     def test_unicode(self):
         param = multipart._format_param("filename", "n\u00e4me")
-        assert param == b'filename="n\u00e4me"'
+        assert param == b'filename="n\xc3\xa4me"'
 
     def test_ascii(self):
         param = multipart._format_param("filename", b"name")
