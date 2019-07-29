@@ -810,15 +810,6 @@ class BaseResponse:
     def is_redirect(self) -> bool:
         return StatusCode.is_redirect(self.status_code) and "location" in self.headers
 
-    @property
-    def is_client_error(self) -> bool:
-        return StatusCode.is_client_error(self.status_code)
-
-    @property
-    def expects_digest_auth(self) -> bool:
-        auth_header = self.headers.get("www-authenticate")
-        return auth_header is None or "digest" in auth_header.lower()
-
     def raise_for_status(self) -> None:
         """
         Raise the `HttpError` if one occurred.
