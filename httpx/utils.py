@@ -15,6 +15,8 @@ def normalize_header_value(value: typing.AnyStr, encoding: str = None) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header value.
     """
+    if value is None:
+        raise ValueError("NoneType header values are not allowed")
     if isinstance(value, bytes):
         return value
     return value.encode(encoding or "ascii")
