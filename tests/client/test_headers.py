@@ -70,6 +70,26 @@ def test_header_merge():
     }
 
 
+def test_header_merge_conflicting_headers():
+    url = "http://example.org/echo_headers"
+    client_headers = {"X-Auth-Token": "FooBar"}
+    request_headers = {"X-Auth-Token": "BazToken"}
+    with Client(dispatch=MockDispatch(), headers=client_headers) as client:
+        response = client.get(url, headers=request_headers)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "connection": "keep-alive",
+            "host": "example.org",
+            "user-agent": f"python-httpx/{__version__}",
+            "x-auth-token": "BazToken",
+        }
+    }
+
+
 def test_header_update():
     url = "http://example.org/echo_headers"
     with Client(dispatch=MockDispatch()) as client:
