@@ -110,6 +110,7 @@ True
 ```
 
 * `def __init__(url)`
+* `.scheme` - **str**
 * `.is_ssl` - **bool**
 * `.host` - **str**
 * `.port` - **int**

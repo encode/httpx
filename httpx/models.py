@@ -233,6 +233,7 @@ class Origin:
     def __init__(self, url: URLTypes) -> None:
         if not isinstance(url, URL):
             url = URL(url)
+        self.scheme = url.scheme
         self.is_ssl = url.is_ssl
         self.host = url.host
         self.port = url.port
@@ -240,13 +241,13 @@ class Origin:
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self.is_ssl == other.is_ssl
+            and self.scheme == other.scheme
             and self.host == other.host
             and self.port == other.port
         )
 
     def __hash__(self) -> int:
-        return hash((self.is_ssl, self.host, self.port))
+        return hash((self.scheme, self.host, self.port))
 
 
 class QueryParams(typing.Mapping[str, str]):
