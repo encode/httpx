@@ -86,24 +86,24 @@ class URL:
         params: QueryParamTypes = None,
     ) -> None:
         if isinstance(url, str):
-            self.components = rfc3986.api.uri_reference(url)
+            self._uri_reference = rfc3986.api.uri_reference(url)
         else:
-            self.components = url.components
+            self._uri_reference = url._uri_reference
 
         # Handle IDNA domain names.
-        if self.components.authority:
-            idna_authority = self.components.authority.encode("idna").decode("ascii")
-            if idna_authority != self.components.authority:
-                self.components = self.components.copy_with(authority=idna_authority)
+        if self._uri_reference.authority:
+            idna_authority = self._uri_reference.authority.encode("idna").decode("ascii")
+            if idna_authority != self._uri_reference.authority:
+                self._uri_reference = self._uri_reference.copy_with(authority=idna_authority)
 
         # Normalize scheme and domain name.
         if self.is_absolute_url:
-            self.components = self.components.normalize()
+            self._uri_reference = self._uri_reference.normalize()
 
         # Add any query parameters.
         if params:
             query_string = str(QueryParams(params))
-            self.components = self.components.copy_with(query=query_string)
+            self._uri_reference = self._uri_reference.copy_with(query=query_string)
 
         # Enforce absolute URLs by default.
         if not allow_relative:
@@ -118,44 +118,44 @@ class URL:
             and self.host
             and hstspreload.in_hsts_preload(self.host)
         ):
-            self.components = self.components.copy_with(scheme="https")
+            self._uri_reference = self._uri_reference.copy_with(scheme="https")
 
     @property
     def scheme(self) -> str:
-        return self.components.scheme or ""
+        return self._uri_reference.scheme or ""
 
     @property
     def authority(self) -> str:
-        return self.components.authority or ""
+        return self._uri_reference.authority or ""
 
     @property
     def username(self) -> str:
-        userinfo = self.components.userinfo or ""
+        userinfo = self._uri_reference.userinfo or ""
         return userinfo.partition(":")[0]
 
     @property
     def password(self) -> str:
-        userinfo = self.components.userinfo or ""
+        userinfo = self._uri_reference.userinfo or ""
         return userinfo.partition(":")[2]
 
     @property
     def host(self) -> str:
-        return self.components.host or ""
+        return self._uri_reference.host or ""
 
     @property
     def port(self) -> int:
-        port = self.components.port
+        port = self._uri_reference.port
         if port is None:
             return {"https": 443, "http": 80}[self.scheme]
         return int(port)
 
     @property
     def path(self) -> str:
-        return self.components.path or "/"
+        return self._uri_reference.path or "/"
 
     @property
     def query(self) -> str:
-        return self.components.query or ""
+        return self._uri_reference.query or ""
 
     @property
     def full_path(self) -> str:
@@ -166,11 +166,11 @@ class URL:
 
     @property
     def fragment(self) -> str:
-        return self.components.fragment or ""
+        return self._uri_reference.fragment or ""
 
     @property
     def is_ssl(self) -> bool:
-        return self.components.scheme == "https"
+        return self.scheme == "https"
 
     @property
     def is_absolute_url(self) -> bool:
@@ -182,7 +182,7 @@ class URL:
         # URLs with a fragment portion as not absolute.
         # What we actually care about is if the URL provides
         # a scheme and hostname to which connections should be made.
-        return self.components.scheme and self.components.host
+        return self.scheme and self.host
 
     @property
     def is_relative_url(self) -> bool:
@@ -193,7 +193,7 @@ class URL:
         return Origin(self)
 
     def copy_with(self, **kwargs: typing.Any) -> "URL":
-        return URL(self.components.copy_with(**kwargs).unsplit())
+        return URL(self._uri_reference.copy_with(**kwargs).unsplit())
 
     def join(self, relative_url: URLTypes) -> "URL":
         """
@@ -204,9 +204,9 @@ class URL:
 
         # We drop any fragment portion, because RFC 3986 strictly
         # treats URLs with a fragment portion as not being absolute URLs.
-        base_components = self.components.copy_with(fragment=None)
+        base_uri = self._uri_reference.copy_with(fragment=None)
         relative_url = URL(relative_url, allow_relative=True)
-        return URL(relative_url.components.resolve_with(base_components).unsplit())
+        return URL(relative_url._uri_reference.resolve_with(base_uri).unsplit())
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -215,7 +215,7 @@ class URL:
         return isinstance(other, (URL, str)) and str(self) == str(other)
 
     def __str__(self) -> str:
-        return self.components.unsplit()
+        return self._uri_reference.unsplit()
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
