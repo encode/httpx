@@ -99,6 +99,7 @@ The HTTPX project relies on these excellent libraries:
 * `idna` - Internationalized domain name support.
 * `rfc3986` - URL parsing & normalization.
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
+* `pyjwt` - JSON Web Token implementation for basic auth. *(Optional)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design

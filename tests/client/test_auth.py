@@ -1,11 +1,15 @@
 import json
 
+import jwt
+import pytest
+
 from httpx import (
     AsyncDispatcher,
     AsyncRequest,
     AsyncResponse,
     CertTypes,
     Client,
+    HTTPJwtBasicAuth,
     TimeoutTypes,
     VerifyTypes,
 )
@@ -67,3 +71,36 @@ def test_custom_auth():
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Token 123"}
+
+
+@pytest.mark.parametrize(
+    "payload",
+    (
+        {"a": 1, "b": [1, 2]},
+        {"username": "tomchristie", "password": "password123"},
+        '{"username": "cansarigol", "password": "123password"}',
+    ),
+)
+def test_jwt_basic_auth(payload):
+    url = "https://example.org/"
+    auth = HTTPJwtBasicAuth(payload)
+
+    with Client(dispatch=MockDispatch()) as client:
+        response = client.get(url, auth=auth)
+
+    assert response.status_code == 200
+
+    expected_payload = jwt.decode(
+        response.json()["auth"].split(" ")[1], "", algorithms=["HS256"]
+    )
+    if isinstance(payload, str):
+        payload = json.loads(payload)
+    assert payload == expected_payload
+
+
+def test_bad_jwt_basic_auth():
+    payload = "123"
+    with pytest.raises(
+        TypeError, match=r".*JWT only supports JSON objects as payloads."
+    ):
+        HTTPJwtBasicAuth(payload)
