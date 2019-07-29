@@ -26,10 +26,8 @@ class ConnectionStore:
     """
 
     def __init__(self) -> None:
-        self.all = {}  # type: typing.Dict[HTTPConnection, float]
-        self.by_origin = (
-            {}
-        )  # type: typing.Dict[Origin, typing.Dict[HTTPConnection, float]]
+        self.all: typing.Dict[HTTPConnection, float] = {}
+        self.by_origin: typing.Dict[Origin, typing.Dict[HTTPConnection, float]] = {}
 
     def pop_by_origin(
         self, origin: Origin, http2_only: bool = False
