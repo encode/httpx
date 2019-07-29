@@ -128,16 +128,16 @@ def test_multipart_encode():
 class TestHeaderParamHTML5Formatting:
     def test_unicode(self):
         param = multipart._format_param("filename", "n\u00e4me")
-        assert param == 'filename="n\u00e4me"'
+        assert param == b'filename="n\u00e4me"'
 
     def test_ascii(self):
         param = multipart._format_param("filename", b"name")
-        assert param == 'filename="name"'
+        assert param == b'filename="name"'
 
     def test_unicode_escape(self):
         param = multipart._format_param("filename", "hello\\world\u0022")
-        assert param == 'filename="hello\\\\world%22"'
+        assert param == b'filename="hello\\\\world%22"'
 
     def test_unicode_with_control_character(self):
         param = multipart._format_param("filename", "hello\x1A\x1B\x1C")
-        assert param == 'filename="hello%1A\x1B%1C"'
+        assert param == b'filename="hello%1A\x1B%1C"'
