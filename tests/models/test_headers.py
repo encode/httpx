@@ -1,3 +1,5 @@
+import pytest
+
 import httpx
 
 
@@ -151,3 +153,8 @@ def test_multiple_headers():
 
     h = httpx.Headers([("vary", "a, b"), ("vary", "c")])
     h.getlist("Vary") == ["a", "b", "c"]
+
+
+def test_none_header_value_disallowed():
+    with pytest.raises(ValueError, match=r"NoneType.*not allowed"):
+        none_headers = httpx.Headers({"key": None})
