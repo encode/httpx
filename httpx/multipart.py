@@ -5,35 +5,13 @@ import re
 import typing
 from io import BytesIO
 
-_HTML5_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
-
-_HTML5_REPLACEMENTS.update(
-    {chr(cc): "%{:02X}".format(cc) for cc in range(0x00, 0x1F + 1) if cc not in (0x1B,)}
+_HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
+_HTML5_FORM_ENCODING_REPLACEMENTS.update(
+    {chr(c): "%{:02X}".format(c) for c in range(0x00, 0x1F + 1) if c != 0x1B}
 )
-
-
-def _replace_multiple(
-    value: str, needles_and_replacements: typing.Dict[str, str]
-) -> str:
-    def replacer(match: typing.Match[str]) -> str:
-        return needles_and_replacements[match.group(0)]
-
-    pattern = re.compile(
-        r"|".join([re.escape(needle) for needle in needles_and_replacements.keys()])
-    )
-
-    result = pattern.sub(replacer, value)
-
-    return result
-
-
-def format_header_param_html5(name: str, value: typing.Union[str, bytes]) -> str:
-    if isinstance(value, bytes):
-        value = value.decode()
-
-    value = _replace_multiple(value, _HTML5_REPLACEMENTS)
-
-    return f'{name}="{value}"'
+_HTML5_FORM_ENCODING_RE = re.compile(
+    r"|".join([re.escape(c) for c in _HTML5_FORM_ENCODING_REPLACEMENTS.keys()])
+)
 
 
 class Field:
@@ -54,8 +32,8 @@ class DataField(Field):
         self.value = value
 
     def render_headers(self) -> bytes:
-        name = format_header_param_html5("name", self.name).encode()
-        return b"".join([b"Content-Disposition: form-data; ", name, b"\r\n", b"\r\n"])
+        name = _format_param("name", self.name)
+        return b"".join([b"Content-Disposition: form-data; ", name, b"\r\n\r\n"])
 
     def render_data(self) -> bytes:
         return (
@@ -83,8 +61,8 @@ class FileField(Field):
         return mimetypes.guess_type(self.filename)[0] or "application/octet-stream"
 
     def render_headers(self) -> bytes:
-        name = format_header_param_html5("name", self.name).encode()
-        filename = format_header_param_html5("filename", self.filename).encode()
+        name = _format_param("name", self.name)
+        filename = _format_param("filename", self.filename)
         content_type = self.content_type.encode()
         return b"".join(
             [
@@ -92,11 +70,9 @@ class FileField(Field):
                 name,
                 b"; ",
                 filename,
-                b"\r\n",
-                b"Content-Type: ",
+                b"\r\nContent-Type: ",
                 content_type,
-                b"\r\n",
-                b"\r\n",
+                b"\r\n\r\n",
             ]
         )
 
@@ -132,3 +108,14 @@ def multipart_encode(data: dict, files: dict) -> typing.Tuple[bytes, str]:
     content_type = "multipart/form-data; boundary=%s" % boundary.decode("ascii")
 
     return body.getvalue(), content_type
+
+
+def _format_param(name: str, value: typing.Union[str, bytes]) -> bytes:
+    if isinstance(value, bytes):
+        value = value.decode()
+        
+    def replacer(match: typing.Match[str]) -> str:
+        return _HTML5_FORM_ENCODING_REPLACEMENTS[match.group(0)]
+
+    value = _HTML5_FORM_ENCODING_RE.sub(replacer, value)
+    return f'{name}="{value}"'.encode()
