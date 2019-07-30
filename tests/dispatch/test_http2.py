@@ -68,7 +68,7 @@ def test_http2_reconnect():
 
     with Client(backend=backend) as client:
         response_1 = client.get("http://example.org/1")
-        backend.server.raise_disconnect = True
+        backend.server.close_connection = True
         response_2 = client.get("http://example.org/2")
 
     assert response_1.status_code == 200

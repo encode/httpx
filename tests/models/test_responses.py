@@ -256,7 +256,7 @@ def test_unknown_status_code():
 
 
 def test_json_with_specified_encoding():
-    data = dict(greeting="hello", recipient="world")
+    data = {"greeting": "hello", "recipient": "world"}
     content = json.dumps(data).encode("utf-16")
     headers = {"Content-Type": "application/json, charset=utf-16"}
     response = httpx.Response(200, content=content, headers=headers)
@@ -264,7 +264,7 @@ def test_json_with_specified_encoding():
 
 
 def test_json_with_options():
-    data = dict(greeting="hello", recipient="world", amount=1)
+    data = {"greeting": "hello", "recipient": "world", "amount": 1}
     content = json.dumps(data).encode("utf-16")
     headers = {"Content-Type": "application/json, charset=utf-16"}
     response = httpx.Response(200, content=content, headers=headers)
@@ -272,7 +272,7 @@ def test_json_with_options():
 
 
 def test_json_without_specified_encoding():
-    data = dict(greeting="hello", recipient="world")
+    data = {"greeting": "hello", "recipient": "world"}
     content = json.dumps(data).encode("utf-32-be")
     headers = {"Content-Type": "application/json"}
     response = httpx.Response(200, content=content, headers=headers)
@@ -280,7 +280,7 @@ def test_json_without_specified_encoding():
 
 
 def test_json_without_specified_encoding_decode_error():
-    data = dict(greeting="hello", recipient="world")
+    data = {"greeting": "hello", "recipient": "world"}
     content = json.dumps(data).encode("utf-32-be")
     headers = {"Content-Type": "application/json"}
     # force incorrect guess from `guess_json_utf` to trigger error

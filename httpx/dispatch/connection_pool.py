@@ -9,7 +9,6 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..exceptions import NotConnected
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse, Origin
 from .connection import HTTPConnection
@@ -27,10 +26,8 @@ class ConnectionStore:
     """
 
     def __init__(self) -> None:
-        self.all = {}  # type: typing.Dict[HTTPConnection, float]
-        self.by_origin = (
-            {}
-        )  # type: typing.Dict[Origin, typing.Dict[HTTPConnection, float]]
+        self.all: typing.Dict[HTTPConnection, float] = {}
+        self.by_origin: typing.Dict[Origin, typing.Dict[HTTPConnection, float]] = {}
 
     def pop_by_origin(
         self, origin: Origin, http2_only: bool = False
@@ -108,35 +105,25 @@ class ConnectionPool(AsyncDispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
-        allow_connection_reuse = True
-        connection = None
-        while connection is None:
-            connection = await self.acquire_connection(
-                origin=request.url.origin, allow_connection_reuse=allow_connection_reuse
+        connection = await self.acquire_connection(origin=request.url.origin)
+        try:
+            response = await connection.send(
+                request, verify=verify, cert=cert, timeout=timeout
             )
-            try:
-                response = await connection.send(
-                    request, verify=verify, cert=cert, timeout=timeout
-                )
-            except BaseException as exc:
-                self.active_connections.remove(connection)
-                self.max_connections.release()
-                if isinstance(exc, NotConnected) and allow_connection_reuse:
-                    connection = None
-                    allow_connection_reuse = False
-                else:
-                    raise exc
+        except BaseException as exc:
+            self.active_connections.remove(connection)
+            self.max_connections.release()
+            raise exc
 
         return response
 
-    async def acquire_connection(
-        self, origin: Origin, allow_connection_reuse: bool = True
-    ) -> HTTPConnection:
-        connection = None
-        if allow_connection_reuse:
-            connection = self.active_connections.pop_by_origin(origin, http2_only=True)
-            if connection is None:
-                connection = self.keepalive_connections.pop_by_origin(origin)
+    async def acquire_connection(self, origin: Origin) -> HTTPConnection:
+        connection = self.active_connections.pop_by_origin(origin, http2_only=True)
+        if connection is None:
+            connection = self.keepalive_connections.pop_by_origin(origin)
+
+        if connection is not None and connection.is_connection_dropped():
+            connection = None
 
         if connection is None:
             await self.max_connections.acquire()

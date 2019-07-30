@@ -2,6 +2,7 @@ certifi
 chardet==3.*
 h11==0.8.*
 h2==3.*
+hstspreload
 idna==2.*
 rfc3986==1.*
 
@@ -9,6 +10,11 @@ rfc3986==1.*
 brotlipy==0.7.*
 
 cryptography
+flake8
+flake8-bugbear
+flake8-comprehensions
+isort
+mypy
 pytest
 pytest-asyncio
 pytest-cov

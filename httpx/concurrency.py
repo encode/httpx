@@ -108,6 +108,9 @@ class Reader(BaseReader):
 
         return data
 
+    def is_connection_dropped(self) -> bool:
+        return self.stream_reader.at_eof()
+
 
 class Writer(BaseWriter):
     def __init__(self, stream_writer: asyncio.StreamWriter, timeout: TimeoutConfig):

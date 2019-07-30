@@ -49,6 +49,7 @@ class BaseClient:
     def __init__(
         self,
         auth: AuthTypes = None,
+        headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
@@ -95,6 +96,7 @@ class BaseClient:
             self.base_url = URL(base_url)
 
         self.auth = auth
+        self.headers = Headers(headers)
         self.cookies = Cookies(cookies)
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
@@ -108,6 +110,15 @@ class BaseClient:
             merged_cookies.update(cookies)
             return merged_cookies
         return cookies
+
+    def merge_headers(
+        self, headers: HeaderTypes = None
+    ) -> typing.Optional[HeaderTypes]:
+        if headers or self.headers:
+            merged_headers = Headers(self.headers)
+            merged_headers.update(headers)
+            return merged_headers
+        return headers
 
     async def send(
         self,
@@ -527,6 +538,7 @@ class AsyncClient(BaseClient):
         timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
         url = self.base_url.join(url)
+        headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
         request = AsyncRequest(
             method,
@@ -608,6 +620,7 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
     ) -> Response:
         url = self.base_url.join(url)
+        headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
         request = AsyncRequest(
             method,
@@ -623,14 +636,14 @@ class Client(BaseClient):
 
         coroutine = self.send
         args = [request]
-        kwargs = dict(
-            stream=True,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-        )
+        kwargs = {
+            "stream": True,
+            "auth": auth,
+            "allow_redirects": allow_redirects,
+            "verify": verify,
+            "cert": cert,
+            "timeout": timeout,
+        }
         async_response = concurrency_backend.run(coroutine, *args, **kwargs)
 
         content = getattr(
