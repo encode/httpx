@@ -40,7 +40,7 @@ URLTypes = typing.Union["URL", str]
 QueryParamTypes = typing.Union[
     "QueryParams",
     typing.Mapping[str, str],
-    typing.List[typing.Tuple[typing.Any, typing.Any]],
+    typing.List[typing.Tuple[str, str]],
     str,
 ]
 
