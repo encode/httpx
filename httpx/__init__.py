@@ -34,6 +34,8 @@ from .interfaces import (
     AsyncDispatcher,
     BaseReader,
     BaseWriter,
+    BaseBackgroundManager,
+    BasePoolSemaphore,
     ConcurrencyBackend,
     Dispatcher,
     Protocol,
