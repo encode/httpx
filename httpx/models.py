@@ -186,7 +186,7 @@ class URL:
         # URLs with a fragment portion as not absolute.
         # What we actually care about is if the URL provides
         # a scheme and hostname to which connections should be made.
-        return self.scheme and self.host
+        return bool(self.scheme and self.host)
 
     @property
     def is_relative_url(self) -> bool:
