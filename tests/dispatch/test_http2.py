@@ -41,6 +41,24 @@ def test_http2_post_request():
     }
 
 
+def test_http2_large_post_request():
+    backend = MockHTTP2Backend(app=app)
+
+    data = b''
+    for _ in range(100000):
+        data += b'a'
+    print(1)
+    with Client(backend=backend) as client:
+        response = client.post("http://example.org", data=data)
+    print(2)
+    assert response.status_code == 200
+    assert json.loads(response.content) == {
+        "method": "POST",
+        "path": "/",
+        "body": "<data>",
+    }
+
+
 def test_http2_multiple_requests():
     backend = MockHTTP2Backend(app=app)
 
