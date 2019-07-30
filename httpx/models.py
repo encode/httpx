@@ -42,8 +42,8 @@ URLTypes = typing.Union["URL", str]
 
 QueryParamTypes = typing.Union[
     "QueryParams",
-    typing.Mapping[PrimitiveData, PrimitiveData],
-    typing.List[typing.Tuple[PrimitiveData, PrimitiveData]],
+    typing.Mapping[str, PrimitiveData],
+    typing.List[typing.Tuple[str, PrimitiveData]],
     str,
 ]
 
@@ -262,8 +262,8 @@ class QueryParams(typing.Mapping[str, str]):
         else:
             items = value.items()  # type: ignore
 
-        self._list = [(str_query_param(k), str_query_param(v)) for k, v in items]
-        self._dict = {str_query_param(k): str_query_param(v) for k, v in items}
+        self._list = [(str(k), str_query_param(v)) for k, v in items]
+        self._dict = {str(k): str_query_param(v) for k, v in items}
 
     def getlist(self, key: typing.Any) -> typing.List[str]:
         return [item_value for item_key, item_value in self._list if item_key == key]
