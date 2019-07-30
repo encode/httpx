@@ -107,6 +107,7 @@ class BaseClient:
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
+        self.additional_middlewares = additional_middlewares or []
 
     def merge_cookies(
         self, cookies: CookieTypes = None
@@ -157,6 +158,8 @@ class BaseClient:
             middlewares.append(HTTPBasicAuthMiddleware(username=auth[0], password=auth[1]))
         elif isinstance(auth, HTTPBasicAuth):
             middlewares.append(HTTPBasicAuthMiddleware(username=auth.username, password=auth.password))
+
+        middlewares.extend(self.additional_middlewares)
 
         while True:
             for middleware in middlewares:
