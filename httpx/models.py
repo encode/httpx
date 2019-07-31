@@ -34,14 +34,17 @@ from .utils import (
     is_known_encoding,
     normalize_header_key,
     normalize_header_value,
+    str_query_param
 )
+
+PrimitiveData = typing.Union[str, int, float, bool, type(None)]
 
 URLTypes = typing.Union["URL", str]
 
 QueryParamTypes = typing.Union[
     "QueryParams",
-    typing.Mapping[str, str],
-    typing.List[typing.Tuple[typing.Any, typing.Any]],
+    typing.Mapping[str, PrimitiveData],
+    typing.List[typing.Tuple[str, PrimitiveData]],
     str,
 ]
 
@@ -85,24 +88,19 @@ class URL:
         allow_relative: bool = False,
         params: QueryParamTypes = None,
     ) -> None:
-        if isinstance(url, rfc3986.uri.URIReference):
-            self.components = url
-        elif isinstance(url, rfc3986.iri.IRIReference):
-            self.components = url.encode()
-        elif isinstance(url, str):
-            # Handle IDNA domain names.
-            self.components = rfc3986.api.iri_reference(url).encode()
+        if isinstance(url, str):
+            self._uri_reference = rfc3986.api.iri_reference(url).encode()
         else:
-            self.components = url.components
+            self._uri_reference = url._uri_reference
 
         # Normalize scheme and domain name.
         if self.is_absolute_url:
-            self.components = self.components.normalize()
+            self._uri_reference = self._uri_reference.normalize()
 
         # Add any query parameters.
         if params:
             query_string = str(QueryParams(params))
-            self.components = self.components.copy_with(query=query_string)
+            self._uri_reference = self._uri_reference.copy_with(query=query_string)
 
         # Enforce absolute URLs by default.
         if not allow_relative:
@@ -117,44 +115,44 @@ class URL:
             and self.host
             and hstspreload.in_hsts_preload(self.host)
         ):
-            self.components = self.components.copy_with(scheme="https")
+            self._uri_reference = self._uri_reference.copy_with(scheme="https")
 
     @property
     def scheme(self) -> str:
-        return self.components.scheme or ""
+        return self._uri_reference.scheme or ""
 
     @property
     def authority(self) -> str:
-        return self.components.authority or ""
+        return self._uri_reference.authority or ""
 
     @property
     def username(self) -> str:
-        userinfo = self.components.userinfo or ""
+        userinfo = self._uri_reference.userinfo or ""
         return userinfo.partition(":")[0]
 
     @property
     def password(self) -> str:
-        userinfo = self.components.userinfo or ""
+        userinfo = self._uri_reference.userinfo or ""
         return userinfo.partition(":")[2]
 
     @property
     def host(self) -> str:
-        return self.components.host or ""
+        return self._uri_reference.host or ""
 
     @property
     def port(self) -> int:
-        port = self.components.port
+        port = self._uri_reference.port
         if port is None:
             return {"https": 443, "http": 80}[self.scheme]
         return int(port)
 
     @property
     def path(self) -> str:
-        return self.components.path or "/"
+        return self._uri_reference.path or "/"
 
     @property
     def query(self) -> str:
-        return self.components.query or ""
+        return self._uri_reference.query or ""
 
     @property
     def full_path(self) -> str:
@@ -165,11 +163,11 @@ class URL:
 
     @property
     def fragment(self) -> str:
-        return self.components.fragment or ""
+        return self._uri_reference.fragment or ""
 
     @property
     def is_ssl(self) -> bool:
-        return self.components.scheme == "https"
+        return self.scheme == "https"
 
     @property
     def is_absolute_url(self) -> bool:
@@ -181,7 +179,7 @@ class URL:
         # URLs with a fragment portion as not absolute.
         # What we actually care about is if the URL provides
         # a scheme and hostname to which connections should be made.
-        return self.components.scheme and self.components.host
+        return self.scheme and self.host
 
     @property
     def is_relative_url(self) -> bool:
@@ -192,7 +190,7 @@ class URL:
         return Origin(self)
 
     def copy_with(self, **kwargs: typing.Any) -> "URL":
-        return URL(self.components.copy_with(**kwargs))
+        return URL(self._uri_reference.copy_with(**kwargs).unsplit())
 
     def join(self, relative_url: URLTypes) -> "URL":
         """
@@ -203,9 +201,9 @@ class URL:
 
         # We drop any fragment portion, because RFC 3986 strictly
         # treats URLs with a fragment portion as not being absolute URLs.
-        base_components = self.components.copy_with(fragment=None)
+        base_uri = self._uri_reference.copy_with(fragment=None)
         relative_url = URL(relative_url, allow_relative=True)
-        return URL(relative_url.components.resolve_with(base_components))
+        return URL(relative_url._uri_reference.resolve_with(base_uri).unsplit())
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -214,7 +212,7 @@ class URL:
         return isinstance(other, (URL, str)) and str(self) == str(other)
 
     def __str__(self) -> str:
-        return self.components.unsplit()
+        return self._uri_reference.unsplit()
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
@@ -230,6 +228,7 @@ class Origin:
     def __init__(self, url: URLTypes) -> None:
         if not isinstance(url, URL):
             url = URL(url)
+        self.scheme = url.scheme
         self.is_ssl = url.is_ssl
         self.host = url.host
         self.port = url.port
@@ -237,13 +236,13 @@ class Origin:
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self.is_ssl == other.is_ssl
+            and self.scheme == other.scheme
             and self.host == other.host
             and self.port == other.port
         )
 
     def __hash__(self) -> int:
-        return hash((self.is_ssl, self.host, self.port))
+        return hash((self.scheme, self.host, self.port))
 
 
 class QueryParams(typing.Mapping[str, str]):
@@ -266,8 +265,8 @@ class QueryParams(typing.Mapping[str, str]):
         else:
             items = value.items()  # type: ignore
 
-        self._list = [(str(k), str(v)) for k, v in items]
-        self._dict = {str(k): str(v) for k, v in items}
+        self._list = [(str(k), str_query_param(v)) for k, v in items]
+        self._dict = {str(k): str_query_param(v) for k, v in items}
 
     def getlist(self, key: typing.Any) -> typing.List[str]:
         return [item_value for item_key, item_value in self._list if item_key == key]
@@ -411,6 +410,11 @@ class Headers(typing.MutableMapping[str, str]):
         for value in values:
             split_values.extend([item.strip() for item in value.split(",")])
         return split_values
+
+    def update(self, headers: HeaderTypes = None) -> None:  # type: ignore
+        headers = Headers(headers)
+        for header in headers:
+            self[header] = headers[header]
 
     def __getitem__(self, key: str) -> str:
         """

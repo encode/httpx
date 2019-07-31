@@ -20,6 +20,21 @@ def normalize_header_value(value: typing.AnyStr, encoding: str = None) -> bytes:
     return value.encode(encoding or "ascii")
 
 
+def str_query_param(value: typing.Union[str, int, float, bool, type(None)]) -> str:
+    """
+    Coerce a primitive data type into a string value for query params.
+
+    Note that we prefer JSON-style 'true'/'false' for boolean values here.
+    """
+    if value is True:
+        return "true"
+    elif value is False:
+        return "false"
+    elif value is None:
+        return ""
+    return str(value)
+
+
 def is_known_encoding(encoding: str) -> bool:
     """
     Return `True` if `encoding` is a known codec.

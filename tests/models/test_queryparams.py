@@ -31,3 +31,23 @@ def test_queryparams():
 
     q = QueryParams([("a", "123"), ("a", "456")])
     assert QueryParams(q) == q
+
+
+def test_queryparam_types():
+    q = QueryParams({"a": True})
+    assert str(q) == "a=true"
+
+    q = QueryParams({"a": False})
+    assert str(q) == "a=false"
+
+    q = QueryParams({"a": ""})
+    assert str(q) == "a="
+
+    q = QueryParams({"a": None})
+    assert str(q) == "a="
+
+    q = QueryParams({"a": 1.23})
+    assert str(q) == "a=1.23"
+
+    q = QueryParams({"a": 123})
+    assert str(q) == "a=123"
