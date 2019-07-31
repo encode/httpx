@@ -142,7 +142,7 @@ class HTTP11Connection:
         while True:
             event = await self._receive_event(timeout)
             if isinstance(event, h11.Data):
-                yield event.data
+                yield bytes(event.data)
             else:
                 assert isinstance(event, h11.EndOfMessage)
                 break
