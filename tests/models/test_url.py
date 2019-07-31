@@ -1,13 +1,65 @@
 import pytest
+import rfc3986
 
 from httpx import URL
 from httpx.exceptions import InvalidURL
 
 
-def test_idna_url():
-    url = URL("http://中国.icom.museum:80/")
-    assert url == URL("http://xn--fiqs8s.icom.museum:80/")
-    assert url.host == "xn--fiqs8s.icom.museum"
+@pytest.mark.parametrize(
+    "given,idna,host,scheme,port",
+    [
+        (
+            "http://中国.icom.museum:80/",
+            "http://xn--fiqs8s.icom.museum:80/",
+            "xn--fiqs8s.icom.museum",
+            "http",
+            80,
+        ),
+        (
+            "http://Königsgäßchen.de",
+            "http://xn--knigsgchen-b4a3dun.de",
+            "xn--knigsgchen-b4a3dun.de",
+            "http",
+            80,
+        ),
+        ("https://faß.de", "https://xn--fa-hia.de", "xn--fa-hia.de", "https", 443),
+        (
+            "https://βόλος.com:443",
+            "https://xn--nxasmm1c.com:443",
+            "xn--nxasmm1c.com",
+            "https",
+            443,
+        ),
+        (
+            "http://ශ්‍රී.com:444",
+            "http://xn--10cl1a0b660p.com:444",
+            "xn--10cl1a0b660p.com",
+            "http",
+            444,
+        ),
+        (
+            "https://نامه‌ای.com:4433",
+            "https://xn--mgba3gch31f060k.com:4433",
+            "xn--mgba3gch31f060k.com",
+            "https",
+            4433,
+        ),
+    ],
+    ids=[
+        "http_with_port",
+        "unicode_tr46_compat",
+        "https_without_port",
+        "https_with_port",
+        "http_with_custom_port",
+        "https_with_custom_port",
+    ],
+)
+def test_idna_url(given, idna, host, scheme, port):
+    url = URL(given)
+    assert url == URL(idna)
+    assert url.host == host
+    assert url.scheme == scheme
+    assert url.port == port
 
 
 def test_url():
