@@ -79,17 +79,6 @@ def test_url():
     assert new == URL("http://example.org:123/path/to/somewhere?abc=123#anchor")
     assert new.scheme == "http"
 
-def test_iri():
-    iri = rfc3986.iri.IRIReference.from_string("https://example.org:123/path/to/somewhere?abc=123#anchor")
-    url = URL(iri)
-    assert url.scheme == "https"
-    assert url.host == "example.org"
-    assert url.port == 123
-    assert url.authority == "example.org:123"
-    assert url.path == "/path/to/somewhere"
-    assert url.query == "abc=123"
-    assert url.fragment == "anchor"
-
 
 def test_url_eq_str():
     url = URL("https://example.org:123/path/to/somewhere?abc=123#anchor")
