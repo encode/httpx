@@ -1,4 +1,6 @@
 import codecs
+import netrc
+import os
 import typing
 
 
@@ -64,3 +66,12 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
             return "utf-32-le"
         # Did not detect a valid UTF-32 ascii-range character
     return None
+
+
+def get_netrc_login(host: str) -> typing.Optional[typing.Tuple[str, str, str]]:
+    try:
+        netrc_info = netrc.netrc(os.environ.get("NETRC"))  # type: ignore
+    except FileNotFoundError:
+        return None
+
+    return netrc_info.authenticators(host)  # type: ignore
