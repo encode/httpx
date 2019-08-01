@@ -150,3 +150,11 @@ def test_base_url(server):
         response = http.get("/")
     assert response.status_code == 200
     assert str(response.url) == base_url
+
+
+def test_merge_url():
+    client = httpx.Client(base_url="https://www.paypal.com/")
+    url = client.merge_url("http://www.paypal.com")
+
+    assert url.scheme == "https"
+    assert url.is_ssl

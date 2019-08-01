@@ -8,7 +8,6 @@ from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
 
 import chardet
-import hstspreload
 import rfc3986
 
 from .config import USER_AGENT
@@ -108,14 +107,6 @@ class URL:
                 raise InvalidURL("No scheme included in URL.")
             if not self.host:
                 raise InvalidURL("No host included in URL.")
-
-        # If the URL is HTTP but the host is on the HSTS preload list switch to HTTPS.
-        if (
-            self.scheme == "http"
-            and self.host
-            and hstspreload.in_hsts_preload(self.host)
-        ):
-            self._uri_reference = self._uri_reference.copy_with(scheme="https")
 
     @property
     def scheme(self) -> str:
