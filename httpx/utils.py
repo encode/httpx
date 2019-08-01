@@ -2,6 +2,7 @@ import codecs
 import netrc
 import os
 import typing
+from pathlib import Path
 
 
 def normalize_header_key(value: typing.AnyStr, encoding: str = None) -> bytes:
@@ -83,20 +84,17 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
     return None
 
 
-NETRC_STATIC_FILES = tuple(
-    os.path.expanduser(path) for path in ("~/.netrc", "~/_netrc")
-)
+NETRC_STATIC_FILES = (Path("~/.netrc"), Path("~/_netrc"))
 
 
 def get_netrc_login(host: str) -> typing.Optional[typing.Tuple[str, str, str]]:
-    NETRC_FILES = (
-        (os.environ["NETRC"],) if "NETRC" in os.environ else NETRC_STATIC_FILES
-    )
+    NETRC_FILES = (Path(os.getenv("NETRC", "")),) + NETRC_STATIC_FILES
     netrc_path = None
 
     for file_path in NETRC_FILES:
-        if os.path.isfile(file_path):
-            netrc_path = file_path
+        expanded_path = file_path.expanduser()
+        if expanded_path.is_file():
+            netrc_path = expanded_path
             break
 
     if netrc_path is None:
