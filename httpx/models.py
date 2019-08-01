@@ -18,6 +18,7 @@ from .decoders import (
     Decoder,
     IdentityDecoder,
     MultiDecoder,
+    TextDecoder,
 )
 from .exceptions import (
     CookieConflict,
@@ -34,17 +35,14 @@ from .utils import (
     is_known_encoding,
     normalize_header_key,
     normalize_header_value,
-    str_query_param
 )
-
-PrimitiveData = typing.Union[str, int, float, bool, type(None)]
 
 URLTypes = typing.Union["URL", str]
 
 QueryParamTypes = typing.Union[
     "QueryParams",
-    typing.Mapping[str, PrimitiveData],
-    typing.List[typing.Tuple[str, PrimitiveData]],
+    typing.Mapping[str, str],
+    typing.List[typing.Tuple[typing.Any, typing.Any]],
     str,
 ]
 
@@ -95,9 +93,13 @@ class URL:
 
         # Handle IDNA domain names.
         if self._uri_reference.authority:
-            idna_authority = self._uri_reference.authority.encode("idna").decode("ascii")
+            idna_authority = self._uri_reference.authority.encode("idna").decode(
+                "ascii"
+            )
             if idna_authority != self._uri_reference.authority:
-                self._uri_reference = self._uri_reference.copy_with(authority=idna_authority)
+                self._uri_reference = self._uri_reference.copy_with(
+                    authority=idna_authority
+                )
 
         # Normalize scheme and domain name.
         if self.is_absolute_url:
@@ -271,8 +273,8 @@ class QueryParams(typing.Mapping[str, str]):
         else:
             items = value.items()  # type: ignore
 
-        self._list = [(str(k), str_query_param(v)) for k, v in items]
-        self._dict = {str(k): str_query_param(v) for k, v in items}
+        self._list = [(str(k), str(v)) for k, v in items]
+        self._dict = {str(k): str(v) for k, v in items}
 
     def getlist(self, key: typing.Any) -> typing.List[str]:
         return [item_value for item_key, item_value in self._list if item_key == key]
@@ -891,6 +893,20 @@ class AsyncResponse(BaseResponse):
             self._content = b"".join([part async for part in self.stream()])
         return self._content
 
+    async def stream_text(self) -> typing.AsyncIterator[str]:
+        """
+        A str-iterator over the decoded response content
+        that handles both gzip, delfate, etc but also detects the content's
+        string encoding.
+        """
+        if hasattr(self, "_content"):
+            yield self._content.decode(self.encoding)
+        else:
+            decoder = TextDecoder(encoding=self.charset_encoding)
+            async for chunk in self.stream():
+                yield decoder.decode(chunk)
+            yield decoder.flush()
+
     async def stream(self) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
@@ -969,6 +985,27 @@ class Response(BaseResponse):
         if not hasattr(self, "_content"):
             self._content = b"".join([part for part in self.stream()])
         return self._content
+
+    def stream_text(self) -> typing.Iterator[str]:
+        """
+        A str-iterator over the decompressed response content
+        that detects the content's string encoding incrementally.
+        """
+        if hasattr(self, "_content"):
+            yield self._content.decode(self.encoding)
+        else:
+            decoder = TextDecoder(encoding=self.charset_encoding)
+            for chunk in self.stream():
+                data = decoder.decode(chunk)
+
+                # The decoder will sometimes not emit a chunk if it isn't
+                # sure what the encoding of the data is.
+                if data:
+                    yield data
+
+            # The decoder will always emit at least one chunk
+            # even if it's the empty string.
+            yield decoder.flush()
 
     def stream(self) -> typing.Iterator[bytes]:
         """

@@ -3,9 +3,12 @@ Handlers for Content-Encoding.
 
 See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 """
+import chardet
+import codecs
 import typing
 import zlib
 
+from .utils import is_known_encoding
 from .exceptions import DecodingError
 
 try:
@@ -136,6 +139,77 @@ class MultiDecoder(Decoder):
         for child in self.children:
             data = child.decode(data) + child.flush()
         return data
+
+
+class TextDecoder:
+    """
+    Handles incrementally decoding bytes into text
+    """
+
+    def __init__(self, encoding: typing.Optional[str] = None):
+        self.buffer = bytearray()
+        self.decoder = (
+            None if encoding is None else codecs.getincrementaldecoder(encoding)()
+        )
+        self.detector = chardet.universaldetector.UniversalDetector()
+
+    def decode(self, data: bytes) -> str:
+        try:
+            if self.decoder is not None:
+                text = self.decoder.decode(data)
+            else:
+                text = ""
+                self.detector.feed(data)
+                self.buffer += data
+
+                # If we don't wait for enough data chardet gives bad results.
+                if len(self.buffer) >= 512:
+                    detected_encoding = self._detector_result()
+
+                    # If we actually detected the encoding we create a decoder right away.
+                    # Apparently this is possible to do per the chardet docs but I couldn't
+                    # get it to trigger during incremental decoding hence the 'nocover' :-(
+                    if detected_encoding:  # pragma: nocover
+                        self.decoder = codecs.getincrementaldecoder(detected_encoding)()
+                        text = self.decoder.decode(bytes(self.buffer), False)
+                        self.buffer = None
+
+                    # Should be more than enough data to process, we don't want to buffer too long
+                    # as chardet will wait until detector.close() is used to give back common
+                    # encodings like 'utf-8'.
+                    elif len(self.buffer) >= 4096:
+                        self.detector.close()
+                        self.decoder = codecs.getincrementaldecoder(
+                            self._detector_result(default="utf-8")
+                        )()
+                        text = self.decoder.decode(bytes(self.buffer), False)
+                        self.buffer = None
+
+            return text
+        except UnicodeDecodeError:  # pragma: nocover
+            raise DecodingError from None
+
+    def flush(self) -> str:
+        try:
+            if self.decoder is None:
+                self.detector.close()
+                return bytes(self.buffer).decode(self._detector_result(min_confidence=0.5, default="utf-8"))
+
+            return self.decoder.decode(b"", True)
+        except UnicodeDecodeError:  # pragma: nocover
+            raise DecodingError from None
+
+    def _detector_result(self, min_confidence=0.75, default=None) -> typing.Optional[str]:
+        detected_encoding = (
+            self.detector.result["encoding"]
+            if self.detector.done and self.detector.result["confidence"] >= min_confidence
+            else None
+        )
+        return (
+            detected_encoding
+            if detected_encoding and is_known_encoding(detected_encoding)
+            else default
+        )
 
 
 SUPPORTED_DECODERS = {
