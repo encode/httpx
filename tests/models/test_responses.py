@@ -292,7 +292,10 @@ def test_json_without_specified_encoding_decode_error():
 
 @pytest.mark.asyncio
 async def test_stream_text():
-    response = httpx.AsyncResponse(200, content=b"Hello, world!")
+    async def iterator():
+        yield b"Hello, world!"
+
+    response = httpx.AsyncResponse(200, content=iterator().__aiter__())
 
     await response.read()
 

@@ -904,13 +904,10 @@ class AsyncResponse(BaseResponse):
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        if hasattr(self, "_content"):
-            yield self._content.decode(self.encoding)
-        else:
-            decoder = TextDecoder(encoding=self.charset_encoding)
-            async for chunk in self.stream():
-                yield decoder.decode(chunk)
-            yield decoder.flush()
+        decoder = TextDecoder(encoding=self.charset_encoding)
+        async for chunk in self.stream():
+            yield decoder.decode(chunk)
+        yield decoder.flush()
 
     async def raw(self) -> typing.AsyncIterator[bytes]:
         """
@@ -991,19 +988,16 @@ class Response(BaseResponse):
                 yield self.decoder.decode(chunk)
             yield self.decoder.flush()
 
-    def stream_text(self) -> typing.AsyncIterator[str]:
+    def stream_text(self) -> typing.Iterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        if hasattr(self, "_content"):
-            yield self._content.decode(self.encoding)
-        else:
-            decoder = TextDecoder(encoding=self.charset_encoding)
-            for chunk in self.stream():
-                yield decoder.decode(chunk)
-            yield decoder.flush()
+        decoder = TextDecoder(encoding=self.charset_encoding)
+        for chunk in self.stream():
+            yield decoder.decode(chunk)
+        yield decoder.flush()
 
     def raw(self) -> typing.Iterator[bytes]:
         """
