@@ -43,6 +43,7 @@ from .models import (
     URLTypes,
 )
 from .status_codes import codes
+from .utils import get_netrc_login
 
 
 class BaseClient:
@@ -61,6 +62,7 @@ class BaseClient:
         app: typing.Callable = None,
         raise_app_exceptions: bool = True,
         backend: ConcurrencyBackend = None,
+        trust_env: bool = True,
     ):
         if backend is None:
             backend = AsyncioBackend()
@@ -101,6 +103,7 @@ class BaseClient:
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
+        self.trust_env = trust_env
 
     def merge_cookies(
         self, cookies: CookieTypes = None
@@ -130,6 +133,7 @@ class BaseClient:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> AsyncResponse:
         if auth is None:
             auth = self.auth
@@ -139,8 +143,16 @@ class BaseClient:
         if url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
 
-        if auth is None and (url.username or url.password):
-            auth = HTTPBasicAuth(username=url.username, password=url.password)
+        if auth is None:
+            if url.username or url.password:
+                auth = HTTPBasicAuth(username=url.username, password=url.password)
+            elif trust_env:
+                netrc_login = get_netrc_login(url.authority)
+                if netrc_login:
+                    netrc_username, _, netrc_password = netrc_login
+                    auth = HTTPBasicAuth(
+                        username=netrc_username, password=netrc_password
+                    )
 
         if auth is not None:
             if isinstance(auth, tuple):
@@ -312,6 +324,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> AsyncResponse:
         return await self.request(
             "GET",
@@ -325,6 +338,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def options(
@@ -340,6 +354,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> AsyncResponse:
         return await self.request(
             "OPTIONS",
@@ -353,6 +368,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def head(
@@ -368,6 +384,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> AsyncResponse:
         return await self.request(
             "HEAD",
@@ -381,6 +398,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def post(
@@ -399,6 +417,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> AsyncResponse:
         return await self.request(
             "POST",
@@ -415,6 +434,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def put(
@@ -433,6 +453,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> AsyncResponse:
         return await self.request(
             "PUT",
@@ -449,6 +470,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def patch(
@@ -467,6 +489,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> AsyncResponse:
         return await self.request(
             "PATCH",
@@ -483,6 +506,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def delete(
@@ -501,6 +525,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> AsyncResponse:
         return await self.request(
             "DELETE",
@@ -517,6 +542,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def request(
@@ -536,6 +562,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> AsyncResponse:
         url = self.base_url.join(url)
         headers = self.merge_headers(headers)
@@ -558,6 +585,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
         return response
 
@@ -618,6 +646,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> Response:
         url = self.base_url.join(url)
         headers = self.merge_headers(headers)
@@ -643,6 +672,7 @@ class Client(BaseClient):
             "verify": verify,
             "cert": cert,
             "timeout": timeout,
+            "trust_env": trust_env,
         }
         async_response = concurrency_backend.run(coroutine, *args, **kwargs)
 
@@ -685,6 +715,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> Response:
         return self.request(
             "GET",
@@ -698,6 +729,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def options(
@@ -713,6 +745,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> Response:
         return self.request(
             "OPTIONS",
@@ -726,6 +759,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def head(
@@ -741,6 +775,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> Response:
         return self.request(
             "HEAD",
@@ -754,6 +789,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def post(
@@ -772,6 +808,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> Response:
         return self.request(
             "POST",
@@ -788,6 +825,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def put(
@@ -806,6 +844,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> Response:
         return self.request(
             "PUT",
@@ -822,6 +861,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def patch(
@@ -840,6 +880,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> Response:
         return self.request(
             "PATCH",
@@ -856,6 +897,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def delete(
@@ -874,6 +916,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = True,
     ) -> Response:
         return self.request(
             "DELETE",
@@ -890,6 +933,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def close(self) -> None:

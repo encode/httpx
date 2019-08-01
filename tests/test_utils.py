@@ -1,6 +1,8 @@
+import os
+
 import pytest
 
-from httpx.utils import guess_json_utf
+from httpx.utils import get_netrc_login, guess_json_utf
 
 
 @pytest.mark.parametrize(
@@ -37,3 +39,22 @@ def test_bad_utf_like_encoding():
 def test_guess_by_bom(encoding, expected):
     data = u"\ufeff{}".encode(encoding)
     assert guess_json_utf(data) == expected
+
+
+def test_bad_get_netrc_login():
+    assert get_netrc_login("url") is None
+
+    os.environ["NETRC"] = "tests/.netrc"
+    assert get_netrc_login("url") is None
+
+    os.environ["NETRC"] = "wrongpath"
+    assert get_netrc_login("url") is None
+
+
+def test_get_netrc_login():
+    os.environ["NETRC"] = "tests/.netrc"
+    assert get_netrc_login("netrcexample.org") == (
+        "example-username",
+        None,
+        "example-password",
+    )
