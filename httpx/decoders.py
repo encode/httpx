@@ -3,13 +3,14 @@ Handlers for Content-Encoding.
 
 See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 """
-import chardet
 import codecs
 import typing
 import zlib
 
-from .utils import is_known_encoding
+import chardet
+
 from .exceptions import DecodingError
+from .utils import is_known_encoding
 
 try:
     import brotli
@@ -193,16 +194,21 @@ class TextDecoder:
         try:
             if self.decoder is None:
                 self.detector.close()
-                return bytes(self.buffer).decode(self._detector_result(min_confidence=0.5, default="utf-8"))
+                return bytes(self.buffer).decode(
+                    self._detector_result(min_confidence=0.5, default="utf-8")
+                )
 
             return self.decoder.decode(b"", True)
         except UnicodeDecodeError:  # pragma: nocover
             raise DecodingError from None
 
-    def _detector_result(self, min_confidence=0.75, default=None) -> typing.Optional[str]:
+    def _detector_result(
+        self, min_confidence=0.75, default=None
+    ) -> typing.Optional[str]:
         detected_encoding = (
             self.detector.result["encoding"]
-            if self.detector.done and self.detector.result["confidence"] >= min_confidence
+            if self.detector.done
+            and self.detector.result["confidence"] >= min_confidence
             else None
         )
         return (
