@@ -2,6 +2,8 @@ import inspect
 import typing
 from types import TracebackType
 
+import hstspreload
+
 from .auth import HTTPBasicAuth
 from .concurrency import AsyncioBackend
 from .config import (
@@ -104,6 +106,12 @@ class BaseClient:
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
         self.trust_env = trust_env
+
+    def merge_url(self, url: URLTypes) -> URL:
+        url = self.base_url.join(relative_url=url)
+        if url.scheme == "http" and hstspreload.in_hsts_preload(url.host):
+            url = url.copy_with(scheme="https")
+        return url
 
     def merge_cookies(
         self, cookies: CookieTypes = None
@@ -564,7 +572,7 @@ class AsyncClient(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = True,
     ) -> AsyncResponse:
-        url = self.base_url.join(url)
+        url = self.merge_url(url)
         headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
         request = AsyncRequest(
@@ -648,7 +656,7 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = True,
     ) -> Response:
-        url = self.base_url.join(url)
+        url = self.merge_url(url)
         headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
         request = AsyncRequest(
