@@ -288,3 +288,15 @@ def test_json_without_specified_encoding_decode_error():
         response = httpx.Response(200, content=content, headers=headers)
         with pytest.raises(json.JSONDecodeError):
             response.json()
+
+
+@pytest.mark.asyncio
+async def test_stream_text():
+    response = httpx.AsyncResponse(200, content=b"Hello, world!")
+
+    await response.read()
+
+    content = ""
+    async for part in response.stream_text():
+        content += part
+    assert content == "Hello, world!"
