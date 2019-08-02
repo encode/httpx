@@ -166,7 +166,6 @@ class TextDecoder:
                 # Should be more than enough data to process, we don't want to buffer too long
                 # as chardet will wait until detector.close() is used to give back common
                 # encodings like 'utf-8'.
-                print(len(self.buffer))
                 if len(self.buffer) >= 4096:
                     self.decoder = codecs.getincrementaldecoder(
                         self._detector_result()
