@@ -1,7 +1,24 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .models import BaseRequest, BaseResponse  # pragma: nocover
+
+
+class HTTPError(Exception):
+    """
+    Base class for Httpx exception
+    """
+
+    def __init__(self, request: 'BaseRequest' = None, response: 'BaseResponse' = None, *args) -> None:
+        self.response = response
+        self.request = request or getattr(self.response, "request", None)
+        super().__init__(*args)
+
+
 # Timeout exceptions...
 
 
-class Timeout(Exception):
+class Timeout(HTTPError):
     """
     A base class for all timeouts.
     """
@@ -34,19 +51,13 @@ class PoolTimeout(Timeout):
 # HTTP exceptions...
 
 
-class HttpError(Exception):
-    """
-    An HTTP error occurred.
-    """
-
-
-class ProtocolError(Exception):
+class ProtocolError(HTTPError):
     """
     Malformed HTTP.
     """
 
 
-class DecodingError(Exception):
+class DecodingError(HTTPError):
     """
     Decoding of the response failed.
     """
@@ -55,7 +66,7 @@ class DecodingError(Exception):
 # Redirect exceptions...
 
 
-class RedirectError(Exception):
+class RedirectError(HTTPError):
     """
     Base class for HTTP redirect errors.
     """
@@ -83,7 +94,7 @@ class RedirectLoop(RedirectError):
 # Stream exceptions...
 
 
-class StreamException(Exception):
+class StreamError(HTTPError):
     """
     The base class for stream exceptions.
 
@@ -92,21 +103,21 @@ class StreamException(Exception):
     """
 
 
-class StreamConsumed(StreamException):
+class StreamConsumed(StreamError):
     """
     Attempted to read or stream response content, but the content has already
     been streamed.
     """
 
 
-class ResponseNotRead(StreamException):
+class ResponseNotRead(StreamError):
     """
     Attempted to access response content, without having called `read()`
     after a streaming response.
     """
 
 
-class ResponseClosed(StreamException):
+class ResponseClosed(StreamError):
     """
     Attempted to read or stream response content, but the request has been
     closed.
@@ -116,13 +127,13 @@ class ResponseClosed(StreamException):
 # Other cases...
 
 
-class InvalidURL(Exception):
+class InvalidURL(HTTPError):
     """
     URL was missing a hostname, or was not one of HTTP/HTTPS.
     """
 
 
-class CookieConflict(Exception):
+class CookieConflict(HTTPError):
     """
     Attempted to lookup a cookie by name, but multiple cookies existed.
     """
