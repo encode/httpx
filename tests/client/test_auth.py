@@ -1,4 +1,5 @@
 import json
+import os
 
 from httpx import (
     AsyncDispatcher,
@@ -67,3 +68,27 @@ def test_custom_auth():
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Token 123"}
+
+
+def test_netrc_auth():
+    os.environ["NETRC"] = "tests/.netrc"
+    url = "http://netrcexample.org"
+
+    with Client(dispatch=MockDispatch()) as client:
+        response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "auth": "Basic ZXhhbXBsZS11c2VybmFtZTpleGFtcGxlLXBhc3N3b3Jk"
+    }
+
+
+def test_trust_env_auth():
+    os.environ["NETRC"] = "tests/.netrc"
+    url = "http://netrcexample.org"
+
+    with Client(dispatch=MockDispatch()) as client:
+        response = client.get(url, trust_env=False)
+
+    assert response.status_code == 200
+    assert response.json() == {"auth": None}

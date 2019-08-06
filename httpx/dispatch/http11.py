@@ -131,7 +131,7 @@ class HTTP11Connection:
                 assert isinstance(event, h11.Response)
                 break
         http_version = "HTTP/%s" % event.http_version.decode("latin-1", errors="ignore")
-        return (http_version, event.status_code, event.headers)
+        return http_version, event.status_code, event.headers
 
     async def _receive_response_data(
         self, timeout: TimeoutConfig = None
@@ -142,7 +142,7 @@ class HTTP11Connection:
         while True:
             event = await self._receive_event(timeout)
             if isinstance(event, h11.Data):
-                yield event.data
+                yield bytes(event.data)
             else:
                 assert isinstance(event, h11.EndOfMessage)
                 break

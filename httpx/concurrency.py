@@ -223,7 +223,7 @@ class AsyncioBackend(ConcurrencyBackend):
         writer = Writer(stream_writer=stream_writer, timeout=timeout)
         protocol = Protocol.HTTP_2 if ident == "h2" else Protocol.HTTP_11
 
-        return (reader, writer, protocol)
+        return reader, writer, protocol
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any

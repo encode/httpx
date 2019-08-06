@@ -133,7 +133,7 @@ class HTTP2Connection:
                 status_code = int(v.decode("ascii", errors="ignore"))
             elif not k.startswith(b":"):
                 headers.append((k, v))
-        return (status_code, headers)
+        return status_code, headers
 
     async def body_iter(
         self, stream_id: int, timeout: TimeoutConfig = None

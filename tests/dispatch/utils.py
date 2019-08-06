@@ -29,7 +29,7 @@ class MockHTTP2Backend(AsyncioBackend):
         timeout: TimeoutConfig,
     ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
         self.server = MockHTTP2Server(self.app)
-        return (self.server, self.server, Protocol.HTTP_2)
+        return self.server, self.server, Protocol.HTTP_2
 
 
 class MockHTTP2Server(BaseReader, BaseWriter):
