@@ -83,10 +83,24 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
     return None
 
 
+NETRC_STATIC_FILES = tuple(
+    os.path.expanduser(path) for path in ("~/.netrc", "~/_netrc")
+)
+
+
 def get_netrc_login(host: str) -> typing.Optional[typing.Tuple[str, str, str]]:
-    try:
-        netrc_info = netrc.netrc(os.environ.get("NETRC"))  # type: ignore
-    except FileNotFoundError:
+    NETRC_FILES = (
+        (os.environ["NETRC"],) if "NETRC" in os.environ else NETRC_STATIC_FILES
+    )
+    netrc_path = None
+
+    for file_path in NETRC_FILES:
+        if os.path.isfile(file_path):
+            netrc_path = file_path
+            break
+
+    if netrc_path is None:
         return None
 
+    netrc_info = netrc.netrc(netrc_path)
     return netrc_info.authenticators(host)  # type: ignore
