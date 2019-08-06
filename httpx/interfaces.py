@@ -26,7 +26,7 @@ class AsyncDispatcher:
     """
     Base class for async dispatcher classes, that handle sending the request.
 
-    Stubs out the interface, as well as providing a `.request()` convienence
+    Stubs out the interface, as well as providing a `.request()` convenience
     implementation, to make it easy to use or test stand-alone dispatchers,
     without requiring a complete `Client` instance.
     """
@@ -72,9 +72,9 @@ class AsyncDispatcher:
 
 class Dispatcher:
     """
-    Base class for syncronous dispatcher classes, that handle sending the request.
+    Base class for synchronous dispatcher classes, that handle sending the request.
 
-    Stubs out the interface, as well as providing a `.request()` convienence
+    Stubs out the interface, as well as providing a `.request()` convenience
     implementation, to make it easy to use or test stand-alone dispatchers,
     without requiring a complete `Client` instance.
     """
@@ -136,7 +136,7 @@ class BaseReader:
 
 class BaseWriter:
     """
-    A stream writer. Abstracts away any asyncio-specfic interfaces
+    A stream writer. Abstracts away any asyncio-specific interfaces
     into a more generic base class, that we can use with alternate
     backend, or for stand-alone test cases.
     """
@@ -155,7 +155,7 @@ class BasePoolSemaphore:
     """
     A semaphore for use with connection pooling.
 
-    Abstracts away any asyncio-specfic interfaces.
+    Abstracts away any asyncio-specific interfaces.
     """
 
     async def acquire(self) -> None:

@@ -20,7 +20,7 @@ from .decoders import (
 )
 from .exceptions import (
     CookieConflict,
-    HttpError,
+    HTTPError,
     InvalidURL,
     ResponseClosed,
     ResponseNotRead,
@@ -528,10 +528,10 @@ class BaseRequest:
         return content, content_type
 
     def prepare(self) -> None:
-        content = getattr(self, "content", None)  # type: bytes
+        content: typing.Optional[bytes] = getattr(self, "content", None)
         is_streaming = getattr(self, "is_streaming", False)
 
-        auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
+        auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
 
         has_host = "host" in self.headers
         has_user_agent = "user-agent" in self.headers
@@ -687,7 +687,7 @@ class BaseResponse:
 
         self.request = request
         self.on_close = on_close
-        self.next = None  # typing.Optional[typing.Callable]
+        self.next: typing.Optional[typing.Callable] = None
 
     @property
     def reason_phrase(self) -> str:
@@ -776,7 +776,7 @@ class BaseResponse:
         content, depending on the Content-Encoding used in the response.
         """
         if not hasattr(self, "_decoder"):
-            decoders = []  # type: typing.List[Decoder]
+            decoders: typing.List[Decoder] = []
             values = self.headers.getlist("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
@@ -811,9 +811,8 @@ class BaseResponse:
             message = message.format(self, error_type="Server Error")
         else:
             message = ""
-
         if message:
-            raise HttpError(message)
+            raise HTTPError(message, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Union[dict, list]:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
