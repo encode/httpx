@@ -36,7 +36,7 @@ from .utils import (
     str_query_param,
 )
 
-PrimitiveData = typing.Union[str, int, float, bool, type(None)]
+PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
 URLTypes = typing.Union["URL", str]
 
@@ -262,7 +262,7 @@ class QueryParams(typing.Mapping[str, str]):
         elif isinstance(value, QueryParams):
             items = value.multi_items()
         elif isinstance(value, list):
-            items = value
+            items = value  # type: ignore
         else:
             items = value.items()  # type: ignore
 

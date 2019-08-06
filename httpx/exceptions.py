@@ -1,6 +1,6 @@
-from typing import TYPE_CHECKING
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from .models import BaseRequest, BaseResponse  # pragma: nocover
 
 
@@ -10,7 +10,10 @@ class HTTPError(Exception):
     """
 
     def __init__(
-        self, request: "BaseRequest" = None, response: "BaseResponse" = None, *args
+        self,
+        *args: typing.Any,
+        request: "BaseRequest" = None,
+        response: "BaseResponse" = None,
     ) -> None:
         self.response = response
         self.request = request or getattr(self.response, "request", None)

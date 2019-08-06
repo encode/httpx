@@ -22,7 +22,7 @@ def normalize_header_value(value: typing.AnyStr, encoding: str = None) -> bytes:
     return value.encode(encoding or "ascii")
 
 
-def str_query_param(value: typing.Union[str, int, float, bool, type(None)]) -> str:
+def str_query_param(value: typing.Optional[typing.Union[str, int, float, bool]]) -> str:
     """
     Coerce a primitive data type into a string value for query params.
 
@@ -89,12 +89,13 @@ NETRC_STATIC_FILES = tuple(
 
 
 def get_netrc_login(host: str) -> typing.Optional[typing.Tuple[str, str, str]]:
-    NETRC_FILES = (
-        (os.environ["NETRC"],) if "NETRC" in os.environ else NETRC_STATIC_FILES
-    )
-    netrc_path = None
+    if isinstance(os.environ.get("NETRC", None), str):
+        netrc_files: typing.Tuple[str, ...] = (os.environ["NETRC"],)
+    else:
+        netrc_files = NETRC_STATIC_FILES
 
-    for file_path in NETRC_FILES:
+    netrc_path = None
+    for file_path in netrc_files:
         if os.path.isfile(file_path):
             netrc_path = file_path
             break
