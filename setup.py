@@ -45,6 +45,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Tom Christie",
     author_email="tom@tomchristie.com",
+    package_data={"httpx": ["py.typed"]},
     packages=get_packages("httpx"),
     install_requires=[
         "certifi",
