@@ -2,7 +2,6 @@
 .coverage
 .pytest_cache/
 .mypy_cache/
-.nox/
 __pycache__/
 htmlcov/
 *.egg-info/
