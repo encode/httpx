@@ -86,3 +86,14 @@ def test_decoding_errors(header_value):
     with pytest.raises(httpx.exceptions.DecodingError):
         response = httpx.Response(200, headers=headers, content=compressed_body)
         response.content
+
+
+@pytest.mark.parametrize("header_value", (b"invalid-header", ))
+def test_invalid_header(header_value):
+    headers = [(b"Content-Encoding", header_value)]
+    body = b"test 123"
+
+    response = httpx.Response(200, headers=headers, content=body)
+    response.content
+
+    assert response.read() == body

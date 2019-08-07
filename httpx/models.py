@@ -780,8 +780,11 @@ class BaseResponse:
             values = self.headers.getlist("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
-                decoder_cls = SUPPORTED_DECODERS[value]
-                decoders.append(decoder_cls())
+                try:
+                    decoder_cls = SUPPORTED_DECODERS[value]
+                    decoders.append(decoder_cls())
+                except KeyError:
+                    continue
 
             if len(decoders) == 1:
                 self._decoder = decoders[0]
