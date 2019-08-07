@@ -94,6 +94,5 @@ def test_invalid_header(header_value):
     body = b"test 123"
 
     response = httpx.Response(200, headers=headers, content=body)
-    response.content
 
     assert response.read() == body
