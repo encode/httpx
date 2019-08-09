@@ -88,8 +88,7 @@ def test_decoding_errors(header_value):
         response.content
 
 
-@pytest.mark.parametrize("header_value", (b"invalid-header", ))
-def test_invalid_header(header_value):
+def test_invalid_content_encoding_header(header_value):
     headers = [(b"Content-Encoding", header_value)]
     body = b"test 123"
 
