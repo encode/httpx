@@ -88,8 +88,8 @@ def test_decoding_errors(header_value):
         response.content
 
 
-def test_invalid_content_encoding_header(header_value):
-    headers = [(b"Content-Encoding", header_value)]
+def test_invalid_content_encoding_header():
+    headers = [(b"Content-Encoding", b"invalid-header")]
     body = b"test 123"
 
     response = httpx.Response(200, headers=headers, content=body)
