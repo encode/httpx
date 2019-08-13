@@ -33,7 +33,7 @@ from .utils import (
     is_known_encoding,
     normalize_header_key,
     normalize_header_value,
-    str_query_param
+    str_query_param,
 )
 
 PrimitiveData = typing.Union[str, int, float, bool, type(None)]

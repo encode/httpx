@@ -86,7 +86,16 @@ class MockDispatch(AsyncDispatcher):
             body = json.dumps({"body": content.decode()}).encode()
             return AsyncResponse(codes.OK, content=body, request=request)
 
-        return AsyncResponse(codes.OK, content=b"Hello, world!", request=request)
+        elif request.url.path == "/cross_subdomain":
+            if request.headers["host"] != "www.example.org":
+                headers = {"location": "https://www.example.org/cross_subdomain"}
+                return AsyncResponse(
+                    codes.PERMANENT_REDIRECT, headers=headers, request=request
+                )
+            else:
+                return AsyncResponse(
+                    codes.OK, content=b"Hello, world!", request=request
+                )
 
 
 @pytest.mark.asyncio
@@ -250,3 +259,11 @@ async def test_cannot_redirect_streaming_body():
 
     with pytest.raises(RedirectBodyUnavailable):
         await client.post(url, data=streaming_body())
+
+
+@pytest.mark.asyncio
+async def test_cross_dubdomain_redirect():
+    client = AsyncClient(dispatch=MockDispatch())
+    url = "https://example.com/cross_subdomain"
+    response = await client.get(url)
+    assert response.url == URL("https://www.example.org/cross_subdomain")

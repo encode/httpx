@@ -9,7 +9,9 @@ class HTTPError(Exception):
     Base class for Httpx exception
     """
 
-    def __init__(self, request: 'BaseRequest' = None, response: 'BaseResponse' = None, *args) -> None:
+    def __init__(
+        self, request: "BaseRequest" = None, response: "BaseResponse" = None, *args
+    ) -> None:
         self.response = response
         self.request = request or getattr(self.response, "request", None)
         super().__init__(*args)

@@ -32,10 +32,10 @@ from .exceptions import (
 )
 from .interfaces import (
     AsyncDispatcher,
-    BaseReader,
-    BaseWriter,
     BaseBackgroundManager,
     BasePoolSemaphore,
+    BaseReader,
+    BaseWriter,
     ConcurrencyBackend,
     Dispatcher,
     Protocol,
