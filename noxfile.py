@@ -9,18 +9,7 @@ def lint(session):
 
     session.run("autoflake", "--in-place", "--recursive", *source_files)
     session.run("seed-isort-config", "--application-directories=httpx")
-    session.run(
-        "isort",
-        "--project=httpx",
-        "--multi-line=3",
-        "--trailing-comma",
-        "--force-grid-wrap=0",
-        "--combine-as",
-        "--line-width=88",
-        "--recursive",
-        "--apply",
-        *source_files,
-    )
+    session.run("isort", "--project=httpx", "--recursive", "--apply", *source_files)
     session.run("black", "--target-version=py36", *source_files)
 
     check(session)
@@ -33,10 +22,8 @@ def check(session):
     )
 
     session.run("black", "--check", "--target-version=py36", *source_files)
-    session.run(
-        "flake8", "--max-line-length=88", "--ignore=W503,E203,B305", *source_files
-    )
-    session.run("mypy", "httpx", "--ignore-missing-imports", "--disallow-untyped-defs")
+    session.run("flake8", *source_files)
+    session.run("mypy", "httpx")
 
 
 @nox.session(reuse_venv=True)
@@ -50,13 +37,4 @@ def docs(session):
 def test(session):
     session.install("-r", "test-requirements.txt")
 
-    session.run(
-        "coverage",
-        "run",
-        "--omit='*'",
-        "-m",
-        "pytest",
-        "--cov=httpx",
-        "--cov=tests",
-        "--cov-report=term-missing",
-    )
+    session.run("coverage", "run", "-m", "pytest")
