@@ -97,6 +97,8 @@ class MockDispatch(AsyncDispatcher):
                     codes.OK, content=b"Hello, world!", request=request
                 )
 
+        return AsyncResponse(codes.OK, content=b"Hello, world!", request=request)
+
 
 @pytest.mark.asyncio
 async def test_redirect_301():
