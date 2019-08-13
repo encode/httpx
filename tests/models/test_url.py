@@ -1,5 +1,4 @@
 import pytest
-import rfc3986
 
 from httpx import URL
 from httpx.exceptions import InvalidURL

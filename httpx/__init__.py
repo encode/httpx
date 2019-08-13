@@ -86,6 +86,8 @@ __all__ = [
     "TimeoutConfig",
     "VerifyTypes",
     "HTTPConnection",
+    "BasePoolSemaphore",
+    "BaseBackgroundManager",
     "ConnectionPool",
     "ConnectTimeout",
     "CookieConflict",

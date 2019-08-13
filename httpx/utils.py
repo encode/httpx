@@ -23,7 +23,7 @@ def normalize_header_value(value: typing.AnyStr, encoding: str = None) -> bytes:
     return value.encode(encoding or "ascii")
 
 
-def str_query_param(value: typing.Union[str, int, float, bool, type(None)]) -> str:
+def str_query_param(value: typing.Optional[typing.Union[str, int, float, bool]]) -> str:
     """
     Coerce a primitive data type into a string value for query params.
 
@@ -100,5 +100,5 @@ def get_netrc_login(host: str) -> typing.Optional[typing.Tuple[str, str, str]]:
     if netrc_path is None:
         return None
 
-    netrc_info = netrc.netrc(netrc_path)
+    netrc_info = netrc.netrc(str(netrc_path))
     return netrc_info.authenticators(host)  # type: ignore

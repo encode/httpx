@@ -36,7 +36,7 @@ from .utils import (
     str_query_param,
 )
 
-PrimitiveData = typing.Union[str, int, float, bool, type(None)]
+PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
 URLTypes = typing.Union["URL", str]
 
@@ -91,6 +91,16 @@ class URL:
             self._uri_reference = rfc3986.api.iri_reference(url).encode()
         else:
             self._uri_reference = url._uri_reference
+
+        # Handle IDNA domain names.
+        if self._uri_reference.authority:
+            idna_authority = self._uri_reference.authority.encode("idna").decode(
+                "ascii"
+            )
+            if idna_authority != self._uri_reference.authority:
+                self._uri_reference = self._uri_reference.copy_with(
+                    authority=idna_authority
+                )
 
         # Normalize scheme and domain name.
         if self.is_absolute_url:
@@ -170,7 +180,7 @@ class URL:
         # URLs with a fragment portion as not absolute.
         # What we actually care about is if the URL provides
         # a scheme and hostname to which connections should be made.
-        return self.scheme and self.host
+        return bool(self.scheme and self.host)
 
     @property
     def is_relative_url(self) -> bool:
@@ -252,7 +262,7 @@ class QueryParams(typing.Mapping[str, str]):
         elif isinstance(value, QueryParams):
             items = value.multi_items()
         elif isinstance(value, list):
-            items = value
+            items = value  # type: ignore
         else:
             items = value.items()  # type: ignore
 
