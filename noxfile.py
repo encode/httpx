@@ -28,7 +28,9 @@ def lint(session):
 
 @nox.session(reuse_venv=True)
 def check(session):
-    session.install("black", "flake8", "flake8-bugbear", "mypy")
+    session.install(
+        "black", "flake8", "flake8-bugbear", "flake8-comprehensions", "mypy"
+    )
 
     session.run("black", "--check", "--target-version=py36", *source_files)
     session.run(
