@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 
 import json
+
 from httpx import (
-    __version__,
-    Client,
+    AsyncDispatcher,
     AsyncRequest,
     AsyncResponse,
-    VerifyTypes,
     CertTypes,
+    Client,
     TimeoutTypes,
-    AsyncDispatcher,
+    VerifyTypes,
+    __version__,
 )
 
 

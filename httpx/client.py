@@ -20,11 +20,11 @@ from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import (
+    HTTPError,
     InvalidURL,
     RedirectBodyUnavailable,
     RedirectLoop,
     TooManyRedirects,
-    HTTPError,
 )
 from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from .models import (
@@ -312,6 +312,7 @@ class BaseClient:
         headers = Headers(request.headers)
         if url.origin != request.url.origin:
             del headers["Authorization"]
+            del headers["host"]
         return headers
 
     def redirect_content(
