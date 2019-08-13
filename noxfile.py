@@ -37,4 +37,4 @@ def docs(session):
 def test(session):
     session.install("-r", "test-requirements.txt")
 
-    session.run("coverage", "run", "-m", "pytest")
+    session.run("python", "-m", "pytest")
