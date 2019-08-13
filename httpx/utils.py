@@ -100,5 +100,5 @@ def get_netrc_login(host: str) -> typing.Optional[typing.Tuple[str, str, str]]:
     if netrc_path is None:
         return None
 
-    netrc_info = netrc.netrc(netrc_path)
+    netrc_info = netrc.netrc(str(netrc_path))
     return netrc_info.authenticators(host)  # type: ignore
