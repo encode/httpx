@@ -4,6 +4,7 @@ import os
 import re
 import typing
 from io import BytesIO
+from pathlib import Path
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
 _HTML5_FORM_ENCODING_REPLACEMENTS.update(
@@ -47,7 +48,7 @@ class FileField(Field):
     ) -> None:
         self.name = name
         if not isinstance(value, tuple):
-            self.filename = os.path.basename(getattr(value, "name", "upload"))
+            self.filename = Path(getattr(value, "name", "upload")).name
             self.file = value  # type: typing.Union[typing.IO[str], typing.IO[bytes]]
             self.content_type = self.guess_content_type()
         else:

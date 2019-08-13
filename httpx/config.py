@@ -1,7 +1,7 @@
 import asyncio
-import os
 import ssl
 import typing
+from pathlib import Path
 
 import certifi
 
@@ -94,8 +94,8 @@ class SSLConfig:
         """
         if isinstance(self.verify, bool):
             ca_bundle_path = DEFAULT_CA_BUNDLE_PATH
-        elif os.path.exists(self.verify):
-            ca_bundle_path = self.verify
+        elif Path(self.verify).exists():
+            ca_bundle_path = Path(self.verify)
         else:
             raise IOError(
                 "Could not find a suitable TLS CA certificate bundle, "
@@ -120,10 +120,10 @@ class SSLConfig:
         except AttributeError:  # pragma: nocover
             pass
 
-        if os.path.isfile(ca_bundle_path):
-            context.load_verify_locations(cafile=ca_bundle_path)
-        elif os.path.isdir(ca_bundle_path):
-            context.load_verify_locations(capath=ca_bundle_path)
+        if ca_bundle_path.is_file():
+            context.load_verify_locations(cafile=str(ca_bundle_path))
+        elif ca_bundle_path.is_dir():
+            context.load_verify_locations(capath=str(ca_bundle_path))
 
         if self.cert is not None:
             if isinstance(self.cert, str):
@@ -248,5 +248,5 @@ class PoolLimits:
 DEFAULT_SSL_CONFIG = SSLConfig(cert=None, verify=True)
 DEFAULT_TIMEOUT_CONFIG = TimeoutConfig(timeout=5.0)
 DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100, pool_timeout=5.0)
-DEFAULT_CA_BUNDLE_PATH = certifi.where()
+DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
 DEFAULT_MAX_REDIRECTS = 20

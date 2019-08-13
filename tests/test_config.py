@@ -1,4 +1,3 @@
-import os
 import ssl
 
 import pytest
@@ -31,7 +30,7 @@ async def test_load_ssl_config_verify_existing_file():
 
 @pytest.mark.asyncio
 async def test_load_ssl_config_verify_directory():
-    path = os.path.dirname(httpx.config.DEFAULT_CA_BUNDLE_PATH)
+    path = httpx.config.DEFAULT_CA_BUNDLE_PATH.parent
     ssl_config = httpx.SSLConfig(verify=path)
     context = await ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
