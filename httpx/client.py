@@ -207,7 +207,7 @@ class BaseClient:
             # will raise redirect errors if appropriate.
             if len(history) > self.max_redirects:
                 raise TooManyRedirects(response=history[-1])
-            if request.url in [response.url for response in history]:
+            if request.url in (response.url for response in history):
                 raise RedirectLoop(response=history[-1])
 
             response = await self.dispatch.send(
