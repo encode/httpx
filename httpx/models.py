@@ -33,6 +33,7 @@ from .utils import (
     is_known_encoding,
     normalize_header_key,
     normalize_header_value,
+    parse_header_links,
     str_query_param,
 )
 
@@ -844,6 +845,19 @@ class BaseResponse:
             self._cookies = Cookies()
             self._cookies.extract_cookies(self)
         return self._cookies
+
+    @property
+    def links(
+        self
+    ) -> typing.Dict[typing.Optional[typing.Any], typing.Dict[str, typing.Any]]:
+        header = self.headers.get("link")
+        ldict = {}
+        if header:
+            links = parse_header_links(header)
+            for link in links:
+                key = link.get("rel") or link.get("url")
+                ldict[key] = link
+        return ldict
 
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
