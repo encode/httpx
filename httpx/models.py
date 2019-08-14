@@ -100,7 +100,7 @@ class URL:
             if idna_authority != self._uri_reference.authority:
                 self._uri_reference = self._uri_reference.copy_with(
                     authority=idna_authority
-                )
+                )  # pragma: nocover
 
         # Normalize scheme and domain name.
         if self.is_absolute_url:
