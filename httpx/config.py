@@ -1,4 +1,3 @@
-import asyncio
 import ssl
 import typing
 from pathlib import Path
@@ -65,16 +64,13 @@ class SSLConfig:
             return self
         return SSLConfig(cert=cert, verify=verify)
 
-    async def load_ssl_context(self) -> ssl.SSLContext:
+    def load_ssl_context(self) -> ssl.SSLContext:
         if self.ssl_context is None:
-            if not self.verify:
-                self.ssl_context = self.load_ssl_context_no_verify()
-            else:
-                # Run the SSL loading in a threadpool, since it makes disk accesses.
-                loop = asyncio.get_event_loop()
-                self.ssl_context = await loop.run_in_executor(
-                    None, self.load_ssl_context_verify
-                )
+            self.ssl_context = (
+                self.load_ssl_context_verify()
+                if self.verify
+                else self.load_ssl_context_no_verify()
+            )
 
         assert self.ssl_context is not None
         return self.ssl_context
