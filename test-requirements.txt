@@ -11,6 +11,8 @@ isort
 mypy
 pytest
 pytest-asyncio
+trio
+pytest-trio
 pytest-cov
 trustme
 uvicorn

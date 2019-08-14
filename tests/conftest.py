@@ -12,10 +12,22 @@ from uvicorn.main import Server
 
 from httpx.concurrency import AsyncioBackend
 
+try:
+    from httpx.contrib.trio import TrioBackend
+except ImportError:
+    TrioBackend = None  # type: ignore
 
-@pytest.fixture(params=[pytest.param(AsyncioBackend, marks=pytest.mark.asyncio)])
+
+@pytest.fixture(
+    params=[
+        pytest.param(AsyncioBackend, marks=pytest.mark.asyncio),
+        pytest.param(TrioBackend, marks=pytest.mark.trio),
+    ]
+)
 def backend(request):
     backend_cls = request.param
+    if backend_cls is None:
+        pytest.skip()
     return backend_cls()
 
 
