@@ -1,5 +1,4 @@
 import pytest
-import rfc3986
 
 from httpx import URL
 from httpx.exceptions import InvalidURL
@@ -176,11 +175,3 @@ def test_url_set():
     url_set = set(urls)
 
     assert all(url in urls for url in url_set)
-
-
-def test_hsts_preload_converted_to_https():
-    url = URL("http://www.paypal.com")
-
-    assert url.is_ssl
-    assert url.scheme == "https"
-    assert url == "https://www.paypal.com"

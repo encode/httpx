@@ -32,10 +32,10 @@ from .exceptions import (
 )
 from .interfaces import (
     AsyncDispatcher,
-    BaseReader,
-    BaseWriter,
     BaseBackgroundManager,
     BasePoolSemaphore,
+    BaseReader,
+    BaseWriter,
     ConcurrencyBackend,
     Dispatcher,
     Protocol,
@@ -86,6 +86,8 @@ __all__ = [
     "TimeoutConfig",
     "VerifyTypes",
     "HTTPConnection",
+    "BasePoolSemaphore",
+    "BaseBackgroundManager",
     "ConnectionPool",
     "ConnectTimeout",
     "CookieConflict",

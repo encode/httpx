@@ -8,7 +8,6 @@ from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
 
 import chardet
-import hstspreload
 import rfc3986
 
 from .config import USER_AGENT
@@ -22,7 +21,7 @@ from .decoders import (
 )
 from .exceptions import (
     CookieConflict,
-    HttpError,
+    HTTPError,
     InvalidURL,
     ResponseClosed,
     ResponseNotRead,
@@ -38,7 +37,7 @@ from .utils import (
     str_query_param,
 )
 
-PrimitiveData = typing.Union[str, int, float, bool, type(None)]
+PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
 URLTypes = typing.Union["URL", str]
 
@@ -110,14 +109,6 @@ class URL:
             if not self.host:
                 raise InvalidURL("No host included in URL.")
 
-        # If the URL is HTTP but the host is on the HSTS preload list switch to HTTPS.
-        if (
-            self.scheme == "http"
-            and self.host
-            and hstspreload.in_hsts_preload(self.host)
-        ):
-            self._uri_reference = self._uri_reference.copy_with(scheme="https")
-
     @property
     def scheme(self) -> str:
         return self._uri_reference.scheme or ""
@@ -180,7 +171,7 @@ class URL:
         # URLs with a fragment portion as not absolute.
         # What we actually care about is if the URL provides
         # a scheme and hostname to which connections should be made.
-        return self.scheme and self.host
+        return bool(self.scheme and self.host)
 
     @property
     def is_relative_url(self) -> bool:
@@ -262,7 +253,7 @@ class QueryParams(typing.Mapping[str, str]):
         elif isinstance(value, QueryParams):
             items = value.multi_items()
         elif isinstance(value, list):
-            items = value
+            items = value  # type: ignore
         else:
             items = value.items()  # type: ignore
 
@@ -538,10 +529,10 @@ class BaseRequest:
         return content, content_type
 
     def prepare(self) -> None:
-        content = getattr(self, "content", None)  # type: bytes
+        content: typing.Optional[bytes] = getattr(self, "content", None)
         is_streaming = getattr(self, "is_streaming", False)
 
-        auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
+        auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
 
         has_host = "host" in self.headers
         has_user_agent = "user-agent" in self.headers
@@ -697,7 +688,7 @@ class BaseResponse:
 
         self.request = request
         self.on_close = on_close
-        self.next = None  # typing.Optional[typing.Callable]
+        self.next: typing.Optional[typing.Callable] = None
 
     @property
     def reason_phrase(self) -> str:
@@ -786,12 +777,15 @@ class BaseResponse:
         content, depending on the Content-Encoding used in the response.
         """
         if not hasattr(self, "_decoder"):
-            decoders = []  # type: typing.List[Decoder]
+            decoders: typing.List[Decoder] = []
             values = self.headers.getlist("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
-                decoder_cls = SUPPORTED_DECODERS[value]
-                decoders.append(decoder_cls())
+                try:
+                    decoder_cls = SUPPORTED_DECODERS[value]
+                    decoders.append(decoder_cls())
+                except KeyError:
+                    continue
 
             if len(decoders) == 1:
                 self._decoder = decoders[0]
@@ -821,9 +815,8 @@ class BaseResponse:
             message = message.format(self, error_type="Server Error")
         else:
             message = ""
-
         if message:
-            raise HttpError(message)
+            raise HTTPError(message, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Union[dict, list]:
         if self.charset_encoding is None and self.content and len(self.content) > 3:

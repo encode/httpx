@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
 import re
+from pathlib import Path
 
 from setuptools import setup
 
@@ -11,8 +11,8 @@ def get_version(package):
     """
     Return package version as listed in `__version__` in `init.py`.
     """
-    with open(os.path.join(package, "__version__.py")) as f:
-        return re.search("__version__ = ['\"]([^'\"]+)['\"]", f.read()).group(1)
+    version = Path(package, "__version__.py").read_text()
+    return re.search("__version__ = ['\"]([^'\"]+)['\"]", version).group(1)
 
 
 def get_long_description():
@@ -27,11 +27,7 @@ def get_packages(package):
     """
     Return root package and all sub-packages.
     """
-    return [
-        dirpath
-        for dirpath, dirnames, filenames in os.walk(package)
-        if os.path.exists(os.path.join(dirpath, "__init__.py"))
-    ]
+    return [str(path.parent) for path in Path(package).glob("**/__init__.py")]
 
 
 setup(
@@ -45,6 +41,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Tom Christie",
     author_email="tom@tomchristie.com",
+    package_data={"httpx": ["py.typed"]},
     packages=get_packages("httpx"),
     install_requires=[
         "certifi",

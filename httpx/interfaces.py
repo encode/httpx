@@ -26,7 +26,7 @@ class AsyncDispatcher:
     """
     Base class for async dispatcher classes, that handle sending the request.
 
-    Stubs out the interface, as well as providing a `.request()` convienence
+    Stubs out the interface, as well as providing a `.request()` convenience
     implementation, to make it easy to use or test stand-alone dispatchers,
     without requiring a complete `Client` instance.
     """
@@ -41,7 +41,7 @@ class AsyncDispatcher:
         headers: HeaderTypes = None,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None
+        timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
         request = AsyncRequest(method, url, data=data, params=params, headers=headers)
         return await self.send(request, verify=verify, cert=cert, timeout=timeout)
@@ -72,9 +72,9 @@ class AsyncDispatcher:
 
 class Dispatcher:
     """
-    Base class for syncronous dispatcher classes, that handle sending the request.
+    Base class for synchronous dispatcher classes, that handle sending the request.
 
-    Stubs out the interface, as well as providing a `.request()` convienence
+    Stubs out the interface, as well as providing a `.request()` convenience
     implementation, to make it easy to use or test stand-alone dispatchers,
     without requiring a complete `Client` instance.
     """
@@ -89,7 +89,7 @@ class Dispatcher:
         headers: HeaderTypes = None,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None
+        timeout: TimeoutTypes = None,
     ) -> Response:
         request = Request(method, url, data=data, params=params, headers=headers)
         return self.send(request, verify=verify, cert=cert, timeout=timeout)
@@ -136,7 +136,7 @@ class BaseReader:
 
 class BaseWriter:
     """
-    A stream writer. Abstracts away any asyncio-specfic interfaces
+    A stream writer. Abstracts away any asyncio-specific interfaces
     into a more generic base class, that we can use with alternate
     backend, or for stand-alone test cases.
     """
@@ -155,7 +155,7 @@ class BasePoolSemaphore:
     """
     A semaphore for use with connection pooling.
 
-    Abstracts away any asyncio-specfic interfaces.
+    Abstracts away any asyncio-specific interfaces.
     """
 
     async def acquire(self) -> None:

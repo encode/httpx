@@ -138,3 +138,11 @@ def test_text_decoder_empty_cases():
     decoder = TextDecoder()
     assert decoder.decode(b"") == ""
     assert decoder.flush() == ""
+
+def test_invalid_content_encoding_header():
+    headers = [(b"Content-Encoding", b"invalid-header")]
+    body = b"test 123"
+
+    response = httpx.Response(200, headers=headers, content=body)
+
+    assert response.read() == body

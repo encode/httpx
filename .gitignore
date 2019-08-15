@@ -4,5 +4,7 @@
 .mypy_cache/
 __pycache__/
 htmlcov/
+site/
 *.egg-info/
 venv/
+.nox
