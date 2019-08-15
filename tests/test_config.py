@@ -76,6 +76,15 @@ def test_load_ssl_config_no_verify():
     assert context.check_hostname is False
 
 
+def test_load_ssl_context():
+    ssl_context = ssl.create_default_context()
+    ssl_config = httpx.SSLConfig(verify=ssl_context)
+
+    assert ssl_config.verify is True
+    assert ssl_config.ssl_context is ssl_context
+    assert repr(ssl_config) == "SSLConfig(cert=None, verify=True)"
+
+
 def test_ssl_repr():
     ssl = httpx.SSLConfig(verify=False)
     assert repr(ssl) == "SSLConfig(cert=None, verify=False)"
