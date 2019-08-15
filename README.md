@@ -90,6 +90,10 @@ the specific topics on making [Parallel Requests](https://www.encode.io/httpx/pa
 
 The [Developer Interface](https://www.encode.io/httpx/api/) provides a comprehensive API reference.
 
+## Contribute
+
+If you want to contribute with HTTPX check out the [Contributing Guide](https://www.encode.io/httpx/contributing/) to learn how to start.
+
 ## Dependencies
 
 The httpx project relies on these excellent libraries:
