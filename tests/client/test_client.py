@@ -19,7 +19,8 @@ def threadpool(func):
 
 
 @threadpool
-def test_get(backend, server):
+@pytest.mark.usefixtures("server")
+def test_get(backend):
     url = "http://127.0.0.1:8000/"
     with httpx.Client(backend=backend) as http:
         response = http.get(url)
@@ -36,7 +37,8 @@ def test_get(backend, server):
 
 
 @threadpool
-def test_post(backend, server):
+@pytest.mark.usefixtures("server")
+def test_post(backend):
     with httpx.Client(backend=backend) as http:
         response = http.post("http://127.0.0.1:8000/", data=b"Hello, world!")
     assert response.status_code == 200
@@ -44,7 +46,8 @@ def test_post(backend, server):
 
 
 @threadpool
-def test_post_json(backend, server):
+@pytest.mark.usefixtures("server")
+def test_post_json(backend):
     with httpx.Client(backend=backend) as http:
         response = http.post("http://127.0.0.1:8000/", json={"text": "Hello, world!"})
     assert response.status_code == 200
@@ -52,7 +55,8 @@ def test_post_json(backend, server):
 
 
 @threadpool
-def test_stream_response(backend, server):
+@pytest.mark.usefixtures("server")
+def test_stream_response(backend):
     with httpx.Client(backend=backend) as http:
         response = http.get("http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
@@ -61,7 +65,8 @@ def test_stream_response(backend, server):
 
 
 @threadpool
-def test_stream_iterator(backend, server):
+@pytest.mark.usefixtures("server")
+def test_stream_iterator(backend):
     with httpx.Client(backend=backend) as http:
         response = http.get("http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
@@ -72,7 +77,8 @@ def test_stream_iterator(backend, server):
 
 
 @threadpool
-def test_raw_iterator(backend, server):
+@pytest.mark.usefixtures("server")
+def test_raw_iterator(backend):
     with httpx.Client(backend=backend) as http:
         response = http.get("http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
@@ -84,7 +90,8 @@ def test_raw_iterator(backend, server):
 
 
 @threadpool
-def test_raise_for_status(backend, server):
+@pytest.mark.usefixtures("server")
+def test_raise_for_status(backend):
     with httpx.Client(backend=backend) as client:
         for status_code in (200, 400, 404, 500, 505):
             response = client.request(
@@ -99,7 +106,8 @@ def test_raise_for_status(backend, server):
 
 
 @threadpool
-def test_options(backend, server):
+@pytest.mark.usefixtures("server")
+def test_options(backend):
     with httpx.Client(backend=backend) as http:
         response = http.options("http://127.0.0.1:8000/")
     assert response.status_code == 200
@@ -107,7 +115,8 @@ def test_options(backend, server):
 
 
 @threadpool
-def test_head(backend, server):
+@pytest.mark.usefixtures("server")
+def test_head(backend):
     with httpx.Client(backend=backend) as http:
         response = http.head("http://127.0.0.1:8000/")
     assert response.status_code == 200
@@ -115,7 +124,8 @@ def test_head(backend, server):
 
 
 @threadpool
-def test_put(backend, server):
+@pytest.mark.usefixtures("server")
+def test_put(backend):
     with httpx.Client(backend=backend) as http:
         response = http.put("http://127.0.0.1:8000/", data=b"Hello, world!")
     assert response.status_code == 200
@@ -123,7 +133,8 @@ def test_put(backend, server):
 
 
 @threadpool
-def test_patch(backend, server):
+@pytest.mark.usefixtures("server")
+def test_patch(backend):
     with httpx.Client(backend=backend) as http:
         response = http.patch("http://127.0.0.1:8000/", data=b"Hello, world!")
     assert response.status_code == 200
@@ -131,7 +142,8 @@ def test_patch(backend, server):
 
 
 @threadpool
-def test_delete(backend, server):
+@pytest.mark.usefixtures("server")
+def test_delete(backend):
     with httpx.Client(backend=backend) as http:
         response = http.delete("http://127.0.0.1:8000/")
     assert response.status_code == 200
@@ -139,7 +151,8 @@ def test_delete(backend, server):
 
 
 @threadpool
-def test_base_url(backend, server):
+@pytest.mark.usefixtures("server")
+def test_base_url(backend):
     base_url = "http://127.0.0.1:8000/"
     with httpx.Client(base_url=base_url, backend=backend) as http:
         response = http.get("/")

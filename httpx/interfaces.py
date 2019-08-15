@@ -238,9 +238,6 @@ class BaseBodyIterator:
     ingest the response content from.
     """
 
-    def __init__(self, backend: ConcurrencyBackend) -> None:
-        self.backend = backend
-
     def iterate(self) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator, used by the client to consume the response body.
