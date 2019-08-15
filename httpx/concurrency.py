@@ -254,7 +254,7 @@ class AsyncioBackend(ConcurrencyBackend):
 
 
 class BackgroundManager(BaseBackgroundManager):
-    def __init__(self, coroutine: typing.Callable, args: typing.Any) -> None:
+    def __init__(self, coroutine: typing.Callable, args: typing.Sequence) -> None:
         self.coroutine = coroutine
         self.args = args
 

@@ -1,4 +1,3 @@
-import asyncio
 import functools
 
 import pytest
@@ -12,21 +11,17 @@ def threadpool(func):
     """
 
     @functools.wraps(func)
-    async def wrapped(*args, **kwargs):
-        nonlocal func
+    async def wrapped(backend, *args, **kwargs):
+        backend_for_thread = type(backend)()
+        await backend.run_in_threadpool(func, backend_for_thread, *args, **kwargs)
 
-        loop = asyncio.get_event_loop()
-        if kwargs:
-            func = functools.partial(func, **kwargs)
-        await loop.run_in_executor(None, func, *args)
-
-    return pytest.mark.asyncio(wrapped)
+    return wrapped
 
 
 @threadpool
-def test_get(server):
+def test_get(backend, server):
     url = "http://127.0.0.1:8000/"
-    with httpx.Client() as http:
+    with httpx.Client(backend=backend) as http:
         response = http.get(url)
     assert response.status_code == 200
     assert response.url == httpx.URL(url)
@@ -41,24 +36,24 @@ def test_get(server):
 
 
 @threadpool
-def test_post(server):
-    with httpx.Client() as http:
+def test_post(backend, server):
+    with httpx.Client(backend=backend) as http:
         response = http.post("http://127.0.0.1:8000/", data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
-def test_post_json(server):
-    with httpx.Client() as http:
+def test_post_json(backend, server):
+    with httpx.Client(backend=backend) as http:
         response = http.post("http://127.0.0.1:8000/", json={"text": "Hello, world!"})
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
-def test_stream_response(server):
-    with httpx.Client() as http:
+def test_stream_response(backend, server):
+    with httpx.Client(backend=backend) as http:
         response = http.get("http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
     content = response.read()
@@ -66,8 +61,8 @@ def test_stream_response(server):
 
 
 @threadpool
-def test_stream_iterator(server):
-    with httpx.Client() as http:
+def test_stream_iterator(backend, server):
+    with httpx.Client(backend=backend) as http:
         response = http.get("http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
     body = b""
@@ -77,8 +72,8 @@ def test_stream_iterator(server):
 
 
 @threadpool
-def test_raw_iterator(server):
-    with httpx.Client() as http:
+def test_raw_iterator(backend, server):
+    with httpx.Client(backend=backend) as http:
         response = http.get("http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
     body = b""
@@ -89,8 +84,8 @@ def test_raw_iterator(server):
 
 
 @threadpool
-def test_raise_for_status(server):
-    with httpx.Client() as client:
+def test_raise_for_status(backend, server):
+    with httpx.Client(backend=backend) as client:
         for status_code in (200, 400, 404, 500, 505):
             response = client.request(
                 "GET", "http://127.0.0.1:8000/status/{}".format(status_code)
@@ -104,49 +99,49 @@ def test_raise_for_status(server):
 
 
 @threadpool
-def test_options(server):
-    with httpx.Client() as http:
+def test_options(backend, server):
+    with httpx.Client(backend=backend) as http:
         response = http.options("http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
-def test_head(server):
-    with httpx.Client() as http:
+def test_head(backend, server):
+    with httpx.Client(backend=backend) as http:
         response = http.head("http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
-def test_put(server):
-    with httpx.Client() as http:
+def test_put(backend, server):
+    with httpx.Client(backend=backend) as http:
         response = http.put("http://127.0.0.1:8000/", data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
-def test_patch(server):
-    with httpx.Client() as http:
+def test_patch(backend, server):
+    with httpx.Client(backend=backend) as http:
         response = http.patch("http://127.0.0.1:8000/", data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
-def test_delete(server):
-    with httpx.Client() as http:
+def test_delete(backend, server):
+    with httpx.Client(backend=backend) as http:
         response = http.delete("http://127.0.0.1:8000/")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 @threadpool
-def test_base_url(server):
+def test_base_url(backend, server):
     base_url = "http://127.0.0.1:8000/"
-    with httpx.Client(base_url=base_url) as http:
+    with httpx.Client(base_url=base_url, backend=backend) as http:
         response = http.get("/")
     assert response.status_code == 200
     assert str(response.url) == base_url

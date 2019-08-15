@@ -10,6 +10,18 @@ from cryptography.hazmat.primitives.serialization import (
 from uvicorn.config import Config
 from uvicorn.main import Server
 
+from httpx.concurrency import AsyncioBackend
+
+
+@pytest.fixture(
+    params=[
+        pytest.param(AsyncioBackend, marks=pytest.mark.asyncio)  # type: ignore
+    ]
+)
+def backend(request):
+    backend_cls = request.param
+    return backend_cls()
+
 
 async def app(scope, receive, send):
     assert scope["type"] == "http"
