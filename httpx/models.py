@@ -17,6 +17,7 @@ from .decoders import (
     Decoder,
     IdentityDecoder,
     MultiDecoder,
+    TextDecoder,
 )
 from .exceptions import (
     CookieConflict,
@@ -890,6 +891,17 @@ class AsyncResponse(BaseResponse):
                 yield self.decoder.decode(chunk)
             yield self.decoder.flush()
 
+    async def stream_text(self) -> typing.AsyncIterator[str]:
+        """
+        A str-iterator over the decoded response content
+        that handles both gzip, deflate, etc but also detects the content's
+        string encoding.
+        """
+        decoder = TextDecoder(encoding=self.charset_encoding)
+        async for chunk in self.stream():
+            yield decoder.decode(chunk)
+        yield decoder.flush()
+
     async def raw(self) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the raw response content.
@@ -968,6 +980,17 @@ class Response(BaseResponse):
             for chunk in self.raw():
                 yield self.decoder.decode(chunk)
             yield self.decoder.flush()
+
+    def stream_text(self) -> typing.Iterator[str]:
+        """
+        A str-iterator over the decoded response content
+        that handles both gzip, deflate, etc but also detects the content's
+        string encoding.
+        """
+        decoder = TextDecoder(encoding=self.charset_encoding)
+        for chunk in self.stream():
+            yield decoder.decode(chunk)
+        yield decoder.flush()
 
     def raw(self) -> typing.Iterator[bytes]:
         """
