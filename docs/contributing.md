@@ -3,14 +3,13 @@
 Thank you for being interested in contributing with HTTPX.
 There are many ways you can contribute with the project:
 
-- Sharing it with your friends
-- Feature requests
-- Bug report
-- Documentation
-- Code reviews
-- Coding
+- Try HTTPX and [report bugs/issues you find](https://github.com/encode/httpx/issues/new)
+- [Implement new features](https://github.com/encode/httpx/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+- [Review Pull Requests of others](https://github.com/encode/httpx/pulls)
+- Write documentation
+- Participate in discussions
 
-## Opening Issues
+## Reporting Bugs or Other Issues
 
 Found something that HTTPX should support?
 Stumbled upon some unexpected behavior?
@@ -22,6 +21,7 @@ provide as much information as possible like:
 
 - OS platform
 - Python version
+- Installed dependencies and versions (`python -m pip freeze`)
 - Code snippet
 - Error traceback
 
@@ -88,29 +88,16 @@ To run the code auto-formatting separately:
 $ nox -s lint
 ```
 
-If you only want to check for lint errors run:
-
-```shell
-$ nox -s check
-```
-
 Also, if you need to run the tests only:
 
 ```shell
 $ nox -s test
 ```
 
-If you are inside your development environment, is possible to call `pytest`
-directly to test a single file:
+You can also run a single test script like this:
 
 ```shell
-$ pytest tests/test_api.py
-```
-
-Or a single test function:
-
-```shell
-$ pytest -k test_multipart
+$ nox -s test -- tests/test_multipart.py
 ```
 
 ## Documenting
