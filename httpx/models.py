@@ -92,16 +92,6 @@ class URL:
         else:
             self._uri_reference = url._uri_reference
 
-        # Handle IDNA domain names.
-        if self._uri_reference.authority:
-            idna_authority = self._uri_reference.authority.encode("idna").decode(
-                "ascii"
-            )
-            if idna_authority != self._uri_reference.authority:
-                self._uri_reference = self._uri_reference.copy_with(
-                    authority=idna_authority
-                )  # pragma: nocover
-
         # Normalize scheme and domain name.
         if self.is_absolute_url:
             self._uri_reference = self._uri_reference.normalize()

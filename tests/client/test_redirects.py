@@ -135,11 +135,13 @@ async def test_disallow_redirects():
     )
     assert response.status_code == codes.SEE_OTHER
     assert response.url == URL("https://example.org/redirect_303")
+    assert response.is_redirect is True
     assert len(response.history) == 0
 
     response = await response.next()
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
+    assert response.is_redirect is False
     assert len(response.history) == 1
 
 

@@ -66,7 +66,12 @@ class HTTPConnection(AsyncDispatcher):
 
         host = self.origin.host
         port = self.origin.port
-        ssl_context = await ssl.load_ssl_context() if self.origin.is_ssl else None
+        # Run the SSL loading in a threadpool, since it makes disk accesses.
+        ssl_context = (
+            await self.backend.run_in_threadpool(ssl.load_ssl_context)
+            if self.origin.is_ssl
+            else None
+        )
 
         if self.release_func is None:
             on_release = None
