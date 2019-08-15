@@ -225,6 +225,45 @@ class AsyncioBackend(ConcurrencyBackend):
 
         return reader, writer, protocol
 
+    async def start_tls(
+        self,
+        reader: Reader,
+        writer: Writer,
+        hostname: str,
+        ssl_context: ssl.SSLContext,
+        timeout: TimeoutConfig,
+    ) -> typing.Tuple[Reader, Writer, Protocol]:
+        loop = self.loop
+        if not hasattr(loop, "start_tls"):
+            raise NotImplementedError(
+                "asyncio.BaseEventLoop.start_tls() is Python 3.7+ only"
+            )
+
+        transport: asyncio.Transport = writer.stream_writer._transport  # type: ignore
+        protocol = transport.get_protocol()  # type: ignore
+        try:
+            transport, protocol = asyncio.wait_for(
+                loop.start_tls(  # type: ignore
+                    transport, protocol, ssl_context, server_hostname=hostname
+                ),
+                timeout.connect_timeout,
+            )
+        except asyncio.TimeoutError:
+            raise ConnectTimeout()
+
+        reader.stream_reader.set_transport(transport)
+        writer.stream_writer.set_transport(transport)  # type: ignore
+        ssl_object = writer.stream_writer.get_extra_info("ssl_object")
+        if ssl_object is None:
+            ident = "http/1.1"
+        else:
+            ident = ssl_object.selected_alpn_protocol()
+            if ident is None:
+                ident = ssl_object.selected_npn_protocol()
+
+        protocol = Protocol.HTTP_2 if ident == "h2" else Protocol.HTTP_11
+        return reader, writer, protocol
+
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:

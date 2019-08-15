@@ -178,7 +178,8 @@ class BaseClient:
             )
         except HTTPError as exc:
             # Add the original request to any HTTPError
-            exc.request = request
+            if exc.request is None:
+                exc.request = request
             raise
 
         if not stream:

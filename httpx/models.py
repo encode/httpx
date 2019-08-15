@@ -92,16 +92,6 @@ class URL:
         else:
             self._uri_reference = url._uri_reference
 
-        # Handle IDNA domain names.
-        if self._uri_reference.authority:
-            idna_authority = self._uri_reference.authority.encode("idna").decode(
-                "ascii"
-            )
-            if idna_authority != self._uri_reference.authority:
-                self._uri_reference = self._uri_reference.copy_with(
-                    authority=idna_authority
-                )
-
         # Normalize scheme and domain name.
         if self.is_absolute_url:
             self._uri_reference = self._uri_reference.normalize()
@@ -416,6 +406,9 @@ class Headers(typing.MutableMapping[str, str]):
         headers = Headers(headers)
         for header in headers:
             self[header] = headers[header]
+
+    def copy(self) -> "Headers":
+        return Headers(self.items(), encoding=self.encoding)
 
     def __getitem__(self, key: str) -> str:
         """

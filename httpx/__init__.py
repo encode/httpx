@@ -13,6 +13,7 @@ from .config import (
 )
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
+from .dispatch.proxy_http_tunnel import HTTPTunnelProxy
 from .exceptions import (
     ConnectTimeout,
     CookieConflict,
@@ -20,6 +21,7 @@ from .exceptions import (
     InvalidURL,
     PoolTimeout,
     ProtocolError,
+    ProxyError,
     ReadTimeout,
     RedirectBodyUnavailable,
     RedirectLoop,
@@ -86,6 +88,7 @@ __all__ = [
     "TimeoutConfig",
     "VerifyTypes",
     "HTTPConnection",
+    "HTTPTunnelProxy",
     "BasePoolSemaphore",
     "BaseBackgroundManager",
     "ConnectionPool",
@@ -95,6 +98,7 @@ __all__ = [
     "InvalidURL",
     "PoolTimeout",
     "ProtocolError",
+    "ProxyError",
     "ReadTimeout",
     "RedirectBodyUnavailable",
     "RedirectLoop",
