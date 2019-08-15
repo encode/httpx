@@ -4,6 +4,7 @@ import brotli
 import pytest
 
 import httpx
+from httpx.decoders import TextDecoder
 
 
 def test_deflate():
@@ -86,6 +87,57 @@ def test_decoding_errors(header_value):
     with pytest.raises(httpx.exceptions.DecodingError):
         response = httpx.Response(200, headers=headers, content=compressed_body)
         response.content
+
+
+@pytest.mark.parametrize(
+    ["data", "encoding"],
+    [
+        ((b"Hello,", b" world!"), "ascii"),
+        ((b"\xe3\x83", b"\x88\xe3\x83\xa9", b"\xe3", b"\x83\x99\xe3\x83\xab"), "utf-8"),
+        ((b"\x83g\x83\x89\x83x\x83\x8b",) * 64, "shift-jis"),
+        ((b"\x83g\x83\x89\x83x\x83\x8b",) * 600, "shift-jis"),
+        (
+            (b"\xcb\xee\xf0\xe5\xec \xe8\xef\xf1\xf3\xec \xe4\xee\xeb\xee\xf0",) * 64,
+            "MacCyrillic",
+        ),
+        (
+            (b"\xa5\xa6\xa5\xa7\xa5\xd6\xa4\xce\xb9\xf1\xba\xdd\xb2\xbd",) * 512,
+            "euc-jp",
+        ),
+    ],
+)
+def test_text_decoder(data, encoding):
+    def iterator():
+        nonlocal data
+        for chunk in data:
+            yield chunk
+
+    response = httpx.Response(200, content=iterator())
+    assert "".join(response.stream_text()) == (b"".join(data)).decode(encoding)
+
+
+def test_text_decoder_known_encoding():
+    def iterator():
+        yield b"\x83g"
+        yield b"\x83"
+        yield b"\x89\x83x\x83\x8b"
+
+    response = httpx.Response(
+        200,
+        headers=[(b"Content-Type", b"text/html; charset=shift-jis")],
+        content=iterator(),
+    )
+
+    assert "".join(response.stream_text()) == "トラベル"
+
+
+def test_text_decoder_empty_cases():
+    decoder = TextDecoder()
+    assert decoder.flush() == ""
+
+    decoder = TextDecoder()
+    assert decoder.decode(b"") == ""
+    assert decoder.flush() == ""
 
 
 def test_invalid_content_encoding_header():
