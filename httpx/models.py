@@ -847,9 +847,10 @@ class BaseResponse:
         return self._cookies
 
     @property
-    def links(
-        self
-    ) -> typing.Dict[typing.Optional[typing.Any], typing.Dict[str, typing.Any]]:
+    def links(self) -> typing.Dict[typing.Optional[str], typing.Dict[str, str]]:
+        """
+        Returns the parsed header links of the response, if any
+        """
         header = self.headers.get("link")
         ldict = {}
         if header:

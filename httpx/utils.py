@@ -111,7 +111,8 @@ def parse_header_links(value: str) -> typing.List[typing.Dict[str, str]]:
     https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link
     The generic syntax of those is:
     Link: < uri-reference >; param1=value1; param2="value2"
-    So for instance Link; '<http:/.../front.jpeg>; type="image/jpeg",<http://.../back.jpeg>;'
+    So for instance:
+    Link; '<http:/.../front.jpeg>; type="image/jpeg",<http://.../back.jpeg>;'
     would return
         [
             {"url": "http:/.../front.jpeg", "type": "image/jpeg"},
