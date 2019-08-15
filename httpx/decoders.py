@@ -192,10 +192,7 @@ class TextDecoder:
     def _detector_result(self) -> str:
         self.detector.close()
         result = self.detector.result["encoding"]
-
-        # I don't think that the second case is even possible for chardet to
-        # do in it's current implementation but just in case.
-        if not (result and is_known_encoding(result)):  # pragma: nocover
+        if not result:  # pragma: nocover
             raise DecodingError("Unable to determine encoding of content")
 
         return result
