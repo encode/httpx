@@ -151,6 +151,25 @@ class BaseWriter:
         raise NotImplementedError()  # pragma: no cover
 
 
+class BaseEvent:
+    def set(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    def is_set(self) -> bool:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def wait(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
+class BaseQueue:
+    async def get(self) -> typing.Any:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def put(self, value: typing.Any) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
 class BasePoolSemaphore:
     """
     A semaphore for use with connection pooling.
@@ -204,6 +223,12 @@ class ConcurrencyBackend:
     ) -> typing.Any:
         raise NotImplementedError()  # pragma: no cover
 
+    def create_event(self) -> BaseEvent:
+        raise NotImplementedError()  # pragma: no cover
+
+    def create_queue(self, max_size: int) -> BaseQueue:
+        raise NotImplementedError()  # pragma: no cover
+
     def iterate(self, async_iterator):  # type: ignore
         while True:
             try:
@@ -211,13 +236,17 @@ class ConcurrencyBackend:
             except StopAsyncIteration:
                 break
 
-    def background_manager(
-        self, coroutine: typing.Callable, args: typing.Any
-    ) -> "BaseBackgroundManager":
+    def background_manager(self) -> "BaseBackgroundManager":
         raise NotImplementedError()  # pragma: no cover
 
 
 class BaseBackgroundManager:
+    def start_soon(self, coroutine: typing.Callable, *args: typing.Any) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    def will_wait_for_first_completed(self) -> typing.AsyncContextManager:
+        raise NotImplementedError()  # pragma: no cover
+
     async def __aenter__(self) -> "BaseBackgroundManager":
         raise NotImplementedError()  # pragma: no cover
 
@@ -228,3 +257,6 @@ class BaseBackgroundManager:
         traceback: TracebackType = None,
     ) -> None:
         raise NotImplementedError()  # pragma: no cover
+
+    async def close(self) -> None:
+        await self.__aexit__(None, None, None)

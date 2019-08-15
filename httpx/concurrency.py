@@ -14,11 +14,15 @@ import ssl
 import typing
 from types import TracebackType
 
+from async_generator import asynccontextmanager
+
 from .config import PoolLimits, TimeoutConfig
 from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .interfaces import (
     BaseBackgroundManager,
+    BaseEvent,
     BasePoolSemaphore,
+    BaseQueue,
     BaseReader,
     BaseWriter,
     ConcurrencyBackend,
@@ -244,24 +248,37 @@ class AsyncioBackend(ConcurrencyBackend):
         finally:
             self._loop = loop
 
+    def create_event(self) -> BaseEvent:
+        return asyncio.Event()  # type: ignore
+
+    def create_queue(self, max_size: int) -> BaseQueue:
+        return asyncio.Queue(maxsize=max_size)  # type: ignore
+
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
 
-    def background_manager(
-        self, coroutine: typing.Callable, args: typing.Any
-    ) -> "BackgroundManager":
-        return BackgroundManager(coroutine, args)
+    def background_manager(self) -> "BackgroundManager":
+        return BackgroundManager()
 
 
 class BackgroundManager(BaseBackgroundManager):
-    def __init__(self, coroutine: typing.Callable, args: typing.Sequence) -> None:
-        self.coroutine = coroutine
-        self.args = args
+    def __init__(self) -> None:
+        self.tasks: typing.Set[asyncio.Task] = set()
 
     async def __aenter__(self) -> "BackgroundManager":
-        loop = asyncio.get_event_loop()
-        self.task = loop.create_task(self.coroutine(*self.args))
         return self
+
+    def start_soon(self, coroutine: typing.Callable, *args: typing.Any) -> None:
+        loop = asyncio.get_event_loop()
+        self.tasks.add(loop.create_task(coroutine(*args)))
+
+    @asynccontextmanager  # type: ignore
+    async def will_wait_for_first_completed(self) -> typing.AsyncContextManager:
+        initial_tasks = self.tasks
+        self.tasks = set()
+        yield
+        await asyncio.wait(self.tasks, return_when=asyncio.FIRST_COMPLETED)
+        self.tasks = initial_tasks.union(self.tasks)
 
     async def __aexit__(
         self,
@@ -269,6 +286,7 @@ class BackgroundManager(BaseBackgroundManager):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self.task
-        if exc_type is None:
-            self.task.result()
+        for task in self.tasks:
+            await task
+            if exc_type is None:
+                task.result()

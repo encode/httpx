@@ -79,7 +79,7 @@ class BaseClient:
                 )
             else:
                 dispatch = ASGIDispatch(
-                    app=app, raise_app_exceptions=raise_app_exceptions
+                    app=app, raise_app_exceptions=raise_app_exceptions, backend=backend
                 )
 
         if dispatch is None:

@@ -1,8 +1,7 @@
-import asyncio
 import typing
 
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
-from ..interfaces import AsyncDispatcher
+from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
 
@@ -35,6 +34,7 @@ class ASGIDispatch(AsyncDispatcher):
     def __init__(
         self,
         app: typing.Callable,
+        backend: ConcurrencyBackend,
         raise_app_exceptions: bool = True,
         root_path: str = "",
         client: typing.Tuple[str, int] = ("127.0.0.1", 123),
@@ -43,6 +43,7 @@ class ASGIDispatch(AsyncDispatcher):
         self.raise_app_exceptions = raise_app_exceptions
         self.root_path = root_path
         self.client = client
+        self.backend = backend
 
     async def send(
         self,
@@ -69,8 +70,8 @@ class ASGIDispatch(AsyncDispatcher):
         app_exc = None
         status_code = None
         headers = None
-        response_started = asyncio.Event()
-        response_body = BodyIterator()
+        response_started = self.backend.create_event()
+        response_body = BodyIterator(self.backend)
         request_stream = request.stream()
 
         async def receive() -> dict:
@@ -106,18 +107,11 @@ class ASGIDispatch(AsyncDispatcher):
             finally:
                 await response_body.done()
 
-        # Really we'd like to push all `asyncio` logic into concurrency.py,
-        # with a standardized interface, so that we can support other event
-        # loop implementations, such as Trio and Curio.
-        # That's a bit fiddly here, so we're not yet supporting using a custom
-        # `ConcurrencyBackend` with the `Client(app=asgi_app)` case.
-        loop = asyncio.get_event_loop()
-        app_task = loop.create_task(run_app())
-        response_task = loop.create_task(response_started.wait())
+        background = self.backend.background_manager()
 
-        tasks = {app_task, response_task}  # type: typing.Set[asyncio.Task]
-
-        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        async with background.will_wait_for_first_completed():
+            background.start_soon(run_app)
+            background.start_soon(response_started.wait)
 
         if app_exc is not None and self.raise_app_exceptions:
             raise app_exc
@@ -127,9 +121,8 @@ class ASGIDispatch(AsyncDispatcher):
         assert headers is not None
 
         async def on_close() -> None:
-            nonlocal app_task, response_body
             await response_body.drain()
-            await app_task
+            await background.close()
             if app_exc is not None and self.raise_app_exceptions:
                 raise app_exc
 
@@ -149,10 +142,9 @@ class BodyIterator:
     ingest the response content from.
     """
 
-    def __init__(self) -> None:
-        self._queue = asyncio.Queue(
-            maxsize=1
-        )  # type: asyncio.Queue[typing.Union[bytes, object]]
+    def __init__(self, backend: ConcurrencyBackend) -> None:
+        self._backend = backend
+        self._queue = self._backend.create_queue(max_size=1)
         self._done = object()
 
     async def iterate(self) -> typing.AsyncIterator[bytes]:
