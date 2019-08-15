@@ -13,11 +13,7 @@ from uvicorn.main import Server
 from httpx.concurrency import AsyncioBackend
 
 
-@pytest.fixture(
-    params=[
-        pytest.param(AsyncioBackend, marks=pytest.mark.asyncio)  # type: ignore
-    ]
-)
+@pytest.fixture(params=[pytest.param(AsyncioBackend, marks=pytest.mark.asyncio)])
 def backend(request):
     backend_cls = request.param
     return backend_cls()
