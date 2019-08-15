@@ -139,6 +139,7 @@ def test_text_decoder_empty_cases():
     assert decoder.decode(b"") == ""
     assert decoder.flush() == ""
 
+
 def test_invalid_content_encoding_header():
     headers = [(b"Content-Encoding", b"invalid-header")]
     body = b"test 123"

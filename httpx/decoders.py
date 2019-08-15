@@ -10,7 +10,6 @@ import zlib
 import chardet
 
 from .exceptions import DecodingError
-from .utils import is_known_encoding
 
 try:
     import brotli
@@ -148,23 +147,30 @@ class TextDecoder:
     """
 
     def __init__(self, encoding: typing.Optional[str] = None):
-        self.buffer = bytearray()
-        self.decoder = (
+        self.decoder: typing.Optional[codecs.IncrementalDecoder] = (
             None if encoding is None else codecs.getincrementaldecoder(encoding)()
         )
         self.detector = chardet.universaldetector.UniversalDetector()
+
+        # This buffer is only needed if 'decoder' is 'None'
+        # we want to trigger errors if data is getting added to
+        # our internal buffer for some silly reason while
+        # a decoder is discovered.
+        self.buffer: typing.Optional[bytearray] = None if self.decoder else bytearray()
 
     def decode(self, data: bytes) -> str:
         try:
             if self.decoder is not None:
                 text = self.decoder.decode(data)
             else:
+                assert self.buffer is not None
                 text = ""
                 self.detector.feed(data)
                 self.buffer += data
 
-                # Should be more than enough data to process, we don't want to buffer too long
-                # as chardet will wait until detector.close() is used to give back common
+                # Should be more than enough data to process, we don't
+                # want to buffer too long as chardet will wait until
+                # detector.close() is used to give back common
                 # encodings like 'utf-8'.
                 if len(self.buffer) >= 4096:
                     self.decoder = codecs.getincrementaldecoder(
@@ -181,6 +187,7 @@ class TextDecoder:
         try:
             if self.decoder is None:
                 # Empty string case as chardet is guaranteed to not have a guess.
+                assert self.buffer is not None
                 if len(self.buffer) == 0:
                     return ""
                 return bytes(self.buffer).decode(self._detector_result())
