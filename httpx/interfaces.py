@@ -162,14 +162,6 @@ class BaseEvent:
         raise NotImplementedError()  # pragma: no cover
 
 
-class BaseQueue:
-    async def get(self) -> typing.Any:
-        raise NotImplementedError()  # pragma: no cover
-
-    async def put(self, value: typing.Any) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
-
 class BasePoolSemaphore:
     """
     A semaphore for use with connection pooling.
@@ -226,9 +218,6 @@ class ConcurrencyBackend:
     def create_event(self) -> BaseEvent:
         raise NotImplementedError()  # pragma: no cover
 
-    def create_queue(self, max_size: int) -> BaseQueue:
-        raise NotImplementedError()  # pragma: no cover
-
     def iterate(self, async_iterator):  # type: ignore
         while True:
             try:
@@ -237,6 +226,45 @@ class ConcurrencyBackend:
                 break
 
     def background_manager(self) -> "BaseBackgroundManager":
+        raise NotImplementedError()  # pragma: no cover
+
+    def body_iterator(self) -> "BaseBodyIterator":
+        raise NotImplementedError()  # pragma: no cover
+
+
+class BaseBodyIterator:
+    """
+    Provides a byte-iterator interface that the client can use to
+    ingest the response content from.
+    """
+
+    def __init__(self, backend: ConcurrencyBackend) -> None:
+        self.backend = backend
+
+    def iterate(self) -> typing.AsyncIterator[bytes]:
+        """
+        A byte-iterator, used by the client to consume the response body.
+        """
+        raise NotImplementedError()  # pragma: no cover
+
+    async def drain(self) -> None:
+        """
+        Drain any remaining body, in order to allow any blocked `put()` calls
+        to complete.
+        """
+        async for chunk in self.iterate():
+            pass  # pragma: no cover
+
+    async def put(self, data: bytes) -> None:
+        """
+        Used by the server to add data to the response body.
+        """
+        raise NotImplementedError()  # pragma: no cover
+
+    async def done(self) -> None:
+        """
+        Used by the server to signal the end of the response body.
+        """
         raise NotImplementedError()  # pragma: no cover
 
 

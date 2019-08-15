@@ -71,7 +71,7 @@ class ASGIDispatch(AsyncDispatcher):
         status_code = None
         headers = None
         response_started = self.backend.create_event()
-        response_body = BodyIterator(self.backend)
+        response_body = self.backend.body_iterator()
         request_stream = request.stream()
 
         async def receive() -> dict:
@@ -134,46 +134,3 @@ class ASGIDispatch(AsyncDispatcher):
             on_close=on_close,
             request=request,
         )
-
-
-class BodyIterator:
-    """
-    Provides a byte-iterator interface that the client can use to
-    ingest the response content from.
-    """
-
-    def __init__(self, backend: ConcurrencyBackend) -> None:
-        self._backend = backend
-        self._queue = self._backend.create_queue(max_size=1)
-        self._done = object()
-
-    async def iterate(self) -> typing.AsyncIterator[bytes]:
-        """
-        A byte-iterator, used by the client to consume the response body.
-        """
-        while True:
-            data = await self._queue.get()
-            if data is self._done:
-                break
-            assert isinstance(data, bytes)
-            yield data
-
-    async def drain(self) -> None:
-        """
-        Drain any remaining body, in order to allow any blocked `put()` calls
-        to complete.
-        """
-        async for chunk in self.iterate():
-            pass  # pragma: no cover
-
-    async def put(self, data: bytes) -> None:
-        """
-        Used by the server to add data to the response body.
-        """
-        await self._queue.put(data)
-
-    async def done(self) -> None:
-        """
-        Used by the server to signal the end of the response body.
-        """
-        await self._queue.put(self._done)
