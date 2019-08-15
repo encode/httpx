@@ -14,11 +14,15 @@ import ssl
 import typing
 from types import TracebackType
 
-from async_generator import asynccontextmanager
+try:
+    from contextlib import asynccontextmanager
+except ImportError:  # pragma: no cover
+    from async_generator import asynccontextmanager  # type: ignore
 
 from .config import PoolLimits, TimeoutConfig
 from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .interfaces import (
+    BaseAsyncContextManager,
     BaseBackgroundManager,
     BaseBodyIterator,
     BaseEvent,
@@ -292,13 +296,16 @@ class BackgroundManager(BaseBackgroundManager):
         loop = asyncio.get_event_loop()
         self.tasks.add(loop.create_task(coroutine(*args)))
 
-    @asynccontextmanager  # type: ignore
-    async def will_wait_for_first_completed(self) -> typing.AsyncContextManager:
-        initial_tasks = self.tasks
-        self.tasks = set()
-        yield
-        await asyncio.wait(self.tasks, return_when=asyncio.FIRST_COMPLETED)
-        self.tasks = initial_tasks.union(self.tasks)
+    def will_wait_for_first_completed(self) -> BaseAsyncContextManager:
+        @asynccontextmanager  # type: ignore
+        async def context() -> None:
+            initial_tasks = self.tasks
+            self.tasks = set()
+            yield
+            await asyncio.wait(self.tasks, return_when=asyncio.FIRST_COMPLETED)
+            self.tasks = initial_tasks.union(self.tasks)
+
+        return context()  # type: ignore
 
     async def __aexit__(
         self,

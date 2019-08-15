@@ -265,14 +265,8 @@ class BaseBodyIterator:
         raise NotImplementedError()  # pragma: no cover
 
 
-class BaseBackgroundManager:
-    def start_soon(self, coroutine: typing.Callable, *args: typing.Any) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
-    def will_wait_for_first_completed(self) -> typing.AsyncContextManager:
-        raise NotImplementedError()  # pragma: no cover
-
-    async def __aenter__(self) -> "BaseBackgroundManager":
+class BaseAsyncContextManager:
+    async def __aenter__(self: typing.T) -> typing.T:
         raise NotImplementedError()  # pragma: no cover
 
     async def __aexit__(
@@ -281,6 +275,14 @@ class BaseBackgroundManager:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
+class BaseBackgroundManager(BaseAsyncContextManager):
+    def start_soon(self, coroutine: typing.Callable, *args: typing.Any) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    def will_wait_for_first_completed(self) -> BaseAsyncContextManager:
         raise NotImplementedError()  # pragma: no cover
 
     async def close(self) -> None:
