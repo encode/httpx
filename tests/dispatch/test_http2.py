@@ -41,6 +41,38 @@ def test_http2_post_request():
     }
 
 
+def test_http2_post_request_with_data_less_then_default_window_size():
+    backend = MockHTTP2Backend(app=app)
+
+    data = b"a" * 30_000
+
+    with Client(backend=backend) as client:
+        response = client.post("http://example.org", data=data)
+
+    assert response.status_code == 200
+    assert json.loads(response.content) == {
+        "method": "POST",
+        "path": "/",
+        "body": data.decode(),
+    }
+
+
+def test_http2_post_request_with_data_more_then_default_window_size():
+    backend = MockHTTP2Backend(app=app)
+
+    data = b"a" * 100_000
+
+    with Client(backend=backend) as client:
+        response = client.post("http://example.org", data=data)
+
+    assert response.status_code == 200
+    assert json.loads(response.content) == {
+        "method": "POST",
+        "path": "/",
+        "body": data.decode(),
+    }
+
+
 def test_http2_multiple_requests():
     backend = MockHTTP2Backend(app=app)
 

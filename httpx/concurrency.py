@@ -18,6 +18,7 @@ from .config import PoolLimits, TimeoutConfig
 from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .interfaces import (
     BaseBackgroundManager,
+    BaseEvent,
     BasePoolSemaphore,
     BaseReader,
     BaseWriter,
@@ -195,6 +196,9 @@ class AsyncioBackend(ConcurrencyBackend):
             except RuntimeError:
                 self._loop = asyncio.new_event_loop()
         return self._loop
+
+    def create_event(self) -> BaseEvent:
+        return typing.cast(BaseEvent, asyncio.Event())
 
     async def connect(
         self,

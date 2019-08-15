@@ -216,6 +216,9 @@ class ConcurrencyBackend:
     ) -> "BaseBackgroundManager":
         raise NotImplementedError()  # pragma: no cover
 
+    def create_event(self) -> "BaseEvent":
+        raise NotImplementedError()  # pragma: no cover
+
 
 class BaseBackgroundManager:
     async def __aenter__(self) -> "BaseBackgroundManager":
@@ -227,4 +230,15 @@ class BaseBackgroundManager:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
+class BaseEvent:
+    async def wait(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    def set(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    def is_set(self) -> bool:
         raise NotImplementedError()  # pragma: no cover

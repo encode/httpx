@@ -6,7 +6,7 @@ import h2.events
 
 from ..concurrency import TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
-from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
+from ..interfaces import BaseEvent, BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
 
@@ -27,6 +27,7 @@ class HTTP2Connection:
         self.h2_state = h2.connection.H2Connection()
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
         self.timeout_flags = {}  # type: typing.Dict[int, TimeoutFlag]
+        self.flow_control_events = {}  # type: typing.Dict[int, BaseEvent]
         self.initialized = False
 
     async def send(
@@ -99,9 +100,16 @@ class HTTP2Connection:
     async def send_data(
         self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
     ) -> None:
-        flow_control = self.h2_state.local_flow_control_window(stream_id)
-        chunk_size = min(len(data), flow_control)
+        window_size = self.h2_state.local_flow_control_window(stream_id)
+        max_frame_size = self.h2_state.max_outbound_frame_size
+        chunk_size = min(len(data), window_size, max_frame_size)
+
         for idx in range(0, len(data), chunk_size):
+            left_window_size = self.h2_state.local_flow_control_window(stream_id)
+            if left_window_size < chunk_size:
+                self.flow_control_events[stream_id] = self.backend.create_event()
+                await self.flow_control_events[stream_id].wait()
+
             chunk = data[idx : idx + chunk_size]
             self.h2_state.send_data(stream_id, chunk)
             data_to_send = self.h2_state.data_to_send()
@@ -125,6 +133,9 @@ class HTTP2Connection:
             self.timeout_flags[stream_id].set_read_timeouts()
             if isinstance(event, h2.events.ResponseReceived):
                 break
+            elif isinstance(event, h2.events.WindowUpdated):
+                if event.stream_id and event.stream_id in self.flow_control_events:
+                    self.flow_control_events[event.stream_id].set()
 
         status_code = 200
         headers = []
@@ -141,7 +152,9 @@ class HTTP2Connection:
         while True:
             event = await self.receive_event(stream_id, timeout)
             if isinstance(event, h2.events.DataReceived):
-                self.h2_state.acknowledge_received_data(len(event.data), stream_id)
+                self.h2_state.acknowledge_received_data(
+                    event.flow_controlled_length, event.stream_id
+                )
                 yield event.data
             elif isinstance(event, (h2.events.StreamEnded, h2.events.StreamReset)):
                 break
