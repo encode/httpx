@@ -50,6 +50,12 @@ def test_bad_get_netrc_login():
     os.environ["NETRC"] = "wrongpath"
     assert get_netrc_login("url") is None
 
+    from httpx import utils
+
+    utils.NETRC_STATIC_FILES = ()
+    os.environ["NETRC"] = ""
+    assert utils.get_netrc_login("url") is None
+
 
 def test_get_netrc_login():
     os.environ["NETRC"] = "tests/.netrc"
