@@ -4,9 +4,9 @@ language: python
 
 cache: pip
 
-#branches:
-#  only:
-#    - master
+branches:
+  only:
+    - master
 
 matrix:
   include:

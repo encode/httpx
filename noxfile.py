@@ -21,7 +21,7 @@ def check(session):
         "black", "flake8", "flake8-bugbear", "flake8-comprehensions", "mypy"
     )
 
-    session.run("black", "--check", "--diff", "--target-version=py36", *source_files)
+    session.run("black", "--check", "--target-version=py36", *source_files)
     session.run("flake8", *source_files)
     session.run("mypy", "httpx")
 
