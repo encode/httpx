@@ -310,7 +310,7 @@ def test_link_headers(headers, expected):
     response = httpx.Response(200, content=None, headers=headers)
     assert response.links == expected
 
-    
+
 @pytest.mark.asyncio
 async def test_stream_text():
     async def iterator():
