@@ -290,6 +290,27 @@ def test_json_without_specified_encoding_decode_error():
             response.json()
 
 
+@pytest.mark.parametrize(
+    "headers, expected",
+    [
+        (
+            {"Link": "<https://example.com>; rel='preload'"},
+            {"preload": {"rel": "preload", "url": "https://example.com"}},
+        ),
+        (
+            {"Link": '</hub>; rel="hub", </resource>; rel="self"'},
+            {
+                "hub": {"url": "/hub", "rel": "hub"},
+                "self": {"url": "/resource", "rel": "self"},
+            },
+        ),
+    ],
+)
+def test_link_headers(headers, expected):
+    response = httpx.Response(200, content=None, headers=headers)
+    assert response.links == expected
+
+
 @pytest.mark.asyncio
 async def test_stream_text():
     async def iterator():

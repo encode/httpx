@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from httpx.utils import get_netrc_login, guess_json_utf
+from httpx.utils import get_netrc_login, guess_json_utf, parse_header_links
 
 
 @pytest.mark.parametrize(
@@ -64,3 +64,26 @@ def test_get_netrc_login():
         None,
         "example-password",
     )
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    (
+        (
+            '<http:/.../front.jpeg>; rel=front; type="image/jpeg"',
+            [{"url": "http:/.../front.jpeg", "rel": "front", "type": "image/jpeg"}],
+        ),
+        ("<http:/.../front.jpeg>", [{"url": "http:/.../front.jpeg"}]),
+        ("<http:/.../front.jpeg>;", [{"url": "http:/.../front.jpeg"}]),
+        (
+            '<http:/.../front.jpeg>; type="image/jpeg",<http://.../back.jpeg>;',
+            [
+                {"url": "http:/.../front.jpeg", "type": "image/jpeg"},
+                {"url": "http://.../back.jpeg"},
+            ],
+        ),
+        ("", []),
+    ),
+)
+def test_parse_header_links(value, expected):
+    assert parse_header_links(value) == expected
