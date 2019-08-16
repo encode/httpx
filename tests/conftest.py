@@ -1,4 +1,7 @@
 import asyncio
+import functools
+import inspect
+import threading
 
 import pytest
 import trustme
@@ -18,10 +21,15 @@ except ImportError:
     TrioBackend = None  # type: ignore
 
 
+# All backends should cause tests to be marked (and run under) asyncio,
+# because that is the only I/O implementation uvicorn can run on.
+MARK_ASYNC = pytest.mark.asyncio
+
+
 @pytest.fixture(
     params=[
-        pytest.param(AsyncioBackend, marks=pytest.mark.asyncio),
-        pytest.param(TrioBackend, marks=pytest.mark.trio),
+        pytest.param(AsyncioBackend, marks=MARK_ASYNC),
+        pytest.param(TrioBackend, marks=MARK_ASYNC),
     ]
 )
 def backend(request):
@@ -29,6 +37,38 @@ def backend(request):
     if backend_cls is None:
         pytest.skip()
     return backend_cls()
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_pyfunc_call(pyfuncitem):
+    """
+    Run test functions parametrized by the concurrency `backend` in the asyncio
+    threadpool instead of a normal function call.
+
+    We do this to prevent the backend-specific event loop from clashing with asyncio.
+    """
+    if "backend" in pyfuncitem.fixturenames:
+        func = pyfuncitem.obj
+
+        if inspect.iscoroutinefunction(func):
+
+            @functools.wraps(func)
+            async def wrapped(backend, *args, **kwargs):
+                asyncio_backend = AsyncioBackend()
+                await asyncio_backend.run_in_threadpool(
+                    backend.run, func, backend, *args, **kwargs
+                )
+
+        else:
+
+            @functools.wraps(func)
+            async def wrapped(backend, *args, **kwargs):
+                asyncio_backend = AsyncioBackend()
+                await asyncio_backend.run_in_threadpool(func, backend, *args, **kwargs)
+
+        pyfuncitem.obj = wrapped
+
+    yield
 
 
 async def app(scope, receive, send):

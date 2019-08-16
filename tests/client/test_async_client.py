@@ -1,27 +1,8 @@
-import functools
-
 import pytest
 
 import httpx
 
 
-def threadpool(func):
-    """
-    Async tests should run in a separate thread to the uvicorn server to prevent event
-    loop clashes (e.g. asyncio for uvicorn, trio for tests).
-    """
-
-    @functools.wraps(func)
-    async def wrapped(backend, *args, **kwargs):
-        backend_for_thread = type(backend)()
-        await backend.run_in_threadpool(
-            backend_for_thread.run, func, backend_for_thread, *args, **kwargs
-        )
-
-    return wrapped
-
-
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_get(backend):
     url = "http://127.0.0.1:8000/"
@@ -34,7 +15,6 @@ async def test_get(backend):
     assert repr(response) == "<Response [200 OK]>"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_post(backend):
     url = "http://127.0.0.1:8000/"
@@ -43,7 +23,6 @@ async def test_post(backend):
     assert response.status_code == 200
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_post_json(backend):
     url = "http://127.0.0.1:8000/"
@@ -52,7 +31,6 @@ async def test_post_json(backend):
     assert response.status_code == 200
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_stream_response(backend):
     async with httpx.AsyncClient(backend=backend) as client:
@@ -63,7 +41,6 @@ async def test_stream_response(backend):
     assert response.content == b"Hello, world!"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_access_content_stream_response(backend):
     async with httpx.AsyncClient(backend=backend) as client:
@@ -73,7 +50,6 @@ async def test_access_content_stream_response(backend):
         response.content
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_stream_request(backend):
     async def hello_world():
@@ -87,7 +63,6 @@ async def test_stream_request(backend):
     assert response.status_code == 200
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_raise_for_status(backend):
     async with httpx.AsyncClient(backend=backend) as client:
@@ -104,7 +79,6 @@ async def test_raise_for_status(backend):
                 assert response.raise_for_status() is None
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_options(backend):
     url = "http://127.0.0.1:8000/"
@@ -114,7 +88,6 @@ async def test_options(backend):
     assert response.text == "Hello, world!"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_head(backend):
     url = "http://127.0.0.1:8000/"
@@ -124,7 +97,6 @@ async def test_head(backend):
     assert response.text == ""
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_put(backend):
     url = "http://127.0.0.1:8000/"
@@ -133,7 +105,6 @@ async def test_put(backend):
     assert response.status_code == 200
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_patch(backend):
     url = "http://127.0.0.1:8000/"
@@ -142,7 +113,6 @@ async def test_patch(backend):
     assert response.status_code == 200
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_delete(backend):
     url = "http://127.0.0.1:8000/"
@@ -152,7 +122,6 @@ async def test_delete(backend):
     assert response.text == "Hello, world!"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 async def test_100_continue(backend):
     url = "http://127.0.0.1:8000/echo_body"

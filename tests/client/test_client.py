@@ -1,24 +1,8 @@
-import functools
-
 import pytest
 
 import httpx
 
 
-def threadpool(func):
-    """
-    Our sync tests should run in seperate thread to the uvicorn server.
-    """
-
-    @functools.wraps(func)
-    async def wrapped(backend, *args, **kwargs):
-        backend_for_thread = type(backend)()
-        await backend.run_in_threadpool(func, backend_for_thread, *args, **kwargs)
-
-    return wrapped
-
-
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_get(backend):
     url = "http://127.0.0.1:8000/"
@@ -36,7 +20,6 @@ def test_get(backend):
     assert repr(response) == "<Response [200 OK]>"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_post(backend):
     with httpx.Client(backend=backend) as http:
@@ -45,7 +28,6 @@ def test_post(backend):
     assert response.reason_phrase == "OK"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_post_json(backend):
     with httpx.Client(backend=backend) as http:
@@ -54,7 +36,6 @@ def test_post_json(backend):
     assert response.reason_phrase == "OK"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_stream_response(backend):
     with httpx.Client(backend=backend) as http:
@@ -64,7 +45,6 @@ def test_stream_response(backend):
     assert content == b"Hello, world!"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_stream_iterator(backend):
     with httpx.Client(backend=backend) as http:
@@ -76,7 +56,6 @@ def test_stream_iterator(backend):
     assert body == b"Hello, world!"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_raw_iterator(backend):
     with httpx.Client(backend=backend) as http:
@@ -89,7 +68,6 @@ def test_raw_iterator(backend):
     response.close()  # TODO: should Response be available as context managers?
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_raise_for_status(backend):
     with httpx.Client(backend=backend) as client:
@@ -105,7 +83,6 @@ def test_raise_for_status(backend):
                 assert response.raise_for_status() is None
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_options(backend):
     with httpx.Client(backend=backend) as http:
@@ -114,7 +91,6 @@ def test_options(backend):
     assert response.reason_phrase == "OK"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_head(backend):
     with httpx.Client(backend=backend) as http:
@@ -123,7 +99,6 @@ def test_head(backend):
     assert response.reason_phrase == "OK"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_put(backend):
     with httpx.Client(backend=backend) as http:
@@ -132,7 +107,6 @@ def test_put(backend):
     assert response.reason_phrase == "OK"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_patch(backend):
     with httpx.Client(backend=backend) as http:
@@ -141,7 +115,6 @@ def test_patch(backend):
     assert response.reason_phrase == "OK"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_delete(backend):
     with httpx.Client(backend=backend) as http:
@@ -150,7 +123,6 @@ def test_delete(backend):
     assert response.reason_phrase == "OK"
 
 
-@threadpool
 @pytest.mark.usefixtures("server")
 def test_base_url(backend):
     base_url = "http://127.0.0.1:8000/"
