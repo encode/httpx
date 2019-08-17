@@ -22,9 +22,6 @@ matrix:
     - python: 3.8-dev
       env: NOX_SESSION=test-3.8
 
-  allow_failures:
-    - python: 3.8-dev
-
 install:
   - pip install --upgrade nox
 
