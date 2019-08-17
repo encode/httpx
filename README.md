@@ -65,7 +65,7 @@ Plus all the standard features of `requests`...
 * HTTP(S) Proxy Support *(TODO)*
 * Connection Timeouts
 * Streaming Downloads
-* .netrc Support *(TODO)*
+* .netrc Support
 * Chunked Requests
 
 ## Installation
