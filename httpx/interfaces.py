@@ -120,7 +120,7 @@ class Dispatcher:
 
 class BaseReader:
     """
-    A stream reader. Abstracts away any asyncio-specfic interfaces
+    A stream reader. Abstracts away any asyncio-specific interfaces
     into a more generic base class, that we can use with alternate
     backend, or for stand-alone test cases.
     """

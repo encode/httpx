@@ -30,7 +30,7 @@ SSL_MONKEY_PATCH_APPLIED = False
 
 def ssl_monkey_patch() -> None:
     """
-    Monky-patch for https://bugs.python.org/issue36709
+    Monkey-patch for https://bugs.python.org/issue36709
 
     This prevents console errors when outstanding HTTPS connections
     still exist at the point of exiting.

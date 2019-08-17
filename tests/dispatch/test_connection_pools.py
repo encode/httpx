@@ -23,7 +23,7 @@ async def test_keepalive_connections(server):
 @pytest.mark.asyncio
 async def test_differing_connection_keys(server):
     """
-    Connnections to differing connection keys should result in multiple connections.
+    Connections to differing connection keys should result in multiple connections.
     """
     async with httpx.ConnectionPool() as http:
         response = await http.request("GET", "http://127.0.0.1:8000/")
