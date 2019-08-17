@@ -92,3 +92,11 @@ def test_trust_env_auth():
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
+
+    with Client(dispatch=MockDispatch(), trust_env=False) as client:
+        response = client.get(url, trust_env=True)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "auth": "Basic ZXhhbXBsZS11c2VybmFtZTpleGFtcGxlLXBhc3N3b3Jk"
+    }
