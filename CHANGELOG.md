@@ -1,6 +1,6 @@
 # Changelog
 
-## dev (master)
+## 0.7.0 (August 17, 2019)
 
 - Add the `trust_env` property to `BaseClient`. (Pull #187)
 - Add the `links` property to `BaseResponse`. (Pull #211)
