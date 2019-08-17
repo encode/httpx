@@ -93,7 +93,8 @@ def test_trust_env_auth():
     assert response.status_code == 200
     assert response.json() == {"auth": None}
 
-    with Client(dispatch=MockDispatch()) as client:
+    # Test that the setting at the request() level overrides client. 
+    with Client(dispatch=MockDispatch(), trust_env=False) as client:
         response = client.get(url, trust_env=True)
 
     assert response.status_code == 200
