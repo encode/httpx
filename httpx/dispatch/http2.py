@@ -25,9 +25,9 @@ class HTTP2Connection:
         self.backend = backend
         self.on_release = on_release
         self.h2_state = h2.connection.H2Connection()
-        self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
-        self.timeout_flags = {}  # type: typing.Dict[int, TimeoutFlag]
-        self.flow_control_events = {}  # type: typing.Dict[int, BaseEvent]
+        self.events: typing.Dict[int, typing.List[h2.events.Event]] = {}
+        self.timeout_flags: typing.Dict[int, TimeoutFlag] = {}
+        self.flow_control_events: typing.Dict[int, BaseEvent] = {}
         self.initialized = False
 
     async def send(
@@ -100,20 +100,18 @@ class HTTP2Connection:
     async def send_data(
         self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
     ) -> None:
-        window_size = self.h2_state.local_flow_control_window(stream_id)
-        max_frame_size = self.h2_state.max_outbound_frame_size
-        chunk_size = min(len(data), window_size, max_frame_size)
-
-        for idx in range(0, len(data), chunk_size):
-            left_window_size = self.h2_state.local_flow_control_window(stream_id)
-            if left_window_size < chunk_size:
+        while data:
+            while self.h2_state.local_flow_control_window(stream_id) < 1:
                 self.flow_control_events[stream_id] = self.backend.create_event()
                 await self.flow_control_events[stream_id].wait()
 
-            chunk = data[idx : idx + chunk_size]
+            window_size = self.h2_state.local_flow_control_window(stream_id)
+            max_frame_size = self.h2_state.max_outbound_frame_size
+            chunk_size = min(len(data), window_size, max_frame_size)
+
+            chunk, data = data[:chunk_size], data[chunk_size:]
             self.h2_state.send_data(stream_id, chunk)
-            data_to_send = self.h2_state.data_to_send()
-            await self.writer.write(data_to_send, timeout)
+            await self.writer.write(self.h2_state.data_to_send(), timeout)
 
     async def end_stream(self, stream_id: int, timeout: TimeoutConfig = None) -> None:
         self.h2_state.end_stream(stream_id)
