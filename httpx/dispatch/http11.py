@@ -129,7 +129,7 @@ class HTTP11Connection:
                 continue
             else:
                 assert isinstance(event, h11.Response)
-                break
+                break  # pragma: no cover
         http_version = "HTTP/%s" % event.http_version.decode("latin-1", errors="ignore")
         return http_version, event.status_code, event.headers
 
@@ -145,7 +145,7 @@ class HTTP11Connection:
                 yield bytes(event.data)
             else:
                 assert isinstance(event, h11.EndOfMessage)
-                break
+                break  # pragma: no cover
 
     async def _receive_event(self, timeout: TimeoutConfig = None) -> H11Event:
         """
@@ -162,7 +162,8 @@ class HTTP11Connection:
                     data = b""
                 self.h11_state.receive_data(data)
             else:
-                break
+                assert event is not h11.NEED_DATA
+                break  # pragma: no cover
         return event
 
     async def response_closed(self) -> None:

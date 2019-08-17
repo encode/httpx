@@ -148,7 +148,7 @@ class SSLConfig:
 
         if ssl.HAS_ALPN:
             context.set_alpn_protocols(["h2", "http/1.1"])
-        if ssl.HAS_NPN:
+        if ssl.HAS_NPN:  # pragma: no cover
             context.set_npn_protocols(["h2", "http/1.1"])
 
         return context
