@@ -32,7 +32,7 @@ def request(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     stream: bool = False,
-    trust_env: bool = True,
+    trust_env: bool = None,
 ) -> Response:
     with Client() as client:
         return client.request(
@@ -66,7 +66,7 @@ def get(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-    trust_env: bool = True,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "GET",
@@ -96,7 +96,7 @@ def options(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-    trust_env: bool = True,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "OPTIONS",
@@ -126,7 +126,7 @@ def head(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-    trust_env: bool = True,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "HEAD",
@@ -159,7 +159,7 @@ def post(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-    trust_env: bool = True,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "POST",
@@ -195,7 +195,7 @@ def put(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-    trust_env: bool = True,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "PUT",
@@ -231,7 +231,7 @@ def patch(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-    trust_env: bool = True,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "PATCH",
@@ -267,7 +267,7 @@ def delete(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
-    trust_env: bool = True,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "DELETE",

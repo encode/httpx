@@ -65,7 +65,7 @@ class BaseClient:
         app: typing.Callable = None,
         raise_app_exceptions: bool = True,
         backend: ConcurrencyBackend = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ):
         if backend is None:
             backend = AsyncioBackend()
@@ -106,7 +106,7 @@ class BaseClient:
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
-        self.trust_env = trust_env
+        self.trust_env = True if trust_env is None else trust_env
 
     def merge_url(self, url: URLTypes) -> URL:
         url = self.base_url.join(relative_url=url)
@@ -142,7 +142,7 @@ class BaseClient:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         if auth is None:
             auth = self.auth
@@ -155,7 +155,7 @@ class BaseClient:
         if auth is None:
             if url.username or url.password:
                 auth = HTTPBasicAuth(username=url.username, password=url.password)
-            elif trust_env:
+            elif self.trust_env if trust_env is None else trust_env:
                 netrc_login = get_netrc_login(url.authority)
                 if netrc_login:
                     netrc_username, _, netrc_password = netrc_login
@@ -342,7 +342,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "GET",
@@ -372,7 +372,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "OPTIONS",
@@ -402,7 +402,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "HEAD",
@@ -435,7 +435,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "POST",
@@ -471,7 +471,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "PUT",
@@ -507,7 +507,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "PATCH",
@@ -543,7 +543,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "DELETE",
@@ -580,7 +580,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         url = self.merge_url(url)
         headers = self.merge_headers(headers)
@@ -664,7 +664,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         url = self.merge_url(url)
         headers = self.merge_headers(headers)
@@ -733,7 +733,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "GET",
@@ -763,7 +763,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "OPTIONS",
@@ -793,7 +793,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "HEAD",
@@ -826,7 +826,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "POST",
@@ -862,7 +862,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "PUT",
@@ -898,7 +898,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "PATCH",
@@ -934,7 +934,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "DELETE",
