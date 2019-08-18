@@ -216,6 +216,9 @@ class ConcurrencyBackend:
     ) -> "BaseBackgroundManager":
         raise NotImplementedError()  # pragma: no cover
 
+    def body_iterator(self) -> "BaseBodyIterator":
+        raise NotImplementedError()  # pragma: no cover
+
 
 class BaseBackgroundManager:
     async def __aenter__(self) -> "BaseBackgroundManager":
@@ -227,4 +230,37 @@ class BaseBackgroundManager:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
+class BaseBodyIterator:
+    """
+    Provides a byte-iterator interface that the client can use to
+    ingest the response content from.
+    """
+
+    def iterate(self) -> typing.AsyncIterator[bytes]:
+        """
+        A byte-iterator, used by the client to consume the response body.
+        """
+        raise NotImplementedError()  # pragma: no cover
+
+    async def drain(self) -> None:
+        """
+        Drain any remaining body, in order to allow any blocked `put()` calls
+        to complete.
+        """
+        async for chunk in self.iterate():
+            pass  # pragma: no cover
+
+    async def put(self, data: bytes) -> None:
+        """
+        Used by the server to add data to the response body.
+        """
+        raise NotImplementedError()  # pragma: no cover
+
+    async def done(self) -> None:
+        """
+        Used by the server to signal the end of the response body.
+        """
         raise NotImplementedError()  # pragma: no cover

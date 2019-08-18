@@ -18,6 +18,7 @@ from ..config import PoolLimits, TimeoutConfig
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from ..interfaces import (
     BaseBackgroundManager,
+    BaseBodyIterator,
     BasePoolSemaphore,
     BaseReader,
     BaseWriter,
@@ -221,6 +222,9 @@ class AsyncioBackend(ConcurrencyBackend):
     ) -> "BackgroundManager":
         return BackgroundManager(coroutine, args)
 
+    def body_iterator(self) -> "BodyIterator":
+        return BodyIterator()
+
 
 class BackgroundManager(BaseBackgroundManager):
     def __init__(self, coroutine: typing.Callable, args: typing.Any) -> None:
@@ -241,3 +245,25 @@ class BackgroundManager(BaseBackgroundManager):
         await self.task
         if exc_type is None:
             self.task.result()
+
+
+class BodyIterator(BaseBodyIterator):
+    def __init__(self) -> None:
+        self._queue = asyncio.Queue(
+            maxsize=1
+        )  # type: asyncio.Queue[typing.Union[bytes, object]]
+        self._done = object()
+
+    async def iterate(self) -> typing.AsyncIterator[bytes]:
+        while True:
+            data = await self._queue.get()
+            if data is self._done:
+                break
+            assert isinstance(data, bytes)
+            yield data
+
+    async def put(self, data: bytes) -> None:
+        await self._queue.put(data)
+
+    async def done(self) -> None:
+        await self._queue.put(self._done)

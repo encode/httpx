@@ -1,7 +1,7 @@
 import asyncio
 import typing
 
-from ..concurrency import AsyncioBackend
+from ..concurrency.asyncio import AsyncioBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
@@ -82,7 +82,7 @@ class ASGIDispatch(AsyncDispatcher):
         status_code = None
         headers = None
         response_started = asyncio.Event()
-        response_body = BodyIterator()
+        response_body = self.backend.body_iterator()
         request_stream = request.stream()
 
         async def receive() -> dict:
@@ -153,47 +153,3 @@ class ASGIDispatch(AsyncDispatcher):
             on_close=on_close,
             request=request,
         )
-
-
-class BodyIterator:
-    """
-    Provides a byte-iterator interface that the client can use to
-    ingest the response content from.
-    """
-
-    def __init__(self) -> None:
-        self._queue = asyncio.Queue(
-            maxsize=1
-        )  # type: asyncio.Queue[typing.Union[bytes, object]]
-        self._done = object()
-
-    async def iterate(self) -> typing.AsyncIterator[bytes]:
-        """
-        A byte-iterator, used by the client to consume the response body.
-        """
-        while True:
-            data = await self._queue.get()
-            if data is self._done:
-                break
-            assert isinstance(data, bytes)
-            yield data
-
-    async def drain(self) -> None:
-        """
-        Drain any remaining body, in order to allow any blocked `put()` calls
-        to complete.
-        """
-        async for chunk in self.iterate():
-            pass  # pragma: no cover
-
-    async def put(self, data: bytes) -> None:
-        """
-        Used by the server to add data to the response body.
-        """
-        await self._queue.put(data)
-
-    async def done(self) -> None:
-        """
-        Used by the server to signal the end of the response body.
-        """
-        await self._queue.put(self._done)
