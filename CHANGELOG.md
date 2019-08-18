@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1 (August 18, 2019)
+
+- Include files with source distribution to be installable. (Pull #233)
+
 ## 0.7.0 (August 17, 2019)
 
 - Add the `trust_env` property to `BaseClient`. (Pull #187)
