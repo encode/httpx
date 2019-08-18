@@ -123,6 +123,7 @@ class ConnectionPool(AsyncDispatcher):
             connection = self.keepalive_connections.pop_by_origin(origin)
 
         if connection is not None and connection.is_connection_dropped():
+            self.max_connections.release()
             connection = None
 
         if connection is None:
