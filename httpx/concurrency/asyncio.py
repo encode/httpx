@@ -246,7 +246,16 @@ class BackgroundManager(BaseBackgroundManager):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        for task in self.tasks:
+        done, pending = await asyncio.wait(self.tasks, timeout=0)
+
+        for task in pending:
+            try:
+                # Give it a chance to finish soon
+                await asyncio.wait_for(task, timeout=0.01)
+            except asyncio.TimeoutError:
+                task.cancel()
+
+        for task in done:
             await task
             if exc_type is None:
                 task.result()
@@ -263,8 +272,12 @@ class WaitFirstCompleted(BaseAsyncContextManager):
         return self
 
     async def __aexit__(self, *args: typing.Any) -> None:
-        await asyncio.wait(self.background.tasks, return_when=asyncio.FIRST_COMPLETED)
-        self.background.tasks = self.initial_tasks.union(self.background.tasks)
+        _, pending = await asyncio.wait(
+            self.background.tasks, return_when=asyncio.FIRST_COMPLETED
+        )
+        self.background.tasks = self.initial_tasks | typing.cast(
+            typing.Set[asyncio.Task], pending
+        )
 
 
 class BodyIterator(BaseBodyIterator):

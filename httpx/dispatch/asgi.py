@@ -118,12 +118,14 @@ class ASGIDispatch(AsyncDispatcher):
                 await response_body.done()
 
         background = self.backend.background_manager()
+        await background.__aenter__()
 
         async with background.wait_first_completed():
             background.start_soon(run_app)
             background.start_soon(response_started.wait)
 
         if app_exc is not None and self.raise_app_exceptions:
+            await background.close()
             raise app_exc
 
         assert response_started.is_set(), "application did not return a response."

@@ -46,6 +46,13 @@ def test_asgi():
     assert response.text == "Hello, World!"
 
 
+async def test_asgi_async(backend):
+    client = httpx.AsyncClient(app=hello_world, backend=backend)
+    response = await client.get("http://www.example.org/")
+    assert response.status_code == 200
+    assert response.text == "Hello, World!"
+
+
 def test_asgi_upload():
     client = httpx.Client(app=echo_body)
     response = client.post("http://www.example.org/", data=b"example")
