@@ -118,6 +118,17 @@ class Dispatcher:
         self.close()
 
 
+class BaseEvent:
+    def set(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    def is_set(self) -> bool:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def wait(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
 class BaseReader:
     """
     A stream reader. Abstracts away any asyncio-specific interfaces
@@ -210,6 +221,9 @@ class ConcurrencyBackend:
                 yield self.run(async_iterator.__anext__)
             except StopAsyncIteration:
                 break
+
+    def create_event(self) -> BaseEvent:
+        raise NotImplementedError()  # pragma: no cover
 
     def background_manager(
         self, coroutine: typing.Callable, args: typing.Any

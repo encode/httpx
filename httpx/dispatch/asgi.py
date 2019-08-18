@@ -81,7 +81,7 @@ class ASGIDispatch(AsyncDispatcher):
         app_exc = None
         status_code = None
         headers = None
-        response_started = asyncio.Event()
+        response_started = self.backend.create_event()
         response_body = self.backend.body_iterator()
         request_stream = request.stream()
 
