@@ -70,6 +70,8 @@ class BaseClient:
         if backend is None:
             backend = AsyncioBackend()
 
+        self.check_concurrency_backend(backend)
+
         if app is not None:
             param_count = len(inspect.signature(app).parameters)
             assert param_count in (2, 3)
@@ -107,6 +109,9 @@ class BaseClient:
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
         self.trust_env = True if trust_env is None else trust_env
+
+    def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
+        pass  # pragma: no cover
 
     def merge_url(self, url: URLTypes) -> URL:
         url = self.base_url.join(relative_url=url)
@@ -623,6 +628,19 @@ class AsyncClient(BaseClient):
 
 
 class Client(BaseClient):
+    def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
+        # Iterating over response content allocates an async environment on each step.
+        # This is relatively cheap on asyncio, but cannot be guaranteed for all
+        # concurrency backends.
+        # The sync client performs I/O on its own, so it doesn't need to support
+        # arbitrary concurrency backends.
+        # Therefore, we kept the `backend` parameter (for testing/mocking), but enforce
+        # that the concurrency backend derives from the asyncio one.
+        if not isinstance(backend, AsyncioBackend):
+            raise ValueError(
+                "'Client' only supports asyncio-based concurrency backends"
+            )
+
     def _async_request_data(
         self, data: RequestData = None
     ) -> typing.Optional[AsyncRequestData]:
