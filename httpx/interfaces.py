@@ -225,18 +225,16 @@ class ConcurrencyBackend:
     def create_event(self) -> BaseEvent:
         raise NotImplementedError()  # pragma: no cover
 
-    def background_manager(
-        self, coroutine: typing.Callable, args: typing.Any
-    ) -> "BaseBackgroundManager":
+    def background_manager(self) -> "BaseBackgroundManager":
         raise NotImplementedError()  # pragma: no cover
 
     def body_iterator(self) -> "BaseBodyIterator":
         raise NotImplementedError()  # pragma: no cover
 
 
-class BaseBackgroundManager:
-    async def __aenter__(self) -> "BaseBackgroundManager":
-        raise NotImplementedError()  # pragma: no cover
+class BaseAsyncContextManager:
+    async def __aenter__(self: typing.T) -> typing.T:
+        return self  # pragma: no cover
 
     async def __aexit__(
         self,
@@ -244,6 +242,11 @@ class BaseBackgroundManager:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
+        pass  # pragma: no cover
+
+
+class BaseBackgroundManager(BaseAsyncContextManager):
+    def start_soon(self, coroutine: typing.Callable, *args: typing.Any) -> None:
         raise NotImplementedError()  # pragma: no cover
 
 

@@ -48,7 +48,8 @@ class HTTP11Connection:
         await self._send_request(request, timeout)
 
         task, args = self._send_request_data, [request.stream(), timeout]
-        async with self.backend.background_manager(task, args=args):
+        async with self.backend.background_manager() as background:
+            background.start_soon(task, *args)
             http_version, status_code, headers = await self._receive_response(timeout)
         content = self._receive_response_data(timeout)
 

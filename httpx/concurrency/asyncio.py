@@ -221,24 +221,20 @@ class AsyncioBackend(ConcurrencyBackend):
     def create_event(self) -> BaseEvent:
         return typing.cast(BaseEvent, asyncio.Event())
 
-    def background_manager(
-        self, coroutine: typing.Callable, args: typing.Any
-    ) -> "BackgroundManager":
-        return BackgroundManager(coroutine, args)
+    def background_manager(self) -> "BackgroundManager":
+        return BackgroundManager()
 
     def body_iterator(self) -> "BodyIterator":
         return BodyIterator()
 
 
 class BackgroundManager(BaseBackgroundManager):
-    def __init__(self, coroutine: typing.Callable, args: typing.Any) -> None:
-        self.coroutine = coroutine
-        self.args = args
+    def __init__(self) -> None:
+        self.tasks: typing.Set[asyncio.Task] = set()
 
-    async def __aenter__(self) -> "BackgroundManager":
+    def start_soon(self, coroutine: typing.Callable, *args: typing.Any) -> None:
         loop = asyncio.get_event_loop()
-        self.task = loop.create_task(self.coroutine(*self.args))
-        return self
+        self.tasks.add(loop.create_task(coroutine(*args)))
 
     async def __aexit__(
         self,
@@ -246,9 +242,10 @@ class BackgroundManager(BaseBackgroundManager):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self.task
-        if exc_type is None:
-            self.task.result()
+        for task in self.tasks:
+            await task
+            if exc_type is None:
+                task.result()
 
 
 class BodyIterator(BaseBodyIterator):
