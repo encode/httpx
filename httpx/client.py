@@ -77,7 +77,7 @@ class BaseClient:
             if param_count == 2:
                 dispatch = WSGIDispatch(app=app)
             else:
-                dispatch = ASGIDispatch(app=app)
+                dispatch = ASGIDispatch(app=app, backend=backend)
 
         if dispatch is None:
             async_dispatch: AsyncDispatcher = ConnectionPool(
