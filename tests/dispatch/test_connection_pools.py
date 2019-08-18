@@ -171,3 +171,21 @@ async def test_keepalive_http2_connection_closed_by_server_is_reestablished(serv
         await response.read()
         assert len(http.active_connections) == 0
         assert len(http.keepalive_connections) == 1
+
+
+@pytest.mark.asyncio
+async def test_connection_closed_free_semaphore_on_acquire(server):
+    """
+    Verify that max_connections semaphore is released
+    properly on a disconnected connection.
+    """
+    async with httpx.ConnectionPool(pool_limits=httpx.PoolLimits(hard_limit=1)) as http:
+        response = await http.request("GET", "http://127.0.0.1:8000/")
+        await response.read()
+
+        # Close the connection so we're forced to recycle it
+        await server.shutdown()
+        await server.startup()
+
+        response = await http.request("GET", "http://127.0.0.1:8000/")
+        assert response.status_code == 200
