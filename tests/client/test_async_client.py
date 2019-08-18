@@ -3,10 +3,14 @@ import pytest
 import httpx
 
 
-@pytest.mark.asyncio
-async def test_get(server):
+@pytest.fixture
+def client(backend):
+    return httpx.AsyncClient(backend=backend)
+
+
+async def test_get(server, client: httpx.AsyncClient):
     url = "http://127.0.0.1:8000/"
-    async with httpx.AsyncClient() as client:
+    async with client:
         response = await client.get(url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
@@ -15,25 +19,22 @@ async def test_get(server):
     assert repr(response) == "<Response [200 OK]>"
 
 
-@pytest.mark.asyncio
-async def test_post(server):
+async def test_post(server, client: httpx.AsyncClient):
     url = "http://127.0.0.1:8000/"
-    async with httpx.AsyncClient() as client:
+    async with client:
         response = await client.post(url, data=b"Hello, world!")
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
-async def test_post_json(server):
+async def test_post_json(server, client: httpx.AsyncClient):
     url = "http://127.0.0.1:8000/"
-    async with httpx.AsyncClient() as client:
+    async with client:
         response = await client.post(url, json={"text": "Hello, world!"})
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
-async def test_stream_response(server):
-    async with httpx.AsyncClient() as client:
+async def test_stream_response(server, client: httpx.AsyncClient):
+    async with client:
         response = await client.request("GET", "http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
     body = await response.read()
@@ -41,31 +42,28 @@ async def test_stream_response(server):
     assert response.content == b"Hello, world!"
 
 
-@pytest.mark.asyncio
-async def test_access_content_stream_response(server):
-    async with httpx.AsyncClient() as client:
+async def test_access_content_stream_response(server, client: httpx.AsyncClient):
+    async with client:
         response = await client.request("GET", "http://127.0.0.1:8000/", stream=True)
     assert response.status_code == 200
     with pytest.raises(httpx.ResponseNotRead):
         response.content
 
 
-@pytest.mark.asyncio
-async def test_stream_request(server):
+async def test_stream_request(server, client: httpx.AsyncClient):
     async def hello_world():
         yield b"Hello, "
         yield b"world!"
 
-    async with httpx.AsyncClient() as client:
+    async with client:
         response = await client.request(
             "POST", "http://127.0.0.1:8000/", data=hello_world()
         )
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
-async def test_raise_for_status(server):
-    async with httpx.AsyncClient() as client:
+async def test_raise_for_status(server, client: httpx.AsyncClient):
+    async with client:
         for status_code in (200, 400, 404, 500, 505):
             response = await client.request(
                 "GET", f"http://127.0.0.1:8000/status/{status_code}"
@@ -79,56 +77,50 @@ async def test_raise_for_status(server):
                 assert response.raise_for_status() is None
 
 
-@pytest.mark.asyncio
-async def test_options(server):
+async def test_options(server, client: httpx.AsyncClient):
     url = "http://127.0.0.1:8000/"
-    async with httpx.AsyncClient() as client:
+    async with client:
         response = await client.options(url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
 
 
-@pytest.mark.asyncio
-async def test_head(server):
+async def test_head(server, client: httpx.AsyncClient):
     url = "http://127.0.0.1:8000/"
-    async with httpx.AsyncClient() as client:
+    async with client:
         response = await client.head(url)
     assert response.status_code == 200
     assert response.text == ""
 
 
-@pytest.mark.asyncio
-async def test_put(server):
+async def test_put(server, client: httpx.AsyncClient):
     url = "http://127.0.0.1:8000/"
-    async with httpx.AsyncClient() as client:
+    async with client:
         response = await client.put(url, data=b"Hello, world!")
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
-async def test_patch(server):
+async def test_patch(server, client: httpx.AsyncClient):
     url = "http://127.0.0.1:8000/"
-    async with httpx.AsyncClient() as client:
+    async with client:
         response = await client.patch(url, data=b"Hello, world!")
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
-async def test_delete(server):
+async def test_delete(server, client: httpx.AsyncClient):
     url = "http://127.0.0.1:8000/"
-    async with httpx.AsyncClient() as client:
+    async with client:
         response = await client.delete(url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
 
 
-@pytest.mark.asyncio
-async def test_100_continue(server):
+async def test_100_continue(server, client: httpx.AsyncClient):
     url = "http://127.0.0.1:8000/echo_body"
     headers = {"Expect": "100-continue"}
     data = b"Echo request body"
 
-    async with httpx.AsyncClient() as client:
+    async with client:
         response = await client.post(url, headers=headers, data=data)
 
     assert response.status_code == 200
