@@ -1,6 +1,6 @@
 import typing
 
-from ..concurrency import AsyncioBackend
+from ..concurrency.asyncio import AsyncioBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
@@ -91,7 +91,9 @@ class ConnectionPool(AsyncDispatcher):
         self.keepalive_connections = ConnectionStore()
         self.active_connections = ConnectionStore()
 
-        self.backend = AsyncioBackend() if backend is None else backend
+        self.backend = typing.cast(
+            ConcurrencyBackend, AsyncioBackend() if backend is None else backend
+        )
         self.max_connections = self.backend.get_semaphore(pool_limits)
 
     @property

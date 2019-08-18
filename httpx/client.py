@@ -5,7 +5,7 @@ from types import TracebackType
 import hstspreload
 
 from .auth import HTTPBasicAuth
-from .concurrency import AsyncioBackend
+from .concurrency.asyncio import AsyncioBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,

@@ -1,7 +1,7 @@
 import functools
 import typing
 
-from ..concurrency import AsyncioBackend
+from ..concurrency.asyncio import AsyncioBackend
 from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
@@ -32,7 +32,9 @@ class HTTPConnection(AsyncDispatcher):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig(cert=cert, verify=verify)
         self.timeout = TimeoutConfig(timeout)
-        self.backend = AsyncioBackend() if backend is None else backend
+        self.backend = typing.cast(
+            ConcurrencyBackend, AsyncioBackend() if backend is None else backend
+        )
         self.release_func = release_func
         self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
         self.h2_connection = None  # type: typing.Optional[HTTP2Connection]
