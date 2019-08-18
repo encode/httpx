@@ -249,6 +249,15 @@ class BaseBackgroundManager(BaseAsyncContextManager):
     def start_soon(self, coroutine: typing.Callable, *args: typing.Any) -> None:
         raise NotImplementedError()  # pragma: no cover
 
+    def wait_first_completed(self) -> BaseAsyncContextManager:
+        """
+        On exit, wait until at least one task started within the block has completed.
+        """
+        raise NotImplementedError()  # pragma: no cover
+
+    async def close(self) -> None:
+        await self.__aexit__(None, None, None)
+
 
 class BaseBodyIterator:
     """

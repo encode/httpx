@@ -1,4 +1,3 @@
-import asyncio
 import typing
 
 from ..concurrency.asyncio import AsyncioBackend
@@ -118,18 +117,11 @@ class ASGIDispatch(AsyncDispatcher):
             finally:
                 await response_body.done()
 
-        # Really we'd like to push all `asyncio` logic into concurrency.py,
-        # with a standardized interface, so that we can support other event
-        # loop implementations, such as Trio and Curio.
-        # That's a bit fiddly here, so we're not yet supporting using a custom
-        # `ConcurrencyBackend` with the `Client(app=asgi_app)` case.
-        loop = asyncio.get_event_loop()
-        app_task = loop.create_task(run_app())
-        response_task = loop.create_task(response_started.wait())
+        background = self.backend.background_manager()
 
-        tasks = {app_task, response_task}  # type: typing.Set[asyncio.Task]
-
-        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        async with background.wait_first_completed():
+            background.start_soon(run_app)
+            background.start_soon(response_started.wait)
 
         if app_exc is not None and self.raise_app_exceptions:
             raise app_exc
@@ -139,9 +131,9 @@ class ASGIDispatch(AsyncDispatcher):
         assert headers is not None
 
         async def on_close() -> None:
-            nonlocal app_task, response_body
+            nonlocal background, response_body
             await response_body.drain()
-            await app_task
+            await background.close()
             if app_exc is not None and self.raise_app_exceptions:
                 raise app_exc
 

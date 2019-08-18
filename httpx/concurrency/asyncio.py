@@ -17,6 +17,7 @@ from types import TracebackType
 from ..config import PoolLimits, TimeoutConfig
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from ..interfaces import (
+    BaseAsyncContextManager,
     BaseBackgroundManager,
     BaseBodyIterator,
     BaseEvent,
@@ -236,6 +237,9 @@ class BackgroundManager(BaseBackgroundManager):
         loop = asyncio.get_event_loop()
         self.tasks.add(loop.create_task(coroutine(*args)))
 
+    def wait_first_completed(self) -> "WaitFirstCompleted":
+        return WaitFirstCompleted(self)
+
     async def __aexit__(
         self,
         exc_type: typing.Type[BaseException] = None,
@@ -246,6 +250,21 @@ class BackgroundManager(BaseBackgroundManager):
             await task
             if exc_type is None:
                 task.result()
+
+
+class WaitFirstCompleted(BaseAsyncContextManager):
+    def __init__(self, background: BackgroundManager):
+        self.background = background
+        self.initial_tasks: typing.Set[asyncio.Task] = set()
+
+    async def __aenter__(self) -> "WaitFirstCompleted":
+        self.initial_tasks = self.background.tasks
+        self.background.tasks = set()
+        return self
+
+    async def __aexit__(self, *args: typing.Any) -> None:
+        await asyncio.wait(self.background.tasks, return_when=asyncio.FIRST_COMPLETED)
+        self.background.tasks = self.initial_tasks.union(self.background.tasks)
 
 
 class BodyIterator(BaseBodyIterator):
