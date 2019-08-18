@@ -246,14 +246,10 @@ class BackgroundManager(BaseBackgroundManager):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        done, pending = await asyncio.wait(self.tasks, timeout=0)
+        done, pending = await asyncio.wait(self.tasks, timeout=1e-3)
 
         for task in pending:
-            try:
-                # Give it a chance to finish soon
-                await asyncio.wait_for(task, timeout=0.01)
-            except asyncio.TimeoutError:
-                task.cancel()
+            task.cancel()
 
         for task in done:
             await task
@@ -282,9 +278,9 @@ class WaitFirstCompleted(BaseAsyncContextManager):
 
 class BodyIterator(BaseBodyIterator):
     def __init__(self) -> None:
-        self._queue = asyncio.Queue(
+        self._queue: asyncio.Queue[typing.Union[bytes, object]] = asyncio.Queue(
             maxsize=1
-        )  # type: asyncio.Queue[typing.Union[bytes, object]]
+        )
         self._done = object()
 
     async def iterate(self) -> typing.AsyncIterator[bytes]:
