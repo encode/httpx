@@ -53,7 +53,7 @@ setup(
         "certifi",
         "chardet==3.*",
         "h11==0.8.*",
-        "h2==3.*",
+        "h2>=3.1.1",
         "hstspreload",
         "idna==2.*",
         "rfc3986==1.*",
