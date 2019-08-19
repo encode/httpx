@@ -1,5 +1,6 @@
 import functools
 import typing
+import asyncio
 
 import h2.connection
 import h2.events
@@ -28,6 +29,7 @@ class HTTP2Connection:
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
         self.timeout_flags = {}  # type: typing.Dict[int, TimeoutFlag]
         self.initialized = False
+        self.window_update_received = {}  # type: typing.Dict[int, asyncio.Event()]
 
     async def send(
         self, request: AsyncRequest, timeout: TimeoutTypes = None
@@ -42,6 +44,7 @@ class HTTP2Connection:
 
         self.events[stream_id] = []
         self.timeout_flags[stream_id] = TimeoutFlag()
+        self.window_update_received[stream_id] = asyncio.Event()
 
         task, args = self.send_request_data, [stream_id, request.stream(), timeout]
         async with self.backend.background_manager(task, args=args):
@@ -99,13 +102,17 @@ class HTTP2Connection:
     async def send_data(
         self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
     ) -> None:
-        flow_control = self.h2_state.local_flow_control_window(stream_id)
-        chunk_size = min(len(data), flow_control, self.h2_state.max_outbound_frame_size - 1)
-        for idx in range(0, len(data), chunk_size):
-            chunk = data[idx : idx + chunk_size]
-            self.h2_state.send_data(stream_id, chunk)
-            data_to_send = self.h2_state.data_to_send()
-            await self.writer.write(data_to_send, timeout)
+        while data:
+            flow_control = self.h2_state.local_flow_control_window(stream_id)
+            chunk_size = min(len(data), flow_control, self.h2_state.max_outbound_frame_size - 1)
+            if chunk_size == 0:
+                await self.window_update_received[stream_id].wait()
+                self.window_update_received[stream_id].clear()
+            else:
+                chunk, data = data[:chunk_size], data[chunk_size:]
+                self.h2_state.send_data(stream_id, chunk)
+                data_to_send = self.h2_state.data_to_send()
+                await self.writer.write(data_to_send, timeout)
 
     async def end_stream(self, stream_id: int, timeout: TimeoutConfig = None) -> None:
         self.h2_state.end_stream(stream_id)
@@ -124,16 +131,14 @@ class HTTP2Connection:
             # read timeouts, if we haven't already.
             self.timeout_flags[stream_id].set_read_timeouts()
             if isinstance(event, h2.events.ResponseReceived):
-                break
-
-        status_code = 200
-        headers = []
-        for k, v in event.headers:
-            if k == b":status":
-                status_code = int(v.decode("ascii", errors="ignore"))
-            elif not k.startswith(b":"):
-                headers.append((k, v))
-        return (status_code, headers)
+                status_code = 200
+                headers = []
+                for k, v in event.headers:
+                    if k == b":status":
+                        status_code = int(v.decode("ascii", errors="ignore"))
+                    elif not k.startswith(b":"):
+                        headers.append((k, v))
+                return (status_code, headers)
 
     async def body_iter(
         self, stream_id: int, timeout: TimeoutConfig = None
@@ -143,6 +148,14 @@ class HTTP2Connection:
             if isinstance(event, h2.events.DataReceived):
                 self.h2_state.acknowledge_received_data(len(event.data), stream_id)
                 yield event.data
+                # if not event.stream_ended: This should be working, but isn't
+                if self.h2_state.streams[stream_id].open:
+                    flow_control_consumed = event.flow_controlled_length
+                    if flow_control_consumed > 0:
+                        self.h2_state.increment_flow_control_window(flow_control_consumed)
+                        await self.writer.write(self.h2_state.data_to_send(), timeout)
+                        self.h2_state.increment_flow_control_window(flow_control_consumed, event.stream_id)
+                        await self.writer.write(self.h2_state.data_to_send(), timeout)
             elif isinstance(event, (h2.events.StreamEnded, h2.events.StreamReset)):
                 break
 
@@ -154,6 +167,12 @@ class HTTP2Connection:
             data = await self.reader.read(self.READ_NUM_BYTES, timeout, flag=flag)
             events = self.h2_state.receive_data(data)
             for event in events:
+                if isinstance(event, h2.events.WindowUpdated):
+                    if event.stream_id == 0:
+                        for window_update_event in self.window_update_received.values():
+                            window_update_event.set()
+                    else:
+                        self.window_update_received[event.stream_id].set()
                 if getattr(event, "stream_id", 0):
                     self.events[event.stream_id].append(event)
 
