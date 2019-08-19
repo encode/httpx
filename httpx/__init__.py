@@ -6,6 +6,8 @@ from .config import (
     USER_AGENT,
     CertTypes,
     PoolLimits,
+    ProtocolConfig,
+    ProtocolTypes,
     SSLConfig,
     TimeoutConfig,
     TimeoutTypes,

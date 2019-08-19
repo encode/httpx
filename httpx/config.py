@@ -9,6 +9,7 @@ from .__version__ import __version__
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
 TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
+ProtocolTypes = typing.Union[str, typing.List[str], typing.Tuple[str], "ProtocolConfig"]
 
 
 USER_AGENT = f"python-httpx/{__version__}"
@@ -72,27 +73,29 @@ class SSLConfig:
             return self
         return SSLConfig(cert=cert, verify=verify)
 
-    def load_ssl_context(self) -> ssl.SSLContext:
+    def load_ssl_context(self, protocols: 'ProtocolConfig'=None) -> ssl.SSLContext:
+        protocols = ProtocolConfig() if protocols is None else protocols
+
         if self.ssl_context is None:
             self.ssl_context = (
-                self.load_ssl_context_verify()
+                self.load_ssl_context_verify(protocols=protocols)
                 if self.verify
-                else self.load_ssl_context_no_verify()
+                else self.load_ssl_context_no_verify(protocols=protocols)
             )
 
         assert self.ssl_context is not None
         return self.ssl_context
 
-    def load_ssl_context_no_verify(self) -> ssl.SSLContext:
+    def load_ssl_context_no_verify(self, protocols: 'ProtocolConfig') -> ssl.SSLContext:
         """
         Return an SSL context for unverified connections.
         """
-        context = self._create_default_ssl_context()
+        context = self._create_default_ssl_context(protocols=protocols)
         context.verify_mode = ssl.CERT_NONE
         context.check_hostname = False
         return context
 
-    def load_ssl_context_verify(self) -> ssl.SSLContext:
+    def load_ssl_context_verify(self, protocols: 'ProtocolConfig') -> ssl.SSLContext:
         """
         Return an SSL context for verified connections.
         """
@@ -106,7 +109,7 @@ class SSLConfig:
                 "invalid path: {}".format(self.verify)
             )
 
-        context = self._create_default_ssl_context()
+        context = self._create_default_ssl_context(protocols=protocols)
         context.verify_mode = ssl.CERT_REQUIRED
         context.check_hostname = True
 
@@ -133,7 +136,7 @@ class SSLConfig:
 
         return context
 
-    def _create_default_ssl_context(self) -> ssl.SSLContext:
+    def _create_default_ssl_context(self, protocols: 'ProtocolConfig') -> ssl.SSLContext:
         """
         Creates the default SSLContext object that's used for both verified
         and unverified connections.
@@ -147,9 +150,9 @@ class SSLConfig:
         context.set_ciphers(DEFAULT_CIPHERS)
 
         if ssl.HAS_ALPN:
-            context.set_alpn_protocols(["h2", "http/1.1"])
+            context.set_alpn_protocols(protocols.protocol_ident_strings)
         if ssl.HAS_NPN:  # pragma: no cover
-            context.set_npn_protocols(["h2", "http/1.1"])
+            context.set_npn_protocols(protocols.protocol_ident_strings)
 
         return context
 
@@ -221,6 +224,40 @@ class TimeoutConfig:
             f"{class_name}(connect_timeout={self.connect_timeout}, "
             f"read_timeout={self.read_timeout}, write_timeout={self.write_timeout})"
         )
+
+
+class ProtocolConfig:
+    """
+    Configure which HTTP protocol versions are supported.
+    """
+
+    def __init__(self, protocols: ProtocolTypes = None):
+        if protocols is None:
+            protocols = ['HTTP/1.1', 'HTTP/2']
+
+        if isinstance(protocols, str):
+            self.protocols = set([protocol])
+        elif isinstance(protocols, ProtocolConfig):
+            self.protocols = protocols.protocols
+        else:
+            self.protocols = set(sorted(protocols))
+
+        for protocol in self.protocols:
+            if protocol not in ('HTTP/1.1', 'HTTP/2'):
+                raise ValueError(f"Unsupported protocol value {protocol!r}")
+
+    @property
+    def protocol_ident_strings(self) -> typing.List[str]:
+        mapping = {"HTTP/1.1": "http/1.1", "HTTP/2": "h2"}
+        return [mapping[protocol] for protocol in self.protocols]
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        if len(self.protocols) == 1:
+            value = self.protocols[0]
+            return f"{class_name}(protocols={value!r})"
+        value = list(self.protocols)
+        return f"{class_name}(protocols={value!r})"
 
 
 class PoolLimits:
