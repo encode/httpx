@@ -29,6 +29,15 @@ class ASGIDispatch(AsyncDispatcher):
         client=("1.2.3.4", 123)
     )
     client = httpx.Client(dispatch=dispatch)
+
+    Arguments:
+
+    * `app` - The ASGI application.
+    * `raise_app_exceptions` - Boolean indicating if exceptions in the application
+       should be raised. Default to `True`. Can be set to `False` for use cases
+       such as testing the content of a client 500 response.
+    * `root_path` - The root path on which the ASGI application should be mounted.
+    * `client` - A two-tuple indicating the client IP and port of incoming requests.
     ```
     """
 
