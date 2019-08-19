@@ -4,7 +4,13 @@ import brotli
 import pytest
 
 import httpx
-from httpx.decoders import TextDecoder
+from httpx.decoders import (
+    BrotliDecoder,
+    DeflateDecoder,
+    GZipDecoder,
+    IdentityDecoder,
+    TextDecoder,
+)
 
 
 def test_deflate():
@@ -77,6 +83,22 @@ def test_streaming():
     response = httpx.Response(200, headers=headers, content=compress(body))
     assert not hasattr(response, "body")
     assert response.read() == body
+
+
+@pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br", b"identity"))
+def test_empty_content(header_value):
+    headers = [(b"Content-Encoding", header_value)]
+    response = httpx.Response(200, headers=headers, content=b"")
+    assert response.content == b""
+
+
+@pytest.mark.parametrize(
+    "decoder", (BrotliDecoder, DeflateDecoder, GZipDecoder, IdentityDecoder)
+)
+def test_decoders_empty_cases(decoder):
+    instance = decoder()
+    assert instance.decode(b"") == b""
+    assert instance.flush() == b""
 
 
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
