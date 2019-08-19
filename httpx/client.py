@@ -63,7 +63,6 @@ class BaseClient:
         base_url: URLTypes = None,
         dispatch: typing.Union[AsyncDispatcher, Dispatcher] = None,
         app: typing.Callable = None,
-        raise_app_exceptions: bool = True,
         backend: ConcurrencyBackend = None,
         trust_env: bool = None,
     ):
@@ -76,13 +75,9 @@ class BaseClient:
             param_count = len(inspect.signature(app).parameters)
             assert param_count in (2, 3)
             if param_count == 2:
-                dispatch = WSGIDispatch(
-                    app=app, raise_app_exceptions=raise_app_exceptions
-                )
+                dispatch = WSGIDispatch(app=app)
             else:
-                dispatch = ASGIDispatch(
-                    app=app, raise_app_exceptions=raise_app_exceptions
-                )
+                dispatch = ASGIDispatch(app=app)
 
         if dispatch is None:
             async_dispatch: AsyncDispatcher = ConnectionPool(
