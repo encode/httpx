@@ -1,5 +1,6 @@
 import functools
 import typing
+import ssl
 
 from ..concurrency import AsyncioBackend
 from ..config import (
@@ -73,12 +74,7 @@ class HTTPConnection(AsyncDispatcher):
 
         host = self.origin.host
         port = self.origin.port
-        # Run the SSL loading in a threadpool, since it makes disk accesses.
-        ssl_context = (
-            await self.backend.run_in_threadpool(ssl.load_ssl_context)
-            if self.origin.is_ssl
-            else None
-        )
+        ssl_context = await self.get_ssl_context(ssl, protocols)
 
         if self.release_func is None:
             on_release = None
@@ -96,6 +92,13 @@ class HTTPConnection(AsyncDispatcher):
             self.h11_connection = HTTP11Connection(
                 reader, writer, self.backend, on_release=on_release
             )
+
+    async def get_ssl_context(self, ssl: SSLConfig, protocols: ProtocolConfig) -> typing.Optional[ssl.SSLContext]:
+        if not self.origin.is_ssl:
+            return None
+
+        # Run the SSL loading in a threadpool, since it may makes disk accesses.
+        return await self.backend.run_in_threadpool(ssl.load_ssl_context, protocols)
 
     async def close(self) -> None:
         if self.h2_connection is not None:
