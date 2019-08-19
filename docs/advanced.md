@@ -42,6 +42,21 @@ assert r.status_code == 200
 assert r.text == "Hello World!"
 ```
 
+For some more complex cases you might need to customize the WSGI or ASGI
+dispatch. This allows you to:
+
+* Inspect 500 error responses, rather than raise exceptions, by setting `raise_app_exceptions=False`.
+* Mount the WSGI or ASGI application at a subpath, by setting `script_name` (WSGI) or `root_path` (ASGI).
+* Use a given the client address for requests, by setting `remote_addr` (WSGI) or `client` (ASGI).
+
+For example:
+
+```python
+# Instantiate a client that makes WSGI requests with a client IP of "1.2.3.4".
+dispatch = httpx.WSGIDispatch(app=app, remote_addr="1.2.3.4")
+client = httpx.Client(dispatch=dispatch)
+```
+
 ## .netrc Support
 
 HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is
