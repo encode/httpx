@@ -9,7 +9,9 @@ from .__version__ import __version__
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
 TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
-HTTPVersionTypes = typing.Union[str, typing.List[str], typing.Tuple[str], "HTTPVersionConfig"]
+HTTPVersionTypes = typing.Union[
+    str, typing.List[str], typing.Tuple[str], "HTTPVersionConfig"
+]
 
 
 USER_AGENT = f"python-httpx/{__version__}"
@@ -73,7 +75,9 @@ class SSLConfig:
             return self
         return SSLConfig(cert=cert, verify=verify)
 
-    def load_ssl_context(self, http_versions: 'HTTPVersionConfig'=None) -> ssl.SSLContext:
+    def load_ssl_context(
+        self, http_versions: "HTTPVersionConfig" = None
+    ) -> ssl.SSLContext:
         http_versions = HTTPVersionConfig() if http_versions is None else http_versions
 
         if self.ssl_context is None:
@@ -86,7 +90,9 @@ class SSLConfig:
         assert self.ssl_context is not None
         return self.ssl_context
 
-    def load_ssl_context_no_verify(self, http_versions: 'HTTPVersionConfig') -> ssl.SSLContext:
+    def load_ssl_context_no_verify(
+        self, http_versions: "HTTPVersionConfig"
+    ) -> ssl.SSLContext:
         """
         Return an SSL context for unverified connections.
         """
@@ -95,7 +101,9 @@ class SSLConfig:
         context.check_hostname = False
         return context
 
-    def load_ssl_context_verify(self, http_versions: 'HTTPVersionConfig') -> ssl.SSLContext:
+    def load_ssl_context_verify(
+        self, http_versions: "HTTPVersionConfig"
+    ) -> ssl.SSLContext:
         """
         Return an SSL context for verified connections.
         """
@@ -136,7 +144,9 @@ class SSLConfig:
 
         return context
 
-    def _create_default_ssl_context(self, http_versions: 'HTTPVersionConfig') -> ssl.SSLContext:
+    def _create_default_ssl_context(
+        self, http_versions: "HTTPVersionConfig"
+    ) -> ssl.SSLContext:
         """
         Creates the default SSLContext object that's used for both verified
         and unverified connections.
@@ -233,17 +243,19 @@ class HTTPVersionConfig:
 
     def __init__(self, http_versions: HTTPVersionTypes = None):
         if http_versions is None:
-            http_versions = ['HTTP/1.1', 'HTTP/2']
+            http_versions = ["HTTP/1.1", "HTTP/2"]
 
         if isinstance(http_versions, str):
             self.http_versions = set([http_versions.upper()])
         elif isinstance(http_versions, HTTPVersionConfig):
             self.http_versions = http_versions.http_versions
         else:
-            self.http_versions = set(sorted([version.upper() for version in http_versions]))
+            self.http_versions = set(
+                sorted([version.upper() for version in http_versions])
+            )
 
         for version in self.http_versions:
-            if version not in ('HTTP/1.1', 'HTTP/2'):
+            if version not in ("HTTP/1.1", "HTTP/2"):
                 raise ValueError(f"Unsupported HTTP version {version!r}.")
 
         if not self.http_versions:

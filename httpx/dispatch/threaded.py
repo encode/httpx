@@ -1,4 +1,4 @@
-from ..config import CertTypes, TimeoutTypes, VerifyTypes
+from ..config import CertTypes, HTTPVersionTypes, TimeoutTypes, VerifyTypes
 from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from ..models import (
     AsyncRequest,
@@ -29,6 +29,7 @@ class ThreadedDispatcher(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
+        http_versions: HTTPVersionTypes = None,
     ) -> AsyncResponse:
         concurrency_backend = self.backend
 
@@ -48,6 +49,7 @@ class ThreadedDispatcher(AsyncDispatcher):
             "verify": verify,
             "cert": cert,
             "timeout": timeout,
+            "http_versions": http_versions,
         }
         sync_response = await self.backend.run_in_threadpool(func, **kwargs)
         assert isinstance(sync_response, Response)

@@ -3,7 +3,15 @@ import ssl
 import typing
 from types import TracebackType
 
-from .config import CertTypes, PoolLimits, HTTPVersionConfig, TimeoutConfig, TimeoutTypes, VerifyTypes
+from .config import (
+    CertTypes,
+    PoolLimits,
+    HTTPVersionConfig,
+    HTTPVersionTypes,
+    TimeoutConfig,
+    TimeoutTypes,
+    VerifyTypes,
+)
 from .models import (
     AsyncRequest,
     AsyncRequestData,
@@ -42,9 +50,16 @@ class AsyncDispatcher:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
+        http_versions: HTTPVersionTypes = None,
     ) -> AsyncResponse:
         request = AsyncRequest(method, url, data=data, params=params, headers=headers)
-        return await self.send(request, verify=verify, cert=cert, timeout=timeout)
+        return await self.send(
+            request,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            http_versions=http_versions,
+        )
 
     async def send(
         self,
@@ -52,6 +67,7 @@ class AsyncDispatcher:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
+        http_versions: HTTPVersionTypes = None,
     ) -> AsyncResponse:
         raise NotImplementedError()  # pragma: nocover
 
@@ -90,9 +106,16 @@ class Dispatcher:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
+        http_versions: HTTPVersionTypes = None,
     ) -> Response:
         request = Request(method, url, data=data, params=params, headers=headers)
-        return self.send(request, verify=verify, cert=cert, timeout=timeout)
+        return self.send(
+            request,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            http_versions=http_versions,
+        )
 
     def send(
         self,
@@ -100,6 +123,7 @@ class Dispatcher:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
+        http_versions: HTTPVersionTypes = None,
     ) -> Response:
         raise NotImplementedError()  # pragma: nocover
 
@@ -171,7 +195,7 @@ class ConcurrencyBackend:
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig
+        timeout: TimeoutConfig,
     ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
         raise NotImplementedError()  # pragma: no cover
 

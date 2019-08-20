@@ -29,9 +29,9 @@ class HTTPConnection(AsyncDispatcher):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,
-        http_versions: HTTPVersionTypes = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig(cert=cert, verify=verify)
@@ -51,7 +51,9 @@ class HTTPConnection(AsyncDispatcher):
         http_versions: HTTPVersionTypes = None,
     ) -> AsyncResponse:
         if self.h11_connection is None and self.h2_connection is None:
-            await self.connect(verify=verify, cert=cert, timeout=timeout, http_versions=http_versions)
+            await self.connect(
+                verify=verify, cert=cert, timeout=timeout, http_versions=http_versions
+            )
 
         if self.h2_connection is not None:
             response = await self.h2_connection.send(request, timeout=timeout)
@@ -70,7 +72,11 @@ class HTTPConnection(AsyncDispatcher):
     ) -> None:
         ssl = self.ssl.with_overrides(verify=verify, cert=cert)
         timeout = self.timeout if timeout is None else TimeoutConfig(timeout)
-        http_versions = self.http_versions if http_versions is None else HTTPVersionConfig(http_versions)
+        http_versions = (
+            self.http_versions
+            if http_versions is None
+            else HTTPVersionConfig(http_versions)
+        )
 
         host = self.origin.host
         port = self.origin.port
@@ -93,7 +99,9 @@ class HTTPConnection(AsyncDispatcher):
                 reader, writer, self.backend, on_release=on_release
             )
 
-    async def get_ssl_context(self, ssl: SSLConfig, http_versions: HTTPVersionConfig) -> typing.Optional[ssl.SSLContext]:
+    async def get_ssl_context(
+        self, ssl: SSLConfig, http_versions: HTTPVersionConfig
+    ) -> typing.Optional[ssl.SSLContext]:
         if not self.origin.is_ssl:
             return None
 
