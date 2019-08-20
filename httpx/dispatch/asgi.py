@@ -142,7 +142,7 @@ class ASGIDispatch(AsyncDispatcher):
 
         return AsyncResponse(
             status_code=status_code,
-            protocol="HTTP/1.1",
+            http_version="HTTP/1.1",
             headers=headers,
             content=response_body.iterate(),
             on_close=on_close,

@@ -104,7 +104,7 @@ class WSGIDispatch(Dispatcher):
 
         return Response(
             status_code=int(seen_status.split()[0]),
-            protocol="HTTP/1.1",
+            http_version="HTTP/1.1",
             headers=seen_response_headers,
             content=(chunk for chunk in result),
             on_close=getattr(result, "close", None),

@@ -54,7 +54,7 @@ class HTTP11Connection:
 
         return AsyncResponse(
             status_code=status_code,
-            protocol=http_version,
+            http_version=http_version,
             headers=headers,
             content=content,
             on_close=self.response_closed,
