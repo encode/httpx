@@ -6,6 +6,7 @@ import hstspreload
 
 from .auth import HTTPBasicAuth
 from .concurrency.asyncio import AsyncioBackend
+from .concurrency.base import ConcurrencyBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
@@ -28,7 +29,6 @@ from .exceptions import (
     RedirectLoop,
     TooManyRedirects,
 )
-from .interfaces import ConcurrencyBackend
 from .models import (
     URL,
     AsyncRequest,

@@ -2,6 +2,7 @@ import typing
 
 from .base import AsyncDispatcher
 from ..concurrency.asyncio import AsyncioBackend
+from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
@@ -11,7 +12,6 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..interfaces import ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse, Origin
 from .connection import HTTPConnection
 
