@@ -13,7 +13,7 @@ from httpx import (
     Protocol,
     Request,
     TimeoutConfig,
-    ProtocolConfig
+    HTTPVersionConfig
 )
 
 
@@ -27,8 +27,7 @@ class MockHTTP2Backend(AsyncioBackend):
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
-        protocols: ProtocolConfig
+        timeout: TimeoutConfig
     ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
         self.server = MockHTTP2Server(self.app)
         return self.server, self.server, Protocol.HTTP_2

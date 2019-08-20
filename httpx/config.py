@@ -9,7 +9,7 @@ from .__version__ import __version__
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
 TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
-ProtocolTypes = typing.Union[str, typing.List[str], typing.Tuple[str], "ProtocolConfig"]
+HTTPVersionTypes = typing.Union[str, typing.List[str], typing.Tuple[str], "HTTPVersionConfig"]
 
 
 USER_AGENT = f"python-httpx/{__version__}"
@@ -73,29 +73,29 @@ class SSLConfig:
             return self
         return SSLConfig(cert=cert, verify=verify)
 
-    def load_ssl_context(self, protocols: 'ProtocolConfig'=None) -> ssl.SSLContext:
-        protocols = ProtocolConfig() if protocols is None else protocols
+    def load_ssl_context(self, http_versions: 'HTTPVersionConfig'=None) -> ssl.SSLContext:
+        http_versions = HTTPVersionConfig() if http_versions is None else http_versions
 
         if self.ssl_context is None:
             self.ssl_context = (
-                self.load_ssl_context_verify(protocols=protocols)
+                self.load_ssl_context_verify(http_versions=http_versions)
                 if self.verify
-                else self.load_ssl_context_no_verify(protocols=protocols)
+                else self.load_ssl_context_no_verify(http_versions=http_versions)
             )
 
         assert self.ssl_context is not None
         return self.ssl_context
 
-    def load_ssl_context_no_verify(self, protocols: 'ProtocolConfig') -> ssl.SSLContext:
+    def load_ssl_context_no_verify(self, http_versions: 'HTTPVersionConfig') -> ssl.SSLContext:
         """
         Return an SSL context for unverified connections.
         """
-        context = self._create_default_ssl_context(protocols=protocols)
+        context = self._create_default_ssl_context(http_versions=http_versions)
         context.verify_mode = ssl.CERT_NONE
         context.check_hostname = False
         return context
 
-    def load_ssl_context_verify(self, protocols: 'ProtocolConfig') -> ssl.SSLContext:
+    def load_ssl_context_verify(self, http_versions: 'HTTPVersionConfig') -> ssl.SSLContext:
         """
         Return an SSL context for verified connections.
         """
@@ -109,7 +109,7 @@ class SSLConfig:
                 "invalid path: {}".format(self.verify)
             )
 
-        context = self._create_default_ssl_context(protocols=protocols)
+        context = self._create_default_ssl_context(http_versions=http_versions)
         context.verify_mode = ssl.CERT_REQUIRED
         context.check_hostname = True
 
@@ -136,7 +136,7 @@ class SSLConfig:
 
         return context
 
-    def _create_default_ssl_context(self, protocols: 'ProtocolConfig') -> ssl.SSLContext:
+    def _create_default_ssl_context(self, http_versions: 'HTTPVersionConfig') -> ssl.SSLContext:
         """
         Creates the default SSLContext object that's used for both verified
         and unverified connections.
@@ -150,9 +150,9 @@ class SSLConfig:
         context.set_ciphers(DEFAULT_CIPHERS)
 
         if ssl.HAS_ALPN:
-            context.set_alpn_protocols(protocols.protocol_ident_strings)
+            context.set_alpn_protocols(http_versions.alpn_strings)
         if ssl.HAS_NPN:  # pragma: no cover
-            context.set_npn_protocols(protocols.protocol_ident_strings)
+            context.set_npn_protocols(http_versions.alpn_strings)
 
         return context
 
@@ -226,38 +226,38 @@ class TimeoutConfig:
         )
 
 
-class ProtocolConfig:
+class HTTPVersionConfig:
     """
     Configure which HTTP protocol versions are supported.
     """
 
-    def __init__(self, protocols: ProtocolTypes = None):
-        if protocols is None:
-            protocols = ['HTTP/1.1', 'HTTP/2']
+    def __init__(self, http_versions: HTTPVersionTypes = None):
+        if http_versions is None:
+            http_versions = ['HTTP/1.1', 'HTTP/2']
 
-        if isinstance(protocols, str):
-            self.protocols = set([protocol])
-        elif isinstance(protocols, ProtocolConfig):
-            self.protocols = protocols.protocols
+        if isinstance(http_versions, str):
+            self.http_versions = set([http_versions])
+        elif isinstance(http_versions, HTTPVersionConfig):
+            self.http_versions = http_versions.http_versions
         else:
-            self.protocols = set(sorted(protocols))
+            self.http_versions = set(sorted(http_versions))
 
-        for protocol in self.protocols:
-            if protocol not in ('HTTP/1.1', 'HTTP/2'):
+        for version in self.http_versions:
+            if version not in ('HTTP/1.1', 'HTTP/2'):
                 raise ValueError(f"Unsupported protocol value {protocol!r}")
 
     @property
-    def protocol_ident_strings(self) -> typing.List[str]:
+    def alpn_strings(self) -> typing.List[str]:
+        """
+        Returns a list of supported ALPN identifiers. (One or more of "http/1.1", "h2").
+        """
         mapping = {"HTTP/1.1": "http/1.1", "HTTP/2": "h2"}
-        return [mapping[protocol] for protocol in self.protocols]
+        return [mapping[version] for version in self.http_versions]
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        if len(self.protocols) == 1:
-            value = self.protocols[0]
-            return f"{class_name}(protocols={value!r})"
-        value = list(self.protocols)
-        return f"{class_name}(protocols={value!r})"
+        value = list(self.http_versions)
+        return f"{class_name}({value!r})"
 
 
 class PoolLimits:
