@@ -236,15 +236,18 @@ class HTTPVersionConfig:
             http_versions = ['HTTP/1.1', 'HTTP/2']
 
         if isinstance(http_versions, str):
-            self.http_versions = set([http_versions])
+            self.http_versions = set([http_versions.upper()])
         elif isinstance(http_versions, HTTPVersionConfig):
             self.http_versions = http_versions.http_versions
         else:
-            self.http_versions = set(sorted(http_versions))
+            self.http_versions = set(sorted([version.upper() for version in http_versions]))
 
         for version in self.http_versions:
             if version not in ('HTTP/1.1', 'HTTP/2'):
-                raise ValueError(f"Unsupported protocol value {protocol!r}")
+                raise ValueError(f"Unsupported HTTP version {version!r}.")
+
+        if not self.http_versions:
+            raise ValueError(f"HTTP versions cannot be an empty list.")
 
     @property
     def alpn_strings(self) -> typing.List[str]:
@@ -256,7 +259,7 @@ class HTTPVersionConfig:
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        value = list(self.http_versions)
+        value = sorted(list(self.http_versions))
         return f"{class_name}({value!r})"
 
 

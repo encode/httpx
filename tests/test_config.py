@@ -90,6 +90,36 @@ def test_ssl_repr():
     assert repr(ssl) == "SSLConfig(cert=None, verify=False)"
 
 
+def test_http_versions_repr():
+    http_versions = httpx.HTTPVersionConfig()
+    assert repr(http_versions) == "HTTPVersionConfig(['HTTP/1.1', 'HTTP/2'])"
+
+
+def test_http_versions_from_string():
+    http_versions = httpx.HTTPVersionConfig("HTTP/1.1")
+    assert repr(http_versions) == "HTTPVersionConfig(['HTTP/1.1'])"
+
+
+def test_http_versions_from_list():
+    http_versions = httpx.HTTPVersionConfig(["http/1.1"])
+    assert repr(http_versions) == "HTTPVersionConfig(['HTTP/1.1'])"
+
+
+def test_http_versions_from_config():
+    http_versions = httpx.HTTPVersionConfig(httpx.HTTPVersionConfig("HTTP/1.1"))
+    assert repr(http_versions) == "HTTPVersionConfig(['HTTP/1.1'])"
+
+
+def test_invalid_http_version():
+    with pytest.raises(ValueError):
+        httpx.HTTPVersionConfig("HTTP/9")
+
+
+def test_empty_http_version():
+    with pytest.raises(ValueError):
+        httpx.HTTPVersionConfig([])
+
+
 def test_timeout_repr():
     timeout = httpx.TimeoutConfig(timeout=5.0)
     assert repr(timeout) == "TimeoutConfig(timeout=5.0)"
