@@ -16,6 +16,8 @@ HTTPVersionTypes = typing.Union[
 
 USER_AGENT = f"python-httpx/{__version__}"
 
+HTTP_VERSIONS_TO_ALPN_IDENTIFIERS = {"HTTP/1.1": "http/1.1", "HTTP/2": "h2"}
+
 DEFAULT_CIPHERS = ":".join(
     [
         "ECDHE+AESGCM",
@@ -160,9 +162,9 @@ class SSLConfig:
         context.set_ciphers(DEFAULT_CIPHERS)
 
         if ssl.HAS_ALPN:
-            context.set_alpn_protocols(http_versions.alpn_strings)
+            context.set_alpn_protocols(http_versions.alpn_identifiers)
         if ssl.HAS_NPN:  # pragma: no cover
-            context.set_npn_protocols(http_versions.alpn_strings)
+            context.set_npn_protocols(http_versions.alpn_identifiers)
 
         return context
 
@@ -260,12 +262,13 @@ class HTTPVersionConfig:
             raise ValueError(f"HTTP versions cannot be an empty list.")
 
     @property
-    def alpn_strings(self) -> typing.List[str]:
+    def alpn_identifiers(self) -> typing.List[str]:
         """
         Returns a list of supported ALPN identifiers. (One or more of "http/1.1", "h2").
         """
-        mapping = {"HTTP/1.1": "http/1.1", "HTTP/2": "h2"}
-        return [mapping[version] for version in self.http_versions]
+        return [
+            HTTP_VERSIONS_TO_ALPN_IDENTIFIERS[version] for version in self.http_versions
+        ]
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
