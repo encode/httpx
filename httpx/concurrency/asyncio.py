@@ -19,6 +19,7 @@ from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from ..interfaces import (
     BaseBackgroundManager,
     BasePoolSemaphore,
+    BaseQueue,
     BaseReader,
     BaseWriter,
     ConcurrencyBackend,
@@ -245,6 +246,9 @@ class AsyncioBackend(ConcurrencyBackend):
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
+
+    def create_queue(self, max_size: int) -> BaseQueue:
+        return typing.cast(BaseQueue, asyncio.Queue(maxsize=max_size))
 
     def background_manager(
         self, coroutine: typing.Callable, args: typing.Any
