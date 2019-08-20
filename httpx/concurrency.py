@@ -14,7 +14,7 @@ import ssl
 import typing
 from types import TracebackType
 
-from .config import PoolLimits, TimeoutConfig
+from .config import PoolLimits, ProtocolConfig, TimeoutConfig
 from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .interfaces import (
     BaseBackgroundManager,
@@ -202,6 +202,7 @@ class AsyncioBackend(ConcurrencyBackend):
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
+        protocols: ProtocolConfig
     ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
         try:
             stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore

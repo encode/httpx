@@ -3,7 +3,7 @@ import ssl
 import typing
 from types import TracebackType
 
-from .config import CertTypes, PoolLimits, TimeoutConfig, TimeoutTypes, VerifyTypes
+from .config import CertTypes, PoolLimits, ProtocolConfig, TimeoutConfig, TimeoutTypes, VerifyTypes
 from .models import (
     AsyncRequest,
     AsyncRequestData,
@@ -172,6 +172,7 @@ class ConcurrencyBackend:
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
+        protocols: ProtocolConfig
     ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
         raise NotImplementedError()  # pragma: no cover
 

@@ -1,10 +1,13 @@
 import functools
 import typing
+import ssl
 
 from ..concurrency import AsyncioBackend
 from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
+    ProtocolTypes,
+    ProtocolConfig,
     SSLConfig,
     TimeoutConfig,
     TimeoutTypes,
@@ -28,10 +31,12 @@ class HTTPConnection(AsyncDispatcher):
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,
+        protocols: ProtocolTypes = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig(cert=cert, verify=verify)
         self.timeout = TimeoutConfig(timeout)
+        self.protocols = ProtocolConfig(protocols)
         self.backend = AsyncioBackend() if backend is None else backend
         self.release_func = release_func
         self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
@@ -43,9 +48,10 @@ class HTTPConnection(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
+        protocols: ProtocolTypes = None,
     ) -> AsyncResponse:
         if self.h11_connection is None and self.h2_connection is None:
-            await self.connect(verify=verify, cert=cert, timeout=timeout)
+            await self.connect(verify=verify, cert=cert, timeout=timeout, protocols=protocols)
 
         if self.h2_connection is not None:
             response = await self.h2_connection.send(request, timeout=timeout)
@@ -60,18 +66,15 @@ class HTTPConnection(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
+        protocols: ProtocolTypes = None,
     ) -> None:
         ssl = self.ssl.with_overrides(verify=verify, cert=cert)
         timeout = self.timeout if timeout is None else TimeoutConfig(timeout)
+        protocols = self.protocols if protocols is None else ProtocolConfig(protocols)
 
         host = self.origin.host
         port = self.origin.port
-        # Run the SSL loading in a threadpool, since it makes disk accesses.
-        ssl_context = (
-            await self.backend.run_in_threadpool(ssl.load_ssl_context)
-            if self.origin.is_ssl
-            else None
-        )
+        ssl_context = await self.get_ssl_context(ssl, protocols)
 
         if self.release_func is None:
             on_release = None
@@ -79,7 +82,7 @@ class HTTPConnection(AsyncDispatcher):
             on_release = functools.partial(self.release_func, self)
 
         reader, writer, protocol = await self.backend.connect(
-            host, port, ssl_context, timeout
+            host, port, ssl_context, timeout, protocols
         )
         if protocol == Protocol.HTTP_2:
             self.h2_connection = HTTP2Connection(
@@ -89,6 +92,13 @@ class HTTPConnection(AsyncDispatcher):
             self.h11_connection = HTTP11Connection(
                 reader, writer, self.backend, on_release=on_release
             )
+
+    async def get_ssl_context(self, ssl: SSLConfig, protocols: ProtocolConfig) -> typing.Optional[ssl.SSLContext]:
+        if not self.origin.is_ssl:
+            return None
+
+        # Run the SSL loading in a threadpool, since it may makes disk accesses.
+        return await self.backend.run_in_threadpool(ssl.load_ssl_context, protocols)
 
     async def close(self) -> None:
         if self.h2_connection is not None:
