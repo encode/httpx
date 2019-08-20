@@ -1,4 +1,3 @@
-import enum
 import ssl
 import typing
 from types import TracebackType
