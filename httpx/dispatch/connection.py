@@ -1,7 +1,7 @@
 import functools
 import typing
 
-from ..concurrency import AsyncioBackend
+from ..concurrency.asyncio import AsyncioBackend
 from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,

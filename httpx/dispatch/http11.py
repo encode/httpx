@@ -2,7 +2,7 @@ import typing
 
 import h11
 
-from ..concurrency import TimeoutFlag
+from ..concurrency.asyncio import TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
 from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
