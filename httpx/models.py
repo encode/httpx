@@ -688,13 +688,13 @@ class BaseResponse:
         self,
         status_code: int,
         *,
-        protocol: str = None,
+        http_version: str = None,
         headers: HeaderTypes = None,
         request: BaseRequest = None,
         on_close: typing.Callable = None,
     ):
         self.status_code = status_code
-        self.protocol = protocol
+        self.http_version = http_version
         self.headers = Headers(headers)
 
         self.request = request
@@ -870,7 +870,7 @@ class AsyncResponse(BaseResponse):
         self,
         status_code: int,
         *,
-        protocol: str = None,
+        http_version: str = None,
         headers: HeaderTypes = None,
         content: AsyncResponseContent = None,
         on_close: typing.Callable = None,
@@ -879,7 +879,7 @@ class AsyncResponse(BaseResponse):
     ):
         super().__init__(
             status_code=status_code,
-            protocol=protocol,
+            http_version=http_version,
             headers=headers,
             request=request,
             on_close=on_close,
@@ -960,7 +960,7 @@ class Response(BaseResponse):
         self,
         status_code: int,
         *,
-        protocol: str = None,
+        http_version: str = None,
         headers: HeaderTypes = None,
         content: ResponseContent = None,
         on_close: typing.Callable = None,
@@ -969,7 +969,7 @@ class Response(BaseResponse):
     ):
         super().__init__(
             status_code=status_code,
-            protocol=protocol,
+            http_version=http_version,
             headers=headers,
             request=request,
             on_close=on_close,

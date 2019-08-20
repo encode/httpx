@@ -39,7 +39,7 @@ Let's get started...
 <Response [200 OK]>
 >>> r.status_code
 200
->>> r.protocol
+>>> r.http_version
 'HTTP/2'
 >>> r.headers['content-type']
 'text/html; charset=UTF-8'

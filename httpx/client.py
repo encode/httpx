@@ -719,7 +719,7 @@ class Client(BaseClient):
 
         response = Response(
             status_code=async_response.status_code,
-            protocol=async_response.protocol,
+            http_version=async_response.http_version,
             headers=async_response.headers,
             content=sync_content,
             on_close=sync_on_close,

@@ -51,7 +51,7 @@ class HTTP2Connection:
 
         return AsyncResponse(
             status_code=status_code,
-            protocol="HTTP/2",
+            http_version="HTTP/2",
             headers=headers,
             content=content,
             on_close=on_close,

@@ -10,7 +10,7 @@ async def test_get(server):
         response = await client.get(url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
-    assert response.protocol == "HTTP/1.1"
+    assert response.http_version == "HTTP/1.1"
     assert response.headers
     assert repr(response) == "<Response [200 OK]>"
 
