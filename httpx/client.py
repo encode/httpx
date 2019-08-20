@@ -17,6 +17,7 @@ from .config import (
     VerifyTypes,
 )
 from .dispatch.asgi import ASGIDispatch
+from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
@@ -27,7 +28,7 @@ from .exceptions import (
     RedirectLoop,
     TooManyRedirects,
 )
-from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
+from .interfaces import ConcurrencyBackend
 from .models import (
     URL,
     AsyncRequest,

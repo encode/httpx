@@ -1,5 +1,6 @@
+from .base import AsyncDispatcher, Dispatcher
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
-from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
+from ..interfaces import ConcurrencyBackend
 from ..models import (
     AsyncRequest,
     AsyncRequestData,

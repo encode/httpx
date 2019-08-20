@@ -1,8 +1,8 @@
 import asyncio
 import typing
 
+from .base import AsyncDispatcher
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
-from ..interfaces import AsyncDispatcher
 from ..models import AsyncRequest, AsyncResponse
 
 

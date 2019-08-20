@@ -2,6 +2,7 @@ import functools
 import ssl
 import typing
 
+from .base import AsyncDispatcher
 from ..concurrency.asyncio import AsyncioBackend
 from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
@@ -13,7 +14,7 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..interfaces import AsyncDispatcher, ConcurrencyBackend
+from ..interfaces import ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse, Origin
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection

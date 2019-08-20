@@ -13,6 +13,7 @@ from .config import (
     TimeoutTypes,
     VerifyTypes,
 )
+from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
 from .exceptions import (
@@ -33,13 +34,11 @@ from .exceptions import (
     WriteTimeout,
 )
 from .interfaces import (
-    AsyncDispatcher,
     BaseBackgroundManager,
     BasePoolSemaphore,
     BaseReader,
     BaseWriter,
     ConcurrencyBackend,
-    Dispatcher,
 )
 from .models import (
     URL,
