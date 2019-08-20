@@ -92,7 +92,8 @@ class ASGIDispatch(AsyncDispatcher):
             return {"type": "http.request", "body": body, "more_body": True}
 
         async def send(message: dict) -> None:
-            nonlocal status_code, headers, response_started_or_failed, response_body, request
+            nonlocal status_code, headers, response_started_or_failed
+            nonlocal response_body, request
 
             if message["type"] == "http.response.start":
                 status_code = message["status"]
