@@ -2,7 +2,7 @@ import typing
 
 import h11
 
-from ..concurrency.base import BaseReader, BaseWriter, ConcurrencyBackend, TimeoutFlag
+from ..concurrency.base import BaseStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
 from ..models import AsyncRequest, AsyncResponse
 
@@ -27,13 +27,11 @@ class HTTP11Connection:
 
     def __init__(
         self,
-        reader: BaseReader,
-        writer: BaseWriter,
+        stream: BaseStream,
         backend: ConcurrencyBackend,
         on_release: typing.Optional[OnReleaseCallback] = None,
     ):
-        self.reader = reader
-        self.writer = writer
+        self.stream = stream
         self.backend = backend
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
@@ -67,7 +65,7 @@ class HTTP11Connection:
         except h11.LocalProtocolError:  # pragma: no cover
             # Premature client disconnect
             pass
-        await self.writer.close()
+        await self.stream.close()
 
     async def _send_request(
         self, request: AsyncRequest, timeout: TimeoutConfig = None
@@ -111,7 +109,7 @@ class HTTP11Connection:
         drain before returning.
         """
         bytes_to_send = self.h11_state.send(event)
-        await self.writer.write(bytes_to_send, timeout)
+        await self.stream.write(bytes_to_send, timeout)
 
     async def _receive_response(
         self, timeout: TimeoutConfig = None
@@ -154,7 +152,7 @@ class HTTP11Connection:
             event = self.h11_state.next_event()
             if event is h11.NEED_DATA:
                 try:
-                    data = await self.reader.read(
+                    data = await self.stream.read(
                         self.READ_NUM_BYTES, timeout, flag=self.timeout_flag
                     )
                 except OSError:  # pragma: nocover
@@ -184,4 +182,4 @@ class HTTP11Connection:
         return self.h11_state.our_state in (h11.CLOSED, h11.ERROR)
 
     def is_connection_dropped(self) -> bool:
-        return self.reader.is_connection_dropped()
+        return self.stream.is_connection_dropped()

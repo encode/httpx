@@ -79,17 +79,17 @@ class HTTPConnection(AsyncDispatcher):
         else:
             on_release = functools.partial(self.release_func, self)
 
-        reader, writer, http_version = await self.backend.connect(
+        stream, http_version = await self.backend.connect(
             host, port, ssl_context, timeout
         )
         if http_version == "HTTP/2":
             self.h2_connection = HTTP2Connection(
-                reader, writer, self.backend, on_release=on_release
+                stream, self.backend, on_release=on_release
             )
         else:
             assert http_version == "HTTP/1.1"
             self.h11_connection = HTTP11Connection(
-                reader, writer, self.backend, on_release=on_release
+                stream, self.backend, on_release=on_release
             )
 
     async def get_ssl_context(self, ssl: SSLConfig) -> typing.Optional[ssl.SSLContext]:
