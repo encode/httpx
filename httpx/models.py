@@ -210,6 +210,12 @@ class URL:
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         url_str = str(self)
+        if self._uri_reference.userinfo:
+            url_str = (
+                rfc3986.urlparse(url_str)
+                .copy_with(userinfo=f"{self.username}:[secure]")
+                .unsplit()
+            )
         return f"{class_name}({url_str!r})"
 
 
@@ -489,10 +495,14 @@ class Headers(typing.MutableMapping[str, str]):
         if self.encoding != "ascii":
             encoding_str = f", encoding={self.encoding!r}"
 
-        as_dict = dict(self.items())
-        if len(as_dict) == len(self):
+        sensitive_headers = {"authorization", "proxy-authorization"}
+        as_list = [
+            (k, "[secure]" if k in sensitive_headers else v) for k, v in self.items()
+        ]
+
+        as_dict = dict(as_list)
+        if len(as_dict) == len(as_list):
             return f"{class_name}({as_dict!r}{encoding_str})"
-        as_list = self.items()
         return f"{class_name}({as_list!r}{encoding_str})"
 
 
