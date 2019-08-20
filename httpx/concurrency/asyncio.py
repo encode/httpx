@@ -22,7 +22,6 @@ from ..interfaces import (
     BaseReader,
     BaseWriter,
     ConcurrencyBackend,
-    Protocol,
 )
 
 SSL_MONKEY_PATCH_APPLIED = False
@@ -202,7 +201,7 @@ class AsyncioBackend(ConcurrencyBackend):
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
+    ) -> typing.Tuple[BaseReader, BaseWriter, str]:
         try:
             stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
                 asyncio.open_connection(hostname, port, ssl=ssl_context),
@@ -221,9 +220,9 @@ class AsyncioBackend(ConcurrencyBackend):
 
         reader = Reader(stream_reader=stream_reader, timeout=timeout)
         writer = Writer(stream_writer=stream_writer, timeout=timeout)
-        protocol = Protocol.HTTP_2 if ident == "h2" else Protocol.HTTP_11
+        http_version = "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
-        return reader, writer, protocol
+        return reader, writer, http_version
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
