@@ -92,7 +92,7 @@ The [Developer Interface](https://www.encode.io/httpx/api/) provides a comprehen
 
 ## Contribute
 
-If you want to contribute with HTTPX check out the [Contributing Guide](https://www.encode.io/httpx/contributing/) to learn how to start.
+If you want to contribute with HTTPX check out the [Contributing Guide](https://github.com/duttashi/httpx/blob/develop/docs/contributing.md) to learn how to start.
 
 ## Dependencies
 
