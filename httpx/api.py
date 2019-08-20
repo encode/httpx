@@ -24,7 +24,6 @@ def request(
     json: typing.Any = None,
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
-    # files
     auth: AuthTypes = None,
     timeout: TimeoutTypes = None,
     allow_redirects: bool = True,

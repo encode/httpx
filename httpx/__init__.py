@@ -5,6 +5,8 @@ from .concurrency.asyncio import AsyncioBackend
 from .config import (
     USER_AGENT,
     CertTypes,
+    HTTPVersionConfig,
+    HTTPVersionTypes,
     PoolLimits,
     SSLConfig,
     TimeoutConfig,
@@ -113,6 +115,8 @@ __all__ = [
     "StatusCode",
     "codes",
     "TimeoutTypes",
+    "HTTPVersionTypes",
+    "HTTPVersionConfig",
     "AsyncRequest",
     "AsyncRequestData",
     "AsyncResponse",

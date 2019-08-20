@@ -5,6 +5,7 @@ from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
+    HTTPVersionTypes,
     PoolLimits,
     TimeoutTypes,
     VerifyTypes,
@@ -80,12 +81,14 @@ class ConnectionPool(AsyncDispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
     ):
         self.verify = verify
         self.cert = cert
         self.timeout = timeout
         self.pool_limits = pool_limits
+        self.http_versions = http_versions
         self.is_closed = False
 
         self.keepalive_connections = ConnectionStore()
@@ -133,6 +136,7 @@ class ConnectionPool(AsyncDispatcher):
                 verify=self.verify,
                 cert=self.cert,
                 timeout=self.timeout,
+                http_versions=self.http_versions,
                 backend=self.backend,
                 release_func=self.release_connection,
             )

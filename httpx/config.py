@@ -9,9 +9,14 @@ from .__version__ import __version__
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
 TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
+HTTPVersionTypes = typing.Union[
+    str, typing.List[str], typing.Tuple[str], "HTTPVersionConfig"
+]
 
 
 USER_AGENT = f"python-httpx/{__version__}"
+
+HTTP_VERSIONS_TO_ALPN_IDENTIFIERS = {"HTTP/1.1": "http/1.1", "HTTP/2": "h2"}
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -72,27 +77,35 @@ class SSLConfig:
             return self
         return SSLConfig(cert=cert, verify=verify)
 
-    def load_ssl_context(self) -> ssl.SSLContext:
+    def load_ssl_context(
+        self, http_versions: "HTTPVersionConfig" = None
+    ) -> ssl.SSLContext:
+        http_versions = HTTPVersionConfig() if http_versions is None else http_versions
+
         if self.ssl_context is None:
             self.ssl_context = (
-                self.load_ssl_context_verify()
+                self.load_ssl_context_verify(http_versions=http_versions)
                 if self.verify
-                else self.load_ssl_context_no_verify()
+                else self.load_ssl_context_no_verify(http_versions=http_versions)
             )
 
         assert self.ssl_context is not None
         return self.ssl_context
 
-    def load_ssl_context_no_verify(self) -> ssl.SSLContext:
+    def load_ssl_context_no_verify(
+        self, http_versions: "HTTPVersionConfig"
+    ) -> ssl.SSLContext:
         """
         Return an SSL context for unverified connections.
         """
-        context = self._create_default_ssl_context()
+        context = self._create_default_ssl_context(http_versions=http_versions)
         context.verify_mode = ssl.CERT_NONE
         context.check_hostname = False
         return context
 
-    def load_ssl_context_verify(self) -> ssl.SSLContext:
+    def load_ssl_context_verify(
+        self, http_versions: "HTTPVersionConfig"
+    ) -> ssl.SSLContext:
         """
         Return an SSL context for verified connections.
         """
@@ -106,7 +119,7 @@ class SSLConfig:
                 "invalid path: {}".format(self.verify)
             )
 
-        context = self._create_default_ssl_context()
+        context = self._create_default_ssl_context(http_versions=http_versions)
         context.verify_mode = ssl.CERT_REQUIRED
         context.check_hostname = True
 
@@ -133,7 +146,9 @@ class SSLConfig:
 
         return context
 
-    def _create_default_ssl_context(self) -> ssl.SSLContext:
+    def _create_default_ssl_context(
+        self, http_versions: "HTTPVersionConfig"
+    ) -> ssl.SSLContext:
         """
         Creates the default SSLContext object that's used for both verified
         and unverified connections.
@@ -147,9 +162,9 @@ class SSLConfig:
         context.set_ciphers(DEFAULT_CIPHERS)
 
         if ssl.HAS_ALPN:
-            context.set_alpn_protocols(["h2", "http/1.1"])
+            context.set_alpn_protocols(http_versions.alpn_identifiers)
         if ssl.HAS_NPN:  # pragma: no cover
-            context.set_npn_protocols(["h2", "http/1.1"])
+            context.set_npn_protocols(http_versions.alpn_identifiers)
 
         return context
 
@@ -221,6 +236,44 @@ class TimeoutConfig:
             f"{class_name}(connect_timeout={self.connect_timeout}, "
             f"read_timeout={self.read_timeout}, write_timeout={self.write_timeout})"
         )
+
+
+class HTTPVersionConfig:
+    """
+    Configure which HTTP protocol versions are supported.
+    """
+
+    def __init__(self, http_versions: HTTPVersionTypes = None):
+        if http_versions is None:
+            http_versions = ["HTTP/1.1", "HTTP/2"]
+
+        if isinstance(http_versions, str):
+            self.http_versions = {http_versions.upper()}
+        elif isinstance(http_versions, HTTPVersionConfig):
+            self.http_versions = http_versions.http_versions
+        else:
+            self.http_versions = {version.upper() for version in http_versions}
+
+        for version in self.http_versions:
+            if version not in ("HTTP/1.1", "HTTP/2"):
+                raise ValueError(f"Unsupported HTTP version {version!r}.")
+
+        if not self.http_versions:
+            raise ValueError(f"HTTP versions cannot be an empty list.")
+
+    @property
+    def alpn_identifiers(self) -> typing.List[str]:
+        """
+        Returns a list of supported ALPN identifiers. (One or more of "http/1.1", "h2").
+        """
+        return [
+            HTTP_VERSIONS_TO_ALPN_IDENTIFIERS[version] for version in self.http_versions
+        ]
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        value = sorted(list(self.http_versions))
+        return f"{class_name}({value!r})"
 
 
 class PoolLimits:
