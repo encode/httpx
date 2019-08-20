@@ -12,7 +12,6 @@ from httpx import (
     CertTypes,
     RedirectBodyUnavailable,
     RedirectLoop,
-    HTTPVersionTypes,
     TimeoutTypes,
     TooManyRedirects,
     VerifyTypes,
@@ -27,7 +26,6 @@ class MockDispatch(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        http_versions: HTTPVersionTypes = None,
     ) -> AsyncResponse:
         if request.url.path == "/redirect_301":
             status_code = codes.MOVED_PERMANENTLY

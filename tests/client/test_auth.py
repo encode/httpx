@@ -8,7 +8,6 @@ from httpx import (
     AsyncResponse,
     CertTypes,
     Client,
-    HTTPVersionTypes,
     TimeoutTypes,
     VerifyTypes,
 )
@@ -21,7 +20,6 @@ class MockDispatch(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        http_versions: HTTPVersionTypes = None,
     ) -> AsyncResponse:
         body = json.dumps({"auth": request.headers.get("Authorization")}).encode()
         return AsyncResponse(200, content=body, request=request)

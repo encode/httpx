@@ -246,11 +246,11 @@ class HTTPVersionConfig:
             http_versions = ["HTTP/1.1", "HTTP/2"]
 
         if isinstance(http_versions, str):
-            self.http_versions = set([http_versions.upper()])
+            self.http_versions = {http_versions.upper()}
         elif isinstance(http_versions, HTTPVersionConfig):
             self.http_versions = http_versions.http_versions
         else:
-            self.http_versions = set([version.upper() for version in http_versions])
+            self.http_versions = {version.upper() for version in http_versions}
 
         for version in self.http_versions:
             if version not in ("HTTP/1.1", "HTTP/2"):

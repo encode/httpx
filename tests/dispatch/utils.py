@@ -13,7 +13,6 @@ from httpx import (
     Protocol,
     Request,
     TimeoutConfig,
-    HTTPVersionConfig,
 )
 
 

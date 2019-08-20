@@ -1,13 +1,13 @@
 import functools
-import typing
 import ssl
+import typing
 
 from ..concurrency.asyncio import AsyncioBackend
 from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
-    HTTPVersionTypes,
     HTTPVersionConfig,
+    HTTPVersionTypes,
     SSLConfig,
     TimeoutConfig,
     TimeoutTypes,
@@ -48,12 +48,9 @@ class HTTPConnection(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        http_versions: HTTPVersionTypes = None,
     ) -> AsyncResponse:
         if self.h11_connection is None and self.h2_connection is None:
-            await self.connect(
-                verify=verify, cert=cert, timeout=timeout, http_versions=http_versions
-            )
+            await self.connect(verify=verify, cert=cert, timeout=timeout)
 
         if self.h2_connection is not None:
             response = await self.h2_connection.send(request, timeout=timeout)
@@ -68,19 +65,13 @@ class HTTPConnection(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        http_versions: HTTPVersionTypes = None,
     ) -> None:
         ssl = self.ssl.with_overrides(verify=verify, cert=cert)
         timeout = self.timeout if timeout is None else TimeoutConfig(timeout)
-        http_versions = (
-            self.http_versions
-            if http_versions is None
-            else HTTPVersionConfig(http_versions)
-        )
 
         host = self.origin.host
         port = self.origin.port
-        ssl_context = await self.get_ssl_context(ssl, http_versions)
+        ssl_context = await self.get_ssl_context(ssl)
 
         if self.release_func is None:
             on_release = None
@@ -99,14 +90,14 @@ class HTTPConnection(AsyncDispatcher):
                 reader, writer, self.backend, on_release=on_release
             )
 
-    async def get_ssl_context(
-        self, ssl: SSLConfig, http_versions: HTTPVersionConfig
-    ) -> typing.Optional[ssl.SSLContext]:
+    async def get_ssl_context(self, ssl: SSLConfig) -> typing.Optional[ssl.SSLContext]:
         if not self.origin.is_ssl:
             return None
 
         # Run the SSL loading in a threadpool, since it may makes disk accesses.
-        return await self.backend.run_in_threadpool(ssl.load_ssl_context, http_versions)
+        return await self.backend.run_in_threadpool(
+            ssl.load_ssl_context, self.http_versions
+        )
 
     async def close(self) -> None:
         if self.h2_connection is not None:

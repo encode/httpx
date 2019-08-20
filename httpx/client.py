@@ -11,6 +11,7 @@ from .config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
+    HTTPVersionTypes,
     PoolLimits,
     TimeoutTypes,
     VerifyTypes,
@@ -57,6 +58,7 @@ class BaseClient:
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http_versions: HTTPVersionTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
@@ -84,6 +86,7 @@ class BaseClient:
                 verify=verify,
                 cert=cert,
                 timeout=timeout,
+                http_versions=http_versions,
                 pool_limits=pool_limits,
                 backend=backend,
             )

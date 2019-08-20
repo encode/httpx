@@ -8,7 +8,6 @@ from httpx import (
     AsyncResponse,
     CertTypes,
     Client,
-    HTTPVersionTypes,
     TimeoutTypes,
     VerifyTypes,
     __version__,
@@ -22,7 +21,6 @@ class MockDispatch(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        http_versions: HTTPVersionTypes = None,
     ) -> AsyncResponse:
         if request.url.path.startswith("/echo_headers"):
             request_headers = dict(request.headers.items())

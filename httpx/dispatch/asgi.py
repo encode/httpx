@@ -1,7 +1,7 @@
 import asyncio
 import typing
 
-from ..config import CertTypes, HTTPVersionTypes, TimeoutTypes, VerifyTypes
+from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..interfaces import AsyncDispatcher
 from ..models import AsyncRequest, AsyncResponse
 
@@ -59,7 +59,6 @@ class ASGIDispatch(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        http_versions: HTTPVersionTypes = None,
     ) -> AsyncResponse:
 
         scope = {

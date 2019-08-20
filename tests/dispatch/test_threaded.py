@@ -4,7 +4,6 @@ from httpx import (
     CertTypes,
     Client,
     Dispatcher,
-    HTTPVersionTypes,
     Request,
     Response,
     TimeoutTypes,
@@ -24,7 +23,6 @@ class MockDispatch(Dispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        http_versions: HTTPVersionTypes = None,
     ) -> Response:
         if request.url.path == "/streaming_response":
             return Response(200, content=streaming_body(), request=request)

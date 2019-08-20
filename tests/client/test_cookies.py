@@ -8,7 +8,6 @@ from httpx import (
     CertTypes,
     Client,
     Cookies,
-    HTTPVersionTypes,
     TimeoutTypes,
     VerifyTypes,
 )
@@ -21,7 +20,6 @@ class MockDispatch(AsyncDispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        http_versions: HTTPVersionTypes = None,
     ) -> AsyncResponse:
         if request.url.path.startswith("/echo_cookies"):
             body = json.dumps({"cookies": request.headers.get("Cookie")}).encode()
