@@ -10,7 +10,7 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Protocol
+from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse, Origin
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
@@ -78,14 +78,15 @@ class HTTPConnection(AsyncDispatcher):
         else:
             on_release = functools.partial(self.release_func, self)
 
-        reader, writer, protocol = await self.backend.connect(
+        reader, writer, http_version = await self.backend.connect(
             host, port, ssl_context, timeout
         )
-        if protocol == Protocol.HTTP_2:
+        if http_version == "HTTP/2":
             self.h2_connection = HTTP2Connection(
                 reader, writer, self.backend, on_release=on_release
             )
         else:
+            assert http_version == "HTTP/1.1"
             self.h11_connection = HTTP11Connection(
                 reader, writer, self.backend, on_release=on_release
             )

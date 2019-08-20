@@ -38,7 +38,6 @@ from .interfaces import (
     BaseWriter,
     ConcurrencyBackend,
     Dispatcher,
-    Protocol,
 )
 from .models import (
     URL,
@@ -109,7 +108,6 @@ __all__ = [
     "BaseWriter",
     "ConcurrencyBackend",
     "Dispatcher",
-    "Protocol",
     "URL",
     "URLTypes",
     "StatusCode",

@@ -17,11 +17,6 @@ from .models import (
 )
 
 
-class Protocol(str, enum.Enum):
-    HTTP_11 = "HTTP/1.1"
-    HTTP_2 = "HTTP/2"
-
-
 class AsyncDispatcher:
     """
     Base class for async dispatcher classes, that handle sending the request.
@@ -172,7 +167,7 @@ class ConcurrencyBackend:
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
+    ) -> typing.Tuple[BaseReader, BaseWriter, str]:
         raise NotImplementedError()  # pragma: no cover
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
