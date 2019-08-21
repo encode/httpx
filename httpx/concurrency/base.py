@@ -37,28 +37,20 @@ class TimeoutFlag:
         self.raise_on_write_timeout = True
 
 
-class BaseReader:
+class BaseStream:
     """
-    A stream reader. Abstracts away any asyncio-specific interfaces
-    into a more generic base class, that we can use with alternate
-    backend, or for stand-alone test cases.
+    A stream with read/write operations. Abstracts away any asyncio-specific
+    interfaces into a more generic base class, that we can use with alternate
+    backends, or for stand-alone test cases.
     """
+
+    def get_http_version(self) -> str:
+        raise NotImplementedError()  # pragma: no cover
 
     async def read(
         self, n: int, timeout: TimeoutConfig = None, flag: typing.Any = None
     ) -> bytes:
         raise NotImplementedError()  # pragma: no cover
-
-    def is_connection_dropped(self) -> bool:
-        raise NotImplementedError()  # pragma: no cover
-
-
-class BaseWriter:
-    """
-    A stream writer. Abstracts away any asyncio-specific interfaces
-    into a more generic base class, that we can use with alternate
-    backend, or for stand-alone test cases.
-    """
 
     def write_no_block(self, data: bytes) -> None:
         raise NotImplementedError()  # pragma: no cover
@@ -67,6 +59,9 @@ class BaseWriter:
         raise NotImplementedError()  # pragma: no cover
 
     async def close(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    def is_connection_dropped(self) -> bool:
         raise NotImplementedError()  # pragma: no cover
 
 
@@ -118,7 +113,7 @@ class ConcurrencyBackend:
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> typing.Tuple[BaseReader, BaseWriter, str]:
+    ) -> BaseStream:
         raise NotImplementedError()  # pragma: no cover
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
