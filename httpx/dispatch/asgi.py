@@ -120,7 +120,8 @@ class ASGIDispatch(AsyncDispatcher):
                 await response_body.mark_as_done()
                 response_started_or_failed.set()
 
-        # Using the background manager here works fine, but looks somewhat clunky.
+        # Using the background manager here *works*, but it is weak design because
+        # the background task isn't strictly context-managed.
         # We could consider refactoring the other uses of this abstraction
         # (mainly sending/receiving request/response data in h11 and h2 dispatchers),
         # and see if that allows us to come back here and refactor things out.
