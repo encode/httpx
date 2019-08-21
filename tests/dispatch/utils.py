@@ -6,14 +6,7 @@ import h2.config
 import h2.connection
 import h2.events
 
-from httpx import (
-    AsyncioBackend,
-    BaseReader,
-    BaseWriter,
-    Protocol,
-    Request,
-    TimeoutConfig,
-)
+from httpx import AsyncioBackend, BaseReader, BaseWriter, Request, TimeoutConfig
 
 
 class MockHTTP2Backend(AsyncioBackend):
@@ -27,9 +20,9 @@ class MockHTTP2Backend(AsyncioBackend):
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
+    ) -> typing.Tuple[BaseReader, BaseWriter, str]:
         self.server = MockHTTP2Server(self.app)
-        return self.server, self.server, Protocol.HTTP_2
+        return self.server, self.server, "HTTP/2"
 
 
 class MockHTTP2Server(BaseReader, BaseWriter):

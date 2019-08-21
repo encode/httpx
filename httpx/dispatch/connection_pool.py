@@ -1,16 +1,18 @@
 import typing
 
-from ..concurrency import AsyncioBackend
+from ..concurrency.asyncio import AsyncioBackend
+from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
+    HTTPVersionTypes,
     PoolLimits,
     TimeoutTypes,
     VerifyTypes,
 )
-from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse, Origin
+from .base import AsyncDispatcher
 from .connection import HTTPConnection
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
@@ -80,12 +82,14 @@ class ConnectionPool(AsyncDispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
     ):
         self.verify = verify
         self.cert = cert
         self.timeout = timeout
         self.pool_limits = pool_limits
+        self.http_versions = http_versions
         self.is_closed = False
 
         self.keepalive_connections = ConnectionStore()
@@ -123,6 +127,7 @@ class ConnectionPool(AsyncDispatcher):
             connection = self.keepalive_connections.pop_by_origin(origin)
 
         if connection is not None and connection.is_connection_dropped():
+            self.max_connections.release()
             connection = None
 
         if connection is None:
@@ -132,6 +137,7 @@ class ConnectionPool(AsyncDispatcher):
                 verify=self.verify,
                 cert=self.cert,
                 timeout=self.timeout,
+                http_versions=self.http_versions,
                 backend=self.backend,
                 release_func=self.release_connection,
             )

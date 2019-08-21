@@ -98,8 +98,12 @@ class BrotliDecoder(Decoder):
             brotli is not None
         ), "The 'brotlipy' or 'brotli' library must be installed to use 'BrotliDecoder'"
         self.decompressor = brotli.Decompressor()
+        self.seen_data = False
 
     def decode(self, data: bytes) -> bytes:
+        if not data:
+            return b""
+        self.seen_data = True
         try:
             if hasattr(self.decompressor, "decompress"):
                 return self.decompressor.decompress(data)
@@ -108,6 +112,8 @@ class BrotliDecoder(Decoder):
             raise DecodingError from exc
 
     def flush(self) -> bytes:
+        if not self.seen_data:
+            return b""
         try:
             if hasattr(self.decompressor, "finish"):
                 self.decompressor.finish()

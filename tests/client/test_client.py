@@ -32,7 +32,7 @@ def test_get(server):
     assert response.url == httpx.URL(url)
     assert response.content == b"Hello, world!"
     assert response.text == "Hello, world!"
-    assert response.protocol == "HTTP/1.1"
+    assert response.http_version == "HTTP/1.1"
     assert response.encoding == "iso-8859-1"
     assert response.request.url == httpx.URL(url)
     assert response.headers
@@ -158,3 +158,19 @@ def test_merge_url():
 
     assert url.scheme == "https"
     assert url.is_ssl
+
+
+class DerivedFromAsyncioBackend(httpx.AsyncioBackend):
+    pass
+
+
+class AnyBackend:
+    pass
+
+
+def test_client_backend_must_be_asyncio_based():
+    httpx.Client(backend=httpx.AsyncioBackend())
+    httpx.Client(backend=DerivedFromAsyncioBackend())
+
+    with pytest.raises(ValueError):
+        httpx.Client(backend=AnyBackend())

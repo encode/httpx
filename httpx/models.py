@@ -34,6 +34,7 @@ from .utils import (
     is_known_encoding,
     normalize_header_key,
     normalize_header_value,
+    parse_header_links,
     str_query_param,
 )
 
@@ -209,6 +210,12 @@ class URL:
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         url_str = str(self)
+        if self._uri_reference.userinfo:
+            url_str = (
+                rfc3986.urlparse(url_str)
+                .copy_with(userinfo=f"{self.username}:[secure]")
+                .unsplit()
+            )
         return f"{class_name}({url_str!r})"
 
 
@@ -488,10 +495,14 @@ class Headers(typing.MutableMapping[str, str]):
         if self.encoding != "ascii":
             encoding_str = f", encoding={self.encoding!r}"
 
-        as_dict = dict(self.items())
-        if len(as_dict) == len(self):
+        sensitive_headers = {"authorization", "proxy-authorization"}
+        as_list = [
+            (k, "[secure]" if k in sensitive_headers else v) for k, v in self.items()
+        ]
+
+        as_dict = dict(as_list)
+        if len(as_dict) == len(as_list):
             return f"{class_name}({as_dict!r}{encoding_str})"
-        as_list = self.items()
         return f"{class_name}({as_list!r}{encoding_str})"
 
 
@@ -677,13 +688,13 @@ class BaseResponse:
         self,
         status_code: int,
         *,
-        protocol: str = None,
+        http_version: str = None,
         headers: HeaderTypes = None,
         request: BaseRequest = None,
         on_close: typing.Callable = None,
     ):
         self.status_code = status_code
-        self.protocol = protocol
+        self.http_version = http_version
         self.headers = Headers(headers)
 
         self.request = request
@@ -836,6 +847,20 @@ class BaseResponse:
             self._cookies.extract_cookies(self)
         return self._cookies
 
+    @property
+    def links(self) -> typing.Dict[typing.Optional[str], typing.Dict[str, str]]:
+        """
+        Returns the parsed header links of the response, if any
+        """
+        header = self.headers.get("link")
+        ldict = {}
+        if header:
+            links = parse_header_links(header)
+            for link in links:
+                key = link.get("rel") or link.get("url")
+                ldict[key] = link
+        return ldict
+
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
@@ -845,7 +870,7 @@ class AsyncResponse(BaseResponse):
         self,
         status_code: int,
         *,
-        protocol: str = None,
+        http_version: str = None,
         headers: HeaderTypes = None,
         content: AsyncResponseContent = None,
         on_close: typing.Callable = None,
@@ -854,7 +879,7 @@ class AsyncResponse(BaseResponse):
     ):
         super().__init__(
             status_code=status_code,
-            protocol=protocol,
+            http_version=http_version,
             headers=headers,
             request=request,
             on_close=on_close,
@@ -935,7 +960,7 @@ class Response(BaseResponse):
         self,
         status_code: int,
         *,
-        protocol: str = None,
+        http_version: str = None,
         headers: HeaderTypes = None,
         content: ResponseContent = None,
         on_close: typing.Callable = None,
@@ -944,7 +969,7 @@ class Response(BaseResponse):
     ):
         super().__init__(
             status_code=status_code,
-            protocol=protocol,
+            http_version=http_version,
             headers=headers,
             request=request,
             on_close=on_close,

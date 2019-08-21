@@ -4,9 +4,14 @@ import typing
 import h2.connection
 import h2.events
 
-from ..concurrency import TimeoutFlag
+from ..concurrency.base import (
+    BaseEvent,
+    BaseReader,
+    BaseWriter,
+    ConcurrencyBackend,
+    TimeoutFlag,
+)
 from ..config import TimeoutConfig, TimeoutTypes
-from ..interfaces import BaseEvent, BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
 
@@ -52,7 +57,7 @@ class HTTP2Connection:
 
         return AsyncResponse(
             status_code=status_code,
-            protocol="HTTP/2",
+            http_version="HTTP/2",
             headers=headers,
             content=content,
             on_close=on_close,

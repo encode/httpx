@@ -14,16 +14,17 @@ import ssl
 import typing
 from types import TracebackType
 
-from .config import PoolLimits, TimeoutConfig
-from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
-from .interfaces import (
+from ..config import PoolLimits, TimeoutConfig
+from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
+from .base import (
     BaseBackgroundManager,
     BaseEvent,
     BasePoolSemaphore,
+    BaseQueue,
     BaseReader,
     BaseWriter,
     ConcurrencyBackend,
-    Protocol,
+    TimeoutFlag,
 )
 
 SSL_MONKEY_PATCH_APPLIED = False
@@ -31,7 +32,7 @@ SSL_MONKEY_PATCH_APPLIED = False
 
 def ssl_monkey_patch() -> None:
     """
-    Monky-patch for https://bugs.python.org/issue36709
+    Monkey-patch for https://bugs.python.org/issue36709
 
     This prevents console errors when outstanding HTTPS connections
     still exist at the point of exiting.
@@ -48,38 +49,6 @@ def ssl_monkey_patch() -> None:
             _write(self, data)
 
     MonkeyPatch.write = _fixed_write
-
-
-class TimeoutFlag:
-    """
-    A timeout flag holds a state of either read-timeout or write-timeout mode.
-
-    We use this so that we can attempt both reads and writes concurrently, while
-    only enforcing timeouts in one direction.
-
-    During a request/response cycle we start in write-timeout mode.
-
-    Once we've sent a request fully, or once we start seeing a response,
-    then we switch to read-timeout mode instead.
-    """
-
-    def __init__(self) -> None:
-        self.raise_on_read_timeout = False
-        self.raise_on_write_timeout = True
-
-    def set_read_timeouts(self) -> None:
-        """
-        Set the flag to read-timeout mode.
-        """
-        self.raise_on_read_timeout = True
-        self.raise_on_write_timeout = False
-
-    def set_write_timeouts(self) -> None:
-        """
-        Set the flag to write-timeout mode.
-        """
-        self.raise_on_read_timeout = False
-        self.raise_on_write_timeout = True
 
 
 class Reader(BaseReader):
@@ -197,16 +166,13 @@ class AsyncioBackend(ConcurrencyBackend):
                 self._loop = asyncio.new_event_loop()
         return self._loop
 
-    def create_event(self) -> BaseEvent:
-        return typing.cast(BaseEvent, asyncio.Event())
-
     async def connect(
         self,
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
+    ) -> typing.Tuple[BaseReader, BaseWriter, str]:
         try:
             stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
                 asyncio.open_connection(hostname, port, ssl=ssl_context),
@@ -225,9 +191,9 @@ class AsyncioBackend(ConcurrencyBackend):
 
         reader = Reader(stream_reader=stream_reader, timeout=timeout)
         writer = Writer(stream_writer=stream_writer, timeout=timeout)
-        protocol = Protocol.HTTP_2 if ident == "h2" else Protocol.HTTP_11
+        http_version = "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
-        return reader, writer, protocol
+        return reader, writer, http_version
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
@@ -250,6 +216,12 @@ class AsyncioBackend(ConcurrencyBackend):
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
+
+    def create_queue(self, max_size: int) -> BaseQueue:
+        return typing.cast(BaseQueue, asyncio.Queue(maxsize=max_size))
+
+    def create_event(self) -> BaseEvent:
+        return typing.cast(BaseEvent, asyncio.Event())
 
     def background_manager(
         self, coroutine: typing.Callable, args: typing.Any

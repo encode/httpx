@@ -1,16 +1,26 @@
 from .__version__ import __description__, __title__, __version__
 from .api import delete, get, head, options, patch, post, put, request
 from .client import AsyncClient, Client
-from .concurrency import AsyncioBackend
+from .concurrency.asyncio import AsyncioBackend
+from .concurrency.base import (
+    BaseBackgroundManager,
+    BasePoolSemaphore,
+    BaseReader,
+    BaseWriter,
+    ConcurrencyBackend,
+)
 from .config import (
     USER_AGENT,
     CertTypes,
+    HTTPVersionConfig,
+    HTTPVersionTypes,
     PoolLimits,
     SSLConfig,
     TimeoutConfig,
     TimeoutTypes,
     VerifyTypes,
 )
+from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
 from .exceptions import (
@@ -29,16 +39,6 @@ from .exceptions import (
     Timeout,
     TooManyRedirects,
     WriteTimeout,
-)
-from .interfaces import (
-    AsyncDispatcher,
-    BaseBackgroundManager,
-    BasePoolSemaphore,
-    BaseReader,
-    BaseWriter,
-    ConcurrencyBackend,
-    Dispatcher,
-    Protocol,
 )
 from .models import (
     URL,
@@ -109,12 +109,13 @@ __all__ = [
     "BaseWriter",
     "ConcurrencyBackend",
     "Dispatcher",
-    "Protocol",
     "URL",
     "URLTypes",
     "StatusCode",
     "codes",
     "TimeoutTypes",
+    "HTTPVersionTypes",
+    "HTTPVersionConfig",
     "AsyncRequest",
     "AsyncRequestData",
     "AsyncResponse",
