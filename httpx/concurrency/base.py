@@ -44,6 +44,9 @@ class BaseStream:
     backends, or for stand-alone test cases.
     """
 
+    def get_http_version(self) -> str:
+        raise NotImplementedError()  # pragma: no cover
+
     async def read(
         self, n: int, timeout: TimeoutConfig = None, flag: typing.Any = None
     ) -> bytes:
@@ -110,7 +113,7 @@ class ConcurrencyBackend:
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> typing.Tuple[BaseStream, str]:
+    ) -> BaseStream:
         raise NotImplementedError()  # pragma: no cover
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:

@@ -20,9 +20,9 @@ class MockHTTP2Backend(AsyncioBackend):
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> typing.Tuple[BaseStream, str]:
+    ) -> BaseStream:
         self.server = MockHTTP2Server(self.app)
-        return self.server, "HTTP/2"
+        return self.server
 
 
 class MockHTTP2Server(BaseStream):
@@ -35,6 +35,9 @@ class MockHTTP2Server(BaseStream):
         self.close_connection = False
 
     # Stream interface
+
+    def get_http_version(self) -> str:
+        return "HTTP/2"
 
     async def read(self, n, timeout, flag=None) -> bytes:
         await asyncio.sleep(0)

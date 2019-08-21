@@ -61,6 +61,18 @@ class Stream(BaseStream):
         self.stream_writer = stream_writer
         self.timeout = timeout
 
+    def get_http_version(self) -> str:
+        ssl_object = self.stream_writer.get_extra_info("ssl_object")
+
+        if ssl_object is None:
+            return "HTTP/1.1"
+
+        ident = ssl_object.selected_alpn_protocol()
+        if ident is None:
+            ident = ssl_object.selected_npn_protocol()
+
+        return "HTTP/2" if ident == "h2" else "HTTP/1.1"
+
     async def read(
         self, n: int, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
     ) -> bytes:
@@ -169,7 +181,7 @@ class AsyncioBackend(ConcurrencyBackend):
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> typing.Tuple[BaseStream, str]:
+    ) -> BaseStream:
         try:
             stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
                 asyncio.open_connection(hostname, port, ssl=ssl_context),
@@ -178,20 +190,9 @@ class AsyncioBackend(ConcurrencyBackend):
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
-        ssl_object = stream_writer.get_extra_info("ssl_object")
-        if ssl_object is None:
-            ident = "http/1.1"
-        else:
-            ident = ssl_object.selected_alpn_protocol()
-            if ident is None:
-                ident = ssl_object.selected_npn_protocol()
-
-        stream = Stream(
+        return Stream(
             stream_reader=stream_reader, stream_writer=stream_writer, timeout=timeout
         )
-        http_version = "HTTP/2" if ident == "h2" else "HTTP/1.1"
-
-        return stream, http_version
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
