@@ -1,9 +1,10 @@
 import asyncio
 import typing
 
+from .base import AsyncDispatcher
+from ..concurrency.base import ConcurrencyBackend
 from ..concurrency.asyncio import AsyncioBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
-from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
 

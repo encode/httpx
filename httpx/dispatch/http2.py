@@ -4,9 +4,8 @@ import typing
 import h2.connection
 import h2.events
 
-from ..concurrency.asyncio import TimeoutFlag
+from ..concurrency.base import BaseReader, BaseWriter, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
-from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
 
 

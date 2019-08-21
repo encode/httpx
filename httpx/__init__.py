@@ -2,6 +2,13 @@ from .__version__ import __description__, __title__, __version__
 from .api import delete, get, head, options, patch, post, put, request
 from .client import AsyncClient, Client
 from .concurrency.asyncio import AsyncioBackend
+from .concurrency.base import (
+    BaseBackgroundManager,
+    BasePoolSemaphore,
+    BaseReader,
+    BaseWriter,
+    ConcurrencyBackend,
+)
 from .config import (
     USER_AGENT,
     CertTypes,
@@ -13,6 +20,7 @@ from .config import (
     TimeoutTypes,
     VerifyTypes,
 )
+from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
 from .exceptions import (
@@ -31,15 +39,6 @@ from .exceptions import (
     Timeout,
     TooManyRedirects,
     WriteTimeout,
-)
-from .interfaces import (
-    AsyncDispatcher,
-    BaseBackgroundManager,
-    BasePoolSemaphore,
-    BaseReader,
-    BaseWriter,
-    ConcurrencyBackend,
-    Dispatcher,
 )
 from .models import (
     URL,

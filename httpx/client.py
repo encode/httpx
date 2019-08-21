@@ -6,6 +6,7 @@ import hstspreload
 
 from .auth import HTTPBasicAuth
 from .concurrency.asyncio import AsyncioBackend
+from .concurrency.base import ConcurrencyBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
@@ -17,6 +18,7 @@ from .config import (
     VerifyTypes,
 )
 from .dispatch.asgi import ASGIDispatch
+from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
@@ -27,7 +29,6 @@ from .exceptions import (
     RedirectLoop,
     TooManyRedirects,
 )
-from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from .models import (
     URL,
     AsyncRequest,
