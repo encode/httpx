@@ -205,7 +205,7 @@ class AsyncioBackend(ConcurrencyBackend):
         loop = self.loop
         if not hasattr(loop, "start_tls"):  # pragma: no cover
             raise NotImplementedError(
-                "AbstractEventLoop.start_tls() available in Python 3.7+"
+                "asyncio.AbstractEventLoop.start_tls() " "available in Python 3.7+"
             )
 
         assert isinstance(stream, Stream)

@@ -1,8 +1,14 @@
+import sys
+
 import pytest
 
 from httpx import AsyncioBackend, HTTPVersionConfig, SSLConfig, TimeoutConfig
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 7),
+    reason="Requires Python 3.7+ for AbstractEventLoop.start_tls()",
+)
 @pytest.mark.asyncio
 async def test_https_get_with_ssl_defaults(https_server):
     """
