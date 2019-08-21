@@ -17,6 +17,7 @@ from types import TracebackType
 from .base import (
     BaseBackgroundManager,
     BasePoolSemaphore,
+    BaseEvent,
     BaseQueue,
     BaseReader,
     BaseWriter,
@@ -218,6 +219,9 @@ class AsyncioBackend(ConcurrencyBackend):
 
     def create_queue(self, max_size: int) -> BaseQueue:
         return typing.cast(BaseQueue, asyncio.Queue(maxsize=max_size))
+
+    def create_event(self) -> BaseEvent:
+        return typing.cast(BaseEvent, asyncio.Event())
 
     def background_manager(
         self, coroutine: typing.Callable, args: typing.Any
