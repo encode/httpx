@@ -20,7 +20,7 @@ from .base import (
     BaseReader,
     BaseWriter,
     ConcurrencyBackend,
-    TimeoutFlag
+    TimeoutFlag,
 )
 from ..config import PoolLimits, TimeoutConfig
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
