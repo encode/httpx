@@ -159,7 +159,7 @@ class ConcurrencyBackend:
         raise NotImplementedError()  # pragma: no cover
 
     def background_manager(
-        self, coroutine: typing.Callable, args: typing.Any
+        self, coroutine: typing.Callable, *args: typing.Any
     ) -> "BaseBackgroundManager":
         raise NotImplementedError()  # pragma: no cover
 
