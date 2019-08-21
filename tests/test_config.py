@@ -115,6 +115,16 @@ def test_invalid_http_version():
         httpx.HTTPVersionConfig("HTTP/9")
 
 
+def test_invalid_http_version_type():
+    with pytest.raises(TypeError):
+        httpx.HTTPVersionConfig(123)
+
+
+def test_invalid_http_version_list_type():
+    with pytest.raises(ValueError):
+        httpx.HTTPVersionConfig([123])
+
+
 def test_empty_http_version():
     with pytest.raises(ValueError):
         httpx.HTTPVersionConfig([])

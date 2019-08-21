@@ -70,6 +70,18 @@ class BaseWriter:
         raise NotImplementedError()  # pragma: no cover
 
 
+class BaseQueue:
+    """
+    A FIFO queue. Abstracts away any asyncio-specific interfaces.
+    """
+
+    async def get(self) -> typing.Any:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def put(self, value: typing.Any) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
 class BasePoolSemaphore:
     """
     A semaphore for use with connection pooling.
@@ -129,6 +141,9 @@ class ConcurrencyBackend:
                 yield self.run(async_iterator.__anext__)
             except StopAsyncIteration:
                 break
+
+    def create_queue(self, max_size: int) -> BaseQueue:
+        raise NotImplementedError()  # pragma: no cover
 
     def background_manager(
         self, coroutine: typing.Callable, args: typing.Any

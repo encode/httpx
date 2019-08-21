@@ -2,6 +2,8 @@ import asyncio
 import typing
 
 from .base import AsyncDispatcher
+from ..concurrency.base import ConcurrencyBackend
+from ..concurrency.asyncio import AsyncioBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import AsyncRequest, AsyncResponse
 
@@ -52,6 +54,8 @@ class ASGIDispatch(AsyncDispatcher):
         self.raise_app_exceptions = raise_app_exceptions
         self.root_path = root_path
         self.client = client
+        # This will need to be turned into a parameter on this class at some point.
+        self.backend: ConcurrencyBackend = AsyncioBackend()
 
     async def send(
         self,
@@ -79,7 +83,7 @@ class ASGIDispatch(AsyncDispatcher):
         status_code = None
         headers = None
         response_started_or_failed = asyncio.Event()
-        response_body = BodyIterator()
+        response_body = BodyIterator(self.backend)
         request_stream = request.stream()
 
         async def receive() -> dict:
@@ -156,10 +160,8 @@ class BodyIterator:
     ingest the response content from.
     """
 
-    def __init__(self) -> None:
-        self._queue = asyncio.Queue(
-            maxsize=1
-        )  # type: asyncio.Queue[typing.Union[bytes, object]]
+    def __init__(self, backend: ConcurrencyBackend) -> None:
+        self._queue = backend.create_queue(max_size=1)
         self._done = object()
 
     async def iterate(self) -> typing.AsyncIterator[bytes]:

@@ -1,8 +1,7 @@
-import ssl
 import typing
 from types import TracebackType
 
-from ..config import CertTypes, PoolLimits, TimeoutConfig, TimeoutTypes, VerifyTypes
+from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import (
     AsyncRequest,
     AsyncRequestData,
