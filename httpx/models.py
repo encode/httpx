@@ -110,6 +110,10 @@ class URL:
             if not self.host:
                 raise InvalidURL("No host included in URL.")
 
+        # Allow setting full_path to custom attributes requests
+        # like OPTIONS, CONNECT, and forwarding proxy requests.
+        self._full_path: typing.Optional[str] = None
+
     @property
     def scheme(self) -> str:
         return self._uri_reference.scheme or ""
@@ -149,10 +153,16 @@ class URL:
 
     @property
     def full_path(self) -> str:
+        if self._full_path is not None:
+            return self._full_path
         path = self.path
         if self.query:
             path += "?" + self.query
         return path
+
+    @full_path.setter
+    def full_path(self, value: typing.Optional[str]):
+        self._full_path = value
 
     @property
     def fragment(self) -> str:
