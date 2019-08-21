@@ -224,7 +224,7 @@ class AsyncioBackend(ConcurrencyBackend):
         return typing.cast(BaseEvent, asyncio.Event())
 
     def background_manager(
-        self, coroutine: typing.Callable, args: typing.Any
+        self, coroutine: typing.Callable, *args: typing.Any
     ) -> "BackgroundManager":
         return BackgroundManager(coroutine, args)
 
