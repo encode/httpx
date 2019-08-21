@@ -82,6 +82,21 @@ class BaseQueue:
         raise NotImplementedError()  # pragma: no cover
 
 
+class BaseEvent:
+    """
+    An event object. Abstracts away any asyncio-specific interfaces.
+    """
+
+    def set(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    def is_set(self) -> bool:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def wait(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
 class BasePoolSemaphore:
     """
     A semaphore for use with connection pooling.
@@ -143,6 +158,9 @@ class ConcurrencyBackend:
                 break
 
     def create_queue(self, max_size: int) -> BaseQueue:
+        raise NotImplementedError()  # pragma: no cover
+
+    def create_event(self) -> BaseEvent:
         raise NotImplementedError()  # pragma: no cover
 
     def background_manager(
