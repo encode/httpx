@@ -6,7 +6,7 @@ import h2.config
 import h2.connection
 import h2.events
 
-from httpx import AsyncioBackend, BaseReader, BaseWriter, Request, TimeoutConfig
+from httpx import AsyncioBackend, BaseStream, Request, TimeoutConfig
 
 
 class MockHTTP2Backend(AsyncioBackend):
@@ -20,16 +20,12 @@ class MockHTTP2Backend(AsyncioBackend):
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> typing.Tuple[BaseReader, BaseWriter, str]:
+    ) -> BaseStream:
         self.server = MockHTTP2Server(self.app)
-        return self.server, self.server, "HTTP/2"
+        return self.server
 
 
-class MockHTTP2Server(BaseReader, BaseWriter):
-    """
-    This class exposes Reader and Writer style interfaces.
-    """
-
+class MockHTTP2Server(BaseStream):
     def __init__(self, app):
         config = h2.config.H2Configuration(client_side=False)
         self.conn = h2.connection.H2Connection(config=config)
@@ -38,14 +34,15 @@ class MockHTTP2Server(BaseReader, BaseWriter):
         self.requests = {}
         self.close_connection = False
 
-    # BaseReader interface
+    # Stream interface
+
+    def get_http_version(self) -> str:
+        return "HTTP/2"
 
     async def read(self, n, timeout, flag=None) -> bytes:
         await asyncio.sleep(0)
         send, self.buffer = self.buffer[:n], self.buffer[n:]
         return send
-
-    # BaseWriter interface
 
     def write_no_block(self, data: bytes) -> None:
         events = self.conn.receive_data(data)

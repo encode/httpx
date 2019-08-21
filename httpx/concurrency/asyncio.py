@@ -1,5 +1,5 @@
 """
-The `Reader` and `Writer` classes here provide a lightweight layer over
+The `Stream` class here provides a lightweight layer over
 `asyncio.StreamReader` and `asyncio.StreamWriter`.
 
 Similarly `PoolSemaphore` is a lightweight layer over `BoundedSemaphore`.
@@ -14,18 +14,17 @@ import ssl
 import typing
 from types import TracebackType
 
+from ..config import PoolLimits, TimeoutConfig
+from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import (
     BaseBackgroundManager,
     BasePoolSemaphore,
     BaseEvent,
     BaseQueue,
-    BaseReader,
-    BaseWriter,
+    BaseStream,
     ConcurrencyBackend,
     TimeoutFlag,
 )
-from ..config import PoolLimits, TimeoutConfig
-from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 
 SSL_MONKEY_PATCH_APPLIED = False
 
@@ -51,12 +50,28 @@ def ssl_monkey_patch() -> None:
     MonkeyPatch.write = _fixed_write
 
 
-class Reader(BaseReader):
+class Stream(BaseStream):
     def __init__(
-        self, stream_reader: asyncio.StreamReader, timeout: TimeoutConfig
-    ) -> None:
+        self,
+        stream_reader: asyncio.StreamReader,
+        stream_writer: asyncio.StreamWriter,
+        timeout: TimeoutConfig,
+    ):
         self.stream_reader = stream_reader
+        self.stream_writer = stream_writer
         self.timeout = timeout
+
+    def get_http_version(self) -> str:
+        ssl_object = self.stream_writer.get_extra_info("ssl_object")
+
+        if ssl_object is None:
+            return "HTTP/1.1"
+
+        ident = ssl_object.selected_alpn_protocol()
+        if ident is None:
+            ident = ssl_object.selected_npn_protocol()
+
+        return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
     async def read(
         self, n: int, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
@@ -77,15 +92,6 @@ class Reader(BaseReader):
                     raise ReadTimeout() from None
 
         return data
-
-    def is_connection_dropped(self) -> bool:
-        return self.stream_reader.at_eof()
-
-
-class Writer(BaseWriter):
-    def __init__(self, stream_writer: asyncio.StreamWriter, timeout: TimeoutConfig):
-        self.stream_writer = stream_writer
-        self.timeout = timeout
 
     def write_no_block(self, data: bytes) -> None:
         self.stream_writer.write(data)  # pragma: nocover
@@ -113,6 +119,9 @@ class Writer(BaseWriter):
                 should_raise = flag is None or flag.raise_on_write_timeout
                 if should_raise:
                     raise WriteTimeout() from None
+
+    def is_connection_dropped(self) -> bool:
+        return self.stream_reader.at_eof()
 
     async def close(self) -> None:
         self.stream_writer.close()
@@ -172,7 +181,7 @@ class AsyncioBackend(ConcurrencyBackend):
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> typing.Tuple[BaseReader, BaseWriter, str]:
+    ) -> BaseStream:
         try:
             stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
                 asyncio.open_connection(hostname, port, ssl=ssl_context),
@@ -181,19 +190,9 @@ class AsyncioBackend(ConcurrencyBackend):
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
-        ssl_object = stream_writer.get_extra_info("ssl_object")
-        if ssl_object is None:
-            ident = "http/1.1"
-        else:
-            ident = ssl_object.selected_alpn_protocol()
-            if ident is None:
-                ident = ssl_object.selected_npn_protocol()
-
-        reader = Reader(stream_reader=stream_reader, timeout=timeout)
-        writer = Writer(stream_writer=stream_writer, timeout=timeout)
-        http_version = "HTTP/2" if ident == "h2" else "HTTP/1.1"
-
-        return reader, writer, http_version
+        return Stream(
+            stream_reader=stream_reader, stream_writer=stream_writer, timeout=timeout
+        )
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
