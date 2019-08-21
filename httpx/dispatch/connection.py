@@ -2,7 +2,6 @@ import functools
 import ssl
 import typing
 
-from .base import AsyncDispatcher
 from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
@@ -16,6 +15,7 @@ from ..config import (
     VerifyTypes,
 )
 from ..models import AsyncRequest, AsyncResponse, Origin
+from .base import AsyncDispatcher
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
