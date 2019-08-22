@@ -1,10 +1,10 @@
 import typing
 
-from .base import AsyncDispatcher
-from ..concurrency.base import ConcurrencyBackend
 from ..concurrency.asyncio import AsyncioBackend
+from ..concurrency.base import ConcurrencyBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import AsyncRequest, AsyncResponse
+from .base import AsyncDispatcher
 
 
 class ASGIDispatch(AsyncDispatcher):

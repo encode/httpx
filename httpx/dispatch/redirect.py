@@ -1,29 +1,10 @@
 import typing
 
-from .base import AsyncDispatcher
-from ..concurrency.base import ConcurrencyBackend
-from .connection import ReleaseCallback
-from ..models import (
-    AsyncRequest,
-    AsyncResponse,
-    AuthTypes,
-    URL,
-    Headers,
-    Cookies,
-    Origin,
-)
-from ..config import (
-    DEFAULT_MAX_REDIRECTS,
-    DEFAULT_POOL_LIMITS,
-    DEFAULT_TIMEOUT_CONFIG,
-    CertTypes,
-    PoolLimits,
-    TimeoutTypes,
-    VerifyTypes,
-    HTTPVersionTypes,
-)
-from ..exceptions import RedirectLoop, RedirectBodyUnavailable, TooManyRedirects
+from ..config import DEFAULT_MAX_REDIRECTS, CertTypes, TimeoutTypes, VerifyTypes
+from ..exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
+from ..models import URL, AsyncRequest, AsyncResponse, Cookies, Headers
 from ..status_codes import codes
+from .base import AsyncDispatcher
 
 
 class RedirectDispatcher(AsyncDispatcher):
@@ -49,7 +30,7 @@ class RedirectDispatcher(AsyncDispatcher):
     ) -> AsyncResponse:
         if len(self.history) > self.max_redirects:
             raise TooManyRedirects()
-        if request.url in [response.url for response in self.history]:
+        if request.url in (response.url for response in self.history):
             raise RedirectLoop()
 
         response = await self.next_dispatcher.send(

@@ -1,28 +1,9 @@
-from base64 import b64encode
 import typing
+from base64 import b64encode
 
+from ..config import CertTypes, TimeoutTypes, VerifyTypes
+from ..models import AsyncRequest, AsyncResponse
 from .base import AsyncDispatcher
-from ..concurrency.base import ConcurrencyBackend
-from .connection import ReleaseCallback
-from ..models import (
-    AsyncRequest,
-    AsyncResponse,
-    AuthTypes,
-    URL,
-    Headers,
-    Cookies,
-    Origin,
-)
-from ..config import (
-    DEFAULT_MAX_REDIRECTS,
-    DEFAULT_POOL_LIMITS,
-    DEFAULT_TIMEOUT_CONFIG,
-    CertTypes,
-    PoolLimits,
-    TimeoutTypes,
-    VerifyTypes,
-    HTTPVersionTypes,
-)
 
 
 class BasicAuthDispatcher(AsyncDispatcher):

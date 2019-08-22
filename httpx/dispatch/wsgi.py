@@ -1,9 +1,9 @@
 import io
 import typing
 
-from .base import Dispatcher
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import Request, Response
+from .base import Dispatcher
 
 
 class WSGIDispatch(Dispatcher):

@@ -19,18 +19,12 @@ from .config import (
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.basic_auth import BasicAuthDispatcher
-from .dispatch.custom_auth import CustomAuthDispatcher
 from .dispatch.connection_pool import ConnectionPool
-from .dispatch.threaded import ThreadedDispatcher
+from .dispatch.custom_auth import CustomAuthDispatcher
 from .dispatch.redirect import RedirectDispatcher
+from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
-from .exceptions import (
-    HTTPError,
-    InvalidURL,
-    RedirectBodyUnavailable,
-    RedirectLoop,
-    TooManyRedirects,
-)
+from .exceptions import HTTPError, InvalidURL
 from .models import (
     URL,
     AsyncRequest,
@@ -49,7 +43,6 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .status_codes import codes
 from .utils import get_netrc_login
 
 
@@ -163,10 +156,7 @@ class BaseClient:
 
         try:
             response = await dispatcher.send(
-                request,
-                verify=verify,
-                cert=cert,
-                timeout=timeout,
+                request, verify=verify, cert=cert, timeout=timeout
             )
         except HTTPError as exc:
             # Add the original request to any HTTPError
@@ -189,12 +179,16 @@ class BaseClient:
         trust_env: bool = False,
         allow_redirects: bool = True,
     ) -> AsyncDispatcher:
-        dispatcher: AsyncDispatcher = RedirectDispatcher(next_dispatcher=self.dispatch, base_cookies=self.cookies, allow_redirects=allow_redirects)
+        dispatcher: AsyncDispatcher = RedirectDispatcher(
+            next_dispatcher=self.dispatch,
+            base_cookies=self.cookies,
+            allow_redirects=allow_redirects,
+        )
 
         username: typing.Optional[typing.Union[str, bytes]] = None
         password: typing.Optional[typing.Union[str, bytes]] = None
         if auth is None:
-            if (request.url.username or request.url.password):
+            if request.url.username or request.url.password:
                 username, password = request.url.username, request.url.password
             elif trust_env:
                 netrc_login = get_netrc_login(request.url.authority)
@@ -204,13 +198,16 @@ class BaseClient:
             if isinstance(auth, tuple):
                 username, password = auth[0], auth[1]
             elif callable(auth):
-                dispatcher = CustomAuthDispatcher(next_dispatcher=dispatcher, auth_callable=auth)
+                dispatcher = CustomAuthDispatcher(
+                    next_dispatcher=dispatcher, auth_callable=auth
+                )
 
         if username is not None and password is not None:
-            dispatcher = BasicAuthDispatcher(next_dispatcher=dispatcher, username=username, password=password)
+            dispatcher = BasicAuthDispatcher(
+                next_dispatcher=dispatcher, username=username, password=password
+            )
 
         return dispatcher
-
 
 
 class AsyncClient(BaseClient):

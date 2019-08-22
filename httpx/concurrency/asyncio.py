@@ -18,8 +18,8 @@ from ..config import PoolLimits, TimeoutConfig
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import (
     BaseBackgroundManager,
-    BasePoolSemaphore,
     BaseEvent,
+    BasePoolSemaphore,
     BaseQueue,
     BaseStream,
     ConcurrencyBackend,
