@@ -1,3 +1,4 @@
+import functools
 import inspect
 import typing
 from types import TracebackType
@@ -18,13 +19,16 @@ from .config import (
 )
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import AsyncDispatcher, Dispatcher
-from .dispatch.basic_auth import BasicAuthDispatcher
 from .dispatch.connection_pool import ConnectionPool
-from .dispatch.custom_auth import CustomAuthDispatcher
-from .dispatch.redirect import RedirectDispatcher
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import HTTPError, InvalidURL
+from .middleware import (
+    BaseMiddleware,
+    BasicAuthMiddleware,
+    CustomAuthMiddleware,
+    RedirectMiddleware,
+)
 from .models import (
     URL,
     AsyncRequest,
@@ -159,73 +163,79 @@ class BaseClient:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: typing.Optional[bool] = None,
+        trust_env: bool = None,
     ) -> AsyncResponse:
-        url = request.url
-        if url.scheme not in ("http", "https"):
+        if request.url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
 
-        dispatcher: AsyncDispatcher = self._resolve_dispatcher(
-            request,
-            auth or self.auth,
-            self.trust_env if trust_env is None else trust_env,
-            allow_redirects,
-        )
-
-        try:
-            response = await dispatcher.send(
-                request, verify=verify, cert=cert, timeout=timeout
-            )
-        except HTTPError as exc:
-            # Add the original request to any HTTPError
-            exc.request = request
-            raise
-
-        self.cookies.extract_cookies(response)
-        if not stream:
+        async def get_response(request: AsyncRequest) -> AsyncResponse:
             try:
-                await response.read()
-            finally:
-                await response.close()
+                response = await self.dispatch.send(
+                    request, verify=verify, cert=cert, timeout=timeout
+                )
+            except HTTPError as exc:
+                # Add the original request to any HTTPError
+                exc.request = request
+                raise
 
-        return response
+            self.cookies.extract_cookies(response)
+            if not stream:
+                try:
+                    await response.read()
+                finally:
+                    await response.close()
 
-    def _resolve_dispatcher(
-        self,
-        request: AsyncRequest,
-        auth: AuthTypes = None,
-        trust_env: bool = False,
-        allow_redirects: bool = True,
-    ) -> AsyncDispatcher:
-        dispatcher: AsyncDispatcher = RedirectDispatcher(
-            next_dispatcher=self.dispatch,
-            base_cookies=self.cookies,
-            allow_redirects=allow_redirects,
+            return response
+
+        def wrap(
+            get_response: typing.Callable, middleware: BaseMiddleware
+        ) -> typing.Callable:
+            return functools.partial(middleware, get_response=get_response)
+
+        get_response = wrap(
+            get_response,
+            RedirectMiddleware(allow_redirects=allow_redirects, cookies=self.cookies),
         )
 
-        username: typing.Optional[typing.Union[str, bytes]] = None
-        password: typing.Optional[typing.Union[str, bytes]] = None
-        if auth is None:
-            if request.url.username or request.url.password:
-                username, password = request.url.username, request.url.password
-            elif trust_env:
-                netrc_login = get_netrc_login(request.url.authority)
-                if netrc_login:
-                    username, _, password = netrc_login
-        else:
-            if isinstance(auth, tuple):
-                username, password = auth[0], auth[1]
-            elif callable(auth):
-                dispatcher = CustomAuthDispatcher(
-                    next_dispatcher=dispatcher, auth_callable=auth
-                )
+        auth_middleware = self._get_auth_middleware(
+            request=request,
+            trust_env=self.trust_env if trust_env is None else trust_env,
+            auth=self.auth if auth is None else auth,
+        )
 
-        if username is not None and password is not None:
-            dispatcher = BasicAuthDispatcher(
-                next_dispatcher=dispatcher, username=username, password=password
+        if auth_middleware is not None:
+            get_response = wrap(get_response, auth_middleware)
+
+        return await get_response(request)
+
+    def _get_auth_middleware(
+        self, request: AsyncRequest, trust_env: bool, auth: AuthTypes = None
+    ) -> typing.Optional[BaseMiddleware]:
+        if isinstance(auth, tuple):
+            return BasicAuthMiddleware(username=auth[0], password=auth[1])
+
+        if callable(auth):
+            return CustomAuthMiddleware(auth=auth)
+
+        if auth is not None:
+            raise TypeError(
+                'When specified, "auth" must be a (username, password) tuple or '
+                "a callable with signature (AsyncRequest) -> AsyncRequest "
+                f"(got {auth!r})"
             )
 
-        return dispatcher
+        if request.url.username or request.url.password:
+            return BasicAuthMiddleware(
+                username=request.url.username, password=request.url.password
+            )
+
+        if trust_env:
+            netrc_login = get_netrc_login(request.url.authority)
+            if netrc_login:
+                username, _, password = netrc_login
+                return BasicAuthMiddleware(username=username, password=password)
+
+        return None
 
 
 class AsyncClient(BaseClient):
