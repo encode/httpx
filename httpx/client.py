@@ -173,6 +173,7 @@ class BaseClient:
             exc.request = request
             raise
 
+        self.cookies.extract_cookies(response)
         if not stream:
             try:
                 await response.read()
