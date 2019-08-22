@@ -12,14 +12,15 @@ import asyncio
 import functools
 import ssl
 import typing
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from types import TracebackType
 
 from ..config import PoolLimits, TimeoutConfig
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import (
     BaseBackgroundManager,
-    BasePoolSemaphore,
     BaseEvent,
+    BasePoolSemaphore,
     BaseQueue,
     BaseStream,
     ConcurrencyBackend,
@@ -159,6 +160,9 @@ class PoolSemaphore(BasePoolSemaphore):
 
 
 class AsyncioBackend(ConcurrencyBackend):
+    executer_type: str = "io_bound"
+    max_workers: int = 1
+
     def __init__(self) -> None:
         global SSL_MONKEY_PATCH_APPLIED
 
@@ -197,6 +201,26 @@ class AsyncioBackend(ConcurrencyBackend):
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
+        is_iterate = kwargs.pop("is_iterate", False)
+
+        executor_class: typing.Optional[
+            typing.Union[
+                typing.Type[ProcessPoolExecutor], typing.Type[ThreadPoolExecutor]
+            ]
+        ] = None
+        if self.executer_type == "io_bound":
+            executor_class = ThreadPoolExecutor
+        elif is_iterate is False and self.executer_type == "cpu_bound":
+            executor_class = ProcessPoolExecutor
+
+        if executor_class:
+            try:
+                with executor_class(max_workers=self.max_workers) as executor:
+                    future = executor.submit(func, *args, **kwargs)
+                    return future.result()
+            except TypeError:
+                pass  # TypeError: can't pickle generator objects
+
         if kwargs:
             # loop.run_in_executor doesn't accept 'kwargs', so bind them in here
             func = functools.partial(func, **kwargs)

@@ -136,7 +136,9 @@ class ConcurrencyBackend:
 
         while True:
             try:
-                yield await self.run_in_threadpool(next_wrapper, iterator)
+                yield await self.run_in_threadpool(
+                    next_wrapper, iterator, is_iterate=True
+                )
             except IterationComplete:
                 break
 
