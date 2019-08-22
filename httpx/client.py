@@ -4,7 +4,6 @@ from types import TracebackType
 
 import hstspreload
 
-from .auth import HTTPBasicAuth
 from .concurrency.asyncio import AsyncioBackend
 from .concurrency.base import ConcurrencyBackend
 from .config import (
@@ -182,15 +181,26 @@ class BaseClient:
         self,
         request: AsyncRequest,
         auth: AuthTypes = None,
+        trust_env: bool = None,
         allow_redirects: bool = True,
     ) -> AsyncDispatcher:
         dispatcher: AsyncDispatcher = RedirectDispatcher(next_dispatcher=self.dispatch, base_cookies=self.cookies, allow_redirects=allow_redirects)
-        if auth is None and (request.url.username or request.url.password):
-            dispatcher = BasicAuthDispatcher(next_dispatcher=dispatcher, username=request.url.username, password=request.url.password)
-        elif isinstance(auth, tuple):
-            dispatcher = BasicAuthDispatcher(next_dispatcher=dispatcher, username=auth[0], password=auth[1])
-        elif isinstance(auth, HTTPBasicAuth):
-            dispatcher = BasicAuthDispatcher(next_dispatcher=dispatcher, username=auth.username, password=auth.password)
+
+        username: typing.Optional[typing.Union[str, bytes]] = None
+        password: typing.Optional[typing.Union[str, bytes]] = None
+        if auth is None:
+            if (request.url.username or request.url.password):
+                username, password = request.url.username, request.url.password
+            elif self.trust_env:
+                netrc_login = get_netrc_login(request.url.authority)
+                if netrc_login:
+                    username, _, password = netrc_login
+        else:
+            if isinstance(auth, tuple):
+                username, password = auth[0], auth[1]
+
+        if username is not None and password is not None:
+            dispatcher = BasicAuthDispatcher(next_dispatcher=dispatcher, username=username, password=password)
 
         return dispatcher
 
