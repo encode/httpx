@@ -19,6 +19,7 @@ from .config import (
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.basic_auth import BasicAuthDispatcher
+from .dispatch.custom_auth import CustomAuthDispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.redirect import RedirectDispatcher
@@ -68,7 +69,7 @@ class BaseClient:
         dispatch: typing.Union[AsyncDispatcher, Dispatcher] = None,
         app: typing.Callable = None,
         backend: ConcurrencyBackend = None,
-        trust_env: bool = None,
+        trust_env: bool = True,
     ):
         if backend is None:
             backend = AsyncioBackend()
@@ -108,7 +109,7 @@ class BaseClient:
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
-        self.trust_env = True if trust_env is None else trust_env
+        self.trust_env = trust_env
 
     def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
         pass  # pragma: no cover
@@ -147,16 +148,16 @@ class BaseClient:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = None,
+        trust_env: typing.Optional[bool] = None,
     ) -> AsyncResponse:
         url = request.url
         if url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
 
-        dispatcher: AsyncDispatcher = self._resolve_dispatch_chain(
+        dispatcher: AsyncDispatcher = self._resolve_dispatcher(
             request,
-            auth,
-            trust_env,
+            auth or self.auth,
+            self.trust_env if trust_env is None else trust_env,
             allow_redirects,
         )
 
@@ -180,11 +181,11 @@ class BaseClient:
 
         return response
 
-    def _resolve_dispatch_chain(
+    def _resolve_dispatcher(
         self,
         request: AsyncRequest,
         auth: AuthTypes = None,
-        trust_env: bool = None,
+        trust_env: bool = False,
         allow_redirects: bool = True,
     ) -> AsyncDispatcher:
         dispatcher: AsyncDispatcher = RedirectDispatcher(next_dispatcher=self.dispatch, base_cookies=self.cookies, allow_redirects=allow_redirects)
@@ -194,13 +195,15 @@ class BaseClient:
         if auth is None:
             if (request.url.username or request.url.password):
                 username, password = request.url.username, request.url.password
-            elif self.trust_env:
+            elif trust_env:
                 netrc_login = get_netrc_login(request.url.authority)
                 if netrc_login:
                     username, _, password = netrc_login
         else:
             if isinstance(auth, tuple):
                 username, password = auth[0], auth[1]
+            elif callable(auth):
+                dispatcher = CustomAuthDispatcher(next_dispatcher=dispatcher, auth_callable=auth)
 
         if username is not None and password is not None:
             dispatcher = BasicAuthDispatcher(next_dispatcher=dispatcher, username=username, password=password)
