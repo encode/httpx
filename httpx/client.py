@@ -154,7 +154,10 @@ class BaseClient:
             raise InvalidURL('URL scheme must be "http" or "https".')
 
         dispatcher: AsyncDispatcher = self._resolve_dispatch_chain(
-            request, auth, allow_redirects,
+            request,
+            auth,
+            trust_env,
+            allow_redirects,
         )
 
         try:

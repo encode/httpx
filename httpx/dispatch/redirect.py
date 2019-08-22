@@ -47,8 +47,6 @@ class RedirectDispatcher(AsyncDispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
-        # We perform these checks here, so that calls to `response.next()`
-        # will raise redirect errors if appropriate.
         if len(self.history) > self.max_redirects:
             raise TooManyRedirects()
         if request.url in [response.url for response in self.history]:
@@ -57,9 +55,9 @@ class RedirectDispatcher(AsyncDispatcher):
         response = await self.next_dispatcher.send(
             request, verify=verify, cert=cert, timeout=timeout
         )
+        response.history = list(self.history)
 
         if not response.is_redirect:
-            response.history = list(self.history)
             return response
 
         self.history.append(response)
@@ -141,6 +139,7 @@ class RedirectDispatcher(AsyncDispatcher):
         headers = Headers(request.headers)
         if url.origin != request.url.origin:
             del headers["Authorization"]
+            del headers["host"]
         return headers
 
     def redirect_content(self, request: AsyncRequest, method: str) -> bytes:

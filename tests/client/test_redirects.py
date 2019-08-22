@@ -266,7 +266,7 @@ async def test_cannot_redirect_streaming_body():
 
 
 @pytest.mark.asyncio
-async def test_cross_dubdomain_redirect():
+async def test_cross_subdomain_redirect():
     client = AsyncClient(dispatch=MockDispatch())
     url = "https://example.com/cross_subdomain"
     response = await client.get(url)
