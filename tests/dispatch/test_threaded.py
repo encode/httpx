@@ -1,6 +1,9 @@
 import json
 
+import pytest
+
 from httpx import (
+    AsyncClient,
     CertTypes,
     Client,
     Dispatcher,
@@ -39,12 +42,26 @@ class MockDispatch(Dispatcher):
 
 def test_threaded_dispatch():
     """
-    Use a syncronous 'Dispatcher' class with the client.
+    Use a synchronous 'Dispatcher' class with the client.
     Calls to the dispatcher will end up running within a thread pool.
     """
     url = "https://example.org/"
     with Client(dispatch=MockDispatch()) as client:
         response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {"hello": "world"}
+
+
+@pytest.mark.asyncio
+async def test_async_threaded_dispatch():
+    """
+    Use a synchronous 'Dispatcher' class with the async client.
+    Calls to the dispatcher will end up running within a thread pool.
+    """
+    url = "https://example.org/"
+    async with AsyncClient(dispatch=MockDispatch()) as client:
+        response = await client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {"hello": "world"}
