@@ -48,13 +48,13 @@ class ASGIDispatch(AsyncDispatcher):
         raise_app_exceptions: bool = True,
         root_path: str = "",
         client: typing.Tuple[str, int] = ("127.0.0.1", 123),
+        backend: ConcurrencyBackend = None,
     ) -> None:
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
         self.root_path = root_path
         self.client = client
-        # This will need to be turned into a parameter on this class at some point.
-        self.backend: ConcurrencyBackend = AsyncioBackend()
+        self.backend = AsyncioBackend() if backend is None else backend
 
     async def send(
         self,
