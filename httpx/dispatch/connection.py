@@ -31,14 +31,14 @@ class HTTPConnection(AsyncDispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         http_versions: HTTPVersionTypes = None,
-        backend: ConcurrencyBackend = None,
+        backend: ConcurrencyBackend = AsyncioBackend(),
         release_func: typing.Optional[ReleaseCallback] = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig(cert=cert, verify=verify)
         self.timeout = TimeoutConfig(timeout)
         self.http_versions = HTTPVersionConfig(http_versions)
-        self.backend = AsyncioBackend() if backend is None else backend
+        self.backend = backend
         self.release_func = release_func
         self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
         self.h2_connection = None  # type: typing.Optional[HTTP2Connection]

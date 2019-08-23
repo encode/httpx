@@ -83,7 +83,7 @@ class ConnectionPool(AsyncDispatcher):
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http_versions: HTTPVersionTypes = None,
-        backend: ConcurrencyBackend = None,
+        backend: ConcurrencyBackend = AsyncioBackend(),
     ):
         self.verify = verify
         self.cert = cert
@@ -95,7 +95,7 @@ class ConnectionPool(AsyncDispatcher):
         self.keepalive_connections = ConnectionStore()
         self.active_connections = ConnectionStore()
 
-        self.backend = AsyncioBackend() if backend is None else backend
+        self.backend =  backend
         self.max_connections = self.backend.get_semaphore(pool_limits)
 
     @property
