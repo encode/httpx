@@ -123,27 +123,8 @@ async def test_premature_response_close(server, backend):
         assert len(http.keepalive_connections) == 0
 
 
-async def test_keepalive_connection_closed_by_server_is_reestablished(server, backend):
-    """
-    Upon keep-alive connection closed by remote a new connection
-    should be reestablished.
-    """
-    async with httpx.ConnectionPool(backend=backend) as http:
-        response = await http.request("GET", "http://127.0.0.1:8000/")
-        await response.read()
-
-        # shutdown the server to close the keep-alive connection
-        await server.shutdown()
-        await server.startup()
-
-        response = await http.request("GET", "http://127.0.0.1:8000/")
-        await response.read()
-        assert len(http.active_connections) == 0
-        assert len(http.keepalive_connections) == 1
-
-
-async def test_keepalive_http2_connection_closed_by_server_is_reestablished(
-    server, backend
+async def test_keepalive_connection_closed_by_server_is_reestablished(
+    server, restart, backend
 ):
     """
     Upon keep-alive connection closed by remote a new connection
@@ -154,8 +135,7 @@ async def test_keepalive_http2_connection_closed_by_server_is_reestablished(
         await response.read()
 
         # shutdown the server to close the keep-alive connection
-        await server.shutdown()
-        await server.startup()
+        await restart(server)
 
         response = await http.request("GET", "http://127.0.0.1:8000/")
         await response.read()
@@ -163,7 +143,27 @@ async def test_keepalive_http2_connection_closed_by_server_is_reestablished(
         assert len(http.keepalive_connections) == 1
 
 
-async def test_connection_closed_free_semaphore_on_acquire(server, backend):
+async def test_keepalive_http2_connection_closed_by_server_is_reestablished(
+    server, restart, backend
+):
+    """
+    Upon keep-alive connection closed by remote a new connection
+    should be reestablished.
+    """
+    async with httpx.ConnectionPool(backend=backend) as http:
+        response = await http.request("GET", "http://127.0.0.1:8000/")
+        await response.read()
+
+        # shutdown the server to close the keep-alive connection
+        await restart(server)
+
+        response = await http.request("GET", "http://127.0.0.1:8000/")
+        await response.read()
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1
+
+
+async def test_connection_closed_free_semaphore_on_acquire(server, restart, backend):
     """
     Verify that max_connections semaphore is released
     properly on a disconnected connection.
@@ -173,8 +173,7 @@ async def test_connection_closed_free_semaphore_on_acquire(server, backend):
         await response.read()
 
         # Close the connection so we're forced to recycle it
-        await server.shutdown()
-        await server.startup()
+        await restart(server)
 
         response = await http.request("GET", "http://127.0.0.1:8000/")
         assert response.status_code == 200

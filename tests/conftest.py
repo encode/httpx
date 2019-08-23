@@ -158,3 +158,19 @@ async def https_server(cert_pem_file, cert_private_key_file):
     finally:
         server.should_exit = True
         await task
+
+
+@pytest.fixture
+def restart(backend):
+    async def asyncio_restart(server):
+        await server.shutdown()
+        await server.startup()
+
+    if isinstance(backend, AsyncioBackend):
+        return asyncio_restart
+
+    # The uvicorn server runs under asyncio, so we will need to figure out
+    # how to restart it under a different I/O library.
+    # This will most likely require running `asyncio_restart` in the threadpool,
+    # but that might not be sufficient.
+    raise NotImplementedError
