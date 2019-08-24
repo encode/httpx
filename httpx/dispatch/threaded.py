@@ -1,4 +1,3 @@
-from .base import AsyncDispatcher, Dispatcher
 from ..concurrency.base import ConcurrencyBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import (
@@ -11,6 +10,7 @@ from ..models import (
     Response,
     ResponseContent,
 )
+from .base import AsyncDispatcher, Dispatcher
 
 
 class ThreadedDispatcher(AsyncDispatcher):

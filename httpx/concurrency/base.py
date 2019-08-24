@@ -116,6 +116,15 @@ class ConcurrencyBackend:
     ) -> BaseStream:
         raise NotImplementedError()  # pragma: no cover
 
+    async def start_tls(
+        self,
+        stream: BaseStream,
+        hostname: str,
+        ssl_context: ssl.SSLContext,
+        timeout: TimeoutConfig,
+    ) -> BaseStream:
+        raise NotImplementedError()  # pragma: no cover
+
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         raise NotImplementedError()  # pragma: no cover
 

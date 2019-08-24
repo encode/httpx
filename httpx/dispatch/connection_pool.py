@@ -1,6 +1,5 @@
 import typing
 
-from .base import AsyncDispatcher
 from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
@@ -13,6 +12,7 @@ from ..config import (
     VerifyTypes,
 )
 from ..models import AsyncRequest, AsyncResponse, Origin
+from .base import AsyncDispatcher
 from .connection import HTTPConnection
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
