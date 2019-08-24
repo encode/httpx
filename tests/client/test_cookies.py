@@ -78,6 +78,42 @@ def test_set_cookie_with_cookiejar():
     assert response.json() == {"cookies": "example-name=example-value"}
 
 
+def test_setting_cookieis_with_cookiejar_in_client():
+    """
+    Send a request including a cookie, using a `CookieJar` instance.
+    """
+
+    url = "http://example.org/echo_cookies"
+    cookies = CookieJar()
+    cookie = Cookie(
+        version=0,
+        name="example-name",
+        value="example-value",
+        port=None,
+        port_specified=False,
+        domain="",
+        domain_specified=False,
+        domain_initial_dot=False,
+        path="/",
+        path_specified=True,
+        secure=False,
+        expires=None,
+        discard=True,
+        comment=None,
+        comment_url=None,
+        rest={"HttpOnly": None},
+        rfc2109=False,
+    )
+    cookies.set_cookie(cookie)
+
+    with Client(dispatch=MockDispatch()) as client:
+        client.cookies = cookies
+        response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {"cookies": "example-name=example-value"}
+
+
 def test_set_cookie_with_cookies_model():
     """
     Send a request including a cookie, using a `Cookies` instance.
