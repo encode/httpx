@@ -14,6 +14,21 @@ async def test_get(server, backend):
     assert repr(response) == "<Response [200 OK]>"
 
 
+@pytest.mark.asyncio
+async def test_get_no_backend(server):
+    """
+    Verify that the client is capable of making a simple request if not given a backend.
+    """
+    url = "http://127.0.0.1:8000/"
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+    assert response.http_version == "HTTP/1.1"
+    assert response.headers
+    assert repr(response) == "<Response [200 OK]>"
+
+
 async def test_post(server, backend):
     url = "http://127.0.0.1:8000/"
     async with httpx.AsyncClient(backend=backend) as client:
