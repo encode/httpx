@@ -1,7 +1,5 @@
 import json
 
-import pytest
-
 from httpx import AsyncClient, Client, Response
 
 from .utils import MockHTTP2Backend
@@ -29,9 +27,8 @@ def test_http2_get_request():
     assert json.loads(response.content) == {"method": "GET", "path": "/", "body": ""}
 
 
-@pytest.mark.asyncio
-async def test_async_http2_get_request():
-    backend = MockHTTP2Backend(app=app)
+async def test_async_http2_get_request(backend):
+    backend = MockHTTP2Backend(app=app, backend=backend)
 
     async with AsyncClient(backend=backend) as client:
         response = await client.get("http://example.org")
@@ -54,9 +51,8 @@ def test_http2_post_request():
     }
 
 
-@pytest.mark.asyncio
-async def test_async_http2_post_request():
-    backend = MockHTTP2Backend(app=app)
+async def test_async_http2_post_request(backend):
+    backend = MockHTTP2Backend(app=app, backend=backend)
 
     async with AsyncClient(backend=backend) as client:
         response = await client.post("http://example.org", data=b"<data>")
@@ -87,9 +83,8 @@ def test_http2_multiple_requests():
     assert json.loads(response_3.content) == {"method": "GET", "path": "/3", "body": ""}
 
 
-@pytest.mark.asyncio
-async def test_async_http2_multiple_requests():
-    backend = MockHTTP2Backend(app=app)
+async def test_async_http2_multiple_requests(backend):
+    backend = MockHTTP2Backend(app=app, backend=backend)
 
     async with AsyncClient(backend=backend) as client:
         response_1 = await client.get("http://example.org/1")
@@ -125,13 +120,12 @@ def test_http2_reconnect():
     assert json.loads(response_2.content) == {"method": "GET", "path": "/2", "body": ""}
 
 
-@pytest.mark.asyncio
-async def test_async_http2_reconnect():
+async def test_async_http2_reconnect(backend):
     """
     If a connection has been dropped between requests, then we should
     be seemlessly reconnected.
     """
-    backend = MockHTTP2Backend(app=app)
+    backend = MockHTTP2Backend(app=app, backend=backend)
 
     async with AsyncClient(backend=backend) as client:
         response_1 = await client.get("http://example.org/1")

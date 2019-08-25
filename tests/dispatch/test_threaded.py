@@ -1,7 +1,5 @@
 import json
 
-import pytest
-
 from httpx import (
     AsyncClient,
     CertTypes,
@@ -53,14 +51,13 @@ def test_threaded_dispatch():
     assert response.json() == {"hello": "world"}
 
 
-@pytest.mark.asyncio
-async def test_async_threaded_dispatch():
+async def test_async_threaded_dispatch(backend):
     """
     Use a synchronous 'Dispatcher' class with the async client.
     Calls to the dispatcher will end up running within a thread pool.
     """
     url = "https://example.org/"
-    async with AsyncClient(dispatch=MockDispatch()) as client:
+    async with AsyncClient(dispatch=MockDispatch(), backend=backend) as client:
         response = await client.get(url)
 
     assert response.status_code == 200

@@ -46,9 +46,8 @@ def test_asgi():
     assert response.text == "Hello, World!"
 
 
-@pytest.mark.asyncio
-async def test_asgi_async():
-    client = httpx.AsyncClient(app=hello_world)
+async def test_asgi_async(backend):
+    client = httpx.AsyncClient(app=hello_world, backend=backend)
     response = await client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == "Hello, World!"
@@ -61,9 +60,8 @@ def test_asgi_upload():
     assert response.text == "example"
 
 
-@pytest.mark.asyncio
-async def test_asgi_upload_async():
-    client = httpx.AsyncClient(app=echo_body)
+async def test_asgi_upload_async(backend):
+    client = httpx.AsyncClient(app=echo_body, backend=backend)
     response = await client.post("http://www.example.org/", data=b"example")
     assert response.status_code == 200
     assert response.text == "example"
@@ -75,9 +73,8 @@ def test_asgi_exc():
         client.get("http://www.example.org/")
 
 
-@pytest.mark.asyncio
-async def test_asgi_exc_async():
-    client = httpx.AsyncClient(app=raise_exc)
+async def test_asgi_exc_async(backend):
+    client = httpx.AsyncClient(app=raise_exc, backend=backend)
     with pytest.raises(ValueError):
         await client.get("http://www.example.org/")
 
@@ -88,8 +85,7 @@ def test_asgi_exc_after_response():
         client.get("http://www.example.org/")
 
 
-@pytest.mark.asyncio
-async def test_asgi_exc_after_response_async():
-    client = httpx.AsyncClient(app=raise_exc_after_response)
+async def test_asgi_exc_after_response_async(backend):
+    client = httpx.AsyncClient(app=raise_exc_after_response, backend=backend)
     with pytest.raises(ValueError):
         await client.get("http://www.example.org/")
