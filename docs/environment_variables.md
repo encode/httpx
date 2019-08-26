@@ -2,7 +2,7 @@ Environment Variables
 =====================
 
 The HTTPX library can be configured via environment variables.
-Here are a list of environment variables that HTTPX recognizes
+Here is a list of environment variables that HTTPX recognizes
 and what function they serve:
 
 HTTPX_DEBUG
