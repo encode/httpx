@@ -1,14 +1,16 @@
+from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
+    HTTPVersionTypes,
     PoolLimits,
+    SSLConfig,
     TimeoutTypes,
     VerifyTypes,
 )
 from ..exceptions import ProxyError
-from ..interfaces import ConcurrencyBackend, HeaderTypes, URLTypes
-from ..models import URL, AsyncRequest, Headers, Origin
+from ..models import URL, AsyncRequest, Headers, HeaderTypes, Origin, URLTypes
 from .connection import HTTPConnection
 from .connection_pool import ConnectionPool
 
@@ -27,6 +29,7 @@ class HTTPTunnelProxy(ConnectionPool):
         cert: CertTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
     ):
 
@@ -35,6 +38,7 @@ class HTTPTunnelProxy(ConnectionPool):
             cert=cert,
             timeout=timeout,
             pool_limits=pool_limits,
+            http_versions=http_versions,
             backend=backend,
         )
 
@@ -43,7 +47,7 @@ class HTTPTunnelProxy(ConnectionPool):
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:
 
-        # See if we already have a connection that is already tunneled
+        # See if we have a connection that is already tunneled
         connection = self.active_connections.pop_by_origin(origin, http2_only=True)
         if connection is None:
             connection = self.keepalive_connections.pop_by_origin(origin)
@@ -72,15 +76,18 @@ class HTTPTunnelProxy(ConnectionPool):
                 cert=self.cert,
                 timeout=self.timeout,
                 backend=self.backend,
+                http_versions=["HTTP/1.1"],  # Short-lived 'connection'
                 release_func=self.release_connection,
             )
+            self.active_connections.add(connection)
 
             # See if our tunnel has been opened successfully
             proxy_response = await connection.send(proxy_request)
+            await proxy_response.read()
             if not 200 <= proxy_response.status_code <= 299:
                 self.max_connections.release()
                 raise ProxyError(
-                    "Non-2XX response received from HTTP proxy",
+                    f"Non-2XX response received from HTTP proxy ({proxy_response.status_code})",
                     request=proxy_request,
                     response=proxy_response,
                 )
@@ -90,7 +97,30 @@ class HTTPTunnelProxy(ConnectionPool):
             # to the original so the tunnel can be re-used.
             connection.origin = origin
 
-        self.active_connections.add(connection)
+            # If we need to start TLS again for the target server
+            # we need to pull the TCP stream off the internal
+            # HTTP connection object and run start_tls()
+            if origin.is_ssl:
+                http_connection = connection.h11_connection
+                assert http_connection is not None
+
+                stream = http_connection.stream
+                ssl_config = SSLConfig(cert=self.cert, verify=self.verify)
+                timeout = connection.timeout
+                ssl_context = await connection.get_ssl_context(ssl_config)
+                assert ssl_context is not None
+
+                stream = await self.backend.start_tls(
+                    stream=stream,
+                    hostname=origin.host,
+                    ssl_context=ssl_context,
+                    timeout=timeout,
+                )
+                http_connection.stream = stream
+
+        else:
+            self.active_connections.add(connection)
+
         return connection
 
     def __repr__(self) -> str:
