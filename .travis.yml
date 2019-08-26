@@ -1,4 +1,3 @@
-sudo: required
 dist: xenial
 language: python
 
@@ -22,9 +21,6 @@ matrix:
     - python: 3.8-dev
       env: NOX_SESSION=test-3.8
 
-  allow_failures:
-    - python: 3.8-dev
-
 install:
   - pip install --upgrade nox
 
@@ -34,5 +30,5 @@ script:
 after_script:
   - if [ -f .coverage ]; then
       python -m pip install codecov;
-      codecov;
+      codecov --required;
     fi

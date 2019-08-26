@@ -100,79 +100,73 @@ class MockDispatch(AsyncDispatcher):
         return AsyncResponse(codes.OK, content=b"Hello, world!", request=request)
 
 
-@pytest.mark.asyncio
-async def test_redirect_301():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_redirect_301(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     response = await client.post("https://example.org/redirect_301")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
 
 
-@pytest.mark.asyncio
-async def test_redirect_302():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_redirect_302(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     response = await client.post("https://example.org/redirect_302")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
 
 
-@pytest.mark.asyncio
-async def test_redirect_303():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_redirect_303(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     response = await client.get("https://example.org/redirect_303")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
 
 
-@pytest.mark.asyncio
-async def test_disallow_redirects():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_disallow_redirects(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     response = await client.post(
         "https://example.org/redirect_303", allow_redirects=False
     )
     assert response.status_code == codes.SEE_OTHER
     assert response.url == URL("https://example.org/redirect_303")
+    assert response.is_redirect is True
     assert len(response.history) == 0
 
     response = await response.next()
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
+    assert response.is_redirect is False
     assert len(response.history) == 1
 
 
-@pytest.mark.asyncio
-async def test_relative_redirect():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_relative_redirect(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     response = await client.get("https://example.org/relative_redirect")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
 
 
-@pytest.mark.asyncio
-async def test_no_scheme_redirect():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_no_scheme_redirect(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     response = await client.get("https://example.org/no_scheme_redirect")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
 
 
-@pytest.mark.asyncio
-async def test_fragment_redirect():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_fragment_redirect(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     response = await client.get("https://example.org/relative_redirect#fragment")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/#fragment")
     assert len(response.history) == 1
 
 
-@pytest.mark.asyncio
-async def test_multiple_redirects():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_multiple_redirects(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     response = await client.get("https://example.org/multiple_redirects?count=20")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/multiple_redirects")
@@ -187,16 +181,14 @@ async def test_multiple_redirects():
     assert len(response.history[1].history) == 1
 
 
-@pytest.mark.asyncio
-async def test_too_many_redirects():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_too_many_redirects(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     with pytest.raises(TooManyRedirects):
         await client.get("https://example.org/multiple_redirects?count=21")
 
 
-@pytest.mark.asyncio
-async def test_too_many_redirects_calling_next():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_too_many_redirects_calling_next(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     url = "https://example.org/multiple_redirects?count=21"
     response = await client.get(url, allow_redirects=False)
     with pytest.raises(TooManyRedirects):
@@ -204,16 +196,14 @@ async def test_too_many_redirects_calling_next():
             response = await response.next()
 
 
-@pytest.mark.asyncio
-async def test_redirect_loop():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_redirect_loop(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     with pytest.raises(RedirectLoop):
         await client.get("https://example.org/redirect_loop")
 
 
-@pytest.mark.asyncio
-async def test_redirect_loop_calling_next():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_redirect_loop_calling_next(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     url = "https://example.org/redirect_loop"
     response = await client.get(url, allow_redirects=False)
     with pytest.raises(RedirectLoop):
@@ -221,9 +211,8 @@ async def test_redirect_loop_calling_next():
             response = await response.next()
 
 
-@pytest.mark.asyncio
-async def test_cross_domain_redirect():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_cross_domain_redirect(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     url = "https://example.com/cross_domain"
     headers = {"Authorization": "abc"}
     response = await client.get(url, headers=headers)
@@ -231,9 +220,8 @@ async def test_cross_domain_redirect():
     assert "authorization" not in response.json()["headers"]
 
 
-@pytest.mark.asyncio
-async def test_same_domain_redirect():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_same_domain_redirect(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     url = "https://example.org/cross_domain"
     headers = {"Authorization": "abc"}
     response = await client.get(url, headers=headers)
@@ -241,9 +229,8 @@ async def test_same_domain_redirect():
     assert response.json()["headers"]["authorization"] == "abc"
 
 
-@pytest.mark.asyncio
-async def test_body_redirect():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_body_redirect(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     url = "https://example.org/redirect_body"
     data = b"Example request body"
     response = await client.post(url, data=data)
@@ -251,9 +238,8 @@ async def test_body_redirect():
     assert response.json() == {"body": "Example request body"}
 
 
-@pytest.mark.asyncio
-async def test_cannot_redirect_streaming_body():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_cannot_redirect_streaming_body(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     url = "https://example.org/redirect_body"
 
     async def streaming_body():
@@ -263,9 +249,8 @@ async def test_cannot_redirect_streaming_body():
         await client.post(url, data=streaming_body())
 
 
-@pytest.mark.asyncio
-async def test_cross_dubdomain_redirect():
-    client = AsyncClient(dispatch=MockDispatch())
+async def test_cross_dubdomain_redirect(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     url = "https://example.com/cross_subdomain"
     response = await client.get(url)
     assert response.url == URL("https://www.example.org/cross_subdomain")

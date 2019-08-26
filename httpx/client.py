@@ -5,17 +5,20 @@ from types import TracebackType
 import hstspreload
 
 from .auth import HTTPBasicAuth
-from .concurrency import AsyncioBackend
+from .concurrency.asyncio import AsyncioBackend
+from .concurrency.base import ConcurrencyBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
+    HTTPVersionTypes,
     PoolLimits,
     TimeoutTypes,
     VerifyTypes,
 )
 from .dispatch.asgi import ASGIDispatch
+from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
@@ -26,7 +29,6 @@ from .exceptions import (
     RedirectLoop,
     TooManyRedirects,
 )
-from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from .models import (
     URL,
     AsyncRequest,
@@ -57,36 +59,35 @@ class BaseClient:
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http_versions: HTTPVersionTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         dispatch: typing.Union[AsyncDispatcher, Dispatcher] = None,
         app: typing.Callable = None,
-        raise_app_exceptions: bool = True,
         backend: ConcurrencyBackend = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ):
         if backend is None:
             backend = AsyncioBackend()
+
+        self.check_concurrency_backend(backend)
 
         if app is not None:
             param_count = len(inspect.signature(app).parameters)
             assert param_count in (2, 3)
             if param_count == 2:
-                dispatch = WSGIDispatch(
-                    app=app, raise_app_exceptions=raise_app_exceptions
-                )
+                dispatch = WSGIDispatch(app=app)
             else:
-                dispatch = ASGIDispatch(
-                    app=app, raise_app_exceptions=raise_app_exceptions
-                )
+                dispatch = ASGIDispatch(app=app)
 
         if dispatch is None:
             async_dispatch: AsyncDispatcher = ConnectionPool(
                 verify=verify,
                 cert=cert,
                 timeout=timeout,
+                http_versions=http_versions,
                 pool_limits=pool_limits,
                 backend=backend,
             )
@@ -106,7 +107,10 @@ class BaseClient:
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
-        self.trust_env = trust_env
+        self.trust_env = True if trust_env is None else trust_env
+
+    def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
+        pass  # pragma: no cover
 
     def merge_url(self, url: URLTypes) -> URL:
         url = self.base_url.join(relative_url=url)
@@ -142,7 +146,7 @@ class BaseClient:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         if auth is None:
             auth = self.auth
@@ -155,7 +159,7 @@ class BaseClient:
         if auth is None:
             if url.username or url.password:
                 auth = HTTPBasicAuth(username=url.username, password=url.password)
-            elif trust_env:
+            elif self.trust_env if trust_env is None else trust_env:
                 netrc_login = get_netrc_login(url.authority)
                 if netrc_login:
                     netrc_username, _, netrc_password = netrc_login
@@ -343,7 +347,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "GET",
@@ -373,7 +377,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "OPTIONS",
@@ -403,7 +407,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "HEAD",
@@ -436,7 +440,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "POST",
@@ -472,7 +476,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "PUT",
@@ -508,7 +512,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "PATCH",
@@ -544,7 +548,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "DELETE",
@@ -581,7 +585,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         url = self.merge_url(url)
         headers = self.merge_headers(headers)
@@ -624,6 +628,24 @@ class AsyncClient(BaseClient):
 
 
 class Client(BaseClient):
+    def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
+        # Iterating over response content allocates an async environment on each step.
+        # This is relatively cheap on asyncio, but cannot be guaranteed for all
+        # concurrency backends.
+        # The sync client performs I/O on its own, so it doesn't need to support
+        # arbitrary concurrency backends.
+        # Therefore, we keep the `backend` parameter (for testing/mocking), but require
+        # that the concurrency backend relies on asyncio.
+
+        if isinstance(backend, AsyncioBackend):
+            return
+
+        if hasattr(backend, "loop"):
+            # Most likely a proxy class.
+            return
+
+        raise ValueError("'Client' only supports asyncio-based concurrency backends")
+
     def _async_request_data(
         self, data: RequestData = None
     ) -> typing.Optional[AsyncRequestData]:
@@ -665,7 +687,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         url = self.merge_url(url)
         headers = self.merge_headers(headers)
@@ -707,7 +729,7 @@ class Client(BaseClient):
 
         response = Response(
             status_code=async_response.status_code,
-            protocol=async_response.protocol,
+            http_version=async_response.http_version,
             headers=async_response.headers,
             content=sync_content,
             on_close=sync_on_close,
@@ -734,7 +756,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "GET",
@@ -764,7 +786,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "OPTIONS",
@@ -794,7 +816,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "HEAD",
@@ -827,7 +849,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "POST",
@@ -863,7 +885,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "PUT",
@@ -899,7 +921,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "PATCH",
@@ -935,7 +957,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
-        trust_env: bool = True,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "DELETE",

@@ -39,7 +39,7 @@
 * `def __init__(...)`
 * `.status_code` - **int**
 * `.reason_phrase` - **str**
-* `.protocol` - `"HTTP/2"` or `"HTTP/1.1"`
+* `.http_version` - `"HTTP/2"` or `"HTTP/1.1"`
 * `.url` - **URL**
 * `.headers` - **Headers**
 * `.content` - **bytes**

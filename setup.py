@@ -19,8 +19,13 @@ def get_long_description():
     """
     Return the README.
     """
+    long_description = ""
     with open("README.md", encoding="utf8") as f:
-        return f.read()
+        long_description += f.read()
+    long_description += "\n\n"
+    with open("CHANGELOG.md", encoding="utf8") as f:
+        long_description += f.read()
+    return long_description
 
 
 def get_packages(package):
@@ -43,6 +48,7 @@ setup(
     author_email="tom@tomchristie.com",
     package_data={"httpx": ["py.typed"]},
     packages=get_packages("httpx"),
+    include_package_data=True,
     install_requires=[
         "certifi",
         "chardet==3.*",

@@ -2,6 +2,7 @@ import json
 import os
 
 from httpx import (
+    URL,
     AsyncDispatcher,
     AsyncRequest,
     AsyncResponse,
@@ -92,3 +93,28 @@ def test_trust_env_auth():
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
+
+    with Client(dispatch=MockDispatch(), trust_env=False) as client:
+        response = client.get(url, trust_env=True)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "auth": "Basic ZXhhbXBsZS11c2VybmFtZTpleGFtcGxlLXBhc3N3b3Jk"
+    }
+
+
+def test_auth_hidden_url():
+    url = "http://example-username:example-password@example.org/"
+    expected = "URL('http://example-username:[secure]@example.org/')"
+    assert url == URL(url)
+    assert expected == repr(URL(url))
+
+
+def test_auth_hidden_header():
+    url = "https://example.org/"
+    auth = ("example-username", "example-password")
+
+    with Client(dispatch=MockDispatch()) as client:
+        response = client.get(url, auth=auth)
+
+    assert "'authorization': '[secure]'" in str(response.request.headers)

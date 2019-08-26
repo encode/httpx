@@ -1,5 +1,5 @@
 """
-The `Reader` and `Writer` classes here provide a lightweight layer over
+The `Stream` class here provides a lightweight layer over
 `asyncio.StreamReader` and `asyncio.StreamWriter`.
 
 Similarly `PoolSemaphore` is a lightweight layer over `BoundedSemaphore`.
@@ -14,15 +14,16 @@ import ssl
 import typing
 from types import TracebackType
 
-from .config import PoolLimits, TimeoutConfig
-from .exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
-from .interfaces import (
+from ..config import PoolLimits, TimeoutConfig
+from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
+from .base import (
     BaseBackgroundManager,
+    BaseEvent,
     BasePoolSemaphore,
-    BaseReader,
-    BaseWriter,
+    BaseQueue,
+    BaseStream,
     ConcurrencyBackend,
-    Protocol,
+    TimeoutFlag,
 )
 
 SSL_MONKEY_PATCH_APPLIED = False
@@ -30,7 +31,7 @@ SSL_MONKEY_PATCH_APPLIED = False
 
 def ssl_monkey_patch() -> None:
     """
-    Monky-patch for https://bugs.python.org/issue36709
+    Monkey-patch for https://bugs.python.org/issue36709
 
     This prevents console errors when outstanding HTTPS connections
     still exist at the point of exiting.
@@ -49,44 +50,28 @@ def ssl_monkey_patch() -> None:
     MonkeyPatch.write = _fixed_write
 
 
-class TimeoutFlag:
-    """
-    A timeout flag holds a state of either read-timeout or write-timeout mode.
-
-    We use this so that we can attempt both reads and writes concurrently, while
-    only enforcing timeouts in one direction.
-
-    During a request/response cycle we start in write-timeout mode.
-
-    Once we've sent a request fully, or once we start seeing a response,
-    then we switch to read-timeout mode instead.
-    """
-
-    def __init__(self) -> None:
-        self.raise_on_read_timeout = False
-        self.raise_on_write_timeout = True
-
-    def set_read_timeouts(self) -> None:
-        """
-        Set the flag to read-timeout mode.
-        """
-        self.raise_on_read_timeout = True
-        self.raise_on_write_timeout = False
-
-    def set_write_timeouts(self) -> None:
-        """
-        Set the flag to write-timeout mode.
-        """
-        self.raise_on_read_timeout = False
-        self.raise_on_write_timeout = True
-
-
-class Reader(BaseReader):
+class Stream(BaseStream):
     def __init__(
-        self, stream_reader: asyncio.StreamReader, timeout: TimeoutConfig
-    ) -> None:
+        self,
+        stream_reader: asyncio.StreamReader,
+        stream_writer: asyncio.StreamWriter,
+        timeout: TimeoutConfig,
+    ):
         self.stream_reader = stream_reader
+        self.stream_writer = stream_writer
         self.timeout = timeout
+
+    def get_http_version(self) -> str:
+        ssl_object = self.stream_writer.get_extra_info("ssl_object")
+
+        if ssl_object is None:
+            return "HTTP/1.1"
+
+        ident = ssl_object.selected_alpn_protocol()
+        if ident is None:
+            ident = ssl_object.selected_npn_protocol()
+
+        return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
     async def read(
         self, n: int, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
@@ -107,15 +92,6 @@ class Reader(BaseReader):
                     raise ReadTimeout() from None
 
         return data
-
-    def is_connection_dropped(self) -> bool:
-        return self.stream_reader.at_eof()
-
-
-class Writer(BaseWriter):
-    def __init__(self, stream_writer: asyncio.StreamWriter, timeout: TimeoutConfig):
-        self.stream_writer = stream_writer
-        self.timeout = timeout
 
     def write_no_block(self, data: bytes) -> None:
         self.stream_writer.write(data)  # pragma: nocover
@@ -143,6 +119,9 @@ class Writer(BaseWriter):
                 should_raise = flag is None or flag.raise_on_write_timeout
                 if should_raise:
                     raise WriteTimeout() from None
+
+    def is_connection_dropped(self) -> bool:
+        return self.stream_reader.at_eof()
 
     async def close(self) -> None:
         self.stream_writer.close()
@@ -202,7 +181,7 @@ class AsyncioBackend(ConcurrencyBackend):
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> typing.Tuple[BaseReader, BaseWriter, Protocol]:
+    ) -> BaseStream:
         try:
             stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
                 asyncio.open_connection(hostname, port, ssl=ssl_context),
@@ -211,19 +190,47 @@ class AsyncioBackend(ConcurrencyBackend):
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
-        ssl_object = stream_writer.get_extra_info("ssl_object")
-        if ssl_object is None:
-            ident = "http/1.1"
-        else:
-            ident = ssl_object.selected_alpn_protocol()
-            if ident is None:
-                ident = ssl_object.selected_npn_protocol()
+        return Stream(
+            stream_reader=stream_reader, stream_writer=stream_writer, timeout=timeout
+        )
 
-        reader = Reader(stream_reader=stream_reader, timeout=timeout)
-        writer = Writer(stream_writer=stream_writer, timeout=timeout)
-        protocol = Protocol.HTTP_2 if ident == "h2" else Protocol.HTTP_11
+    async def start_tls(
+        self,
+        stream: BaseStream,
+        hostname: str,
+        ssl_context: ssl.SSLContext,
+        timeout: TimeoutConfig,
+    ) -> BaseStream:
 
-        return reader, writer, protocol
+        loop = self.loop
+        if not hasattr(loop, "start_tls"):  # pragma: no cover
+            raise NotImplementedError(
+                "asyncio.AbstractEventLoop.start_tls() is only available in Python 3.7+"
+            )
+
+        assert isinstance(stream, Stream)
+
+        stream_reader = asyncio.StreamReader()
+        protocol = asyncio.StreamReaderProtocol(stream_reader)
+        transport = stream.stream_writer.transport
+
+        loop_start_tls = loop.start_tls  # type: ignore
+        transport = await asyncio.wait_for(
+            loop_start_tls(
+                transport=transport,
+                protocol=protocol,
+                sslcontext=ssl_context,
+                server_hostname=hostname,
+            ),
+            timeout=timeout.connect_timeout,
+        )
+
+        stream_reader.set_transport(transport)
+        stream.stream_reader = stream_reader
+        stream.stream_writer = asyncio.StreamWriter(
+            transport=transport, protocol=protocol, reader=stream_reader, loop=loop
+        )
+        return stream
 
     async def start_tls(
         self,
@@ -286,8 +293,14 @@ class AsyncioBackend(ConcurrencyBackend):
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
 
+    def create_queue(self, max_size: int) -> BaseQueue:
+        return typing.cast(BaseQueue, asyncio.Queue(maxsize=max_size))
+
+    def create_event(self) -> BaseEvent:
+        return typing.cast(BaseEvent, asyncio.Event())
+
     def background_manager(
-        self, coroutine: typing.Callable, args: typing.Any
+        self, coroutine: typing.Callable, *args: typing.Any
     ) -> "BackgroundManager":
         return BackgroundManager(coroutine, args)
 
