@@ -251,8 +251,16 @@ class HTTPVersionConfig:
             self.http_versions = {http_versions.upper()}
         elif isinstance(http_versions, HTTPVersionConfig):
             self.http_versions = http_versions.http_versions
+        elif isinstance(http_versions, typing.Iterable):
+            self.http_versions = {
+                version.upper() if isinstance(version, str) else version
+                for version in http_versions
+            }
         else:
-            self.http_versions = {version.upper() for version in http_versions}
+            raise TypeError(
+                f"HTTP version should be a string or list of strings, "
+                "but got {type(http_versions)}"
+            )
 
         for version in self.http_versions:
             if version not in ("HTTP/1.1", "HTTP/2"):

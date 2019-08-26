@@ -1,9 +1,10 @@
-import asyncio
 import typing
 
+from ..concurrency.asyncio import AsyncioBackend
+from ..concurrency.base import ConcurrencyBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
-from ..interfaces import AsyncDispatcher
 from ..models import AsyncRequest, AsyncResponse
+from .base import AsyncDispatcher
 
 
 class ASGIDispatch(AsyncDispatcher):
@@ -47,11 +48,13 @@ class ASGIDispatch(AsyncDispatcher):
         raise_app_exceptions: bool = True,
         root_path: str = "",
         client: typing.Tuple[str, int] = ("127.0.0.1", 123),
+        backend: ConcurrencyBackend = None,
     ) -> None:
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
         self.root_path = root_path
         self.client = client
+        self.backend = AsyncioBackend() if backend is None else backend
 
     async def send(
         self,
@@ -78,8 +81,8 @@ class ASGIDispatch(AsyncDispatcher):
         app_exc = None
         status_code = None
         headers = None
-        response_started_or_failed = asyncio.Event()
-        response_body = BodyIterator()
+        response_started_or_failed = self.backend.create_event()
+        response_body = BodyIterator(self.backend)
         request_stream = request.stream()
 
         async def receive() -> dict:
@@ -117,13 +120,12 @@ class ASGIDispatch(AsyncDispatcher):
                 await response_body.mark_as_done()
                 response_started_or_failed.set()
 
-        # Really we'd like to push all `asyncio` logic into concurrency.py,
-        # with a standardized interface, so that we can support other event
-        # loop implementations, such as Trio and Curio.
-        # That's a bit fiddly here, so we're not yet supporting using a custom
-        # `ConcurrencyBackend` with the `Client(app=asgi_app)` case.
-        loop = asyncio.get_event_loop()
-        app_task = loop.create_task(run_app())
+        # Using the background manager here *works*, but it is weak design because
+        # the background task isn't strictly context-managed.
+        # We could consider refactoring the other uses of this abstraction
+        # (mainly sending/receiving request/response data in h11 and h2 dispatchers),
+        # and see if that allows us to come back here and refactor things out.
+        background = await self.backend.background_manager(run_app).__aenter__()
 
         await response_started_or_failed.wait()
 
@@ -134,9 +136,9 @@ class ASGIDispatch(AsyncDispatcher):
         assert headers is not None
 
         async def on_close() -> None:
-            nonlocal app_task, response_body
+            nonlocal response_body
             await response_body.drain()
-            await app_task
+            await background.__aexit__(None, None, None)
             if app_exc is not None and self.raise_app_exceptions:
                 raise app_exc
 
@@ -156,10 +158,8 @@ class BodyIterator:
     ingest the response content from.
     """
 
-    def __init__(self) -> None:
-        self._queue = asyncio.Queue(
-            maxsize=1
-        )  # type: asyncio.Queue[typing.Union[bytes, object]]
+    def __init__(self, backend: ConcurrencyBackend) -> None:
+        self._queue = backend.create_queue(max_size=1)
         self._done = object()
 
     async def iterate(self) -> typing.AsyncIterator[bytes]:

@@ -1,6 +1,7 @@
 import typing
 
 from ..concurrency.asyncio import AsyncioBackend
+from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
@@ -10,8 +11,8 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..interfaces import AsyncDispatcher, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse, Origin
+from .base import AsyncDispatcher
 from .connection import HTTPConnection
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
