@@ -5,6 +5,7 @@ import h11
 from ..concurrency.base import BaseStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
 from ..models import AsyncRequest, AsyncResponse
+from ..utils import get_logger
 
 H11Event = typing.Union[
     h11.Request,
@@ -20,6 +21,9 @@ H11Event = typing.Union[
 # In practice the callback will be a functools partial, which binds
 # the `ConnectionPool.release_connection(conn: HTTPConnection)` method.
 OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
+
+
+logger = get_logger(__name__)
 
 
 class HTTP11Connection:
@@ -73,6 +77,12 @@ class HTTP11Connection:
         """
         Send the request method, URL, and headers to the network.
         """
+        logger.debug(
+            f"send_request method={request.method!r} "
+            f"target={request.url.full_path!r} "
+            f"headers={request.headers!r}"
+        )
+
         method = request.method.encode("ascii")
         target = request.url.full_path.encode("ascii")
         headers = request.headers.raw
@@ -128,6 +138,12 @@ class HTTP11Connection:
                 assert isinstance(event, h11.Response)
                 break  # pragma: no cover
         http_version = "HTTP/%s" % event.http_version.decode("latin-1", errors="ignore")
+        logger.debug(
+            f"receive_response "
+            f"status_code={event.status_code} "
+            f"headers={event.headers!r}"
+        )
+
         return http_version, event.status_code, event.headers
 
     async def _receive_response_data(
@@ -150,6 +166,12 @@ class HTTP11Connection:
         """
         while True:
             event = self.h11_state.next_event()
+
+            if isinstance(event, h11.Data):
+                logger.debug(f"receive_event event=Data({len(event.data)})")
+            else:
+                logger.debug(f"receive_event event={event!r}")
+
             if event is h11.NEED_DATA:
                 try:
                     data = await self.stream.read(
@@ -164,6 +186,11 @@ class HTTP11Connection:
         return event
 
     async def response_closed(self) -> None:
+        logger.debug(
+            f"response_closed "
+            f"our_state={self.h11_state.our_state!r} "
+            f"their_state={self.h11_state.their_state}"
+        )
         if (
             self.h11_state.our_state is h11.DONE
             and self.h11_state.their_state is h11.DONE

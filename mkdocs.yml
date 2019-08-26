@@ -12,6 +12,7 @@ nav:
     - Introduction: 'index.md'
     - QuickStart: 'quickstart.md'
     - Advanced Usage: 'advanced.md'
+    - Environment Variables: 'environment_variables.md'
     - Parallel Requests: 'parallel.md'
     - Async Client: 'async.md'
     - Requests Compatibility: 'compatibility.md'

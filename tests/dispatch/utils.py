@@ -4,9 +4,9 @@ import typing
 import h2.config
 import h2.connection
 import h2.events
+from tests.concurrency import sleep
 
 from httpx import AsyncioBackend, BaseStream, Request, TimeoutConfig
-from tests.concurrency import sleep
 
 
 class MockHTTP2Backend:
