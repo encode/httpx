@@ -5,7 +5,7 @@ The HTTPX library can be configured via environment variables.
 Here is a list of environment variables that HTTPX recognizes
 and what function they serve:
 
-HTTPX_DEBUG
+`HTTPX_DEBUG`
 -----------
 
 Valid values: `1`, `true`
