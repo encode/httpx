@@ -24,7 +24,7 @@ Example:
 
 import httpx
 client = httpx.Client()
-client.request("GET", "https://google.com")
+client.get("https://google.com")
 ```
 
 ```console
