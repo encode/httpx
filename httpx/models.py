@@ -161,7 +161,7 @@ class URL:
         return path
 
     @full_path.setter
-    def full_path(self, value: typing.Optional[str]):
+    def full_path(self, value: typing.Optional[str]) -> None:
         self._full_path = value
 
     @property

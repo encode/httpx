@@ -22,6 +22,7 @@ from .config import (
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
+from .dispatch.proxy_http_forwarding import HTTPForwardingProxy
 from .exceptions import (
     ConnectTimeout,
     CookieConflict,
@@ -29,6 +30,7 @@ from .exceptions import (
     InvalidURL,
     PoolTimeout,
     ProtocolError,
+    ProxyError,
     ReadTimeout,
     RedirectBodyUnavailable,
     RedirectLoop,
@@ -88,6 +90,7 @@ __all__ = [
     "BasePoolSemaphore",
     "BaseBackgroundManager",
     "ConnectionPool",
+    "HTTPForwardingProxy",
     "ConnectTimeout",
     "CookieConflict",
     "DecodingError",
@@ -100,6 +103,7 @@ __all__ = [
     "ResponseClosed",
     "ResponseNotRead",
     "StreamConsumed",
+    "ProxyError",
     "Timeout",
     "TooManyRedirects",
     "WriteTimeout",

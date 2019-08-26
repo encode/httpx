@@ -1,4 +1,4 @@
-
+from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
@@ -7,8 +7,15 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..interfaces import ConcurrencyBackend, HeaderTypes, URLTypes
-from ..models import URL, Headers, Origin, AsyncRequest, AsyncResponse
+from ..models import (
+    URL,
+    AsyncRequest,
+    AsyncResponse,
+    Headers,
+    HeaderTypes,
+    Origin,
+    URLTypes,
+)
 from .connection import HTTPConnection
 from .connection_pool import ConnectionPool
 
@@ -62,10 +69,7 @@ class HTTPForwardingProxy(ConnectionPool):
             request.headers.setdefault(name, value)
 
         return await super().send(
-            request=request,
-            verify=verify,
-            cert=cert,
-            timeout=timeout
+            request=request, verify=verify, cert=cert, timeout=timeout
         )
 
     def __repr__(self) -> str:
