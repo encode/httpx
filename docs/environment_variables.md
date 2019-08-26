@@ -10,9 +10,8 @@ and what function they serve:
 
 Valid values: `1`, `true`
 
-If this environment variable is set to `1` or `true` then
-logging will be turned on by default to stderr about low-level
-details of the HTTP request and responses being sent and received.
+If this environment variable is set to `1` or `true` then low-level
+details about the execution of HTTP requests will be logged to `stderr`.
 
 This can help you debug issues and see what's exactly being sent
 over the wire and to which location.
