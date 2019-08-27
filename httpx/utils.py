@@ -154,7 +154,7 @@ def get_logger(name: str) -> logging.Logger:
     """
     global _LOGGER_INITIALIZED
 
-    if not _LOGGER_INITIALIZED:  # pragma: no cover
+    if not _LOGGER_INITIALIZED:
         _LOGGER_INITIALIZED = True
         if os.environ.get("HTTPX_DEBUG", "").lower() in ("1", "true"):
             logger = logging.getLogger("httpx")
