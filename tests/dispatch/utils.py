@@ -1,4 +1,3 @@
-import asyncio
 import ssl
 import typing
 
@@ -7,11 +6,13 @@ import h2.connection
 import h2.events
 
 from httpx import AsyncioBackend, BaseStream, Request, TimeoutConfig
+from tests.concurrency import sleep
 
 
-class MockHTTP2Backend(AsyncioBackend):
-    def __init__(self, app):
+class MockHTTP2Backend:
+    def __init__(self, app, backend=None):
         self.app = app
+        self.backend = AsyncioBackend() if backend is None else backend
         self.server = None
 
     async def connect(
@@ -21,15 +22,20 @@ class MockHTTP2Backend(AsyncioBackend):
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
     ) -> BaseStream:
-        self.server = MockHTTP2Server(self.app)
+        self.server = MockHTTP2Server(self.app, backend=self.backend)
         return self.server
+
+    # Defer all other attributes and methods to the underlying backend.
+    def __getattr__(self, name: str) -> typing.Any:
+        return getattr(self.backend, name)
 
 
 class MockHTTP2Server(BaseStream):
-    def __init__(self, app):
+    def __init__(self, app, backend):
         config = h2.config.H2Configuration(client_side=False)
         self.conn = h2.connection.H2Connection(config=config)
         self.app = app
+        self.backend = backend
         self.buffer = b""
         self.requests = {}
         self.close_connection = False
@@ -41,7 +47,7 @@ class MockHTTP2Server(BaseStream):
         return "HTTP/2"
 
     async def read(self, n, timeout, flag=None) -> bytes:
-        await asyncio.sleep(0)
+        await sleep(self.backend, 0)
         send, self.buffer = self.buffer[:n], self.buffer[n:]
         return send
 

@@ -1,4 +1,3 @@
-sudo: required
 dist: xenial
 language: python
 
@@ -31,5 +30,5 @@ script:
 after_script:
   - if [ -f .coverage ]; then
       python -m pip install codecov;
-      codecov;
+      codecov --required;
     fi

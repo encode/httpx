@@ -194,6 +194,44 @@ class AsyncioBackend(ConcurrencyBackend):
             stream_reader=stream_reader, stream_writer=stream_writer, timeout=timeout
         )
 
+    async def start_tls(
+        self,
+        stream: BaseStream,
+        hostname: str,
+        ssl_context: ssl.SSLContext,
+        timeout: TimeoutConfig,
+    ) -> BaseStream:
+
+        loop = self.loop
+        if not hasattr(loop, "start_tls"):  # pragma: no cover
+            raise NotImplementedError(
+                "asyncio.AbstractEventLoop.start_tls() is only available in Python 3.7+"
+            )
+
+        assert isinstance(stream, Stream)
+
+        stream_reader = asyncio.StreamReader()
+        protocol = asyncio.StreamReaderProtocol(stream_reader)
+        transport = stream.stream_writer.transport
+
+        loop_start_tls = loop.start_tls  # type: ignore
+        transport = await asyncio.wait_for(
+            loop_start_tls(
+                transport=transport,
+                protocol=protocol,
+                sslcontext=ssl_context,
+                server_hostname=hostname,
+            ),
+            timeout=timeout.connect_timeout,
+        )
+
+        stream_reader.set_transport(transport)
+        stream.stream_reader = stream_reader
+        stream.stream_writer = asyncio.StreamWriter(
+            transport=transport, protocol=protocol, reader=stream_reader, loop=loop
+        )
+        return stream
+
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
@@ -223,7 +261,7 @@ class AsyncioBackend(ConcurrencyBackend):
         return typing.cast(BaseEvent, asyncio.Event())
 
     def background_manager(
-        self, coroutine: typing.Callable, args: typing.Any
+        self, coroutine: typing.Callable, *args: typing.Any
     ) -> "BackgroundManager":
         return BackgroundManager(coroutine, args)
 

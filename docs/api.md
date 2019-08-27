@@ -1,6 +1,12 @@
 # Developer Interface
 
-## Main Interface
+## Helper Functions
+
+!!! note
+    Only use these functions if you're testing HTTPX in a console
+    or making a small number of requests. Using a `Client` will
+    enable HTTP/2 and connection pooling for more efficient and
+    long-lived connections.
 
 * `get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
@@ -13,7 +19,7 @@
 
 ## `Client`
 
-*An HTTP client, with connection pooling, redirects, cookie persistence, etc.*
+*An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.*
 
 ```python
 >>> client = httpx.Client()

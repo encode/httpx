@@ -633,12 +633,17 @@ class Client(BaseClient):
         # concurrency backends.
         # The sync client performs I/O on its own, so it doesn't need to support
         # arbitrary concurrency backends.
-        # Therefore, we kept the `backend` parameter (for testing/mocking), but enforce
-        # that the concurrency backend derives from the asyncio one.
-        if not isinstance(backend, AsyncioBackend):
-            raise ValueError(
-                "'Client' only supports asyncio-based concurrency backends"
-            )
+        # Therefore, we keep the `backend` parameter (for testing/mocking), but require
+        # that the concurrency backend relies on asyncio.
+
+        if isinstance(backend, AsyncioBackend):
+            return
+
+        if hasattr(backend, "loop"):
+            # Most likely a proxy class.
+            return
+
+        raise ValueError("'Client' only supports asyncio-based concurrency backends")
 
     def _async_request_data(
         self, data: RequestData = None

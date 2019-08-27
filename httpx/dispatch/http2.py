@@ -42,7 +42,7 @@ class HTTP2Connection:
         self.timeout_flags[stream_id] = TimeoutFlag()
 
         task, args = self.send_request_data, [stream_id, request.stream(), timeout]
-        async with self.backend.background_manager(task, args=args):
+        async with self.backend.background_manager(task, *args):
             status_code, headers = await self.receive_response(stream_id, timeout)
         content = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
