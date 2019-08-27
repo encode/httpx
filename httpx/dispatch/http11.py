@@ -5,6 +5,7 @@ import h11
 from ..concurrency.base import BaseStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
 from ..models import AsyncRequest, AsyncResponse
+from ..utils import get_logger
 
 H11Event = typing.Union[
     h11.Request,
@@ -20,6 +21,9 @@ H11Event = typing.Union[
 # In practice the callback will be a functools partial, which binds
 # the `ConnectionPool.release_connection(conn: HTTPConnection)` method.
 OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
+
+
+logger = get_logger(__name__)
 
 
 class HTTP11Connection:
@@ -61,6 +65,7 @@ class HTTP11Connection:
     async def close(self) -> None:
         event = h11.ConnectionClosed()
         try:
+            logger.debug(f"send_event event={event!r}")
             self.h11_state.send(event)
         except h11.LocalProtocolError:  # pragma: no cover
             # Premature client disconnect
@@ -73,6 +78,12 @@ class HTTP11Connection:
         """
         Send the request method, URL, and headers to the network.
         """
+        logger.debug(
+            f"send_headers method={request.method!r} "
+            f"target={request.url.full_path!r} "
+            f"headers={request.headers!r}"
+        )
+
         method = request.method.encode("ascii")
         target = request.url.full_path.encode("ascii")
         headers = request.headers.raw
@@ -88,6 +99,7 @@ class HTTP11Connection:
         try:
             # Send the request body.
             async for chunk in data:
+                logger.debug(f"send_data data=Data(<{len(chunk)} bytes>)")
                 event = h11.Data(data=chunk)
                 await self._send_event(event, timeout)
 
@@ -150,6 +162,12 @@ class HTTP11Connection:
         """
         while True:
             event = self.h11_state.next_event()
+
+            if isinstance(event, h11.Data):
+                logger.debug(f"receive_event event=Data(<{len(event.data)} bytes>)")
+            else:
+                logger.debug(f"receive_event event={event!r}")
+
             if event is h11.NEED_DATA:
                 try:
                     data = await self.stream.read(
@@ -164,6 +182,11 @@ class HTTP11Connection:
         return event
 
     async def response_closed(self) -> None:
+        logger.debug(
+            f"response_closed "
+            f"our_state={self.h11_state.our_state!r} "
+            f"their_state={self.h11_state.their_state}"
+        )
         if (
             self.h11_state.our_state is h11.DONE
             and self.h11_state.their_state is h11.DONE

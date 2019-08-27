@@ -1,7 +1,10 @@
+import logging
 import os
 
 import pytest
 
+import httpx
+from httpx import utils
 from httpx.utils import get_netrc_login, guess_json_utf, parse_header_links
 
 
@@ -87,3 +90,24 @@ def test_get_netrc_login():
 )
 def test_parse_header_links(value, expected):
     assert parse_header_links(value) == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("httpx_debug", ["0", "1", "True", "False"])
+async def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):
+    os.environ["HTTPX_DEBUG"] = httpx_debug
+
+    # Force a reload on the logging handlers
+    utils._LOGGER_INITIALIZED = False
+    utils.get_logger("httpx")
+
+    async with httpx.AsyncClient() as client:
+        await client.get("http://127.0.0.1:8000/")
+
+    if httpx_debug in ("1", "True"):
+        assert "httpx.dispatch.connection_pool" in capsys.readouterr().err
+    else:
+        assert "httpx.dispatch.connection_pool" not in capsys.readouterr().err
+
+    # Reset the logger so we don't have verbose output in all unit tests
+    logging.getLogger("httpx").handlers = []

@@ -243,6 +243,12 @@ class Origin:
     def __hash__(self) -> int:
         return hash((self.scheme, self.host, self.port))
 
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        return (
+            f"{class_name}(scheme={self.scheme!r} host={self.host!r} port={self.port})"
+        )
+
 
 class QueryParams(typing.Mapping[str, str]):
     """

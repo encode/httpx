@@ -15,12 +15,16 @@ from ..config import (
     VerifyTypes,
 )
 from ..models import AsyncRequest, AsyncResponse, Origin
+from ..utils import get_logger
 from .base import AsyncDispatcher
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
 # Callback signature: async def callback(conn: HTTPConnection) -> None
 ReleaseCallback = typing.Callable[["HTTPConnection"], typing.Awaitable[None]]
+
+
+logger = get_logger(__name__)
 
 
 class HTTPConnection(AsyncDispatcher):
@@ -79,8 +83,10 @@ class HTTPConnection(AsyncDispatcher):
         else:
             on_release = functools.partial(self.release_func, self)
 
+        logger.debug(f"start_connect host={host!r} port={port!r} timeout={timeout!r}")
         stream = await self.backend.connect(host, port, ssl_context, timeout)
         http_version = stream.get_http_version()
+        logger.debug(f"connected http_version={http_version!r}")
 
         if http_version == "HTTP/2":
             self.h2_connection = HTTP2Connection(
@@ -102,6 +108,7 @@ class HTTPConnection(AsyncDispatcher):
         )
 
     async def close(self) -> None:
+        logger.debug("close_connection")
         if self.h2_connection is not None:
             await self.h2_connection.close()
         elif self.h11_connection is not None:
@@ -125,3 +132,7 @@ class HTTPConnection(AsyncDispatcher):
         else:
             assert self.h11_connection is not None
             return self.h11_connection.is_connection_dropped()
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        return f"{class_name}(origin={self.origin!r})"
