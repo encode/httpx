@@ -29,6 +29,7 @@ def test_get(server):
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
+    assert response.http_version == "HTTP/1.1"
 
 
 @threadpool
