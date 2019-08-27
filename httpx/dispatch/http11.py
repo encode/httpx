@@ -65,6 +65,7 @@ class HTTP11Connection:
     async def close(self) -> None:
         event = h11.ConnectionClosed()
         try:
+            logger.debug(f"send_event event={event!r}")
             self.h11_state.send(event)
         except h11.LocalProtocolError:  # pragma: no cover
             # Premature client disconnect
@@ -78,7 +79,7 @@ class HTTP11Connection:
         Send the request method, URL, and headers to the network.
         """
         logger.debug(
-            f"send_request method={request.method!r} "
+            f"send_headers method={request.method!r} "
             f"target={request.url.full_path!r} "
             f"headers={request.headers!r}"
         )
@@ -98,6 +99,7 @@ class HTTP11Connection:
         try:
             # Send the request body.
             async for chunk in data:
+                logger.debug(f"send_data data=Data(<{len(chunk)} bytes>)")
                 event = h11.Data(data=chunk)
                 await self._send_event(event, timeout)
 
@@ -138,12 +140,6 @@ class HTTP11Connection:
                 assert isinstance(event, h11.Response)
                 break  # pragma: no cover
         http_version = "HTTP/%s" % event.http_version.decode("latin-1", errors="ignore")
-        logger.debug(
-            f"receive_response "
-            f"status_code={event.status_code} "
-            f"headers={event.headers!r}"
-        )
-
         return http_version, event.status_code, event.headers
 
     async def _receive_response_data(
@@ -168,7 +164,7 @@ class HTTP11Connection:
             event = self.h11_state.next_event()
 
             if isinstance(event, h11.Data):
-                logger.debug(f"receive_event event=Data({len(event.data)})")
+                logger.debug(f"receive_event event=Data(<{len(event.data)} bytes>)")
             else:
                 logger.debug(f"receive_event event={event!r}")
 

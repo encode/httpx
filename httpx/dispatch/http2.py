@@ -78,7 +78,13 @@ class HTTP2Connection:
             (b":path", request.url.full_path.encode("ascii")),
         ] + [(k, v) for k, v in request.headers.raw if k != b"host"]
 
-        logger.debug(f"send_headers stream_id={stream_id} headers={headers!r}")
+        logger.debug(
+            f"send_headers "
+            f"stream_id={stream_id} "
+            f"method={request.method!r} "
+            f"target={request.url.full_path!r} "
+            f"headers={headers!r}"
+        )
 
         self.h2_state.send_headers(stream_id, headers)
         data_to_send = self.h2_state.data_to_send()
@@ -107,7 +113,9 @@ class HTTP2Connection:
         for idx in range(0, len(data), chunk_size):
             chunk = data[idx : idx + chunk_size]
 
-            logger.debug(f"send_data stream_id={stream_id} data=Data({len(chunk)})")
+            logger.debug(
+                f"send_data stream_id={stream_id} data=Data(<{len(chunk)} bytes>)"
+            )
 
             self.h2_state.send_data(stream_id, chunk)
             data_to_send = self.h2_state.data_to_send()
