@@ -78,7 +78,7 @@ def test_set_cookie_with_cookiejar():
     assert response.json() == {"cookies": "example-name=example-value"}
 
 
-def test_setting_cookieis_with_cookiejar_in_client():
+def test_setting_client_cookies_to_cookiejar():
     """
     Send a request including a cookie, using a `CookieJar` instance.
     """
