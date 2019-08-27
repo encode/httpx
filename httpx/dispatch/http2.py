@@ -7,6 +7,9 @@ import h2.events
 from ..concurrency.base import BaseEvent, BaseStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
 from ..models import AsyncRequest, AsyncResponse
+from ..utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class HTTP2Connection:
@@ -75,6 +78,15 @@ class HTTP2Connection:
             (b":scheme", request.url.scheme.encode("ascii")),
             (b":path", request.url.full_path.encode("ascii")),
         ] + [(k, v) for k, v in request.headers.raw if k != b"host"]
+
+        logger.debug(
+            f"send_headers "
+            f"stream_id={stream_id} "
+            f"method={request.method!r} "
+            f"target={request.url.full_path!r} "
+            f"headers={headers!r}"
+        )
+
         self.h2_state.send_headers(stream_id, headers)
         data_to_send = self.h2_state.data_to_send()
         await self.stream.write(data_to_send, timeout)
@@ -107,11 +119,13 @@ class HTTP2Connection:
             chunk_size = min(len(data), window_size, max_frame_size)
 
             chunk, data = data[:chunk_size], data[chunk_size:]
+
             self.h2_state.send_data(stream_id, chunk)
             data_to_send = self.h2_state.data_to_send()
             await self.stream.write(data_to_send, timeout)
 
     async def end_stream(self, stream_id: int, timeout: TimeoutConfig = None) -> None:
+        logger.debug(f"end_stream stream_id={stream_id}")
         self.h2_state.end_stream(stream_id)
         data_to_send = self.h2_state.data_to_send()
         await self.stream.write(data_to_send, timeout)
@@ -163,7 +177,11 @@ class HTTP2Connection:
             data = await self.stream.read(self.READ_NUM_BYTES, timeout, flag=flag)
             events = self.h2_state.receive_data(data)
             for event in events:
-                if getattr(event, "stream_id", 0):
+                event_stream_id = getattr(event, "stream_id", 0)
+                logger.debug(
+                    f"receive_event stream_id={event_stream_id} event={event!r}"
+                )
+                if event_stream_id:
                     self.events[event.stream_id].append(event)
 
             data_to_send = self.h2_state.data_to_send()

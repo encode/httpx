@@ -1,7 +1,9 @@
 import codecs
+import logging
 import netrc
 import os
 import re
+import sys
 import typing
 from pathlib import Path
 
@@ -140,3 +142,30 @@ def parse_header_links(value: str) -> typing.List[typing.Dict[str, str]]:
             link[key.strip(replace_chars)] = value.strip(replace_chars)
         links.append(link)
     return links
+
+
+_LOGGER_INITIALIZED = False
+
+
+def get_logger(name: str) -> logging.Logger:
+    """Gets a `logging.Logger` instance and optionally
+    sets up debug logging if the user requests it via
+    the `HTTPX_DEBUG=1` environment variable.
+    """
+    global _LOGGER_INITIALIZED
+
+    if not _LOGGER_INITIALIZED:
+        _LOGGER_INITIALIZED = True
+        if os.environ.get("HTTPX_DEBUG", "").lower() in ("1", "true"):
+            logger = logging.getLogger("httpx")
+            logger.setLevel(logging.DEBUG)
+            handler = logging.StreamHandler(sys.stderr)
+            handler.setFormatter(
+                logging.Formatter(
+                    fmt="%(asctime)s.%(msecs)03d - %(name)s - %(message)s",
+                    datefmt="%H:%M:%S",
+                )
+            )
+            logger.addHandler(handler)
+
+    return logging.getLogger(name)
