@@ -154,7 +154,6 @@ def get_logger(name: str) -> logging.Logger:
     """
     global _LOGGER_INITIALIZED
 
-    # If the user wants debug logging on we set it up for them.
     if not _LOGGER_INITIALIZED:
         _LOGGER_INITIALIZED = True
         if os.environ.get("HTTPX_DEBUG", "").lower() in ("1", "true"):

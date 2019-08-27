@@ -10,7 +10,7 @@ and what function they serve:
 
 Valid values: `1`, `true`
 
-If this environment variable is set to `1` or `true` then low-level
+If this environment variable is set to a valid value then low-level
 details about the execution of HTTP requests will be logged to `stderr`.
 
 This can help you debug issues and see what's exactly being sent
