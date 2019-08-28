@@ -102,12 +102,28 @@ class BaseClient:
             self.base_url = URL(base_url)
 
         self.auth = auth
-        self.headers = Headers(headers)
-        self.cookies = Cookies(cookies)
+        self._headers = Headers(headers)
+        self._cookies = Cookies(cookies)
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
         self.trust_env = True if trust_env is None else trust_env
+
+    @property
+    def headers(self) -> Headers:
+        return self._headers
+
+    @headers.setter
+    def headers(self, headers: HeaderTypes) -> None:
+        self._headers = Headers(headers)
+
+    @property
+    def cookies(self) -> Cookies:
+        return self._cookies
+
+    @cookies.setter
+    def cookies(self, cookies: CookieTypes) -> None:
+        self._cookies = Cookies(cookies)
 
     def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
         pass  # pragma: no cover
