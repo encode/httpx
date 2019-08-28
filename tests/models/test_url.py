@@ -175,3 +175,10 @@ def test_url_set():
     url_set = set(urls)
 
     assert all(url in urls for url in url_set)
+
+
+def test_url_full_path_setter():
+    url = URL("http://example.org")
+
+    url.full_path = "http://example.org"
+    assert url.full_path == "http://example.org"

@@ -20,6 +20,7 @@ from .config import (
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection_pool import ConnectionPool
+from .dispatch.proxy_http import HTTPProxy
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import (
@@ -50,6 +51,10 @@ from .models import (
 from .status_codes import codes
 from .utils import get_netrc_login
 
+ProxiesTypes = typing.Union[
+    URLTypes, AsyncDispatcher, typing.Dict[str, typing.Union[URLTypes, AsyncDispatcher]]
+]
+
 
 class BaseClient:
     def __init__(
@@ -59,6 +64,7 @@ class BaseClient:
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        proxies: ProxiesTypes = None,
         http_versions: HTTPVersionTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
@@ -100,6 +106,25 @@ class BaseClient:
             self.base_url = URL("", allow_relative=True)
         else:
             self.base_url = URL(base_url)
+
+        if proxies is None:
+            proxies = {}
+        elif isinstance(proxies, URLTypes):
+            proxies = {"*": proxy_from_url(proxies)}
+        elif isinstance(proxies, AsyncDispatcher):
+            proxies = {"*": proxies}
+        else:
+            new_proxies = {}
+            for key, val in proxies.items():
+                if isinstance(val, URLTypes):
+                    new_proxies[key] = proxy_from_url(val)
+                elif isinstance(val, AsyncDispatcher):
+                    new_proxies[key] = val
+                else:
+                    raise ValueError(f"Unknown proxy type {val}")
+            proxies = new_proxies
+
+        self.proxies: typing.Dict[str, AsyncDispatcher] = proxies
 
         self.auth = auth
         self.headers = Headers(headers)
@@ -330,6 +355,23 @@ class BaseClient:
         if request.is_streaming:
             raise RedirectBodyUnavailable(response=response)
         return request.content
+
+    def get_dispatcher_for_url(self, url: URL) -> AsyncDispatcher:
+        """
+        Return an AsyncDispatcher for the given URL taking in
+        to account proxies that are defined.
+        """
+        if self.proxies:
+            hostname = url.host
+            if url.port is not None:
+                hostname += f":{url.port}"
+            proxy_keys = (f"{url.scheme}://{hostname}", url.scheme, "*")
+
+            for proxy_key in proxy_keys:
+                if proxy_key in self.proxies:
+                    return self.proxies[proxy_key]
+
+        return self.dispatch
 
 
 class AsyncClient(BaseClient):
@@ -990,3 +1032,10 @@ class Client(BaseClient):
         traceback: TracebackType = None,
     ) -> None:
         self.close()
+
+
+def proxy_from_url(url: URLTypes) -> AsyncDispatcher:
+    url = URL(url)
+    if url.scheme in ("http", "https"):
+        return HTTPProxy(proxy_url=url)
+    raise ValueError(f"Unknown proxy URL: {url!r}")

@@ -4,6 +4,7 @@ import os
 import re
 import typing
 from pathlib import Path
+from urllib.request import getproxies
 
 
 def normalize_header_key(value: typing.AnyStr, encoding: str = None) -> bytes:
@@ -140,3 +141,19 @@ def parse_header_links(value: str) -> typing.List[typing.Dict[str, str]]:
             link[key.strip(replace_chars)] = value.strip(replace_chars)
         links.append(link)
     return links
+
+
+def get_environment_proxies() -> typing.Dict[str, str]:
+    """Gets proxy information from the environment"""
+
+    # urllib.request.getproxies() falls back on System
+    # Registry and Config for proxies on Windows and macOS.
+    proxies = {key: val for key, val in getproxies().items()}
+
+    for key in ("all_proxy", "ALL_PROXY"):
+        pass
+
+    for key in ("no_proxy", "NO_PROXY"):
+        pass
+
+    return proxies

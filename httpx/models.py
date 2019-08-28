@@ -425,6 +425,9 @@ class Headers(typing.MutableMapping[str, str]):
         for header in headers:
             self[header] = headers[header]
 
+    def copy(self) -> "Headers":
+        return Headers(self.items(), encoding=self.encoding)
+
     def __getitem__(self, key: str) -> str:
         """
         Return a single header value.

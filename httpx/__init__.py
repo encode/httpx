@@ -22,7 +22,7 @@ from .config import (
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
-from .dispatch.proxy_http_forwarding import HTTPForwardingProxy
+from .dispatch.proxy_http import HTTPProxy, HTTPProxyMode
 from .exceptions import (
     ConnectTimeout,
     CookieConflict,
@@ -90,7 +90,8 @@ __all__ = [
     "BasePoolSemaphore",
     "BaseBackgroundManager",
     "ConnectionPool",
-    "HTTPForwardingProxy",
+    "HTTPProxy",
+    "HTTPProxyMode",
     "ConnectTimeout",
     "CookieConflict",
     "DecodingError",
