@@ -134,7 +134,7 @@ async def test_keepalive_connection_closed_by_server_is_reestablished(
         response = await http.request("GET", "http://127.0.0.1:8000/")
         await response.read()
 
-        # shutdown the server to close the keep-alive connection
+        # Shutdown the server to close the keep-alive connection
         await restart(server)
 
         response = await http.request("GET", "http://127.0.0.1:8000/")
@@ -154,7 +154,7 @@ async def test_keepalive_http2_connection_closed_by_server_is_reestablished(
         response = await http.request("GET", "http://127.0.0.1:8000/")
         await response.read()
 
-        # shutdown the server to close the keep-alive connection
+        # Shutdown the server to close the keep-alive connection
         await restart(server)
 
         response = await http.request("GET", "http://127.0.0.1:8000/")
