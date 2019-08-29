@@ -130,6 +130,6 @@ class StatusCode(IntEnum):
 
 codes = StatusCode
 
-#  Include lower-case styles for `requests` compatability.
+#  Include lower-case styles for `requests` compatibility.
 for code in codes:
     setattr(codes, code._name_.lower(), int(code))

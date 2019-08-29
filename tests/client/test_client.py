@@ -8,7 +8,7 @@ import httpx
 
 def threadpool(func):
     """
-    Our sync tests should run in seperate thread to the uvicorn server.
+    Our sync tests should run in separate thread to the uvicorn server.
     """
 
     @functools.wraps(func)

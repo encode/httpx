@@ -102,7 +102,7 @@ def test_threaded_request_body_streaming():
 
 def test_dispatch_class():
     """
-    Use a syncronous 'Dispatcher' class directly.
+    Use a synchronous 'Dispatcher' class directly.
     """
     url = "https://example.org/"
     with MockDispatch() as dispatcher:
