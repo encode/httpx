@@ -252,7 +252,7 @@ class BaseClient:
 
         if response.is_redirect:
 
-            async def send_next() -> AsyncResponse:
+            async def call_next() -> AsyncResponse:
                 nonlocal request, response, verify, cert
                 nonlocal allow_redirects, timeout, history
                 request = self.build_redirect_request(request, response)
@@ -266,7 +266,7 @@ class BaseClient:
                 )
                 return response
 
-            response.next = send_next  # type: ignore
+            response.call_next = call_next  # type: ignore
 
         return response
 

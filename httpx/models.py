@@ -23,6 +23,7 @@ from .exceptions import (
     CookieConflict,
     HTTPError,
     InvalidURL,
+    NotRedirectResponse,
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
@@ -705,7 +706,7 @@ class BaseResponse:
 
         self.request = request
         self.on_close = on_close
-        self.next: typing.Optional[typing.Callable] = None
+        self.call_next: typing.Optional[typing.Callable] = None
 
     @property
     def reason_phrase(self) -> str:
@@ -949,6 +950,15 @@ class AsyncResponse(BaseResponse):
             async for part in self._raw_stream:
                 yield part
             await self.close()
+
+    async def next(self) -> "AsyncResponse":
+        """
+        Get the next response from a redirect response.
+        """
+        if not self.is_redirect:
+            raise NotRedirectResponse()
+        assert self.call_next is not None
+        return await self.call_next()
 
     async def close(self) -> None:
         """
