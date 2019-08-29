@@ -47,7 +47,17 @@ def clean_environ() -> typing.Dict[str, typing.Any]:
     os.environ.update(original_environ)
 
 
-@pytest.fixture(params=[pytest.param(AsyncioBackend, marks=pytest.mark.asyncio)])
+backend_params = [pytest.param(AsyncioBackend, marks=pytest.mark.asyncio)]
+
+try:
+    from httpx.concurrency.trio import TrioBackend
+except ImportError:  # pragma: no cover
+    pass
+else:
+    backend_params.append(pytest.param(TrioBackend, marks=pytest.mark.trio))
+
+
+@pytest.fixture(params=backend_params)
 def backend(request):
     backend_cls = request.param
     return backend_cls()
