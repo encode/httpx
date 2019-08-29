@@ -9,7 +9,7 @@
 - Added `http_versions` parameter to `Client`. (Pull #250)
 - Only use HTTP/1.1 on short-lived connections like `httpx.get()`. (Pull #284)
 - Convert `Client.cookies` and `Client.headers` when set as a property. (Pull #274)
-- Setting `HTTPX_DEBUG=1` enabled debug logging on all requests. (Pull #277)
+- Setting `HTTPX_DEBUG=1` enables debug logging on all requests. (Pull #277)
 
 ## 0.7.1 (August 18, 2019)
 
