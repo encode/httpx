@@ -12,10 +12,14 @@ from ..config import (
     VerifyTypes,
 )
 from ..models import AsyncRequest, AsyncResponse, Origin
+from ..utils import get_logger
 from .base import AsyncDispatcher
 from .connection import HTTPConnection
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
+
+
+logger = get_logger(__name__)
 
 
 class ConnectionStore:
@@ -135,12 +139,16 @@ class ConnectionPool(AsyncDispatcher):
                 backend=self.backend,
                 release_func=self.release_connection,
             )
+            logger.debug(f"new_connection connection={connection!r}")
+        else:
+            logger.debug(f"reuse_connection connection={connection!r}")
 
         self.active_connections.add(connection)
 
         return connection
 
     async def release_connection(self, connection: HTTPConnection) -> None:
+        logger.debug(f"release_connection connection={connection!r}")
         if connection.is_closed:
             self.active_connections.remove(connection)
             self.max_connections.release()

@@ -32,7 +32,7 @@ def request(
     stream: bool = False,
     trust_env: bool = None,
 ) -> Response:
-    with Client() as client:
+    with Client(http_versions=["HTTP/1.1"]) as client:
         return client.request(
             method=method,
             url=url,

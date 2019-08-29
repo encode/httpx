@@ -253,6 +253,12 @@ class Origin:
     def __hash__(self) -> int:
         return hash((self.scheme, self.host, self.port))
 
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        return (
+            f"{class_name}(scheme={self.scheme!r} host={self.host!r} port={self.port})"
+        )
+
 
 class QueryParams(typing.Mapping[str, str]):
     """
@@ -1201,7 +1207,7 @@ class Cookies(MutableMapping):
 
     class _CookieCompatRequest(urllib.request.Request):
         """
-        Wraps a `Request` instance up in a compatability interface suitable
+        Wraps a `Request` instance up in a compatibility interface suitable
         for use with `CookieJar` operations.
         """
 
@@ -1219,7 +1225,7 @@ class Cookies(MutableMapping):
 
     class _CookieCompatResponse:
         """
-        Wraps a `Request` instance up in a compatability interface suitable
+        Wraps a `Request` instance up in a compatibility interface suitable
         for use with `CookieJar` operations.
         """
 

@@ -113,7 +113,7 @@ class Stream(BaseStream):
                 )
                 break
             except asyncio.TimeoutError:
-                # We check our flag at the possible moment, in order to
+                # We check our flag at the first possible moment, in order to
                 # allow us to suppress write timeouts, if we've since
                 # switched over to read-timeout mode.
                 should_raise = flag is None or flag.raise_on_write_timeout

@@ -1,5 +1,7 @@
 import nox
 
+nox.options.stop_on_first_error = True
+
 source_files = ("httpx", "tests", "setup.py", "noxfile.py")
 
 
@@ -36,5 +38,4 @@ def docs(session):
 @nox.session(python=["3.6", "3.7", "3.8"])
 def test(session):
     session.install("-r", "test-requirements.txt")
-
-    session.run("python", "-m", "pytest")
+    session.run("python", "-m", "pytest", *session.posargs)
