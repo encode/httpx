@@ -1194,7 +1194,7 @@ class Cookies(MutableMapping):
 
     class _CookieCompatRequest(urllib.request.Request):
         """
-        Wraps a `Request` instance up in a compatability interface suitable
+        Wraps a `Request` instance up in a compatibility interface suitable
         for use with `CookieJar` operations.
         """
 
@@ -1212,7 +1212,7 @@ class Cookies(MutableMapping):
 
     class _CookieCompatResponse:
         """
-        Wraps a `Request` instance up in a compatability interface suitable
+        Wraps a `Request` instance up in a compatibility interface suitable
         for use with `CookieJar` operations.
         """
 
