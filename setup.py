@@ -54,7 +54,7 @@ setup(
         "chardet==3.*",
         "h11==0.8.*",
         "h2==3.*",
-        "hstspreload",
+        "hstspreload>=2019.8.27",
         "idna==2.*",
         "rfc3986==1.*",
     ],
