@@ -3,6 +3,7 @@ import os
 import threading
 import time
 import typing
+from urllib.parse import urljoin
 
 import pytest
 import trustme
@@ -247,3 +248,23 @@ def https_server(cert_pem_file, cert_private_key_file):
     )
     server = TestServer(config=config)
     yield from serve_in_thread(server)
+
+
+def prepare_httpbin_url(value: str) -> typing.Callable:
+    # Issue #1483: Make sure the URL always has a trailing slash
+    httpbin_url = value.url.rstrip("/") + "/"
+
+    def inner(*suffix: str) -> str:
+        return urljoin(httpbin_url, "/".join(suffix))
+
+    return inner
+
+
+@pytest.fixture
+def httpbin(httpbin):
+    return prepare_httpbin_url(httpbin)
+
+
+@pytest.fixture
+def httpbin_secure(httpbin_secure):
+    return prepare_httpbin_url(httpbin_secure)
