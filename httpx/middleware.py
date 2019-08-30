@@ -19,16 +19,7 @@ class BasicAuthMiddleware(BaseMiddleware):
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ):
-        if isinstance(username, str):
-            username = username.encode("latin1")
-
-        if isinstance(password, str):
-            password = password.encode("latin1")
-
-        userpass = b":".join((username, password))
-        token = b64encode(userpass).decode().strip()
-
-        self.authorization_header = f"Basic {token}"
+        self.authorization_header = build_basic_auth_header(username, password)
 
     async def __call__(
         self, request: AsyncRequest, get_response: typing.Callable
@@ -158,3 +149,17 @@ class RedirectMiddleware(BaseMiddleware):
         if request.is_streaming:
             raise RedirectBodyUnavailable()
         return request.content
+
+
+def build_basic_auth_header(
+    username: typing.Union[str, bytes], password: typing.Union[str, bytes]
+) -> str:
+    if isinstance(username, str):
+        username = username.encode("latin1")
+
+    if isinstance(password, str):
+        password = password.encode("latin1")
+
+    userpass = b":".join((username, password))
+    token = b64encode(userpass).decode().strip()
+    return f"Basic {token}"

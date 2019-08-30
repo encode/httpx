@@ -38,4 +38,5 @@ def docs(session):
 @nox.session(python=["3.6", "3.7", "3.8"])
 def test(session):
     session.install("-r", "test-requirements.txt")
-    session.run("python", "-m", "pytest", *session.posargs)
+    failure_summary_flag = "-rxXs"
+    session.run("python", "-m", "pytest", failure_summary_flag, *session.posargs)
