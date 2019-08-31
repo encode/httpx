@@ -19,13 +19,15 @@ async def test_start_tls_on_socket_stream(https_server):
     ctx = SSLConfig().load_ssl_context_no_verify(HTTPVersionConfig())
     timeout = TimeoutConfig(5)
 
-    stream = await backend.connect("127.0.0.1", 8001, None, timeout)
+    stream = await backend.connect(
+        https_server.url.host, https_server.url.port, None, timeout
+    )
 
     try:
         assert stream.is_connection_dropped() is False
         assert stream.stream_writer.get_extra_info("cipher", default=None) is None
 
-        stream = await backend.start_tls(stream, "127.0.0.1", ctx, timeout)
+        stream = await backend.start_tls(stream, https_server.url.host, ctx, timeout)
         assert stream.is_connection_dropped() is False
         assert stream.stream_writer.get_extra_info("cipher", default=None) is not None
 

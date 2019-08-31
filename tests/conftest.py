@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives.serialization import (
 from uvicorn.config import Config
 from uvicorn.main import Server
 
-from httpx import AsyncioBackend
+from httpx import URL, AsyncioBackend
 
 
 @pytest.fixture(params=[pytest.param(AsyncioBackend, marks=pytest.mark.asyncio)])
@@ -145,8 +145,12 @@ class TestServer(Server):
             loop.create_task(super().serve(sockets=sockets)),
             loop.create_task(self.watch_restarts()),
         }
-
         await asyncio.wait(tasks)
+
+    @property
+    def url(self) -> URL:
+        protocol = "https" if self.config.is_ssl else "http"
+        return URL(f"{protocol}://{self.config.host}:{self.config.port}/")
 
     async def restart(self) -> None:
         # Ensure we are in an asyncio environment.
