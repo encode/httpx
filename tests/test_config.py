@@ -175,6 +175,10 @@ def test_timeout_from_config_instance():
     assert httpx.TimeoutConfig(timeout) == httpx.TimeoutConfig(timeout=5.0)
 
 
+@pytest.mark.skipif(
+    not hasattr(ssl.SSLContext, "keylog_filename"),
+    reason="requires OpenSSL 1.1.1 or higher",
+)
 @pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python3.8 or higher")
 def test_ssl_config_support_for_keylog_file(tmpdir):
     old = os.getenv("SSLKEYLOGFILE")
