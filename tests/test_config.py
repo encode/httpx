@@ -1,4 +1,6 @@
+import os
 import ssl
+import sys
 
 import pytest
 
@@ -171,3 +173,28 @@ def test_timeout_from_tuple():
 def test_timeout_from_config_instance():
     timeout = httpx.TimeoutConfig(timeout=5.0)
     assert httpx.TimeoutConfig(timeout) == httpx.TimeoutConfig(timeout=5.0)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python3.8 or higher")
+def test_ssl_config_support_for_keylog_file(tmpdir):
+    old = os.getenv("SSLKEYLOGFILE")
+    if old is not None:
+        del os.environ["SSLKEYLOGFILE"]
+
+    ssl_config = httpx.SSLConfig()
+    ssl_config.load_ssl_context()
+
+    assert ssl_config.ssl_context.keylog_filename is None
+
+    filename = str(tmpdir.join("test.log"))
+    os.environ["SSLKEYLOGFILE"] = filename
+
+    ssl_config = httpx.SSLConfig()
+    ssl_config.load_ssl_context()
+
+    assert ssl_config.ssl_context.keylog_filename == filename
+
+    if old is None:
+        del os.environ["SSLKEYLOGFILE"]
+    else:
+        os.environ["SSLKEYLOGFILE"] = old
