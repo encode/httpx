@@ -84,11 +84,11 @@ class ConnectionPool(AsyncDispatcher):
         *,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
-        trust_env: bool = None,
     ):
         self.verify = verify
         self.cert = cert

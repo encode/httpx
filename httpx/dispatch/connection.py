@@ -33,11 +33,11 @@ class HTTPConnection(AsyncDispatcher):
         origin: typing.Union[str, Origin],
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,
-        trust_env: bool = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env)
