@@ -82,6 +82,8 @@ class BaseClient:
             else:
                 dispatch = ASGIDispatch(app=app)
 
+        self.trust_env = True if trust_env is None else trust_env
+
         if dispatch is None:
             async_dispatch: AsyncDispatcher = ConnectionPool(
                 verify=verify,
@@ -90,6 +92,7 @@ class BaseClient:
                 http_versions=http_versions,
                 pool_limits=pool_limits,
                 backend=backend,
+                trust_env=self.trust_env,
             )
         elif isinstance(dispatch, Dispatcher):
             async_dispatch = ThreadedDispatcher(dispatch, backend)
@@ -107,7 +110,6 @@ class BaseClient:
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
-        self.trust_env = True if trust_env is None else trust_env
 
     @property
     def headers(self) -> Headers:

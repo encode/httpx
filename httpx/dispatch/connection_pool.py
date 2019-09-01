@@ -84,6 +84,7 @@ class ConnectionPool(AsyncDispatcher):
         *,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http_versions: HTTPVersionTypes = None,
@@ -95,6 +96,7 @@ class ConnectionPool(AsyncDispatcher):
         self.pool_limits = pool_limits
         self.http_versions = http_versions
         self.is_closed = False
+        self.trust_env = trust_env
 
         self.keepalive_connections = ConnectionStore()
         self.active_connections = ConnectionStore()
@@ -145,6 +147,7 @@ class ConnectionPool(AsyncDispatcher):
                 http_versions=self.http_versions,
                 backend=self.backend,
                 release_func=self.release_connection,
+                trust_env=self.trust_env,
             )
             logger.debug(f"new_connection connection={connection!r}")
         else:
