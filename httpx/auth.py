@@ -21,18 +21,19 @@ class HTTPBasicAuth(AuthBase):
         self.password = password
 
     def __call__(self, request: AsyncRequest) -> AsyncRequest:
-        request.headers["Authorization"] = self.build_auth_header()
+        request.headers["Authorization"] = basic_auth_str(self.username, self.password)
         return request
 
-    def build_auth_header(self) -> str:
-        username, password = self.username, self.password
 
-        if isinstance(username, str):
-            username = username.encode("latin1")
+def basic_auth_str(
+    username: typing.Union[str, bytes], password: typing.Union[str, bytes]
+) -> str:
+    if isinstance(username, str):
+        username = username.encode("latin1")
 
-        if isinstance(password, str):
-            password = password.encode("latin1")
+    if isinstance(password, str):
+        password = password.encode("latin1")
 
-        userpass = b":".join((username, password))
-        token = b64encode(userpass).decode().strip()
-        return f"Basic {token}"
+    userpass = b":".join((username, password))
+    token = b64encode(userpass).decode().strip()
+    return f"Basic {token}"

@@ -145,7 +145,6 @@ def parse_header_links(value: str) -> typing.List[typing.Dict[str, str]]:
     return links
 
 
-<<<<<<< HEAD
 def get_environment_proxies() -> typing.Dict[str, str]:
     """Gets proxy information from the environment"""
 
@@ -153,13 +152,15 @@ def get_environment_proxies() -> typing.Dict[str, str]:
     # Registry and Config for proxies on Windows and macOS.
     proxies = {key: val for key, val in getproxies().items()}
 
-    for key in ("all_proxy", "ALL_PROXY"):
-        pass
-
-    for key in ("no_proxy", "NO_PROXY"):
-        pass
+    # Favor lowercase environment variables over uppercase.
+    all_proxy = get_environ_lower_and_upper("all_proxy")
+    if all_proxy is not None:
+        proxies["all"] = all_proxy
 
     return proxies
+
+
+_LOGGER_INITIALIZED = False
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -184,3 +185,14 @@ def get_logger(name: str) -> logging.Logger:
             logger.addHandler(handler)
 
     return logging.getLogger(name)
+
+
+def get_environ_lower_and_upper(key: str) -> typing.Optional[str]:
+    """Gets a value from os.environ with both the lowercase and uppercase
+    environment variable. Prioritizes the lowercase environment variable.
+    """
+    for key in (key.lower(), key.upper()):
+        value = os.environ.get(key, None)
+        if value is not None and isinstance(value, str):
+            return value
+    return None

@@ -1,5 +1,6 @@
 import enum
 
+from ..auth import basic_auth_str
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
@@ -59,6 +60,13 @@ class HTTPProxy(ConnectionPool):
         self.proxy_url = URL(proxy_url)
         self.proxy_mode = proxy_mode
         self.proxy_headers = Headers(proxy_headers)
+
+        url = self.proxy_url
+        if url.username or url.password:
+            self.proxy_headers.setdefault(
+                "Proxy-Authorization", basic_auth_str(url.username, url.password)
+            )
+            self.proxy_url = url.copy_with(userinfo=None)
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:
         if self.should_forward_origin(origin):

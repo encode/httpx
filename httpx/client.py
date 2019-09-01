@@ -49,7 +49,7 @@ from .models import (
     URLTypes,
 )
 from .status_codes import codes
-from .utils import get_netrc_login
+from .utils import get_environment_proxies, get_netrc_login
 
 ProxiesTypes = typing.Union[
     URLTypes, AsyncDispatcher, typing.Dict[str, typing.Union[URLTypes, AsyncDispatcher]]
@@ -107,25 +107,6 @@ class BaseClient:
         else:
             self.base_url = URL(base_url)
 
-        if proxies is None:
-            proxies = {}
-        elif isinstance(proxies, URLTypes):
-            proxies = {"*": proxy_from_url(proxies)}
-        elif isinstance(proxies, AsyncDispatcher):
-            proxies = {"*": proxies}
-        else:
-            new_proxies = {}
-            for key, val in proxies.items():
-                if isinstance(val, URLTypes):
-                    new_proxies[key] = proxy_from_url(val)
-                elif isinstance(val, AsyncDispatcher):
-                    new_proxies[key] = val
-                else:
-                    raise ValueError(f"Unknown proxy type {val}")
-            proxies = new_proxies
-
-        self.proxies: typing.Dict[str, AsyncDispatcher] = proxies
-
         self.auth = auth
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
@@ -133,6 +114,27 @@ class BaseClient:
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
         self.trust_env = True if trust_env is None else trust_env
+
+        if proxies is None:
+            if self.trust_env:
+                proxies = get_environment_proxies()
+            else:
+                proxies = {}
+
+        if isinstance(proxies, (URL, str)):
+            self.proxies = {"all": proxy_from_url(proxies)}
+        elif isinstance(proxies, AsyncDispatcher):
+            self.proxies = {"all": proxies}
+        elif proxies:
+            new_proxies = {}
+            for key, val in proxies.items():
+                if isinstance(val, (URL, str)):
+                    new_proxies[key] = proxy_from_url(val)
+                elif isinstance(val, AsyncDispatcher):
+                    new_proxies[key] = val
+                else:
+                    raise ValueError(f"Unknown proxy type {val}")
+            self.proxies = new_proxies
 
     @property
     def headers(self) -> Headers:
@@ -381,8 +383,13 @@ class BaseClient:
             hostname = url.host
             if url.port is not None:
                 hostname += f":{url.port}"
-            proxy_keys = (f"{url.scheme}://{hostname}", url.scheme, "*")
 
+            proxy_keys = (
+                f"{url.scheme}://{hostname}",
+                f"all://{hostname}",
+                url.scheme,
+                "all",
+            )
             for proxy_key in proxy_keys:
                 if proxy_key in self.proxies:
                     return self.proxies[proxy_key]

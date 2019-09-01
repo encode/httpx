@@ -1,5 +1,4 @@
 import asyncio
-import re
 import threading
 import time
 
@@ -30,10 +29,6 @@ async def app(scope, receive, send):
         await status_code(scope, receive, send)
     elif scope["path"].startswith("/echo_body"):
         await echo_body(scope, receive, send)
-    elif scope["path"].startswith("http://"):
-        await proxy_forward_response(scope, receive, send)
-    elif scope["path"].startswith("https://") and scope["method"] == "CONNECT":
-        await proxy_tunnel_response(scope, receive, send)
     else:
         await hello_world(scope, receive, send)
 
@@ -90,20 +85,6 @@ async def echo_body(scope, receive, send):
         }
     )
     await send({"type": "http.response.body", "body": body})
-
-
-async def proxy_tunnel_response(scope, receive, send):
-    if "/proxy_status_code/" in scope["path"]:
-        status_code = int(
-            re.search(r"/proxy_status_code/(\d+)", scope["path"]).group(1)
-        )
-        await send(
-            {
-                "type": "http.response.start",
-                "status": status_code,
-                "headers": [[b"content-type", b"text/plain"]],
-            }
-        )
 
 
 class CAWithPKEncryption(trustme.CA):

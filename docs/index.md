@@ -72,7 +72,7 @@ Plus all the standard features of `requests`...
 * Automatic Content Decoding
 * Unicode Response Bodies
 * Multipart File Uploads
-* HTTP(S) Proxy Support *(TODO)*
+* HTTP(S) Proxy Support
 * Connection Timeouts
 * Streaming Downloads
 * .netrc Support

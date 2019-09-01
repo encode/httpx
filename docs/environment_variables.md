@@ -44,3 +44,15 @@ user@host:~$ HTTPX_DEBUG=1 python test_script.py
 20:54:17.742 - httpx.dispatch.http2 - receive_event stream_id=0 event=<PingReceived ping_data:0000000000000000>
 20:54:17.743 - httpx.dispatch.connection_pool - release_connection connection=HTTPConnection(origin=Origin(scheme='https' host='www.google.com' port=443))
 ```
+
+`ALL_PROXY`, `HTTP_PROXY`, `HTTPS_PROXY`
+---------------------------
+
+Valid values: A single valid URL (eg `http://127.0.0.1:3200`)
+
+If these environment variables are set they will automatically
+configure proxies for `httpx.Client()`.  If `ALL_PROXY` is set
+then all requests, HTTP and HTTPS will be sent through the proxy
+at the given URL.  If `HTTP_PROXY` or `HTTPS_PROXY` are set then
+respectively `http://` and `https://` requests will be sent through
+the proxy at the given URL.
