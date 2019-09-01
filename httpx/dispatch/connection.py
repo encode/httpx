@@ -37,9 +37,10 @@ class HTTPConnection(AsyncDispatcher):
         http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,
+        trust_env: bool = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
-        self.ssl = SSLConfig(cert=cert, verify=verify)
+        self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env)
         self.timeout = TimeoutConfig(timeout)
         self.http_versions = HTTPVersionConfig(http_versions)
         self.backend = AsyncioBackend() if backend is None else backend
