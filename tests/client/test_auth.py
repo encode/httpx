@@ -1,6 +1,8 @@
 import json
 import os
 
+import pytest
+
 from httpx import (
     URL,
     AsyncDispatcher,
@@ -118,3 +120,10 @@ def test_auth_hidden_header():
         response = client.get(url, auth=auth)
 
     assert "'authorization': '[secure]'" in str(response.request.headers)
+
+
+def test_auth_invalid_type():
+    url = "https://example.org/"
+    with Client(dispatch=MockDispatch(), auth="not a tuple, not a callable") as client:
+        with pytest.raises(TypeError):
+            client.get(url)

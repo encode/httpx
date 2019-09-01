@@ -262,7 +262,7 @@ async def test_cannot_redirect_streaming_body(backend):
         await client.post(url, data=streaming_body())
 
 
-async def test_cross_dubdomain_redirect(backend):
+async def test_cross_subdomain_redirect(backend):
     client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     url = "https://example.com/cross_subdomain"
     response = await client.get(url)
