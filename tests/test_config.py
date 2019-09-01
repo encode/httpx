@@ -181,7 +181,7 @@ def test_timeout_from_config_instance():
 @pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python3.8 or higher")
 def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):
     with monkeypatch.context() as m:
-        m.delenv("SSLKEYLOGFILE")
+        m.delenv("SSLKEYLOGFILE", raising=False)
 
         ssl_config = httpx.SSLConfig(trust_env=True)
         ssl_config.load_ssl_context()
