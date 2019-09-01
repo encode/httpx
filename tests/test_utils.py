@@ -102,7 +102,7 @@ async def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):
     utils.get_logger("httpx")
 
     async with httpx.AsyncClient() as client:
-        await client.get("http://127.0.0.1:8000/")
+        await client.get(server.url)
 
     if httpx_debug in ("1", "True"):
         assert "httpx.dispatch.connection_pool" in capsys.readouterr().err
