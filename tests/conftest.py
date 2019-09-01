@@ -132,6 +132,11 @@ def cert_encrypted_private_key_file(example_cert):
 
 
 class TestServer(Server):
+    @property
+    def url(self) -> URL:
+        protocol = "https" if self.config.is_ssl else "http"
+        return URL(f"{protocol}://{self.config.host}:{self.config.port}/")
+
     def install_signal_handlers(self) -> None:
         # Disable the default installation of handlers for signals such as SIGTERM,
         # because it can only be done in the main thread.
@@ -146,11 +151,6 @@ class TestServer(Server):
             loop.create_task(self.watch_restarts()),
         }
         await asyncio.wait(tasks)
-
-    @property
-    def url(self) -> URL:
-        protocol = "https" if self.config.is_ssl else "http"
-        return URL(f"{protocol}://{self.config.host}:{self.config.port}/")
 
     async def restart(self) -> None:
         # Ensure we are in an asyncio environment.
