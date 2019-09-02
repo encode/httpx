@@ -17,6 +17,7 @@ from .config import (
     TimeoutTypes,
     VerifyTypes,
 )
+from .decorators import share_signature
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection_pool import ConnectionPool
@@ -47,6 +48,7 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
+from .types import RequestType
 from .utils import get_netrc_login
 
 
@@ -648,239 +650,53 @@ class Client(BaseClient):
                 response.close()
         return response
 
+    def _build_request(
+        self, method: str, url: URLTypes, **kwargs: typing.Any
+    ) -> Response:
+        default_kw: typing.Any = {}
+        for request_type_key in RequestType.__annotations__.keys():
+            default_value = None
+            if request_type_key == "stream":
+                default_value = False
+            elif request_type_key == "allow_redirects":
+                default_value = method != "HEAD"  #  Note: Differs to usual default.
+            default_kw[request_type_key] = default_value
+        default_kw.update(kwargs)
+        return self.request(method, url, **default_kw)
+
+    @share_signature(request)
     def get(
         self,
         url: URLTypes,
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
+        # TODO: After fixed the issue, can use types.RequestType instead of Any
+        # https://github.com/python/mypy/issues/4441
+        **kwargs: typing.Any,
     ) -> Response:
-        return self.request(
-            "GET",
-            url,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
+        return self._build_request("GET", url, **kwargs)
 
-    def options(
-        self,
-        url: URLTypes,
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        return self.request(
-            "OPTIONS",
-            url,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
+    @share_signature(request)
+    def options(self, url: URLTypes, **kwargs: typing.Any) -> Response:
+        return self._build_request("OPTIONS", url, **kwargs)
 
-    def head(
-        self,
-        url: URLTypes,
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = False,  #  Note: Differs to usual default.
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        return self.request(
-            "HEAD",
-            url,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
+    @share_signature(request)
+    def head(self, url: URLTypes, **kwargs: typing.Any) -> Response:
+        return self._build_request("HEAD", url, **kwargs)
 
-    def post(
-        self,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        return self.request(
-            "POST",
-            url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
+    @share_signature(request)
+    def post(self, url: URLTypes, **kwargs: typing.Any) -> Response:
+        return self._build_request("POST", url, **kwargs)
 
-    def put(
-        self,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        return self.request(
-            "PUT",
-            url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
+    @share_signature(request)
+    def put(self, url: URLTypes, **kwargs: typing.Any) -> Response:
+        return self._build_request("PUT", url, **kwargs)
 
-    def patch(
-        self,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        return self.request(
-            "PATCH",
-            url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
+    @share_signature(request)
+    def patch(self, url: URLTypes, **kwargs: typing.Any) -> Response:
+        return self._build_request("PATCH", url, **kwargs)
 
-    def delete(
-        self,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        return self.request(
-            "DELETE",
-            url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
+    @share_signature(request)
+    def delete(self, url: URLTypes, **kwargs: typing.Any) -> Response:
+        return self._build_request("DELETE", url, **kwargs)
 
     def close(self) -> None:
         coroutine = self.dispatch.close
