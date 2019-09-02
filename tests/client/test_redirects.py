@@ -10,6 +10,7 @@ from httpx import (
     AsyncRequest,
     AsyncResponse,
     CertTypes,
+    NotRedirectResponse,
     RedirectBodyUnavailable,
     RedirectLoop,
     TimeoutTypes,
@@ -27,7 +28,10 @@ class MockDispatch(AsyncDispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
-        if request.url.path == "/redirect_301":
+        if request.url.path == "/no_redirect":
+            return AsyncResponse(codes.OK, request=request)
+
+        elif request.url.path == "/redirect_301":
             status_code = codes.MOVED_PERMANENTLY
             headers = {"location": "https://example.org/"}
             return AsyncResponse(status_code, headers=headers, request=request)
@@ -98,6 +102,15 @@ class MockDispatch(AsyncDispatcher):
                 )
 
         return AsyncResponse(codes.OK, content=b"Hello, world!", request=request)
+
+
+async def test_no_redirect(backend):
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
+    url = "https://example.com/no_redirect"
+    response = await client.get(url)
+    assert response.status_code == 200
+    with pytest.raises(NotRedirectResponse):
+        await response.next()
 
 
 async def test_redirect_301(backend):
@@ -249,7 +262,7 @@ async def test_cannot_redirect_streaming_body(backend):
         await client.post(url, data=streaming_body())
 
 
-async def test_cross_dubdomain_redirect(backend):
+async def test_cross_subdomain_redirect(backend):
     client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     url = "https://example.com/cross_subdomain"
     response = await client.get(url)

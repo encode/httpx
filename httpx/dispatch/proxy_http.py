@@ -1,6 +1,5 @@
 import enum
 
-from ..auth import basic_auth_str
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
@@ -12,6 +11,7 @@ from ..config import (
     VerifyTypes,
 )
 from ..exceptions import ProxyError
+from ..middleware import basic_auth_str
 from ..models import (
     URL,
     AsyncRequest,

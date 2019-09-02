@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives.serialization import (
 from uvicorn.config import Config
 from uvicorn.main import Server
 
-from httpx import AsyncioBackend
+from httpx import URL, AsyncioBackend
 
 
 @pytest.fixture(params=[pytest.param(AsyncioBackend, marks=pytest.mark.asyncio)])
@@ -132,6 +132,11 @@ def cert_encrypted_private_key_file(example_cert):
 
 
 class TestServer(Server):
+    @property
+    def url(self) -> URL:
+        protocol = "https" if self.config.is_ssl else "http"
+        return URL(f"{protocol}://{self.config.host}:{self.config.port}/")
+
     def install_signal_handlers(self) -> None:
         # Disable the default installation of handlers for signals such as SIGTERM,
         # because it can only be done in the main thread.
@@ -145,7 +150,6 @@ class TestServer(Server):
             loop.create_task(super().serve(sockets=sockets)),
             loop.create_task(self.watch_restarts()),
         }
-
         await asyncio.wait(tasks)
 
     async def restart(self) -> None:

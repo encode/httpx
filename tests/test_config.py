@@ -1,4 +1,5 @@
 import ssl
+import sys
 
 import pytest
 
@@ -171,3 +172,33 @@ def test_timeout_from_tuple():
 def test_timeout_from_config_instance():
     timeout = httpx.TimeoutConfig(timeout=5.0)
     assert httpx.TimeoutConfig(timeout) == httpx.TimeoutConfig(timeout=5.0)
+
+
+@pytest.mark.skipif(
+    not hasattr(ssl.SSLContext, "keylog_filename"),
+    reason="requires OpenSSL 1.1.1 or higher",
+)
+@pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python3.8 or higher")
+def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):
+    with monkeypatch.context() as m:
+        m.delenv("SSLKEYLOGFILE", raising=False)
+
+        ssl_config = httpx.SSLConfig(trust_env=True)
+        ssl_config.load_ssl_context()
+
+        assert ssl_config.ssl_context.keylog_filename is None
+
+    filename = str(tmpdir.join("test.log"))
+
+    with monkeypatch.context() as m:
+        m.setenv("SSLKEYLOGFILE", filename)
+
+        ssl_config = httpx.SSLConfig(trust_env=True)
+        ssl_config.load_ssl_context()
+
+        assert ssl_config.ssl_context.keylog_filename == filename
+
+        ssl_config = httpx.SSLConfig(trust_env=False)
+        ssl_config.load_ssl_context()
+
+        assert ssl_config.ssl_context.keylog_filename is None

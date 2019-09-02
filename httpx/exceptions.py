@@ -102,6 +102,12 @@ class RedirectLoop(RedirectError):
     """
 
 
+class NotRedirectResponse(RedirectError):
+    """
+    Response was not a redirect response.
+    """
+
+
 # Stream exceptions...
 
 

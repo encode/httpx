@@ -1,3 +1,4 @@
+import os
 import ssl
 import typing
 from pathlib import Path
@@ -43,7 +44,13 @@ class SSLConfig:
     SSL Configuration.
     """
 
-    def __init__(self, *, cert: CertTypes = None, verify: VerifyTypes = True):
+    def __init__(
+        self,
+        *,
+        cert: CertTypes = None,
+        verify: VerifyTypes = True,
+        trust_env: bool = None,
+    ):
         self.cert = cert
 
         # Allow passing in our own SSLContext object that's pre-configured.
@@ -56,6 +63,7 @@ class SSLConfig:
 
         self.ssl_context: typing.Optional[ssl.SSLContext] = ssl_context
         self.verify: typing.Union[str, bool] = verify
+        self.trust_env = trust_env
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -165,6 +173,11 @@ class SSLConfig:
             context.set_alpn_protocols(http_versions.alpn_identifiers)
         if ssl.HAS_NPN:  # pragma: no cover
             context.set_npn_protocols(http_versions.alpn_identifiers)
+
+        if hasattr(context, "keylog_filename"):
+            keylogfile = os.environ.get("SSLKEYLOGFILE")
+            if keylogfile and self.trust_env:
+                context.keylog_filename = keylogfile  # type: ignore
 
         return context
 

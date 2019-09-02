@@ -4,7 +4,7 @@ import httpx
 
 
 def test_get(server):
-    response = httpx.get("http://127.0.0.1:8000/")
+    response = httpx.get(server.url)
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
@@ -12,7 +12,7 @@ def test_get(server):
 
 
 def test_post(server):
-    response = httpx.post("http://127.0.0.1:8000/", data=b"Hello, world!")
+    response = httpx.post(server.url, data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
@@ -23,37 +23,37 @@ def test_post_byte_iterator(server):
         yield b", "
         yield b"world!"
 
-    response = httpx.post("http://127.0.0.1:8000/", data=data())
+    response = httpx.post(server.url, data=data())
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 def test_options(server):
-    response = httpx.options("http://127.0.0.1:8000/")
+    response = httpx.options(server.url)
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 def test_head(server):
-    response = httpx.head("http://127.0.0.1:8000/")
+    response = httpx.head(server.url)
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 def test_put(server):
-    response = httpx.put("http://127.0.0.1:8000/", data=b"Hello, world!")
+    response = httpx.put(server.url, data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 def test_patch(server):
-    response = httpx.patch("http://127.0.0.1:8000/", data=b"Hello, world!")
+    response = httpx.patch(server.url, data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 def test_delete(server):
-    response = httpx.delete("http://127.0.0.1:8000/")
+    response = httpx.delete(server.url)
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
