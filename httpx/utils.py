@@ -169,3 +169,12 @@ def get_logger(name: str) -> logging.Logger:
             logger.addHandler(handler)
 
     return logging.getLogger(name)
+
+
+def safe_encode(str_or_bytes: typing.Union[str, bytes]) -> bytes:
+    """Accepts and str or bytes object returning the bytes
+    unmodified or the UTF-8 encoded string.
+    """
+    return (
+        str_or_bytes.encode("utf-8") if isinstance(str_or_bytes, str) else str_or_bytes
+    )

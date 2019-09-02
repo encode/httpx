@@ -6,6 +6,7 @@ from base64 import b64encode
 
 from ..models import AsyncRequest, AsyncResponse, StatusCode, URL
 from .base import BaseMiddleware
+from ..utils import safe_encode
 
 
 class BasicAuthMiddleware(BaseMiddleware):
@@ -93,12 +94,12 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         challenge = self._parse_header(header)
         algorithm = challenge.get("algorithm", "MD5")
 
-        realm = _safe_encode(challenge["realm"])
-        nonce = _safe_encode(challenge["nonce"])
-        qop = _safe_encode(challenge["qop"]) if "qop" in challenge else None
-        opaque = _safe_encode(challenge["opaque"]) if "opaque" in challenge else None
-        username = _safe_encode(self.username)
-        password = _safe_encode(self.password)
+        realm = safe_encode(challenge["realm"])
+        nonce = safe_encode(challenge["nonce"])
+        qop = safe_encode(challenge["qop"]) if "qop" in challenge else None
+        opaque = safe_encode(challenge["opaque"]) if "opaque" in challenge else None
+        username = safe_encode(self.username)
+        password = safe_encode(self.password)
 
         # Assemble parts depending on hash algorithms
         hash_func = self.ALGORITHM_TO_HASH_FUNCTION[algorithm]
@@ -180,9 +181,3 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         if url.query:
             path += "?" + url.query
         return path.encode("utf-8")
-
-
-def _safe_encode(str_or_bytes: typing.Union[str, bytes]) -> bytes:
-    return (
-        str_or_bytes.encode("utf-8") if isinstance(str_or_bytes, str) else str_or_bytes
-    )
