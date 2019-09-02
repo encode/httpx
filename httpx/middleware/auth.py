@@ -60,6 +60,8 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
     ) -> None:
         self.username = username
         self.password = password
+        self._previous_nonce: typing.Optional[bytes] = None
+        self._nonce_count = 0
 
     async def __call__(
         self, request: AsyncRequest, get_response: typing.Callable
@@ -119,10 +121,14 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         HA2 = digest(A2)
 
         # Construct Authenticate header string
-        nonce_count = 1  # TODO: use contextvars to count properly
-        nc_value = b"%08x" % nonce_count
+        if nonce != self._previous_nonce:
+            self._nonce_count = 1
+        else:
+            self._nonce_count += 1
+        self._previous_nonce = nonce
+        nc_value = b"%08x" % self._nonce_count
 
-        s = str(nonce_count).encode("utf-8")
+        s = str(self._nonce_count).encode("utf-8")
         s += nonce
         s += time.ctime().encode("utf-8")
         s += os.urandom(8)
