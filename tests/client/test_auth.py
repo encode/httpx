@@ -10,9 +10,9 @@ from httpx import (
     AsyncResponse,
     CertTypes,
     Client,
+    HTTPDigestAuth,
     TimeoutTypes,
     VerifyTypes,
-    HTTPDigestAuth,
 )
 
 
@@ -29,7 +29,8 @@ class MockDispatch(AsyncDispatcher):
 
 
 class MockDigestAuthDispatch(AsyncDispatcher):
-    def __init__(self) -> None:
+    def __init__(self, algorithm) -> None:
+        self.algorithm = algorithm
         self._challenge_sent = False
 
     async def send(
@@ -50,8 +51,10 @@ class MockDigestAuthDispatch(AsyncDispatcher):
         challenge_data = {
             "nonce": "ee96edced2a0b43e4869e96ebe27563f369c1205a049d06419bb51d8aeddf3d3",
             "qop": "auth",
-            "opaque": "ee6378f3ee14ebfd2fff54b70a91a7c9390518047f242ab2271380db0e14bda1",
-            "algorithm": "SHA-256",
+            "opaque": (
+                "ee6378f3ee14ebfd2fff54b70a91a7c9390518047f242ab2271380db0e14bda1"
+            ),
+            "algorithm": self.algorithm,
             "stale": "FALSE",
         }
         challenge_str = ", ".join(
@@ -177,11 +180,24 @@ def test_digest_auth_returns_no_auth_if_no_digest_header_in_response():
     assert response.json() == {"auth": None}
 
 
-def test_digest_auth():
+@pytest.mark.parametrize(
+    "algorithm,expected_hash_length,expected_response_length",
+    [
+        ("MD5", 64, 32),
+        ("MD5-SESS", 64, 32),
+        ("SHA", 64, 40),
+        ("SHA-SESS", 64, 40),
+        ("SHA-256", 64, 64),
+        ("SHA-256-SESS", 64, 64),
+        ("SHA-512", 64, 128),
+        ("SHA-512-SESS", 64, 128),
+    ],
+)
+def test_digest_auth(algorithm, expected_hash_length, expected_response_length):
     url = "https://example.org/"
     auth = HTTPDigestAuth(username="tomchristie", password="password123")
 
-    with Client(dispatch=MockDigestAuthDispatch()) as client:
+    with Client(dispatch=MockDigestAuthDispatch(algorithm=algorithm)) as client:
         response = client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -193,11 +209,11 @@ def test_digest_auth():
 
     assert digest_data["username"] == '"tomchristie"'
     assert digest_data["realm"] == '"httpx@example.org"'
-    assert len(digest_data["nonce"]) == 64 + 2  # extra quotes
+    assert len(digest_data["nonce"]) == expected_hash_length + 2  # extra quotes
     assert digest_data["uri"] == '"/"'
-    assert len(digest_data["response"]) == 64 + 2
-    assert len(digest_data["opaque"]) == 64 + 2
-    assert digest_data["algorithm"] == '"SHA-256"'
+    assert len(digest_data["response"]) == expected_response_length + 2
+    assert len(digest_data["opaque"]) == expected_hash_length + 2
+    assert digest_data["algorithm"] == '"{}"'.format(algorithm)
     assert digest_data["qop"] == '"auth"'
     assert digest_data["nc"] == '"00000001"'
     assert len(digest_data["cnonce"]) == 16 + 2
