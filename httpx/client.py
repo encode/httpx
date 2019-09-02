@@ -23,12 +23,9 @@ from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import HTTPError, InvalidURL
-from .middleware import (
-    BaseMiddleware,
-    BasicAuthMiddleware,
-    CustomAuthMiddleware,
-    RedirectMiddleware,
-)
+from .middleware.base import BaseMiddleware
+from .middleware.auth import BasicAuthMiddleware, CustomAuthMiddleware
+from .middleware.redirect import RedirectMiddleware
 from .models import (
     URL,
     AsyncRequest,
