@@ -7,6 +7,7 @@ from base64 import b64encode
 from ..models import URL, AsyncRequest, AsyncResponse, StatusCode
 from ..utils import safe_encode
 from .base import BaseMiddleware
+from ..exceptions import ProtocolError
 
 
 class BasicAuthMiddleware(BaseMiddleware):
@@ -69,10 +70,9 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         response = await get_response(request)
 
         if self._should_return_digest_auth(response):
-            auth_header = self._build_auth_header(request, response)
-            if auth_header is not None:
-                # TODO: raise instead of returning None?
-                request.headers["Authorization"] = auth_header
+            request.headers["Authorization"] = self._build_auth_header(
+                request, response
+            )
             return await self(request, get_response)
 
         return response
@@ -83,13 +83,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
             auth_header is None or "digest" in auth_header.lower()
         )
 
-    def _expects_digest_auth(self, response: AsyncResponse) -> bool:
-        auth_header = response.headers.get("www-authenticate")
-        return auth_header is None or "digest" in auth_header.lower()
-
-    def _build_auth_header(
-        self, request: AsyncRequest, response: AsyncResponse
-    ) -> typing.Optional[str]:
+    def _build_auth_header(self, request: AsyncRequest, response: AsyncResponse) -> str:
         # Retrieve challenge from response header
         header = response.headers.get("www-authenticate")
         assert header.lower().startswith("digest")
@@ -98,7 +92,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
 
         realm = safe_encode(challenge["realm"])
         nonce = safe_encode(challenge["nonce"])
-        qop = safe_encode(challenge["qop"]) if "qop" in challenge else None
+        qop = safe_encode(challenge["qop"])
         opaque = safe_encode(challenge["opaque"]) if "opaque" in challenge else None
         username = safe_encode(self.username)
         password = safe_encode(self.password)
@@ -115,7 +109,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         A1 = b":".join((username, realm, password))
         HA1 = digest(A1)
 
-        path = self._get_parsed_path(request.url)
+        path = request.url.full_path.encode("utf-8")
         A2 = b":".join((request.method.encode("utf-8"), path))
         # TODO: implement auth-int
         HA2 = digest(A2)
@@ -140,12 +134,12 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         if algorithm == "MD5-SESS":
             HA1 = digest(b":".join((HA1, nonce, cnonce)))
 
-        if not qop:
-            to_key_digest = [nonce, HA2]
-        elif qop == "auth" or "auth" in qop.decode().split(","):
+        if qop == b"auth" or b"auth" in qop.split(b","):
             to_key_digest = [nonce, nc_value, cnonce, b"auth", HA2]
+        elif qop == b"auth-int":
+            raise NotImplementedError("Digest auth-int support is not yet implemented")
         else:
-            return None  # handle auth-int
+            raise ProtocolError('Unexpected qop value "{}" in digest auth'.format(qop))
 
         format_args = {
             "username": username,
@@ -181,9 +175,3 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
             result[key] = value
 
         return result
-
-    def _get_parsed_path(self, url: URL) -> bytes:
-        path = url.path or "/"
-        if url.query:
-            path += "?" + url.query
-        return path.encode("utf-8")

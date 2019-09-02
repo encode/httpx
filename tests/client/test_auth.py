@@ -13,6 +13,7 @@ from httpx import (
     HTTPDigestAuth,
     TimeoutTypes,
     VerifyTypes,
+    ProtocolError,
 )
 
 
@@ -29,9 +30,16 @@ class MockDispatch(AsyncDispatcher):
 
 
 class MockDigestAuthDispatch(AsyncDispatcher):
-    def __init__(self, algorithm) -> None:
+    def __init__(
+        self,
+        algorithm: str = "SHA-256",
+        send_response_after_attempt: int = 1,
+        qop="auth",
+    ) -> None:
         self.algorithm = algorithm
-        self._challenge_sent = False
+        self.send_response_after_attempt = send_response_after_attempt
+        self.qop = qop
+        self._response_count = 0
 
     async def send(
         self,
@@ -40,17 +48,17 @@ class MockDigestAuthDispatch(AsyncDispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
-        if not self._challenge_sent:
+        if self._response_count < self.send_response_after_attempt:
             return self.challenge_send(request)
 
         body = json.dumps({"auth": request.headers.get("Authorization")}).encode()
         return AsyncResponse(200, content=body, request=request)
 
     def challenge_send(self, request: AsyncRequest) -> AsyncResponse:
-        self._challenge_sent = True
+        self._response_count += 1
         challenge_data = {
             "nonce": "ee96edced2a0b43e4869e96ebe27563f369c1205a049d06419bb51d8aeddf3d3",
-            "qop": "auth",
+            "qop": self.qop,
             "opaque": (
                 "ee6378f3ee14ebfd2fff54b70a91a7c9390518047f242ab2271380db0e14bda1"
             ),
@@ -58,7 +66,9 @@ class MockDigestAuthDispatch(AsyncDispatcher):
             "stale": "FALSE",
         }
         challenge_str = ", ".join(
-            '{}="{}"'.format(key, value) for key, value in challenge_data.items()
+            '{}="{}"'.format(key, value)
+            for key, value in challenge_data.items()
+            if value
         )
 
         headers = [
@@ -217,3 +227,36 @@ def test_digest_auth(algorithm, expected_hash_length, expected_response_length):
     assert digest_data["qop"] == '"auth"'
     assert digest_data["nc"] == '"00000001"'
     assert len(digest_data["cnonce"]) == 16 + 2
+
+
+def test_digest_auth_nonce_count():
+    url = "https://example.org/"
+    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+
+    with Client(
+        dispatch=MockDigestAuthDispatch(send_response_after_attempt=2)
+    ) as client:
+        response = client.get(url, auth=auth)
+
+    auth = response.json()["auth"]
+    response_fields = [field.strip() for field in auth[auth.find(" ") :].split(",")]
+    digest_data = dict(field.split("=") for field in response_fields)
+    assert digest_data["nc"] == '"00000002"'
+
+
+def test_digest_auth_qop_auth_int_not_implemented():
+    url = "https://example.org/"
+    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+
+    with pytest.raises(NotImplementedError):
+        with Client(dispatch=MockDigestAuthDispatch(qop="auth-int")) as client:
+            client.get(url, auth=auth)
+
+
+def test_digest_auth_qop_must_be_auth_or_auth_int():
+    url = "https://example.org/"
+    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+
+    with pytest.raises(ProtocolError):
+        with Client(dispatch=MockDigestAuthDispatch(qop="not-auth")) as client:
+            client.get(url, auth=auth)
