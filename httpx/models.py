@@ -1237,7 +1237,6 @@ class Cookies(MutableMapping):
 
 
 class HTTPDigestAuth:
-
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ) -> None:

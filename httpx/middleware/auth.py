@@ -4,9 +4,9 @@ import time
 import typing
 from base64 import b64encode
 
-from ..models import AsyncRequest, AsyncResponse, StatusCode, URL
-from .base import BaseMiddleware
+from ..models import URL, AsyncRequest, AsyncResponse, StatusCode
 from ..utils import safe_encode
+from .base import BaseMiddleware
 
 
 class BasicAuthMiddleware(BaseMiddleware):
@@ -159,7 +159,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         if algorithm:
             format_args["algorithm"] = algorithm
         if qop:
-            format_args["qop"] = "auth"
+            format_args["qop"] = b"auth"
             format_args["nc"] = nc_value
             format_args["cnonce"] = cnonce
 
