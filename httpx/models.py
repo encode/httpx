@@ -61,6 +61,7 @@ CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
     typing.Callable[["AsyncRequest"], "AsyncRequest"],
+    "HTTPDigestAuth",
 ]
 
 AsyncRequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
