@@ -11,9 +11,9 @@ from httpx import (
     CertTypes,
     Client,
     HTTPDigestAuth,
+    ProtocolError,
     TimeoutTypes,
     VerifyTypes,
-    ProtocolError,
 )
 
 

@@ -4,10 +4,10 @@ import time
 import typing
 from base64 import b64encode
 
-from ..models import URL, AsyncRequest, AsyncResponse, StatusCode
+from ..exceptions import ProtocolError
+from ..models import AsyncRequest, AsyncResponse, StatusCode
 from ..utils import safe_encode
 from .base import BaseMiddleware
-from ..exceptions import ProtocolError
 
 
 class BasicAuthMiddleware(BaseMiddleware):
