@@ -1234,3 +1234,12 @@ class Cookies(MutableMapping):
             for key, value in self.response.headers.items():
                 info[key] = value
             return info
+
+
+class HTTPDigestAuth:
+
+    def __init__(
+        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
+    ) -> None:
+        self.username = username
+        self.password = password

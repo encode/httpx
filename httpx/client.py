@@ -24,7 +24,7 @@ from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import HTTPError, InvalidURL
 from .middleware.base import BaseMiddleware
-from .middleware.auth import BasicAuthMiddleware, CustomAuthMiddleware
+from .middleware.auth import BasicAuthMiddleware, CustomAuthMiddleware, HTTPDigestAuthMiddleware
 from .middleware.redirect import RedirectMiddleware
 from .models import (
     URL,
@@ -37,6 +37,7 @@ from .models import (
     CookieTypes,
     Headers,
     HeaderTypes,
+    HTTPDigestAuth,
     QueryParamTypes,
     RequestData,
     RequestFiles,
@@ -213,6 +214,9 @@ class BaseClient:
 
         if callable(auth):
             return CustomAuthMiddleware(auth=auth)
+
+        if isinstance(auth, HTTPDigestAuth):
+            return HTTPDigestAuthMiddleware(username=auth.username, password=auth.password)
 
         if auth is not None:
             raise TypeError(
