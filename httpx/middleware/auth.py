@@ -182,7 +182,7 @@ class DigestAuthChallenge:
         """
         scheme, _, fields = header.partition(" ")
         assert scheme.lower() == "digest"
-        header_dict = {}
+        header_dict: typing.Dict[str, str] = {}
         for field in fields.split(","):
             key, value = field.strip().split("=")
             header_dict[key] = unquote(value)
