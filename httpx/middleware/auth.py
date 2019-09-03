@@ -103,9 +103,6 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         def digest(data: bytes) -> bytes:
             return hash_func(data).hexdigest().encode()
 
-        def keyed_digest(secret: bytes, data: bytes) -> bytes:
-            return digest(b":".join((secret, data)))
-
         A1 = b":".join((username, realm, password))
         HA1 = digest(A1)
 
@@ -141,12 +138,14 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         else:
             raise ProtocolError('Unexpected qop value "{}" in digest auth'.format(qop))
 
+        key_digest = b":".join(to_key_digest)
+
         format_args = {
             "username": username,
             "realm": realm,
             "nonce": nonce,
             "uri": path,
-            "response": keyed_digest(HA1, b":".join(to_key_digest)),
+            "response": digest(b":".join((HA1, key_digest))),
         }
         if opaque:
             format_args["opaque"] = opaque
