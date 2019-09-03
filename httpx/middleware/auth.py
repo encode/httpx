@@ -68,25 +68,38 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         self, request: AsyncRequest, get_response: typing.Callable
     ) -> AsyncResponse:
         response = await get_response(request)
+        if not (
+            StatusCode.is_client_error(response.status_code)
+            and "www-authenticate" in response.headers
+        ):
+            return response
 
-        if self._should_return_digest_auth(response):
-            request.headers["Authorization"] = self._build_auth_header(
-                request, response
-            )
-            return await self(request, get_response)
+        header = response.headers["www-authenticate"]
+        try:
+            challenge = DigestAuthChallenge.from_header(header)
+        except ValueError:
+            return response
 
-        return response
+        if self._previous_auth_failed(challenge):
+            return response
 
-    def _should_return_digest_auth(self, response: AsyncResponse) -> bool:
-        auth_header = response.headers.get("www-authenticate")
-        return StatusCode.is_client_error(response.status_code) and (
-            auth_header is None or "digest" in auth_header.lower()
+        request.headers["Authorization"] = self._build_auth_header(request, challenge)
+        return await self(request, get_response)
+
+    def _previous_auth_failed(self, challenge: "DigestAuthChallenge") -> bool:
+        """Returns whether the previous auth failed.
+
+        This is fairly subtle as the server may return a 401 with the *same* nonce that
+        that of our first attempt. If it is different, however, we know the server has
+        rejected our credentials.
+        """
+        return (
+            self._previous_nonce is not None and self._previous_nonce != challenge.nonce
         )
 
-    def _build_auth_header(self, request: AsyncRequest, response: AsyncResponse) -> str:
-        header = response.headers.get("www-authenticate")
-        challenge = DigestAuthChallenge.from_header(header)
-
+    def _build_auth_header(
+        self, request: AsyncRequest, challenge: "DigestAuthChallenge"
+    ) -> str:
         hash_func = self.ALGORITHM_TO_HASH_FUNCTION[challenge.algorithm]
 
         def digest(data: bytes) -> bytes:
@@ -180,13 +193,18 @@ class DigestAuthChallenge:
         `Digest realm="realm@host.com",qop="auth,auth-int",nonce="abc",opaque="xyz"`
         """
         scheme, _, fields = header.partition(" ")
-        assert scheme.lower() == "digest"
+        if scheme.lower() != "digest":
+            raise ValueError("Header does not start with 'Digest'")
+
         header_dict: typing.Dict[str, str] = {}
         for field in fields.split(","):
             key, value = field.strip().split("=")
             header_dict[key] = unquote(value)
 
-        return cls.from_header_dict(header_dict)
+        try:
+            return cls.from_header_dict(header_dict)
+        except KeyError as exc:
+            raise ValueError("Malformed Digest WWW-Authenticate header") from exc
 
     @classmethod
     def from_header_dict(cls, header_dict: dict) -> "DigestAuthChallenge":

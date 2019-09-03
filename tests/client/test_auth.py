@@ -1,5 +1,6 @@
 import json
 import os
+import hashlib
 
 import pytest
 
@@ -34,11 +35,13 @@ class MockDigestAuthDispatch(AsyncDispatcher):
         self,
         algorithm: str = "SHA-256",
         send_response_after_attempt: int = 1,
-        qop="auth",
+        qop: str = "auth",
+        regenerate_nonce: bool = False,
     ) -> None:
         self.algorithm = algorithm
         self.send_response_after_attempt = send_response_after_attempt
         self.qop = qop
+        self._regenerate_nonce = regenerate_nonce
         self._response_count = 0
 
     async def send(
@@ -56,8 +59,13 @@ class MockDigestAuthDispatch(AsyncDispatcher):
 
     def challenge_send(self, request: AsyncRequest) -> AsyncResponse:
         self._response_count += 1
+        nonce = (
+            hashlib.sha256(os.urandom(8))
+            if self._regenerate_nonce
+            else "ee96edced2a0b43e4869e96ebe27563f369c1205a049d06419bb51d8aeddf3d3"
+        )
         challenge_data = {
-            "nonce": "ee96edced2a0b43e4869e96ebe27563f369c1205a049d06419bb51d8aeddf3d3",
+            "nonce": nonce,
             "qop": self.qop,
             "opaque": (
                 "ee6378f3ee14ebfd2fff54b70a91a7c9390518047f242ab2271380db0e14bda1"
@@ -260,3 +268,17 @@ def test_digest_auth_qop_must_be_auth_or_auth_int():
     with pytest.raises(ProtocolError):
         with Client(dispatch=MockDigestAuthDispatch(qop="not-auth")) as client:
             client.get(url, auth=auth)
+
+
+def test_digest_auth_incorrect_credentials():
+    url = "https://example.org/"
+    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+
+    with Client(
+        dispatch=MockDigestAuthDispatch(
+            send_response_after_attempt=2, regenerate_nonce=True
+        )
+    ) as client:
+        response = client.get(url, auth=auth)
+
+    assert response.status_code == 401
