@@ -115,15 +115,15 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
 
         qop = challenge.qop
         if not qop:
-            to_key_digest = [HA1, challenge.nonce, HA2]
+            digest_data = [HA1, challenge.nonce, HA2]
         elif qop == b"auth" or b"auth" in qop.split(b",") or b"auth" in qop.split(b" "):
-            to_key_digest = [challenge.nonce, nc_value, cnonce, b"auth", HA2]
+            digest_data = [challenge.nonce, nc_value, cnonce, b"auth", HA2]
         elif qop == b"auth-int":
             raise NotImplementedError("Digest auth-int support is not yet implemented")
         else:
             raise ProtocolError(f'Unexpected qop value "{qop!r}" in digest auth')
 
-        key_digest = b":".join(to_key_digest)
+        key_digest = b":".join(digest_data)
 
         format_args = {
             "username": self.username,
