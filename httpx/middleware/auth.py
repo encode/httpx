@@ -131,7 +131,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         if algorithm == "MD5-SESS":
             HA1 = digest(b":".join((HA1, nonce, cnonce)))
 
-        if qop == b"auth" or b"auth" in qop.split(b","):
+        if qop == b"auth" or b"auth" in qop.split(b",") or b"auth" in qop.split(b" "):
             to_key_digest = [nonce, nc_value, cnonce, b"auth", HA2]
         elif qop == b"auth-int":
             raise NotImplementedError("Digest auth-int support is not yet implemented")
