@@ -45,7 +45,7 @@ class CustomAuthMiddleware(BaseMiddleware):
 
 class HTTPDigestAuthMiddleware(BaseMiddleware):
 
-    ALGORITHM_TO_HASH_FUNCTION = {
+    ALGORITHM_TO_HASH_FUNCTION: typing.Dict[str, typing.Callable] = {
         "MD5": hashlib.md5,
         "MD5-SESS": hashlib.md5,
         "SHA": hashlib.sha1,
