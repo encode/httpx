@@ -39,8 +39,8 @@ Let's get started...
 <Response [200 OK]>
 >>> r.status_code
 200
->>> r.protocol
-'HTTP/2'
+>>> r.http_version
+'HTTP/1.1'
 >>> r.headers['content-type']
 'text/html; charset=UTF-8'
 >>> r.text
@@ -75,7 +75,7 @@ Plus all the standard features of `requests`...
 * HTTP(S) Proxy Support *(TODO)*
 * Connection Timeouts
 * Streaming Downloads
-* .netrc Support *(TODO)*
+* .netrc Support
 * Chunked Requests
 
 ## Documentation

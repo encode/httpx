@@ -24,7 +24,6 @@ def request(
     json: typing.Any = None,
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
-    # files
     auth: AuthTypes = None,
     timeout: TimeoutTypes = None,
     allow_redirects: bool = True,
@@ -32,8 +31,9 @@ def request(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     stream: bool = False,
+    trust_env: bool = None,
 ) -> Response:
-    with Client() as client:
+    with Client(http_versions=["HTTP/1.1"]) as client:
         return client.request(
             method=method,
             url=url,
@@ -49,6 +49,7 @@ def request(
             cert=cert,
             verify=verify,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
 
@@ -64,6 +65,7 @@ def get(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "GET",
@@ -77,6 +79,7 @@ def get(
         cert=cert,
         verify=verify,
         timeout=timeout,
+        trust_env=trust_env,
     )
 
 
@@ -92,6 +95,7 @@ def options(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "OPTIONS",
@@ -105,6 +109,7 @@ def options(
         cert=cert,
         verify=verify,
         timeout=timeout,
+        trust_env=trust_env,
     )
 
 
@@ -120,6 +125,7 @@ def head(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "HEAD",
@@ -133,6 +139,7 @@ def head(
         cert=cert,
         verify=verify,
         timeout=timeout,
+        trust_env=trust_env,
     )
 
 
@@ -151,6 +158,7 @@ def post(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "POST",
@@ -167,6 +175,7 @@ def post(
         cert=cert,
         verify=verify,
         timeout=timeout,
+        trust_env=trust_env,
     )
 
 
@@ -185,6 +194,7 @@ def put(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "PUT",
@@ -201,6 +211,7 @@ def put(
         cert=cert,
         verify=verify,
         timeout=timeout,
+        trust_env=trust_env,
     )
 
 
@@ -219,6 +230,7 @@ def patch(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "PATCH",
@@ -235,6 +247,7 @@ def patch(
         cert=cert,
         verify=verify,
         timeout=timeout,
+        trust_env=trust_env,
     )
 
 
@@ -253,6 +266,7 @@ def delete(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
+    trust_env: bool = None,
 ) -> Response:
     return request(
         "DELETE",
@@ -269,4 +283,5 @@ def delete(
         cert=cert,
         verify=verify,
         timeout=timeout,
+        trust_env=trust_env,
     )

@@ -1,6 +1,7 @@
 import json
 
 from httpx import (
+    AsyncClient,
     CertTypes,
     Client,
     Dispatcher,
@@ -39,12 +40,25 @@ class MockDispatch(Dispatcher):
 
 def test_threaded_dispatch():
     """
-    Use a syncronous 'Dispatcher' class with the client.
+    Use a synchronous 'Dispatcher' class with the client.
     Calls to the dispatcher will end up running within a thread pool.
     """
     url = "https://example.org/"
     with Client(dispatch=MockDispatch()) as client:
         response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {"hello": "world"}
+
+
+async def test_async_threaded_dispatch(backend):
+    """
+    Use a synchronous 'Dispatcher' class with the async client.
+    Calls to the dispatcher will end up running within a thread pool.
+    """
+    url = "https://example.org/"
+    async with AsyncClient(dispatch=MockDispatch(), backend=backend) as client:
+        response = await client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {"hello": "world"}
@@ -88,7 +102,7 @@ def test_threaded_request_body_streaming():
 
 def test_dispatch_class():
     """
-    Use a syncronous 'Dispatcher' class directly.
+    Use a synchronous 'Dispatcher' class directly.
     """
     url = "https://example.org/"
     with MockDispatch() as dispatcher:

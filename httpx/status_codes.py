@@ -51,11 +51,11 @@ class StatusCode(IntEnum):
 
     @classmethod
     def is_client_error(cls, value: int) -> bool:
-        return value >= 400 and value <= 499
+        return 400 <= value <= 499
 
     @classmethod
     def is_server_error(cls, value: int) -> bool:
-        return value >= 500 and value <= 599
+        return 500 <= value <= 599
 
     # informational
     CONTINUE = 100, "Continue"
@@ -130,6 +130,6 @@ class StatusCode(IntEnum):
 
 codes = StatusCode
 
-#  Include lower-case styles for `requests` compatability.
+#  Include lower-case styles for `requests` compatibility.
 for code in codes:
     setattr(codes, code._name_.lower(), int(code))

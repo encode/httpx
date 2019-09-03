@@ -1,29 +1,34 @@
+import functools
 import inspect
 import typing
 from types import TracebackType
 
-from .auth import HTTPBasicAuth
-from .concurrency import AsyncioBackend
+import hstspreload
+
+from .concurrency.asyncio import AsyncioBackend
+from .concurrency.base import ConcurrencyBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
+    HTTPVersionTypes,
     PoolLimits,
     TimeoutTypes,
     VerifyTypes,
 )
 from .dispatch.asgi import ASGIDispatch
+from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
-from .exceptions import (
-    InvalidURL,
-    RedirectBodyUnavailable,
-    RedirectLoop,
-    TooManyRedirects,
+from .exceptions import HTTPError, InvalidURL
+from .middleware import (
+    BaseMiddleware,
+    BasicAuthMiddleware,
+    CustomAuthMiddleware,
+    RedirectMiddleware,
 )
-from .interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from .models import (
     URL,
     AsyncRequest,
@@ -42,48 +47,52 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .status_codes import codes
+from .utils import get_netrc_login
 
 
 class BaseClient:
     def __init__(
         self,
         auth: AuthTypes = None,
+        headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http_versions: HTTPVersionTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         dispatch: typing.Union[AsyncDispatcher, Dispatcher] = None,
         app: typing.Callable = None,
-        raise_app_exceptions: bool = True,
         backend: ConcurrencyBackend = None,
+        trust_env: bool = True,
     ):
         if backend is None:
             backend = AsyncioBackend()
+
+        self.check_concurrency_backend(backend)
 
         if app is not None:
             param_count = len(inspect.signature(app).parameters)
             assert param_count in (2, 3)
             if param_count == 2:
-                dispatch = WSGIDispatch(
-                    app=app, raise_app_exceptions=raise_app_exceptions
-                )
+                dispatch = WSGIDispatch(app=app)
             else:
-                dispatch = ASGIDispatch(
-                    app=app, raise_app_exceptions=raise_app_exceptions
-                )
+                dispatch = ASGIDispatch(app=app)
+
+        self.trust_env = True if trust_env is None else trust_env
 
         if dispatch is None:
-            async_dispatch = ConnectionPool(
+            async_dispatch: AsyncDispatcher = ConnectionPool(
                 verify=verify,
                 cert=cert,
                 timeout=timeout,
+                http_versions=http_versions,
                 pool_limits=pool_limits,
                 backend=backend,
-            )  # type: AsyncDispatcher
+                trust_env=self.trust_env,
+            )
         elif isinstance(dispatch, Dispatcher):
             async_dispatch = ThreadedDispatcher(dispatch, backend)
         else:
@@ -95,10 +104,36 @@ class BaseClient:
             self.base_url = URL(base_url)
 
         self.auth = auth
-        self.cookies = Cookies(cookies)
+        self._headers = Headers(headers)
+        self._cookies = Cookies(cookies)
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
+
+    @property
+    def headers(self) -> Headers:
+        return self._headers
+
+    @headers.setter
+    def headers(self, headers: HeaderTypes) -> None:
+        self._headers = Headers(headers)
+
+    @property
+    def cookies(self) -> Cookies:
+        return self._cookies
+
+    @cookies.setter
+    def cookies(self, cookies: CookieTypes) -> None:
+        self._cookies = Cookies(cookies)
+
+    def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
+        pass  # pragma: no cover
+
+    def merge_url(self, url: URLTypes) -> URL:
+        url = self.base_url.join(relative_url=url)
+        if url.scheme == "http" and hstspreload.in_hsts_preload(url.host):
+            url = url.copy_with(scheme="https")
+        return url
 
     def merge_cookies(
         self, cookies: CookieTypes = None
@@ -108,6 +143,15 @@ class BaseClient:
             merged_cookies.update(cookies)
             return merged_cookies
         return cookies
+
+    def merge_headers(
+        self, headers: HeaderTypes = None
+    ) -> typing.Optional[HeaderTypes]:
+        if headers or self.headers:
+            merged_headers = Headers(self.headers)
+            merged_headers.update(headers)
+            return merged_headers
+        return headers
 
     async def send(
         self,
@@ -119,172 +163,79 @@ class BaseClient:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> AsyncResponse:
-        if auth is None:
-            auth = self.auth
-
-        url = request.url
-
-        if url.scheme not in ("http", "https"):
+        if request.url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
 
-        if auth is None and (url.username or url.password):
-            auth = HTTPBasicAuth(username=url.username, password=url.password)
-
-        if auth is not None:
-            if isinstance(auth, tuple):
-                auth = HTTPBasicAuth(username=auth[0], password=auth[1])
-            request = auth(request)
-
-        response = await self.send_handling_redirects(
-            request,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            allow_redirects=allow_redirects,
-        )
-
-        if not stream:
+        async def get_response(request: AsyncRequest) -> AsyncResponse:
             try:
-                await response.read()
-            finally:
-                await response.close()
+                response = await self.dispatch.send(
+                    request, verify=verify, cert=cert, timeout=timeout
+                )
+            except HTTPError as exc:
+                # Add the original request to any HTTPError
+                exc.request = request
+                raise
 
-        return response
-
-    async def send_handling_redirects(
-        self,
-        request: AsyncRequest,
-        *,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        allow_redirects: bool = True,
-        history: typing.List[AsyncResponse] = None,
-    ) -> AsyncResponse:
-        if history is None:
-            history = []
-
-        while True:
-            # We perform these checks here, so that calls to `response.next()`
-            # will raise redirect errors if appropriate.
-            if len(history) > self.max_redirects:
-                raise TooManyRedirects()
-            if request.url in [response.url for response in history]:
-                raise RedirectLoop()
-
-            response = await self.dispatch.send(
-                request, verify=verify, cert=cert, timeout=timeout
-            )
-            should_close_response = True
-            try:
-                assert isinstance(response, AsyncResponse)
-                response.history = list(history)
-                self.cookies.extract_cookies(response)
-                history = history + [response]
-
-                if allow_redirects and response.is_redirect:
-                    request = self.build_redirect_request(request, response)
-                else:
-                    should_close_response = False
-                    break
-            finally:
-                if should_close_response:
+            self.cookies.extract_cookies(response)
+            if not stream:
+                try:
+                    await response.read()
+                finally:
                     await response.close()
 
-        if response.is_redirect:
+            return response
 
-            async def send_next() -> AsyncResponse:
-                nonlocal request, response, verify, cert
-                nonlocal allow_redirects, timeout, history
-                request = self.build_redirect_request(request, response)
-                response = await self.send_handling_redirects(
-                    request,
-                    allow_redirects=allow_redirects,
-                    verify=verify,
-                    cert=cert,
-                    timeout=timeout,
-                    history=history,
-                )
-                return response
+        def wrap(
+            get_response: typing.Callable, middleware: BaseMiddleware
+        ) -> typing.Callable:
+            return functools.partial(middleware, get_response=get_response)
 
-            response.next = send_next  # type: ignore
-
-        return response
-
-    def build_redirect_request(
-        self, request: AsyncRequest, response: AsyncResponse
-    ) -> AsyncRequest:
-        method = self.redirect_method(request, response)
-        url = self.redirect_url(request, response)
-        headers = self.redirect_headers(request, url)
-        content = self.redirect_content(request, method)
-        cookies = self.merge_cookies(request.cookies)
-        return AsyncRequest(
-            method=method, url=url, headers=headers, data=content, cookies=cookies
+        get_response = wrap(
+            get_response,
+            RedirectMiddleware(allow_redirects=allow_redirects, cookies=self.cookies),
         )
 
-    def redirect_method(self, request: AsyncRequest, response: AsyncResponse) -> str:
-        """
-        When being redirected we may want to change the method of the request
-        based on certain specs or browser behavior.
-        """
-        method = request.method
+        auth_middleware = self._get_auth_middleware(
+            request=request,
+            trust_env=self.trust_env if trust_env is None else trust_env,
+            auth=self.auth if auth is None else auth,
+        )
 
-        # https://tools.ietf.org/html/rfc7231#section-6.4.4
-        if response.status_code == codes.SEE_OTHER and method != "HEAD":
-            method = "GET"
+        if auth_middleware is not None:
+            get_response = wrap(get_response, auth_middleware)
 
-        # Do what the browsers do, despite standards...
-        # Turn 302s into GETs.
-        if response.status_code == codes.FOUND and method != "HEAD":
-            method = "GET"
+        return await get_response(request)
 
-        # If a POST is responded to with a 301, turn it into a GET.
-        # This bizarre behaviour is explained in 'requests' issue 1704.
-        if response.status_code == codes.MOVED_PERMANENTLY and method == "POST":
-            method = "GET"
+    def _get_auth_middleware(
+        self, request: AsyncRequest, trust_env: bool, auth: AuthTypes = None
+    ) -> typing.Optional[BaseMiddleware]:
+        if isinstance(auth, tuple):
+            return BasicAuthMiddleware(username=auth[0], password=auth[1])
 
-        return method
+        if callable(auth):
+            return CustomAuthMiddleware(auth=auth)
 
-    def redirect_url(self, request: AsyncRequest, response: AsyncResponse) -> URL:
-        """
-        Return the URL for the redirect to follow.
-        """
-        location = response.headers["Location"]
+        if auth is not None:
+            raise TypeError(
+                'When specified, "auth" must be a (username, password) tuple or '
+                "a callable with signature (AsyncRequest) -> AsyncRequest "
+                f"(got {auth!r})"
+            )
 
-        url = URL(location, allow_relative=True)
+        if request.url.username or request.url.password:
+            return BasicAuthMiddleware(
+                username=request.url.username, password=request.url.password
+            )
 
-        # Facilitate relative 'Location' headers, as allowed by RFC 7231.
-        # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
-        if url.is_relative_url:
-            url = request.url.join(url)
+        if trust_env:
+            netrc_login = get_netrc_login(request.url.authority)
+            if netrc_login:
+                username, _, password = netrc_login
+                return BasicAuthMiddleware(username=username, password=password)
 
-        # Attach previous fragment if needed (RFC 7231 7.1.2)
-        if request.url.fragment and not url.fragment:
-            url = url.copy_with(fragment=request.url.fragment)
-
-        return url
-
-    def redirect_headers(self, request: AsyncRequest, url: URL) -> Headers:
-        """
-        Strip Authorization headers when responses are redirected away from
-        the origin.
-        """
-        headers = Headers(request.headers)
-        if url.origin != request.url.origin:
-            del headers["Authorization"]
-        return headers
-
-    def redirect_content(self, request: AsyncRequest, method: str) -> bytes:
-        """
-        Return the body that should be used for the redirect request.
-        """
-        if method != request.method and method == "GET":
-            return b""
-        if request.is_streaming:
-            raise RedirectBodyUnavailable()
-        return request.content
+        return None
 
 
 class AsyncClient(BaseClient):
@@ -301,6 +252,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "GET",
@@ -314,6 +266,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def options(
@@ -329,6 +282,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "OPTIONS",
@@ -342,6 +296,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def head(
@@ -357,6 +312,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "HEAD",
@@ -370,6 +326,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def post(
@@ -388,6 +345,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "POST",
@@ -404,6 +362,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def put(
@@ -422,6 +381,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "PUT",
@@ -438,6 +398,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def patch(
@@ -456,6 +417,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "PATCH",
@@ -472,6 +434,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def delete(
@@ -490,6 +453,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "DELETE",
@@ -506,6 +470,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def request(
@@ -525,8 +490,10 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> AsyncResponse:
-        url = self.base_url.join(url)
+        url = self.merge_url(url)
+        headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
         request = AsyncRequest(
             method,
@@ -546,6 +513,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
         return response
 
@@ -565,6 +533,24 @@ class AsyncClient(BaseClient):
 
 
 class Client(BaseClient):
+    def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
+        # Iterating over response content allocates an async environment on each step.
+        # This is relatively cheap on asyncio, but cannot be guaranteed for all
+        # concurrency backends.
+        # The sync client performs I/O on its own, so it doesn't need to support
+        # arbitrary concurrency backends.
+        # Therefore, we keep the `backend` parameter (for testing/mocking), but require
+        # that the concurrency backend relies on asyncio.
+
+        if isinstance(backend, AsyncioBackend):
+            return
+
+        if hasattr(backend, "loop"):
+            # Most likely a proxy class.
+            return
+
+        raise ValueError("'Client' only supports asyncio-based concurrency backends")
+
     def _async_request_data(
         self, data: RequestData = None
     ) -> typing.Optional[AsyncRequestData]:
@@ -606,8 +592,10 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> Response:
-        url = self.base_url.join(url)
+        url = self.merge_url(url)
+        headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
         request = AsyncRequest(
             method,
@@ -623,14 +611,15 @@ class Client(BaseClient):
 
         coroutine = self.send
         args = [request]
-        kwargs = dict(
-            stream=True,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-        )
+        kwargs = {
+            "stream": True,
+            "auth": auth,
+            "allow_redirects": allow_redirects,
+            "verify": verify,
+            "cert": cert,
+            "timeout": timeout,
+            "trust_env": trust_env,
+        }
         async_response = concurrency_backend.run(coroutine, *args, **kwargs)
 
         content = getattr(
@@ -645,7 +634,7 @@ class Client(BaseClient):
 
         response = Response(
             status_code=async_response.status_code,
-            protocol=async_response.protocol,
+            http_version=async_response.http_version,
             headers=async_response.headers,
             content=sync_content,
             on_close=sync_on_close,
@@ -672,6 +661,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "GET",
@@ -685,6 +675,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def options(
@@ -700,6 +691,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "OPTIONS",
@@ -713,6 +705,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def head(
@@ -728,6 +721,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "HEAD",
@@ -741,6 +735,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def post(
@@ -759,6 +754,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "POST",
@@ -775,6 +771,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def put(
@@ -793,6 +790,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "PUT",
@@ -809,6 +807,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def patch(
@@ -827,6 +826,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "PATCH",
@@ -843,6 +843,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def delete(
@@ -861,6 +862,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
+        trust_env: bool = None,
     ) -> Response:
         return self.request(
             "DELETE",
@@ -877,6 +879,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     def close(self) -> None:

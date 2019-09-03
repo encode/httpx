@@ -2,10 +2,10 @@ import typing
 
 import h11
 
-from ..concurrency import TimeoutFlag
+from ..concurrency.base import BaseStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
-from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
+from ..utils import get_logger
 
 H11Event = typing.Union[
     h11.Request,
@@ -23,18 +23,19 @@ H11Event = typing.Union[
 OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
 
 
+logger = get_logger(__name__)
+
+
 class HTTP11Connection:
     READ_NUM_BYTES = 4096
 
     def __init__(
         self,
-        reader: BaseReader,
-        writer: BaseWriter,
+        stream: BaseStream,
         backend: ConcurrencyBackend,
         on_release: typing.Optional[OnReleaseCallback] = None,
     ):
-        self.reader = reader
-        self.writer = writer
+        self.stream = stream
         self.backend = backend
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
@@ -48,13 +49,13 @@ class HTTP11Connection:
         await self._send_request(request, timeout)
 
         task, args = self._send_request_data, [request.stream(), timeout]
-        async with self.backend.background_manager(task, args=args):
+        async with self.backend.background_manager(task, *args):
             http_version, status_code, headers = await self._receive_response(timeout)
         content = self._receive_response_data(timeout)
 
         return AsyncResponse(
             status_code=status_code,
-            protocol=http_version,
+            http_version=http_version,
             headers=headers,
             content=content,
             on_close=self.response_closed,
@@ -64,11 +65,12 @@ class HTTP11Connection:
     async def close(self) -> None:
         event = h11.ConnectionClosed()
         try:
+            logger.debug(f"send_event event={event!r}")
             self.h11_state.send(event)
         except h11.LocalProtocolError:  # pragma: no cover
             # Premature client disconnect
             pass
-        await self.writer.close()
+        await self.stream.close()
 
     async def _send_request(
         self, request: AsyncRequest, timeout: TimeoutConfig = None
@@ -76,6 +78,12 @@ class HTTP11Connection:
         """
         Send the request method, URL, and headers to the network.
         """
+        logger.debug(
+            f"send_headers method={request.method!r} "
+            f"target={request.url.full_path!r} "
+            f"headers={request.headers!r}"
+        )
+
         method = request.method.encode("ascii")
         target = request.url.full_path.encode("ascii")
         headers = request.headers.raw
@@ -91,6 +99,7 @@ class HTTP11Connection:
         try:
             # Send the request body.
             async for chunk in data:
+                logger.debug(f"send_data data=Data(<{len(chunk)} bytes>)")
                 event = h11.Data(data=chunk)
                 await self._send_event(event, timeout)
 
@@ -112,7 +121,7 @@ class HTTP11Connection:
         drain before returning.
         """
         bytes_to_send = self.h11_state.send(event)
-        await self.writer.write(bytes_to_send, timeout)
+        await self.stream.write(bytes_to_send, timeout)
 
     async def _receive_response(
         self, timeout: TimeoutConfig = None
@@ -129,9 +138,9 @@ class HTTP11Connection:
                 continue
             else:
                 assert isinstance(event, h11.Response)
-                break
+                break  # pragma: no cover
         http_version = "HTTP/%s" % event.http_version.decode("latin-1", errors="ignore")
-        return (http_version, event.status_code, event.headers)
+        return http_version, event.status_code, event.headers
 
     async def _receive_response_data(
         self, timeout: TimeoutConfig = None
@@ -142,10 +151,10 @@ class HTTP11Connection:
         while True:
             event = await self._receive_event(timeout)
             if isinstance(event, h11.Data):
-                yield event.data
+                yield bytes(event.data)
             else:
                 assert isinstance(event, h11.EndOfMessage)
-                break
+                break  # pragma: no cover
 
     async def _receive_event(self, timeout: TimeoutConfig = None) -> H11Event:
         """
@@ -153,19 +162,31 @@ class HTTP11Connection:
         """
         while True:
             event = self.h11_state.next_event()
+
+            if isinstance(event, h11.Data):
+                logger.debug(f"receive_event event=Data(<{len(event.data)} bytes>)")
+            else:
+                logger.debug(f"receive_event event={event!r}")
+
             if event is h11.NEED_DATA:
                 try:
-                    data = await self.reader.read(
+                    data = await self.stream.read(
                         self.READ_NUM_BYTES, timeout, flag=self.timeout_flag
                     )
                 except OSError:  # pragma: nocover
                     data = b""
                 self.h11_state.receive_data(data)
             else:
-                break
+                assert event is not h11.NEED_DATA
+                break  # pragma: no cover
         return event
 
     async def response_closed(self) -> None:
+        logger.debug(
+            f"response_closed "
+            f"our_state={self.h11_state.our_state!r} "
+            f"their_state={self.h11_state.their_state}"
+        )
         if (
             self.h11_state.our_state is h11.DONE
             and self.h11_state.their_state is h11.DONE
@@ -184,4 +205,4 @@ class HTTP11Connection:
         return self.h11_state.our_state in (h11.CLOSED, h11.ERROR)
 
     def is_connection_dropped(self) -> bool:
-        return self.reader.is_connection_dropped()
+        return self.stream.is_connection_dropped()

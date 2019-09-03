@@ -256,7 +256,7 @@ def test_unknown_status_code():
 
 
 def test_json_with_specified_encoding():
-    data = dict(greeting="hello", recipient="world")
+    data = {"greeting": "hello", "recipient": "world"}
     content = json.dumps(data).encode("utf-16")
     headers = {"Content-Type": "application/json, charset=utf-16"}
     response = httpx.Response(200, content=content, headers=headers)
@@ -264,7 +264,7 @@ def test_json_with_specified_encoding():
 
 
 def test_json_with_options():
-    data = dict(greeting="hello", recipient="world", amount=1)
+    data = {"greeting": "hello", "recipient": "world", "amount": 1}
     content = json.dumps(data).encode("utf-16")
     headers = {"Content-Type": "application/json, charset=utf-16"}
     response = httpx.Response(200, content=content, headers=headers)
@@ -272,7 +272,7 @@ def test_json_with_options():
 
 
 def test_json_without_specified_encoding():
-    data = dict(greeting="hello", recipient="world")
+    data = {"greeting": "hello", "recipient": "world"}
     content = json.dumps(data).encode("utf-32-be")
     headers = {"Content-Type": "application/json"}
     response = httpx.Response(200, content=content, headers=headers)
@@ -280,7 +280,7 @@ def test_json_without_specified_encoding():
 
 
 def test_json_without_specified_encoding_decode_error():
-    data = dict(greeting="hello", recipient="world")
+    data = {"greeting": "hello", "recipient": "world"}
     content = json.dumps(data).encode("utf-32-be")
     headers = {"Content-Type": "application/json"}
     # force incorrect guess from `guess_json_utf` to trigger error
@@ -288,3 +288,39 @@ def test_json_without_specified_encoding_decode_error():
         response = httpx.Response(200, content=content, headers=headers)
         with pytest.raises(json.JSONDecodeError):
             response.json()
+
+
+@pytest.mark.parametrize(
+    "headers, expected",
+    [
+        (
+            {"Link": "<https://example.com>; rel='preload'"},
+            {"preload": {"rel": "preload", "url": "https://example.com"}},
+        ),
+        (
+            {"Link": '</hub>; rel="hub", </resource>; rel="self"'},
+            {
+                "hub": {"url": "/hub", "rel": "hub"},
+                "self": {"url": "/resource", "rel": "self"},
+            },
+        ),
+    ],
+)
+def test_link_headers(headers, expected):
+    response = httpx.Response(200, content=None, headers=headers)
+    assert response.links == expected
+
+
+@pytest.mark.asyncio
+async def test_stream_text():
+    async def iterator():
+        yield b"Hello, world!"
+
+    response = httpx.AsyncResponse(200, content=iterator().__aiter__())
+
+    await response.read()
+
+    content = ""
+    async for part in response.stream_text():
+        content += part
+    assert content == "Hello, world!"

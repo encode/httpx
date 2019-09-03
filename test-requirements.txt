@@ -1,0 +1,16 @@
+-e .
+
+# Optional
+brotlipy==0.7.*
+
+cryptography
+flake8
+flake8-bugbear
+flake8-comprehensions
+isort
+mypy
+pytest
+pytest-asyncio
+pytest-cov
+trustme
+uvicorn

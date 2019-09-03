@@ -1,19 +1,35 @@
-sudo: required
 dist: xenial
 language: python
 
 cache: pip
 
-python:
-    - "3.6"
-    - "3.7"
+branches:
+  only:
+    - master
+
+matrix:
+  include:
+    - python: 3.7
+      env: NOX_SESSION=check
+    - python: 3.7
+      env: NOX_SESSION=docs
+
+    - python: 3.6
+      env: NOX_SESSION=test-3.6
+    - python: 3.7
+      env: NOX_SESSION=test-3.7
+    - python: 3.8-dev
+      env: NOX_SESSION=test-3.8
+      dist: bionic # Required to get OpenSSL 1.1.1+
 
 install:
-    - pip install -U -r requirements.txt
+  - pip install --upgrade nox
 
 script:
-    - scripts/test
+  - nox -s ${NOX_SESSION}
 
 after_script:
-    - pip install codecov
-    - codecov
+  - if [ -f .coverage ]; then
+      python -m pip install codecov;
+      codecov --required;
+    fi
