@@ -151,7 +151,7 @@ class RedirectMiddleware(BaseMiddleware):
             del headers["Host"]
 
         if method != request.method and method == "GET":
-            # Strip Content-Length headers when we've switch to a 'GET' request.
+            #  Strip Content-Length headers when we've switch to a 'GET' request.
             del headers["Content-Length"]
 
         return headers
