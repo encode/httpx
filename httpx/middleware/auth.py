@@ -102,13 +102,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
 
         # Construct Authenticate header string
         nonce_count, nc_value = self._get_nonce_count(challenge.nonce)
-
-        s = str(nonce_count).encode()
-        s += challenge.nonce
-        s += time.ctime().encode()
-        s += os.urandom(8)
-
-        cnonce = hashlib.sha1(s).hexdigest()[:16].encode()
+        cnonce = self._get_client_nonce(nonce_count, challenge.nonce)
         HA1 = digest(A1)
         if challenge.algorithm.lower().endswith("-sess"):
             HA1 = digest(b":".join((HA1, challenge.nonce, cnonce)))
@@ -145,6 +139,14 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         )
         return "Digest " + header_value
 
+    def _get_client_nonce(self, nonce_count: int, nonce: bytes) -> bytes:
+        s = str(nonce_count).encode()
+        s += nonce
+        s += time.ctime().encode()
+        s += os.urandom(8)
+
+        return hashlib.sha1(s).hexdigest()[:16].encode()
+
     def _get_nonce_count(self, nonce: bytes) -> typing.Tuple[int, bytes]:
         """Returns the number of requests made with the same server provided
         nonce value along with its 8-digit hex representation."""
@@ -173,6 +175,11 @@ class DigestAuthChallenge:
 
     @classmethod
     def from_header(cls, header: str) -> "DigestAuthChallenge":
+        """Returns a challenge from a Digest WWW-Authenticate header.
+
+        These take the form of:
+        `Digest realm="realm@host.com",qop="auth,auth-int",nonce="abc",opaque="xyz"`
+        """
         scheme, _, fields = header.partition(" ")
         assert scheme.lower() == "digest"
         header_dict = {}
