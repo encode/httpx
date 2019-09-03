@@ -90,10 +90,10 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         challenge = self._parse_header(header)
         algorithm = challenge.get("algorithm", "MD5")
 
-        realm = safe_encode(challenge["realm"])
-        nonce = safe_encode(challenge["nonce"])
-        qop = safe_encode(challenge["qop"])
-        opaque = safe_encode(challenge["opaque"]) if "opaque" in challenge else None
+        realm = challenge["realm"].encode()
+        nonce = challenge["nonce"].encode()
+        qop = challenge["qop"].encode()
+        opaque = challenge["opaque"].encode() if "opaque" in challenge else None
         username = safe_encode(self.username)
         password = safe_encode(self.password)
 
