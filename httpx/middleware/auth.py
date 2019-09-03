@@ -59,8 +59,8 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ) -> None:
-        self.username = username
-        self.password = password
+        self.username = to_bytes(username)
+        self.password = to_bytes(password)
         self._previous_nonce: typing.Optional[bytes] = None
         self._nonce_count = 0
 
@@ -89,16 +89,13 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         assert header.lower().startswith("digest")
         challenge = DigestAuthChallenge.from_header_dict(self._parse_header(header))
 
-        username = to_bytes(self.username)
-        password = to_bytes(self.password)
-
         # Assemble parts depending on hash algorithms
         hash_func = self.ALGORITHM_TO_HASH_FUNCTION[challenge.algorithm]
 
         def digest(data: bytes) -> bytes:
             return hash_func(data).hexdigest().encode()
 
-        A1 = b":".join((username, challenge.realm, password))
+        A1 = b":".join((self.username, challenge.realm, self.password))
         HA1 = digest(A1)
 
         path = request.url.full_path.encode("utf-8")
@@ -139,7 +136,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         key_digest = b":".join(to_key_digest)
 
         format_args = {
-            "username": username,
+            "username": self.username,
             "realm": challenge.realm,
             "nonce": challenge.nonce,
             "uri": path,
