@@ -187,3 +187,8 @@ def to_str(str_or_bytes: typing.Union[str, bytes]) -> str:
     return (
         str_or_bytes if isinstance(str_or_bytes, str) else str_or_bytes.decode("utf-8")
     )
+
+
+def unquote(value: str) -> str:
+    """Remove quotes from a string if present."""
+    return value[1:-1] if value[0] == value[-1] == '"' else value

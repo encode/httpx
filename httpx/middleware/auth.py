@@ -6,7 +6,7 @@ from base64 import b64encode
 
 from ..exceptions import ProtocolError
 from ..models import AsyncRequest, AsyncResponse, StatusCode
-from ..utils import to_bytes, to_str
+from ..utils import to_bytes, to_str, unquote
 from .base import BaseMiddleware
 
 
@@ -84,10 +84,8 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         )
 
     def _build_auth_header(self, request: AsyncRequest, response: AsyncResponse) -> str:
-        # Retrieve challenge from response header
         header = response.headers.get("www-authenticate")
-        assert header.lower().startswith("digest")
-        challenge = DigestAuthChallenge.from_header_dict(self._parse_header(header))
+        challenge = DigestAuthChallenge.from_header(header)
 
         # Assemble parts depending on hash algorithms
         hash_func = self.ALGORITHM_TO_HASH_FUNCTION[challenge.algorithm]
@@ -155,15 +153,6 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         )
         return "Digest " + header_value
 
-    def _parse_header(self, header: str) -> dict:
-        result = {}
-        for item in header[7:].split(","):
-            key, value = item.strip().split("=")
-            value = value[1:-1] if value[0] == value[-1] == '"' else value
-            result[key] = value
-
-        return result
-
 
 class DigestAuthChallenge:
     def __init__(
@@ -179,6 +168,17 @@ class DigestAuthChallenge:
         self.algorithm = algorithm or "MD5"
         self.opaque = opaque
         self.qop = qop
+
+    @classmethod
+    def from_header(cls, header: str) -> "DigestAuthChallenge":
+        scheme, _, fields = header.partition(" ")
+        assert scheme.lower() == "digest"
+        header_dict = {}
+        for field in fields.split(","):
+            key, value = field.strip().split("=")
+            header_dict[key] = unquote(value)
+
+        return cls.from_header_dict(header_dict)
 
     @classmethod
     def from_header_dict(cls, header_dict: dict) -> "DigestAuthChallenge":
