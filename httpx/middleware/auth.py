@@ -126,7 +126,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         elif qop == b"auth-int":
             raise NotImplementedError("Digest auth-int support is not yet implemented")
         else:
-            raise ProtocolError('Unexpected qop value "{}" in digest auth'.format(qop))
+            raise ProtocolError(f'Unexpected qop value "{qop!r}" in digest auth')
 
         key_digest = b":".join(to_key_digest)
 
