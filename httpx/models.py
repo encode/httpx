@@ -17,11 +17,13 @@ from .decoders import (
     Decoder,
     IdentityDecoder,
     MultiDecoder,
+    TextDecoder,
 )
 from .exceptions import (
     CookieConflict,
-    HttpError,
+    HTTPError,
     InvalidURL,
+    NotRedirectResponse,
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
@@ -33,14 +35,18 @@ from .utils import (
     is_known_encoding,
     normalize_header_key,
     normalize_header_value,
+    parse_header_links,
+    str_query_param,
 )
+
+PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
 URLTypes = typing.Union["URL", str]
 
 QueryParamTypes = typing.Union[
     "QueryParams",
-    typing.Mapping[str, str],
-    typing.List[typing.Tuple[typing.Any, typing.Any]],
+    typing.Mapping[str, PrimitiveData],
+    typing.List[typing.Tuple[str, PrimitiveData]],
     str,
 ]
 
@@ -84,27 +90,19 @@ class URL:
         allow_relative: bool = False,
         params: QueryParamTypes = None,
     ) -> None:
-        if isinstance(url, rfc3986.uri.URIReference):
-            self.components = url
-        elif isinstance(url, str):
-            self.components = rfc3986.api.uri_reference(url)
+        if isinstance(url, str):
+            self._uri_reference = rfc3986.api.iri_reference(url).encode()
         else:
-            self.components = url.components
-
-        # Handle IDNA domain names.
-        if self.components.authority:
-            idna_authority = self.components.authority.encode("idna").decode("ascii")
-            if idna_authority != self.components.authority:
-                self.components = self.components.copy_with(authority=idna_authority)
+            self._uri_reference = url._uri_reference
 
         # Normalize scheme and domain name.
         if self.is_absolute_url:
-            self.components = self.components.normalize()
+            self._uri_reference = self._uri_reference.normalize()
 
         # Add any query parameters.
         if params:
             query_string = str(QueryParams(params))
-            self.components = self.components.copy_with(query=query_string)
+            self._uri_reference = self._uri_reference.copy_with(query=query_string)
 
         # Enforce absolute URLs by default.
         if not allow_relative:
@@ -115,40 +113,40 @@ class URL:
 
     @property
     def scheme(self) -> str:
-        return self.components.scheme or ""
+        return self._uri_reference.scheme or ""
 
     @property
     def authority(self) -> str:
-        return self.components.authority or ""
+        return self._uri_reference.authority or ""
 
     @property
     def username(self) -> str:
-        userinfo = self.components.userinfo or ""
+        userinfo = self._uri_reference.userinfo or ""
         return userinfo.partition(":")[0]
 
     @property
     def password(self) -> str:
-        userinfo = self.components.userinfo or ""
+        userinfo = self._uri_reference.userinfo or ""
         return userinfo.partition(":")[2]
 
     @property
     def host(self) -> str:
-        return self.components.host or ""
+        return self._uri_reference.host or ""
 
     @property
     def port(self) -> int:
-        port = self.components.port
+        port = self._uri_reference.port
         if port is None:
             return {"https": 443, "http": 80}[self.scheme]
         return int(port)
 
     @property
     def path(self) -> str:
-        return self.components.path or "/"
+        return self._uri_reference.path or "/"
 
     @property
     def query(self) -> str:
-        return self.components.query or ""
+        return self._uri_reference.query or ""
 
     @property
     def full_path(self) -> str:
@@ -159,11 +157,11 @@ class URL:
 
     @property
     def fragment(self) -> str:
-        return self.components.fragment or ""
+        return self._uri_reference.fragment or ""
 
     @property
     def is_ssl(self) -> bool:
-        return self.components.scheme == "https"
+        return self.scheme == "https"
 
     @property
     def is_absolute_url(self) -> bool:
@@ -175,7 +173,7 @@ class URL:
         # URLs with a fragment portion as not absolute.
         # What we actually care about is if the URL provides
         # a scheme and hostname to which connections should be made.
-        return self.components.scheme and self.components.host
+        return bool(self.scheme and self.host)
 
     @property
     def is_relative_url(self) -> bool:
@@ -186,7 +184,7 @@ class URL:
         return Origin(self)
 
     def copy_with(self, **kwargs: typing.Any) -> "URL":
-        return URL(self.components.copy_with(**kwargs))
+        return URL(self._uri_reference.copy_with(**kwargs).unsplit())
 
     def join(self, relative_url: URLTypes) -> "URL":
         """
@@ -197,9 +195,9 @@ class URL:
 
         # We drop any fragment portion, because RFC 3986 strictly
         # treats URLs with a fragment portion as not being absolute URLs.
-        base_components = self.components.copy_with(fragment=None)
+        base_uri = self._uri_reference.copy_with(fragment=None)
         relative_url = URL(relative_url, allow_relative=True)
-        return URL(relative_url.components.resolve_with(base_components))
+        return URL(relative_url._uri_reference.resolve_with(base_uri).unsplit())
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -208,11 +206,17 @@ class URL:
         return isinstance(other, (URL, str)) and str(self) == str(other)
 
     def __str__(self) -> str:
-        return self.components.unsplit()
+        return self._uri_reference.unsplit()
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         url_str = str(self)
+        if self._uri_reference.userinfo:
+            url_str = (
+                rfc3986.urlparse(url_str)
+                .copy_with(userinfo=f"{self.username}:[secure]")
+                .unsplit()
+            )
         return f"{class_name}({url_str!r})"
 
 
@@ -224,6 +228,7 @@ class Origin:
     def __init__(self, url: URLTypes) -> None:
         if not isinstance(url, URL):
             url = URL(url)
+        self.scheme = url.scheme
         self.is_ssl = url.is_ssl
         self.host = url.host
         self.port = url.port
@@ -231,13 +236,19 @@ class Origin:
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self.is_ssl == other.is_ssl
+            and self.scheme == other.scheme
             and self.host == other.host
             and self.port == other.port
         )
 
     def __hash__(self) -> int:
-        return hash((self.is_ssl, self.host, self.port))
+        return hash((self.scheme, self.host, self.port))
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        return (
+            f"{class_name}(scheme={self.scheme!r} host={self.host!r} port={self.port})"
+        )
 
 
 class QueryParams(typing.Mapping[str, str]):
@@ -256,12 +267,12 @@ class QueryParams(typing.Mapping[str, str]):
         elif isinstance(value, QueryParams):
             items = value.multi_items()
         elif isinstance(value, list):
-            items = value
+            items = value  # type: ignore
         else:
             items = value.items()  # type: ignore
 
-        self._list = [(str(k), str(v)) for k, v in items]
-        self._dict = {str(k): str(v) for k, v in items}
+        self._list = [(str(k), str_query_param(v)) for k, v in items]
+        self._dict = {str(k): str_query_param(v) for k, v in items}
 
     def getlist(self, key: typing.Any) -> typing.List[str]:
         return [item_value for item_key, item_value in self._list if item_key == key]
@@ -406,6 +417,11 @@ class Headers(typing.MutableMapping[str, str]):
             split_values.extend([item.strip() for item in value.split(",")])
         return split_values
 
+    def update(self, headers: HeaderTypes = None) -> None:  # type: ignore
+        headers = Headers(headers)
+        for header in headers:
+            self[header] = headers[header]
+
     def __getitem__(self, key: str) -> str:
         """
         Return a single header value.
@@ -434,7 +450,7 @@ class Headers(typing.MutableMapping[str, str]):
         set_value = value.encode(self.encoding)
 
         found_indexes = []
-        for idx, (item_key, item_value) in enumerate(self._list):
+        for idx, (item_key, _) in enumerate(self._list):
             if item_key == set_key:
                 found_indexes.append(idx)
 
@@ -454,7 +470,7 @@ class Headers(typing.MutableMapping[str, str]):
         del_key = key.lower().encode(self.encoding)
 
         pop_indexes = []
-        for idx, (item_key, item_value) in enumerate(self._list):
+        for idx, (item_key, _) in enumerate(self._list):
             if item_key == del_key:
                 pop_indexes.append(idx)
 
@@ -463,7 +479,7 @@ class Headers(typing.MutableMapping[str, str]):
 
     def __contains__(self, key: typing.Any) -> bool:
         get_header_key = key.lower().encode(self.encoding)
-        for header_key, header_value in self._list:
+        for header_key, _ in self._list:
             if header_key == get_header_key:
                 return True
         return False
@@ -486,10 +502,14 @@ class Headers(typing.MutableMapping[str, str]):
         if self.encoding != "ascii":
             encoding_str = f", encoding={self.encoding!r}"
 
-        as_dict = dict(self.items())
-        if len(as_dict) == len(self):
+        sensitive_headers = {"authorization", "proxy-authorization"}
+        as_list = [
+            (k, "[secure]" if k in sensitive_headers else v) for k, v in self.items()
+        ]
+
+        as_dict = dict(as_list)
+        if len(as_dict) == len(as_list):
             return f"{class_name}({as_dict!r}{encoding_str})"
-        as_list = self.items()
         return f"{class_name}({as_list!r}{encoding_str})"
 
 
@@ -527,10 +547,10 @@ class BaseRequest:
         return content, content_type
 
     def prepare(self) -> None:
-        content = getattr(self, "content", None)  # type: bytes
+        content: typing.Optional[bytes] = getattr(self, "content", None)
         is_streaming = getattr(self, "is_streaming", False)
 
-        auto_headers = []  # type: typing.List[typing.Tuple[bytes, bytes]]
+        auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
 
         has_host = "host" in self.headers
         has_user_agent = "user-agent" in self.headers
@@ -675,18 +695,18 @@ class BaseResponse:
         self,
         status_code: int,
         *,
-        protocol: str = None,
+        http_version: str = None,
         headers: HeaderTypes = None,
         request: BaseRequest = None,
         on_close: typing.Callable = None,
     ):
         self.status_code = status_code
-        self.protocol = protocol
+        self.http_version = http_version
         self.headers = Headers(headers)
 
         self.request = request
         self.on_close = on_close
-        self.next = None  # typing.Optional[typing.Callable]
+        self.call_next: typing.Optional[typing.Callable] = None
 
     @property
     def reason_phrase(self) -> str:
@@ -705,7 +725,7 @@ class BaseResponse:
     def content(self) -> bytes:
         if not hasattr(self, "_content"):
             if hasattr(self, "_raw_content"):
-                raw_content = getattr(self, "_raw_content")  # type: bytes
+                raw_content = self._raw_content  # type: ignore
                 content = self.decoder.decode(raw_content)
                 content += self.decoder.flush()
                 self._content = content
@@ -775,12 +795,15 @@ class BaseResponse:
         content, depending on the Content-Encoding used in the response.
         """
         if not hasattr(self, "_decoder"):
-            decoders = []  # type: typing.List[Decoder]
+            decoders: typing.List[Decoder] = []
             values = self.headers.getlist("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
-                decoder_cls = SUPPORTED_DECODERS[value]
-                decoders.append(decoder_cls())
+                try:
+                    decoder_cls = SUPPORTED_DECODERS[value]
+                    decoders.append(decoder_cls())
+                except KeyError:
+                    continue
 
             if len(decoders) == 1:
                 self._decoder = decoders[0]
@@ -810,9 +833,8 @@ class BaseResponse:
             message = message.format(self, error_type="Server Error")
         else:
             message = ""
-
         if message:
-            raise HttpError(message)
+            raise HTTPError(message, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Union[dict, list]:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
@@ -832,6 +854,20 @@ class BaseResponse:
             self._cookies.extract_cookies(self)
         return self._cookies
 
+    @property
+    def links(self) -> typing.Dict[typing.Optional[str], typing.Dict[str, str]]:
+        """
+        Returns the parsed header links of the response, if any
+        """
+        header = self.headers.get("link")
+        ldict = {}
+        if header:
+            links = parse_header_links(header)
+            for link in links:
+                key = link.get("rel") or link.get("url")
+                ldict[key] = link
+        return ldict
+
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
@@ -841,7 +877,7 @@ class AsyncResponse(BaseResponse):
         self,
         status_code: int,
         *,
-        protocol: str = None,
+        http_version: str = None,
         headers: HeaderTypes = None,
         content: AsyncResponseContent = None,
         on_close: typing.Callable = None,
@@ -850,7 +886,7 @@ class AsyncResponse(BaseResponse):
     ):
         super().__init__(
             status_code=status_code,
-            protocol=protocol,
+            http_version=http_version,
             headers=headers,
             request=request,
             on_close=on_close,
@@ -887,6 +923,17 @@ class AsyncResponse(BaseResponse):
                 yield self.decoder.decode(chunk)
             yield self.decoder.flush()
 
+    async def stream_text(self) -> typing.AsyncIterator[str]:
+        """
+        A str-iterator over the decoded response content
+        that handles both gzip, deflate, etc but also detects the content's
+        string encoding.
+        """
+        decoder = TextDecoder(encoding=self.charset_encoding)
+        async for chunk in self.stream():
+            yield decoder.decode(chunk)
+        yield decoder.flush()
+
     async def raw(self) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the raw response content.
@@ -904,6 +951,15 @@ class AsyncResponse(BaseResponse):
                 yield part
             await self.close()
 
+    async def next(self) -> "AsyncResponse":
+        """
+        Get the next response from a redirect response.
+        """
+        if not self.is_redirect:
+            raise NotRedirectResponse()
+        assert self.call_next is not None
+        return await self.call_next()
+
     async def close(self) -> None:
         """
         Close the response and release the connection.
@@ -920,7 +976,7 @@ class Response(BaseResponse):
         self,
         status_code: int,
         *,
-        protocol: str = None,
+        http_version: str = None,
         headers: HeaderTypes = None,
         content: ResponseContent = None,
         on_close: typing.Callable = None,
@@ -929,7 +985,7 @@ class Response(BaseResponse):
     ):
         super().__init__(
             status_code=status_code,
-            protocol=protocol,
+            http_version=http_version,
             headers=headers,
             request=request,
             on_close=on_close,
@@ -965,6 +1021,17 @@ class Response(BaseResponse):
             for chunk in self.raw():
                 yield self.decoder.decode(chunk)
             yield self.decoder.flush()
+
+    def stream_text(self) -> typing.Iterator[str]:
+        """
+        A str-iterator over the decoded response content
+        that handles both gzip, deflate, etc but also detects the content's
+        string encoding.
+        """
+        decoder = TextDecoder(encoding=self.charset_encoding)
+        for chunk in self.stream():
+            yield decoder.decode(chunk)
+        yield decoder.flush()
 
     def raw(self) -> typing.Iterator[bytes]:
         """
@@ -1033,25 +1100,25 @@ class Cookies(MutableMapping):
         """
         Set a cookie value by name. May optionally include domain and path.
         """
-        kwargs = dict(
-            version=0,
-            name=name,
-            value=value,
-            port=None,
-            port_specified=False,
-            domain=domain,
-            domain_specified=bool(domain),
-            domain_initial_dot=domain.startswith("."),
-            path=path,
-            path_specified=bool(path),
-            secure=False,
-            expires=None,
-            discard=True,
-            comment=None,
-            comment_url=None,
-            rest={"HttpOnly": None},
-            rfc2109=False,
-        )
+        kwargs = {
+            "version": 0,
+            "name": name,
+            "value": value,
+            "port": None,
+            "port_specified": False,
+            "domain": domain,
+            "domain_specified": bool(domain),
+            "domain_initial_dot": domain.startswith("."),
+            "path": path,
+            "path_specified": bool(path),
+            "secure": False,
+            "expires": None,
+            "discard": True,
+            "comment": None,
+            "comment_url": None,
+            "rest": {"HttpOnly": None},
+            "rfc2109": False,
+        }
         cookie = Cookie(**kwargs)  # type: ignore
         self.jar.set_cookie(cookie)
 
@@ -1131,13 +1198,13 @@ class Cookies(MutableMapping):
         return (cookie.name for cookie in self.jar)
 
     def __bool__(self) -> bool:
-        for cookie in self.jar:
+        for _ in self.jar:
             return True
         return False
 
     class _CookieCompatRequest(urllib.request.Request):
         """
-        Wraps a `Request` instance up in a compatability interface suitable
+        Wraps a `Request` instance up in a compatibility interface suitable
         for use with `CookieJar` operations.
         """
 
@@ -1155,7 +1222,7 @@ class Cookies(MutableMapping):
 
     class _CookieCompatResponse:
         """
-        Wraps a `Request` instance up in a compatability interface suitable
+        Wraps a `Request` instance up in a compatibility interface suitable
         for use with `CookieJar` operations.
         """
 

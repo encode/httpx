@@ -1,5 +1,5 @@
+from ..concurrency.base import ConcurrencyBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
-from ..interfaces import AsyncDispatcher, ConcurrencyBackend, Dispatcher
 from ..models import (
     AsyncRequest,
     AsyncRequestData,
@@ -10,6 +10,7 @@ from ..models import (
     Response,
     ResponseContent,
 )
+from .base import AsyncDispatcher, Dispatcher
 
 
 class ThreadedDispatcher(AsyncDispatcher):
@@ -64,7 +65,7 @@ class ThreadedDispatcher(AsyncDispatcher):
 
         return AsyncResponse(
             status_code=sync_response.status_code,
-            protocol=sync_response.protocol,
+            http_version=sync_response.http_version,
             headers=sync_response.headers,
             content=async_content,
             on_close=async_on_close,

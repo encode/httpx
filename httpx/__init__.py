@@ -1,16 +1,25 @@
 from .__version__ import __description__, __title__, __version__
 from .api import delete, get, head, options, patch, post, put, request
 from .client import AsyncClient, Client
-from .concurrency import AsyncioBackend
+from .concurrency.asyncio import AsyncioBackend
+from .concurrency.base import (
+    BaseBackgroundManager,
+    BasePoolSemaphore,
+    BaseStream,
+    ConcurrencyBackend,
+)
 from .config import (
     USER_AGENT,
     CertTypes,
+    HTTPVersionConfig,
+    HTTPVersionTypes,
     PoolLimits,
     SSLConfig,
     TimeoutConfig,
     TimeoutTypes,
     VerifyTypes,
 )
+from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
 from .exceptions import (
@@ -18,6 +27,7 @@ from .exceptions import (
     CookieConflict,
     DecodingError,
     InvalidURL,
+    NotRedirectResponse,
     PoolTimeout,
     ProtocolError,
     ReadTimeout,
@@ -29,14 +39,6 @@ from .exceptions import (
     Timeout,
     TooManyRedirects,
     WriteTimeout,
-)
-from .interfaces import (
-    AsyncDispatcher,
-    BaseReader,
-    BaseWriter,
-    ConcurrencyBackend,
-    Dispatcher,
-    Protocol,
 )
 from .models import (
     URL,
@@ -84,11 +86,14 @@ __all__ = [
     "TimeoutConfig",
     "VerifyTypes",
     "HTTPConnection",
+    "BasePoolSemaphore",
+    "BaseBackgroundManager",
     "ConnectionPool",
     "ConnectTimeout",
     "CookieConflict",
     "DecodingError",
     "InvalidURL",
+    "NotRedirectResponse",
     "PoolTimeout",
     "ProtocolError",
     "ReadTimeout",
@@ -101,16 +106,16 @@ __all__ = [
     "TooManyRedirects",
     "WriteTimeout",
     "AsyncDispatcher",
-    "BaseReader",
-    "BaseWriter",
+    "BaseStream",
     "ConcurrencyBackend",
     "Dispatcher",
-    "Protocol",
     "URL",
     "URLTypes",
     "StatusCode",
     "codes",
     "TimeoutTypes",
+    "HTTPVersionTypes",
+    "HTTPVersionConfig",
     "AsyncRequest",
     "AsyncRequestData",
     "AsyncResponse",

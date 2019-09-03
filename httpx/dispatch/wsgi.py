@@ -2,8 +2,8 @@ import io
 import typing
 
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
-from ..interfaces import Dispatcher
 from ..models import Request, Response
+from .base import Dispatcher
 
 
 class WSGIDispatch(Dispatcher):
@@ -29,6 +29,16 @@ class WSGIDispatch(Dispatcher):
         remote_addr="1.2.3.4"
     )
     client = httpx.Client(dispatch=dispatch)
+
+
+    Arguments:
+
+    * `app` - The ASGI application.
+    * `raise_app_exceptions` - Boolean indicating if exceptions in the application
+       should be raised. Default to `True`. Can be set to `False` for use cases
+       such as testing the content of a client 500 response.
+    * `script_name` - The root path on which the ASGI application should be mounted.
+    * `remote_addr` - A string indicating the client IP of incoming requests.
     ```
     """
 
@@ -94,7 +104,7 @@ class WSGIDispatch(Dispatcher):
 
         return Response(
             status_code=int(seen_status.split()[0]),
-            protocol="HTTP/1.1",
+            http_version="HTTP/1.1",
             headers=seen_response_headers,
             content=(chunk for chunk in result),
             on_close=getattr(result, "close", None),

@@ -1,6 +1,12 @@
 # Developer Interface
 
-## Main Interface
+## Helper Functions
+
+!!! note
+    Only use these functions if you're testing HTTPX in a console
+    or making a small number of requests. Using a `Client` will
+    enable HTTP/2 and connection pooling for more efficient and
+    long-lived connections.
 
 * `get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
@@ -13,14 +19,16 @@
 
 ## `Client`
 
-*An HTTP client, with connection pooling, redirects, cookie persistence, etc.*
+*An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.*
 
 ```python
 >>> client = httpx.Client()
 >>> response = client.get('https://example.org')
 ```
 
-* `def __init__([auth], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [app], [dispatch])`
+* `def __init__([auth], [headers], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [app], [dispatch])`
+* `.headers` - **Headers**
+* `.cookies` - **Cookies**
 * `def .get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
@@ -39,7 +47,7 @@
 * `def __init__(...)`
 * `.status_code` - **int**
 * `.reason_phrase` - **str**
-* `.protocol` - `"HTTP/2"` or `"HTTP/1.1"`
+* `.http_version` - `"HTTP/2"` or `"HTTP/1.1"`
 * `.url` - **URL**
 * `.headers` - **Headers**
 * `.content` - **bytes**
@@ -110,6 +118,7 @@ True
 ```
 
 * `def __init__(url)`
+* `.scheme` - **str**
 * `.is_ssl` - **bool**
 * `.host` - **str**
 * `.port` - **int**

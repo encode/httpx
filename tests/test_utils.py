@@ -1,6 +1,11 @@
+import logging
+import os
+
 import pytest
 
-from httpx.utils import guess_json_utf
+import httpx
+from httpx import utils
+from httpx.utils import get_netrc_login, guess_json_utf, parse_header_links
 
 
 @pytest.mark.parametrize(
@@ -35,5 +40,74 @@ def test_bad_utf_like_encoding():
     ),
 )
 def test_guess_by_bom(encoding, expected):
-    data = u"\ufeff{}".encode(encoding)
+    data = "\ufeff{}".encode(encoding)
     assert guess_json_utf(data) == expected
+
+
+def test_bad_get_netrc_login():
+    assert get_netrc_login("url") is None
+
+    os.environ["NETRC"] = "tests/.netrc"
+    assert get_netrc_login("url") is None
+
+    os.environ["NETRC"] = "wrongpath"
+    assert get_netrc_login("url") is None
+
+    from httpx import utils
+
+    utils.NETRC_STATIC_FILES = ()
+    os.environ["NETRC"] = ""
+    assert utils.get_netrc_login("url") is None
+
+
+def test_get_netrc_login():
+    os.environ["NETRC"] = "tests/.netrc"
+    assert get_netrc_login("netrcexample.org") == (
+        "example-username",
+        None,
+        "example-password",
+    )
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    (
+        (
+            '<http:/.../front.jpeg>; rel=front; type="image/jpeg"',
+            [{"url": "http:/.../front.jpeg", "rel": "front", "type": "image/jpeg"}],
+        ),
+        ("<http:/.../front.jpeg>", [{"url": "http:/.../front.jpeg"}]),
+        ("<http:/.../front.jpeg>;", [{"url": "http:/.../front.jpeg"}]),
+        (
+            '<http:/.../front.jpeg>; type="image/jpeg",<http://.../back.jpeg>;',
+            [
+                {"url": "http:/.../front.jpeg", "type": "image/jpeg"},
+                {"url": "http://.../back.jpeg"},
+            ],
+        ),
+        ("", []),
+    ),
+)
+def test_parse_header_links(value, expected):
+    assert parse_header_links(value) == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("httpx_debug", ["0", "1", "True", "False"])
+async def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):
+    os.environ["HTTPX_DEBUG"] = httpx_debug
+
+    # Force a reload on the logging handlers
+    utils._LOGGER_INITIALIZED = False
+    utils.get_logger("httpx")
+
+    async with httpx.AsyncClient() as client:
+        await client.get(server.url)
+
+    if httpx_debug in ("1", "True"):
+        assert "httpx.dispatch.connection_pool" in capsys.readouterr().err
+    else:
+        assert "httpx.dispatch.connection_pool" not in capsys.readouterr().err
+
+    # Reset the logger so we don't have verbose output in all unit tests
+    logging.getLogger("httpx").handlers = []

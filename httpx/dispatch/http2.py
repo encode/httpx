@@ -5,10 +5,12 @@ import asyncio
 import h2.connection
 import h2.events
 
-from ..concurrency import TimeoutFlag
+from ..concurrency.base import BaseStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
-from ..interfaces import BaseReader, BaseWriter, ConcurrencyBackend
 from ..models import AsyncRequest, AsyncResponse
+from ..utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class HTTP2Connection:
@@ -16,13 +18,11 @@ class HTTP2Connection:
 
     def __init__(
         self,
-        reader: BaseReader,
-        writer: BaseWriter,
+        stream: BaseStream,
         backend: ConcurrencyBackend,
         on_release: typing.Callable = None,
     ):
-        self.reader = reader
-        self.writer = writer
+        self.stream = stream
         self.backend = backend
         self.on_release = on_release
         self.h2_state = h2.connection.H2Connection()
@@ -47,14 +47,14 @@ class HTTP2Connection:
         self.window_update_received[stream_id] = asyncio.Event()
 
         task, args = self.send_request_data, [stream_id, request.stream(), timeout]
-        async with self.backend.background_manager(task, args=args):
+        async with self.backend.background_manager(task, *args):
             status_code, headers = await self.receive_response(stream_id, timeout)
         content = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
 
         return AsyncResponse(
             status_code=status_code,
-            protocol="HTTP/2",
+            http_version="HTTP/2",
             headers=headers,
             content=content,
             on_close=on_close,
@@ -62,12 +62,12 @@ class HTTP2Connection:
         )
 
     async def close(self) -> None:
-        await self.writer.close()
+        await self.stream.close()
 
     def initiate_connection(self) -> None:
         self.h2_state.initiate_connection()
         data_to_send = self.h2_state.data_to_send()
-        self.writer.write_no_block(data_to_send)
+        self.stream.write_no_block(data_to_send)
         self.initialized = True
 
     async def send_headers(
@@ -80,9 +80,18 @@ class HTTP2Connection:
             (b":scheme", request.url.scheme.encode("ascii")),
             (b":path", request.url.full_path.encode("ascii")),
         ] + [(k, v) for k, v in request.headers.raw if k != b"host"]
+
+        logger.debug(
+            f"send_headers "
+            f"stream_id={stream_id} "
+            f"method={request.method!r} "
+            f"target={request.url.full_path!r} "
+            f"headers={headers!r}"
+        )
+
         self.h2_state.send_headers(stream_id, headers)
         data_to_send = self.h2_state.data_to_send()
-        await self.writer.write(data_to_send, timeout)
+        await self.stream.write(data_to_send, timeout)
         return stream_id
 
     async def send_request_data(
@@ -112,12 +121,13 @@ class HTTP2Connection:
                 chunk, data = data[:chunk_size], data[chunk_size:]
                 self.h2_state.send_data(stream_id, chunk)
                 data_to_send = self.h2_state.data_to_send()
-                await self.writer.write(data_to_send, timeout)
+                await self.stream.write(data_to_send, timeout)
 
     async def end_stream(self, stream_id: int, timeout: TimeoutConfig = None) -> None:
+        logger.debug(f"end_stream stream_id={stream_id}")
         self.h2_state.end_stream(stream_id)
         data_to_send = self.h2_state.data_to_send()
-        await self.writer.write(data_to_send, timeout)
+        await self.stream.write(data_to_send, timeout)
 
     async def receive_response(
         self, stream_id: int, timeout: TimeoutConfig = None
@@ -148,14 +158,13 @@ class HTTP2Connection:
             if isinstance(event, h2.events.DataReceived):
                 self.h2_state.acknowledge_received_data(len(event.data), stream_id)
                 yield event.data
-                # if not event.stream_ended: This should be working, but isn't
                 if self.h2_state.streams[stream_id].open:
                     flow_control_consumed = event.flow_controlled_length
                     if flow_control_consumed > 0:
                         self.h2_state.increment_flow_control_window(flow_control_consumed)
-                        await self.writer.write(self.h2_state.data_to_send(), timeout)
+                        await self.stream.write(self.h2_state.data_to_send(), timeout)
                         self.h2_state.increment_flow_control_window(flow_control_consumed, event.stream_id)
-                        await self.writer.write(self.h2_state.data_to_send(), timeout)
+                        await self.stream.write(self.h2_state.data_to_send(), timeout)
             elif isinstance(event, (h2.events.StreamEnded, h2.events.StreamReset)):
                 break
 
@@ -164,20 +173,25 @@ class HTTP2Connection:
     ) -> h2.events.Event:
         while not self.events[stream_id]:
             flag = self.timeout_flags[stream_id]
-            data = await self.reader.read(self.READ_NUM_BYTES, timeout, flag=flag)
+            data = await self.stream.read(self.READ_NUM_BYTES, timeout, flag=flag)
             events = self.h2_state.receive_data(data)
             for event in events:
+                event_stream_id = getattr(event, "stream_id", 0)
+                logger.debug(
+                    f"receive_event stream_id={event_stream_id} event={event!r}"
+                )
                 if isinstance(event, h2.events.WindowUpdated):
-                    if event.stream_id == 0:
+                    if event_stream_id == 0:
                         for window_update_event in self.window_update_received.values():
                             window_update_event.set()
                     else:
-                        self.window_update_received[event.stream_id].set()
-                if getattr(event, "stream_id", 0):
+                        self.window_update_received[event_stream_id].set()
+
+                if event_stream_id:
                     self.events[event.stream_id].append(event)
 
             data_to_send = self.h2_state.data_to_send()
-            await self.writer.write(data_to_send, timeout)
+            await self.stream.write(data_to_send, timeout)
 
         return self.events[stream_id].pop(0)
 
@@ -193,4 +207,4 @@ class HTTP2Connection:
         return False
 
     def is_connection_dropped(self) -> bool:
-        return self.reader.is_connection_dropped()
+        return self.stream.is_connection_dropped()

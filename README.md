@@ -29,8 +29,8 @@ Let's get started...
 <Response [200 OK]>
 >>> r.status_code
 200
->>> r.protocol
-'HTTP/2'
+>>> r.http_version
+'HTTP/1.1'
 >>> r.headers['content-type']
 'text/html; charset=UTF-8'
 >>> r.text
@@ -65,7 +65,7 @@ Plus all the standard features of `requests`...
 * HTTP(S) Proxy Support *(TODO)*
 * Connection Timeouts
 * Streaming Downloads
-* .netrc Support *(TODO)*
+* .netrc Support
 * Chunked Requests
 
 ## Installation
@@ -89,6 +89,10 @@ the specific topics on making [Parallel Requests](https://www.encode.io/httpx/pa
 [Async Client](https://www.encode.io/httpx/async/).
 
 The [Developer Interface](https://www.encode.io/httpx/api/) provides a comprehensive API reference.
+
+## Contribute
+
+If you want to contribute with HTTPX check out the [Contributing Guide](https://www.encode.io/httpx/contributing/) to learn how to start.
 
 ## Dependencies
 

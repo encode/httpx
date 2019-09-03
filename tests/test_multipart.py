@@ -10,6 +10,7 @@ from httpx import (
     CertTypes,
     Client,
     Dispatcher,
+    HTTPVersionTypes,
     Request,
     Response,
     TimeoutTypes,
@@ -25,6 +26,7 @@ class MockDispatch(Dispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
+        http_versions: HTTPVersionTypes = None,
     ) -> Response:
         return Response(200, content=request.read())
 
@@ -117,8 +119,27 @@ def test_multipart_encode():
             '--{0}\r\nContent-Disposition: form-data; name="d"\r\n\r\nff\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="d"\r\n\r\nfff\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="f"\r\n\r\n\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="file"; filename="name.txt"\r\n'
+            '--{0}\r\nContent-Disposition: form-data; name="file";'
+            ' filename="name.txt"\r\n'
             "Content-Type: text/plain\r\n\r\n<file content>\r\n"
             "--{0}--\r\n"
             "".format(boundary).encode("ascii")
         )
+
+
+class TestHeaderParamHTML5Formatting:
+    def test_unicode(self):
+        param = multipart._format_param("filename", "n\u00e4me")
+        assert param == b'filename="n\xc3\xa4me"'
+
+    def test_ascii(self):
+        param = multipart._format_param("filename", b"name")
+        assert param == b'filename="name"'
+
+    def test_unicode_escape(self):
+        param = multipart._format_param("filename", "hello\\world\u0022")
+        assert param == b'filename="hello\\\\world%22"'
+
+    def test_unicode_with_control_character(self):
+        param = multipart._format_param("filename", "hello\x1A\x1B\x1C")
+        assert param == b'filename="hello%1A\x1B%1C"'
