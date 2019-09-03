@@ -6,7 +6,7 @@ from base64 import b64encode
 
 from ..exceptions import ProtocolError
 from ..models import AsyncRequest, AsyncResponse, StatusCode
-from ..utils import safe_encode
+from ..utils import to_bytes, to_str
 from .base import BaseMiddleware
 
 
@@ -94,8 +94,8 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         nonce = challenge["nonce"].encode()
         qop = challenge["qop"].encode()
         opaque = challenge["opaque"].encode() if "opaque" in challenge else None
-        username = safe_encode(self.username)
-        password = safe_encode(self.password)
+        username = to_bytes(self.username)
+        password = to_bytes(self.password)
 
         # Assemble parts depending on hash algorithms
         hash_func = self.ALGORITHM_TO_HASH_FUNCTION[algorithm]
@@ -157,12 +157,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
             format_args["cnonce"] = cnonce
 
         header_value = ", ".join(
-            [
-                '{}="{}"'.format(
-                    key, value if isinstance(value, str) else value.decode("utf-8")
-                )
-                for key, value in format_args.items()
-            ]
+            ['{}="{}"'.format(key, to_str(value)) for key, value in format_args.items()]
         )
         return "Digest " + header_value
 
