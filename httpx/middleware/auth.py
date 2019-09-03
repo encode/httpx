@@ -101,7 +101,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         hash_func = self.ALGORITHM_TO_HASH_FUNCTION[algorithm]
 
         def digest(data: bytes) -> bytes:
-            return hash_func(data).hexdigest().encode("utf-8")
+            return hash_func(data).hexdigest().encode()
 
         def keyed_digest(secret: bytes, data: bytes) -> bytes:
             return digest(b":".join((secret, data)))
