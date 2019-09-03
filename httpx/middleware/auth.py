@@ -101,14 +101,9 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         HA2 = digest(A2)
 
         # Construct Authenticate header string
-        if challenge.nonce != self._previous_nonce:
-            self._nonce_count = 1
-        else:
-            self._nonce_count += 1
-        self._previous_nonce = challenge.nonce
-        nc_value = b"%08x" % self._nonce_count
+        nonce_count, nc_value = self._get_nonce_count(challenge.nonce)
 
-        s = str(self._nonce_count).encode()
+        s = str(nonce_count).encode()
         s += challenge.nonce
         s += time.ctime().encode()
         s += os.urandom(8)
@@ -149,6 +144,16 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
             ['{}="{}"'.format(key, to_str(value)) for key, value in format_args.items()]
         )
         return "Digest " + header_value
+
+    def _get_nonce_count(self, nonce: bytes) -> typing.Tuple[int, bytes]:
+        """Returns the number of requests made with the same server provided
+        nonce value along with its 8-digit hex representation."""
+        if nonce != self._previous_nonce:
+            self._nonce_count = 1
+        else:
+            self._nonce_count += 1
+        self._previous_nonce = nonce
+        return self._nonce_count, b"%08x" % self._nonce_count
 
 
 class DigestAuthChallenge:
