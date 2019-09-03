@@ -107,7 +107,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         HA1 = digest(A1)
 
         path = request.url.full_path.encode("utf-8")
-        A2 = b":".join((request.method.encode("utf-8"), path))
+        A2 = b":".join((request.method.encode(), path))
         # TODO: implement auth-int
         HA2 = digest(A2)
 
@@ -119,12 +119,12 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         self._previous_nonce = nonce
         nc_value = b"%08x" % self._nonce_count
 
-        s = str(self._nonce_count).encode("utf-8")
+        s = str(self._nonce_count).encode()
         s += nonce
-        s += time.ctime().encode("utf-8")
+        s += time.ctime().encode()
         s += os.urandom(8)
 
-        cnonce = hashlib.sha1(s).hexdigest()[:16].encode("utf-8")
+        cnonce = hashlib.sha1(s).hexdigest()[:16].encode()
         if algorithm.lower().endswith("-sess"):
             A1 += b":".join((nonce, cnonce))
 
