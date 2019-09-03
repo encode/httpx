@@ -87,23 +87,18 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         # Retrieve challenge from response header
         header = response.headers.get("www-authenticate")
         assert header.lower().startswith("digest")
-        challenge = self._parse_header(header)
-        algorithm = challenge.get("algorithm", "MD5")
+        challenge = DigestAuthChallenge.from_header_dict(self._parse_header(header))
 
-        realm = challenge["realm"].encode()
-        nonce = challenge["nonce"].encode()
-        qop = challenge["qop"].encode()
-        opaque = challenge["opaque"].encode() if "opaque" in challenge else None
         username = to_bytes(self.username)
         password = to_bytes(self.password)
 
         # Assemble parts depending on hash algorithms
-        hash_func = self.ALGORITHM_TO_HASH_FUNCTION[algorithm]
+        hash_func = self.ALGORITHM_TO_HASH_FUNCTION[challenge.algorithm]
 
         def digest(data: bytes) -> bytes:
             return hash_func(data).hexdigest().encode()
 
-        A1 = b":".join((username, realm, password))
+        A1 = b":".join((username, challenge.realm, password))
         HA1 = digest(A1)
 
         path = request.url.full_path.encode("utf-8")
@@ -112,27 +107,30 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         HA2 = digest(A2)
 
         # Construct Authenticate header string
-        if nonce != self._previous_nonce:
+        if challenge.nonce != self._previous_nonce:
             self._nonce_count = 1
         else:
             self._nonce_count += 1
-        self._previous_nonce = nonce
+        self._previous_nonce = challenge.nonce
         nc_value = b"%08x" % self._nonce_count
 
         s = str(self._nonce_count).encode()
-        s += nonce
+        s += challenge.nonce
         s += time.ctime().encode()
         s += os.urandom(8)
 
         cnonce = hashlib.sha1(s).hexdigest()[:16].encode()
-        if algorithm.lower().endswith("-sess"):
-            A1 += b":".join((nonce, cnonce))
+        if challenge.algorithm.lower().endswith("-sess"):
+            A1 += b":".join((challenge.nonce, cnonce))
 
-        if algorithm == "MD5-SESS":
-            HA1 = digest(b":".join((HA1, nonce, cnonce)))
+        if challenge.algorithm == "MD5-SESS":
+            HA1 = digest(b":".join((HA1, challenge.nonce, cnonce)))
 
-        if qop == b"auth" or b"auth" in qop.split(b",") or b"auth" in qop.split(b" "):
-            to_key_digest = [nonce, nc_value, cnonce, b"auth", HA2]
+        qop = challenge.qop
+        if not qop:
+            to_key_digest = [HA1, challenge.nonce, HA2]
+        elif qop == b"auth" or b"auth" in qop.split(b",") or b"auth" in qop.split(b" "):
+            to_key_digest = [challenge.nonce, nc_value, cnonce, b"auth", HA2]
         elif qop == b"auth-int":
             raise NotImplementedError("Digest auth-int support is not yet implemented")
         else:
@@ -142,15 +140,14 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
 
         format_args = {
             "username": username,
-            "realm": realm,
-            "nonce": nonce,
+            "realm": challenge.realm,
+            "nonce": challenge.nonce,
             "uri": path,
             "response": digest(b":".join((HA1, key_digest))),
+            "algorithm": challenge.algorithm.encode(),
         }
-        if opaque:
-            format_args["opaque"] = opaque
-        if algorithm:
-            format_args["algorithm"] = algorithm
+        if challenge.opaque:
+            format_args["opaque"] = challenge.opaque
         if qop:
             format_args["qop"] = b"auth"
             format_args["nc"] = nc_value
@@ -169,3 +166,30 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
             result[key] = value
 
         return result
+
+
+class DigestAuthChallenge:
+    def __init__(
+        self,
+        realm: bytes,
+        nonce: bytes,
+        algorithm: str = None,
+        opaque: typing.Optional[bytes] = None,
+        qop: typing.Optional[bytes] = None,
+    ) -> None:
+        self.realm = realm
+        self.nonce = nonce
+        self.algorithm = algorithm or "MD5"
+        self.opaque = opaque
+        self.qop = qop
+
+    @classmethod
+    def from_header_dict(cls, header_dict: dict) -> "DigestAuthChallenge":
+        realm = header_dict["realm"].encode()
+        nonce = header_dict["nonce"].encode()
+        qop = header_dict["qop"].encode() if "qop" in header_dict else None
+        opaque = header_dict["opaque"].encode() if "opaque" in header_dict else None
+        algorithm = header_dict.get("algorithm")
+        return cls(
+            realm=realm, nonce=nonce, qop=qop, opaque=opaque, algorithm=algorithm
+        )
