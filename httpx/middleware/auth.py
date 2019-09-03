@@ -94,7 +94,6 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
             return hash_func(data).hexdigest().encode()
 
         A1 = b":".join((self.username, challenge.realm, self.password))
-        HA1 = digest(A1)
 
         path = request.url.full_path.encode("utf-8")
         A2 = b":".join((request.method.encode(), path))
@@ -115,10 +114,8 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         s += os.urandom(8)
 
         cnonce = hashlib.sha1(s).hexdigest()[:16].encode()
+        HA1 = digest(A1)
         if challenge.algorithm.lower().endswith("-sess"):
-            A1 += b":".join((challenge.nonce, cnonce))
-
-        if challenge.algorithm == "MD5-SESS":
             HA1 = digest(b":".join((HA1, challenge.nonce, cnonce)))
 
         qop = challenge.qop
