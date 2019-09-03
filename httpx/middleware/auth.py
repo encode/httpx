@@ -87,7 +87,6 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         header = response.headers.get("www-authenticate")
         challenge = DigestAuthChallenge.from_header(header)
 
-        # Assemble parts depending on hash algorithms
         hash_func = self.ALGORITHM_TO_HASH_FUNCTION[challenge.algorithm]
 
         def digest(data: bytes) -> bytes:
@@ -100,9 +99,9 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         # TODO: implement auth-int
         HA2 = digest(A2)
 
-        # Construct Authenticate header string
         nonce_count, nc_value = self._get_nonce_count(challenge.nonce)
         cnonce = self._get_client_nonce(nonce_count, challenge.nonce)
+
         HA1 = digest(A1)
         if challenge.algorithm.lower().endswith("-sess"):
             HA1 = digest(b":".join((HA1, challenge.nonce, cnonce)))
