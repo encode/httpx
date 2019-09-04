@@ -3,6 +3,7 @@ import os
 import time
 import typing
 from base64 import b64encode
+from urllib.request import parse_http_list
 
 from ..exceptions import ProtocolError
 from ..models import AsyncRequest, AsyncResponse, StatusCode
@@ -197,7 +198,7 @@ class DigestAuthChallenge:
             raise ValueError("Header does not start with 'Digest'")
 
         header_dict: typing.Dict[str, str] = {}
-        for field in fields.split(","):
+        for field in parse_http_list(fields):
             key, value = field.strip().split("=")
             header_dict[key] = unquote(value)
 
