@@ -1,11 +1,10 @@
 import functools
 import typing
-import asyncio
 
 import h2.connection
 import h2.events
 
-from ..concurrency.base import BaseStream, ConcurrencyBackend, TimeoutFlag
+from ..concurrency.base import BaseStream, ConcurrencyBackend, TimeoutFlag, BaseEvent
 from ..config import TimeoutConfig, TimeoutTypes
 from ..models import AsyncRequest, AsyncResponse
 from ..utils import get_logger
@@ -29,7 +28,7 @@ class HTTP2Connection:
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
         self.timeout_flags = {}  # type: typing.Dict[int, TimeoutFlag]
         self.initialized = False
-        self.window_update_received = {}  # type: typing.Dict[int, asyncio.Event()]
+        self.window_update_received = {}  # type: typing.Dict[int, BaseEvent]
 
     async def send(
         self, request: AsyncRequest, timeout: TimeoutTypes = None
@@ -44,7 +43,7 @@ class HTTP2Connection:
 
         self.events[stream_id] = []
         self.timeout_flags[stream_id] = TimeoutFlag()
-        self.window_update_received[stream_id] = asyncio.Event()
+        self.window_update_received[stream_id] = self.backend.create_event()
 
         task, args = self.send_request_data, [stream_id, request.stream(), timeout]
         async with self.backend.background_manager(task, *args):
@@ -113,7 +112,9 @@ class HTTP2Connection:
     ) -> None:
         while data:
             flow_control = self.h2_state.local_flow_control_window(stream_id)
-            chunk_size = min(len(data), flow_control, self.h2_state.max_outbound_frame_size - 1)
+            chunk_size = min(
+                len(data), flow_control, self.h2_state.max_outbound_frame_size - 1
+            )
             if chunk_size == 0:
                 await self.window_update_received[stream_id].wait()
                 self.window_update_received[stream_id].clear()
@@ -161,9 +162,13 @@ class HTTP2Connection:
                 if self.h2_state.streams[stream_id].open:
                     flow_control_consumed = event.flow_controlled_length
                     if flow_control_consumed > 0:
-                        self.h2_state.increment_flow_control_window(flow_control_consumed)
+                        self.h2_state.increment_flow_control_window(
+                            flow_control_consumed
+                        )
                         await self.stream.write(self.h2_state.data_to_send(), timeout)
-                        self.h2_state.increment_flow_control_window(flow_control_consumed, event.stream_id)
+                        self.h2_state.increment_flow_control_window(
+                            flow_control_consumed, event.stream_id
+                        )
                         await self.stream.write(self.h2_state.data_to_send(), timeout)
             elif isinstance(event, (h2.events.StreamEnded, h2.events.StreamReset)):
                 break

@@ -66,7 +66,9 @@ class MockHTTP2Server(BaseStream):
                 if flow_control_consumed > 0:
                     self.conn.increment_flow_control_window(flow_control_consumed)
                     self.buffer += self.conn.data_to_send()
-                    self.conn.increment_flow_control_window(flow_control_consumed, event.stream_id)
+                    self.conn.increment_flow_control_window(
+                        flow_control_consumed, event.stream_id
+                    )
                     self.buffer += self.conn.data_to_send()
             elif isinstance(event, h2.events.StreamEnded):
                 self.stream_complete(event.stream_id)
@@ -140,12 +142,18 @@ class MockHTTP2Server(BaseStream):
     def send_return_data(self, stream_id):
         while self.return_data[stream_id]:
             flow_control = self.conn.local_flow_control_window(stream_id)
-            chunk_size = min(len(self.return_data[stream_id]), flow_control, self.conn.max_outbound_frame_size - 1)
+            chunk_size = min(
+                len(self.return_data[stream_id]),
+                flow_control,
+                self.conn.max_outbound_frame_size - 1,
+            )
             if chunk_size == 0:
                 return
             else:
-                chunk, self.return_data[stream_id] = \
-                    self.return_data[stream_id][:chunk_size], self.return_data[stream_id][chunk_size:]
+                chunk, self.return_data[stream_id] = (
+                    self.return_data[stream_id][:chunk_size],
+                    self.return_data[stream_id][chunk_size:],
+                )
                 self.conn.send_data(stream_id, chunk)
                 self.buffer += self.conn.data_to_send()
         self.returning[stream_id] = False
