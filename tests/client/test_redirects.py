@@ -88,9 +88,7 @@ class MockDispatch(AsyncDispatcher):
         elif request.url.path == "/redirect_no_body":
             await request.read()
             headers = {"location": "/redirect_body_target"}
-            return AsyncResponse(
-                codes.SEE_OTHER, headers=headers, request=request
-            )
+            return AsyncResponse(codes.SEE_OTHER, headers=headers, request=request)
 
         elif request.url.path == "/redirect_body_target":
             content = await request.read()
