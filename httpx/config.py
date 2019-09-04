@@ -171,8 +171,6 @@ class SSLConfig:
 
         if ssl.HAS_ALPN:
             context.set_alpn_protocols(http_versions.alpn_identifiers)
-        if ssl.HAS_NPN:  # pragma: no cover
-            context.set_npn_protocols(http_versions.alpn_identifiers)
 
         if hasattr(context, "keylog_filename"):
             keylogfile = os.environ.get("SSLKEYLOGFILE")
