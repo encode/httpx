@@ -393,7 +393,7 @@ functions:
 ```
 
 To provide credentials for Digest authentication you need to instantiate
-an `HTTPDigestAuth` object providing, again, the plaintext username and
+an `DigestAuth` object providing, again, the plaintext username and
 password as arguments. This object can be then passed as the `auth` argument
 to the request methods as above:
 

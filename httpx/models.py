@@ -61,7 +61,7 @@ CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
     typing.Callable[["AsyncRequest"], "AsyncRequest"],
-    "HTTPDigestAuth",
+    "DigestAuth",
 ]
 
 AsyncRequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
@@ -1237,7 +1237,7 @@ class Cookies(MutableMapping):
             return info
 
 
-class HTTPDigestAuth:
+class DigestAuth:
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ) -> None:

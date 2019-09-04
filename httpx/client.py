@@ -41,7 +41,7 @@ from .models import (
     CookieTypes,
     Headers,
     HeaderTypes,
-    HTTPDigestAuth,
+    DigestAuth,
     QueryParamTypes,
     RequestData,
     RequestFiles,
@@ -219,8 +219,8 @@ class BaseClient:
         if callable(auth):
             return CustomAuthMiddleware(auth=auth)
 
-        if isinstance(auth, HTTPDigestAuth):
-            return HTTPDigestAuthMiddleware(
+        if isinstance(auth, DigestAuth):
+            return DigestAuthMiddleware(
                 username=auth.username, password=auth.password
             )
 

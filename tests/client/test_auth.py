@@ -11,7 +11,7 @@ from httpx import (
     AsyncResponse,
     CertTypes,
     Client,
-    HTTPDigestAuth,
+    DigestAuth,
     ProtocolError,
     TimeoutTypes,
     VerifyTypes,
@@ -204,7 +204,7 @@ def test_auth_invalid_type():
 
 def test_digest_auth_returns_no_auth_if_no_digest_header_in_response():
     url = "https://example.org/"
-    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="tomchristie", password="password123")
 
     with Client(dispatch=MockDispatch()) as client:
         response = client.get(url, auth=auth)
@@ -228,7 +228,7 @@ def test_digest_auth_returns_no_auth_if_no_digest_header_in_response():
 )
 def test_digest_auth(algorithm, expected_hash_length, expected_response_length):
     url = "https://example.org/"
-    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="tomchristie", password="password123")
 
     with Client(dispatch=MockDigestAuthDispatch(algorithm=algorithm)) as client:
         response = client.get(url, auth=auth)
@@ -254,7 +254,7 @@ def test_digest_auth(algorithm, expected_hash_length, expected_response_length):
 
 def test_digest_auth_no_specified_qop():
     url = "https://example.org/"
-    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="tomchristie", password="password123")
 
     with Client(dispatch=MockDigestAuthDispatch(qop=None)) as client:
         response = client.get(url, auth=auth)
@@ -280,7 +280,7 @@ def test_digest_auth_no_specified_qop():
 
 def test_digest_auth_nonce_count():
     url = "https://example.org/"
-    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="tomchristie", password="password123")
 
     with Client(
         dispatch=MockDigestAuthDispatch(send_response_after_attempt=2)
@@ -295,7 +295,7 @@ def test_digest_auth_nonce_count():
 
 def test_digest_auth_qop_auth_int_not_implemented():
     url = "https://example.org/"
-    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="tomchristie", password="password123")
 
     with pytest.raises(NotImplementedError):
         with Client(dispatch=MockDigestAuthDispatch(qop="auth-int")) as client:
@@ -304,7 +304,7 @@ def test_digest_auth_qop_auth_int_not_implemented():
 
 def test_digest_auth_qop_must_be_auth_or_auth_int():
     url = "https://example.org/"
-    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="tomchristie", password="password123")
 
     with pytest.raises(ProtocolError):
         with Client(dispatch=MockDigestAuthDispatch(qop="not-auth")) as client:
@@ -313,7 +313,7 @@ def test_digest_auth_qop_must_be_auth_or_auth_int():
 
 def test_digest_auth_incorrect_credentials():
     url = "https://example.org/"
-    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="tomchristie", password="password123")
 
     with Client(
         dispatch=MockDigestAuthDispatch(
@@ -337,7 +337,7 @@ def test_digest_auth_incorrect_credentials():
 )
 def test_digest_auth_raises_protocol_error_on_malformed_header(auth_header):
     url = "https://example.org/"
-    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="tomchristie", password="password123")
 
     with pytest.raises(ProtocolError):
         with Client(dispatch=MockAuthHeaderDispatch(auth_header=auth_header)) as client:
