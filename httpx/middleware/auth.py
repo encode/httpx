@@ -11,7 +11,7 @@ from ..utils import to_bytes, to_str, unquote
 from .base import BaseMiddleware
 
 
-class BasicAuthMiddleware(BaseMiddleware):
+class BasicAuth(BaseMiddleware):
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ):
@@ -33,7 +33,7 @@ class BasicAuthMiddleware(BaseMiddleware):
         return await get_response(request)
 
 
-class CustomAuthMiddleware(BaseMiddleware):
+class CustomAuth(BaseMiddleware):
     def __init__(self, auth: typing.Callable[[AsyncRequest], AsyncRequest]):
         self.auth = auth
 
@@ -44,7 +44,7 @@ class CustomAuthMiddleware(BaseMiddleware):
         return await get_response(request)
 
 
-class HTTPDigestAuthMiddleware(BaseMiddleware):
+class DigestAuth(BaseMiddleware):
 
     ALGORITHM_TO_HASH_FUNCTION: typing.Dict[str, typing.Callable] = {
         "MD5": hashlib.md5,

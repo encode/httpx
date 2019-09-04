@@ -40,6 +40,7 @@ from .exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
+from .middleware.auth import BasicAuth, DigestAuth
 from .models import (
     URL,
     AsyncRequest,
@@ -51,7 +52,6 @@ from .models import (
     CookieTypes,
     Headers,
     HeaderTypes,
-    DigestAuth,
     Origin,
     QueryParams,
     QueryParamTypes,
@@ -126,6 +126,7 @@ __all__ = [
     "CookieTypes",
     "Headers",
     "HeaderTypes",
+    "BasicAuth",
     "DigestAuth",
     "Origin",
     "QueryParams",

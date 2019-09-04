@@ -332,7 +332,7 @@ def test_digest_auth_incorrect_credentials():
         'realm="httpx@example.org", qop="auth"',  # not starting with Digest
         'DigestZ realm="httpx@example.org", qop="auth"'
         'qop="auth,auth-int",nonce="abc",opaque="xyz"',
-        'Digest realm="httpx@example.org", qop="auth,au'  # malformed fields list
+        'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
     ],
 )
 def test_digest_auth_raises_protocol_error_on_malformed_header(auth_header):

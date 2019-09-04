@@ -23,11 +23,7 @@ from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import HTTPError, InvalidURL
-from .middleware.auth import (
-    BasicAuthMiddleware,
-    CustomAuthMiddleware,
-    HTTPDigestAuthMiddleware,
-)
+from .middleware.auth import BasicAuth, CustomAuth
 from .middleware.base import BaseMiddleware
 from .middleware.redirect import RedirectMiddleware
 from .models import (
@@ -41,7 +37,6 @@ from .models import (
     CookieTypes,
     Headers,
     HeaderTypes,
-    DigestAuth,
     QueryParamTypes,
     RequestData,
     RequestFiles,
@@ -214,25 +209,22 @@ class BaseClient:
         self, request: AsyncRequest, trust_env: bool, auth: AuthTypes = None
     ) -> typing.Optional[BaseMiddleware]:
         if isinstance(auth, tuple):
-            return BasicAuthMiddleware(username=auth[0], password=auth[1])
-
-        if callable(auth):
-            return CustomAuthMiddleware(auth=auth)
-
-        if isinstance(auth, DigestAuth):
-            return DigestAuthMiddleware(
-                username=auth.username, password=auth.password
-            )
+            return BasicAuth(username=auth[0], password=auth[1])
+        elif isinstance(auth, BaseMiddleware):
+            return auth
+        elif callable(auth):
+            return CustomAuth(auth=auth)
 
         if auth is not None:
             raise TypeError(
                 'When specified, "auth" must be a (username, password) tuple or '
                 "a callable with signature (AsyncRequest) -> AsyncRequest "
+                "or an subclass of BaseMiddleware "
                 f"(got {auth!r})"
             )
 
         if request.url.username or request.url.password:
-            return BasicAuthMiddleware(
+            return BasicAuth(
                 username=request.url.username, password=request.url.password
             )
 
@@ -240,7 +232,7 @@ class BaseClient:
             netrc_login = get_netrc_login(request.url.authority)
             if netrc_login:
                 username, _, password = netrc_login
-                return BasicAuthMiddleware(username=username, password=password)
+                return BasicAuth(username=username, password=password)
 
         return None
 
