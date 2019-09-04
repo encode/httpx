@@ -1,6 +1,6 @@
+import hashlib
 import json
 import os
-import hashlib
 
 import pytest
 
