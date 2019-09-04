@@ -21,6 +21,7 @@ from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
+from .dispatch.routing import RoutingDispatcher
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import HTTPError, InvalidURL
@@ -104,6 +105,24 @@ class BaseClient:
         else:
             async_dispatch = dispatch
 
+        if proxies is None:
+            if self.trust_env:
+                proxies = get_environment_proxies()
+            else:
+                proxies = {}
+
+        if proxies:
+            if isinstance(proxies, (str, URL)):
+                proxies = {"all": proxies}
+            routes = {}
+            for key, val in proxies.items():
+                if isinstance(val, (str, URL)):
+                    val = proxy_from_url(url=val, verify=verify, cert=cert, timeout=timeout, pool_limits=pool_limits, backend=backend)
+                routes[key] = val
+
+            routes.setdefault("all", async_dispatch)
+            async_dispatch = RoutingDispatcher(routes=routes, backend=backend)
+
         if base_url is None:
             self.base_url = URL("", allow_relative=True)
         else:
@@ -115,27 +134,6 @@ class BaseClient:
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
-
-        if proxies is None:
-            if self.trust_env:
-                proxies = get_environment_proxies()
-            else:
-                proxies = {}
-
-        if isinstance(proxies, (URL, str)):
-            self.proxies = {"all": proxy_from_url(proxies)}
-        elif isinstance(proxies, AsyncDispatcher):
-            self.proxies = {"all": proxies}
-        elif proxies:
-            new_proxies = {}
-            for key, val in proxies.items():
-                if isinstance(val, (URL, str)):
-                    new_proxies[key] = proxy_from_url(val)
-                elif isinstance(val, AsyncDispatcher):
-                    new_proxies[key] = val
-                else:
-                    raise ValueError(f"Unknown proxy type {val}")
-            self.proxies = new_proxies
 
     @property
     def headers(self) -> Headers:
@@ -263,28 +261,6 @@ class BaseClient:
                 return BasicAuthMiddleware(username=username, password=password)
 
         return None
-
-    def get_dispatcher_for_url(self, url: URL) -> AsyncDispatcher:
-        """
-        Return an AsyncDispatcher for the given URL taking in
-        to account proxies that are defined.
-        """
-        if self.proxies:
-            hostname = url.host
-            if url.port is not None:
-                hostname += f":{url.port}"
-
-            proxy_keys = (
-                f"{url.scheme}://{hostname}",
-                f"all://{hostname}",
-                url.scheme,
-                "all",
-            )
-            for proxy_key in proxy_keys:
-                if proxy_key in self.proxies:
-                    return self.proxies[proxy_key]
-
-        return self.dispatch
 
 
 class AsyncClient(BaseClient):
@@ -947,8 +923,12 @@ class Client(BaseClient):
         self.close()
 
 
-def proxy_from_url(url: URLTypes) -> AsyncDispatcher:
+def proxy_from_url(url: URLTypes,verify: VerifyTypes,
+        cert: CertTypes,
+        timeout: TimeoutTypes,
+        pool_limits: PoolLimits,
+        backend: ConcurrencyBackend) -> AsyncDispatcher:
     url = URL(url)
     if url.scheme in ("http", "https"):
-        return HTTPProxy(proxy_url=url)
+        return HTTPProxy(proxy_url=url, verify=verify, cert=cert, timeout=timeout, pool_limits=pool_limits, backend=backend)
     raise ValueError(f"Unknown proxy URL: {url!r}")

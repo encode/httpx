@@ -22,7 +22,13 @@ from ..models import (
     URLTypes,
 )
 from .connection import HTTPConnection
+from .http11 import HTTP11Connection
+from .http2 import HTTP2Connection
 from .connection_pool import ConnectionPool
+from ..utils import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class HTTPProxyMode(enum.Enum):
@@ -33,7 +39,7 @@ class HTTPProxyMode(enum.Enum):
 
 class HTTPProxy(ConnectionPool):
     """A proxy that sends requests to the recipient server
-    on behalf of the connecting client. Not recommended for HTTPS.
+    on behalf of the connecting client.
     """
 
     def __init__(
@@ -70,8 +76,10 @@ class HTTPProxy(ConnectionPool):
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:
         if self.should_forward_origin(origin):
+            logger.debug(f"forward_connection proxy_url={self.proxy_url!r} origin={origin!r}")
             return await super().acquire_connection(self.proxy_url.origin)
         else:
+            logger.debug(f"tunnel_connection proxy_url={self.proxy_url!r} origin={origin!r}")
             return await self.tunnel_connection(origin)
 
     async def tunnel_connection(self, origin: Origin) -> HTTPConnection:
@@ -81,15 +89,12 @@ class HTTPProxy(ConnectionPool):
         connection = self.pop_connection(origin)
 
         if connection is None:
-            # Set the default headers that a proxy needs: 'Host', and 'Accept'.
-            # We don't allow users to control 'Host' but do let them override 'Accept'.
             proxy_headers = self.proxy_headers.copy()
-            proxy_headers["Host"] = f"{origin.host}:{origin.port}"
             proxy_headers.setdefault("Accept", "*/*")
-
             proxy_request = AsyncRequest(
                 method="CONNECT", url=self.proxy_url, headers=proxy_headers
             )
+            proxy_request.url.full_path = f"{origin.host}:{origin.port}"
 
             await self.max_connections.acquire()
 
@@ -106,19 +111,30 @@ class HTTPProxy(ConnectionPool):
 
             # See if our tunnel has been opened successfully
             proxy_response = await connection.send(proxy_request)
-            await proxy_response.read()
+            logger.debug(
+                f"tunnel_response "
+                f"proxy_url={self.proxy_url!r} "
+                f"origin={origin!r} "
+                f"response={proxy_response!r}"
+            )
             if not 200 <= proxy_response.status_code <= 299:
+                await proxy_response.read()
                 raise ProxyError(
                     f"Non-2XX response received from HTTP proxy "
                     f"({proxy_response.status_code})",
                     request=proxy_request,
                     response=proxy_response,
                 )
+            else:
+                proxy_response.on_close = None
+                await proxy_response.read()
 
             # After we receive the 2XX response from the proxy that our
             # tunnel is open we switch the connection's origin
             # to the original so the tunnel can be re-used.
+            self.active_connections.remove(connection)
             connection.origin = origin
+            self.active_connections.add(connection)
 
             # If we need to start TLS again for the target server
             # we need to pull the TCP stream off the internal
@@ -126,6 +142,7 @@ class HTTPProxy(ConnectionPool):
             if origin.is_ssl:
                 http_connection = connection.h11_connection
                 assert http_connection is not None
+                on_release = http_connection.on_release
 
                 stream = http_connection.stream
                 ssl_config = SSLConfig(cert=self.cert, verify=self.verify)
@@ -133,13 +150,28 @@ class HTTPProxy(ConnectionPool):
                 ssl_context = await connection.get_ssl_context(ssl_config)
                 assert ssl_context is not None
 
+                logger.debug(
+                    f"tunnel_start_tls "
+                    f"proxy_url={self.proxy_url!r} "
+                    f"origin={origin!r}"
+                )
                 stream = await self.backend.start_tls(
                     stream=stream,
                     hostname=origin.host,
                     ssl_context=ssl_context,
                     timeout=timeout,
                 )
-                http_connection.stream = stream
+                http_version = stream.get_http_version()
+                logger.debug(f"tunnel_tls_complete proxy_url={self.proxy_url!r} origin={origin!r} http_version={http_version!r}")
+                if http_version == "HTTP/2":
+                    connection.h2_connection = HTTP2Connection(
+                        stream, self.backend, on_release=on_release
+                    )
+                else:
+                    assert http_version == "HTTP/1.1"
+                    connection.h11_connection = HTTP11Connection(
+                        stream, self.backend, on_release=on_release
+                    )
 
         else:
             self.active_connections.add(connection)
