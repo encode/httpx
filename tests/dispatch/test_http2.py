@@ -82,7 +82,7 @@ async def test_async_http2_post_request(backend):
 async def test_http2_large_async_post_request(backend):
     backend = MockHTTP2Backend(app=app, backend=backend)
 
-    data = b"a"
+    data = b"a" * 100000
     async with AsyncClient(backend=backend) as client:
         response = await client.post("http://example.org", data=data)
     assert response.status_code == 200
