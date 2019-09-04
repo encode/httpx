@@ -85,6 +85,21 @@ class MockDigestAuthDispatch(AsyncDispatcher):
         return AsyncResponse(401, headers=headers, content=b"", request=request)
 
 
+class MockAuthHeaderDispatch(AsyncDispatcher):
+    def __init__(self, auth_header: str) -> None:
+        self.auth_header = auth_header
+
+    async def send(
+        self,
+        request: AsyncRequest,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+    ) -> AsyncResponse:
+        headers = [("www-authenticate", self.auth_header)]
+        return AsyncResponse(401, headers=headers, content=b"", request=request)
+
+
 def test_basic_auth():
     url = "https://example.org/"
     auth = ("tomchristie", "password123")
@@ -237,6 +252,32 @@ def test_digest_auth(algorithm, expected_hash_length, expected_response_length):
     assert len(digest_data["cnonce"]) == 16 + 2
 
 
+def test_digest_auth_no_specified_qop():
+    url = "https://example.org/"
+    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+
+    with Client(dispatch=MockDigestAuthDispatch(qop=None)) as client:
+        response = client.get(url, auth=auth)
+
+    assert response.status_code == 200
+    auth = response.json()["auth"]
+    assert auth.startswith("Digest")
+
+    response_fields = [field.strip() for field in auth[auth.find(" ") :].split(",")]
+    digest_data = dict(field.split("=") for field in response_fields)
+
+    assert "qop" not in digest_data
+    assert "nc" not in digest_data
+    assert "cnonce" not in digest_data
+    assert digest_data["username"] == '"tomchristie"'
+    assert digest_data["realm"] == '"httpx@example.org"'
+    assert len(digest_data["nonce"]) == 64 + 2  # extra quotes
+    assert digest_data["uri"] == '"/"'
+    assert len(digest_data["response"]) == 64 + 2
+    assert len(digest_data["opaque"]) == 64 + 2
+    assert digest_data["algorithm"] == '"SHA-256"'
+
+
 def test_digest_auth_nonce_count():
     url = "https://example.org/"
     auth = HTTPDigestAuth(username="tomchristie", password="password123")
@@ -282,3 +323,19 @@ def test_digest_auth_incorrect_credentials():
         response = client.get(url, auth=auth)
 
     assert response.status_code == 401
+
+
+@pytest.mark.parametrize(
+    "auth_header",
+    [
+        'Digest realm="httpx@example.org", qop="auth"',  # missing fields
+        'realm="httpx@example.org", qop="auth"',  # not starting with Digest
+    ],
+)
+def test_digest_auth_raises_protocol_error_on_malformed_header(auth_header):
+    url = "https://example.org/"
+    auth = HTTPDigestAuth(username="tomchristie", password="password123")
+
+    with pytest.raises(ProtocolError):
+        with Client(dispatch=MockAuthHeaderDispatch(auth_header=auth_header)) as client:
+            client.get(url, auth=auth)
