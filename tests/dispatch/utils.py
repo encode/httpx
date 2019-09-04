@@ -60,7 +60,8 @@ class MockHTTP2Server(BaseStream):
                 self.request_received(event.headers, event.stream_id)
             elif isinstance(event, h2.events.DataReceived):
                 self.receive_data(event.data, event.stream_id)
-                # This should send an UPDATE_WINDOW for both the stream and the connection increasing it by the amount
+                # This should send an UPDATE_WINDOW for both the stream and the
+                # connection increasing it by the amount
                 # consumed keeping the flow control window constant
                 flow_control_consumed = event.flow_controlled_length
                 if flow_control_consumed > 0:
