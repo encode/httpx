@@ -78,7 +78,7 @@ class HTTPDigestAuthMiddleware(BaseMiddleware):
         try:
             challenge = DigestAuthChallenge.from_header(header)
         except ValueError:
-            return response
+            raise ProtocolError("Malformed Digest authentication header")
 
         if self._previous_auth_failed(challenge):
             return response
