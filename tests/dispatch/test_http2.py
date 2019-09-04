@@ -92,6 +92,7 @@ async def test_http2_large_async_post_request(backend):
         "body": data.decode(),
     }
 
+
 def test_http2_multiple_requests():
     backend = MockHTTP2Backend(app=app)
 
