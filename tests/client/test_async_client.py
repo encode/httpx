@@ -14,6 +14,18 @@ async def test_get(server, backend):
     assert repr(response) == "<Response [200 OK]>"
 
 
+async def test_build_request(server, backend):
+    url = server.url
+    async with httpx.AsyncClient(backend=backend) as client:
+        request = client.build_request("GET", url)
+        response = await client.send(request)
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+    assert response.http_version == "HTTP/1.1"
+    assert response.headers
+    assert repr(response) == "<Response [200 OK]>"
+
+
 @pytest.mark.asyncio
 async def test_get_no_backend(server):
     """
