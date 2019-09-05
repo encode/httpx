@@ -15,12 +15,8 @@ class BasicAuth(BaseMiddleware):
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ):
-        if isinstance(username, str):
-            username = to_bytes(username)
-
-        if isinstance(password, str):
-            password = to_bytes(password)
-
+        username = to_bytes(username)
+        password = to_bytes(password)
         userpass = b":".join((username, password))
         token = b64encode(userpass).decode().strip()
 
