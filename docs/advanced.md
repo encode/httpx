@@ -68,16 +68,6 @@ Using a Client instance to make build requests
 >>> client.send(r)
 <Response [200 OK]>
 ```
-And async client
-```python
->>> import httpx
->>> client = httpx.AsyncClient()
->>> r = client.build_request("GET", "https://example.com")
->>> r
-<AsyncRequest('GET', 'https://example.com')>
->>> client.send(r)
-<coroutine object AsyncClient.send at 0x7fbc588f7560>
-```
 
 ## .netrc Support
 
