@@ -113,7 +113,7 @@ class HTTP2Connection:
         while data:
             flow_control = self.h2_state.local_flow_control_window(stream_id)
             chunk_size = min(
-                len(data), flow_control, self.h2_state.max_outbound_frame_size - 1
+                len(data), flow_control, self.h2_state.max_outbound_frame_size
             )
             if chunk_size == 0:
                 await self.window_update_received[stream_id].wait()
