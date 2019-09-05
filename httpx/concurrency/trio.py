@@ -71,8 +71,12 @@ class TCPStream(BaseTCPStream):
     async def write(
         self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
     ) -> None:
-        data += self.write_buffer
-        self.write_buffer = b""
+        if self.write_buffer:
+            previous_data = self.write_buffer
+            # Reset before recursive call, otherwise we'll go through
+            # this branch indefinitely.
+            self.write_buffer = b""
+            await self.write(previous_data, timeout=timeout, flag=flag)
 
         if not data:
             return
