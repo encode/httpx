@@ -41,6 +41,23 @@ class CustomAuth(BaseMiddleware):
 
 
 class DigestAuth(BaseMiddleware):
+    def __init__(
+        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
+    ) -> None:
+        self.username = to_bytes(username)
+        self.password = to_bytes(password)
+
+    async def __call__(
+        self, request: AsyncRequest, get_response: typing.Callable
+    ) -> AsyncResponse:
+        per_request_digest_auth = _RequestDigestAuthMiddleware(
+            username=self.username, password=self.password
+        )
+        return await per_request_digest_auth(request=request, get_response=get_response)
+
+
+class _RequestDigestAuthMiddleware(BaseMiddleware):
+    """Per request stateful Digest auth handler."""
 
     ALGORITHM_TO_HASH_FUNCTION: typing.Dict[str, typing.Callable] = {
         "MD5": hashlib.md5,

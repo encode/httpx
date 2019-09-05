@@ -84,6 +84,9 @@ class MockDigestAuthDispatch(AsyncDispatcher):
         ]
         return AsyncResponse(401, headers=headers, content=b"", request=request)
 
+    def reset(self):
+        self._response_count = 0
+
 
 class MockAuthHeaderDispatch(AsyncDispatcher):
     def __init__(self, auth_header: str) -> None:
@@ -342,3 +345,20 @@ def test_digest_auth_raises_protocol_error_on_malformed_header(auth_header):
     with pytest.raises(ProtocolError):
         with Client(dispatch=MockAuthHeaderDispatch(auth_header=auth_header)) as client:
             client.get(url, auth=auth)
+
+
+def test_digest_auth_passed_to_client_does_not_share_state():
+    url = "https://example.org/"
+    auth = DigestAuth(username="tomchristie", password="password123")
+    mock_dispatch = MockDigestAuthDispatch()
+
+    with Client(dispatch=mock_dispatch, auth=auth) as client:
+        response = client.get(url)
+        auth_header = response.json()["auth"]
+        assert 'nc="00000001"' in auth_header
+
+        mock_dispatch.reset()
+
+        response = client.get(url)
+        auth_header = response.json()["auth"]
+        assert 'nc="00000001"' in auth_header
