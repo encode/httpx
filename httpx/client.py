@@ -219,7 +219,7 @@ class BaseClient:
             raise TypeError(
                 'When specified, "auth" must be a (username, password) tuple or '
                 "a callable with signature (AsyncRequest) -> AsyncRequest "
-                "or an subclass of BaseMiddleware "
+                "or a subclass of BaseMiddleware "
                 f"(got {auth!r})"
             )
 

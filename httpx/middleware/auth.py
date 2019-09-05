@@ -16,10 +16,10 @@ class BasicAuth(BaseMiddleware):
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ):
         if isinstance(username, str):
-            username = username.encode("utf-8")
+            username = to_bytes(username)
 
         if isinstance(password, str):
-            password = password.encode("utf-8")
+            password = to_bytes(password)
 
         userpass = b":".join((username, password))
         token = b64encode(userpass).decode().strip()
