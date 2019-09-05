@@ -96,6 +96,7 @@ The HTTPX project relies on these excellent libraries:
 * `h11` - HTTP/1.1 support.
 * `certifi` - SSL certificates.
 * `chardet` - Fallback auto-detection for response encoding.
+* `hstspreload` - determines whether IDNA-encoded host should be only accessed via HTTPS.
 * `idna` - Internationalized domain name support.
 * `rfc3986` - URL parsing & normalization.
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
