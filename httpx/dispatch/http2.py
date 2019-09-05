@@ -157,7 +157,9 @@ class HTTP2Connection:
         while True:
             event = await self.receive_event(stream_id, timeout)
             if isinstance(event, h2.events.DataReceived):
-                self.h2_state.acknowledge_received_data(event.flow_controlled_length, stream_id)
+                self.h2_state.acknowledge_received_data(
+                    event.flow_controlled_length, stream_id
+                )
                 yield event.data
                 if self.h2_state.streams[stream_id].open:
                     await self.stream.write(self.h2_state.data_to_send(), timeout)
@@ -185,7 +187,8 @@ class HTTP2Connection:
                             self.window_update_received[event_stream_id].set()
                         except KeyError:
                             # the window_update_received dictionary is only relevant
-                            # when sending data, which should never raise a KeyError here.
+                            # when sending data, which should never raise a KeyError
+                            # here.
                             pass
 
                 if event_stream_id:
