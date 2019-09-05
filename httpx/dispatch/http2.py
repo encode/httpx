@@ -161,8 +161,6 @@ class HTTP2Connection:
                     event.flow_controlled_length, stream_id
                 )
                 yield event.data
-                if self.h2_state.streams[stream_id].open:
-                    await self.stream.write(self.h2_state.data_to_send(), timeout)
             elif isinstance(event, (h2.events.StreamEnded, h2.events.StreamReset)):
                 break
 
