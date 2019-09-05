@@ -39,6 +39,9 @@ from .utils import (
     str_query_param,
 )
 
+if typing.TYPE_CHECKING:
+    from .middleware.base import BaseMiddleware  # noqa: F401
+
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
 URLTypes = typing.Union["URL", str]
@@ -61,7 +64,7 @@ CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
     typing.Callable[["AsyncRequest"], "AsyncRequest"],
-    "BaseMiddleware",  # type: ignore
+    "BaseMiddleware",
 ]
 
 AsyncRequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
