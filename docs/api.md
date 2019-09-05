@@ -16,6 +16,7 @@
 * `patch(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `request(method, url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `build_request(method, url, [data], [files], [json], [params], [headers], [cookies])`
 
 ## `Client`
 
@@ -38,7 +39,32 @@
 * `def .delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .request(method, url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .send(request, [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `def .build_request(method, url, [data], [files], [json], [params], [headers], [cookies])`
 * `def .close()`
+
+## `AsyncClient`
+
+*An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.*
+
+```python
+>>> client = httpx.AsyncClient()
+>>> response = client.get('https://example.org')
+```
+
+* `def __init__([auth], [headers], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [app], [dispatch])`
+* `.headers` - **Headers**
+* `.cookies` - **Cookies**
+* `async def .get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `async def .options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `async def .head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `async def .post(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `async def .put(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `async def .patch(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `async def .delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `async def .request(method, url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `async def .send(request, [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `async def .build_request(method, url, [data], [files], [json], [params], [headers], [cookies])`
+* `async def .close()`
 
 ## `Response`
 
