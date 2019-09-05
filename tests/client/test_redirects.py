@@ -85,9 +85,15 @@ class MockDispatch(AsyncDispatcher):
                 codes.PERMANENT_REDIRECT, headers=headers, request=request
             )
 
+        elif request.url.path == "/redirect_no_body":
+            await request.read()
+            headers = {"location": "/redirect_body_target"}
+            return AsyncResponse(codes.SEE_OTHER, headers=headers, request=request)
+
         elif request.url.path == "/redirect_body_target":
             content = await request.read()
-            body = json.dumps({"body": content.decode()}).encode()
+            headers = dict(request.headers.items())
+            body = json.dumps({"body": content.decode(), "headers": headers}).encode()
             return AsyncResponse(codes.OK, content=body, request=request)
 
         elif request.url.path == "/cross_subdomain":
@@ -243,12 +249,29 @@ async def test_same_domain_redirect(backend):
 
 
 async def test_body_redirect(backend):
+    """
+    A 308 redirect should preserve the request body.
+    """
     client = AsyncClient(dispatch=MockDispatch(), backend=backend)
     url = "https://example.org/redirect_body"
     data = b"Example request body"
     response = await client.post(url, data=data)
     assert response.url == URL("https://example.org/redirect_body_target")
-    assert response.json() == {"body": "Example request body"}
+    assert response.json()["body"] == "Example request body"
+    assert "content-length" in response.json()["headers"]
+
+
+async def test_no_body_redirect(backend):
+    """
+    A 303 redirect should remove the request body.
+    """
+    client = AsyncClient(dispatch=MockDispatch(), backend=backend)
+    url = "https://example.org/redirect_no_body"
+    data = b"Example request body"
+    response = await client.post(url, data=data)
+    assert response.url == URL("https://example.org/redirect_body_target")
+    assert response.json()["body"] == ""
+    assert "content-length" not in response.json()["headers"]
 
 
 async def test_cannot_redirect_streaming_body(backend):
