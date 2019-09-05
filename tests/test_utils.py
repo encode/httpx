@@ -5,7 +5,12 @@ import pytest
 
 import httpx
 from httpx import utils
-from httpx.utils import get_netrc_login, guess_json_utf, parse_header_links
+from httpx.utils import (
+    get_ca_bundle_from_env,
+    get_netrc_login,
+    guess_json_utf,
+    parse_header_links,
+)
 
 
 @pytest.mark.parametrize(
@@ -111,3 +116,15 @@ async def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):
 
     # Reset the logger so we don't have verbose output in all unit tests
     logging.getLogger("httpx").handlers = []
+
+
+def test_get_ssl_cert_file():
+    os.environ["SSL_CERT_FILE"] = "tests/test_utils.py"
+    os.environ["SSL_CERT_DIR"] = "tests/"
+    assert get_ca_bundle_from_env() == "tests/test_utils.py"
+
+    os.environ["SSL_CERT_FILE"] = "wrongpath"
+    assert get_ca_bundle_from_env() == "tests"
+
+    os.environ["SSL_CERT_DIR"] = "wrongpath"
+    assert get_ca_bundle_from_env() is None

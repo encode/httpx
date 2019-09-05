@@ -1,3 +1,4 @@
+import os
 import ssl
 import sys
 
@@ -21,6 +22,18 @@ def test_load_ssl_config_verify_non_existing_path():
 
 def test_load_ssl_config_verify_existing_file():
     ssl_config = httpx.SSLConfig(verify=httpx.config.DEFAULT_CA_BUNDLE_PATH)
+    context = ssl_config.load_ssl_context()
+    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+    assert context.check_hostname is True
+
+
+@pytest.mark.parametrize("config", ("SSL_CERT_FILE", "SSL_CERT_DIR"))
+def test_load_ssl_config_verify_env_file(config):
+    default_path = httpx.config.DEFAULT_CA_BUNDLE_PATH
+    os.environ[config] = (
+        str(default_path) if config.endswith("_FILE") else str(default_path.parent)
+    )
+    ssl_config = httpx.SSLConfig(verify=None, trust_env=True)
     context = ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True

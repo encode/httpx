@@ -6,6 +6,7 @@ from pathlib import Path
 import certifi
 
 from .__version__ import __version__
+from .utils import get_ca_bundle_from_env
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
@@ -89,6 +90,12 @@ class SSLConfig:
         self, http_versions: "HTTPVersionConfig" = None
     ) -> ssl.SSLContext:
         http_versions = HTTPVersionConfig() if http_versions is None else http_versions
+
+        if self.trust_env:
+            if self.verify is True or self.verify is None:
+                ssl_cert_file = get_ca_bundle_from_env()
+                if ssl_cert_file is not None:
+                    self.verify = ssl_cert_file  # type: ignore
 
         if self.ssl_context is None:
             self.ssl_context = (
