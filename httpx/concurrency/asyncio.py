@@ -208,30 +208,30 @@ class AsyncioBackend(ConcurrencyBackend):
             raise NotImplementedError(
                 "asyncio.AbstractEventLoop.start_tls() is only available in Python 3.7+"
             )
+        else:  # pragma: py36_nocover
+            assert isinstance(stream, Stream)
 
-        assert isinstance(stream, Stream)
+            stream_reader = asyncio.StreamReader()
+            protocol = asyncio.StreamReaderProtocol(stream_reader)
+            transport = stream.stream_writer.transport
 
-        stream_reader = asyncio.StreamReader()
-        protocol = asyncio.StreamReaderProtocol(stream_reader)
-        transport = stream.stream_writer.transport
+            loop_start_tls = loop.start_tls  # type: ignore
+            transport = await asyncio.wait_for(
+                loop_start_tls(
+                    transport=transport,
+                    protocol=protocol,
+                    sslcontext=ssl_context,
+                    server_hostname=hostname,
+                ),
+                timeout=timeout.connect_timeout,
+            )
 
-        loop_start_tls = loop.start_tls  # type: ignore
-        transport = await asyncio.wait_for(
-            loop_start_tls(
-                transport=transport,
-                protocol=protocol,
-                sslcontext=ssl_context,
-                server_hostname=hostname,
-            ),
-            timeout=timeout.connect_timeout,
-        )
-
-        stream_reader.set_transport(transport)
-        stream.stream_reader = stream_reader
-        stream.stream_writer = asyncio.StreamWriter(
-            transport=transport, protocol=protocol, reader=stream_reader, loop=loop
-        )
-        return stream
+            stream_reader.set_transport(transport)
+            stream.stream_reader = stream_reader
+            stream.stream_writer = asyncio.StreamWriter(
+                transport=transport, protocol=protocol, reader=stream_reader, loop=loop
+            )
+        return stream  # pragma: py36_nocover
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any

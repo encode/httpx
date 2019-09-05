@@ -172,7 +172,7 @@ class SSLConfig:
         if ssl.HAS_ALPN:
             context.set_alpn_protocols(http_versions.alpn_identifiers)
 
-        if hasattr(context, "keylog_filename"):
+        if hasattr(context, "keylog_filename"):  # pragma: py37_nocover
             keylogfile = os.environ.get("SSLKEYLOGFILE")
             if keylogfile and self.trust_env:
                 context.keylog_filename = keylogfile  # type: ignore

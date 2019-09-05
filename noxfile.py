@@ -38,4 +38,11 @@ def docs(session):
 @nox.session(python=["3.6", "3.7", "3.8"])
 def test(session):
     session.install("-r", "test-requirements.txt")
-    session.run("python", "-m", "pytest", *session.posargs)
+    session.run(
+        "python",
+        "-m",
+        "pytest",
+        "--cov-config",
+        ".coveragerc" if session.python == "3.8" else f".coveragerc_py{session.python}",
+        *session.posargs,
+    )
