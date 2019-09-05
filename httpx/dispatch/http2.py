@@ -157,19 +157,10 @@ class HTTP2Connection:
         while True:
             event = await self.receive_event(stream_id, timeout)
             if isinstance(event, h2.events.DataReceived):
-                self.h2_state.acknowledge_received_data(len(event.data), stream_id)
+                self.h2_state.acknowledge_received_data(event.flow_controlled_length, stream_id)
                 yield event.data
                 if self.h2_state.streams[stream_id].open:
-                    flow_control_consumed = event.flow_controlled_length
-                    if flow_control_consumed > 0:
-                        self.h2_state.increment_flow_control_window(
-                            flow_control_consumed
-                        )
-                        await self.stream.write(self.h2_state.data_to_send(), timeout)
-                        self.h2_state.increment_flow_control_window(
-                            flow_control_consumed, event.stream_id
-                        )
-                        await self.stream.write(self.h2_state.data_to_send(), timeout)
+                    await self.stream.write(self.h2_state.data_to_send(), timeout)
             elif isinstance(event, (h2.events.StreamEnded, h2.events.StreamReset)):
                 break
 
@@ -190,7 +181,12 @@ class HTTP2Connection:
                         for window_update_event in self.window_update_received.values():
                             window_update_event.set()
                     else:
-                        self.window_update_received[event_stream_id].set()
+                        try:
+                            self.window_update_received[event_stream_id].set()
+                        except KeyError:
+                            # the window_update_received dictionary is only relevant
+                            # when sending data, which should never raise a KeyError here.
+                            pass
 
                 if event_stream_id:
                     self.events[event.stream_id].append(event)
@@ -203,6 +199,7 @@ class HTTP2Connection:
     async def response_closed(self, stream_id: int) -> None:
         del self.events[stream_id]
         del self.timeout_flags[stream_id]
+        del self.window_update_received[stream_id]
 
         if not self.events and self.on_release is not None:
             await self.on_release()
