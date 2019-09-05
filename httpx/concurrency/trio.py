@@ -29,6 +29,7 @@ class TCPStream(BaseTCPStream):
         self.timeout = timeout
         self.is_eof = False
         self.write_buffer = b""
+        self.write_lock = trio.Lock()
 
     def get_http_version(self) -> str:
         if not isinstance(self.stream, trio.SSLStream):
@@ -83,7 +84,8 @@ class TCPStream(BaseTCPStream):
 
         while True:
             with trio.move_on_after(write_timeout):
-                await self.stream.send_all(data)
+                async with self.write_lock:
+                    await self.stream.send_all(data)
                 break
             # We check our flag at the first possible moment, in order to
             # allow us to suppress write timeouts, if we've since
