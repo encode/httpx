@@ -112,6 +112,17 @@ async def test_standard_response_close(server, backend):
         assert len(http.keepalive_connections) == 1
 
 
+async def test_close_connection_on_context_manager_exit(server, backend):
+    """
+    After block with all connections should be closed.
+    """
+    async with httpx.ConnectionPool(backend=backend) as http:
+        await http.request("GET", server.url)
+
+    assert len(http.active_connections) == 0
+    assert len(http.keepalive_connections) == 0
+
+
 async def test_premature_response_close(server, backend):
     """
     A premature close should close the connection.

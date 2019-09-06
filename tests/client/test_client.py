@@ -1,4 +1,5 @@
 import pytest
+from h11 import RemoteProtocolError
 
 import httpx
 
@@ -33,33 +34,44 @@ def test_post_json(server):
     assert response.reason_phrase == "OK"
 
 
+def test_stream_manger_release_resources(server):
+    with httpx.Client() as http:
+        response = http.post(
+            server.url.copy_with(path="/echo_body"), stream=True, data=b"*" * 409600
+        )
+
+    assert response.status_code == 200
+    with pytest.raises(RemoteProtocolError):
+        response.read()
+
+
 def test_stream_response(server):
     with httpx.Client() as http:
         response = http.get(server.url, stream=True)
-    assert response.status_code == 200
-    content = response.read()
-    assert content == b"Hello, world!"
+        assert response.status_code == 200
+        content = response.read()
+        assert content == b"Hello, world!"
 
 
 def test_stream_iterator(server):
     with httpx.Client() as http:
         response = http.get(server.url, stream=True)
-    assert response.status_code == 200
-    body = b""
-    for chunk in response.stream():
-        body += chunk
-    assert body == b"Hello, world!"
+        assert response.status_code == 200
+        body = b""
+        for chunk in response.stream():
+            body += chunk
+        assert body == b"Hello, world!"
 
 
 def test_raw_iterator(server):
     with httpx.Client() as http:
         response = http.get(server.url, stream=True)
-    assert response.status_code == 200
-    body = b""
-    for chunk in response.raw():
-        body += chunk
-    assert body == b"Hello, world!"
-    response.close()  # TODO: should Response be available as context managers?
+        assert response.status_code == 200
+        body = b""
+        for chunk in response.raw():
+            body += chunk
+        assert body == b"Hello, world!"
+        response.close()  # TODO: should Response be available as context managers?
 
 
 def test_raise_for_status(server):

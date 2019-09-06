@@ -1,4 +1,5 @@
 import typing
+from itertools import chain
 
 from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
@@ -62,10 +63,11 @@ class ConnectionStore:
             self.by_origin[connection.origin] = {connection: 0.0}
 
     def remove(self, connection: HTTPConnection) -> None:
-        del self.all[connection]
-        del self.by_origin[connection.origin][connection]
-        if not self.by_origin[connection.origin]:
-            del self.by_origin[connection.origin]
+        if connection in self.all:
+            del self.all[connection]
+            del self.by_origin[connection.origin][connection]
+            if not self.by_origin[connection.origin]:
+                del self.by_origin[connection.origin]
 
     def clear(self) -> None:
         self.all.clear()
@@ -175,7 +177,9 @@ class ConnectionPool(AsyncDispatcher):
 
     async def close(self) -> None:
         self.is_closed = True
-        connections = list(self.keepalive_connections)
-        self.keepalive_connections.clear()
-        for connection in connections:
+
+        for connection in chain(self.keepalive_connections, self.active_connections):
             await connection.close()
+
+        self.keepalive_connections.clear()
+        self.active_connections.clear()

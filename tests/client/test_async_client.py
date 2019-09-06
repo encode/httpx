@@ -1,4 +1,5 @@
 import pytest
+from h11 import RemoteProtocolError
 
 import httpx
 
@@ -43,13 +44,24 @@ async def test_post_json(server, backend):
     assert response.status_code == 200
 
 
+async def test_stream_manger_release_resources(server, backend):
+    async with httpx.AsyncClient(backend=backend) as http:
+        response = await http.post(
+            server.url.copy_with(path="/echo_body"), stream=True, data=b"*" * 409600
+        )
+
+    assert response.status_code == 200
+    with pytest.raises(RemoteProtocolError):
+        await response.read()
+
+
 async def test_stream_response(server, backend):
     async with httpx.AsyncClient(backend=backend) as client:
         response = await client.request("GET", server.url, stream=True)
-    assert response.status_code == 200
-    body = await response.read()
-    assert body == b"Hello, world!"
-    assert response.content == b"Hello, world!"
+        assert response.status_code == 200
+        body = await response.read()
+        assert body == b"Hello, world!"
+        assert response.content == b"Hello, world!"
 
 
 async def test_access_content_stream_response(server, backend):
