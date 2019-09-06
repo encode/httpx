@@ -2,13 +2,12 @@ Environment Variables
 =====================
 
 The HTTPX library can be configured via environment variables.
-Environment variables are used by default. To deactivate them,
-`trust_env` has to be set `False`.
-Besides that `trust_env` can set three ways for instances:
+Environment variables are used by default. To ignore environment variables, `trust_env` has to be set `False`.
+There are three ways to set `trust_env` to disable environment variables:
 
-* For client trust_env's default value is true, httpx.Client()
-* For ssl config, httpx.SSLConfig(trust_env=True)
-* For api, httpx.get(url, trust_env=True)
+* On the client via `httpx.Client(trust_env=False)`
+* Per request via `client.get("<url>", trust_env=False)`
+* On the `SSLConfig` via `httpx.SSLConfig(trust_env=False)`
 
 Here is a list of environment variables that HTTPX recognizes
 and what function they serve:
@@ -93,20 +92,13 @@ CLIENT_TRAFFIC_SECRET_0 XXXX
 
 Valid values: a filename, directory
 
-If one of these environment variables is set and `verify=True` or `verify is None`,
-`verify` will be set by respectively `SSL_CERT_FILE`, `SSL_CERT_DIR`
-environments as file.
+If one of these environment variables is set then HTTPX will load
+CA certificates from the specified location instead of the default
+location.
 
 Example:
 
-```python
-
-import httpx
-client = httpx.Client()
-client.get("https://google.com")
-```
-
 ```console
-SSL_CERT_FILE=tests/test.pem python test_script.py
-SSL_CERT_DIR=tests/ python test_script.py
+SSL_CERT_FILE=/path/to/ca-certs/ca-bundle.crt python -c "import httpx; httpx.get('https://example.com')"
+SSL_CERT_DIR=/path/to/ca-certs/ python -c "import httpx; httpx.get('https://example.com')"
 ```
