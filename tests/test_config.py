@@ -37,7 +37,7 @@ def test_load_ssl_config_verify_env_file(cert_pem_file, config):
     context = ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
-    assert ssl_config.verify == cert_pem_file
+    assert ssl_config.verify == os.environ[config]
 
 
 def test_load_ssl_config_verify_directory():
