@@ -91,12 +91,6 @@ class SSLConfig:
     ) -> ssl.SSLContext:
         http_versions = HTTPVersionConfig() if http_versions is None else http_versions
 
-        if self.trust_env:
-            if self.verify is True or self.verify is None:
-                ssl_cert_file = get_ca_bundle_from_env()
-                if ssl_cert_file is not None:
-                    self.verify = ssl_cert_file  # type: ignore
-
         if self.ssl_context is None:
             self.ssl_context = (
                 self.load_ssl_context_verify(http_versions=http_versions)
@@ -124,6 +118,12 @@ class SSLConfig:
         """
         Return an SSL context for verified connections.
         """
+        if self.trust_env:
+            if self.verify is True or self.verify is None:
+                ssl_cert_file = get_ca_bundle_from_env()
+                if ssl_cert_file is not None:
+                    self.verify = ssl_cert_file  # type: ignore
+
         if isinstance(self.verify, bool):
             ca_bundle_path = DEFAULT_CA_BUNDLE_PATH
         elif Path(self.verify).exists():
