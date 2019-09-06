@@ -148,7 +148,7 @@ class RedirectMiddleware(BaseMiddleware):
             # Strip Authorization headers when responses are redirected away from
             # the origin.
             del headers["Authorization"]
-            headers["Host"] = url.authority.encode('ascii')
+            headers["Host"] = url.authority
 
         if method != request.method and method == "GET":
             # If we've switch to a 'GET' request, then strip any headers which

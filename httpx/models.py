@@ -447,7 +447,7 @@ class Headers(typing.MutableMapping[str, str]):
         Retains insertion order.
         """
         set_key = key.lower().encode(self.encoding)
-        set_value = value if isinstance(value, bytes) else value.encode(self.encoding)
+        set_value = value.encode(self.encoding)
 
         found_indexes = []
         for idx, (item_key, _) in enumerate(self._list):
