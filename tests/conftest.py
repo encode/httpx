@@ -116,9 +116,7 @@ async def echo_body(scope, receive, send):
 async def echo_headers(scope, receive, send):
     body: bytes = b""
 
-    more_body = scope.get("headers", [])
-    for h in more_body:
-        name, value = h[0], h[1]
+    for name, value in scope.get("headers", []):
         value = f"{name.capitalize().decode()}: {value.decode()}\n"
         body += value.encode()
 
