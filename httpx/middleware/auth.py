@@ -89,7 +89,7 @@ class _RequestDigestAuth(BaseMiddleware):
             StatusCode.is_client_error(response.status_code)
             and "www-authenticate" in response.headers
         ):
-            self._num_401_responses = 0
+            self.num_401_responses = 0
             return response
 
         header = response.headers["www-authenticate"]
