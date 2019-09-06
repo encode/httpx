@@ -20,20 +20,22 @@ def test_get(server):
 
 
 def test_build_request(server):
-    url = server.url
+    url = server.url.copy_with(path="/echo_headers")
+    headers = {
+        'Custom-header': 'value'
+    }
+
     with httpx.Client() as http:
         request = http.build_request("GET", url)
+        request.headers.update(headers)
         response = http.send(request)
+
     assert response.status_code == 200
     assert response.url == url
-    assert response.content == b"Hello, world!"
-    assert response.text == "Hello, world!"
-    assert response.http_version == "HTTP/1.1"
-    assert response.encoding == "iso-8859-1"
-    assert response.request.url == url
-    assert response.headers
-    assert response.is_redirect is False
-    assert repr(response) == "<Response [200 OK]>"
+
+    for header_name, value in headers.items():
+        assert f'{header_name}: {value}' in response.content.decode()
+
 
 
 def test_post(server):

@@ -153,7 +153,7 @@ class BaseClient:
             return merged_headers
         return headers
 
-    async def _send(
+    async def _get_response(
         self,
         request: AsyncRequest,
         *,
@@ -553,7 +553,7 @@ class AsyncClient(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> AsyncResponse:
-        return await self._send(
+        return await self._get_response(
             request=request,
             stream=stream,
             auth=auth,
@@ -677,7 +677,7 @@ class Client(BaseClient):
     ) -> Response:
         concurrency_backend = self.concurrency_backend
 
-        coroutine = self._send
+        coroutine = self._get_response
         args = [request]
         kwargs = {
             "stream": True,

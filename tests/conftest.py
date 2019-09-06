@@ -53,6 +53,8 @@ async def app(scope, receive, send):
         await status_code(scope, receive, send)
     elif scope["path"].startswith("/echo_body"):
         await echo_body(scope, receive, send)
+    elif scope["path"].startswith("/echo_headers"):
+        await echo_headers(scope, receive, send)
     else:
         await hello_world(scope, receive, send)
 
@@ -100,6 +102,25 @@ async def echo_body(scope, receive, send):
         message = await receive()
         body += message.get("body", b"")
         more_body = message.get("more_body", False)
+
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [[b"content-type", b"text/plain"]],
+        }
+    )
+    await send({"type": "http.response.body", "body": body})
+
+
+async def echo_headers(scope, receive, send):
+    body: bytes = b""
+
+    more_body = scope.get("headers", [])
+    for h in more_body:
+        name, value = h[0], h[1]
+        value = f"{name.capitalize().decode()}: {value.decode()}\n"
+        body += value.encode()
 
     await send(
         {

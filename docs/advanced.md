@@ -63,8 +63,7 @@ Using a Client instance to make build requests
 ```python
 >>> client = httpx.Client()
 >>> r = client.build_request("GET", "https://example.com")
->>> r
-<AsyncRequest('GET', 'https://example.com')>
+>>> req.url.full_path = "*"
 >>> client.send(r)
 <Response [200 OK]>
 ```
