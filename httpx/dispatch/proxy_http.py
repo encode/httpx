@@ -1,5 +1,7 @@
 import enum
 
+import h11
+
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
@@ -21,12 +23,11 @@ from ..models import (
     Origin,
     URLTypes,
 )
-from .connection import HTTPConnection
-from .http11 import HTTP11Connection
-from .http2 import HTTP2Connection
-from .connection_pool import ConnectionPool
 from ..utils import get_logger
-
+from .connection import HTTPConnection
+from .connection_pool import ConnectionPool
+from .http2 import HTTP2Connection
+from .http11 import HTTP11Connection
 
 logger = get_logger(__name__)
 
@@ -76,10 +77,14 @@ class HTTPProxy(ConnectionPool):
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:
         if self.should_forward_origin(origin):
-            logger.debug(f"forward_connection proxy_url={self.proxy_url!r} origin={origin!r}")
+            logger.debug(
+                f"forward_connection proxy_url={self.proxy_url!r} origin={origin!r}"
+            )
             return await super().acquire_connection(self.proxy_url.origin)
         else:
-            logger.debug(f"tunnel_connection proxy_url={self.proxy_url!r} origin={origin!r}")
+            logger.debug(
+                f"tunnel_connection proxy_url={self.proxy_url!r} origin={origin!r}"
+            )
             return await self.tunnel_connection(origin)
 
     async def tunnel_connection(self, origin: Origin) -> HTTPConnection:
@@ -92,7 +97,7 @@ class HTTPProxy(ConnectionPool):
             proxy_headers = self.proxy_headers.copy()
             proxy_headers.setdefault("Accept", "*/*")
             proxy_request = AsyncRequest(
-                method="CONNECT", url=self.proxy_url, headers=proxy_headers
+                method="CONNECT", url=self.proxy_url.copy_with(), headers=proxy_headers
             )
             proxy_request.url.full_path = f"{origin.host}:{origin.port}"
 
@@ -105,6 +110,7 @@ class HTTPProxy(ConnectionPool):
                 timeout=self.timeout,
                 backend=self.backend,
                 http_versions=["HTTP/1.1"],  # Short-lived 'connection'
+                trust_env=self.trust_env,
                 release_func=self.release_connection,
             )
             self.active_connections.add(connection)
@@ -117,7 +123,7 @@ class HTTPProxy(ConnectionPool):
                 f"origin={origin!r} "
                 f"response={proxy_response!r}"
             )
-            if not 200 <= proxy_response.status_code <= 299:
+            if not (200 <= proxy_response.status_code <= 299):
                 await proxy_response.read()
                 raise ProxyError(
                     f"Non-2XX response received from HTTP proxy "
@@ -136,15 +142,20 @@ class HTTPProxy(ConnectionPool):
             connection.origin = origin
             self.active_connections.add(connection)
 
+            # Store this information here so that we can transfer
+            # it to the new internal connection object after
+            # the old one goes to 'SWITCHED_PROTOCOL'.
+            http_version = "HTTP/1.1"
+            http_connection = connection.h11_connection
+            assert http_connection is not None
+            assert http_connection.h11_state.our_state == h11.SWITCHED_PROTOCOL
+            on_release = http_connection.on_release
+            stream = http_connection.stream
+
             # If we need to start TLS again for the target server
             # we need to pull the TCP stream off the internal
             # HTTP connection object and run start_tls()
             if origin.is_ssl:
-                http_connection = connection.h11_connection
-                assert http_connection is not None
-                on_release = http_connection.on_release
-
-                stream = http_connection.stream
                 ssl_config = SSLConfig(cert=self.cert, verify=self.verify)
                 timeout = connection.timeout
                 ssl_context = await connection.get_ssl_context(ssl_config)
@@ -162,16 +173,22 @@ class HTTPProxy(ConnectionPool):
                     timeout=timeout,
                 )
                 http_version = stream.get_http_version()
-                logger.debug(f"tunnel_tls_complete proxy_url={self.proxy_url!r} origin={origin!r} http_version={http_version!r}")
-                if http_version == "HTTP/2":
-                    connection.h2_connection = HTTP2Connection(
-                        stream, self.backend, on_release=on_release
-                    )
-                else:
-                    assert http_version == "HTTP/1.1"
-                    connection.h11_connection = HTTP11Connection(
-                        stream, self.backend, on_release=on_release
-                    )
+                logger.debug(
+                    f"tunnel_tls_complete "
+                    f"proxy_url={self.proxy_url!r} "
+                    f"origin={origin!r} "
+                    f"http_version={http_version!r}"
+                )
+
+            if http_version == "HTTP/2":
+                connection.h2_connection = HTTP2Connection(
+                    stream, self.backend, on_release=on_release
+                )
+            else:
+                assert http_version == "HTTP/1.1"
+                connection.h11_connection = HTTP11Connection(
+                    stream, self.backend, on_release=on_release
+                )
 
         else:
             self.active_connections.add(connection)

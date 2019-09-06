@@ -52,7 +52,9 @@ from .models import (
 from .utils import get_environment_proxies, get_netrc_login
 
 ProxiesTypes = typing.Union[
-    URLTypes, AsyncDispatcher, typing.Dict[str, typing.Union[URLTypes, AsyncDispatcher]]
+    URLTypes,
+    AsyncDispatcher,
+    typing.Dict[str, typing.Union[str, URLTypes, AsyncDispatcher]],
 ]
 
 
@@ -107,17 +109,24 @@ class BaseClient:
 
         if proxies is None:
             if self.trust_env:
-                proxies = get_environment_proxies()
+                proxies = typing.cast(ProxiesTypes, get_environment_proxies())
             else:
                 proxies = {}
 
         if proxies:
-            if isinstance(proxies, (str, URL)):
+            if isinstance(proxies, (str, URL, AsyncDispatcher)):
                 proxies = {"all": proxies}
             routes = {}
             for key, val in proxies.items():
                 if isinstance(val, (str, URL)):
-                    val = proxy_from_url(url=val, verify=verify, cert=cert, timeout=timeout, pool_limits=pool_limits, backend=backend)
+                    val = proxy_from_url(
+                        url=val,
+                        verify=verify,
+                        cert=cert,
+                        timeout=timeout,
+                        pool_limits=pool_limits,
+                        backend=backend,
+                    )
                 routes[key] = val
 
             routes.setdefault("all", async_dispatch)
@@ -923,12 +932,23 @@ class Client(BaseClient):
         self.close()
 
 
-def proxy_from_url(url: URLTypes,verify: VerifyTypes,
-        cert: CertTypes,
-        timeout: TimeoutTypes,
-        pool_limits: PoolLimits,
-        backend: ConcurrencyBackend) -> AsyncDispatcher:
+def proxy_from_url(
+    url: URLTypes,
+    *,
+    verify: VerifyTypes,
+    cert: typing.Optional[CertTypes],
+    timeout: TimeoutTypes,
+    pool_limits: PoolLimits,
+    backend: ConcurrencyBackend,
+) -> AsyncDispatcher:
     url = URL(url)
     if url.scheme in ("http", "https"):
-        return HTTPProxy(proxy_url=url, verify=verify, cert=cert, timeout=timeout, pool_limits=pool_limits, backend=backend)
+        return HTTPProxy(
+            proxy_url=url,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            pool_limits=pool_limits,
+            backend=backend,
+        )
     raise ValueError(f"Unknown proxy URL: {url!r}")
