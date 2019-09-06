@@ -55,7 +55,9 @@ class TCPStream(BaseTCPStream):
 
             with trio.move_on_after(read_timeout):
                 data = await self.stream.receive_some(max_bytes=n)
-                if data == b"":  # pragma: no cover
+                # b"" is the expected EOF message for Trio.
+                # The other case is an edge case that occurs with uvicorn+httptools.
+                if data == b"" or data.endswith(b"0\r\n\r\n"):
                     self.is_eof = True
                 return data
 
