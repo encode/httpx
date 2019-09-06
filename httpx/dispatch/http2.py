@@ -111,11 +111,19 @@ class HTTP2Connection:
         self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
     ) -> None:
         while data:
+            # The data will be divided into frames to send based on the flow control
+            # window and the maximum frame size. Because the flow control window
+            # can decrease in size, even possibly to zero, this will loop until all the
+            # data is sent. In http2 specification:
+            # https://tools.ietf.org/html/rfc7540#section-6.9
             flow_control = self.h2_state.local_flow_control_window(stream_id)
             chunk_size = min(
                 len(data), flow_control, self.h2_state.max_outbound_frame_size
             )
             if chunk_size == 0:
+                # this means that the flow control window is 0 (either for the stream
+                # or the connection one), and no data can be sent until the flow control
+                # window is updated.
                 await self.window_update_received[stream_id].wait()
                 self.window_update_received[stream_id].clear()
             else:

@@ -51,20 +51,6 @@ def test_http2_post_request():
     }
 
 
-def test_http2_large_post_request():
-    backend = MockHTTP2Backend(app=app)
-
-    data = b"a" * 100000
-    with Client(backend=backend) as client:
-        response = client.post("http://example.org", data=data)
-    assert response.status_code == 200
-    assert json.loads(response.content) == {
-        "method": "POST",
-        "path": "/",
-        "body": data.decode(),
-    }
-
-
 async def test_async_http2_post_request(backend):
     backend = MockHTTP2Backend(app=app, backend=backend)
 
@@ -79,7 +65,21 @@ async def test_async_http2_post_request(backend):
     }
 
 
-async def test_http2_large_async_post_request(backend):
+def test_http2_large_post_request():
+    backend = MockHTTP2Backend(app=app)
+
+    data = b"a" * 100000
+    with Client(backend=backend) as client:
+        response = client.post("http://example.org", data=data)
+    assert response.status_code == 200
+    assert json.loads(response.content) == {
+        "method": "POST",
+        "path": "/",
+        "body": data.decode(),
+    }
+
+
+async def test_async_http2_large_post_request(backend):
     backend = MockHTTP2Backend(app=app, backend=backend)
 
     data = b"a" * 100000
