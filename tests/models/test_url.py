@@ -1,6 +1,6 @@
 import pytest
 
-from httpx import URL
+from httpx import URL, Origin
 from httpx.exceptions import InvalidURL
 
 
@@ -182,3 +182,11 @@ def test_url_full_path_setter():
 
     url.full_path = "http://example.org"
     assert url.full_path == "http://example.org"
+
+
+def test_origin_from_url_string():
+    origin = Origin("https://example.com")
+    assert origin.scheme == "https"
+    assert origin.is_ssl
+    assert origin.host == "example.com"
+    assert origin.port == 443
