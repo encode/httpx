@@ -150,14 +150,17 @@ class HTTP2Connection:
             # read timeouts, if we haven't already.
             self.timeout_flags[stream_id].set_read_timeouts()
             if isinstance(event, h2.events.ResponseReceived):
-                status_code = 200
-                headers = []
-                for k, v in event.headers:
-                    if k == b":status":
-                        status_code = int(v.decode("ascii", errors="ignore"))
-                    elif not k.startswith(b":"):
-                        headers.append((k, v))
-                return (status_code, headers)
+                break
+
+        status_code = 200
+        headers = []
+        for k, v in event.headers:
+            if k == b":status":
+                status_code = int(v.decode("ascii", errors="ignore"))
+            elif not k.startswith(b":"):
+                headers.append((k, v))
+
+        return (status_code, headers)
 
     async def body_iter(
         self, stream_id: int, timeout: TimeoutConfig = None
