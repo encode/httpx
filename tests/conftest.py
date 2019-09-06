@@ -1,6 +1,8 @@
 import asyncio
+import os
 import threading
 import time
+import typing
 
 import pytest
 import trustme
@@ -13,6 +15,28 @@ from uvicorn.config import Config
 from uvicorn.main import Server
 
 from httpx import URL, AsyncioBackend
+
+ENVIRONMENT_VARIABLES = (
+    "SSL_CERT_FILE",
+    "REQUESTS_CA_BUNDLE",
+    "CURL_CA_BUNDLE",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "NO_PROXY",
+    "SSLKEYLOGFILE",
+)
+
+
+@pytest.fixture(scope="function", autouse=True)
+def clean_environ() -> typing.Dict[str, typing.Any]:
+    """Keeps os.environ clean for every test without having to mock os.environ"""
+    original_environ = os.environ.copy()
+    for key in ENVIRONMENT_VARIABLES:
+        os.environ.pop(key, None)
+    yield
+    os.environ.clear()
+    os.environ.update(original_environ)
 
 
 @pytest.fixture(params=[pytest.param(AsyncioBackend, marks=pytest.mark.asyncio)])

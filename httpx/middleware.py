@@ -88,7 +88,7 @@ class RedirectMiddleware(BaseMiddleware):
     ) -> AsyncRequest:
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
-        headers = self.redirect_headers(request, url)  # TODO: merge headers?
+        headers = self.redirect_headers(request, url, method)  # TODO: merge headers?
         content = self.redirect_content(request, method)
         cookies = Cookies(self.cookies)
         cookies.update(request.cookies)
@@ -138,15 +138,24 @@ class RedirectMiddleware(BaseMiddleware):
 
         return url
 
-    def redirect_headers(self, request: AsyncRequest, url: URL) -> Headers:
+    def redirect_headers(self, request: AsyncRequest, url: URL, method: str) -> Headers:
         """
-        Strip Authorization headers when responses are redirected away from
-        the origin.
+        Return the headers that should be used for the redirect request.
         """
         headers = Headers(request.headers)
+
         if url.origin != request.url.origin:
+            # Strip Authorization headers when responses are redirected away from
+            # the origin.
             del headers["Authorization"]
-            del headers["host"]
+            headers["Host"] = url.authority
+
+        if method != request.method and method == "GET":
+            # If we've switch to a 'GET' request, then strip any headers which
+            # are only relevant to the request body.
+            del headers["Content-Length"]
+            del headers["Transfer-Encoding"]
+
         return headers
 
     def redirect_content(self, request: AsyncRequest, method: str) -> bytes:
