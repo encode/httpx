@@ -59,11 +59,13 @@ client = httpx.Client(dispatch=dispatch)
 
 ## Build Request
 
-Using a Client instance to make build requests
+You can use `Client.build_request()` to build a request and
+make modifications before sending the request.
+
 ```python
 >>> client = httpx.Client()
->>> r = client.build_request("GET", "https://example.com")
->>> req.url.full_path = "*"
+>>> r = client.build_request("OPTIONS", "https://example.com")
+>>> req.url.full_path = "*"  # Build an 'OPTIONS *' request for CORS
 >>> client.send(r)
 <Response [200 OK]>
 ```
