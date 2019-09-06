@@ -249,9 +249,9 @@ def test_digest_auth(algorithm, expected_hash_length, expected_response_length):
     assert digest_data["uri"] == '"/"'
     assert len(digest_data["response"]) == expected_response_length + 2  # extra quotes
     assert len(digest_data["opaque"]) == expected_hash_length + 2
-    assert digest_data["algorithm"] == '"{}"'.format(algorithm)
-    assert digest_data["qop"] == '"auth"'
-    assert digest_data["nc"] == '"00000001"'
+    assert digest_data["algorithm"] == algorithm
+    assert digest_data["qop"] == "auth"
+    assert digest_data["nc"] == "00000001"
     assert len(digest_data["cnonce"]) == 16 + 2
 
 
@@ -278,7 +278,7 @@ def test_digest_auth_no_specified_qop():
     assert digest_data["uri"] == '"/"'
     assert len(digest_data["response"]) == 64 + 2
     assert len(digest_data["opaque"]) == 64 + 2
-    assert digest_data["algorithm"] == '"SHA-256"'
+    assert digest_data["algorithm"] == "SHA-256"
 
 
 def test_digest_auth_nonce_count():
@@ -295,7 +295,7 @@ def test_digest_auth_nonce_count():
     auth = response.json()["auth"]
     response_fields = [field.strip() for field in auth[auth.find(" ") :].split(",")]
     digest_data = dict(field.split("=") for field in response_fields)
-    assert digest_data["nc"] == '"00000002"'
+    assert digest_data["nc"] == "00000002"
 
 
 def test_digest_auth_qop_auth_int_not_implemented():

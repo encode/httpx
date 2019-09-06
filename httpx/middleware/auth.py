@@ -166,10 +166,7 @@ class _RequestDigestAuth(BaseMiddleware):
             format_args["nc"] = nc_value
             format_args["cnonce"] = cnonce
 
-        header_value = ", ".join(
-            ['{}="{}"'.format(key, to_str(value)) for key, value in format_args.items()]
-        )
-        return "Digest " + header_value
+        return "Digest " + self._get_header_value(format_args)
 
     def _get_client_nonce(self, nonce_count: int, nonce: bytes) -> bytes:
         s = str(nonce_count).encode()
@@ -184,6 +181,24 @@ class _RequestDigestAuth(BaseMiddleware):
         nonce value along with its 8-digit hex representation."""
         self.per_nonce_count[nonce] += 1
         return self.per_nonce_count[nonce], b"%08x" % self.per_nonce_count[nonce]
+
+    def _get_header_value(self, header_fields: typing.Dict[str, bytes]) -> str:
+        NON_QUOTED_FIELDS = ("algorithm", "qop", "nc")
+        QUOTED_TEMPLATE = '{}="{}"'
+        NON_QUOTED_TEMPLATE = "{}={}"
+
+        header_value = ""
+        for i, (field, value) in enumerate(header_fields.items()):
+            if i > 0:
+                header_value += ", "
+            template = (
+                QUOTED_TEMPLATE
+                if field not in NON_QUOTED_FIELDS
+                else NON_QUOTED_TEMPLATE
+            )
+            header_value += template.format(field, to_str(value))
+
+        return header_value
 
 
 class DigestAuthChallenge:
