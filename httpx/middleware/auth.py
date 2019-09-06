@@ -3,6 +3,7 @@ import os
 import time
 import typing
 from base64 import b64encode
+from collections import defaultdict
 from urllib.request import parse_http_list
 
 from ..exceptions import ProtocolError
@@ -41,6 +42,8 @@ class CustomAuth(BaseMiddleware):
 
 
 class DigestAuth(BaseMiddleware):
+    per_nonce_count: typing.Dict[bytes, int] = defaultdict(lambda: 0)
+
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ) -> None:
@@ -50,15 +53,15 @@ class DigestAuth(BaseMiddleware):
     async def __call__(
         self, request: AsyncRequest, get_response: typing.Callable
     ) -> AsyncResponse:
-        per_request_digest_auth = _RequestDigestAuthMiddleware(
-            username=self.username, password=self.password
+        request_middleware = _RequestDigestAuth(
+            username=self.username,
+            password=self.password,
+            per_nonce_count=self.per_nonce_count,
         )
-        return await per_request_digest_auth(request=request, get_response=get_response)
+        return await request_middleware(request=request, get_response=get_response)
 
 
-class _RequestDigestAuthMiddleware(BaseMiddleware):
-    """Per request stateful Digest auth handler."""
-
+class _RequestDigestAuth(BaseMiddleware):
     ALGORITHM_TO_HASH_FUNCTION: typing.Dict[str, typing.Callable] = {
         "MD5": hashlib.md5,
         "MD5-SESS": hashlib.md5,
@@ -71,12 +74,12 @@ class _RequestDigestAuthMiddleware(BaseMiddleware):
     }
 
     def __init__(
-        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
+        self, username: bytes, password: bytes, per_nonce_count: typing.Dict[bytes, int]
     ) -> None:
-        self.username = to_bytes(username)
-        self.password = to_bytes(password)
-        self._previous_nonce: typing.Optional[bytes] = None
-        self._nonce_count = 0
+        self.username = username
+        self.password = password
+        self.per_nonce_count = per_nonce_count
+        self.num_401_responses = 0
 
     async def __call__(
         self, request: AsyncRequest, get_response: typing.Callable
@@ -86,6 +89,7 @@ class _RequestDigestAuthMiddleware(BaseMiddleware):
             StatusCode.is_client_error(response.status_code)
             and "www-authenticate" in response.headers
         ):
+            self._num_401_responses = 0
             return response
 
         header = response.headers["www-authenticate"]
@@ -107,8 +111,10 @@ class _RequestDigestAuthMiddleware(BaseMiddleware):
         that of our first attempt. If it is different, however, we know the server has
         rejected our credentials.
         """
+        self.num_401_responses += 1
+
         return (
-            self._previous_nonce is not None and self._previous_nonce != challenge.nonce
+            challenge.nonce not in self.per_nonce_count and self.num_401_responses > 1
         )
 
     def _build_auth_header(
@@ -176,12 +182,8 @@ class _RequestDigestAuthMiddleware(BaseMiddleware):
     def _get_nonce_count(self, nonce: bytes) -> typing.Tuple[int, bytes]:
         """Returns the number of requests made with the same server provided
         nonce value along with its 8-digit hex representation."""
-        if nonce != self._previous_nonce:
-            self._nonce_count = 1
-        else:
-            self._nonce_count += 1
-        self._previous_nonce = nonce
-        return self._nonce_count, b"%08x" % self._nonce_count
+        self.per_nonce_count[nonce] += 1
+        return self.per_nonce_count[nonce], b"%08x" % self.per_nonce_count[nonce]
 
 
 class DigestAuthChallenge:

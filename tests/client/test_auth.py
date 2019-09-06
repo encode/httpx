@@ -36,7 +36,7 @@ class MockDigestAuthDispatch(AsyncDispatcher):
         algorithm: str = "SHA-256",
         send_response_after_attempt: int = 1,
         qop: str = "auth",
-        regenerate_nonce: bool = False,
+        regenerate_nonce: bool = True,
     ) -> None:
         self.algorithm = algorithm
         self.send_response_after_attempt = send_response_after_attempt
@@ -60,7 +60,7 @@ class MockDigestAuthDispatch(AsyncDispatcher):
     def challenge_send(self, request: AsyncRequest) -> AsyncResponse:
         self._response_count += 1
         nonce = (
-            hashlib.sha256(os.urandom(8))
+            hashlib.sha256(os.urandom(8)).hexdigest()
             if self._regenerate_nonce
             else "ee96edced2a0b43e4869e96ebe27563f369c1205a049d06419bb51d8aeddf3d3"
         )
@@ -245,9 +245,9 @@ def test_digest_auth(algorithm, expected_hash_length, expected_response_length):
 
     assert digest_data["username"] == '"tomchristie"'
     assert digest_data["realm"] == '"httpx@example.org"'
-    assert len(digest_data["nonce"]) == expected_hash_length + 2  # extra quotes
+    assert "nonce" in digest_data
     assert digest_data["uri"] == '"/"'
-    assert len(digest_data["response"]) == expected_response_length + 2
+    assert len(digest_data["response"]) == expected_response_length + 2  # extra quotes
     assert len(digest_data["opaque"]) == expected_hash_length + 2
     assert digest_data["algorithm"] == '"{}"'.format(algorithm)
     assert digest_data["qop"] == '"auth"'
@@ -286,7 +286,9 @@ def test_digest_auth_nonce_count():
     auth = DigestAuth(username="tomchristie", password="password123")
 
     with Client(
-        dispatch=MockDigestAuthDispatch(send_response_after_attempt=2)
+        dispatch=MockDigestAuthDispatch(
+            send_response_after_attempt=2, regenerate_nonce=False
+        )
     ) as client:
         response = client.get(url, auth=auth)
 
@@ -319,9 +321,7 @@ def test_digest_auth_incorrect_credentials():
     auth = DigestAuth(username="tomchristie", password="password123")
 
     with Client(
-        dispatch=MockDigestAuthDispatch(
-            send_response_after_attempt=2, regenerate_nonce=True
-        )
+        dispatch=MockDigestAuthDispatch(send_response_after_attempt=2)
     ) as client:
         response = client.get(url, auth=auth)
 
@@ -345,20 +345,3 @@ def test_digest_auth_raises_protocol_error_on_malformed_header(auth_header):
     with pytest.raises(ProtocolError):
         with Client(dispatch=MockAuthHeaderDispatch(auth_header=auth_header)) as client:
             client.get(url, auth=auth)
-
-
-def test_digest_auth_passed_to_client_does_not_share_state():
-    url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
-    mock_dispatch = MockDigestAuthDispatch()
-
-    with Client(dispatch=mock_dispatch, auth=auth) as client:
-        response = client.get(url)
-        auth_header = response.json()["auth"]
-        assert 'nc="00000001"' in auth_header
-
-        mock_dispatch.reset()
-
-        response = client.get(url)
-        auth_header = response.json()["auth"]
-        assert 'nc="00000001"' in auth_header
