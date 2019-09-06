@@ -1,5 +1,6 @@
 import hashlib
 import os
+import re
 import time
 import typing
 from base64 import b64encode
@@ -139,16 +140,11 @@ class _RequestDigestAuth(BaseMiddleware):
         if challenge.algorithm.lower().endswith("-sess"):
             HA1 = digest(b":".join((HA1, challenge.nonce, cnonce)))
 
-        qop = challenge.qop
-        if not qop:
+        qop = self._resolve_qop(challenge.qop)
+        if qop is None:
             digest_data = [HA1, challenge.nonce, HA2]
-        elif qop == b"auth" or b"auth" in qop.split(b",") or b"auth" in qop.split(b" "):
-            digest_data = [challenge.nonce, nc_value, cnonce, b"auth", HA2]
-        elif qop == b"auth-int":
-            raise NotImplementedError("Digest auth-int support is not yet implemented")
         else:
-            raise ProtocolError(f'Unexpected qop value "{qop!r}" in digest auth')
-
+            digest_data = [challenge.nonce, nc_value, cnonce, qop, HA2]
         key_digest = b":".join(digest_data)
 
         format_args = {
@@ -199,6 +195,18 @@ class _RequestDigestAuth(BaseMiddleware):
             header_value += template.format(field, to_str(value))
 
         return header_value
+
+    def _resolve_qop(self, qop: typing.Optional[bytes]) -> typing.Optional[bytes]:
+        if qop is None:
+            return None
+        qops = re.split(b", ?", qop)
+        if b"auth" in qops:
+            return b"auth"
+
+        if qops == [b"auth-int"]:
+            raise NotImplementedError("Digest auth-int support is not yet implemented")
+
+        raise ProtocolError(f'Unexpected qop value "{qop!r}" in digest auth')
 
 
 class DigestAuthChallenge:

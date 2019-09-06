@@ -298,6 +298,14 @@ def test_digest_auth_nonce_count():
     assert digest_data["nc"] == "00000002"
 
 
+def test_digest_auth_qop_including_spaces_and_auth_returns_auth():
+    url = "https://example.org/"
+    auth = DigestAuth(username="tomchristie", password="password123")
+
+    with Client(dispatch=MockDigestAuthDispatch(qop="auth, auth-int")) as client:
+        client.get(url, auth=auth)
+
+
 def test_digest_auth_qop_auth_int_not_implemented():
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
