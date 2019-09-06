@@ -21,9 +21,7 @@ def test_get(server):
 
 def test_build_request(server):
     url = server.url.copy_with(path="/echo_headers")
-    headers = {
-        'Custom-header': 'value'
-    }
+    headers = {"Custom-header": "value"}
 
     with httpx.Client() as http:
         request = http.build_request("GET", url)
@@ -34,8 +32,7 @@ def test_build_request(server):
     assert response.url == url
 
     for header_name, value in headers.items():
-        assert f'{header_name}: {value}' in response.content.decode()
-
+        assert f"{header_name}: {value}" in response.content.decode()
 
 
 def test_post(server):
