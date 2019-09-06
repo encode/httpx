@@ -181,7 +181,7 @@ class TrioBackend(ConcurrencyBackend):
         return Queue(max_size=max_size)
 
     def create_event(self) -> BaseEvent:
-        return typing.cast(BaseEvent, trio.Event())
+        return Event()
 
     def background_manager(
         self, coroutine: typing.Callable, *args: typing.Any
@@ -198,6 +198,25 @@ class Queue(BaseQueue):
 
     async def put(self, value: typing.Any) -> None:
         await self.send_channel.send(value)
+
+
+class Event(BaseEvent):
+    def __init__(self) -> None:
+        self._event = trio.Event()
+
+    def set(self) -> None:
+        self._event.set()
+
+    def is_set(self) -> bool:
+        return self._event.is_set()
+
+    async def wait(self) -> None:
+        await self._event.wait()
+
+    def clear(self) -> None:
+        # trio.Event.clear() was deprecated in Trio 0.12.
+        # https://github.com/python-trio/trio/issues/637
+        self._event = trio.Event()
 
 
 class BackgroundManager(BaseBackgroundManager):
