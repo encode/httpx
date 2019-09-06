@@ -1,6 +1,7 @@
 import os
 import ssl
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -28,15 +29,15 @@ def test_load_ssl_config_verify_existing_file():
 
 
 @pytest.mark.parametrize("config", ("SSL_CERT_FILE", "SSL_CERT_DIR"))
-def test_load_ssl_config_verify_env_file(config):
-    default_path = httpx.config.DEFAULT_CA_BUNDLE_PATH
+def test_load_ssl_config_verify_env_file(cert_pem_file, config):
     os.environ[config] = (
-        str(default_path) if config.endswith("_FILE") else str(default_path.parent)
+        cert_pem_file if config.endswith("_FILE") else str(Path(cert_pem_file).parent)
     )
-    ssl_config = httpx.SSLConfig(verify=None, trust_env=True)
+    ssl_config = httpx.SSLConfig(trust_env=True)
     context = ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
+    assert ssl_config.verify == cert_pem_file
 
 
 def test_load_ssl_config_verify_directory():
