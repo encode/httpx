@@ -626,7 +626,6 @@ class AsyncRequest(BaseRequest):
             assert hasattr(data, "__aiter__")
             self.is_streaming = True
             self.content_aiter = data
-            
         self.prepare()
 
     async def read(self) -> bytes:

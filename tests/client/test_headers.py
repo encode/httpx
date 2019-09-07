@@ -13,6 +13,7 @@ from httpx import (
     TimeoutTypes,
     VerifyTypes,
     __version__,
+    models,
 )
 
 
@@ -125,9 +126,8 @@ def test_header_update():
         }
     }
 
+
 def test_header_does_not_exist():
-    from httpx.models import Headers
-    headers = Headers({"foo": "bar"})
+    headers = models.Headers({"foo": "bar"})
     with pytest.raises(KeyError):
         del headers["baz"]
-    

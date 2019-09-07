@@ -39,6 +39,8 @@ class MockHTTP2Server(BaseStream):
         self.buffer = b""
         self.requests = {}
         self.close_connection = False
+        self.return_data = {}
+        self.returning = {}
 
     # Stream interface
 
@@ -58,8 +60,27 @@ class MockHTTP2Server(BaseStream):
                 self.request_received(event.headers, event.stream_id)
             elif isinstance(event, h2.events.DataReceived):
                 self.receive_data(event.data, event.stream_id)
+                # This should send an UPDATE_WINDOW for both the stream and the
+                # connection increasing it by the amount
+                # consumed keeping the flow control window constant
+                flow_control_consumed = event.flow_controlled_length
+                if flow_control_consumed > 0:
+                    self.conn.increment_flow_control_window(flow_control_consumed)
+                    self.buffer += self.conn.data_to_send()
+                    self.conn.increment_flow_control_window(
+                        flow_control_consumed, event.stream_id
+                    )
+                    self.buffer += self.conn.data_to_send()
             elif isinstance(event, h2.events.StreamEnded):
                 self.stream_complete(event.stream_id)
+            elif isinstance(event, h2.events.WindowUpdated):
+                if event.stream_id == 0:
+                    for key, value in self.returning.items():
+                        if value:
+                            self.send_return_data(key)
+                # This will throw an error if the event is for a not-yet created stream
+                elif self.returning[event.stream_id]:
+                    self.send_return_data(event.stream_id)
 
     async def write(self, data: bytes, timeout) -> None:
         self.write_no_block(data)
@@ -114,5 +135,28 @@ class MockHTTP2Server(BaseStream):
         response_headers = [(b":status", status_code_bytes)] + response.headers.raw
 
         self.conn.send_headers(stream_id, response_headers)
-        self.conn.send_data(stream_id, response.content, end_stream=True)
+        self.buffer += self.conn.data_to_send()
+        self.return_data[stream_id] = response.content
+        self.returning[stream_id] = True
+        self.send_return_data(stream_id)
+
+    def send_return_data(self, stream_id):
+        while self.return_data[stream_id]:
+            flow_control = self.conn.local_flow_control_window(stream_id)
+            chunk_size = min(
+                len(self.return_data[stream_id]),
+                flow_control,
+                self.conn.max_outbound_frame_size,
+            )
+            if chunk_size == 0:
+                return
+            else:
+                chunk, self.return_data[stream_id] = (
+                    self.return_data[stream_id][:chunk_size],
+                    self.return_data[stream_id][chunk_size:],
+                )
+                self.conn.send_data(stream_id, chunk)
+                self.buffer += self.conn.data_to_send()
+        self.returning[stream_id] = False
+        self.conn.end_stream(stream_id)
         self.buffer += self.conn.data_to_send()

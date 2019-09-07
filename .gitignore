@@ -6,6 +6,6 @@ __pycache__/
 htmlcov/
 site/
 *.egg-info/
-venv/
+venv*/
 .nox
-TAGS
+.python-version
