@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import threading
 import time
@@ -114,20 +115,18 @@ async def echo_body(scope, receive, send):
 
 
 async def echo_headers(scope, receive, send):
-    body: bytes = b""
-
+    body = {}
     for name, value in scope.get("headers", []):
-        value = f"{name.capitalize().decode()}: {value.decode()}\n"
-        body += value.encode()
+        body[name.capitalize().decode()] = value.decode()
 
     await send(
         {
             "type": "http.response.start",
             "status": 200,
-            "headers": [[b"content-type", b"text/plain"]],
+            "headers": [[b"content-type", b"application/json"]],
         }
     )
-    await send({"type": "http.response.body", "body": body})
+    await send({"type": "http.response.body", "body": json.dumps(body).encode()})
 
 
 class CAWithPKEncryption(trustme.CA):

@@ -31,8 +31,10 @@ def test_build_request(server):
     assert response.status_code == 200
     assert response.url == url
 
+    response_data = response.json()
     for header_name, value in headers.items():
-        assert f"{header_name}: {value}" in response.content.decode()
+        assert header_name in response_data
+        assert response_data[header_name] == value
 
 
 def test_post(server):
