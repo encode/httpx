@@ -111,3 +111,45 @@ async def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):
 
     # Reset the logger so we don't have verbose output in all unit tests
     logging.getLogger("httpx").handlers = []
+
+
+def test_lru_dict() -> None:
+    d = utils.LRUDict(max_size=2)
+    d["a"] = 1
+    d["b"] = 2
+    d["c"] = 3
+
+    assert d == {"b": 2, "c": 3}
+
+
+def test_lru_dict_initialized_with_keywords() -> None:
+    d = utils.LRUDict(max_size=2, a=1, b=2)
+    d["c"] = 3
+
+    assert d == {"b": 2, "c": 3}
+
+
+def test_lru_dict_initialized_with_iterable() -> None:
+    d = utils.LRUDict(2, (("a", 1), ("b", 2)))
+    d["c"] = 3
+
+    assert d == {"b": 2, "c": 3}
+
+
+def test_lru_dict_initialized_with_both() -> None:
+    d = utils.LRUDict(2, [("a", 1)], b=2)
+    d["c"] = 3
+
+    assert d == {"b": 2, "c": 3}
+
+
+def test_lru_dict_initialized_with_more_items_than_max_size_raises() -> None:
+    with pytest.raises(ValueError):
+        utils.LRUDict(1, a=1, b=2)
+
+
+def test_default_lru_dict() -> None:
+    d = utils.DefaultLRUDict(2, lambda: 0, [("a", 1)], b=2)
+    assert d["c"] == 0
+
+    assert d == {"b": 2, "c": 0}

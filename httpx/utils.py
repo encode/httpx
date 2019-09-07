@@ -192,3 +192,44 @@ def to_str(str_or_bytes: typing.Union[str, bytes]) -> str:
 def unquote(value: str) -> str:
     """Remove quotes from a string if present."""
     return value[1:-1] if value[0] == value[-1] == '"' else value
+
+
+class LRUDict(dict):
+    """Subclass of dict keeping only the N last items inserted.
+
+    When setting a new item the oldest element on the dict is deleted.
+    """
+
+    def __init__(
+        self,
+        max_size: int,
+        *args: typing.Iterable[typing.Tuple[typing.Any, typing.Any]],
+        **kwargs: typing.Any,
+    ) -> None:
+        if len(args) + len(kwargs) > max_size:
+            raise ValueError("Cannot initialize with more elements than the maximum")
+        self.max_size = max_size
+        super().__init__(*args, **kwargs)
+
+    def __setitem__(self, key: typing.Any, value: typing.Any) -> None:
+        super().__setitem__(key, value)
+        if len(self) > self.max_size:
+            del self[list(self)[0]]
+
+
+class DefaultLRUDict(LRUDict):
+    def __init__(
+        self,
+        max_size: int,
+        default_factory: typing.Callable = None,
+        *args: typing.Iterable[typing.Tuple[typing.Any, typing.Any]],
+        **kwargs: typing.Any,
+    ) -> None:
+        self.default_factory = default_factory
+        super().__init__(max_size, *args, **kwargs)
+
+    def __missing__(self, key: typing.Any) -> typing.Any:
+        if self.default_factory is None:
+            raise KeyError(key)
+        self[key] = self.default_factory()
+        return self[key]

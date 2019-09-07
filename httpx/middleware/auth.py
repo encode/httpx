@@ -4,12 +4,11 @@ import re
 import time
 import typing
 from base64 import b64encode
-from collections import defaultdict
 from urllib.request import parse_http_list
 
 from ..exceptions import ProtocolError
 from ..models import AsyncRequest, AsyncResponse, StatusCode
-from ..utils import to_bytes, to_str, unquote
+from ..utils import DefaultLRUDict, to_bytes, to_str, unquote
 from .base import BaseMiddleware
 
 
@@ -43,7 +42,7 @@ class CustomAuth(BaseMiddleware):
 
 
 class DigestAuth(BaseMiddleware):
-    per_nonce_count: typing.Dict[bytes, int] = defaultdict(lambda: 0)
+    per_nonce_count: typing.Dict[bytes, int] = DefaultLRUDict(1_000, lambda: 0)
 
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
