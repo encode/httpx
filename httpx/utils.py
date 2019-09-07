@@ -169,3 +169,7 @@ def get_logger(name: str) -> logging.Logger:
             logger.addHandler(handler)
 
     return logging.getLogger(name)
+
+
+def to_bytes(value: typing.Union[str, bytes]) -> bytes:
+    return value.encode() if isinstance(value, str) else value
