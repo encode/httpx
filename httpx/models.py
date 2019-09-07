@@ -477,6 +477,8 @@ class Headers(typing.MutableMapping[str, str]):
         for idx, (item_key, _) in enumerate(self._list):
             if item_key == del_key:
                 pop_indexes.append(idx)
+        if not pop_indexes:
+            raise KeyError(key)
 
         for idx in reversed(pop_indexes):
             del self._list[idx]
@@ -628,7 +630,6 @@ class AsyncRequest(BaseRequest):
             assert hasattr(data, "__aiter__")
             self.is_streaming = True
             self.content_aiter = data
-
         self.prepare()
 
     async def read(self) -> bytes:

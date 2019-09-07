@@ -40,7 +40,8 @@ from .exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
-from .middleware.auth import BasicAuth, DigestAuth
+from .middleware.basic_auth import BasicAuthMiddleware as BasicAuth
+from .middleware.digest_auth import DigestAuthMiddleware as DigestAuth
 from .models import (
     URL,
     AsyncRequest,

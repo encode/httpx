@@ -171,26 +171,17 @@ def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)
 
 
-def to_bytes(str_or_bytes: typing.Union[str, bytes]) -> bytes:
-    """Accepts an str or bytes object returning the bytes
-    unmodified or the UTF-8 encoded string.
-    """
-    return (
-        str_or_bytes.encode("utf-8") if isinstance(str_or_bytes, str) else str_or_bytes
-    )
+def to_bytes(value: typing.Union[str, bytes], encoding: str = "utf-8") -> bytes:
+    return value.encode(encoding) if isinstance(value, str) else value
 
 
-def to_str(str_or_bytes: typing.Union[str, bytes]) -> str:
-    """Accepts an str or bytes object returning the str
-    unmodified or the UTF-8 decoded string.
-    """
+def to_str(str_or_bytes: typing.Union[str, bytes], encoding: str = "utf-8") -> str:
     return (
-        str_or_bytes if isinstance(str_or_bytes, str) else str_or_bytes.decode("utf-8")
+        str_or_bytes if isinstance(str_or_bytes, str) else str_or_bytes.decode(encoding)
     )
 
 
 def unquote(value: str) -> str:
-    """Remove quotes from a string if present."""
     return value[1:-1] if value[0] == value[-1] == '"' else value
 
 
