@@ -147,15 +147,14 @@ class RedirectMiddleware(BaseMiddleware):
         if url.origin != request.url.origin:
             # Strip Authorization headers when responses are redirected away from
             # the origin.
-            del headers["Authorization"]
+            headers.pop("Authorization", None)
             headers["Host"] = url.authority
 
         if method != request.method and method == "GET":
             # If we've switch to a 'GET' request, then strip any headers which
             # are only relevant to the request body.
-            del headers["Content-Length"]
-            del headers["Transfer-Encoding"]
-
+            headers.pop("Content-Length", None)
+            headers.pop("Transfer-Encoding", None)
         return headers
 
     def redirect_content(self, request: AsyncRequest, method: str) -> bytes:
