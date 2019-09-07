@@ -1,8 +1,8 @@
 import functools
 import typing
-from contextvars import ContextVar
 
 from ..config import DEFAULT_MAX_REDIRECTS
+from ..compat.contextvars import ContextVar
 from ..exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from ..models import URL, AsyncRequest, AsyncResponse, Cookies, Headers
 from ..status_codes import codes
