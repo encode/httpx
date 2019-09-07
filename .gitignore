@@ -8,3 +8,4 @@ site/
 *.egg-info/
 venv/
 .nox
+TAGS

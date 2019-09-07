@@ -2,6 +2,8 @@
 
 import json
 
+import pytest
+
 from httpx import (
     AsyncDispatcher,
     AsyncRequest,
@@ -122,3 +124,10 @@ def test_header_update():
             "user-agent": "python-myclient/0.2.1",
         }
     }
+
+def test_header_does_not_exist():
+    from httpx.models import Headers
+    headers = Headers({"foo": "bar"})
+    with pytest.raises(KeyError):
+        del headers["baz"]
+    
