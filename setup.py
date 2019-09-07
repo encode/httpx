@@ -57,6 +57,7 @@ setup(
         "hstspreload>=2019.8.27",
         "idna==2.*",
         "rfc3986==1.*",
+        "contextvars; python_version<'3.7'",
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",

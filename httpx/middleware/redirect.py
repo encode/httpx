@@ -1,11 +1,14 @@
 import functools
 import typing
+from contextvars import ContextVar
 
 from ..config import DEFAULT_MAX_REDIRECTS
 from ..exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from ..models import URL, AsyncRequest, AsyncResponse, Cookies, Headers
 from ..status_codes import codes
 from .base import BaseMiddleware
+
+HISTORY: ContextVar[typing.List[AsyncResponse]] = ContextVar("history")
 
 
 class RedirectMiddleware(BaseMiddleware):
@@ -18,23 +21,28 @@ class RedirectMiddleware(BaseMiddleware):
         self.allow_redirects = allow_redirects
         self.max_redirects = max_redirects
         self.cookies = cookies
-        self.history: typing.List[AsyncResponse] = []
 
     async def __call__(
         self, request: AsyncRequest, get_response: typing.Callable
     ) -> AsyncResponse:
-        if len(self.history) > self.max_redirects:
+        try:
+            history = HISTORY.get()
+        except LookupError:
+            history = []
+
+        if len(history) > self.max_redirects:
             raise TooManyRedirects()
-        if request.url in (response.url for response in self.history):
+        if request.url in (response.url for response in history):
             raise RedirectLoop()
 
         response = await get_response(request)
-        response.history = list(self.history)
+        response.history = list(history)
 
         if not response.is_redirect:
             return response
 
-        self.history.append(response)
+        history.append(response)
+        HISTORY.set(history)
         next_request = self.build_redirect_request(request, response)
 
         if self.allow_redirects:
