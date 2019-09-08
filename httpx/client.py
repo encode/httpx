@@ -111,14 +111,30 @@ class BaseClient:
                 proxies = {}
 
         if isinstance(proxies, (URL, str)):
-            self.proxies = {"all": proxy_from_url(proxies, verify=verify, cert=cert, timeout=timeout, pool_limits=pool_limits, backend=backend)}
+            self.proxies = {
+                "all": proxy_from_url(
+                    proxies,
+                    verify=verify,
+                    cert=cert,
+                    timeout=timeout,
+                    pool_limits=pool_limits,
+                    backend=backend,
+                )
+            }
         elif isinstance(proxies, AsyncDispatcher):
             self.proxies = {"all": proxies}
         elif proxies:
             new_proxies = {}
             for key, val in proxies.items():
                 if isinstance(val, (URL, str)):
-                    new_proxies[key] = proxy_from_url(val, verify=verify, cert=cert, timeout=timeout, pool_limits=pool_limits, backend=backend)
+                    new_proxies[key] = proxy_from_url(
+                        val,
+                        verify=verify,
+                        cert=cert,
+                        timeout=timeout,
+                        pool_limits=pool_limits,
+                        backend=backend,
+                    )
                 elif isinstance(val, AsyncDispatcher):
                     new_proxies[key] = val
                 else:

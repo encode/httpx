@@ -126,7 +126,9 @@ async def test_proxy_tunnel_start_tls(backend):
     assert recv[3].startswith(b"GET / HTTP/1.1\r\nhost: example.com\r\n")
 
 
-@pytest.mark.parametrize("proxy_mode", [httpx.HTTPProxyMode.FORWARD_ONLY, httpx.HTTPProxyMode.DEFAULT])
+@pytest.mark.parametrize(
+    "proxy_mode", [httpx.HTTPProxyMode.FORWARD_ONLY, httpx.HTTPProxyMode.DEFAULT]
+)
 async def test_proxy_forwarding(backend, proxy_mode):
     raw_io = MockRawSocketBackend(
         data_to_send=(
@@ -134,15 +136,13 @@ async def test_proxy_forwarding(backend, proxy_mode):
                 b"HTTP/1.1 200 OK\r\n"
                 b"Date: Sun, 10 Oct 2010 23:26:07 GMT\r\n"
                 b"Server: origin-server\r\n"
-                b"\r\n",
+                b"\r\n"
             ]
         ),
         backend=backend,
     )
     async with httpx.HTTPProxy(
-        proxy_url="http://127.0.0.1:8000",
-        backend=raw_io,
-        proxy_mode=proxy_mode,
+        proxy_url="http://127.0.0.1:8000", backend=raw_io, proxy_mode=proxy_mode
     ) as proxy:
         response = await proxy.request("GET", f"http://example.com")
 

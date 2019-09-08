@@ -56,6 +56,8 @@ def test_proxies_set_from_environ_variations(environ_key):
 
 def test_proxies_set_from_environ_no_trust_env():
     os.environ["HTTP_PROXY"] = "http://127.0.0.1:3000"
+    os.environ["HTTPS_PROXY"] = "http://127.0.0.1:3001"
+    os.environ["ALL_PROXY"] = "http://127.0.0.1:3002"
 
     client = httpx.Client(trust_env=False)
 
@@ -64,7 +66,28 @@ def test_proxies_set_from_environ_no_trust_env():
 
 def test_proxies_authentication_in_url():
     client = httpx.Client(proxies="http://user:password@127.0.0.1:3000")
+
     assert len(client.proxies) == 1
     assert isinstance(client.proxies["all"], httpx.HTTPProxy)
-    assert client.proxies["all"].proxy_url == "http://127.0.0.1:3000"
-    assert client.proxies["all"].proxy_headers == {"Proxy-Authorization": ""}
+
+    proxy = client.proxies["all"]
+    assert proxy.proxy_url == "http://127.0.0.1:3000"
+    assert proxy.proxy_headers["Proxy-Authorization"] == "Basic dXNlcjpwYXNzd29yZA=="
+
+
+def test_proxies_headers_merged_with_authorization():
+    client = httpx.Client(
+        proxies=httpx.HTTPProxy(
+            "https://user:password@127.0.0.1:3000",
+            proxy_headers={"Custom": "Header"},
+            proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY,
+        )
+    )
+    assert len(client.proxies) == 1
+    assert isinstance(client.proxies["all"], httpx.HTTPProxy)
+
+    proxy = client.proxies["all"]
+    assert proxy.proxy_url == "https://127.0.0.1:3000"
+    assert proxy.proxy_mode == httpx.HTTPProxyMode.TUNNEL_ONLY
+    assert proxy.proxy_headers["Proxy-Authorization"] == "Basic dXNlcjpwYXNzd29yZA=="
+    assert proxy.proxy_headers["Custom"] == "Header"
