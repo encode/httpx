@@ -19,6 +19,21 @@ def test_get(server):
     assert repr(response) == "<Response [200 OK]>"
 
 
+def test_build_request(server):
+    url = server.url.copy_with(path="/echo_headers")
+    headers = {"Custom-header": "value"}
+
+    with httpx.Client() as http:
+        request = http.build_request("GET", url)
+        request.headers.update(headers)
+        response = http.send(request)
+
+    assert response.status_code == 200
+    assert response.url == url
+
+    assert response.json()["Custom-header"] == "value"
+
+
 def test_post(server):
     with httpx.Client() as http:
         response = http.post(server.url, data=b"Hello, world!")

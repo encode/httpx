@@ -25,12 +25,10 @@ from .dispatch.routing import RoutingDispatcher
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import HTTPError, InvalidURL
-from .middleware import (
-    BaseMiddleware,
-    BasicAuthMiddleware,
-    CustomAuthMiddleware,
-    RedirectMiddleware,
-)
+from .middleware.base import BaseMiddleware
+from .middleware.basic_auth import BasicAuthMiddleware
+from .middleware.custom_auth import CustomAuthMiddleware
+from .middleware.redirect import RedirectMiddleware
 from .models import (
     URL,
     AsyncRequest,
@@ -187,7 +185,7 @@ class BaseClient:
             return merged_headers
         return headers
 
-    async def send(
+    async def _get_response(
         self,
         request: AsyncRequest,
         *,
@@ -270,6 +268,33 @@ class BaseClient:
                 return BasicAuthMiddleware(username=username, password=password)
 
         return None
+
+    def build_request(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: AsyncRequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+    ) -> AsyncRequest:
+        url = self.merge_url(url)
+        headers = self.merge_headers(headers)
+        cookies = self.merge_cookies(cookies)
+        request = AsyncRequest(
+            method,
+            url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        return request
 
 
 class AsyncClient(BaseClient):
@@ -526,12 +551,9 @@ class AsyncClient(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> AsyncResponse:
-        url = self.merge_url(url)
-        headers = self.merge_headers(headers)
-        cookies = self.merge_cookies(cookies)
-        request = AsyncRequest(
-            method,
-            url,
+        request = self.build_request(
+            method=method,
+            url=url,
             data=data,
             files=files,
             json=json,
@@ -550,6 +572,29 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
         return response
+
+    async def send(
+        self,
+        request: AsyncRequest,
+        *,
+        stream: bool = False,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+        trust_env: bool = None,
+    ) -> AsyncResponse:
+        return await self._get_response(
+            request=request,
+            stream=stream,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            trust_env=trust_env,
+        )
 
     async def close(self) -> None:
         await self.dispatch.close()
@@ -628,12 +673,9 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
-        url = self.merge_url(url)
-        headers = self.merge_headers(headers)
-        cookies = self.merge_cookies(cookies)
-        request = AsyncRequest(
-            method,
-            url,
+        request = self.build_request(
+            method=method,
+            url=url,
             data=self._async_request_data(data),
             files=files,
             json=json,
@@ -641,9 +683,33 @@ class Client(BaseClient):
             headers=headers,
             cookies=cookies,
         )
+        response = self.send(
+            request,
+            stream=stream,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            trust_env=trust_env,
+        )
+        return response
+
+    def send(
+        self,
+        request: AsyncRequest,
+        *,
+        stream: bool = False,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+        trust_env: bool = None,
+    ) -> Response:
         concurrency_backend = self.concurrency_backend
 
-        coroutine = self.send
+        coroutine = self._get_response
         args = [request]
         kwargs = {
             "stream": True,
