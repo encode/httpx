@@ -200,4 +200,3 @@ def get_environ_lower_and_upper(key: str) -> typing.Optional[str]:
 
 def to_bytes(value: typing.Union[str, bytes], encoding: str = "utf-8") -> bytes:
     return value.encode(encoding) if isinstance(value, str) else value
-

@@ -13,7 +13,7 @@ from ..config import (
     VerifyTypes,
 )
 from ..exceptions import ProxyError
-from ..middleware import basic_auth_str
+from ..middleware.basic_auth import build_basic_auth_header
 from ..models import (
     URL,
     AsyncRequest,
@@ -71,9 +71,10 @@ class HTTPProxy(ConnectionPool):
         url = self.proxy_url
         if url.username or url.password:
             self.proxy_headers.setdefault(
-                "Proxy-Authorization", basic_auth_str(url.username, url.password)
+                "Proxy-Authorization",
+                build_basic_auth_header(url.username, url.password),
             )
-            self.proxy_url = url.copy_with(userinfo=None)
+            self.proxy_url = url.copy_with(authority=url.authority.rpartition("@")[2])
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:
         if self.should_forward_origin(origin):

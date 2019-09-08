@@ -128,6 +128,7 @@ class ConnectionPool(AsyncDispatcher):
         return response
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:
+        logger.debug("acquire_connection origin={origin!r}")
         connection = self.pop_connection(origin)
 
         if connection is None:

@@ -23,7 +23,6 @@ from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy, HTTPProxyMode
-from .dispatch.routing import RoutingDispatcher
 from .exceptions import (
     ConnectTimeout,
     CookieConflict,
@@ -112,7 +111,6 @@ __all__ = [
     "TooManyRedirects",
     "WriteTimeout",
     "AsyncDispatcher",
-    "RoutingDispatcher",
     "BaseStream",
     "ConcurrencyBackend",
     "Dispatcher",

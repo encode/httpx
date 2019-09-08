@@ -1,7 +1,6 @@
 import functools
 import typing
 
-
 from ..config import DEFAULT_MAX_REDIRECTS
 from ..exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from ..models import URL, AsyncRequest, AsyncResponse, Cookies, Headers
