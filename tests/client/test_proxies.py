@@ -64,6 +64,14 @@ def test_proxies_set_from_environ_no_trust_env():
     assert len(client.proxies) == 0
 
 
+def test_proxies_set_from_environ_ignores_non_http_proxies():
+    os.environ["TRAVIS_APT_PROXY"] = "DEFAULT"
+
+    client = httpx.Client(trust_env=True)
+
+    assert len(client.proxies) == 0
+
+
 def test_proxies_authentication_in_url():
     client = httpx.Client(proxies="http://user:password@127.0.0.1:3000")
 

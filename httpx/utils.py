@@ -150,10 +150,12 @@ def get_environment_proxies() -> typing.Dict[str, str]:
 
     # urllib.request.getproxies() falls back on System
     # Registry and Config for proxies on Windows and macOS.
-    proxies = {key: val for key, val in getproxies().items()}
+    # We don't want to propagate non-HTTP proxies into
+    # our configuration such as 'TRAVIS_APT_PROXY'.
+    proxies = {key: val for key, val in getproxies().items() if ("://" in key or key in ("http", "https"))}
 
     # Favor lowercase environment variables over uppercase.
-    all_proxy = get_environ_lower_and_upper("all_proxy")
+    all_proxy = get_environ_lower_and_upper("ALL_PROXY")
     if all_proxy is not None:
         proxies["all"] = all_proxy
 
