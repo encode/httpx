@@ -37,7 +37,7 @@ class TCPStream(BaseTCPStream):
 
         ident = self.stream.selected_alpn_protocol()
         if ident is None:
-            ident = self.stream.selected_npn_protocol()
+            return "HTTP/1.1"
 
         return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
