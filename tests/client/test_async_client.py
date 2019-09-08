@@ -14,6 +14,20 @@ async def test_get(server, backend):
     assert repr(response) == "<Response [200 OK]>"
 
 
+async def test_build_request(server, backend):
+    url = server.url.copy_with(path="/echo_headers")
+    headers = {"Custom-header": "value"}
+    async with httpx.AsyncClient(backend=backend) as client:
+        request = client.build_request("GET", url)
+        request.headers.update(headers)
+        response = await client.send(request)
+
+    assert response.status_code == 200
+    assert response.url == url
+
+    assert response.json()["Custom-header"] == "value"
+
+
 @pytest.mark.asyncio
 async def test_get_no_backend(server):
     """
