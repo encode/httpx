@@ -64,7 +64,7 @@ make modifications before sending the request.
 
 ```python
 >>> client = httpx.Client()
->>> r = client.build_request("OPTIONS", "https://example.com")
+>>> req = client.build_request("OPTIONS", "https://example.com")
 >>> req.url.full_path = "*"  # Build an 'OPTIONS *' request for CORS
 >>> client.send(r)
 <Response [200 OK]>
