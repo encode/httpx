@@ -46,7 +46,7 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .utils import get_environment_proxies, get_netrc_login
+from .utils import get_netrc_login
 
 ProxiesTypes = typing.Union[
     URLTypes,
@@ -63,7 +63,6 @@ class BaseClient:
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
-        proxies: ProxiesTypes = None,
         http_versions: HTTPVersionTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
@@ -103,45 +102,6 @@ class BaseClient:
             async_dispatch = ThreadedDispatcher(dispatch, backend)
         else:
             async_dispatch = dispatch
-
-        if proxies is None:
-            if self.trust_env:
-                proxies = get_environment_proxies()
-            else:
-                proxies = {}
-
-        if isinstance(proxies, (URL, str)):
-            self.proxies = {
-                "all": proxy_from_url(
-                    proxies,
-                    verify=verify,
-                    cert=cert,
-                    timeout=timeout,
-                    pool_limits=pool_limits,
-                    backend=backend,
-                )
-            }
-        elif isinstance(proxies, AsyncDispatcher):
-            self.proxies = {"all": proxies}
-        elif proxies:
-            new_proxies = {}
-            for key, val in proxies.items():
-                if isinstance(val, (URL, str)):
-                    new_proxies[key] = proxy_from_url(
-                        val,
-                        verify=verify,
-                        cert=cert,
-                        timeout=timeout,
-                        pool_limits=pool_limits,
-                        backend=backend,
-                    )
-                elif isinstance(val, AsyncDispatcher):
-                    new_proxies[key] = val
-                else:
-                    raise ValueError(f"Unknown proxy type {val}")
-            self.proxies = new_proxies
-        else:
-            self.proxies = {}
 
         if base_url is None:
             self.base_url = URL("", allow_relative=True)
@@ -214,9 +174,8 @@ class BaseClient:
             raise InvalidURL('URL scheme must be "http" or "https".')
 
         async def get_response(request: AsyncRequest) -> AsyncResponse:
-            dispatch = self._get_dispatcher_for_url(request.url)
             try:
-                response = await dispatch.send(
+                response = await self.dispatch.send(
                     request, verify=verify, cert=cert, timeout=timeout
                 )
             except HTTPError as exc:
@@ -309,28 +268,6 @@ class BaseClient:
             cookies=cookies,
         )
         return request
-
-    def _get_dispatcher_for_url(self, url: URL) -> AsyncDispatcher:
-        """
-        Return an AsyncDispatcher for the given URL taking in
-        to account proxies that are defined.
-        """
-        if self.proxies:
-            hostname = url.host
-            if url.port is not None:
-                hostname += f":{url.port}"
-
-            proxy_keys = (
-                f"{url.scheme}://{hostname}",
-                f"all://{hostname}",
-                url.scheme,
-                "all",
-            )
-            for proxy_key in proxy_keys:
-                if proxy_key in self.proxies:
-                    return self.proxies[proxy_key]
-
-        return self.dispatch
 
 
 class AsyncClient(BaseClient):
