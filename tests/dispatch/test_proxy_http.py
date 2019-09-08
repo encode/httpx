@@ -160,3 +160,10 @@ async def test_proxy_forwarding(backend, proxy_mode):
     assert recv[1].startswith(
         b"GET http://example.com HTTP/1.1\r\nhost: example.com\r\n"
     )
+
+
+def test_proxy_url_with_username_and_password():
+    proxy = httpx.HTTPProxy("http://user:password@example.com:1080")
+
+    assert proxy.proxy_url == "http://example.com:1080"
+    assert proxy.proxy_headers["Proxy-Authorization"] == "Basic dXNlcjpwYXNzd29yZA=="
