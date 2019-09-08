@@ -78,7 +78,11 @@ class TCPStream(BaseTCPStream):
             # Reset before recursive call, otherwise we'll go through
             # this branch indefinitely.
             self.write_buffer = b""
-            await self.write(previous_data, timeout=timeout, flag=flag)
+            try:
+                await self.write(previous_data, timeout=timeout, flag=flag)
+            except WriteTimeout:
+                self.writer_buffer = previous_data
+                raise
 
         if not data:
             return
