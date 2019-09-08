@@ -3,7 +3,6 @@ import os
 import re
 import time
 import typing
-from base64 import b64encode
 from urllib.request import parse_http_list
 
 from ..exceptions import ProtocolError
@@ -12,36 +11,7 @@ from ..utils import DefaultLRUDict, to_bytes, to_str, unquote
 from .base import BaseMiddleware
 
 
-class BasicAuth(BaseMiddleware):
-    def __init__(
-        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
-    ):
-        username = to_bytes(username)
-        password = to_bytes(password)
-        userpass = b":".join((username, password))
-        token = b64encode(userpass).decode().strip()
-
-        self.authorization_header = f"Basic {token}"
-
-    async def __call__(
-        self, request: AsyncRequest, get_response: typing.Callable
-    ) -> AsyncResponse:
-        request.headers["Authorization"] = self.authorization_header
-        return await get_response(request)
-
-
-class CustomAuth(BaseMiddleware):
-    def __init__(self, auth: typing.Callable[[AsyncRequest], AsyncRequest]):
-        self.auth = auth
-
-    async def __call__(
-        self, request: AsyncRequest, get_response: typing.Callable
-    ) -> AsyncResponse:
-        request = self.auth(request)
-        return await get_response(request)
-
-
-class DigestAuth(BaseMiddleware):
+class DigestAuthMiddleware(BaseMiddleware):
     per_nonce_count: typing.Dict[bytes, int] = DefaultLRUDict(1_000, lambda: 0)
 
     def __init__(

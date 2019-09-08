@@ -23,8 +23,9 @@ from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import HTTPError, InvalidURL
-from .middleware.auth import BasicAuth, CustomAuth
 from .middleware.base import BaseMiddleware
+from .middleware.basic_auth import BasicAuthMiddleware
+from .middleware.custom_auth import CustomAuthMiddleware
 from .middleware.redirect import RedirectMiddleware
 from .models import (
     URL,
@@ -209,11 +210,11 @@ class BaseClient:
         self, request: AsyncRequest, trust_env: bool, auth: AuthTypes = None
     ) -> typing.Optional[BaseMiddleware]:
         if isinstance(auth, tuple):
-            return BasicAuth(username=auth[0], password=auth[1])
+            return BasicAuthMiddleware(username=auth[0], password=auth[1])
         elif isinstance(auth, BaseMiddleware):
             return auth
         elif callable(auth):
-            return CustomAuth(auth=auth)
+            return CustomAuthMiddleware(auth=auth)
 
         if auth is not None:
             raise TypeError(
@@ -224,7 +225,7 @@ class BaseClient:
             )
 
         if request.url.username or request.url.password:
-            return BasicAuth(
+            return BasicAuthMiddleware(
                 username=request.url.username, password=request.url.password
             )
 
@@ -232,7 +233,7 @@ class BaseClient:
             netrc_login = get_netrc_login(request.url.authority)
             if netrc_login:
                 username, _, password = netrc_login
-                return BasicAuth(username=username, password=password)
+                return BasicAuthMiddleware(username=username, password=password)
 
         return None
 
