@@ -24,10 +24,13 @@ def _or_inf(value: typing.Optional[float]) -> float:
 
 
 class TCPStream(BaseTCPStream):
-    def __init__(self, stream: trio.abc.Stream, timeout: TimeoutConfig) -> None:
+    def __init__(
+        self,
+        stream: typing.Union[trio.SocketStream, trio.SSLStream],
+        timeout: TimeoutConfig,
+    ) -> None:
         self.stream = stream
         self.timeout = timeout
-        self.is_eof = False
         self.write_buffer = b""
         self.write_lock = trio.Lock()
 
@@ -54,18 +57,18 @@ class TCPStream(BaseTCPStream):
             read_timeout = _or_inf(timeout.read_timeout if should_raise else 0.01)
 
             with trio.move_on_after(read_timeout):
-                data = await self.stream.receive_some(max_bytes=n)
-                # b"" is the expected EOF message for Trio.
-                # The other case is an edge case that occurs with uvicorn+httptools.
-                if data == b"" or data.endswith(b"0\r\n\r\n"):
-                    self.is_eof = True
-                return data
+                return await self.stream.receive_some(max_bytes=n)
 
             if should_raise:
                 raise ReadTimeout() from None
 
     def is_connection_dropped(self) -> bool:
-        return self.is_eof
+        stream = self.stream
+        # Peek through any SSLStream wrappers to get the underlying SocketStream.
+        while hasattr(stream, "transport_stream"):
+            stream = stream.transport_stream
+        assert isinstance(stream, trio.SocketStream)
+        return not stream.socket.is_readable()
 
     def write_no_block(self, data: bytes) -> None:
         self.write_buffer += data
