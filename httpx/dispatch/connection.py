@@ -2,6 +2,8 @@ import functools
 import ssl
 import typing
 
+from h2.exception import NoAvailableStreamIDError
+
 from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
@@ -59,13 +61,19 @@ class HTTPConnection(AsyncDispatcher):
             await self.connect(verify=verify, cert=cert, timeout=timeout)
 
         if self.h2_connection is not None:
-            response = await self.h2_connection.send(request, timeout=timeout)
+            try:
+                response = await self.h2_connection.send(request, timeout=timeout)
+            except NoAvailableStreamIDError:
+                await self.connect(verify=verify, cert=cert, timeout=timeout)
+                # since the h2_connection is renewed, NoAvailableStreamIDError
+                # should not occur again
+                response = await self.h2_connection.send(request, timeout=timeout)
         else:
             assert self.h11_connection is not None
             response = await self.h11_connection.send(request, timeout=timeout)
 
         return response
-
+            
     async def connect(
         self,
         verify: VerifyTypes = None,
