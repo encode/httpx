@@ -2,7 +2,7 @@ import functools
 import ssl
 import typing
 
-from h2.exception import NoAvailableStreamIDError
+from h2.exceptions import NoAvailableStreamIDError
 
 from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
@@ -73,7 +73,7 @@ class HTTPConnection(AsyncDispatcher):
             response = await self.h11_connection.send(request, timeout=timeout)
 
         return response
-            
+
     async def connect(
         self,
         verify: VerifyTypes = None,
