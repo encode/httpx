@@ -28,7 +28,6 @@ class DigestAuth(BaseMiddleware):
     ) -> None:
         self.username = to_bytes(username)
         self.password = to_bytes(password)
-        self._num_401_responses = 0
 
     async def __call__(
         self, request: AsyncRequest, get_response: typing.Callable
@@ -38,10 +37,7 @@ class DigestAuth(BaseMiddleware):
             StatusCode.is_client_error(response.status_code)
             and "www-authenticate" in response.headers
         ):
-            self._num_401_responses = 0
             return response
-        else:
-            self._num_401_responses += 1
 
         header = response.headers["www-authenticate"]
         try:
@@ -49,11 +45,8 @@ class DigestAuth(BaseMiddleware):
         except ValueError:
             raise ProtocolError("Malformed Digest authentication header")
 
-        if self._num_401_responses > 1:
-            return response
-
         request.headers["Authorization"] = self._build_auth_header(request, challenge)
-        return await self(request, get_response)
+        return await get_response(request)
 
     def _build_auth_header(
         self, request: AsyncRequest, challenge: "DigestAuthChallenge"
