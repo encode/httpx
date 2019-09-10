@@ -173,3 +173,13 @@ def get_logger(name: str) -> logging.Logger:
 
 def to_bytes(value: typing.Union[str, bytes], encoding: str = "utf-8") -> bytes:
     return value.encode(encoding) if isinstance(value, str) else value
+
+
+def to_str(str_or_bytes: typing.Union[str, bytes], encoding: str = "utf-8") -> str:
+    return (
+        str_or_bytes if isinstance(str_or_bytes, str) else str_or_bytes.decode(encoding)
+    )
+
+
+def unquote(value: str) -> str:
+    return value[1:-1] if value[0] == value[-1] == '"' else value

@@ -211,8 +211,9 @@ class BaseClient:
     ) -> typing.Optional[BaseMiddleware]:
         if isinstance(auth, tuple):
             return BasicAuthMiddleware(username=auth[0], password=auth[1])
-
-        if callable(auth):
+        elif isinstance(auth, BaseMiddleware):
+            return auth
+        elif callable(auth):
             return CustomAuthMiddleware(auth=auth)
 
         if auth is not None:
