@@ -161,7 +161,7 @@ class DigestAuthChallenge:
 
         header_dict: typing.Dict[str, str] = {}
         for field in parse_http_list(fields):
-            key, value = field.strip().split("=")
+            key, value = field.strip().split("=", 1)
             header_dict[key] = unquote(value)
 
         try:
