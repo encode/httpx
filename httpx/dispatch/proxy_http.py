@@ -95,46 +95,7 @@ class HTTPProxy(ConnectionPool):
         connection = self.pop_connection(origin)
 
         if connection is None:
-            proxy_headers = self.proxy_headers.copy()
-            proxy_headers.setdefault("Accept", "*/*")
-            proxy_request = AsyncRequest(
-                method="CONNECT", url=self.proxy_url.copy_with(), headers=proxy_headers
-            )
-            proxy_request.url.full_path = f"{origin.host}:{origin.port}"
-
-            await self.max_connections.acquire()
-
-            connection = HTTPConnection(
-                self.proxy_url.origin,
-                verify=self.verify,
-                cert=self.cert,
-                timeout=self.timeout,
-                backend=self.backend,
-                http_versions=["HTTP/1.1"],  # Short-lived 'connection'
-                trust_env=self.trust_env,
-                release_func=self.release_connection,
-            )
-            self.active_connections.add(connection)
-
-            # See if our tunnel has been opened successfully
-            proxy_response = await connection.send(proxy_request)
-            logger.debug(
-                f"tunnel_response "
-                f"proxy_url={self.proxy_url!r} "
-                f"origin={origin!r} "
-                f"response={proxy_response!r}"
-            )
-            if not (200 <= proxy_response.status_code <= 299):
-                await proxy_response.read()
-                raise ProxyError(
-                    f"Non-2XX response received from HTTP proxy "
-                    f"({proxy_response.status_code})",
-                    request=proxy_request,
-                    response=proxy_response,
-                )
-            else:
-                proxy_response.on_close = None
-                await proxy_response.read()
+            connection = self.request_tunnel_proxy_connection(origin)
 
             # After we receive the 2XX response from the proxy that our
             # tunnel is open we switch the connection's origin
@@ -193,6 +154,51 @@ class HTTPProxy(ConnectionPool):
 
         else:
             self.active_connections.add(connection)
+
+        return connection
+
+    async def request_tunnel_proxy_connection(self, origin: Origin) -> HTTPConnection:
+        """Creates an HTTPConnection via """
+        proxy_headers = self.proxy_headers.copy()
+        proxy_headers.setdefault("Accept", "*/*")
+        proxy_request = AsyncRequest(
+            method="CONNECT", url=self.proxy_url.copy_with(), headers=proxy_headers
+        )
+        proxy_request.url.full_path = f"{origin.host}:{origin.port}"
+
+        await self.max_connections.acquire()
+
+        connection = HTTPConnection(
+            self.proxy_url.origin,
+            verify=self.verify,
+            cert=self.cert,
+            timeout=self.timeout,
+            backend=self.backend,
+            http_versions=["HTTP/1.1"],  # Short-lived 'connection'
+            trust_env=self.trust_env,
+            release_func=self.release_connection,
+        )
+        self.active_connections.add(connection)
+
+        # See if our tunnel has been opened successfully
+        proxy_response = await connection.send(proxy_request)
+        logger.debug(
+            f"tunnel_response "
+            f"proxy_url={self.proxy_url!r} "
+            f"origin={origin!r} "
+            f"response={proxy_response!r}"
+        )
+        if not (200 <= proxy_response.status_code <= 299):
+            await proxy_response.read()
+            raise ProxyError(
+                f"Non-2XX response received from HTTP proxy "
+                f"({proxy_response.status_code})",
+                request=proxy_request,
+                response=proxy_response,
+            )
+        else:
+            proxy_response.on_close = None
+            await proxy_response.read()
 
         return connection
 

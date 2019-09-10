@@ -180,8 +180,8 @@ def test_url_set():
 def test_url_full_path_setter():
     url = URL("http://example.org")
 
-    url.full_path = "http://example.org"
-    assert url.full_path == "http://example.org"
+    url.full_path = "http://example.net"
+    assert url.full_path == "http://example.net"
 
 
 def test_origin_from_url_string():

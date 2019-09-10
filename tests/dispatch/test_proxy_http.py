@@ -167,3 +167,17 @@ def test_proxy_url_with_username_and_password():
 
     assert proxy.proxy_url == "http://example.com:1080"
     assert proxy.proxy_headers["Proxy-Authorization"] == "Basic dXNlcjpwYXNzd29yZA=="
+
+
+def test_proxy_repr():
+    proxy = httpx.HTTPProxy(
+        "http://127.0.0.1:1080",
+        proxy_headers={"Custom": "Header"},
+        proxy_mode=httpx.HTTPProxyMode.DEFAULT,
+    )
+
+    assert repr(proxy) == (
+        "HTTPProxy(proxy_url=URL('http://127.0.0.1:1080') "
+        "proxy_headers=Headers({'custom': 'Header'}) "
+        "proxy_mode=<HTTPProxyMode.DEFAULT: 'DEFAULT'>)"
+    )

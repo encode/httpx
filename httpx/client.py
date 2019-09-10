@@ -20,7 +20,6 @@ from .config import (
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection_pool import ConnectionPool
-from .dispatch.proxy_http import HTTPProxy
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import HTTPError, InvalidURL
@@ -47,12 +46,6 @@ from .models import (
     URLTypes,
 )
 from .utils import get_netrc_login
-
-ProxiesTypes = typing.Union[
-    URLTypes,
-    AsyncDispatcher,
-    typing.Dict[str, typing.Union[str, URLTypes, AsyncDispatcher]],
-]
 
 
 class BaseClient:
@@ -340,7 +333,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
-        allow_redirects: bool = False,  #  Note: Differs to usual default.
+        allow_redirects: bool = False,  # NOTE: Differs to usual default.
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
@@ -790,7 +783,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
-        allow_redirects: bool = False,  #  Note: Differs to usual default.
+        allow_redirects: bool = False,  # NOTE: Differs to usual default.
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
@@ -969,25 +962,3 @@ class Client(BaseClient):
         traceback: TracebackType = None,
     ) -> None:
         self.close()
-
-
-def proxy_from_url(
-    url: URLTypes,
-    *,
-    verify: VerifyTypes,
-    cert: typing.Optional[CertTypes],
-    timeout: TimeoutTypes,
-    pool_limits: PoolLimits,
-    backend: ConcurrencyBackend,
-) -> AsyncDispatcher:
-    url = URL(url)
-    if url.scheme in ("http", "https"):
-        return HTTPProxy(
-            proxy_url=url,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            pool_limits=pool_limits,
-            backend=backend,
-        )
-    raise InvalidURL("Unable to find proxy for {url!r}")
