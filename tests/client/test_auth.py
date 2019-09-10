@@ -238,7 +238,7 @@ def test_digest_auth(algorithm, expected_hash_length, expected_response_length):
 
     assert response.status_code == 200
     auth = response.json()["auth"]
-    assert auth.startswith("Digest")
+    assert auth.startswith("Digest ")
 
     response_fields = [field.strip() for field in auth[auth.find(" ") :].split(",")]
     digest_data = dict(field.split("=") for field in response_fields)
@@ -264,7 +264,7 @@ def test_digest_auth_no_specified_qop():
 
     assert response.status_code == 200
     auth = response.json()["auth"]
-    assert auth.startswith("Digest")
+    assert auth.startswith("Digest ")
 
     response_fields = [field.strip() for field in auth[auth.find(" ") :].split(",")]
     digest_data = dict(field.split("=") for field in response_fields)
