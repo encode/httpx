@@ -40,6 +40,7 @@ from .exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
+from .middleware.digest_auth import DigestAuth
 from .models import (
     URL,
     AsyncRequest,
@@ -133,4 +134,5 @@ __all__ = [
     "Response",
     "ResponseContent",
     "RequestFiles",
+    "DigestAuth",
 ]
