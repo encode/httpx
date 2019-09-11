@@ -281,11 +281,12 @@ def test_digest_auth_no_specified_qop():
     assert digest_data["algorithm"] == "SHA-256"
 
 
-def test_digest_auth_qop_including_spaces_and_auth_returns_auth():
+@pytest.mark.parametrize("qop", ("auth, auth-int", "auth,auth-int", "unknown,auth"))
+def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str):
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
 
-    with Client(dispatch=MockDigestAuthDispatch(qop="auth, auth-int")) as client:
+    with Client(dispatch=MockDigestAuthDispatch(qop=qop)) as client:
         client.get(url, auth=auth)
 
 
