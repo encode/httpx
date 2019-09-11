@@ -118,11 +118,10 @@ class SSLConfig:
         """
         Return an SSL context for verified connections.
         """
-        if self.trust_env:
-            if self.verify is True or self.verify is None:
-                ssl_cert_file = get_ca_bundle_from_env()
-                if ssl_cert_file is not None:
-                    self.verify = ssl_cert_file  # type: ignore
+        if self.trust_env and self.verify is True:
+            ca_bundle = get_ca_bundle_from_env()
+            if ca_bundle is not None:
+                self.verify = ca_bundle  # type: ignore
 
         if isinstance(self.verify, bool):
             ca_bundle_path = DEFAULT_CA_BUNDLE_PATH
