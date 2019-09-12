@@ -70,6 +70,20 @@ make modifications before sending the request.
 <Response [200 OK]>
 ```
 
+## Specify the version of HTTP protocol
+
+One can set the version of HTTP protocol for the client in case you want to make the requests using specific version.
+
+For example:
+
+```python
+h11_client = httpx.Client(http_versions=["HTTP/1.1"])
+h11_response = h11_client.get("https://myserver.com")
+
+h2_client = httpx.Client(http_versions=["HTTP/2"])
+h2_response = h2_client.get("https://myserver.com")
+```
+
 ## .netrc Support
 
 HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is
