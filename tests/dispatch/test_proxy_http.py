@@ -66,8 +66,6 @@ async def test_proxy_tunnel_non_2xx_response(backend, status_code):
         ) as proxy:
             await proxy.request("GET", f"http://example.com")
 
-    assert isinstance(e.value, httpx.ProxyError)
-
     # ProxyError.request should be the CONNECT request not the original request
     assert e.value.request.method == "CONNECT"
     assert e.value.request.headers["Host"] == "127.0.0.1:8000"
