@@ -5,7 +5,7 @@ from .concurrency.asyncio import AsyncioBackend
 from .concurrency.base import (
     BaseBackgroundManager,
     BasePoolSemaphore,
-    BaseStream,
+    BaseTCPStream,
     ConcurrencyBackend,
 )
 from .config import (
@@ -107,7 +107,7 @@ __all__ = [
     "TooManyRedirects",
     "WriteTimeout",
     "AsyncDispatcher",
-    "BaseStream",
+    "BaseTCPStream",
     "ConcurrencyBackend",
     "Dispatcher",
     "URL",

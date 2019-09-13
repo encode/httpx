@@ -37,9 +37,9 @@ class TimeoutFlag:
         self.raise_on_write_timeout = True
 
 
-class BaseStream:
+class BaseTCPStream:
     """
-    A stream with read/write operations. Abstracts away any asyncio-specific
+    A TCP stream with read/write operations. Abstracts away any asyncio-specific
     interfaces into a more generic base class, that we can use with alternate
     backends, or for stand-alone test cases.
     """
@@ -110,22 +110,22 @@ class BasePoolSemaphore:
 
 
 class ConcurrencyBackend:
-    async def connect(
+    async def open_tcp_stream(
         self,
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> BaseStream:
+    ) -> BaseTCPStream:
         raise NotImplementedError()  # pragma: no cover
 
     async def start_tls(
         self,
-        stream: BaseStream,
+        stream: BaseTCPStream,
         hostname: str,
         ssl_context: ssl.SSLContext,
         timeout: TimeoutConfig,
-    ) -> BaseStream:
+    ) -> BaseTCPStream:
         raise NotImplementedError()  # pragma: no cover
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:

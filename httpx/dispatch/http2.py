@@ -4,7 +4,7 @@ import typing
 import h2.connection
 import h2.events
 
-from ..concurrency.base import BaseEvent, BaseStream, ConcurrencyBackend, TimeoutFlag
+from ..concurrency.base import BaseEvent, BaseTCPStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
 from ..models import AsyncRequest, AsyncResponse
 from ..utils import get_logger
@@ -17,7 +17,7 @@ class HTTP2Connection:
 
     def __init__(
         self,
-        stream: BaseStream,
+        stream: BaseTCPStream,
         backend: ConcurrencyBackend,
         on_release: typing.Callable = None,
     ):
