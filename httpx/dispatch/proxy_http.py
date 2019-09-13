@@ -74,7 +74,10 @@ class HTTPProxy(ConnectionPool):
                 "Proxy-Authorization",
                 build_basic_auth_header(url.username, url.password),
             )
-            self.proxy_url = url.copy_with(authority=url.authority.rpartition("@")[2])
+            # Remove userinfo from the URL authority, e.g.:
+            # 'username:password@proxy_host:proxy_port' -> 'proxy_host:proxy_port'
+            credentials, _, authority = url.authority.rpartition("@")
+            self.proxy_url = url.copy_with(authority=authority)
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:
         if self.should_forward_origin(origin):
