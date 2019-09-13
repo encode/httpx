@@ -3,6 +3,7 @@ import typing
 from types import TracebackType
 
 from ..config import PoolLimits, TimeoutConfig
+from ..models import Datagram
 
 
 class TimeoutFlag:
@@ -65,6 +66,23 @@ class BaseStream:
         raise NotImplementedError()  # pragma: no cover
 
 
+class BaseUDPStream:
+    """
+    An UDP stream with read/write operations.
+    """
+
+    async def read(
+        self, n: int, timeout: TimeoutConfig = None, flag: typing.Any = None
+    ) -> Datagram:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def write(self, data: bytes) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def close(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+
 class BaseQueue:
     """
     A FIFO queue. Abstracts away any asyncio-specific interfaces.
@@ -118,6 +136,11 @@ class ConcurrencyBackend:
         timeout: TimeoutConfig,
     ) -> BaseStream:
         raise NotImplementedError()  # pragma: no cover
+
+    async def open_udp_stream(
+        self, host: str, port: int, timeout: TimeoutConfig
+    ) -> BaseUDPStream:
+        raise NotImplementedError  # pragma: no cover
 
     async def start_tls(
         self,

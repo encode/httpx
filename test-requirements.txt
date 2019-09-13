@@ -1,6 +1,7 @@
 -e .
 
 # Optional
+anyio
 brotlipy==0.7.*
 
 cryptography

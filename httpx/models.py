@@ -1239,3 +1239,14 @@ class Cookies(MutableMapping):
             for key, value in self.response.headers.items():
                 info[key] = value
             return info
+
+
+class Datagram:
+    """
+    Representation of an UDP datagram.
+    """
+
+    def __init__(self, data: bytes, address: str, port: int):
+        self.data = data
+        self.address = address
+        self.port = port
