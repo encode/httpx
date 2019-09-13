@@ -3,6 +3,7 @@ import typing
 from types import TracebackType
 
 from ..config import PoolLimits, TimeoutConfig
+from ..exceptions import ReadTimeout, WriteTimeout
 
 
 class TimeoutFlag:
@@ -44,19 +45,75 @@ class BaseTCPStream:
     backends, or for stand-alone test cases.
     """
 
+    def __init__(self, timeout: TimeoutConfig):
+        self.timeout = timeout
+        self.write_buffer = b""
+
     def get_http_version(self) -> str:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def read_or_timeout(self, n: int, timeout: typing.Optional[float]) -> bytes:
         raise NotImplementedError()  # pragma: no cover
 
     async def read(
         self, n: int, timeout: TimeoutConfig = None, flag: typing.Any = None
     ) -> bytes:
-        raise NotImplementedError()  # pragma: no cover
+        if timeout is None:
+            timeout = self.timeout
+
+        while True:
+            # Check our flag at the first possible moment, and use a fine
+            # grained retry loop if we're not yet in read-timeout mode.
+            should_raise = flag is None or flag.raise_on_read_timeout
+            read_timeout = timeout.read_timeout if should_raise else 0.01
+            try:
+                data = await self.read_or_timeout(n, read_timeout)
+                break
+            except ReadTimeout:
+                if should_raise:
+                    raise
+
+        return data
 
     def write_no_block(self, data: bytes) -> None:
+        self.write_buffer += data
+
+    async def write_or_timeout(
+        self, data: bytes, timeout: typing.Optional[float]
+    ) -> None:
         raise NotImplementedError()  # pragma: no cover
 
-    async def write(self, data: bytes, timeout: TimeoutConfig = None) -> None:
-        raise NotImplementedError()  # pragma: no cover
+    async def write(
+        self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
+    ) -> None:
+        if self.write_buffer:
+            write_buffer = self.write_buffer
+            # Reset write buffer before recursive call,
+            # otherwise we'd go through this branch indefinitely.
+            self.write_buffer = b""
+            try:
+                await self.write(write_buffer, timeout=timeout, flag=flag)
+            except WriteTimeout:
+                self.writer_buffer = write_buffer
+                raise
+
+        if not data:
+            return
+
+        if timeout is None:
+            timeout = self.timeout
+
+        while True:
+            try:
+                await self.write_or_timeout(data, timeout.write_timeout)
+                break
+            except WriteTimeout:
+                # We check our flag at the first possible moment, in order to
+                # allow us to suppress write timeouts, if we've since
+                # switched over to read-timeout mode.
+                should_raise = flag is None or flag.raise_on_write_timeout
+                if should_raise:
+                    raise
 
     async def close(self) -> None:
         raise NotImplementedError()  # pragma: no cover

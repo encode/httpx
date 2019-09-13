@@ -41,23 +41,19 @@ class TCPStream(BaseTCPStream):
         ident = self.stream.selected_alpn_protocol()
         return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
-    async def read(
-        self, n: int, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
-    ) -> bytes:
-        if timeout is None:
-            timeout = self.timeout
+    async def read_or_timeout(self, n: int, timeout: typing.Optional[float]) -> bytes:
+        with trio.move_on_after(_or_inf(timeout)):
+            return await self.stream.receive_some(max_bytes=n)
+        raise ReadTimeout()
 
-        while True:
-            # Check our flag at the first possible moment, and use a fine
-            # grained retry loop if we're not yet in read-timeout mode.
-            should_raise = flag is None or flag.raise_on_read_timeout
-            read_timeout = _or_inf(timeout.read_timeout if should_raise else 0.01)
-
-            with trio.move_on_after(read_timeout):
-                return await self.stream.receive_some(max_bytes=n)
-
-            if should_raise:
-                raise ReadTimeout() from None
+    async def write_or_timeout(
+        self, data: bytes, timeout: typing.Optional[float]
+    ) -> None:
+        with trio.move_on_after(_or_inf(timeout)):
+            async with self.write_lock:
+                await self.stream.send_all(data)
+            return
+        raise WriteTimeout()
 
     def is_connection_dropped(self) -> bool:
         # Adapted from: https://github.com/encode/httpx/pull/143#issuecomment-515202982
