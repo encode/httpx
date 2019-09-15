@@ -63,12 +63,19 @@ class TCPStream(BaseTCPStream):
                 raise ReadTimeout() from None
 
     def is_connection_dropped(self) -> bool:
+        # Adapted from: https://github.com/encode/httpx/pull/143#issuecomment-515202982
         stream = self.stream
+
         # Peek through any SSLStream wrappers to get the underlying SocketStream.
         while hasattr(stream, "transport_stream"):
             stream = stream.transport_stream
         assert isinstance(stream, trio.SocketStream)
-        return not stream.socket.is_readable()
+
+        # Counter-intuitively, what we really want to know here is whether the socket is
+        # *readable*, i.e. whether it would return immediately with empty bytes if we
+        # called `.recv()` on it, indicating that the other end has closed the socket.
+        # See: https://github.com/encode/httpx/pull/143#issuecomment-515181778
+        return stream.socket.is_readable()
 
     def write_no_block(self, data: bytes) -> None:
         self.write_buffer += data
