@@ -5,7 +5,7 @@ import h2.config
 import h2.connection
 import h2.events
 
-from httpx import AsyncioBackend, BaseStream, Request, TimeoutConfig
+from httpx import AsyncioBackend, BaseTCPStream, Request, TimeoutConfig
 from tests.concurrency import sleep
 
 
@@ -15,13 +15,13 @@ class MockHTTP2Backend:
         self.backend = AsyncioBackend() if backend is None else backend
         self.server = None
 
-    async def connect(
+    async def open_tcp_stream(
         self,
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> BaseStream:
+    ) -> BaseTCPStream:
         self.server = MockHTTP2Server(self.app, backend=self.backend)
         return self.server
 
@@ -30,7 +30,7 @@ class MockHTTP2Backend:
         return getattr(self.backend, name)
 
 
-class MockHTTP2Server(BaseStream):
+class MockHTTP2Server(BaseTCPStream):
     def __init__(self, app, backend):
         config = h2.config.H2Configuration(client_side=False)
         self.conn = h2.connection.H2Connection(config=config)
@@ -42,7 +42,7 @@ class MockHTTP2Server(BaseStream):
         self.return_data = {}
         self.returning = {}
 
-    # Stream interface
+    # TCP stream interface
 
     def get_http_version(self) -> str:
         return "HTTP/2"
