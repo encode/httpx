@@ -35,7 +35,7 @@ class HTTP2Connection:
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
-        #  Start sending the request.
+        # Start sending the request.
         if not self.initialized:
             self.initiate_connection()
 

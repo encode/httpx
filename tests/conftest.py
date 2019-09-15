@@ -17,24 +17,29 @@ from uvicorn.main import Server
 
 from httpx import URL, AsyncioBackend
 
-ENVIRONMENT_VARIABLES = (
+ENVIRONMENT_VARIABLES = {
     "SSL_CERT_FILE",
-    "REQUESTS_CA_BUNDLE",
-    "CURL_CA_BUNDLE",
+    "SSL_CERT_DIR",
     "HTTP_PROXY",
     "HTTPS_PROXY",
     "ALL_PROXY",
     "NO_PROXY",
     "SSLKEYLOGFILE",
-)
+}
 
 
 @pytest.fixture(scope="function", autouse=True)
 def clean_environ() -> typing.Dict[str, typing.Any]:
     """Keeps os.environ clean for every test without having to mock os.environ"""
     original_environ = os.environ.copy()
-    for key in ENVIRONMENT_VARIABLES:
-        os.environ.pop(key, None)
+    os.environ.clear()
+    os.environ.update(
+        {
+            k: v
+            for k, v in original_environ.items()
+            if k not in ENVIRONMENT_VARIABLES and k.lower() not in ENVIRONMENT_VARIABLES
+        }
+    )
     yield
     os.environ.clear()
     os.environ.update(original_environ)

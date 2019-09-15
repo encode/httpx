@@ -334,7 +334,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
-        allow_redirects: bool = False,  #  Note: Differs to usual default.
+        allow_redirects: bool = False,  # NOTE: Differs to usual default.
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
@@ -784,7 +784,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
-        allow_redirects: bool = False,  #  Note: Differs to usual default.
+        allow_redirects: bool = False,  # NOTE: Differs to usual default.
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
