@@ -384,7 +384,7 @@ value to be more or less strict:
 
 HTTPX supports Basic and Digest HTTP authentication.
 
-To provide Basic authentication credentials you can provide a tuple of
+To provide Basic authentication credentials you can simply pass a 2-tuple of
 plaintext `str` or `bytes` objects as the `auth` argument to the request
 functions:
 
@@ -392,10 +392,10 @@ functions:
 >>> httpx.get("https://example.com", auth=("my_user", "password123"))
 ```
 
-To provide credentials for Digest authentication you need to instantiate
-an `DigestAuth` object providing, again, the plaintext username and
-password as arguments. This object can be then passed as the `auth` argument
-to the request methods as above:
+To provide credentials for Digest authentication you'll need to instantiate
+a `DigestAuth` object with the plaintext username and password as arguments.
+This object can be then passed as the `auth` argument to the request methods
+as above:
 
 ```python
 >>> auth = httpx.DigestAuth("my_user", "password123")
