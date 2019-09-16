@@ -169,13 +169,13 @@ class MockRawSocketBackend:
         self.received_data = []
         self.stream = MockRawSocketStream(self)
 
-    async def connect(
+    async def open_tcp_stream(
         self,
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> BaseStream:
+    ) -> BaseTCPStream:
         self.received_data.append(
             b"--- CONNECT(%s, %d) ---" % (hostname.encode(), port)
         )
@@ -183,11 +183,11 @@ class MockRawSocketBackend:
 
     async def start_tls(
         self,
-        stream: BaseStream,
+        stream: BaseTCPStream,
         hostname: str,
         ssl_context: ssl.SSLContext,
         timeout: TimeoutConfig,
-    ) -> BaseStream:
+    ) -> BaseTCPStream:
         self.received_data.append(b"--- START_TLS(%s) ---" % hostname.encode())
         return self.stream
 
@@ -196,7 +196,7 @@ class MockRawSocketBackend:
         return getattr(self.backend, name)
 
 
-class MockRawSocketStream(BaseStream):
+class MockRawSocketStream(BaseTCPStream):
     def __init__(self, backend: MockRawSocketBackend):
         self.backend = backend
 
