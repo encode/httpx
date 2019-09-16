@@ -384,7 +384,7 @@ value to be more or less strict:
 
 HTTPX supports Basic and Digest HTTP authentication.
 
-To provide Basic authentication credentials you can simply pass a 2-tuple of
+To provide Basic authentication credentials, pass a 2-tuple of
 plaintext `str` or `bytes` objects as the `auth` argument to the request
 functions:
 
