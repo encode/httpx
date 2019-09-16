@@ -1,6 +1,5 @@
 """Test compatibility with the Requests high-level API."""
 import pytest
-
 import requests
 
 
