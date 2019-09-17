@@ -1,6 +1,8 @@
 import io
 import typing
 
+from httpx.utils import ElapsedTimer
+
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import Request, Response
 from .base import Dispatcher
@@ -95,7 +97,8 @@ class WSGIDispatch(Dispatcher):
             seen_response_headers = response_headers
             seen_exc_info = exc_info
 
-        result = self.app(environ, start_response)
+        with ElapsedTimer() as timer:
+            result = self.app(environ, start_response)
 
         assert seen_status is not None
         assert seen_response_headers is not None
@@ -108,6 +111,7 @@ class WSGIDispatch(Dispatcher):
             headers=seen_response_headers,
             content=(chunk for chunk in result),
             on_close=getattr(result, "close", None),
+            elapsed=timer.elapsed,
         )
 
 

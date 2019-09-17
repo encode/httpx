@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 
 import httpx
@@ -44,6 +46,7 @@ def test_asgi():
     response = client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == "Hello, World!"
+    assert response.elapsed > timedelta(seconds=0)
 
 
 async def test_asgi_async(backend):

@@ -71,6 +71,7 @@ class ThreadedDispatcher(AsyncDispatcher):
             on_close=async_on_close,
             request=request,
             history=sync_response.history,
+            elapsed=sync_response.elapsed,
         )
 
     async def close(self) -> None:

@@ -5,7 +5,7 @@ import h11
 from ..concurrency.base import BaseTCPStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
 from ..models import AsyncRequest, AsyncResponse
-from ..utils import get_logger
+from ..utils import ElapsedTimer, get_logger
 
 H11Event = typing.Union[
     h11.Request,
@@ -49,8 +49,11 @@ class HTTP11Connection:
         await self._send_request(request, timeout)
 
         task, args = self._send_request_data, [request.stream(), timeout]
-        async with self.backend.background_manager(task, *args):
-            http_version, status_code, headers = await self._receive_response(timeout)
+        with ElapsedTimer() as timer:
+            async with self.backend.background_manager(task, *args):
+                http_version, status_code, headers = await self._receive_response(
+                    timeout
+                )
         content = self._receive_response_data(timeout)
 
         return AsyncResponse(
@@ -60,6 +63,7 @@ class HTTP11Connection:
             content=content,
             on_close=self.response_closed,
             request=request,
+            elapsed=timer.elapsed,
         )
 
     async def close(self) -> None:

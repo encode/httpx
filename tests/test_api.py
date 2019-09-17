@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 
 import httpx
@@ -15,6 +17,7 @@ def test_post(server):
     response = httpx.post(server.url, data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
+    assert response.elapsed > timedelta(seconds=0)
 
 
 def test_post_byte_iterator(server):

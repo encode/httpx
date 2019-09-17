@@ -707,6 +707,7 @@ class Client(BaseClient):
             on_close=sync_on_close,
             request=async_response.request,
             history=async_response.history,
+            elapsed=async_response.elapsed,
         )
         if not stream:
             try:

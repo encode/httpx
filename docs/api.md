@@ -59,6 +59,7 @@
 * `.request` - **Request**
 * `.cookies` - **Cookies**
 * `.history` - **List[Response]**
+* `.elapsed` - **timedelta**
 * `def .raise_for_status()` - **None**
 * `def .json()` - **Any**
 * `def .read()` - **bytes**

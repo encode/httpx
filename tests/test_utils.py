@@ -1,11 +1,18 @@
+import asyncio
 import logging
 import os
+from datetime import timedelta
 
 import pytest
 
 import httpx
 from httpx import utils
-from httpx.utils import get_netrc_login, guess_json_utf, parse_header_links
+from httpx.utils import (
+    ElapsedTimer,
+    get_netrc_login,
+    guess_json_utf,
+    parse_header_links,
+)
 
 
 @pytest.mark.parametrize(
@@ -111,3 +118,13 @@ async def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):
 
     # Reset the logger so we don't have verbose output in all unit tests
     logging.getLogger("httpx").handlers = []
+
+
+@pytest.mark.asyncio
+async def test_elapsed_timer():
+    with ElapsedTimer() as timer:
+        pass
+    assert timer.elapsed < timedelta(seconds=0.1)
+    with ElapsedTimer() as timer:
+        await asyncio.sleep(0.1)
+    assert timer.elapsed >= timedelta(seconds=0.1)
