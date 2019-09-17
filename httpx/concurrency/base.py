@@ -70,6 +70,9 @@ class BaseQueue:
     A FIFO queue. Abstracts away any asyncio-specific interfaces.
     """
 
+    def empty(self) -> bool:
+        raise NotImplementedError()  # pragma: no cover
+
     async def get(self) -> typing.Any:
         raise NotImplementedError()  # pragma: no cover
 

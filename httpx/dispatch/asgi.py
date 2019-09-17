@@ -1,7 +1,8 @@
 import typing
+from types import TracebackType
 
 from ..concurrency.asyncio import AsyncioBackend
-from ..concurrency.base import ConcurrencyBackend
+from ..concurrency.base import ConcurrencyBackend, BaseBackgroundManager
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import AsyncRequest, AsyncResponse
 from ..utils import MessageLoggerASGIMiddleware, get_logger
@@ -59,6 +60,7 @@ class ASGIDispatch(AsyncDispatcher):
         self.root_path = root_path
         self.client = client
         self.backend = AsyncioBackend() if backend is None else backend
+        self._lifespan: typing.Optional[Lifespan] = None
 
     async def send(
         self,
@@ -155,6 +157,34 @@ class ASGIDispatch(AsyncDispatcher):
             request=request,
         )
 
+    async def __aenter__(self) -> "ASGIDispatch":
+        self._lifespan = Lifespan(app=self.app, backend=self.backend)
+        try:
+            # TODO: should this be subject to a timeout?
+            await self._lifespan.__aenter__()
+        except Exception as exc:
+            if self.raise_app_exceptions:
+                raise
+            else:
+                await self._lifespan.__aexit__(type(exc), exc, exc.__traceback__)
+                self._lifespan = None
+
+        return self
+
+    async def close(self) -> None:
+        await self.__aexit__(None, None, None)
+
+    async def __aexit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        if self._lifespan is not None:
+            # TODO: should this be subject to a timeout?
+            await self._lifespan.__aexit__(exc_type, exc_value, traceback)
+        self._lifespan = None
+
 
 class BodyIterator:
     """
@@ -196,3 +226,74 @@ class BodyIterator:
         Used by the server to signal the end of the response body.
         """
         await self._queue.put(self._done)
+
+
+class Lifespan:
+    def __init__(self, app: typing.Callable, backend: ConcurrencyBackend) -> None:
+        self.app = app
+        self.backend = backend
+
+        self.receive_queue = self.backend.create_queue(max_size=1)
+        self.send_queue = self.backend.create_queue(max_size=1)
+        self.background: typing.Optional[BaseBackgroundManager] = None
+        self.is_lifespan_supported = True
+
+    async def __aenter__(self) -> None:
+        app_started_or_failed = self.backend.create_event()
+        app_exc = None
+
+        # The three wrappers below solely exist to propagate exceptions raised
+        # during app startup.
+        # This logic is duplicated with `ASGIDispatch.send()`, which might be a sign
+        # that this should really be the background manager's duty.
+
+        async def receive() -> dict:
+            message = await self.receive_queue.get()
+            app_started_or_failed.set()
+            return message
+
+        async def send(message: dict) -> None:
+            app_started_or_failed.set()
+            await self.send_queue.put(message)
+
+        async def run_app() -> None:
+            nonlocal app_exc
+            try:
+                await self.app({"type": "lifespan"}, receive, send)
+            except Exception as exc:
+                app_exc = exc
+            finally:
+                app_started_or_failed.set()
+
+        self.background = self.backend.background_manager(run_app)
+        await self.background.__aenter__()
+        await self.receive_queue.put({"type": "lifespan.startup"})
+        await app_started_or_failed.wait()
+
+        if app_exc is not None:
+            if not self.receive_queue.empty():
+                # App failed before calling `receive()` for the first time,
+                # e.g. `assert scope["type"] == "http"`.
+                self.is_lifespan_supported = False
+                return
+            raise app_exc
+
+        message = await self.send_queue.get()
+        assert message["type"] in {
+            "lifespan.startup.complete",
+            "lifespan.startup.failed",
+        }
+
+    async def __aexit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        assert self.background is not None
+        if self.is_lifespan_supported and exc_type is None:
+            await self.receive_queue.put({"type": "lifespan.shutdown"})
+            message = await self.send_queue.get()
+            assert message["type"] == "lifespan.shutdown.complete"
+        await self.background.__aexit__(exc_type, exc_value, traceback)
+        self.background = None

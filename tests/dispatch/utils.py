@@ -224,3 +224,49 @@ class MockRawSocketStream(BaseTCPStream):
 
     async def close(self) -> None:
         pass
+
+
+class LifespanSpy:
+    def __init__(
+        self,
+        app: typing.Callable,
+        startup_exception: typing.Type[BaseException] = None,
+        handle_startup_failed: bool = False,
+    ):
+        self.app = app
+        self.received_lifespan_events: typing.List[str] = []
+        self.sent_lifespan_events: typing.List[str] = []
+        self.startup_exception = startup_exception
+        self.handle_startup_failed = handle_startup_failed
+
+    async def __call__(
+        self, scope: dict, receive: typing.Callable, send: typing.Callable
+    ) -> None:
+        if scope["type"] != "lifespan":
+            await self.app(scope, receive, send)
+            return
+
+        async def spy_receive() -> dict:
+            message = await receive()
+            self.received_lifespan_events.append(message["type"])
+            return message
+
+        async def spy_send(message: dict) -> None:
+            self.sent_lifespan_events.append(message["type"])
+            await send(message)
+
+        message = await spy_receive()
+        assert message["type"] == "lifespan.startup"
+
+        if self.startup_exception is not None:
+            if self.handle_startup_failed:
+                await spy_send({"type": "lifespan.startup.failed"})
+            else:
+                raise self.startup_exception
+        else:
+            await spy_send({"type": "lifespan.startup.complete"})
+
+        message = await spy_receive()
+        assert message["type"] == "lifespan.shutdown"
+
+        await spy_send({"type": "lifespan.shutdown.complete"})
