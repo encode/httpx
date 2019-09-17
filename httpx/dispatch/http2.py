@@ -7,7 +7,7 @@ import h2.events
 from ..concurrency.base import BaseEvent, BaseTCPStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
 from ..models import AsyncRequest, AsyncResponse
-from ..utils import ElapsedTimer, get_logger
+from ..utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -46,9 +46,8 @@ class HTTP2Connection:
         self.window_update_received[stream_id] = self.backend.create_event()
 
         task, args = self.send_request_data, [stream_id, request.stream(), timeout]
-        with ElapsedTimer() as timer:
-            async with self.backend.background_manager(task, *args):
-                status_code, headers = await self.receive_response(stream_id, timeout)
+        async with self.backend.background_manager(task, *args):
+            status_code, headers = await self.receive_response(stream_id, timeout)
         content = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
 
@@ -59,7 +58,6 @@ class HTTP2Connection:
             content=content,
             on_close=on_close,
             request=request,
-            elapsed=timer.elapsed,
         )
 
     async def close(self) -> None:

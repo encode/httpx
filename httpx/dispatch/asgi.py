@@ -1,7 +1,5 @@
 import typing
 
-from httpx.utils import ElapsedTimer
-
 from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
@@ -127,10 +125,9 @@ class ASGIDispatch(AsyncDispatcher):
         # We could consider refactoring the other uses of this abstraction
         # (mainly sending/receiving request/response data in h11 and h2 dispatchers),
         # and see if that allows us to come back here and refactor things out.
-        with ElapsedTimer() as timer:
-            background = await self.backend.background_manager(run_app).__aenter__()
+        background = await self.backend.background_manager(run_app).__aenter__()
 
-            await response_started_or_failed.wait()
+        await response_started_or_failed.wait()
 
         if app_exc is not None and self.raise_app_exceptions:
             raise app_exc
@@ -152,7 +149,6 @@ class ASGIDispatch(AsyncDispatcher):
             content=response_body.iterate(),
             on_close=on_close,
             request=request,
-            elapsed=timer.elapsed,
         )
 
 

@@ -45,7 +45,7 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .utils import get_netrc_login
+from .utils import ElapsedTimer, get_netrc_login
 
 
 class BaseClient:
@@ -168,9 +168,11 @@ class BaseClient:
 
         async def get_response(request: AsyncRequest) -> AsyncResponse:
             try:
-                response = await self.dispatch.send(
-                    request, verify=verify, cert=cert, timeout=timeout
-                )
+                with ElapsedTimer() as timer:
+                    response = await self.dispatch.send(
+                        request, verify=verify, cert=cert, timeout=timeout
+                    )
+                response.elapsed = timer.elapsed
             except HTTPError as exc:
                 # Add the original request to any HTTPError
                 exc.request = request
