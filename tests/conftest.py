@@ -53,7 +53,7 @@ def backend(request):
 
 async def app(scope, receive, send):
     assert scope["type"] == "http"
-    if scope["path"] == "/slow_response":
+    if scope["path"].startswith("/slow_response"):
         await slow_response(scope, receive, send)
     elif scope["path"].startswith("/status"):
         await status_code(scope, receive, send)
@@ -77,7 +77,12 @@ async def hello_world(scope, receive, send):
 
 
 async def slow_response(scope, receive, send):
-    await asyncio.sleep(0.1)
+    delay_ms_str: str = scope["path"].replace("/slow_response/", "")
+    try:
+        delay_ms = float(delay_ms_str)
+    except ValueError:
+        delay_ms = 100
+    await asyncio.sleep(delay_ms / 1000.0)
     await send(
         {
             "type": "http.response.start",
