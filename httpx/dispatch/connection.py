@@ -127,12 +127,12 @@ class HTTPConnection(AsyncDispatcher):
             assert self.h11_connection is not None
             return self.h11_connection.is_closed
 
-    def is_connection_dropped(self) -> bool:
+    async def is_connection_dropped(self) -> bool:
         if self.h2_connection is not None:
-            return self.h2_connection.is_connection_dropped()
+            return await self.h2_connection.is_connection_dropped()
         else:
             assert self.h11_connection is not None
-            return self.h11_connection.is_connection_dropped()
+            return await self.h11_connection.is_connection_dropped()
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__

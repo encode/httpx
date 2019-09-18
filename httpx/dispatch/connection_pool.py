@@ -129,7 +129,7 @@ class ConnectionPool(AsyncDispatcher):
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:
         logger.debug("acquire_connection origin={origin!r}")
-        connection = self.pop_connection(origin)
+        connection = await self.pop_connection(origin)
 
         if connection is None:
             await self.max_connections.acquire()
@@ -174,12 +174,12 @@ class ConnectionPool(AsyncDispatcher):
         for connection in connections:
             await connection.close()
 
-    def pop_connection(self, origin: Origin) -> typing.Optional[HTTPConnection]:
+    async def pop_connection(self, origin: Origin) -> typing.Optional[HTTPConnection]:
         connection = self.active_connections.pop_by_origin(origin, http2_only=True)
         if connection is None:
             connection = self.keepalive_connections.pop_by_origin(origin)
 
-        if connection is not None and connection.is_connection_dropped():
+        if connection is not None and (await connection.is_connection_dropped()):
             self.max_connections.release()
             connection = None
 

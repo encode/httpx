@@ -61,7 +61,7 @@ class BaseTCPStream:
     async def close(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 
-    def is_connection_dropped(self) -> bool:
+    async def is_connection_dropped(self) -> bool:
         raise NotImplementedError()  # pragma: no cover
 
 

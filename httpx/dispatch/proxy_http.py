@@ -95,7 +95,7 @@ class HTTPProxy(ConnectionPool):
         """Creates a new HTTPConnection via the CONNECT method
         usually reserved for proxying HTTPS connections.
         """
-        connection = self.pop_connection(origin)
+        connection = await self.pop_connection(origin)
 
         if connection is None:
             connection = await self.request_tunnel_proxy_connection(origin)

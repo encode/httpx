@@ -111,7 +111,7 @@ class TCPStream(BaseTCPStream):
                 if should_raise:
                     raise WriteTimeout() from None
 
-    def is_connection_dropped(self) -> bool:
+    async def is_connection_dropped(self) -> bool:
         return self.stream_reader.at_eof()
 
     async def close(self) -> None:

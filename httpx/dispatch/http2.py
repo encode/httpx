@@ -220,5 +220,5 @@ class HTTP2Connection:
     def is_closed(self) -> bool:
         return False
 
-    def is_connection_dropped(self) -> bool:
-        return self.stream.is_connection_dropped()
+    async def is_connection_dropped(self) -> bool:
+        return await self.stream.is_connection_dropped()

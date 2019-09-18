@@ -204,5 +204,5 @@ class HTTP11Connection:
     def is_closed(self) -> bool:
         return self.h11_state.our_state in (h11.CLOSED, h11.ERROR)
 
-    def is_connection_dropped(self) -> bool:
-        return self.stream.is_connection_dropped()
+    async def is_connection_dropped(self) -> bool:
+        return await self.stream.is_connection_dropped()

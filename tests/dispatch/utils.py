@@ -88,7 +88,7 @@ class MockHTTP2Server(BaseTCPStream):
     async def close(self) -> None:
         pass
 
-    def is_connection_dropped(self) -> bool:
+    async def is_connection_dropped(self) -> bool:
         return self.close_connection
 
     # Server implementation
