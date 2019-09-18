@@ -12,7 +12,7 @@ def test_get(server):
 
 
 def test_post(server):
-    response = httpx.post(server.url, data=b"   Hello, world!")
+    response = httpx.post(server.url, data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
