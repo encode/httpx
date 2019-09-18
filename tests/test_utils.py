@@ -5,7 +5,12 @@ import pytest
 
 import httpx
 from httpx import utils
-from httpx.utils import get_netrc_login, guess_json_utf, parse_header_links
+from httpx.utils import (
+    get_environment_proxies,
+    get_netrc_login,
+    guess_json_utf,
+    parse_header_links,
+)
 
 
 @pytest.mark.parametrize(
@@ -111,3 +116,29 @@ async def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):
 
     # Reset the logger so we don't have verbose output in all unit tests
     logging.getLogger("httpx").handlers = []
+
+
+@pytest.mark.parametrize(
+    ["environment", "proxies"],
+    [
+        ({}, {}),
+        ({"HTTP_PROXY": "http://127.0.0.1"}, {"http": "http://127.0.0.1"}),
+        (
+            {"https_proxy": "http://127.0.0.1", "HTTP_PROXY": "https://127.0.0.1"},
+            {"https": "http://127.0.0.1", "http": "https://127.0.0.1"},
+        ),
+        (
+            {"all_proxy": "http://127.0.0.1", "ALL_PROXY": "https://1.1.1.1"},
+            {"all": "http://127.0.0.1"},
+        ),
+        (
+            {"https_proxy": "http://127.0.0.1", "HTTPS_PROXY": "https://1.1.1.1"},
+            {"https": "http://127.0.0.1"},
+        ),
+        ({"TRAVIS_APT_PROXY": "http://127.0.0.1"}, {}),
+    ],
+)
+def test_get_environment_proxies(environment, proxies):
+    os.environ.update(environment)
+
+    assert get_environment_proxies() == proxies

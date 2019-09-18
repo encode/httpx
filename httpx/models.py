@@ -41,6 +41,7 @@ from .utils import (
 
 if typing.TYPE_CHECKING:
     from .middleware.base import BaseMiddleware  # noqa: F401
+    from .dispatch.base import AsyncDispatcher  # noqa: F401
 
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
@@ -65,6 +66,12 @@ AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
     typing.Callable[["AsyncRequest"], "AsyncRequest"],
     "BaseMiddleware",
+]
+
+ProxiesTypes = typing.Union[
+    URLTypes,
+    "AsyncDispatcher",
+    typing.Dict[URLTypes, typing.Union[URLTypes, "AsyncDispatcher"]],
 ]
 
 AsyncRequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]

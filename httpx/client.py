@@ -20,6 +20,7 @@ from .config import (
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection_pool import ConnectionPool
+from .dispatch.proxy_http import HTTPProxy
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import HTTPError, InvalidURL
@@ -38,6 +39,7 @@ from .models import (
     CookieTypes,
     Headers,
     HeaderTypes,
+    ProxiesTypes,
     QueryParamTypes,
     RequestData,
     RequestFiles,
@@ -45,18 +47,20 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .utils import get_netrc_login
+from .utils import get_environment_proxies, get_netrc_login
 
 
 class BaseClient:
     def __init__(
         self,
+        *,
         auth: AuthTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http_versions: HTTPVersionTypes = None,
+        proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
@@ -100,6 +104,13 @@ class BaseClient:
             self.base_url = URL("", allow_relative=True)
         else:
             self.base_url = URL(base_url)
+
+        if proxies is None and trust_env:
+            proxies = typing.cast(ProxiesTypes, get_environment_proxies())
+
+        self.proxies: typing.Dict[str, AsyncDispatcher] = _proxies_to_dispatchers(
+            proxies
+        )
 
         self.auth = auth
         self._headers = Headers(headers)
@@ -162,13 +173,20 @@ class BaseClient:
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> AsyncResponse:
         if request.url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
 
+        if proxies is not None:
+            dispatch_proxies = _proxies_to_dispatchers(proxies)
+        else:
+            dispatch_proxies = proxies or self.proxies
+        dispatch = self._dispatcher_for_request(request, dispatch_proxies)
+
         async def get_response(request: AsyncRequest) -> AsyncResponse:
             try:
-                response = await self.dispatch.send(
+                response = await dispatch.send(
                     request, verify=verify, cert=cert, timeout=timeout
                 )
             except HTTPError as exc:
@@ -236,6 +254,31 @@ class BaseClient:
 
         return None
 
+    def _dispatcher_for_request(
+        self, request: AsyncRequest, proxies: typing.Dict[str, AsyncDispatcher]
+    ) -> AsyncDispatcher:
+        """Gets the AsyncDispatcher instance that should be used for a given Request"""
+        if proxies:
+            url = request.url
+            is_default_port = (url.scheme == "http" and url.port == 80) or (
+                url.scheme == "https" and url.port == 443
+            )
+            hostname = f"{url.host}:{url.port}"
+            proxy_keys = (
+                f"{url.scheme}://{hostname}",
+                f"{url.scheme}://{url.host}" if is_default_port else None,
+                f"all://{hostname}",
+                f"all://{url.host}" if is_default_port else None,
+                url.scheme,
+                "all",
+            )
+            for proxy_key in proxy_keys:
+                if proxy_key and proxy_key in proxies:
+                    dispatcher = proxies[proxy_key]
+                    return dispatcher
+
+        return self.dispatch
+
     def build_request(
         self,
         method: str,
@@ -279,6 +322,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> AsyncResponse:
         return await self.request(
             "GET",
@@ -293,6 +337,7 @@ class AsyncClient(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     async def options(
@@ -309,6 +354,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> AsyncResponse:
         return await self.request(
             "OPTIONS",
@@ -323,6 +369,7 @@ class AsyncClient(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     async def head(
@@ -339,6 +386,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> AsyncResponse:
         return await self.request(
             "HEAD",
@@ -353,6 +401,7 @@ class AsyncClient(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     async def post(
@@ -372,6 +421,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> AsyncResponse:
         return await self.request(
             "POST",
@@ -389,6 +439,7 @@ class AsyncClient(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     async def put(
@@ -408,6 +459,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> AsyncResponse:
         return await self.request(
             "PUT",
@@ -425,6 +477,7 @@ class AsyncClient(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     async def patch(
@@ -444,6 +497,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> AsyncResponse:
         return await self.request(
             "PATCH",
@@ -461,6 +515,7 @@ class AsyncClient(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     async def delete(
@@ -480,6 +535,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> AsyncResponse:
         return await self.request(
             "DELETE",
@@ -497,6 +553,7 @@ class AsyncClient(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     async def request(
@@ -517,6 +574,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> AsyncResponse:
         request = self.build_request(
             method=method,
@@ -537,6 +595,7 @@ class AsyncClient(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
         return response
 
@@ -551,6 +610,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> AsyncResponse:
         return await self._get_response(
             request=request,
@@ -561,6 +621,7 @@ class AsyncClient(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     async def close(self) -> None:
@@ -639,6 +700,7 @@ class Client(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> Response:
         request = self.build_request(
             method=method,
@@ -659,6 +721,7 @@ class Client(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
         return response
 
@@ -673,6 +736,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> Response:
         concurrency_backend = self.concurrency_backend
 
@@ -686,6 +750,7 @@ class Client(BaseClient):
             "cert": cert,
             "timeout": timeout,
             "trust_env": trust_env,
+            "proxies": proxies,
         }
         async_response = concurrency_backend.run(coroutine, *args, **kwargs)
 
@@ -729,6 +794,7 @@ class Client(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> Response:
         return self.request(
             "GET",
@@ -743,6 +809,7 @@ class Client(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     def options(
@@ -759,6 +826,7 @@ class Client(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> Response:
         return self.request(
             "OPTIONS",
@@ -773,6 +841,7 @@ class Client(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     def head(
@@ -789,6 +858,7 @@ class Client(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> Response:
         return self.request(
             "HEAD",
@@ -803,6 +873,7 @@ class Client(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     def post(
@@ -822,6 +893,7 @@ class Client(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> Response:
         return self.request(
             "POST",
@@ -839,6 +911,7 @@ class Client(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     def put(
@@ -858,6 +931,7 @@ class Client(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> Response:
         return self.request(
             "PUT",
@@ -875,6 +949,7 @@ class Client(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     def patch(
@@ -894,6 +969,7 @@ class Client(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> Response:
         return self.request(
             "PATCH",
@@ -911,6 +987,7 @@ class Client(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     def delete(
@@ -930,6 +1007,7 @@ class Client(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
+        proxies: ProxiesTypes = None,
     ) -> Response:
         return self.request(
             "DELETE",
@@ -947,6 +1025,7 @@ class Client(BaseClient):
             cert=cert,
             timeout=timeout,
             trust_env=trust_env,
+            proxies=proxies,
         )
 
     def close(self) -> None:
@@ -963,3 +1042,29 @@ class Client(BaseClient):
         traceback: TracebackType = None,
     ) -> None:
         self.close()
+
+
+def _proxy_from_url(url: URLTypes) -> AsyncDispatcher:
+    url = URL(url)
+    if url.scheme in ("http", "https"):
+        return HTTPProxy(url)
+    raise ValueError(f"Unknown proxy for {url!r}")
+
+
+def _proxies_to_dispatchers(
+    proxies: typing.Optional[ProxiesTypes]
+) -> typing.Dict[str, AsyncDispatcher]:
+    if proxies is None:
+        return {}
+    elif isinstance(proxies, (str, URL)):
+        return {"all": _proxy_from_url(proxies)}
+    elif isinstance(proxies, AsyncDispatcher):
+        return {"all": proxies}
+    else:
+        new_proxies = {}
+        for key, dispatcher_or_url in proxies.items():
+            if isinstance(dispatcher_or_url, (str, URL)):
+                new_proxies[str(key)] = _proxy_from_url(dispatcher_or_url)
+            else:
+                new_proxies[str(key)] = dispatcher_or_url
+        return new_proxies
