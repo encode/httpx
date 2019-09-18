@@ -34,8 +34,8 @@ def test_load_ssl_config_verify_directory():
     assert context.check_hostname is True
 
 
-def test_load_ssl_config_cert_and_key(cert_chain_pem_file, cert_private_key_file):
-    ssl_config = httpx.SSLConfig(cert=(cert_chain_pem_file, cert_private_key_file))
+def test_load_ssl_config_cert_and_key(cert_pem_file, cert_private_key_file):
+    ssl_config = httpx.SSLConfig(cert=(cert_pem_file, cert_private_key_file))
     context = ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
@@ -43,10 +43,10 @@ def test_load_ssl_config_cert_and_key(cert_chain_pem_file, cert_private_key_file
 
 @pytest.mark.parametrize("password", [b"password", "password"])
 def test_load_ssl_config_cert_and_encrypted_key(
-    cert_chain_pem_file, cert_encrypted_private_key_file, password
+    cert_pem_file, cert_encrypted_private_key_file, password
 ):
     ssl_config = httpx.SSLConfig(
-        cert=(cert_chain_pem_file, cert_encrypted_private_key_file, password)
+        cert=(cert_pem_file, cert_encrypted_private_key_file, password)
     )
     context = ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
@@ -54,18 +54,18 @@ def test_load_ssl_config_cert_and_encrypted_key(
 
 
 def test_load_ssl_config_cert_and_key_invalid_password(
-    cert_chain_pem_file, cert_encrypted_private_key_file
+    cert_pem_file, cert_encrypted_private_key_file
 ):
     ssl_config = httpx.SSLConfig(
-        cert=(cert_chain_pem_file, cert_encrypted_private_key_file, "password1")
+        cert=(cert_pem_file, cert_encrypted_private_key_file, "password1")
     )
 
     with pytest.raises(ssl.SSLError):
         ssl_config.load_ssl_context()
 
 
-def test_load_ssl_config_cert_without_key_raises(cert_chain_pem_file):
-    ssl_config = httpx.SSLConfig(cert=cert_chain_pem_file)
+def test_load_ssl_config_cert_without_key_raises(cert_pem_file):
+    ssl_config = httpx.SSLConfig(cert=cert_pem_file)
     with pytest.raises(ssl.SSLError):
         ssl_config.load_ssl_context()
 

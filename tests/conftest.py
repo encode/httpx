@@ -161,11 +161,8 @@ def localhost_cert(cert_authority):
 
 
 @pytest.fixture(scope=SERVER_SCOPE)
-def cert_chain_pem_file(localhost_cert):
-    cert_chain_pem = trustme.Blob(
-        b"".join([pem.bytes() for pem in localhost_cert.cert_chain_pems])
-    )
-    with cert_chain_pem.tempfile() as tmp:
+def cert_pem_file(localhost_cert):
+    with localhost_cert.cert_chain_pems[0].tempfile() as tmp:
         yield tmp
 
 
@@ -273,11 +270,11 @@ def server():
 
 
 @pytest.fixture(scope=SERVER_SCOPE)
-def https_server(cert_chain_pem_file, cert_private_key_file):
+def https_server(cert_pem_file, cert_private_key_file):
     config = Config(
         app=app,
         lifespan="off",
-        ssl_certfile=cert_chain_pem_file,
+        ssl_certfile=cert_pem_file,
         ssl_keyfile=cert_private_key_file,
         host="localhost",
         port=8001,
