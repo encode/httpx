@@ -116,26 +116,28 @@ async def test_proxy_tunnel_start_tls(backend):
         backend=raw_io,
         proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY,
     ) as proxy:
-        response1 = await proxy.request("GET", f"https://example.com")
+        resp = await proxy.request("GET", f"https://example.com")
 
-        assert response1.status_code == 404
-        assert response1.headers["Server"] == "origin-server"
+        assert resp.status_code == 404
+        assert resp.headers["Server"] == "origin-server"
 
-        assert response1.request.method == "GET"
-        assert response1.request.url == "https://example.com"
-        assert response1.request.headers["Host"] == "example.com"
-        await response1.read()
+        assert resp.request.method == "GET"
+        assert resp.request.url == "https://example.com"
+        assert resp.request.headers["Host"] == "example.com"
+
+        await resp.read()
 
         # Make another request to see that the tunnel is re-used.
-        response2 = await proxy.request("GET", f"https://example.com/target")
+        resp = await proxy.request("GET", f"https://example.com/target")
 
-        assert response2.status_code == 200
-        assert response2.headers["Server"] == "origin-server"
+        assert resp.status_code == 200
+        assert resp.headers["Server"] == "origin-server"
 
-        assert response2.request.method == "GET"
-        assert response2.request.url == "https://example.com/target"
-        assert response2.request.headers["Host"] == "example.com"
-        await response2.read()
+        assert resp.request.method == "GET"
+        assert resp.request.url == "https://example.com/target"
+        assert resp.request.headers["Host"] == "example.com"
+
+        await resp.read()
 
     recv = raw_io.received_data
     assert len(recv) == 5
