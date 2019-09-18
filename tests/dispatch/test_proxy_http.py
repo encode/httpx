@@ -88,13 +88,24 @@ async def test_proxy_tunnel_start_tls(backend):
     raw_io = MockRawSocketBackend(
         data_to_send=(
             [
+                # Tunnel Response
                 b"HTTP/1.1 200 OK\r\n"
                 b"Date: Sun, 10 Oct 2010 23:26:07 GMT\r\n"
                 b"Server: proxy-server\r\n"
                 b"\r\n",
+                # Response 1
                 b"HTTP/1.1 404 Not Found\r\n"
                 b"Date: Sun, 10 Oct 2010 23:26:07 GMT\r\n"
                 b"Server: origin-server\r\n"
+                b"Connection: keep-alive\r\n"
+                b"Content-Length: 0\r\n"
+                b"\r\n",
+                # Response 2
+                b"HTTP/1.1 200 OK\r\n"
+                b"Date: Sun, 10 Oct 2010 23:26:07 GMT\r\n"
+                b"Server: origin-server\r\n"
+                b"Connection: keep-alive\r\n"
+                b"Content-Length: 0\r\n"
                 b"\r\n",
             ]
         ),
@@ -105,23 +116,36 @@ async def test_proxy_tunnel_start_tls(backend):
         backend=raw_io,
         proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY,
     ) as proxy:
-        response = await proxy.request("GET", f"https://example.com")
+        response1 = await proxy.request("GET", f"https://example.com")
 
-        assert response.status_code == 404
-        assert response.headers["Server"] == "origin-server"
+        assert response1.status_code == 404
+        assert response1.headers["Server"] == "origin-server"
 
-        assert response.request.method == "GET"
-        assert response.request.url == "https://example.com"
-        assert response.request.headers["Host"] == "example.com"
+        assert response1.request.method == "GET"
+        assert response1.request.url == "https://example.com"
+        assert response1.request.headers["Host"] == "example.com"
+        await response1.read()
+
+        # Make another request to see that the tunnel is re-used.
+        response2 = await proxy.request("GET", f"https://example.com/target")
+
+        assert response2.status_code == 200
+        assert response2.headers["Server"] == "origin-server"
+
+        assert response2.request.method == "GET"
+        assert response2.request.url == "https://example.com/target"
+        assert response2.request.headers["Host"] == "example.com"
+        await response2.read()
 
     recv = raw_io.received_data
-    assert len(recv) == 4
+    assert len(recv) == 5
     assert recv[0] == b"--- CONNECT(127.0.0.1, 8000) ---"
     assert recv[1].startswith(
         b"CONNECT example.com:443 HTTP/1.1\r\nhost: 127.0.0.1:8000\r\n"
     )
     assert recv[2] == b"--- START_TLS(example.com) ---"
     assert recv[3].startswith(b"GET / HTTP/1.1\r\nhost: example.com\r\n")
+    assert recv[4].startswith(b"GET /target HTTP/1.1\r\nhost: example.com\r\n")
 
 
 @pytest.mark.parametrize(
