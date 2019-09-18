@@ -1,5 +1,4 @@
 import sys
-from datetime import timedelta
 
 import pytest
 
@@ -74,7 +73,6 @@ def test_wsgi():
     response = client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == "Hello, World!"
-    assert response.elapsed > timedelta(seconds=0)
 
 
 def test_wsgi_upload():

@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-from datetime import timedelta
 
 import pytest
 
@@ -123,8 +122,9 @@ async def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):
 @pytest.mark.asyncio
 async def test_elapsed_timer():
     with ElapsedTimer() as timer:
-        pass
-    assert timer.elapsed < timedelta(seconds=0.1)
-    with ElapsedTimer() as timer:
+        assert timer.elapsed.total_seconds() == pytest.approx(0, abs=0.05)
         await asyncio.sleep(0.1)
-    assert timer.elapsed >= timedelta(seconds=0.1)
+    await asyncio.sleep(
+        0.1
+    )  # test to ensure time spent after timer exits isn't accounted for.
+    assert timer.elapsed.total_seconds() == pytest.approx(0.1, abs=0.05)
