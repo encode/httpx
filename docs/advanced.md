@@ -115,15 +115,19 @@ password example-password
 ## HTTP Proxying
 
 HTTPX supports setting up proxies the same way that Requests does via the `proxies` parameter.
+For example to forward all HTTP traffic to `http://127.0.0.1:3080` and all HTTPS traffic
+to `http://127.0.0.1:3081` your `proxies` config would look like this:
 
 ```python
 >>> client = httpx.Client(proxies={
   "http": "http://127.0.0.1:3080",
-  "https": "http://127.0.0.1:3080"
+  "https": "http://127.0.0.1:3081"
 })
 ```
 
-Proxies can be configured per scheme, scheme+host, for all schemes of a host, or for all requests:
+Proxies can be configured for a specific scheme and host, all schemes of a host,
+all hosts for a scheme, or for all requests. When determining which proxy configuration
+to use for a given request this same order is used.
 
 ```python
 >>> client = httpx.Client(proxies={
@@ -136,9 +140,9 @@ Proxies can be configured per scheme, scheme+host, for all schemes of a host, or
 ```
 
 !!! warning
-    It is recommended for privacy reasons to use HTTPS and tunnel requests if possible.
-    Proxies can read your traffic even if the `proxy_url` parameter uses HTTPS
-    unless you make requests to the target domain with HTTPS through a `CONNECT` TCP tunnel.
+    To make sure that proxies cannot read your traffic,
+    and even if the proxy_url uses HTTPS, it is recommended to
+    use HTTPS and tunnel requests if possible.
 
 By default `HTTPProxy` will operate as a forwarding proxy for `http://...` requests
 and will establish a `CONNECT` TCP tunnel for `https://` requests. This doesn't change
