@@ -2,7 +2,7 @@ import typing
 
 import h11
 
-from ..concurrency.base import BaseStream, ConcurrencyBackend, TimeoutFlag
+from ..concurrency.base import BaseTCPStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
 from ..models import AsyncRequest, AsyncResponse
 from ..utils import get_logger
@@ -31,7 +31,7 @@ class HTTP11Connection:
 
     def __init__(
         self,
-        stream: BaseStream,
+        stream: BaseTCPStream,
         backend: ConcurrencyBackend,
         on_release: typing.Optional[OnReleaseCallback] = None,
     ):
@@ -153,7 +153,7 @@ class HTTP11Connection:
             if isinstance(event, h11.Data):
                 yield bytes(event.data)
             else:
-                assert isinstance(event, h11.EndOfMessage)
+                assert isinstance(event, h11.EndOfMessage) or event is h11.PAUSED
                 break  # pragma: no cover
 
     async def _receive_event(self, timeout: TimeoutConfig = None) -> H11Event:

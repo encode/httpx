@@ -85,7 +85,7 @@ class HTTPConnection(AsyncDispatcher):
             on_release = functools.partial(self.release_func, self)
 
         logger.debug(f"start_connect host={host!r} port={port!r} timeout={timeout!r}")
-        stream = await self.backend.connect(host, port, ssl_context, timeout)
+        stream = await self.backend.open_tcp_stream(host, port, ssl_context, timeout)
         http_version = stream.get_http_version()
         logger.debug(f"connected http_version={http_version!r}")
 

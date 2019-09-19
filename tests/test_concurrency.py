@@ -19,7 +19,7 @@ async def test_start_tls_on_socket_stream(https_server):
     ctx = SSLConfig().load_ssl_context_no_verify(HTTPVersionConfig())
     timeout = TimeoutConfig(5)
 
-    stream = await backend.connect(
+    stream = await backend.open_tcp_stream(
         https_server.url.host, https_server.url.port, None, timeout
     )
 

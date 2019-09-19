@@ -23,12 +23,10 @@ from .dispatch.connection_pool import ConnectionPool
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import HTTPError, InvalidURL
-from .middleware import (
-    BaseMiddleware,
-    BasicAuthMiddleware,
-    CustomAuthMiddleware,
-    RedirectMiddleware,
-)
+from .middleware.base import BaseMiddleware
+from .middleware.basic_auth import BasicAuthMiddleware
+from .middleware.custom_auth import CustomAuthMiddleware
+from .middleware.redirect import RedirectMiddleware
 from .models import (
     URL,
     AsyncRequest,
@@ -47,7 +45,7 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .utils import get_netrc_login
+from .utils import ElapsedTimer, get_netrc_login
 
 
 class BaseClient:
@@ -153,7 +151,7 @@ class BaseClient:
             return merged_headers
         return headers
 
-    async def send(
+    async def _get_response(
         self,
         request: AsyncRequest,
         *,
@@ -170,9 +168,11 @@ class BaseClient:
 
         async def get_response(request: AsyncRequest) -> AsyncResponse:
             try:
-                response = await self.dispatch.send(
-                    request, verify=verify, cert=cert, timeout=timeout
-                )
+                with ElapsedTimer() as timer:
+                    response = await self.dispatch.send(
+                        request, verify=verify, cert=cert, timeout=timeout
+                    )
+                response.elapsed = timer.elapsed
             except HTTPError as exc:
                 # Add the original request to any HTTPError
                 exc.request = request
@@ -213,8 +213,9 @@ class BaseClient:
     ) -> typing.Optional[BaseMiddleware]:
         if isinstance(auth, tuple):
             return BasicAuthMiddleware(username=auth[0], password=auth[1])
-
-        if callable(auth):
+        elif isinstance(auth, BaseMiddleware):
+            return auth
+        elif callable(auth):
             return CustomAuthMiddleware(auth=auth)
 
         if auth is not None:
@@ -236,6 +237,33 @@ class BaseClient:
                 return BasicAuthMiddleware(username=username, password=password)
 
         return None
+
+    def build_request(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: AsyncRequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+    ) -> AsyncRequest:
+        url = self.merge_url(url)
+        headers = self.merge_headers(headers)
+        cookies = self.merge_cookies(cookies)
+        request = AsyncRequest(
+            method,
+            url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        return request
 
 
 class AsyncClient(BaseClient):
@@ -308,7 +336,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
-        allow_redirects: bool = False,  #  Note: Differs to usual default.
+        allow_redirects: bool = False,  # NOTE: Differs to usual default.
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
@@ -492,12 +520,9 @@ class AsyncClient(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> AsyncResponse:
-        url = self.merge_url(url)
-        headers = self.merge_headers(headers)
-        cookies = self.merge_cookies(cookies)
-        request = AsyncRequest(
-            method,
-            url,
+        request = self.build_request(
+            method=method,
+            url=url,
             data=data,
             files=files,
             json=json,
@@ -516,6 +541,29 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
         return response
+
+    async def send(
+        self,
+        request: AsyncRequest,
+        *,
+        stream: bool = False,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+        trust_env: bool = None,
+    ) -> AsyncResponse:
+        return await self._get_response(
+            request=request,
+            stream=stream,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            trust_env=trust_env,
+        )
 
     async def close(self) -> None:
         await self.dispatch.close()
@@ -594,12 +642,9 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
-        url = self.merge_url(url)
-        headers = self.merge_headers(headers)
-        cookies = self.merge_cookies(cookies)
-        request = AsyncRequest(
-            method,
-            url,
+        request = self.build_request(
+            method=method,
+            url=url,
             data=self._async_request_data(data),
             files=files,
             json=json,
@@ -607,9 +652,33 @@ class Client(BaseClient):
             headers=headers,
             cookies=cookies,
         )
+        response = self.send(
+            request,
+            stream=stream,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            trust_env=trust_env,
+        )
+        return response
+
+    def send(
+        self,
+        request: AsyncRequest,
+        *,
+        stream: bool = False,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+        trust_env: bool = None,
+    ) -> Response:
         concurrency_backend = self.concurrency_backend
 
-        coroutine = self.send
+        coroutine = self._get_response
         args = [request]
         kwargs = {
             "stream": True,
@@ -640,6 +709,7 @@ class Client(BaseClient):
             on_close=sync_on_close,
             request=async_response.request,
             history=async_response.history,
+            elapsed=async_response.elapsed,
         )
         if not stream:
             try:
@@ -717,7 +787,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
-        allow_redirects: bool = False,  #  Note: Differs to usual default.
+        allow_redirects: bool = False,  # NOTE: Differs to usual default.
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,

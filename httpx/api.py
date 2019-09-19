@@ -27,7 +27,6 @@ def request(
     auth: AuthTypes = None,
     timeout: TimeoutTypes = None,
     allow_redirects: bool = True,
-    # proxies
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     stream: bool = False,

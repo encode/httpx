@@ -5,7 +5,7 @@ from .concurrency.asyncio import AsyncioBackend
 from .concurrency.base import (
     BaseBackgroundManager,
     BasePoolSemaphore,
-    BaseStream,
+    BaseTCPStream,
     ConcurrencyBackend,
 )
 from .config import (
@@ -22,6 +22,7 @@ from .config import (
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
+from .dispatch.proxy_http import HTTPProxy, HTTPProxyMode
 from .exceptions import (
     ConnectTimeout,
     CookieConflict,
@@ -30,6 +31,7 @@ from .exceptions import (
     NotRedirectResponse,
     PoolTimeout,
     ProtocolError,
+    ProxyError,
     ReadTimeout,
     RedirectBodyUnavailable,
     RedirectLoop,
@@ -40,6 +42,7 @@ from .exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
+from .middleware.digest_auth import DigestAuth
 from .models import (
     URL,
     AsyncRequest,
@@ -89,6 +92,8 @@ __all__ = [
     "BasePoolSemaphore",
     "BaseBackgroundManager",
     "ConnectionPool",
+    "HTTPProxy",
+    "HTTPProxyMode",
     "ConnectTimeout",
     "CookieConflict",
     "DecodingError",
@@ -102,11 +107,12 @@ __all__ = [
     "ResponseClosed",
     "ResponseNotRead",
     "StreamConsumed",
+    "ProxyError",
     "Timeout",
     "TooManyRedirects",
     "WriteTimeout",
     "AsyncDispatcher",
-    "BaseStream",
+    "BaseTCPStream",
     "ConcurrencyBackend",
     "Dispatcher",
     "URL",
@@ -133,4 +139,5 @@ __all__ = [
     "Response",
     "ResponseContent",
     "RequestFiles",
+    "DigestAuth",
 ]

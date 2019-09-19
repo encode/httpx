@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 
 import httpx
@@ -12,6 +14,21 @@ async def test_get(server, backend):
     assert response.http_version == "HTTP/1.1"
     assert response.headers
     assert repr(response) == "<Response [200 OK]>"
+    assert response.elapsed > timedelta(seconds=0)
+
+
+async def test_build_request(server, backend):
+    url = server.url.copy_with(path="/echo_headers")
+    headers = {"Custom-header": "value"}
+    async with httpx.AsyncClient(backend=backend) as client:
+        request = client.build_request("GET", url)
+        request.headers.update(headers)
+        response = await client.send(request)
+
+    assert response.status_code == 200
+    assert response.url == url
+
+    assert response.json()["Custom-header"] == "value"
 
 
 @pytest.mark.asyncio

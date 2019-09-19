@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import threading
 import time
@@ -6,7 +7,9 @@ import typing
 
 import pytest
 import trustme
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import (
+    load_pem_private_key,
     BestAvailableEncryption,
     Encoding,
     PrivateFormat,
@@ -16,24 +19,29 @@ from uvicorn.main import Server
 
 from httpx import URL, AsyncioBackend
 
-ENVIRONMENT_VARIABLES = (
+ENVIRONMENT_VARIABLES = {
     "SSL_CERT_FILE",
-    "REQUESTS_CA_BUNDLE",
-    "CURL_CA_BUNDLE",
+    "SSL_CERT_DIR",
     "HTTP_PROXY",
     "HTTPS_PROXY",
     "ALL_PROXY",
     "NO_PROXY",
     "SSLKEYLOGFILE",
-)
+}
 
 
 @pytest.fixture(scope="function", autouse=True)
 def clean_environ() -> typing.Dict[str, typing.Any]:
     """Keeps os.environ clean for every test without having to mock os.environ"""
     original_environ = os.environ.copy()
-    for key in ENVIRONMENT_VARIABLES:
-        os.environ.pop(key, None)
+    os.environ.clear()
+    os.environ.update(
+        {
+            k: v
+            for k, v in original_environ.items()
+            if k not in ENVIRONMENT_VARIABLES and k.lower() not in ENVIRONMENT_VARIABLES
+        }
+    )
     yield
     os.environ.clear()
     os.environ.update(original_environ)
@@ -47,12 +55,14 @@ def backend(request):
 
 async def app(scope, receive, send):
     assert scope["type"] == "http"
-    if scope["path"] == "/slow_response":
+    if scope["path"].startswith("/slow_response"):
         await slow_response(scope, receive, send)
     elif scope["path"].startswith("/status"):
         await status_code(scope, receive, send)
     elif scope["path"].startswith("/echo_body"):
         await echo_body(scope, receive, send)
+    elif scope["path"].startswith("/echo_headers"):
+        await echo_headers(scope, receive, send)
     else:
         await hello_world(scope, receive, send)
 
@@ -69,7 +79,12 @@ async def hello_world(scope, receive, send):
 
 
 async def slow_response(scope, receive, send):
-    await asyncio.sleep(0.1)
+    delay_ms_str: str = scope["path"].replace("/slow_response/", "")
+    try:
+        delay_ms = float(delay_ms_str)
+    except ValueError:
+        delay_ms = 100
+    await asyncio.sleep(delay_ms / 1000.0)
     await send(
         {
             "type": "http.response.start",
@@ -111,47 +126,66 @@ async def echo_body(scope, receive, send):
     await send({"type": "http.response.body", "body": body})
 
 
-class CAWithPKEncryption(trustme.CA):
-    """Implementation of trustme.CA() that can emit
-    private keys that are encrypted with a password.
-    """
+async def echo_headers(scope, receive, send):
+    body = {}
+    for name, value in scope.get("headers", []):
+        body[name.capitalize().decode()] = value.decode()
 
-    @property
-    def encrypted_private_key_pem(self):
-        return trustme.Blob(
-            self._private_key.private_bytes(
-                Encoding.PEM,
-                PrivateFormat.TraditionalOpenSSL,
-                BestAvailableEncryption(password=b"password"),
-            )
-        )
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [[b"content-type", b"application/json"]],
+        }
+    )
+    await send({"type": "http.response.body", "body": json.dumps(body).encode()})
 
 
 SERVER_SCOPE = "session"
 
 
 @pytest.fixture(scope=SERVER_SCOPE)
-def example_cert():
-    ca = CAWithPKEncryption()
-    ca.issue_cert("example.org")
-    return ca
+def cert_authority():
+    return trustme.CA()
 
 
 @pytest.fixture(scope=SERVER_SCOPE)
-def cert_pem_file(example_cert):
-    with example_cert.cert_pem.tempfile() as tmp:
+def ca_cert_pem_file(cert_authority):
+    with cert_authority.cert_pem.tempfile() as tmp:
         yield tmp
 
 
 @pytest.fixture(scope=SERVER_SCOPE)
-def cert_private_key_file(example_cert):
-    with example_cert.private_key_pem.tempfile() as tmp:
+def localhost_cert(cert_authority):
+    return cert_authority.issue_cert("localhost")
+
+
+@pytest.fixture(scope=SERVER_SCOPE)
+def cert_pem_file(localhost_cert):
+    with localhost_cert.cert_chain_pems[0].tempfile() as tmp:
         yield tmp
 
 
 @pytest.fixture(scope=SERVER_SCOPE)
-def cert_encrypted_private_key_file(example_cert):
-    with example_cert.encrypted_private_key_pem.tempfile() as tmp:
+def cert_private_key_file(localhost_cert):
+    with localhost_cert.private_key_pem.tempfile() as tmp:
+        yield tmp
+
+
+@pytest.fixture(scope=SERVER_SCOPE)
+def cert_encrypted_private_key_file(localhost_cert):
+    # Deserialize the private key and then reserialize with a password
+    private_key = load_pem_private_key(
+        localhost_cert.private_key_pem.bytes(), password=None, backend=default_backend()
+    )
+    encrypted_private_key_pem = trustme.Blob(
+        private_key.private_bytes(
+            Encoding.PEM,
+            PrivateFormat.TraditionalOpenSSL,
+            BestAvailableEncryption(password=b"password"),
+        )
+    )
+    with encrypted_private_key_pem.tempfile() as tmp:
         yield tmp
 
 
@@ -242,6 +276,7 @@ def https_server(cert_pem_file, cert_private_key_file):
         lifespan="off",
         ssl_certfile=cert_pem_file,
         ssl_keyfile=cert_private_key_file,
+        host="localhost",
         port=8001,
         loop="asyncio",
     )

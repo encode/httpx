@@ -1,51 +1,11 @@
 import functools
 import typing
-from base64 import b64encode
 
-from .config import DEFAULT_MAX_REDIRECTS
-from .exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
-from .models import URL, AsyncRequest, AsyncResponse, Cookies, Headers
-from .status_codes import codes
-
-
-class BaseMiddleware:
-    async def __call__(
-        self, request: AsyncRequest, get_response: typing.Callable
-    ) -> AsyncResponse:
-        raise NotImplementedError  # pragma: no cover
-
-
-class BasicAuthMiddleware(BaseMiddleware):
-    def __init__(
-        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
-    ):
-        if isinstance(username, str):
-            username = username.encode("latin1")
-
-        if isinstance(password, str):
-            password = password.encode("latin1")
-
-        userpass = b":".join((username, password))
-        token = b64encode(userpass).decode().strip()
-
-        self.authorization_header = f"Basic {token}"
-
-    async def __call__(
-        self, request: AsyncRequest, get_response: typing.Callable
-    ) -> AsyncResponse:
-        request.headers["Authorization"] = self.authorization_header
-        return await get_response(request)
-
-
-class CustomAuthMiddleware(BaseMiddleware):
-    def __init__(self, auth: typing.Callable[[AsyncRequest], AsyncRequest]):
-        self.auth = auth
-
-    async def __call__(
-        self, request: AsyncRequest, get_response: typing.Callable
-    ) -> AsyncResponse:
-        request = self.auth(request)
-        return await get_response(request)
+from ..config import DEFAULT_MAX_REDIRECTS
+from ..exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
+from ..models import URL, AsyncRequest, AsyncResponse, Cookies, Headers
+from ..status_codes import codes
+from .base import BaseMiddleware
 
 
 class RedirectMiddleware(BaseMiddleware):
@@ -147,15 +107,14 @@ class RedirectMiddleware(BaseMiddleware):
         if url.origin != request.url.origin:
             # Strip Authorization headers when responses are redirected away from
             # the origin.
-            del headers["Authorization"]
+            headers.pop("Authorization", None)
             headers["Host"] = url.authority
 
         if method != request.method and method == "GET":
             # If we've switch to a 'GET' request, then strip any headers which
             # are only relevant to the request body.
-            del headers["Content-Length"]
-            del headers["Transfer-Encoding"]
-
+            headers.pop("Content-Length", None)
+            headers.pop("Transfer-Encoding", None)
         return headers
 
     def redirect_content(self, request: AsyncRequest, method: str) -> bytes:

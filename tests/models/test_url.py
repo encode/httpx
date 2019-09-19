@@ -177,6 +177,13 @@ def test_url_set():
     assert all(url in urls for url in url_set)
 
 
+def test_url_full_path_setter():
+    url = URL("http://example.org")
+
+    url.full_path = "http://example.net"
+    assert url.full_path == "http://example.net"
+
+
 def test_origin_from_url_string():
     origin = Origin("https://example.com")
     assert origin.scheme == "https"

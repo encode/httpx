@@ -1,3 +1,4 @@
+import datetime
 import json
 from unittest import mock
 
@@ -21,6 +22,7 @@ def test_response():
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
+    assert response.elapsed == datetime.timedelta(0)
 
 
 def test_response_repr():

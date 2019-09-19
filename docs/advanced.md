@@ -57,6 +57,33 @@ dispatch = httpx.WSGIDispatch(app=app, remote_addr="1.2.3.4")
 client = httpx.Client(dispatch=dispatch)
 ```
 
+## Build Request
+
+You can use `Client.build_request()` to build a request and
+make modifications before sending the request.
+
+```python
+>>> client = httpx.Client()
+>>> req = client.build_request("OPTIONS", "https://example.com")
+>>> req.url.full_path = "*"  # Build an 'OPTIONS *' request for CORS
+>>> client.send(r)
+<Response [200 OK]>
+```
+
+## Specify the version of HTTP protocol
+
+One can set the version of HTTP protocol for the client in case you want to make the requests using specific version.
+
+For example:
+
+```python
+h11_client = httpx.Client(http_versions=["HTTP/1.1"])
+h11_response = h11_client.get("https://myserver.com")
+
+h2_client = httpx.Client(http_versions=["HTTP/2"])
+h2_response = h2_client.get("https://myserver.com")
+```
+
 ## .netrc Support
 
 HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is

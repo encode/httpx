@@ -16,6 +16,7 @@
 * `patch(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `request(method, url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `build_request(method, url, [data], [files], [json], [params], [headers], [cookies])`
 
 ## `Client`
 
@@ -37,6 +38,7 @@
 * `def .patch(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .delete(url, [data], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .request(method, url, [data], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout])`
+* `def .build_request(method, url, [data], [files], [json], [params], [headers], [cookies])`
 * `def .send(request, [stream], [allow_redirects], [verify], [cert], [timeout])`
 * `def .close()`
 
@@ -57,6 +59,11 @@
 * `.request` - **Request**
 * `.cookies` - **Cookies**
 * `.history` - **List[Response]**
+* `.elapsed` - **[timedelta](https://docs.python.org/3/library/datetime.html)**
+  * The amount of time elapsed between sending the first byte and parsing the headers (not including time spent reading
+  the response).  Use
+  [total_seconds()](https://docs.python.org/3/library/datetime.html#datetime.timedelta.total_seconds) to correctly get
+  the total elapsed seconds.
 * `def .raise_for_status()` - **None**
 * `def .json()` - **Any**
 * `def .read()` - **bytes**
