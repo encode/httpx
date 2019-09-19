@@ -49,6 +49,7 @@ setup(
     package_data={"httpx": ["py.typed"]},
     packages=get_packages("httpx"),
     include_package_data=True,
+    zip_safe=False,
     install_requires=[
         "certifi",
         "chardet==3.*",
