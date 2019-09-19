@@ -47,7 +47,7 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .utils import get_environment_proxies, get_netrc_login
+from .utils import ElapsedTimer, get_environment_proxies, get_netrc_login
 
 
 class BaseClient:
@@ -186,12 +186,17 @@ class BaseClient:
 
         async def get_response(request: AsyncRequest) -> AsyncResponse:
             try:
-                response = await dispatch.send(
-                    request, verify=verify, cert=cert, timeout=timeout
-                )
+                with ElapsedTimer() as timer:
+                    response = await dispatch.send(
+                        request, verify=verify, cert=cert, timeout=timeout
+                    )
+                response.elapsed = timer.elapsed
             except HTTPError as exc:
-                # Add the original request to any HTTPError
-                exc.request = request
+                # Add the original request to any HTTPError unless
+                # there'a already a request attached in the case of
+                # a ProxyError.
+                if exc.request is None:
+                    exc.request = request
                 raise
 
             self.cookies.extract_cookies(response)
@@ -772,6 +777,7 @@ class Client(BaseClient):
             on_close=sync_on_close,
             request=async_response.request,
             history=async_response.history,
+            elapsed=async_response.elapsed,
         )
         if not stream:
             try:

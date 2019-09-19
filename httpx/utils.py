@@ -5,7 +5,10 @@ import os
 import re
 import sys
 import typing
+from datetime import timedelta
 from pathlib import Path
+from time import perf_counter
+from types import TracebackType
 from urllib.request import getproxies
 
 
@@ -214,3 +217,27 @@ def to_str(value: typing.Union[str, bytes], encoding: str = "utf-8") -> str:
 
 def unquote(value: str) -> str:
     return value[1:-1] if value[0] == value[-1] == '"' else value
+
+
+class ElapsedTimer:
+    def __init__(self) -> None:
+        self.start: float = perf_counter()
+        self.end: typing.Optional[float] = None
+
+    def __enter__(self) -> "ElapsedTimer":
+        self.start = perf_counter()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        self.end = perf_counter()
+
+    @property
+    def elapsed(self) -> timedelta:
+        if self.end is None:
+            return timedelta(seconds=perf_counter() - self.start)
+        return timedelta(seconds=self.end - self.start)

@@ -1,4 +1,5 @@
 import cgi
+import datetime
 import email.message
 import json as jsonlib
 import typing
@@ -724,6 +725,7 @@ class BaseResponse:
         headers: HeaderTypes = None,
         request: BaseRequest = None,
         on_close: typing.Callable = None,
+        elapsed: datetime.timedelta = None,
     ):
         self.status_code = status_code
         self.http_version = http_version
@@ -731,6 +733,7 @@ class BaseResponse:
 
         self.request = request
         self.on_close = on_close
+        self.elapsed = datetime.timedelta(0) if elapsed is None else elapsed
         self.call_next: typing.Optional[typing.Callable] = None
 
     @property
@@ -908,6 +911,7 @@ class AsyncResponse(BaseResponse):
         on_close: typing.Callable = None,
         request: AsyncRequest = None,
         history: typing.List["BaseResponse"] = None,
+        elapsed: datetime.timedelta = None,
     ):
         super().__init__(
             status_code=status_code,
@@ -915,6 +919,7 @@ class AsyncResponse(BaseResponse):
             headers=headers,
             request=request,
             on_close=on_close,
+            elapsed=elapsed,
         )
 
         self.history = [] if history is None else list(history)
@@ -1007,6 +1012,7 @@ class Response(BaseResponse):
         on_close: typing.Callable = None,
         request: Request = None,
         history: typing.List["BaseResponse"] = None,
+        elapsed: datetime.timedelta = None,
     ):
         super().__init__(
             status_code=status_code,
@@ -1014,6 +1020,7 @@ class Response(BaseResponse):
             headers=headers,
             request=request,
             on_close=on_close,
+            elapsed=elapsed,
         )
 
         self.history = [] if history is None else list(history)
