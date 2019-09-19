@@ -114,3 +114,21 @@ To spawn the docs server run:
 ```shell
 $ mkdocs serve
 ```
+
+## Releasing
+
+*This section is targeted at HTTPX maintainers.*
+
+Before releasing a new version, create a pull request that includes:
+
+- **An update to the changelog**.
+  - Visit `https://github.com/encode/httpx/compare/PREVIOUS_VERSION_TAG...HEAD` and list all entries that are of interest to our users. This typically includes bug fixes and new/changed/removed features. Documentation updates *may* make it to the changelog if they're of particular interest to our users. Updates to our tooling or test setup typically don't go in the changelog.
+  - Keep it concise and to-the-point.
+  - Aim at sorting entries in descending order of impact or importance.
+- **A version bump**: see `__version__.py`.
+
+For an example, see [#291](https://github.com/encode/httpx/pull/291).
+
+Once the release PR is merged, run `$ scripts/publish` to publish the new release to PyPI.
+
+To release the docs site, run `$ mkdocs gh-deploy`.
