@@ -30,9 +30,11 @@ def test_load_ssl_config_verify_existing_file():
 
 
 @pytest.mark.parametrize("config", ("SSL_CERT_FILE", "SSL_CERT_DIR"))
-def test_load_ssl_config_verify_env_file(https_server, cert_pem_file, config):
+def test_load_ssl_config_verify_env_file(https_server, ca_cert_pem_file, config):
     os.environ[config] = (
-        cert_pem_file if config.endswith("_FILE") else str(Path(cert_pem_file).parent)
+        ca_cert_pem_file
+        if config.endswith("_FILE")
+        else str(Path(ca_cert_pem_file).parent)
     )
     ssl_config = httpx.SSLConfig(trust_env=True)
     context = ssl_config.load_ssl_context()
@@ -40,11 +42,10 @@ def test_load_ssl_config_verify_env_file(https_server, cert_pem_file, config):
     assert context.check_hostname is True
     assert ssl_config.verify == os.environ[config]
 
-    if config == "SSL_CERT_DIR":
-        host = https_server.url.host
-        port = https_server.url.port
-        conn = socket.create_connection((host, port))
-        context.wrap_socket(conn, server_hostname=host)
+    host = https_server.url.host
+    port = https_server.url.port
+    conn = socket.create_connection((host, port))
+    context.wrap_socket(conn, server_hostname=host)
     assert len(context.get_ca_certs()) == 1
 
 
