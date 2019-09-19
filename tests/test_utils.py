@@ -7,11 +7,8 @@ import pytest
 import httpx
 from httpx import utils
 from httpx.utils import (
-<<<<<<< HEAD
-    get_ca_bundle_from_env,
-=======
     ElapsedTimer,
->>>>>>> master
+    get_ca_bundle_from_env,
     get_netrc_login,
     guess_json_utf,
     parse_header_links,
@@ -157,6 +154,7 @@ def test_get_ssl_cert_file():
     os.environ["SSL_CERT_DIR"] = "wrongpath"
     # Two environments is set but both are not correct.
     assert get_ca_bundle_from_env() is None
+
 
 @pytest.mark.asyncio
 async def test_elapsed_timer():
