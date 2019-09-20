@@ -9,6 +9,10 @@
 - Add `.elapsed` property on responses. (Pull #351)
 - Add support for `SSLKEYLOGFILE` in Python 3.8b4+. (Pull #301)
 
+### Removed
+
+- Drop NPN support for HTTP version negotiation. (Pull #314)
+
 ### Fixed
 
 - Fix distribution of type annotations for mypy (Pull #361).
@@ -17,10 +21,6 @@
 - Raise `KeyError` if header isn't found in `Headers`. (Pull #324)
 - Raise `NotRedirectResponse` in `response.next()` if there is no redirection to perform. (Pull #297)
 - Fix bug in calculating the HTTP/2 maximum frame size. (Pull #153)
-
-### Removed
-
-- Drop NPN support for HTTP version negotiation. (Pull #314)
 
 ## 0.7.2 (August 28, 2019)
 
