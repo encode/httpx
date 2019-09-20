@@ -9,10 +9,10 @@ import pytest
 import trustme
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import (
-    load_pem_private_key,
     BestAvailableEncryption,
     Encoding,
     PrivateFormat,
+    load_pem_private_key,
 )
 from uvicorn.config import Config
 from uvicorn.main import Server

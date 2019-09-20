@@ -79,3 +79,17 @@ SERVER_TRAFFIC_SECRET_0 XXXX
 CLIENT_HANDSHAKE_TRAFFIC_SECRET XXXX
 CLIENT_TRAFFIC_SECRET_0 XXXX
 ```
+
+`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`
+----------------------------------------
+
+Valid values: A URL to a proxy
+
+Sets the proxy to be used for `http`, `https`, or all requests respectively.
+
+```bash
+export HTTP_PROXY=http://127.0.0.1:3080
+
+# This request will be sent through the proxy
+python -c "import httpx; httpx.get('http://example.com')"
+```
