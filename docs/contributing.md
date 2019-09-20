@@ -133,5 +133,3 @@ Before releasing a new version, create a pull request that includes:
 For an example, see [#362](https://github.com/encode/httpx/pull/362).
 
 Once the release PR is merged, run `$ scripts/publish` to publish the new release to PyPI.
-
-To release the docs site, run `$ mkdocs gh-deploy`.
