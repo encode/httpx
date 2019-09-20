@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- HTTP Proxy support. (Pulls #259, #353)
 - Add Digest authentication. (Pull #332)
 - Add `.build_request()` method to `Client` and `AsyncClient`. (Pull #319)
 - Add `.elapsed` property on responses. (Pull #351)
