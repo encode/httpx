@@ -181,7 +181,7 @@ class BaseClient:
         if proxies is not None:
             dispatch_proxies = _proxies_to_dispatchers(proxies)
         else:
-            dispatch_proxies = proxies or self.proxies
+            dispatch_proxies = self.proxies
         dispatch = self._dispatcher_for_request(request, dispatch_proxies)
 
         async def get_response(request: AsyncRequest) -> AsyncResponse:
