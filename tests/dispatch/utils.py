@@ -226,7 +226,11 @@ class MockRawSocketStream(BaseTCPStream):
         pass
 
 
-class LifespanSpy:
+class MockLifespan:
+    """
+    Add lifespan protocol support to an ASGI app and record exchanged lifespan events.
+    """
+
     def __init__(
         self,
         app: typing.Callable,
@@ -246,27 +250,28 @@ class LifespanSpy:
             await self.app(scope, receive, send)
             return
 
-        async def spy_receive() -> dict:
+        async def _receive() -> dict:
             message = await receive()
             self.received_lifespan_events.append(message["type"])
             return message
 
-        async def spy_send(message: dict) -> None:
+        async def _send(message: dict) -> None:
             self.sent_lifespan_events.append(message["type"])
             await send(message)
 
-        message = await spy_receive()
+        message = await _receive()
         assert message["type"] == "lifespan.startup"
 
         if self.startup_exception is not None:
+            # Simulate an exception raised during app startup.
             if self.handle_startup_failed:
-                await spy_send({"type": "lifespan.startup.failed"})
+                await _send({"type": "lifespan.startup.failed"})
             else:
                 raise self.startup_exception
         else:
-            await spy_send({"type": "lifespan.startup.complete"})
+            await _send({"type": "lifespan.startup.complete"})
 
-        message = await spy_receive()
+        message = await _receive()
         assert message["type"] == "lifespan.shutdown"
 
-        await spy_send({"type": "lifespan.shutdown.complete"})
+        await _send({"type": "lifespan.shutdown.complete"})
