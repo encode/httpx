@@ -325,13 +325,10 @@ class QueryParams(typing.Mapping[str, str]):
             self[param] = params[param]
 
     def __getitem__(self, key: typing.Any) -> str:
-        normalized_param_key = key.lower()
-        return self._dict[normalized_param_key]
+        return self._dict[key]
 
     def __setitem__(self, key: str, value: str) -> None:
-        set_key = key.lower()
-        set_value = value
-        self._dict[set_key] = set_value
+        self._dict[key] = value
 
     def __contains__(self, key: typing.Any) -> bool:
         return key in self._dict
