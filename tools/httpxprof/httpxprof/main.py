@@ -11,7 +11,11 @@ OUTPUT_DIR = pathlib.Path(__file__).parent / "out"
 SCRIPTS_DIR = pathlib.Path(__file__).parent / "scripts"
 assert SCRIPTS_DIR.exists(), SCRIPTS_DIR
 
-SCRIPTS = [filename.rstrip(".py") for filename in os.listdir(SCRIPTS_DIR)]
+SCRIPTS = [
+    filename.rstrip(".py")
+    for filename in os.listdir(SCRIPTS_DIR)
+    if filename != "__init__.py"
+]
 
 
 @click.group()
