@@ -146,8 +146,6 @@ async def test_asgi_lifespan(
             assert app.sent_lifespan_events.pop() == "lifespan.shutdown.complete"
 
 
-async def test_asgi_lifespan_unsupported(backend):
-    async with ASGIDispatch(app=hello_world, backend=backend) as http:
-        response = await http.request("GET", "http://www.example.org/")
-        await response.read()
-        assert response.status_code == 200
+async def test_asgi_lifespan_unsupported_is_ignored(backend):
+    async with ASGIDispatch(app=hello_world, backend=backend):
+        pass

@@ -2,7 +2,7 @@ import typing
 from types import TracebackType
 
 from ..concurrency.asyncio import AsyncioBackend
-from ..concurrency.base import ConcurrencyBackend, BaseBackgroundManager
+from ..concurrency.base import BaseBackgroundManager, ConcurrencyBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import AsyncRequest, AsyncResponse
 from ..utils import MessageLoggerASGIMiddleware, get_logger
@@ -158,21 +158,24 @@ class ASGIDispatch(AsyncDispatcher):
         )
 
     async def __aenter__(self) -> "ASGIDispatch":
-        self._lifespan = Lifespan(app=self.app, backend=self.backend)
+        lifespan = Lifespan(app=self.app, backend=self.backend)
+
         try:
             # TODO: should this be subject to a timeout?
-            await self._lifespan.__aenter__()
+            await lifespan.__aenter__()
         except Exception as exc:
-            if self.raise_app_exceptions:
+            # Be sure to close the async context manager, or strict async libraries
+            # such as trio might complain.
+            await lifespan.__aexit__(type(exc), exc, exc.__traceback__)
+
+            if isinstance(exc, Lifespan.NotSupported):
+                logger.debug("ASGI 'lifespan' protocol appears unsupported")
+            elif self.raise_app_exceptions:
                 raise
-            else:
-                await self._lifespan.__aexit__(type(exc), exc, exc.__traceback__)
-                self._lifespan = None
+        else:
+            self._lifespan = lifespan
 
         return self
-
-    async def close(self) -> None:
-        await self.__aexit__(None, None, None)
 
     async def __aexit__(
         self,
@@ -184,6 +187,9 @@ class ASGIDispatch(AsyncDispatcher):
             # TODO: should this be subject to a timeout?
             await self._lifespan.__aexit__(exc_type, exc_value, traceback)
         self._lifespan = None
+
+    async def close(self) -> None:
+        await self.__aexit__(None, None, None)
 
 
 class BodyIterator:
@@ -229,14 +235,15 @@ class BodyIterator:
 
 
 class Lifespan:
+    class NotSupported(Exception):
+        pass
+
     def __init__(self, app: typing.Callable, backend: ConcurrencyBackend) -> None:
         self.app = app
         self.backend = backend
-
         self.receive_queue = self.backend.create_queue(max_size=1)
         self.send_queue = self.backend.create_queue(max_size=1)
-        self.background: typing.Optional[BaseBackgroundManager] = None
-        self.is_lifespan_supported = True
+        self.lifespan_task: typing.Optional[BaseBackgroundManager] = None
 
     async def __aenter__(self) -> None:
         app_started_or_failed = self.backend.create_event()
@@ -256,17 +263,19 @@ class Lifespan:
             app_started_or_failed.set()
             await self.send_queue.put(message)
 
+        app = MessageLoggerASGIMiddleware(self.app, logger=logger)
+
         async def run_app() -> None:
             nonlocal app_exc
             try:
-                await self.app({"type": "lifespan"}, receive, send)
+                await app({"type": "lifespan"}, receive, send)
             except Exception as exc:
                 app_exc = exc
             finally:
                 app_started_or_failed.set()
 
-        self.background = self.backend.background_manager(run_app)
-        await self.background.__aenter__()
+        self.lifespan_task = self.backend.background_manager(run_app)
+        await self.lifespan_task.__aenter__()
         await self.receive_queue.put({"type": "lifespan.startup"})
         await app_started_or_failed.wait()
 
@@ -274,15 +283,15 @@ class Lifespan:
             if not self.receive_queue.empty():
                 # App failed before calling `receive()` for the first time,
                 # e.g. `assert scope["type"] == "http"`.
-                self.is_lifespan_supported = False
-                return
+                raise self.NotSupported()
+
             raise app_exc
 
         message = await self.send_queue.get()
         assert message["type"] in {
             "lifespan.startup.complete",
             "lifespan.startup.failed",
-        }
+        }, message["type"]
 
     async def __aexit__(
         self,
@@ -290,10 +299,12 @@ class Lifespan:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        assert self.background is not None
-        if self.is_lifespan_supported and exc_type is None:
+        assert self.lifespan_task is not None
+
+        if exc_type is None:
             await self.receive_queue.put({"type": "lifespan.shutdown"})
             message = await self.send_queue.get()
-            assert message["type"] == "lifespan.shutdown.complete"
-        await self.background.__aexit__(exc_type, exc_value, traceback)
-        self.background = None
+            assert message["type"] == "lifespan.shutdown.complete", message["type"]
+
+        await self.lifespan_task.close(exc_value)
+        self.lifespan_task = None
