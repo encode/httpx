@@ -1,6 +1,9 @@
 import contextlib
 import time
+import multiprocessing
 import typing
+
+import uvicorn
 
 
 async def app(scope: dict, receive: typing.Callable, send: typing.Callable) -> None:
@@ -17,6 +20,28 @@ async def app(scope: dict, receive: typing.Callable, send: typing.Callable) -> N
         }
     )
     await send({"type": "http.response.body", "body": res})
+
+
+@contextlib.contextmanager
+def server() -> typing.Iterator[None]:
+    config = uvicorn.Config(
+        app=app, lifespan="off", loop="asyncio", log_level="warning"
+    )
+    server = uvicorn.Server(config)
+
+    proc = multiprocessing.Process(target=server.run)
+    proc.start()
+
+    # Wait a bit for the uvicorn server process to be ready to accept connections.
+    time.sleep(0.2)
+    print("Server started.")
+
+    try:
+        yield
+    finally:
+        print("Stopping server...")
+        proc.terminate()
+        proc.join()
 
 
 @contextlib.contextmanager

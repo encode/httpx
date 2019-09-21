@@ -3,9 +3,8 @@ import pathlib
 import subprocess
 
 import click
-import uvicorn
 
-from .utils import app, timeit
+from .utils import server, timeit
 
 OUTPUT_DIR = pathlib.Path(__file__).parent / "out"
 SCRIPTS_DIR = pathlib.Path(__file__).parent / "scripts"
@@ -24,13 +23,6 @@ def cli() -> None:
 
 
 @cli.command()
-def serve() -> None:
-    config = uvicorn.Config(app=app)
-    server = uvicorn.Server(config)
-    server.run()
-
-
-@cli.command()
 @click.argument("script", type=click.Choice(SCRIPTS))
 def run(script: str) -> None:
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -40,8 +32,9 @@ def run(script: str) -> None:
 
     args = ["python", "-m", "cProfile", "-o", out, target]
 
-    with timeit():
-        subprocess.run(args)
+    with server():
+        with timeit():
+            subprocess.run(args)
 
 
 @cli.command()

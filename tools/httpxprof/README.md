@@ -5,11 +5,7 @@ A tool for profiling [HTTPX](https://github.com/encode/httpx) using cProfile and
 ## Usage
 
 ```bash
-httpxprof 
-# Start the supporting server:
-httpxprof serve
-
-# In another terminal, run one of the scripts:
+# Run one of the scripts:
 httpxprof run async
 
 # View results:
