@@ -81,7 +81,7 @@ class BaseClient:
             if param_count == 2:
                 dispatch = WSGIDispatch(app=app)
             else:
-                dispatch = ASGIDispatch(app=app)
+                dispatch = ASGIDispatch(app=app, backend=backend)
 
         self.trust_env = True if trust_env is None else trust_env
 

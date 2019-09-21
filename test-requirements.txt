@@ -1,4 +1,4 @@
--e .
+-e .[trio]
 
 # Optional
 brotlipy==0.7.*
@@ -11,6 +11,7 @@ isort
 mypy
 pytest
 pytest-asyncio
+pytest-trio
 pytest-cov
 trustme
 uvicorn

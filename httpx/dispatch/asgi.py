@@ -130,6 +130,7 @@ class ASGIDispatch(AsyncDispatcher):
         await response_started_or_failed.wait()
 
         if app_exc is not None and self.raise_app_exceptions:
+            await background.close(app_exc)
             raise app_exc
 
         assert status_code is not None, "application did not return a response."
@@ -138,7 +139,7 @@ class ASGIDispatch(AsyncDispatcher):
         async def on_close() -> None:
             nonlocal response_body
             await response_body.drain()
-            await background.__aexit__(None, None, None)
+            await background.close(app_exc)
             if app_exc is not None and self.raise_app_exceptions:
                 raise app_exc
 
