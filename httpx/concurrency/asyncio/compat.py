@@ -3,7 +3,6 @@ import ssl
 import sys
 import typing
 
-
 if sys.version_info >= (3, 8):
     from typing import Protocol
 else:

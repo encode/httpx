@@ -4,8 +4,9 @@ import ssl
 import typing
 from types import TracebackType
 
-from ...config import PoolLimits, TimeoutConfig
-from ...exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
+from httpx.config import PoolLimits, TimeoutConfig
+from httpx.exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
+
 from ..base import (
     BaseBackgroundManager,
     BaseEvent,
