@@ -11,7 +11,7 @@ setup(
     name="httpxprof",
     version="0.1",
     packages=get_packages("httpxprof"),
-    install_requires=["click", "snakeviz", "uvicorn"],
+    install_requires=["click", "snakeviz", "uvicorn", "tqdm"],
     entry_points="""
         [console_scripts]
         httpxprof=httpxprof.main:cli

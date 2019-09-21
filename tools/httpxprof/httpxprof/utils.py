@@ -1,6 +1,6 @@
 import contextlib
-import time
 import multiprocessing
+import time
 import typing
 
 import uvicorn
@@ -42,11 +42,3 @@ def server() -> typing.Iterator[None]:
         print("Stopping server...")
         proc.terminate()
         proc.join()
-
-
-@contextlib.contextmanager
-def timeit() -> typing.Iterator[None]:
-    start = time.perf_counter()
-    yield
-    elapsed = time.perf_counter() - start
-    print(f"Took {elapsed:.2f} seconds")

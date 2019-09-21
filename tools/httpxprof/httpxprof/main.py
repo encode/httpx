@@ -4,7 +4,7 @@ import subprocess
 
 import click
 
-from .utils import server, timeit
+from .utils import server
 
 OUTPUT_DIR = pathlib.Path(__file__).parent / "out"
 SCRIPTS_DIR = pathlib.Path(__file__).parent / "scripts"
@@ -33,8 +33,7 @@ def run(script: str) -> None:
     args = ["python", "-m", "cProfile", "-o", out, target]
 
     with server():
-        with timeit():
-            subprocess.run(args)
+        subprocess.run(args)
 
 
 @cli.command()
