@@ -9,10 +9,10 @@ httpxprof
 # Start the supporting server:
 httpxprof serve
 
-# In another terminal, run a benchmark:
+# In another terminal, run one of the scripts:
 httpxprof run async
 
-# View benchmark results:
+# View results:
 httpxprof view async
 ```
 

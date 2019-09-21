@@ -8,10 +8,10 @@ import uvicorn
 from .utils import app, timeit
 
 OUTPUT_DIR = pathlib.Path(__file__).parent / "out"
-BENCHES_DIR = pathlib.Path(__file__).parent / "benches"
-assert BENCHES_DIR.exists(), BENCHES_DIR
+SCRIPTS_DIR = pathlib.Path(__file__).parent / "scripts"
+assert SCRIPTS_DIR.exists(), SCRIPTS_DIR
 
-BENCHES = [filename.rstrip(".py") for filename in os.listdir(BENCHES_DIR)]
+SCRIPTS = [filename.rstrip(".py") for filename in os.listdir(SCRIPTS_DIR)]
 
 
 @click.group()
@@ -27,23 +27,23 @@ def serve() -> None:
 
 
 @cli.command()
-@click.argument("bench", type=click.Choice(BENCHES))
-def run(bench: str) -> None:
+@click.argument("script", type=click.Choice(SCRIPTS))
+def run(script: str) -> None:
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    out = str(OUTPUT_DIR / f"{bench}.prof")
-    script = str(BENCHES_DIR / f"{bench}.py")
+    out = str(OUTPUT_DIR / f"{script}.prof")
+    target = str(SCRIPTS_DIR / f"{script}.py")
 
-    args = ["python", "-m", "cProfile", "-o", out, script]
+    args = ["python", "-m", "cProfile", "-o", out, target]
 
     with timeit():
         subprocess.run(args)
 
 
 @cli.command()
-@click.argument("bench", type=click.Choice(BENCHES))
-def view(bench: str) -> None:
-    args = ["snakeviz", str(OUTPUT_DIR / f"{bench}.prof")]
+@click.argument("script", type=click.Choice(SCRIPTS))
+def view(script: str) -> None:
+    args = ["snakeviz", str(OUTPUT_DIR / f"{script}.prof")]
     subprocess.run(args)
 
 
