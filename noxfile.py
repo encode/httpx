@@ -2,7 +2,7 @@ import nox
 
 nox.options.stop_on_first_error = True
 
-source_files = ("httpx", "tests", "setup.py", "noxfile.py")
+source_files = ("httpx", "tools", "tests", "setup.py", "noxfile.py")
 
 
 @nox.session(reuse_venv=True)
