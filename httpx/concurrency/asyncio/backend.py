@@ -111,7 +111,9 @@ class TCPStream(BaseTCPStream):
         return self.stream.at_eof()
 
     async def close(self) -> None:
-        await self.stream.close()
+        # FIXME: We should await on this call, but need a workaround for this first:
+        # https://github.com/aio-libs/aiohttp/issues/3535
+        self.stream.close()
 
 
 class PoolSemaphore(BasePoolSemaphore):
