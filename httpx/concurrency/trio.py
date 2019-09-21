@@ -207,6 +207,9 @@ class Queue(BaseQueue):
     def __init__(self, max_size: int) -> None:
         self.send_channel, self.receive_channel = trio.open_memory_channel(math.inf)
 
+    def empty(self) -> bool:
+        return self.receive_channel.statistics().current_buffer_used == 0
+
     async def get(self) -> typing.Any:
         return await self.receive_channel.receive()
 
