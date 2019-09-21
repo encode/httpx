@@ -1,14 +1,10 @@
 import os
-import pathlib
 import subprocess
 
 import click
 
+from .config import OUTPUT_DIR, SCRIPTS_DIR, SERVER_HOST, SERVER_PORT
 from .utils import server
-
-OUTPUT_DIR = pathlib.Path(__file__).parent / "out"
-SCRIPTS_DIR = pathlib.Path(__file__).parent / "scripts"
-assert SCRIPTS_DIR.exists(), SCRIPTS_DIR
 
 SCRIPTS = [
     filename.rstrip(".py")
@@ -32,7 +28,7 @@ def run(script: str) -> None:
 
     args = ["python", "-m", "cProfile", "-o", out, target]
 
-    with server():
+    with server(host=SERVER_HOST, port=SERVER_PORT):
         subprocess.run(args)
 
 

@@ -23,9 +23,14 @@ async def app(scope: dict, receive: typing.Callable, send: typing.Callable) -> N
 
 
 @contextlib.contextmanager
-def server() -> typing.Iterator[None]:
+def server(host: str, port: int) -> typing.Iterator[None]:
     config = uvicorn.Config(
-        app=app, lifespan="off", loop="asyncio", log_level="warning"
+        app=app,
+        host=host,
+        port=port,
+        lifespan="off",
+        loop="asyncio",
+        log_level="warning",
     )
     server = uvicorn.Server(config)
 
@@ -34,7 +39,7 @@ def server() -> typing.Iterator[None]:
 
     # Wait a bit for the uvicorn server process to be ready to accept connections.
     time.sleep(0.2)
-    print("Server started.")
+    print(f"Server started at {host}:{port}.")
 
     try:
         yield
