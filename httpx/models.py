@@ -316,6 +316,14 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[key]
         return default
 
+    def update(self, params: QueryParamTypes = None) -> None:  # type: ignore
+        if params:
+            params = QueryParams(params)
+        else:
+            params = QueryParams()
+        for param in params:
+            self[param] = params[param]
+
     def __getitem__(self, key: typing.Any) -> str:
         return self._dict[key]
 

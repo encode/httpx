@@ -40,6 +40,7 @@ from .models import (
     Headers,
     HeaderTypes,
     ProxiesTypes,
+    QueryParams,
     QueryParamTypes,
     RequestData,
     RequestFiles,
@@ -69,6 +70,7 @@ class BaseClient:
         app: typing.Callable = None,
         backend: ConcurrencyBackend = None,
         trust_env: bool = True,
+        params: QueryParamTypes = None,
     ):
         if backend is None:
             backend = AsyncioBackend()
@@ -111,6 +113,10 @@ class BaseClient:
         self.proxies: typing.Dict[str, AsyncDispatcher] = _proxies_to_dispatchers(
             proxies
         )
+        if params:
+            self._params = QueryParams(params)
+        else:
+            self._params = QueryParams()
 
         self.auth = auth
         self._headers = Headers(headers)
@@ -134,6 +140,14 @@ class BaseClient:
     @cookies.setter
     def cookies(self, cookies: CookieTypes) -> None:
         self._cookies = Cookies(cookies)
+
+    @property
+    def params(self) -> QueryParams:
+        return self._params
+
+    @params.setter
+    def params(self, params: QueryParamTypes) -> None:
+        self._params = QueryParams(params)
 
     def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
         pass  # pragma: no cover
@@ -161,6 +175,15 @@ class BaseClient:
             merged_headers.update(headers)
             return merged_headers
         return headers
+
+    def merge_query_params(
+        self, params: QueryParamTypes = None
+    ) -> typing.Optional[QueryParamTypes]:
+        if params or self.params:
+            merged_query_params = QueryParams(self.params)
+            merged_query_params.update(params)
+            return merged_query_params
+        return params
 
     async def _get_response(
         self,
@@ -299,6 +322,7 @@ class BaseClient:
         url = self.merge_url(url)
         headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
+        params = self.merge_query_params(params)
         request = AsyncRequest(
             method,
             url,
