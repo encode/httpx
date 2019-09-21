@@ -113,10 +113,10 @@ class BaseClient:
         self.proxies: typing.Dict[str, AsyncDispatcher] = _proxies_to_dispatchers(
             proxies
         )
+
+        self._params = QueryParams()
         if params:
-            self._params = QueryParams(params)
-        else:
-            self._params = QueryParams()
+            self._params.update(params)
 
         self.auth = auth
         self._headers = Headers(headers)
@@ -176,13 +176,13 @@ class BaseClient:
             return merged_headers
         return headers
 
-    def merge_query_params(
+    def merge_queryparams(
         self, params: QueryParamTypes = None
     ) -> typing.Optional[QueryParamTypes]:
         if params or self.params:
-            merged_query_params = QueryParams(self.params)
-            merged_query_params.update(params)
-            return merged_query_params
+            merged_queryparams = QueryParams(self.params)
+            merged_queryparams.update(params)
+            return merged_queryparams
         return params
 
     async def _get_response(
@@ -322,7 +322,7 @@ class BaseClient:
         url = self.merge_url(url)
         headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
-        params = self.merge_query_params(params)
+        params = self.merge_queryparams(params)
         request = AsyncRequest(
             method,
             url,

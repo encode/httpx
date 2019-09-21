@@ -317,10 +317,10 @@ class QueryParams(typing.Mapping[str, str]):
         return default
 
     def update(self, params: QueryParamTypes = None) -> None:  # type: ignore
-        if params:
-            params = QueryParams(params)
-        else:
-            params = QueryParams()
+        if not params:
+            return
+
+        params = QueryParams(params)
         for param in params:
             self[param] = params[param]
 
@@ -330,12 +330,9 @@ class QueryParams(typing.Mapping[str, str]):
     def __setitem__(self, key: str, value: str) -> None:
         self._dict[key] = value
 
-        set_key = key
-        set_value = value
-
         found_indexes = []
         for idx, (item_key, _) in enumerate(self._list):
-            if item_key == set_key:
+            if item_key == key:
                 found_indexes.append(idx)
 
         for idx in reversed(found_indexes[1:]):
@@ -343,9 +340,9 @@ class QueryParams(typing.Mapping[str, str]):
 
         if found_indexes:
             idx = found_indexes[0]
-            self._list[idx] = (set_key, set_value)
+            self._list[idx] = (key, value)
         else:
-            self._list.append((set_key, set_value))
+            self._list.append((key, value))
 
     def __contains__(self, key: typing.Any) -> bool:
         return key in self._dict
