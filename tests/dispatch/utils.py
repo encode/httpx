@@ -216,5 +216,8 @@ class MockRawSocketStream(BaseTCPStream):
             return b""
         return self.backend.data_to_send.pop(0)
 
+    def is_connection_dropped(self) -> bool:
+        return False
+
     async def close(self) -> None:
         pass

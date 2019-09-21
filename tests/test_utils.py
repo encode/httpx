@@ -9,6 +9,7 @@ from httpx import utils
 from httpx.utils import (
     ElapsedTimer,
     get_ca_bundle_from_env,
+    get_environment_proxies,
     get_netrc_login,
     guess_json_utf,
     parse_header_links,
@@ -165,3 +166,29 @@ async def test_elapsed_timer():
         0.1
     )  # test to ensure time spent after timer exits isn't accounted for.
     assert timer.elapsed.total_seconds() == pytest.approx(0.1, abs=0.05)
+
+
+@pytest.mark.parametrize(
+    ["environment", "proxies"],
+    [
+        ({}, {}),
+        ({"HTTP_PROXY": "http://127.0.0.1"}, {"http": "http://127.0.0.1"}),
+        (
+            {"https_proxy": "http://127.0.0.1", "HTTP_PROXY": "https://127.0.0.1"},
+            {"https": "http://127.0.0.1", "http": "https://127.0.0.1"},
+        ),
+        (
+            {"all_proxy": "http://127.0.0.1", "ALL_PROXY": "https://1.1.1.1"},
+            {"all": "http://127.0.0.1"},
+        ),
+        (
+            {"https_proxy": "http://127.0.0.1", "HTTPS_PROXY": "https://1.1.1.1"},
+            {"https": "http://127.0.0.1"},
+        ),
+        ({"TRAVIS_APT_PROXY": "http://127.0.0.1"}, {}),
+    ],
+)
+def test_get_environment_proxies(environment, proxies):
+    os.environ.update(environment)
+
+    assert get_environment_proxies() == proxies

@@ -6,6 +6,7 @@ import h2.events
 
 from ..concurrency.base import BaseEvent, BaseTCPStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
+from ..exceptions import ProtocolError
 from ..models import AsyncRequest, AsyncResponse
 from ..utils import get_logger
 
@@ -187,6 +188,10 @@ class HTTP2Connection:
                 logger.debug(
                     f"receive_event stream_id={event_stream_id} event={event!r}"
                 )
+
+                if hasattr(event, "error_code"):
+                    raise ProtocolError(event)
+
                 if isinstance(event, h2.events.WindowUpdated):
                     if event_stream_id == 0:
                         for window_update_event in self.window_update_received.values():

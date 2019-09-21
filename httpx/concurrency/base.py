@@ -187,3 +187,10 @@ class BaseBackgroundManager:
         traceback: TracebackType = None,
     ) -> None:
         raise NotImplementedError()  # pragma: no cover
+
+    async def close(self, exception: BaseException = None) -> None:
+        if exception is None:
+            await self.__aexit__(None, None, None)
+        else:
+            traceback = exception.__traceback__  # type: ignore
+            await self.__aexit__(type(exception), exception, traceback)

@@ -114,3 +114,22 @@ To spawn the docs server run:
 ```shell
 $ mkdocs serve
 ```
+
+## Releasing
+
+*This section is targeted at HTTPX maintainers.*
+
+Before releasing a new version, create a pull request that includes:
+
+- **An update to the changelog**:
+    - We follow the format from [keepachangelog](https://keepachangelog.com/en/1.0.0/).
+    - [Compare](https://github.com/encode/httpx/compare/) `master` with the tag of the latest release, and list all entries that are of interest to our users:
+        - Things that **must** go in the changelog: added, changed, deprecated or removed features, and bug fixes.
+        - Things that **should not** go in the changelog: changes to documentation, tests or tooling.
+        - Try sorting entries in descending order of impact / importance.
+        - Keep it concise and to-the-point. 🎯
+- **A version bump**: see `__version__.py`.
+
+For an example, see [#362](https://github.com/encode/httpx/pull/362).
+
+Once the release PR is merged, run `$ scripts/publish` to publish the new release to PyPI.
