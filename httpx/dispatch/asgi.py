@@ -4,7 +4,10 @@ from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import AsyncRequest, AsyncResponse
+from ..utils import MessageLoggerASGIMiddleware, get_logger
 from .base import AsyncDispatcher
+
+logger = get_logger(__name__)
 
 
 class ASGIDispatch(AsyncDispatcher):
@@ -77,7 +80,7 @@ class ASGIDispatch(AsyncDispatcher):
             "client": self.client,
             "root_path": self.root_path,
         }
-        app = self.app
+        app = MessageLoggerASGIMiddleware(self.app, logger=logger)
         app_exc = None
         status_code = None
         headers = None

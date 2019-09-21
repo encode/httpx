@@ -253,3 +253,54 @@ class ElapsedTimer:
         if self.end is None:
             return timedelta(seconds=perf_counter() - self.start)
         return timedelta(seconds=self.end - self.start)
+
+
+ASGI_PLACEHOLDER_FORMAT = {
+    "body": "<{length} bytes>",
+    "bytes": "<{length} bytes>",
+    "text": "<{length} chars>",
+    "headers": "<...>",
+}
+
+
+def asgi_message_with_placeholders(message: dict) -> dict:
+    """
+    Return an ASGI message, with any body-type content omitted and replaced
+    with a placeholder.
+    """
+    new_message = message.copy()
+    for attr in ASGI_PLACEHOLDER_FORMAT:
+        if attr in message:
+            content = message[attr]
+            placeholder = ASGI_PLACEHOLDER_FORMAT[attr].format(length=len(content))
+            new_message[attr] = placeholder
+    return new_message
+
+
+class MessageLoggerASGIMiddleware:
+    def __init__(self, app: typing.Callable, logger: logging.Logger) -> None:
+        self.app = app
+        self.logger = logger
+
+    async def __call__(
+        self, scope: dict, receive: typing.Callable, send: typing.Callable
+    ) -> None:
+        async def inner_receive() -> dict:
+            message = await receive()
+            logged_message = asgi_message_with_placeholders(message)
+            self.logger.debug(f"sent message={logged_message}")
+            return message
+
+        async def inner_send(message: dict) -> None:
+            logged_message = asgi_message_with_placeholders(message)
+            self.logger.debug(f"received message={logged_message}")
+            await send(message)
+
+        self.logger.debug("started")
+        try:
+            await self.app(scope, inner_receive, inner_send)
+        except BaseException as exc:
+            self.logger.debug("raised_exception")
+            raise exc from None
+        else:
+            self.logger.debug("completed")
