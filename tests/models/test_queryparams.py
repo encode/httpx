@@ -1,8 +1,18 @@
+import pytest
+
 from httpx import QueryParams
 
 
-def test_queryparams():
-    q = QueryParams("a=123&a=456&b=789")
+@pytest.mark.parametrize(
+    "source",
+    [
+        "a=123&a=456&b=789",
+        {"a": ["123", "456"], "b": 789},
+        {"a": ("123", "456"), "b": 789},
+    ],
+)
+def test_queryparams(source):
+    q = QueryParams(source)
     assert "a" in q
     assert "A" not in q
     assert "c" not in q

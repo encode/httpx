@@ -291,7 +291,16 @@ class QueryParams(typing.Mapping[str, str]):
         elif isinstance(value, list):
             items = value  # type: ignore
         else:
-            items = value.items()  # type: ignore
+            # A dict-like object whose values may be lists.
+            items = [
+                (k, u)  # type: ignore
+                for k, v in value.items()
+                for u in (
+                    v  # type: ignore
+                    if hasattr(v, "__iter__") and not isinstance(v, (str, bytes))
+                    else [v]
+                )
+            ]
 
         self._list = [(str(k), str_query_param(v)) for k, v in items]
         self._dict = {str(k): str_query_param(v) for k, v in items}
@@ -312,9 +321,7 @@ class QueryParams(typing.Mapping[str, str]):
         return list(self._list)
 
     def get(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
-        if key in self._dict:
-            return self._dict[key]
-        return default
+        return self._dict.get(key, default)
 
     def update(self, params: QueryParamTypes = None) -> None:  # type: ignore
         if not params:
