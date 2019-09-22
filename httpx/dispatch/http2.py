@@ -3,7 +3,7 @@ import typing
 
 import h2.connection
 import h2.events
-from h2.settings import Settings, SettingCodes
+from h2.settings import SettingCodes, Settings
 
 from ..concurrency.base import BaseEvent, BaseTCPStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
@@ -77,8 +77,8 @@ class HTTP2Connection:
                 SettingCodes.ENABLE_PUSH: 0,
                 # These two are taken from h2 for safe defaults
                 SettingCodes.MAX_CONCURRENT_STREAMS: 100,
-                SettingCodes.MAX_HEADER_LIST_SIZE: 65536
-            }
+                SettingCodes.MAX_HEADER_LIST_SIZE: 65536,
+            },
         )
 
         # Some websites (*cough* Yahoo *cough*) balk at this setting being

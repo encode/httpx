@@ -189,7 +189,7 @@ async def test_http2_settings_in_handshake(backend):
         SettingCodes.MAX_HEADER_LIST_SIZE: 65536,
         # This one's here because h2 helpfully populates remote_settings
         # with default values even if the peer doesn't send the setting.
-        SettingCodes.ENABLE_CONNECT_PROTOCOL: 0
+        SettingCodes.ENABLE_CONNECT_PROTOCOL: 0,
     }
     assert dict(h2_conn.remote_settings) == expected_settings
 
