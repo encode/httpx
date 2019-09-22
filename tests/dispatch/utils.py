@@ -41,6 +41,7 @@ class MockHTTP2Server(BaseTCPStream):
         self.close_connection = False
         self.return_data = {}
         self.returning = {}
+        self.settings_changed = []
 
     # TCP stream interface
 
@@ -81,6 +82,8 @@ class MockHTTP2Server(BaseTCPStream):
                 # This will throw an error if the event is for a not-yet created stream
                 elif self.returning[event.stream_id]:
                     self.send_return_data(event.stream_id)
+            elif isinstance(event, h2.events.RemoteSettingsChanged):
+                self.settings_changed.append(event)
 
     async def write(self, data: bytes, timeout) -> None:
         self.write_no_block(data)
