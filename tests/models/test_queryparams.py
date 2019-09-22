@@ -28,39 +28,41 @@ def test_queryparams(source):
     assert dict(q) == {"a": "456", "b": "789"}
     assert str(q) == "a=123&a=456&b=789"
     assert repr(q) == "QueryParams('a=123&a=456&b=789')"
-    assert QueryParams({"a": "123", "b": "456"}) == QueryParams(
-        [("a", "123"), ("b", "456")]
-    )
-    assert QueryParams({"a": "123", "b": "456"}) == QueryParams("a=123&b=456")
-    assert QueryParams({"a": "123", "b": "456"}) == QueryParams(
-        {"b": "456", "a": "123"}
-    )
-    assert QueryParams() == QueryParams({})
-    assert QueryParams([("a", "123"), ("a", "456")]) == QueryParams("a=123&a=456")
-    assert QueryParams({"a": "123", "b": "456"}) != "invalid"
-
-    q = QueryParams([("a", "123"), ("a", "456")])
-    assert QueryParams(q) == q
 
 
-def test_queryparam_types():
-    q = QueryParams({"a": True})
-    assert str(q) == "a=true"
+@pytest.mark.parametrize(
+    "one, other",
+    [
+        [
+            QueryParams({"a": "123", "b": "456"}),
+            QueryParams([("a", "123"), ("b", "456")]),
+        ],
+        [QueryParams({"a": "123", "b": "456"}), QueryParams("a=123&b=456")],
+        [QueryParams({"a": "123", "b": "456"}), QueryParams({"b": "456", "a": "123"})],
+        [QueryParams(), QueryParams({})],
+        [QueryParams([("a", "123"), ("a", "456")]), QueryParams("a=123&a=456")],
+        [
+            QueryParams([("a", "123"), ("a", "456")]),
+            QueryParams(QueryParams([("a", "123"), ("a", "456")])),
+        ],
+    ],
+)
+def test_queryparams_equality(one, other):
+    assert one == other
 
-    q = QueryParams({"a": False})
-    assert str(q) == "a=false"
 
-    q = QueryParams({"a": ""})
-    assert str(q) == "a="
-
-    q = QueryParams({"a": None})
-    assert str(q) == "a="
-
-    q = QueryParams({"a": 1.23})
-    assert str(q) == "a=1.23"
-
-    q = QueryParams({"a": 123})
-    assert str(q) == "a=123"
-
-    q = QueryParams({"a": b"123"})
-    assert str(q) == "a=123"
+@pytest.mark.parametrize(
+    "source, output",
+    [
+        ({"a": True}, "a=true"),
+        ({"a": False}, "a=false"),
+        ({"a": ""}, "a="),
+        ({"a": None}, "a="),
+        ({"a": 1.23}, "a=1.23"),
+        ({"a": 123}, "a=123"),
+        ({"a": b"123"}, "a=123"),
+    ],
+)
+def test_queryparam_types(source, output):
+    q = QueryParams(source)
+    assert str(q) == output
