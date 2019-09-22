@@ -42,6 +42,8 @@ def str_query_param(value: typing.Optional[typing.Union[str, int, float, bool]])
         return "false"
     elif value is None:
         return ""
+    elif isinstance(value, bytes):
+        return value.decode()
     return str(value)
 
 

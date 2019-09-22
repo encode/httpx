@@ -61,3 +61,6 @@ def test_queryparam_types():
 
     q = QueryParams({"a": 123})
     assert str(q) == "a=123"
+
+    q = QueryParams({"a": b"123"})
+    assert str(q) == "a=123"
