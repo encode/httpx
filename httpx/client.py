@@ -56,6 +56,7 @@ class BaseClient:
         self,
         *,
         auth: AuthTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
@@ -70,7 +71,6 @@ class BaseClient:
         app: typing.Callable = None,
         backend: ConcurrencyBackend = None,
         trust_env: bool = True,
-        params: QueryParamTypes = None,
     ):
         if backend is None:
             backend = AsyncioBackend()
@@ -114,11 +114,11 @@ class BaseClient:
             proxies
         )
 
-        self._params = QueryParams()
-        if params:
-            self._params.update(params)
+        if params is None:
+            params = {}
 
         self.auth = auth
+        self._params = QueryParams(params)
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
         self.max_redirects = max_redirects
