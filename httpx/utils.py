@@ -187,6 +187,15 @@ def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)
 
 
+def kv_format(**kwargs: typing.Any) -> str:
+    """Format arguments into a key=value line.
+
+    >>> formatkv(x=1, name="Bob")
+    "x=1 name='Bob'"
+    """
+    return " ".join(f"{key}={value!r}" for key, value in kwargs.items())
+
+
 def get_environment_proxies() -> typing.Dict[str, str]:
     """Gets proxy information from the environment"""
 
@@ -259,7 +268,6 @@ ASGI_PLACEHOLDER_FORMAT = {
     "body": "<{length} bytes>",
     "bytes": "<{length} bytes>",
     "text": "<{length} chars>",
-    "headers": "<...>",
 }
 
 
@@ -288,15 +296,16 @@ class MessageLoggerASGIMiddleware:
         async def inner_receive() -> dict:
             message = await receive()
             logged_message = asgi_message_with_placeholders(message)
-            self.logger.debug(f"sent message={logged_message}")
+            self.logger.debug(f"sent {kv_format(**logged_message)}")
             return message
 
         async def inner_send(message: dict) -> None:
             logged_message = asgi_message_with_placeholders(message)
-            self.logger.debug(f"received message={logged_message}")
+            self.logger.debug(f"received {kv_format(**logged_message)}")
             await send(message)
 
-        self.logger.debug("started")
+        self.logger.debug(f"started {kv_format(**scope)}")
+
         try:
             await self.app(scope, inner_receive, inner_send)
         except BaseException as exc:
