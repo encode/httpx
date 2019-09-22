@@ -70,7 +70,9 @@ class HTTP2Connection:
         # Some websites (*cough* Yahoo *cough*) balk at this setting being
         # present in the initial handshake since it's not defined in the original
         # RFC despite the RFC mandating ignoring settings you don't know about.
-        del self.h2_state.local_settings[h2.settings.SettingCodes.ENABLE_CONNECT_PROTOCOL]
+        del self.h2_state.local_settings[
+            h2.settings.SettingCodes.ENABLE_CONNECT_PROTOCOL
+        ]
 
         self.h2_state.initiate_connection()
         data_to_send = self.h2_state.data_to_send()
@@ -95,7 +97,7 @@ class HTTP2Connection:
             f"target={request.url.full_path!r} "
             f"headers={headers!r}"
         )
-        self.push_stream_event(stream_id, functools.partial(self.h2_state.send_headers, stream_id, headers))
+        self.h2_state.send_headers(stream_id, headers)
         data_to_send = self.h2_state.data_to_send()
         await self.stream.write(data_to_send, timeout)
         return stream_id
@@ -135,7 +137,7 @@ class HTTP2Connection:
                 self.window_update_received[stream_id].clear()
             else:
                 chunk, data = data[:chunk_size], data[chunk_size:]
-                self.push_stream_event(stream_id, functools.partial(self.h2_state.send_data, stream_id, chunk))
+                self.h2_state.send_data(stream_id, chunk)
                 data_to_send = self.h2_state.data_to_send()
                 await self.stream.write(data_to_send, timeout)
 
@@ -234,8 +236,3 @@ class HTTP2Connection:
 
     def is_connection_dropped(self) -> bool:
         return self.stream.is_connection_dropped()
-
-    def push_stream_event(self, stream_id: int, event: typing.Callable) -> None:
-        if stream_id in self.stream_event_pending:
-            self.stream_event_pending[stream_id]()
-        self.stream_event_pending[stream_id] = event

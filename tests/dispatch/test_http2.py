@@ -1,5 +1,7 @@
 import json
 
+import h2.connection
+
 from httpx import AsyncClient, Client, Response
 
 from .utils import MockHTTP2Backend
@@ -165,3 +167,15 @@ async def test_async_http2_reconnect(backend):
 
     assert response_2.status_code == 200
     assert json.loads(response_2.content) == {"method": "GET", "path": "/2", "body": ""}
+
+
+async def test_http2_default_settings(backend):
+    backend = MockHTTP2Backend(app=app, backend=backend)
+
+    async with AsyncClient(backend=backend) as client:
+        await client.get("http://example.org")
+
+    h2_conn = backend.server.conn
+
+    assert isinstance(h2_conn, h2.connection.H2Connection)
+    assert h2_conn.remote_settings == {}
