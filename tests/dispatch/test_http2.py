@@ -1,6 +1,8 @@
 import json
 
 import h2.connection
+import h2.events
+from h2.settings import SettingCodes
 
 from httpx import AsyncClient, Client, Response
 
@@ -169,7 +171,7 @@ async def test_async_http2_reconnect(backend):
     assert json.loads(response_2.content) == {"method": "GET", "path": "/2", "body": ""}
 
 
-async def test_http2_default_settings(backend):
+async def test_http2_settings_in_handshake(backend):
     backend = MockHTTP2Backend(app=app, backend=backend)
 
     async with AsyncClient(backend=backend) as client:
@@ -178,4 +180,27 @@ async def test_http2_default_settings(backend):
     h2_conn = backend.server.conn
 
     assert isinstance(h2_conn, h2.connection.H2Connection)
-    assert h2_conn.remote_settings == {}
+    expected_settings = {
+        SettingCodes.HEADER_TABLE_SIZE: 4096,
+        SettingCodes.ENABLE_PUSH: 0,
+        SettingCodes.MAX_CONCURRENT_STREAMS: 100,
+        SettingCodes.INITIAL_WINDOW_SIZE: 65535,
+        SettingCodes.MAX_FRAME_SIZE: 16384,
+        SettingCodes.MAX_HEADER_LIST_SIZE: 65536,
+        # This one's here because h2 helpfully populates remote_settings
+        # with default values even if the peer doesn't send the setting.
+        SettingCodes.ENABLE_CONNECT_PROTOCOL: 0
+    }
+    assert dict(h2_conn.remote_settings) == expected_settings
+
+    # We don't expect the ENABLE_CONNECT_PROTOCOL to be in the handshake
+    expected_settings.pop(SettingCodes.ENABLE_CONNECT_PROTOCOL)
+
+    assert len(backend.server.settings_changed) == 1
+    settings = backend.server.settings_changed[0]
+
+    assert isinstance(settings, h2.events.RemoteSettingsChanged)
+    assert len(settings.changed_settings) == len(expected_settings)
+    for setting_code, changed_setting in settings.changed_settings.items():
+        assert isinstance(changed_setting, h2.settings.ChangedSetting)
+        assert changed_setting.new_value == expected_settings[setting_code]

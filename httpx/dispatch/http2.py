@@ -3,7 +3,7 @@ import typing
 
 import h2.connection
 import h2.events
-import h2.settings
+from h2.settings import Settings, SettingCodes
 
 from ..concurrency.base import BaseEvent, BaseTCPStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
@@ -31,7 +31,6 @@ class HTTP2Connection:
         self.timeout_flags = {}  # type: typing.Dict[int, TimeoutFlag]
         self.initialized = False
         self.window_update_received = {}  # type: typing.Dict[int, BaseEvent]
-        self.stream_event_pending = {}  # type: typing.Dict[int, typing.Callable]
 
     async def send(
         self, request: AsyncRequest, timeout: TimeoutTypes = None
@@ -67,6 +66,21 @@ class HTTP2Connection:
         await self.stream.close()
 
     def initiate_connection(self) -> None:
+        # Need to set these manually here instead of manipulating via
+        # __setitem__() otherwise the H2Connection will emit SettingsUpdate
+        # frames in addition to sending the undesired defaults.
+        self.h2_state.local_settings = Settings(
+            client=True,
+            initial_values={
+                # Disable PUSH_PROMISE frames from the server since we don't do anything
+                # with them for now.  Maybe when we support caching?
+                SettingCodes.ENABLE_PUSH: 0,
+                # These two are taken from h2 for safe defaults
+                SettingCodes.MAX_CONCURRENT_STREAMS: 100,
+                SettingCodes.MAX_HEADER_LIST_SIZE: 65536
+            }
+        )
+
         # Some websites (*cough* Yahoo *cough*) balk at this setting being
         # present in the initial handshake since it's not defined in the original
         # RFC despite the RFC mandating ignoring settings you don't know about.
@@ -143,8 +157,7 @@ class HTTP2Connection:
 
     async def end_stream(self, stream_id: int, timeout: TimeoutConfig = None) -> None:
         logger.debug(f"end_stream stream_id={stream_id}")
-        if stream_id in self.stream_event_pending:
-            self.stream_event_pending[stream_id](end_stream=True)
+        self.h2_state.end_stream(stream_id)
         data_to_send = self.h2_state.data_to_send()
         await self.stream.write(data_to_send, timeout)
 
