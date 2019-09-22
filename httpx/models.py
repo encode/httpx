@@ -52,6 +52,7 @@ QueryParamTypes = typing.Union[
     "QueryParams",
     typing.Mapping[str, PrimitiveData],
     typing.List[typing.Tuple[str, PrimitiveData]],
+    typing.Mapping[str, typing.Sequence[PrimitiveData]],
     str,
 ]
 
@@ -298,7 +299,7 @@ class QueryParams(typing.Mapping[str, str]):
                 for u in (
                     v  # type: ignore
                     if hasattr(v, "__iter__") and not isinstance(v, (str, bytes))
-                    else [v]
+                    else [v]  # type: ignore
                 )
             ]
 
