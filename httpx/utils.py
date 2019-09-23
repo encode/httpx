@@ -11,6 +11,9 @@ from time import perf_counter
 from types import TracebackType
 from urllib.request import getproxies
 
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from .models import PrimitiveData
+
 
 def normalize_header_key(value: typing.AnyStr, encoding: str = None) -> bytes:
     """
@@ -30,7 +33,7 @@ def normalize_header_value(value: typing.AnyStr, encoding: str = None) -> bytes:
     return value.encode(encoding or "ascii")
 
 
-def str_query_param(value: typing.Optional[typing.Union[str, int, float, bool]]) -> str:
+def str_query_param(value: "PrimitiveData") -> str:
     """
     Coerce a primitive data type into a string value for query params.
 

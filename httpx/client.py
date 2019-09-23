@@ -115,7 +115,8 @@ class BaseClient:
         )
 
         if params is None:
-            params = {}
+            # Cast since mypy complains if we assign to `{}` here.
+            params = typing.cast(typing.Mapping, {})
 
         self.auth = auth
         self._params = QueryParams(params)

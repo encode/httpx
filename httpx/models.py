@@ -51,8 +51,8 @@ URLTypes = typing.Union["URL", str]
 QueryParamTypes = typing.Union[
     "QueryParams",
     typing.Mapping[str, PrimitiveData],
-    typing.List[typing.Tuple[str, PrimitiveData]],
     typing.Mapping[str, typing.Sequence[PrimitiveData]],
+    typing.List[typing.Tuple[str, PrimitiveData]],
     str,
 ]
 
