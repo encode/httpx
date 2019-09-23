@@ -15,9 +15,19 @@ async client for sending outgoing HTTP requests.
 To make asynchronous requests, you'll need an `AsyncClient`.
 
 ```python
->>> client = httpx.AsyncClient()
->>> r = await client.get('https://www.example.com/')
+>>> async with httpx.AsyncClient() as client:
+>>>     r = await client.get('https://www.example.com/')
+>>> r
+<Response [200 OK]>
 ```
+
+!!! tip
+    Use [IPython](https://ipython.readthedocs.io/en/stable/) to try this code interactively, as it supports executing `async`/`await` expressions in the console.
+
+!!! note
+    The `async with` syntax ensures that all active connections are closed on exit.
+
+    It is safe to access response content (e.g. `r.text`) both inside and outside the `async with` block, unless you are using response streaming. In that case, you should `.read()`, `.stream()`, or `.close()` the response *inside* the `async with` block.
 
 ## API Differences
 
@@ -25,13 +35,10 @@ If you're using streaming responses then there are a few bits of API that
 use async methods:
 
 ```python
->>> client = httpx.AsyncClient()
->>> r = await client.get('https://www.example.com/', stream=True)
->>> try:
+>>> async with httpx.AsyncClient() as client:
+>>>     r = await client.get('https://www.example.com/', stream=True)
 >>>     async for chunk in r.stream():
 >>>         ...
->>> finally:
->>>     await r.close()
 ```
 
 The async response methods are:
@@ -41,15 +48,15 @@ The async response methods are:
 * `.raw()`
 * `.close()`
 
-If you're making parallel requests, then you'll also need to use an async API:
+If you're making [parallel requests](/parallel/), then you'll also need to use an async API:
 
 ```python
->>> client = httpx.AsyncClient()
->>> async with client.parallel() as parallel:
->>>     pending_one = parallel.get('https://example.com/1')
->>>     pending_two = parallel.get('https://example.com/2')
->>>     response_one = await pending_one.get_response()
->>>     response_two = await pending_two.get_response()
+>>> async with httpx.AsyncClient() as client:
+>>>     async with client.parallel() as parallel:
+>>>         pending_one = parallel.get('https://example.com/1')
+>>>         pending_two = parallel.get('https://example.com/2')
+>>>         response_one = await pending_one.get_response()
+>>>         response_two = await pending_two.get_response()
 ```
 
 The async parallel methods are:

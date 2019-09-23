@@ -49,6 +49,7 @@ setup(
     package_data={"httpx": ["py.typed"]},
     packages=get_packages("httpx"),
     include_package_data=True,
+    zip_safe=False,
     install_requires=[
         "certifi",
         "chardet==3.*",
@@ -58,6 +59,7 @@ setup(
         "idna==2.*",
         "rfc3986==1.*",
     ],
+    extras_require={"trio": ["trio"]},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",

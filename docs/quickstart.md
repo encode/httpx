@@ -379,3 +379,25 @@ value to be more or less strict:
 ```python
 >>> httpx.get('https://github.com/', timeout=0.001)
 ```
+
+## Authentication
+
+HTTPX supports Basic and Digest HTTP authentication.
+
+To provide Basic authentication credentials, pass a 2-tuple of
+plaintext `str` or `bytes` objects as the `auth` argument to the request
+functions:
+
+```python
+>>> httpx.get("https://example.com", auth=("my_user", "password123"))
+```
+
+To provide credentials for Digest authentication you'll need to instantiate
+a `DigestAuth` object with the plaintext username and password as arguments.
+This object can be then passed as the `auth` argument to the request methods
+as above:
+
+```python
+>>> auth = httpx.DigestAuth("my_user", "password123")
+>>> httpx.get("https://example.com", auth=auth)
+<Response [200 OK]>

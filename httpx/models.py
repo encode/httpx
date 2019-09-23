@@ -1,4 +1,5 @@
 import cgi
+import datetime
 import email.message
 import json as jsonlib
 import typing
@@ -39,6 +40,10 @@ from .utils import (
     str_query_param,
 )
 
+if typing.TYPE_CHECKING:
+    from .middleware.base import BaseMiddleware  # noqa: F401
+    from .dispatch.base import AsyncDispatcher  # noqa: F401
+
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
 URLTypes = typing.Union["URL", str]
@@ -61,6 +66,13 @@ CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
     typing.Callable[["AsyncRequest"], "AsyncRequest"],
+    "BaseMiddleware",
+]
+
+ProxiesTypes = typing.Union[
+    URLTypes,
+    "AsyncDispatcher",
+    typing.Dict[URLTypes, typing.Union[URLTypes, "AsyncDispatcher"]],
 ]
 
 AsyncRequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
@@ -111,6 +123,10 @@ class URL:
             if not self.host:
                 raise InvalidURL("No host included in URL.")
 
+        # Allow setting full_path to custom attributes requests
+        # like OPTIONS, CONNECT, and forwarding proxy requests.
+        self._full_path: typing.Optional[str] = None
+
     @property
     def scheme(self) -> str:
         return self._uri_reference.scheme or ""
@@ -150,10 +166,16 @@ class URL:
 
     @property
     def full_path(self) -> str:
+        if self._full_path is not None:
+            return self._full_path
         path = self.path
         if self.query:
             path += "?" + self.query
         return path
+
+    @full_path.setter
+    def full_path(self, value: typing.Optional[str]) -> None:
+        self._full_path = value
 
     @property
     def fragment(self) -> str:
@@ -421,6 +443,9 @@ class Headers(typing.MutableMapping[str, str]):
         headers = Headers(headers)
         for header in headers:
             self[header] = headers[header]
+
+    def copy(self) -> "Headers":
+        return Headers(self.items(), encoding=self.encoding)
 
     def __getitem__(self, key: str) -> str:
         """
@@ -700,6 +725,7 @@ class BaseResponse:
         headers: HeaderTypes = None,
         request: BaseRequest = None,
         on_close: typing.Callable = None,
+        elapsed: datetime.timedelta = None,
     ):
         self.status_code = status_code
         self.http_version = http_version
@@ -707,6 +733,7 @@ class BaseResponse:
 
         self.request = request
         self.on_close = on_close
+        self.elapsed = datetime.timedelta(0) if elapsed is None else elapsed
         self.call_next: typing.Optional[typing.Callable] = None
 
     @property
@@ -884,6 +911,7 @@ class AsyncResponse(BaseResponse):
         on_close: typing.Callable = None,
         request: AsyncRequest = None,
         history: typing.List["BaseResponse"] = None,
+        elapsed: datetime.timedelta = None,
     ):
         super().__init__(
             status_code=status_code,
@@ -891,6 +919,7 @@ class AsyncResponse(BaseResponse):
             headers=headers,
             request=request,
             on_close=on_close,
+            elapsed=elapsed,
         )
 
         self.history = [] if history is None else list(history)
@@ -983,6 +1012,7 @@ class Response(BaseResponse):
         on_close: typing.Callable = None,
         request: Request = None,
         history: typing.List["BaseResponse"] = None,
+        elapsed: datetime.timedelta = None,
     ):
         super().__init__(
             status_code=status_code,
@@ -990,6 +1020,7 @@ class Response(BaseResponse):
             headers=headers,
             request=request,
             on_close=on_close,
+            elapsed=elapsed,
         )
 
         self.history = [] if history is None else list(history)

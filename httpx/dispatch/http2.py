@@ -3,9 +3,11 @@ import typing
 
 import h2.connection
 import h2.events
+from h2.settings import SettingCodes, Settings
 
-from ..concurrency.base import BaseEvent, BaseStream, ConcurrencyBackend, TimeoutFlag
+from ..concurrency.base import BaseEvent, BaseTCPStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
+from ..exceptions import ProtocolError
 from ..models import AsyncRequest, AsyncResponse
 from ..utils import get_logger
 
@@ -17,7 +19,7 @@ class HTTP2Connection:
 
     def __init__(
         self,
-        stream: BaseStream,
+        stream: BaseTCPStream,
         backend: ConcurrencyBackend,
         on_release: typing.Callable = None,
     ):
@@ -35,7 +37,7 @@ class HTTP2Connection:
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
-        #  Start sending the request.
+        # Start sending the request.
         if not self.initialized:
             self.initiate_connection()
 
@@ -64,6 +66,28 @@ class HTTP2Connection:
         await self.stream.close()
 
     def initiate_connection(self) -> None:
+        # Need to set these manually here instead of manipulating via
+        # __setitem__() otherwise the H2Connection will emit SettingsUpdate
+        # frames in addition to sending the undesired defaults.
+        self.h2_state.local_settings = Settings(
+            client=True,
+            initial_values={
+                # Disable PUSH_PROMISE frames from the server since we don't do anything
+                # with them for now.  Maybe when we support caching?
+                SettingCodes.ENABLE_PUSH: 0,
+                # These two are taken from h2 for safe defaults
+                SettingCodes.MAX_CONCURRENT_STREAMS: 100,
+                SettingCodes.MAX_HEADER_LIST_SIZE: 65536,
+            },
+        )
+
+        # Some websites (*cough* Yahoo *cough*) balk at this setting being
+        # present in the initial handshake since it's not defined in the original
+        # RFC despite the RFC mandating ignoring settings you don't know about.
+        del self.h2_state.local_settings[
+            h2.settings.SettingCodes.ENABLE_CONNECT_PROTOCOL
+        ]
+
         self.h2_state.initiate_connection()
         data_to_send = self.h2_state.data_to_send()
         self.stream.write_no_block(data_to_send)
@@ -87,7 +111,6 @@ class HTTP2Connection:
             f"target={request.url.full_path!r} "
             f"headers={headers!r}"
         )
-
         self.h2_state.send_headers(stream_id, headers)
         data_to_send = self.h2_state.data_to_send()
         await self.stream.write(data_to_send, timeout)
@@ -187,6 +210,10 @@ class HTTP2Connection:
                 logger.debug(
                     f"receive_event stream_id={event_stream_id} event={event!r}"
                 )
+
+                if hasattr(event, "error_code"):
+                    raise ProtocolError(event)
+
                 if isinstance(event, h2.events.WindowUpdated):
                     if event_stream_id == 0:
                         for window_update_event in self.window_update_received.values():

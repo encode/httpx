@@ -53,6 +53,12 @@ class PoolTimeout(Timeout):
     """
 
 
+class ProxyError(HTTPError):
+    """
+    Error from within a proxy
+    """
+
+
 # HTTP exceptions...
 
 
