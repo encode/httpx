@@ -40,6 +40,7 @@ from .models import (
     Headers,
     HeaderTypes,
     ProxiesTypes,
+    QueryParams,
     QueryParamTypes,
     RequestData,
     RequestFiles,
@@ -55,6 +56,7 @@ class BaseClient:
         self,
         *,
         auth: AuthTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
@@ -112,7 +114,11 @@ class BaseClient:
             proxies
         )
 
+        if params is None:
+            params = {}
+
         self.auth = auth
+        self._params = QueryParams(params)
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
         self.max_redirects = max_redirects
@@ -134,6 +140,14 @@ class BaseClient:
     @cookies.setter
     def cookies(self, cookies: CookieTypes) -> None:
         self._cookies = Cookies(cookies)
+
+    @property
+    def params(self) -> QueryParams:
+        return self._params
+
+    @params.setter
+    def params(self, params: QueryParamTypes) -> None:
+        self._params = QueryParams(params)
 
     def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
         pass  # pragma: no cover
@@ -161,6 +175,15 @@ class BaseClient:
             merged_headers.update(headers)
             return merged_headers
         return headers
+
+    def merge_queryparams(
+        self, params: QueryParamTypes = None
+    ) -> typing.Optional[QueryParamTypes]:
+        if params or self.params:
+            merged_queryparams = QueryParams(self.params)
+            merged_queryparams.update(params)
+            return merged_queryparams
+        return params
 
     async def _get_response(
         self,
@@ -299,6 +322,7 @@ class BaseClient:
         url = self.merge_url(url)
         headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
+        params = self.merge_queryparams(params)
         request = AsyncRequest(
             method,
             url,

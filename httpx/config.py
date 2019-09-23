@@ -6,6 +6,7 @@ from pathlib import Path
 import certifi
 
 from .__version__ import __version__
+from .utils import get_ca_bundle_from_env
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
@@ -117,6 +118,11 @@ class SSLConfig:
         """
         Return an SSL context for verified connections.
         """
+        if self.trust_env and self.verify is True:
+            ca_bundle = get_ca_bundle_from_env()
+            if ca_bundle is not None:
+                self.verify = ca_bundle  # type: ignore
+
         if isinstance(self.verify, bool):
             ca_bundle_path = DEFAULT_CA_BUNDLE_PATH
         elif Path(self.verify).exists():
@@ -269,8 +275,8 @@ class HTTPVersionConfig:
             }
         else:
             raise TypeError(
-                f"HTTP version should be a string or list of strings, "
-                "but got {type(http_versions)}"
+                "HTTP version should be a string or list of strings, "
+                f"but got {type(http_versions)}"
             )
 
         for version in self.http_versions:
@@ -278,7 +284,7 @@ class HTTPVersionConfig:
                 raise ValueError(f"Unsupported HTTP version {version!r}.")
 
         if not self.http_versions:
-            raise ValueError(f"HTTP versions cannot be an empty list.")
+            raise ValueError("HTTP versions cannot be an empty list.")
 
     @property
     def alpn_identifiers(self) -> typing.List[str]:
