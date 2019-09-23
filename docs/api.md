@@ -27,7 +27,8 @@
 >>> response = client.get('https://example.org')
 ```
 
-* `def __init__([auth], [headers], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [app], [dispatch])`
+* `def __init__([auth], [params], [headers], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [app], [dispatch])`
+* `.params` - **QueryParams**
 * `.headers` - **Headers**
 * `.cookies` - **Cookies**
 * `def .get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
