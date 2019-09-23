@@ -167,7 +167,7 @@ def obfuscate_sensitive_headers(
     items: typing.Iterable[typing.Tuple[typing.AnyStr, typing.AnyStr]]
 ) -> typing.Iterator[typing.Tuple[typing.AnyStr, typing.AnyStr]]:
     for k, v in items:
-        if to_str(k) in SENSITIVE_HEADERS:
+        if to_str(k.lower()) in SENSITIVE_HEADERS:
             v = to_bytes_or_str("[secure]", match_type_of=v)
         yield k, v
 
