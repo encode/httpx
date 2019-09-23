@@ -160,6 +160,18 @@ def parse_header_links(value: str) -> typing.List[typing.Dict[str, str]]:
     return links
 
 
+SENSITIVE_HEADERS = {"authorization", "proxy-authorization"}
+
+
+def obfuscate_sensitive_headers(
+    items: typing.Iterable[typing.Tuple[typing.AnyStr, typing.AnyStr]]
+) -> typing.Iterator[typing.Tuple[typing.AnyStr, typing.AnyStr]]:
+    for k, v in items:
+        if to_str(k.lower()) in SENSITIVE_HEADERS:
+            v = to_bytes_or_str("[secure]", match_type_of=v)
+        yield k, v
+
+
 _LOGGER_INITIALIZED = False
 
 
@@ -185,6 +197,15 @@ def get_logger(name: str) -> logging.Logger:
             logger.addHandler(handler)
 
     return logging.getLogger(name)
+
+
+def kv_format(**kwargs: typing.Any) -> str:
+    """Format arguments into a key=value line.
+
+    >>> formatkv(x=1, name="Bob")
+    "x=1 name='Bob'"
+    """
+    return " ".join(f"{key}={value!r}" for key, value in kwargs.items())
 
 
 def get_environment_proxies() -> typing.Dict[str, str]:
@@ -227,6 +248,10 @@ def to_str(value: typing.Union[str, bytes], encoding: str = "utf-8") -> str:
     return value if isinstance(value, str) else value.decode(encoding)
 
 
+def to_bytes_or_str(value: str, match_type_of: typing.AnyStr) -> typing.AnyStr:
+    return value if isinstance(match_type_of, str) else value.encode()
+
+
 def unquote(value: str) -> str:
     return value[1:-1] if value[0] == value[-1] == '"' else value
 
@@ -253,3 +278,64 @@ class ElapsedTimer:
         if self.end is None:
             return timedelta(seconds=perf_counter() - self.start)
         return timedelta(seconds=self.end - self.start)
+
+
+ASGI_PLACEHOLDER_FORMAT = {
+    "body": "<{length} bytes>",
+    "bytes": "<{length} bytes>",
+    "text": "<{length} chars>",
+}
+
+
+def asgi_message_with_placeholders(message: dict) -> dict:
+    """
+    Return an ASGI message, with any body-type content omitted and replaced
+    with a placeholder.
+    """
+    new_message = message.copy()
+
+    for attr in ASGI_PLACEHOLDER_FORMAT:
+        if attr in message:
+            content = message[attr]
+            placeholder = ASGI_PLACEHOLDER_FORMAT[attr].format(length=len(content))
+            new_message[attr] = placeholder
+
+    if "headers" in message:
+        new_message["headers"] = list(obfuscate_sensitive_headers(message["headers"]))
+
+    return new_message
+
+
+class MessageLoggerASGIMiddleware:
+    def __init__(self, app: typing.Callable, logger: logging.Logger) -> None:
+        self.app = app
+        self.logger = logger
+
+    async def __call__(
+        self, scope: dict, receive: typing.Callable, send: typing.Callable
+    ) -> None:
+        async def inner_receive() -> dict:
+            message = await receive()
+            logged_message = asgi_message_with_placeholders(message)
+            self.logger.debug(f"sent {kv_format(**logged_message)}")
+            return message
+
+        async def inner_send(message: dict) -> None:
+            logged_message = asgi_message_with_placeholders(message)
+            self.logger.debug(f"received {kv_format(**logged_message)}")
+            await send(message)
+
+        logged_scope = dict(scope)
+        if "headers" in scope:
+            logged_scope["headers"] = list(
+                obfuscate_sensitive_headers(scope["headers"])
+            )
+        self.logger.debug(f"started {kv_format(**logged_scope)}")
+
+        try:
+            await self.app(scope, inner_receive, inner_send)
+        except BaseException as exc:
+            self.logger.debug("raised_exception")
+            raise exc from None
+        else:
+            self.logger.debug("completed")

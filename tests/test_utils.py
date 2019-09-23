@@ -12,6 +12,7 @@ from httpx.utils import (
     get_environment_proxies,
     get_netrc_login,
     guess_json_utf,
+    obfuscate_sensitive_headers,
     parse_header_links,
 )
 
@@ -192,3 +193,18 @@ def test_get_environment_proxies(environment, proxies):
     os.environ.update(environment)
 
     assert get_environment_proxies() == proxies
+
+
+@pytest.mark.parametrize(
+    "headers, output",
+    [
+        ([("content-type", "text/html")], [("content-type", "text/html")]),
+        ([("authorization", "s3kr3t")], [("authorization", "[secure]")]),
+        ([("proxy-authorization", "s3kr3t")], [("proxy-authorization", "[secure]")]),
+    ],
+)
+def test_obfuscate_sensitive_headers(headers, output):
+    bytes_headers = [(k.encode(), v.encode()) for k, v in headers]
+    bytes_output = [(k.encode(), v.encode()) for k, v in output]
+    assert list(obfuscate_sensitive_headers(headers)) == output
+    assert list(obfuscate_sensitive_headers(bytes_headers)) == bytes_output
