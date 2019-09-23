@@ -269,8 +269,8 @@ class HTTPVersionConfig:
             }
         else:
             raise TypeError(
-                f"HTTP version should be a string or list of strings, "
-                "but got {type(http_versions)}"
+                "HTTP version should be a string or list of strings, "
+                f"but got {type(http_versions)}"
             )
 
         for version in self.http_versions:
@@ -278,7 +278,7 @@ class HTTPVersionConfig:
                 raise ValueError(f"Unsupported HTTP version {version!r}.")
 
         if not self.http_versions:
-            raise ValueError(f"HTTP versions cannot be an empty list.")
+            raise ValueError("HTTP versions cannot be an empty list.")
 
     @property
     def alpn_identifiers(self) -> typing.List[str]:
