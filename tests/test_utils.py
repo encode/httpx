@@ -8,6 +8,7 @@ import httpx
 from httpx import utils
 from httpx.utils import (
     ElapsedTimer,
+    get_ca_bundle_from_env,
     get_environment_proxies,
     get_netrc_login,
     guess_json_utf,
@@ -118,6 +119,42 @@ async def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):
 
     # Reset the logger so we don't have verbose output in all unit tests
     logging.getLogger("httpx").handlers = []
+
+
+def test_get_ssl_cert_file():
+    # Two environments is not set.
+    assert get_ca_bundle_from_env() is None
+
+    os.environ["SSL_CERT_DIR"] = "tests/"
+    # SSL_CERT_DIR is correctly set, SSL_CERT_FILE is not set.
+    assert get_ca_bundle_from_env() == "tests"
+
+    del os.environ["SSL_CERT_DIR"]
+    os.environ["SSL_CERT_FILE"] = "tests/test_utils.py"
+    # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
+    assert get_ca_bundle_from_env() == "tests/test_utils.py"
+
+    os.environ["SSL_CERT_FILE"] = "wrongfile"
+    # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
+    assert get_ca_bundle_from_env() is None
+
+    del os.environ["SSL_CERT_FILE"]
+    os.environ["SSL_CERT_DIR"] = "wrongpath"
+    # SSL_CERT_DIR is set with wrong path,  SSL_CERT_FILE is not set.
+    assert get_ca_bundle_from_env() is None
+
+    os.environ["SSL_CERT_DIR"] = "tests/"
+    os.environ["SSL_CERT_FILE"] = "tests/test_utils.py"
+    # Two environments is correctly set.
+    assert get_ca_bundle_from_env() == "tests/test_utils.py"
+
+    os.environ["SSL_CERT_FILE"] = "wrongfile"
+    # Two environments is set but SSL_CERT_FILE is not a file.
+    assert get_ca_bundle_from_env() == "tests"
+
+    os.environ["SSL_CERT_DIR"] = "wrongpath"
+    # Two environments is set but both are not correct.
+    assert get_ca_bundle_from_env() is None
 
 
 @pytest.mark.asyncio

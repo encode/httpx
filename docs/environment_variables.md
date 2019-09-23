@@ -2,6 +2,12 @@ Environment Variables
 =====================
 
 The HTTPX library can be configured via environment variables.
+Environment variables are used by default. To ignore environment variables, `trust_env` has to be set `False`.
+There are two ways to set `trust_env` to disable environment variables:
+
+* On the client via `httpx.Client(trust_env=False)`
+* Per request via `client.get("<url>", trust_env=False)`
+
 Here is a list of environment variables that HTTPX recognizes
 and what function they serve:
 
@@ -78,6 +84,36 @@ EXPORTER_SECRET XXXX
 SERVER_TRAFFIC_SECRET_0 XXXX
 CLIENT_HANDSHAKE_TRAFFIC_SECRET XXXX
 CLIENT_TRAFFIC_SECRET_0 XXXX
+```
+
+`SSL_CERT_FILE`
+-----------
+
+Valid values: a filename
+
+if this environment variable is set then HTTPX will load
+CA certificate from the specified file instead of the default
+location.
+
+Example:
+
+```console
+SSL_CERT_FILE=/path/to/ca-certs/ca-bundle.crt python -c "import httpx; httpx.get('https://example.com')"
+```
+
+`SSL_CERT_DIR`
+-----------
+
+Valid values: a directory
+
+if this environment variable is set then HTTPX will load
+CA certificates from the specified location instead of the default
+location.
+
+Example:
+
+```console
+SSL_CERT_DIR=/path/to/ca-certs/ python -c "import httpx; httpx.get('https://example.com')"
 ```
 
 `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`
