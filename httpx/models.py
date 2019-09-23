@@ -36,6 +36,7 @@ from .utils import (
     is_known_encoding,
     normalize_header_key,
     normalize_header_value,
+    obfuscate_sensitive_headers,
     parse_header_links,
     str_query_param,
 )
@@ -554,13 +555,11 @@ class Headers(typing.MutableMapping[str, str]):
         if self.encoding != "ascii":
             encoding_str = f", encoding={self.encoding!r}"
 
-        sensitive_headers = {"authorization", "proxy-authorization"}
-        as_list = [
-            (k, "[secure]" if k in sensitive_headers else v) for k, v in self.items()
-        ]
-
+        as_list = list(obfuscate_sensitive_headers(self.items()))
         as_dict = dict(as_list)
-        if len(as_dict) == len(as_list):
+
+        no_duplicate_keys = len(as_dict) == len(as_list)
+        if no_duplicate_keys:
             return f"{class_name}({as_dict!r}{encoding_str})"
         return f"{class_name}({as_list!r}{encoding_str})"
 
