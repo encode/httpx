@@ -20,12 +20,15 @@ def lint(session):
 @nox.session(reuse_venv=True)
 def check(session):
     session.install(
-        "black", "flake8", "flake8-bugbear", "flake8-comprehensions", "mypy"
+        "black", "flake8", "flake8-bugbear", "flake8-comprehensions", "isort", "mypy"
     )
 
     session.run("black", "--check", "--diff", "--target-version=py36", *source_files)
     session.run("flake8", *source_files)
     session.run("mypy", "httpx")
+    session.run(
+        "isort", "--check", "--diff", "--project=httpx", "--recursive", *source_files
+    )
 
 
 @nox.session(reuse_venv=True)
