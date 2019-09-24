@@ -38,4 +38,4 @@ def docs(session):
 @nox.session(python=["3.6", "3.7", "3.8"])
 def test(session):
     session.install("-r", "test-requirements.txt")
-    session.run("python", "-m", "pytest", *session.posargs)
+    session.run("python", "-m", "pytest", "--cov-fail-under=100", *session.posargs)
