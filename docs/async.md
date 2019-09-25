@@ -64,3 +64,44 @@ The async parallel methods are:
 * `.parallel()` *Used as an "async with" context manager.*
 * `.get_response()`
 * `.next_response()`
+
+## Supported async libraries
+
+You can use `AsyncClient` with any of the following async libraries.
+
+!!! tip
+    You will typically be using `AsyncClient` in async programs that run on `asyncio`. If that's the case, or if you're not sure what this is all about, you can safely ignore this section.
+
+### [asyncio](https://docs.python.org/3/library/asyncio.html) (Default)
+
+By default, `AsyncClient` uses `asyncio` to perform asynchronous operations and I/O calls. It's a safe default: `asyncio` is built into the standard library and has widespread usage.
+
+```python
+import asyncio
+import httpx
+
+async def main():
+    async with httpx.AsyncClient() as client:
+        ...
+
+asyncio.run(main())
+```
+
+### [trio](https://github.com/python-trio/trio)
+
+To make asynchronous requests in `trio` programs, pass a `TrioBackend` to the `AsyncClient`:
+
+```python
+import trio
+import httpx
+from httpx.concurrency.trio import TrioBackend
+
+async def main():
+    async with httpx.AsyncClient(backend=TrioBackend()) as client:
+        ...
+
+trio.run(main)
+```
+
+!!! important
+    `trio` must be installed to import and use the `TrioBackend`.
