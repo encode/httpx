@@ -38,4 +38,8 @@ def docs(session):
 @nox.session(python=["3.6", "3.7", "3.8"])
 def test(session):
     session.install("-r", "test-requirements.txt")
-    session.run("python", "-m", "pytest", "--cov-fail-under=100", *session.posargs)
+    # Skip 3.6 as it is deliberately missing a large chunk of test coverage
+    if session.python == "3.6":
+        session.run("python", "-m", "pytest", *session.posargs)
+    else:
+        session.run("python", "-m", "pytest", "--cov-fail-under=100", *session.posargs)
