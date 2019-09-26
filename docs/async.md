@@ -74,7 +74,7 @@ You can use `AsyncClient` with any of the following async libraries.
 
 ### [asyncio](https://docs.python.org/3/library/asyncio.html) (Default)
 
-By default, `AsyncClient` uses `asyncio` to perform asynchronous operations and I/O calls. It's a safe default: `asyncio` is built into the standard library and has widespread usage.
+By default, `AsyncClient` uses `asyncio` to perform asynchronous operations and I/O calls.
 
 ```python
 import asyncio
