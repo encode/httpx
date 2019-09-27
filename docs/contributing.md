@@ -115,6 +115,43 @@ To spawn the docs server run:
 $ mkdocs serve
 ```
 
+## Resolving Build / Travis Failures
+
+Once you've submitted your pull request, the test suite will automatically run, and the results will show up in GitHub.
+If the test suite fails, you'll want to click through to the "Details" link, and try to identify why the test suite failed.
+
+Here are some common ways the test suite can fail:
+
+### NOX_SESSION=check Job Failed
+
+This job failing means there is either a code formatting issue or type-annotation issue.
+You can look at the job output to figure out why it's failed or within a shell run:
+
+`nox -s check`
+
+It may be worth it to run `nox -s lint` to attempt auto-formatting the code
+and if that job succeeds commit the changes.
+
+### NOX_SESSION=docs Job Failed
+
+This job failing means the documentation failed to build. This can happen for
+a variety of reasons like invalid markdown or missing configuration within `mkdocs.yml`.
+
+### NOX_SESSION=test-3.X Job Failed
+
+This job failing means the unit tests failed or not all code paths are covered by a unit tests.
+
+If tests are failing you will see this message under the coverage report:
+
+`=== 1 failed, 435 passed, 1 skipped, 1 xfailed in 11.09s ===`
+
+If tests succeed but coverage isn't 100% you will see this message under the coverage report:
+
+`FAIL Required test coverage of 100% not reached. Total coverage: 99.00%`
+
+Look at the [coverage report from codecov](https://codecov.io/gh/encode/httpx/pulls)
+for the pull request for help debugging coverage.
+
 ## Releasing
 
 *This section is targeted at HTTPX maintainers.*
