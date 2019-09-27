@@ -1,6 +1,11 @@
 dist: xenial
 language: python
 
+os:
+  - windows
+  - linux
+  - osx
+
 cache: pip
 
 branches:
