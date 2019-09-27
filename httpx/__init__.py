@@ -19,6 +19,7 @@ from .config import (
     TimeoutTypes,
     VerifyTypes,
 )
+from .dispatch import ASGIDispatch, WSGIDispatch
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
@@ -115,6 +116,8 @@ __all__ = [
     "BaseTCPStream",
     "ConcurrencyBackend",
     "Dispatcher",
+    "ASGIDispatch",
+    "WSGIDispatch",
     "URL",
     "URLTypes",
     "StatusCode",
