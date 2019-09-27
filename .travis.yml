@@ -3,6 +3,7 @@ language: python
 
 os:
   - windows
+    language : shell
   - linux
   - osx
 
