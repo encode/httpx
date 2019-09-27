@@ -115,12 +115,9 @@ async def test_asgi_lifespan(
         handle_startup_failed=handle_startup_failed,
     )
 
-    # Things we expect to happen here.
-    should_startup = handle_startup_failed or not startup_exception
-    should_shutdown = not startup_exception or handle_startup_failed
-    should_raise_app_exception = (
-        startup_exception and not handle_startup_failed and raise_app_exceptions
-    )
+    # Things we expect to happen.
+    should_shutdown = not startup_exception
+    should_raise_app_exception = startup_exception and raise_app_exceptions
 
     with (
         pytest.raises(FakeAppException) if should_raise_app_exception else nullcontext()
@@ -134,10 +131,8 @@ async def test_asgi_lifespan(
             startup_event = (
                 f"lifespan.startup.{'failed' if startup_exception else 'complete'}"
             )
-            if should_startup:
+            if not startup_exception or handle_startup_failed:
                 assert startup_event in app.sent_lifespan_events
-            else:
-                assert startup_event not in app.sent_lifespan_events
 
             response = await http.request("GET", "http://www.example.org/")
             await response.read()

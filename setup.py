@@ -58,6 +58,7 @@ setup(
         "hstspreload>=2019.8.27",
         "idna==2.*",
         "rfc3986==1.*",
+        "async_generator; python_version < '3.7'",
     ],
     extras_require={"trio": ["trio"]},
     classifiers=[

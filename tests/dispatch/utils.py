@@ -243,6 +243,10 @@ class MockLifespan:
         self.startup_exception = startup_exception
         self.handle_startup_failed = handle_startup_failed
 
+    async def startup(self) -> None:
+        if self.startup_exception is not None:
+            raise self.startup_exception
+
     async def __call__(
         self, scope: dict, receive: typing.Callable, send: typing.Callable
     ) -> None:
@@ -262,16 +266,15 @@ class MockLifespan:
         message = await _receive()
         assert message["type"] == "lifespan.startup"
 
-        if self.startup_exception is not None:
-            # Simulate an exception raised during app startup.
+        try:
+            await self.startup()
+        except BaseException:
             if self.handle_startup_failed:
                 await _send({"type": "lifespan.startup.failed"})
-            else:
-                raise self.startup_exception
+            raise
         else:
             await _send({"type": "lifespan.startup.complete"})
 
         message = await _receive()
         assert message["type"] == "lifespan.shutdown"
-
         await _send({"type": "lifespan.shutdown.complete"})

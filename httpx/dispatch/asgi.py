@@ -1,8 +1,9 @@
 import typing
 from types import TracebackType
 
+from ..compat import asynccontextmanager
 from ..concurrency.asyncio import AsyncioBackend
-from ..concurrency.base import BaseBackgroundManager, ConcurrencyBackend
+from ..concurrency.base import ConcurrencyBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import AsyncRequest, AsyncResponse
 from ..utils import MessageLoggerASGIMiddleware, get_logger
@@ -60,7 +61,7 @@ class ASGIDispatch(AsyncDispatcher):
         self.root_path = root_path
         self.client = client
         self.backend = AsyncioBackend() if backend is None else backend
-        self._lifespan: typing.Optional[Lifespan] = None
+        self._lifespan: typing.Optional[typing.AsyncContextManager] = None
 
     async def send(
         self,
@@ -158,17 +159,13 @@ class ASGIDispatch(AsyncDispatcher):
         )
 
     async def __aenter__(self) -> "ASGIDispatch":
-        lifespan = Lifespan(app=self.app, backend=self.backend)
+        lifespan = open_lifespan(app=self.app, backend=self.backend)
 
         try:
             # TODO: should this be subject to a timeout?
             await lifespan.__aenter__()
-        except Exception as exc:
-            # Be sure to close the async context manager, or strict async libraries
-            # such as trio might complain.
-            await lifespan.__aexit__(type(exc), exc, exc.__traceback__)
-
-            if isinstance(exc, Lifespan.NotSupported):
+        except BaseException as exc:
+            if isinstance(exc, _LifespanNotSupported):
                 logger.debug("ASGI 'lifespan' protocol appears unsupported")
             elif self.raise_app_exceptions:
                 raise
@@ -234,77 +231,74 @@ class BodyIterator:
         await self._queue.put(self._done)
 
 
-class Lifespan:
-    class NotSupported(Exception):
-        pass
+class _LifespanNotSupported(Exception):
+    pass
 
-    def __init__(self, app: typing.Callable, backend: ConcurrencyBackend) -> None:
-        self.app = app
-        self.backend = backend
-        self.receive_queue = self.backend.create_queue(max_size=1)
-        self.send_queue = self.backend.create_queue(max_size=1)
-        self.lifespan_task: typing.Optional[BaseBackgroundManager] = None
 
-    async def __aenter__(self) -> None:
-        app_started_or_failed = self.backend.create_event()
-        app_exc = None
+@asynccontextmanager
+async def open_lifespan(
+    app: typing.Callable, backend: ConcurrencyBackend
+) -> typing.AsyncIterator[None]:
+    receive_queue = backend.create_queue(max_size=1)
+    send_queue = backend.create_queue(max_size=1)
 
-        # The three wrappers below solely exist to propagate exceptions raised
-        # during app startup.
-        # This logic is duplicated with `ASGIDispatch.send()`, which might be a sign
-        # that this should really be the background manager's duty.
+    app_started_or_failed = backend.create_event()
+    app_exc = None
 
-        async def receive() -> dict:
-            message = await self.receive_queue.get()
+    # The three wrappers below solely exist to propagate exceptions raised
+    # during app startup.
+    # This logic is duplicated with `ASGIDispatch.send()`, which might be a sign
+    # that this should really be the background manager's duty.
+
+    async def receive() -> dict:
+        return await receive_queue.get()
+
+    async def send(message: dict) -> None:
+        await send_queue.put(message)
+        app_started_or_failed.set()
+
+    app = MessageLoggerASGIMiddleware(app, logger=logger)
+
+    async def run_app() -> None:
+        nonlocal app_exc
+        try:
+            await app({"type": "lifespan"}, receive, send)
+        except Exception as exc:
+            app_exc = exc
+        finally:
             app_started_or_failed.set()
-            return message
 
-        async def send(message: dict) -> None:
-            app_started_or_failed.set()
-            await self.send_queue.put(message)
-
-        app = MessageLoggerASGIMiddleware(self.app, logger=logger)
-
-        async def run_app() -> None:
-            nonlocal app_exc
-            try:
-                await app({"type": "lifespan"}, receive, send)
-            except Exception as exc:
-                app_exc = exc
-            finally:
-                app_started_or_failed.set()
-
-        self.lifespan_task = self.backend.background_manager(run_app)
-        await self.lifespan_task.__aenter__()
-        await self.receive_queue.put({"type": "lifespan.startup"})
+    async with backend.background_manager(run_app):
+        await receive_queue.put({"type": "lifespan.startup"})
         await app_started_or_failed.wait()
 
         if app_exc is not None:
-            if not self.receive_queue.empty():
+            if not receive_queue.empty():
                 # App failed before calling `receive()` for the first time,
                 # e.g. `assert scope["type"] == "http"`.
-                raise self.NotSupported()
+                raise _LifespanNotSupported()
+
+            if send_queue.empty():
+                raise app_exc
+
+            # App correctly received the "lifespan.startup" event, but it failed
+            # with an exception and sent something to us. It must be startup.failed.
+            message = await send_queue.get()
+            assert message["type"] == "lifespan.startup.failed", message["type"]
 
             raise app_exc
 
-        message = await self.send_queue.get()
+        message = await send_queue.get()
         assert message["type"] in {
             "lifespan.startup.complete",
             "lifespan.startup.failed",
         }, message["type"]
 
-    async def __aexit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        assert self.lifespan_task is not None
+        yield
 
-        if exc_type is None:
-            await self.receive_queue.put({"type": "lifespan.shutdown"})
-            message = await self.send_queue.get()
-            assert message["type"] == "lifespan.shutdown.complete", message["type"]
+        if message["type"] == "lifespan.startup.failed":
+            return
 
-        await self.lifespan_task.close(exc_value)
-        self.lifespan_task = None
+        await receive_queue.put({"type": "lifespan.shutdown"})
+        message = await send_queue.get()
+        assert message["type"] == "lifespan.shutdown.complete", message["type"]
