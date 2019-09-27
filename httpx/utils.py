@@ -6,6 +6,7 @@ import re
 import sys
 import typing
 from datetime import timedelta
+from functools import lru_cache
 from pathlib import Path
 from time import perf_counter
 from types import TracebackType
@@ -94,6 +95,7 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
 NETRC_STATIC_FILES = (Path("~/.netrc"), Path("~/_netrc"))
 
 
+@lru_cache()
 def get_netrc_login(host: str) -> typing.Optional[typing.Tuple[str, str, str]]:
     NETRC_FILES = (Path(os.getenv("NETRC", "")),) + NETRC_STATIC_FILES
     netrc_path = None
