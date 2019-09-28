@@ -1,5 +1,47 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## 0.7.4 (September 25, 2019)
+
+### Added
+
+- Add Trio concurrency backend. (Pull #276)
+- Add `params` parameter to `Client` for setting default query parameters. (Pull #372)
+- Add support for `SSL_CERT_FILE` and `SSL_CERT_DIR` environment variables. (Pull #307)
+- Add debug logging to calls into ASGI apps. (Pull #371)
+- Add debug logging to SSL configuration. (Pull #378)
+
+### Fixed
+
+- Fix a bug when using `Client` without timeouts in Python 3.6. (Pull #383)
+- Propagate `Client` configuration to HTTP proxies. (Pull #377)
+
+## 0.7.3 (September 20, 2019)
+
+### Added
+
+- HTTP Proxy support. (Pulls #259, #353)
+- Add Digest authentication. (Pull #332)
+- Add `.build_request()` method to `Client` and `AsyncClient`. (Pull #319)
+- Add `.elapsed` property on responses. (Pull #351)
+- Add support for `SSLKEYLOGFILE` in Python 3.8b4+. (Pull #301)
+
+### Removed
+
+- Drop NPN support for HTTP version negotiation. (Pull #314)
+
+### Fixed
+
+- Fix distribution of type annotations for mypy (Pull #361).
+- Set `Host` header when redirecting cross-origin. (Pull #321)
+- Drop `Content-Length` headers on `GET` redirects. (Pull #310)
+- Raise `KeyError` if header isn't found in `Headers`. (Pull #324)
+- Raise `NotRedirectResponse` in `response.next()` if there is no redirection to perform. (Pull #297)
+- Fix bug in calculating the HTTP/2 maximum frame size. (Pull #153)
+
 ## 0.7.2 (August 28, 2019)
 
 - Enforce using `httpx.AsyncioBackend` for the synchronous client. (Pull #232)

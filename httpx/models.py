@@ -1,4 +1,5 @@
 import cgi
+import datetime
 import email.message
 import json as jsonlib
 import typing
@@ -35,12 +36,14 @@ from .utils import (
     is_known_encoding,
     normalize_header_key,
     normalize_header_value,
+    obfuscate_sensitive_headers,
     parse_header_links,
     str_query_param,
 )
 
 if typing.TYPE_CHECKING:
     from .middleware.base import BaseMiddleware  # noqa: F401
+    from .dispatch.base import AsyncDispatcher  # noqa: F401
 
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
@@ -65,6 +68,12 @@ AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
     typing.Callable[["AsyncRequest"], "AsyncRequest"],
     "BaseMiddleware",
+]
+
+ProxiesTypes = typing.Union[
+    URLTypes,
+    "AsyncDispatcher",
+    typing.Dict[URLTypes, typing.Union[URLTypes, "AsyncDispatcher"]],
 ]
 
 AsyncRequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
@@ -115,6 +124,10 @@ class URL:
             if not self.host:
                 raise InvalidURL("No host included in URL.")
 
+        # Allow setting full_path to custom attributes requests
+        # like OPTIONS, CONNECT, and forwarding proxy requests.
+        self._full_path: typing.Optional[str] = None
+
     @property
     def scheme(self) -> str:
         return self._uri_reference.scheme or ""
@@ -154,10 +167,16 @@ class URL:
 
     @property
     def full_path(self) -> str:
+        if self._full_path is not None:
+            return self._full_path
         path = self.path
         if self.query:
             path += "?" + self.query
         return path
+
+    @full_path.setter
+    def full_path(self, value: typing.Optional[str]) -> None:
+        self._full_path = value
 
     @property
     def fragment(self) -> str:
@@ -298,8 +317,33 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[key]
         return default
 
+    def update(self, params: QueryParamTypes = None) -> None:  # type: ignore
+        if not params:
+            return
+
+        params = QueryParams(params)
+        for param in params:
+            self[param] = params[param]
+
     def __getitem__(self, key: typing.Any) -> str:
         return self._dict[key]
+
+    def __setitem__(self, key: str, value: str) -> None:
+        self._dict[key] = value
+
+        found_indexes = []
+        for idx, (item_key, _) in enumerate(self._list):
+            if item_key == key:
+                found_indexes.append(idx)
+
+        for idx in reversed(found_indexes[1:]):
+            del self._list[idx]
+
+        if found_indexes:
+            idx = found_indexes[0]
+            self._list[idx] = (key, value)
+        else:
+            self._list.append((key, value))
 
     def __contains__(self, key: typing.Any) -> bool:
         return key in self._dict
@@ -426,6 +470,9 @@ class Headers(typing.MutableMapping[str, str]):
         for header in headers:
             self[header] = headers[header]
 
+    def copy(self) -> "Headers":
+        return Headers(self.items(), encoding=self.encoding)
+
     def __getitem__(self, key: str) -> str:
         """
         Return a single header value.
@@ -508,13 +555,11 @@ class Headers(typing.MutableMapping[str, str]):
         if self.encoding != "ascii":
             encoding_str = f", encoding={self.encoding!r}"
 
-        sensitive_headers = {"authorization", "proxy-authorization"}
-        as_list = [
-            (k, "[secure]" if k in sensitive_headers else v) for k, v in self.items()
-        ]
-
+        as_list = list(obfuscate_sensitive_headers(self.items()))
         as_dict = dict(as_list)
-        if len(as_dict) == len(as_list):
+
+        no_duplicate_keys = len(as_dict) == len(as_list)
+        if no_duplicate_keys:
             return f"{class_name}({as_dict!r}{encoding_str})"
         return f"{class_name}({as_list!r}{encoding_str})"
 
@@ -704,6 +749,7 @@ class BaseResponse:
         headers: HeaderTypes = None,
         request: BaseRequest = None,
         on_close: typing.Callable = None,
+        elapsed: datetime.timedelta = None,
     ):
         self.status_code = status_code
         self.http_version = http_version
@@ -711,6 +757,7 @@ class BaseResponse:
 
         self.request = request
         self.on_close = on_close
+        self.elapsed = datetime.timedelta(0) if elapsed is None else elapsed
         self.call_next: typing.Optional[typing.Callable] = None
 
     @property
@@ -888,6 +935,7 @@ class AsyncResponse(BaseResponse):
         on_close: typing.Callable = None,
         request: AsyncRequest = None,
         history: typing.List["BaseResponse"] = None,
+        elapsed: datetime.timedelta = None,
     ):
         super().__init__(
             status_code=status_code,
@@ -895,6 +943,7 @@ class AsyncResponse(BaseResponse):
             headers=headers,
             request=request,
             on_close=on_close,
+            elapsed=elapsed,
         )
 
         self.history = [] if history is None else list(history)
@@ -987,6 +1036,7 @@ class Response(BaseResponse):
         on_close: typing.Callable = None,
         request: Request = None,
         history: typing.List["BaseResponse"] = None,
+        elapsed: datetime.timedelta = None,
     ):
         super().__init__(
             status_code=status_code,
@@ -994,6 +1044,7 @@ class Response(BaseResponse):
             headers=headers,
             request=request,
             on_close=on_close,
+            elapsed=elapsed,
         )
 
         self.history = [] if history is None else list(history)

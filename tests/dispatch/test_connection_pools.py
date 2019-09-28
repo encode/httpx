@@ -168,7 +168,9 @@ async def test_connection_closed_free_semaphore_on_acquire(server, restart, back
     Verify that max_connections semaphore is released
     properly on a disconnected connection.
     """
-    async with httpx.ConnectionPool(pool_limits=httpx.PoolLimits(hard_limit=1)) as http:
+    async with httpx.ConnectionPool(
+        pool_limits=httpx.PoolLimits(hard_limit=1), backend=backend
+    ) as http:
         response = await http.request("GET", server.url)
         await response.read()
 

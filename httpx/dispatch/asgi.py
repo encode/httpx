@@ -4,14 +4,17 @@ from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import AsyncRequest, AsyncResponse
+from ..utils import MessageLoggerASGIMiddleware, get_logger
 from .base import AsyncDispatcher
+
+logger = get_logger(__name__)
 
 
 class ASGIDispatch(AsyncDispatcher):
     """
     A custom dispatcher that handles sending requests directly to an ASGI app.
 
-    The simplest way to use this functionality is to use the `app`argument.
+    The simplest way to use this functionality is to use the `app` argument.
     This will automatically infer if 'app' is a WSGI or an ASGI application,
     and will setup an appropriate dispatch class:
 
@@ -30,6 +33,7 @@ class ASGIDispatch(AsyncDispatcher):
         client=("1.2.3.4", 123)
     )
     client = httpx.Client(dispatch=dispatch)
+    ```
 
     Arguments:
 
@@ -77,7 +81,7 @@ class ASGIDispatch(AsyncDispatcher):
             "client": self.client,
             "root_path": self.root_path,
         }
-        app = self.app
+        app = MessageLoggerASGIMiddleware(self.app, logger=logger)
         app_exc = None
         status_code = None
         headers = None
@@ -86,8 +90,6 @@ class ASGIDispatch(AsyncDispatcher):
         request_stream = request.stream()
 
         async def receive() -> dict:
-            nonlocal request_stream
-
             try:
                 body = await request_stream.__anext__()
             except StopAsyncIteration:
@@ -95,23 +97,25 @@ class ASGIDispatch(AsyncDispatcher):
             return {"type": "http.request", "body": body, "more_body": True}
 
         async def send(message: dict) -> None:
-            nonlocal status_code, headers, response_started_or_failed
-            nonlocal response_body, request
+            nonlocal status_code, headers
 
             if message["type"] == "http.response.start":
                 status_code = message["status"]
                 headers = message.get("headers", [])
                 response_started_or_failed.set()
+
             elif message["type"] == "http.response.body":
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
+
                 if body and request.method != "HEAD":
                     await response_body.put(body)
+
                 if not more_body:
                     await response_body.mark_as_done()
 
         async def run_app() -> None:
-            nonlocal app, scope, receive, send, app_exc, response_body
+            nonlocal app_exc
             try:
                 await app(scope, receive, send)
             except Exception as exc:
@@ -130,15 +134,15 @@ class ASGIDispatch(AsyncDispatcher):
         await response_started_or_failed.wait()
 
         if app_exc is not None and self.raise_app_exceptions:
+            await background.close(app_exc)
             raise app_exc
 
         assert status_code is not None, "application did not return a response."
         assert headers is not None
 
         async def on_close() -> None:
-            nonlocal response_body
             await response_body.drain()
-            await background.__aexit__(None, None, None)
+            await background.close(app_exc)
             if app_exc is not None and self.raise_app_exceptions:
                 raise app_exc
 

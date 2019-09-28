@@ -20,6 +20,7 @@ from .config import (
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import AsyncDispatcher, Dispatcher
 from .dispatch.connection_pool import ConnectionPool
+from .dispatch.proxy_http import HTTPProxy
 from .dispatch.threaded import ThreadedDispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import HTTPError, InvalidURL
@@ -38,6 +39,8 @@ from .models import (
     CookieTypes,
     Headers,
     HeaderTypes,
+    ProxiesTypes,
+    QueryParams,
     QueryParamTypes,
     RequestData,
     RequestFiles,
@@ -45,18 +48,21 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .utils import get_netrc_login
+from .utils import ElapsedTimer, get_environment_proxies, get_netrc_login
 
 
 class BaseClient:
     def __init__(
         self,
+        *,
         auth: AuthTypes = None,
+        params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http_versions: HTTPVersionTypes = None,
+        proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
@@ -77,7 +83,7 @@ class BaseClient:
             if param_count == 2:
                 dispatch = WSGIDispatch(app=app)
             else:
-                dispatch = ASGIDispatch(app=app)
+                dispatch = ASGIDispatch(app=app, backend=backend)
 
         self.trust_env = True if trust_env is None else trust_env
 
@@ -101,12 +107,30 @@ class BaseClient:
         else:
             self.base_url = URL(base_url)
 
+        if params is None:
+            params = {}
+
         self.auth = auth
+        self._params = QueryParams(params)
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
+
+        if proxies is None and trust_env:
+            proxies = typing.cast(ProxiesTypes, get_environment_proxies())
+
+        self.proxies: typing.Dict[str, AsyncDispatcher] = _proxies_to_dispatchers(
+            proxies,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            http_versions=http_versions,
+            pool_limits=pool_limits,
+            backend=backend,
+            trust_env=trust_env,
+        )
 
     @property
     def headers(self) -> Headers:
@@ -123,6 +147,14 @@ class BaseClient:
     @cookies.setter
     def cookies(self, cookies: CookieTypes) -> None:
         self._cookies = Cookies(cookies)
+
+    @property
+    def params(self) -> QueryParams:
+        return self._params
+
+    @params.setter
+    def params(self, params: QueryParamTypes) -> None:
+        self._params = QueryParams(params)
 
     def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
         pass  # pragma: no cover
@@ -151,6 +183,15 @@ class BaseClient:
             return merged_headers
         return headers
 
+    def merge_queryparams(
+        self, params: QueryParamTypes = None
+    ) -> typing.Optional[QueryParamTypes]:
+        if params or self.params:
+            merged_queryparams = QueryParams(self.params)
+            merged_queryparams.update(params)
+            return merged_queryparams
+        return params
+
     async def _get_response(
         self,
         request: AsyncRequest,
@@ -166,14 +207,21 @@ class BaseClient:
         if request.url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
 
+        dispatch = self._dispatcher_for_request(request, self.proxies)
+
         async def get_response(request: AsyncRequest) -> AsyncResponse:
             try:
-                response = await self.dispatch.send(
-                    request, verify=verify, cert=cert, timeout=timeout
-                )
+                with ElapsedTimer() as timer:
+                    response = await dispatch.send(
+                        request, verify=verify, cert=cert, timeout=timeout
+                    )
+                response.elapsed = timer.elapsed
             except HTTPError as exc:
-                # Add the original request to any HTTPError
-                exc.request = request
+                # Add the original request to any HTTPError unless
+                # there'a already a request attached in the case of
+                # a ProxyError.
+                if exc.request is None:
+                    exc.request = request
                 raise
 
             self.cookies.extract_cookies(response)
@@ -236,6 +284,31 @@ class BaseClient:
 
         return None
 
+    def _dispatcher_for_request(
+        self, request: AsyncRequest, proxies: typing.Dict[str, AsyncDispatcher]
+    ) -> AsyncDispatcher:
+        """Gets the AsyncDispatcher instance that should be used for a given Request"""
+        if proxies:
+            url = request.url
+            is_default_port = (url.scheme == "http" and url.port == 80) or (
+                url.scheme == "https" and url.port == 443
+            )
+            hostname = f"{url.host}:{url.port}"
+            proxy_keys = (
+                f"{url.scheme}://{hostname}",
+                f"{url.scheme}://{url.host}" if is_default_port else None,
+                f"all://{hostname}",
+                f"all://{url.host}" if is_default_port else None,
+                url.scheme,
+                "all",
+            )
+            for proxy_key in proxy_keys:
+                if proxy_key and proxy_key in proxies:
+                    dispatcher = proxies[proxy_key]
+                    return dispatcher
+
+        return self.dispatch
+
     def build_request(
         self,
         method: str,
@@ -251,6 +324,7 @@ class BaseClient:
         url = self.merge_url(url)
         headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
+        params = self.merge_queryparams(params)
         request = AsyncRequest(
             method,
             url,
@@ -334,7 +408,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
-        allow_redirects: bool = False,  #  Note: Differs to usual default.
+        allow_redirects: bool = False,  # NOTE: Differs to usual default.
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
@@ -707,6 +781,7 @@ class Client(BaseClient):
             on_close=sync_on_close,
             request=async_response.request,
             history=async_response.history,
+            elapsed=async_response.elapsed,
         )
         if not stream:
             try:
@@ -784,7 +859,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         stream: bool = False,
         auth: AuthTypes = None,
-        allow_redirects: bool = False,  #  Note: Differs to usual default.
+        allow_redirects: bool = False,  # NOTE: Differs to usual default.
         cert: CertTypes = None,
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
@@ -963,3 +1038,45 @@ class Client(BaseClient):
         traceback: TracebackType = None,
     ) -> None:
         self.close()
+
+
+def _proxies_to_dispatchers(
+    proxies: typing.Optional[ProxiesTypes],
+    verify: VerifyTypes,
+    cert: typing.Optional[CertTypes],
+    timeout: TimeoutTypes,
+    http_versions: typing.Optional[HTTPVersionTypes],
+    pool_limits: PoolLimits,
+    backend: ConcurrencyBackend,
+    trust_env: bool,
+) -> typing.Dict[str, AsyncDispatcher]:
+    def _proxy_from_url(url: URLTypes) -> AsyncDispatcher:
+        nonlocal verify, cert, timeout, http_versions, pool_limits, backend, trust_env
+        url = URL(url)
+        if url.scheme in ("http", "https"):
+            return HTTPProxy(
+                url,
+                verify=verify,
+                cert=cert,
+                timeout=timeout,
+                pool_limits=pool_limits,
+                backend=backend,
+                trust_env=trust_env,
+                http_versions=http_versions,
+            )
+        raise ValueError(f"Unknown proxy for {url!r}")
+
+    if proxies is None:
+        return {}
+    elif isinstance(proxies, (str, URL)):
+        return {"all": _proxy_from_url(proxies)}
+    elif isinstance(proxies, AsyncDispatcher):
+        return {"all": proxies}
+    else:
+        new_proxies = {}
+        for key, dispatcher_or_url in proxies.items():
+            if isinstance(dispatcher_or_url, (str, URL)):
+                new_proxies[str(key)] = _proxy_from_url(dispatcher_or_url)
+            else:
+                new_proxies[str(key)] = dispatcher_or_url
+        return new_proxies

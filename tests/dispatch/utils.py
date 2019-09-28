@@ -5,7 +5,7 @@ import h2.config
 import h2.connection
 import h2.events
 
-from httpx import AsyncioBackend, BaseStream, Request, TimeoutConfig
+from httpx import AsyncioBackend, BaseTCPStream, Request, TimeoutConfig
 from tests.concurrency import sleep
 
 
@@ -15,13 +15,13 @@ class MockHTTP2Backend:
         self.backend = AsyncioBackend() if backend is None else backend
         self.server = None
 
-    async def connect(
+    async def open_tcp_stream(
         self,
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> BaseStream:
+    ) -> BaseTCPStream:
         self.server = MockHTTP2Server(self.app, backend=self.backend)
         return self.server
 
@@ -30,7 +30,7 @@ class MockHTTP2Backend:
         return getattr(self.backend, name)
 
 
-class MockHTTP2Server(BaseStream):
+class MockHTTP2Server(BaseTCPStream):
     def __init__(self, app, backend):
         config = h2.config.H2Configuration(client_side=False)
         self.conn = h2.connection.H2Connection(config=config)
@@ -41,8 +41,9 @@ class MockHTTP2Server(BaseStream):
         self.close_connection = False
         self.return_data = {}
         self.returning = {}
+        self.settings_changed = []
 
-    # Stream interface
+    # TCP stream interface
 
     def get_http_version(self) -> str:
         return "HTTP/2"
@@ -81,6 +82,8 @@ class MockHTTP2Server(BaseStream):
                 # This will throw an error if the event is for a not-yet created stream
                 elif self.returning[event.stream_id]:
                     self.send_return_data(event.stream_id)
+            elif isinstance(event, h2.events.RemoteSettingsChanged):
+                self.settings_changed.append(event)
 
     async def write(self, data: bytes, timeout) -> None:
         self.write_no_block(data)
@@ -160,3 +163,64 @@ class MockHTTP2Server(BaseStream):
         self.returning[stream_id] = False
         self.conn.end_stream(stream_id)
         self.buffer += self.conn.data_to_send()
+
+
+class MockRawSocketBackend:
+    def __init__(self, data_to_send=b"", backend=None):
+        self.backend = AsyncioBackend() if backend is None else backend
+        self.data_to_send = data_to_send
+        self.received_data = []
+        self.stream = MockRawSocketStream(self)
+
+    async def open_tcp_stream(
+        self,
+        hostname: str,
+        port: int,
+        ssl_context: typing.Optional[ssl.SSLContext],
+        timeout: TimeoutConfig,
+    ) -> BaseTCPStream:
+        self.received_data.append(
+            b"--- CONNECT(%s, %d) ---" % (hostname.encode(), port)
+        )
+        return self.stream
+
+    async def start_tls(
+        self,
+        stream: BaseTCPStream,
+        hostname: str,
+        ssl_context: ssl.SSLContext,
+        timeout: TimeoutConfig,
+    ) -> BaseTCPStream:
+        self.received_data.append(b"--- START_TLS(%s) ---" % hostname.encode())
+        return self.stream
+
+    # Defer all other attributes and methods to the underlying backend.
+    def __getattr__(self, name: str) -> typing.Any:
+        return getattr(self.backend, name)
+
+
+class MockRawSocketStream(BaseTCPStream):
+    def __init__(self, backend: MockRawSocketBackend):
+        self.backend = backend
+
+    def get_http_version(self) -> str:
+        return "HTTP/1.1"
+
+    def write_no_block(self, data: bytes) -> None:
+        self.backend.received_data.append(data)
+
+    async def write(self, data: bytes, timeout: TimeoutConfig = None) -> None:
+        if data:
+            self.write_no_block(data)
+
+    async def read(self, n, timeout, flag=None) -> bytes:
+        await sleep(self.backend.backend, 0)
+        if not self.backend.data_to_send:
+            return b""
+        return self.backend.data_to_send.pop(0)
+
+    def is_connection_dropped(self) -> bool:
+        return False
+
+    async def close(self) -> None:
+        pass

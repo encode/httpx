@@ -1,13 +1,3 @@
-"""
-The `Stream` class here provides a lightweight layer over
-`asyncio.StreamReader` and `asyncio.StreamWriter`.
-
-Similarly `PoolSemaphore` is a lightweight layer over `BoundedSemaphore`.
-
-These classes help encapsulate the timeout logic, make it easier to unit-test
-protocols, and help keep the rest of the package more `async`/`await`
-based, and less strictly `asyncio`-specific.
-"""
 import asyncio
 import functools
 import ssl
@@ -21,7 +11,7 @@ from .base import (
     BaseEvent,
     BasePoolSemaphore,
     BaseQueue,
-    BaseStream,
+    BaseTCPStream,
     ConcurrencyBackend,
     TimeoutFlag,
 )
@@ -50,7 +40,7 @@ def ssl_monkey_patch() -> None:
     MonkeyPatch.write = _fixed_write
 
 
-class Stream(BaseStream):
+class TCPStream(BaseTCPStream):
     def __init__(
         self,
         stream_reader: asyncio.StreamReader,
@@ -91,6 +81,12 @@ class Stream(BaseStream):
             except asyncio.TimeoutError:
                 if should_raise:
                     raise ReadTimeout() from None
+                # FIX(py3.6): yield control back to the event loop to give it a chance
+                # to cancel `.read(n)` before we retry.
+                # This prevents concurrent `.read()` calls, which asyncio
+                # doesn't seem to allow on 3.6.
+                # See: https://github.com/encode/httpx/issues/382
+                await asyncio.sleep(0)
 
         return data
 
@@ -122,6 +118,20 @@ class Stream(BaseStream):
                     raise WriteTimeout() from None
 
     def is_connection_dropped(self) -> bool:
+        # Counter-intuitively, what we really want to know here is whether the socket is
+        # *readable*, i.e. whether it would return immediately with empty bytes if we
+        # called `.recv()` on it, indicating that the other end has closed the socket.
+        # See: https://github.com/encode/httpx/pull/143#issuecomment-515181778
+        #
+        # As it turns out, asyncio checks for readability in the background
+        # (see: https://github.com/encode/httpx/pull/276#discussion_r322000402),
+        # so checking for EOF or readability here would yield the same result.
+        #
+        # At the cost of rigour, we check for EOF instead of readability because asyncio
+        # does not expose any public API to check for readability.
+        # (For a solution that uses private asyncio APIs, see:
+        # https://github.com/encode/httpx/pull/143#issuecomment-515202982)
+
         return self.stream_reader.at_eof()
 
     async def close(self) -> None:
@@ -176,13 +186,13 @@ class AsyncioBackend(ConcurrencyBackend):
                 self._loop = asyncio.new_event_loop()
         return self._loop
 
-    async def connect(
+    async def open_tcp_stream(
         self,
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> BaseStream:
+    ) -> BaseTCPStream:
         try:
             stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
                 asyncio.open_connection(hostname, port, ssl=ssl_context),
@@ -191,17 +201,17 @@ class AsyncioBackend(ConcurrencyBackend):
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
-        return Stream(
+        return TCPStream(
             stream_reader=stream_reader, stream_writer=stream_writer, timeout=timeout
         )
 
     async def start_tls(
         self,
-        stream: BaseStream,
+        stream: BaseTCPStream,
         hostname: str,
         ssl_context: ssl.SSLContext,
         timeout: TimeoutConfig,
-    ) -> BaseStream:
+    ) -> BaseTCPStream:
 
         loop = self.loop
         if not hasattr(loop, "start_tls"):  # pragma: no cover
@@ -209,7 +219,7 @@ class AsyncioBackend(ConcurrencyBackend):
                 "asyncio.AbstractEventLoop.start_tls() is only available in Python 3.7+"
             )
 
-        assert isinstance(stream, Stream)
+        assert isinstance(stream, TCPStream)
 
         stream_reader = asyncio.StreamReader()
         protocol = asyncio.StreamReaderProtocol(stream_reader)

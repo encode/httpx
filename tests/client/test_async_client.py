@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 
 import httpx
@@ -12,6 +14,7 @@ async def test_get(server, backend):
     assert response.http_version == "HTTP/1.1"
     assert response.headers
     assert repr(response) == "<Response [200 OK]>"
+    assert response.elapsed > timedelta(seconds=0)
 
 
 async def test_build_request(server, backend):

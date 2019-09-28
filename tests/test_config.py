@@ -1,5 +1,8 @@
+import os
+import socket
 import ssl
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -24,6 +27,30 @@ def test_load_ssl_config_verify_existing_file():
     context = ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
+
+
+@pytest.mark.parametrize("config", ("SSL_CERT_FILE", "SSL_CERT_DIR"))
+def test_load_ssl_config_verify_env_file(https_server, ca_cert_pem_file, config):
+    os.environ[config] = (
+        ca_cert_pem_file
+        if config.endswith("_FILE")
+        else str(Path(ca_cert_pem_file).parent)
+    )
+    ssl_config = httpx.SSLConfig(trust_env=True)
+    context = ssl_config.load_ssl_context()
+    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+    assert context.check_hostname is True
+    assert ssl_config.verify == os.environ[config]
+
+    # Skipping 'SSL_CERT_DIR' functional test for now because
+    # we're unable to get the certificate within the directory to
+    # load into the SSLContext. :(
+    if config == "SSL_CERT_FILE":
+        host = https_server.url.host
+        port = https_server.url.port
+        conn = socket.create_connection((host, port))
+        context.wrap_socket(conn, server_hostname=host)
+        assert len(context.get_ca_certs()) == 1
 
 
 def test_load_ssl_config_verify_directory():
