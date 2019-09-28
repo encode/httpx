@@ -4,9 +4,10 @@ import ssl
 import typing
 from types import TracebackType
 
-from ..config import PoolLimits, TimeoutConfig
-from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
-from .base import (
+from httpx.config import PoolLimits, TimeoutConfig
+from httpx.exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
+
+from ..base import (
     BaseBackgroundManager,
     BaseEvent,
     BasePoolSemaphore,
@@ -15,6 +16,7 @@ from .base import (
     ConcurrencyBackend,
     TimeoutFlag,
 )
+from .compat import Stream, connect_compat
 
 SSL_MONKEY_PATCH_APPLIED = False
 
@@ -41,18 +43,12 @@ def ssl_monkey_patch() -> None:
 
 
 class TCPStream(BaseTCPStream):
-    def __init__(
-        self,
-        stream_reader: asyncio.StreamReader,
-        stream_writer: asyncio.StreamWriter,
-        timeout: TimeoutConfig,
-    ):
-        self.stream_reader = stream_reader
-        self.stream_writer = stream_writer
+    def __init__(self, stream: Stream, timeout: TimeoutConfig):
+        self.stream = stream
         self.timeout = timeout
 
     def get_http_version(self) -> str:
-        ssl_object = self.stream_writer.get_extra_info("ssl_object")
+        ssl_object = self.stream.get_extra_info("ssl_object")
 
         if ssl_object is None:
             return "HTTP/1.1"
@@ -76,7 +72,7 @@ class TCPStream(BaseTCPStream):
             should_raise = flag is None or flag.raise_on_read_timeout
             read_timeout = timeout.read_timeout if should_raise else 0.01
             try:
-                data = await asyncio.wait_for(self.stream_reader.read(n), read_timeout)
+                data = await asyncio.wait_for(self.stream.read(n), read_timeout)
                 break
             except asyncio.TimeoutError:
                 if should_raise:
@@ -91,7 +87,7 @@ class TCPStream(BaseTCPStream):
         return data
 
     def write_no_block(self, data: bytes) -> None:
-        self.stream_writer.write(data)  # pragma: nocover
+        self.stream.write(data)  # pragma: nocover
 
     async def write(
         self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
@@ -102,11 +98,11 @@ class TCPStream(BaseTCPStream):
         if timeout is None:
             timeout = self.timeout
 
-        self.stream_writer.write(data)
+        self.stream.write(data)
         while True:
             try:
                 await asyncio.wait_for(  # type: ignore
-                    self.stream_writer.drain(), timeout.write_timeout
+                    self.stream.drain(), timeout.write_timeout
                 )
                 break
             except asyncio.TimeoutError:
@@ -132,10 +128,12 @@ class TCPStream(BaseTCPStream):
         # (For a solution that uses private asyncio APIs, see:
         # https://github.com/encode/httpx/pull/143#issuecomment-515202982)
 
-        return self.stream_reader.at_eof()
+        return self.stream.at_eof()
 
     async def close(self) -> None:
-        self.stream_writer.close()
+        # FIXME: We should await on this call, but need a workaround for this first:
+        # https://github.com/aio-libs/aiohttp/issues/3535
+        self.stream.close()
 
 
 class PoolSemaphore(BasePoolSemaphore):
@@ -194,16 +192,13 @@ class AsyncioBackend(ConcurrencyBackend):
         timeout: TimeoutConfig,
     ) -> BaseTCPStream:
         try:
-            stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
-                asyncio.open_connection(hostname, port, ssl=ssl_context),
-                timeout.connect_timeout,
+            stream = await asyncio.wait_for(  # type: ignore
+                connect_compat(hostname, port, ssl=ssl_context), timeout.connect_timeout
             )
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
-        return TCPStream(
-            stream_reader=stream_reader, stream_writer=stream_writer, timeout=timeout
-        )
+        return TCPStream(stream=stream, timeout=timeout)
 
     async def start_tls(
         self,
@@ -212,35 +207,13 @@ class AsyncioBackend(ConcurrencyBackend):
         ssl_context: ssl.SSLContext,
         timeout: TimeoutConfig,
     ) -> BaseTCPStream:
-
-        loop = self.loop
-        if not hasattr(loop, "start_tls"):  # pragma: no cover
-            raise NotImplementedError(
-                "asyncio.AbstractEventLoop.start_tls() is only available in Python 3.7+"
-            )
-
         assert isinstance(stream, TCPStream)
 
-        stream_reader = asyncio.StreamReader()
-        protocol = asyncio.StreamReaderProtocol(stream_reader)
-        transport = stream.stream_writer.transport
-
-        loop_start_tls = loop.start_tls  # type: ignore
-        transport = await asyncio.wait_for(
-            loop_start_tls(
-                transport=transport,
-                protocol=protocol,
-                sslcontext=ssl_context,
-                server_hostname=hostname,
-            ),
+        await asyncio.wait_for(
+            stream.stream.start_tls(ssl_context, server_hostname=hostname),
             timeout=timeout.connect_timeout,
         )
 
-        stream_reader.set_transport(transport)
-        stream.stream_reader = stream_reader
-        stream.stream_writer = asyncio.StreamWriter(
-            transport=transport, protocol=protocol, reader=stream_reader, loop=loop
-        )
         return stream
 
     async def run_in_threadpool(
