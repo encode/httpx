@@ -53,7 +53,7 @@ For example:
 
 ```python
 # Instantiate a client that makes WSGI requests with a client IP of "1.2.3.4".
-dispatch = httpx.WSGIDispatch(app=app, remote_addr="1.2.3.4")
+dispatch = httpx.dispatch.WSGIDispatch(app=app, remote_addr="1.2.3.4")
 client = httpx.Client(dispatch=dispatch)
 ```
 
