@@ -204,3 +204,11 @@ async def test_http2_settings_in_handshake(backend):
     for setting_code, changed_setting in settings.changed_settings.items():
         assert isinstance(changed_setting, h2.settings.ChangedSetting)
         assert changed_setting.new_value == expected_settings[setting_code]
+
+
+async def test_http2_live_request(backend):
+    async with AsyncClient(backend=backend) as client:
+        resp = await client.get("https://nghttp2.org/httpbin/anything")
+
+        assert resp.status_code == 200
+        assert resp.http_version == "HTTP/2"

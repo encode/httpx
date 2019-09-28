@@ -166,9 +166,14 @@ async def test_proxy_forwarding(backend, proxy_mode):
         backend=backend,
     )
     async with httpx.HTTPProxy(
-        proxy_url="http://127.0.0.1:8000", backend=raw_io, proxy_mode=proxy_mode
+        proxy_url="http://127.0.0.1:8000",
+        backend=raw_io,
+        proxy_mode=proxy_mode,
+        proxy_headers={"Proxy-Authorization": "test", "Override": "2"},
     ) as proxy:
-        response = await proxy.request("GET", f"http://example.com")
+        response = await proxy.request(
+            "GET", f"http://example.com", headers={"override": "1"}
+        )
 
         assert response.status_code == 200
         assert response.headers["Server"] == "origin-server"
@@ -184,6 +189,8 @@ async def test_proxy_forwarding(backend, proxy_mode):
     assert recv[1].startswith(
         b"GET http://example.com HTTP/1.1\r\nhost: example.com\r\n"
     )
+    assert b"proxy-authorization: test" in recv[1]
+    assert b"override: 1" in recv[1]
 
 
 def test_proxy_url_with_username_and_password():
