@@ -1,6 +1,5 @@
 import functools
 import inspect
-import os
 import typing
 from types import TracebackType
 
@@ -49,7 +48,7 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .utils import ElapsedTimer, get_environment_proxies, get_netrc
+from .utils import ElapsedTimer, get_environment_proxies, get_netrc_login
 
 
 class BaseClient:
@@ -258,13 +257,6 @@ class BaseClient:
     def _get_auth_middleware(
         self, request: AsyncRequest, trust_env: bool, auth: AuthTypes = None
     ) -> typing.Optional[BaseMiddleware]:
-        _NETRC = None
-
-        def _get_netrc_login(host: str) -> typing.Optional[typing.Tuple[str, str, str]]:
-            nonlocal _NETRC
-            if _NETRC is None:
-                _NETRC = get_netrc(os.getenv("NETRC", ""))
-            return _NETRC.authenticators(host)  # type: ignore
 
         if isinstance(auth, tuple):
             return BasicAuthMiddleware(username=auth[0], password=auth[1])
@@ -286,7 +278,7 @@ class BaseClient:
             )
 
         if trust_env:
-            netrc_login = _get_netrc_login(request.url.authority)
+            netrc_login = get_netrc_login(request.url.authority)
             if netrc_login:
                 username, _, password = netrc_login
                 return BasicAuthMiddleware(username=username, password=password)

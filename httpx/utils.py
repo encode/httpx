@@ -95,8 +95,8 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
 NETRC_STATIC_FILES = (Path("~/.netrc"), Path("~/_netrc"))
 
 
-@functools.lru_cache()
-def get_netrc(netrc_env: str) -> typing.Optional[typing.Any]:
+@functools.lru_cache(1)
+def get_netrc(netrc_env: str) -> typing.Optional[netrc.netrc]:
     NETRC_FILES = (Path(netrc_env),) + NETRC_STATIC_FILES
     netrc_path = None
 
@@ -109,6 +109,13 @@ def get_netrc(netrc_env: str) -> typing.Optional[typing.Any]:
     if netrc_path is None:
         return None
     return netrc.netrc(str(netrc_path))
+
+
+def get_netrc_login(host: str) -> typing.Optional[typing.Tuple[str, str, str]]:
+    netrc_info = get_netrc(os.getenv("NETRC", ""))
+    if not netrc_info:
+        return None
+    return netrc_info.authenticators(host)  # type: ignore
 
 
 def get_ca_bundle_from_env() -> typing.Optional[str]:
