@@ -111,11 +111,6 @@ def get_netrc(netrc_env: str) -> typing.Optional[typing.Any]:
     return netrc.netrc(str(netrc_path))
 
 
-def get_netrc_login(host: str) -> typing.Optional[typing.Tuple[str, str, str]]:
-    netrc_info = get_netrc(os.getenv("NETRC", ""))
-    return netrc_info.authenticators(host)  # type: ignore
-
-
 def get_ca_bundle_from_env() -> typing.Optional[str]:
     if "SSL_CERT_FILE" in os.environ:
         ssl_file = Path(os.environ["SSL_CERT_FILE"])

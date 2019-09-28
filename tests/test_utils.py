@@ -10,7 +10,7 @@ from httpx.utils import (
     ElapsedTimer,
     get_ca_bundle_from_env,
     get_environment_proxies,
-    get_netrc_login,
+    get_netrc,
     guess_json_utf,
     obfuscate_sensitive_headers,
     parse_header_links,
@@ -53,25 +53,25 @@ def test_guess_by_bom(encoding, expected):
     assert guess_json_utf(data) == expected
 
 
-def test_bad_get_netrc_login():
-    assert get_netrc_login("url") is None
+def test_bad_get_netrc():
+    assert get_netrc("url") is None
 
     os.environ["NETRC"] = "tests/.netrc"
-    assert get_netrc_login("url") is None
+    assert get_netrc("url") is None
 
     os.environ["NETRC"] = "wrongpath"
-    assert get_netrc_login("url") is None
+    assert get_netrc("url") is None
 
     from httpx import utils
 
     utils.NETRC_STATIC_FILES = ()
     os.environ["NETRC"] = ""
-    assert utils.get_netrc_login("url") is None
+    assert utils.get_netrc("url") is None
 
 
-def test_get_netrc_login():
+def test_get_netrc():
     os.environ["NETRC"] = "tests/.netrc"
-    assert get_netrc_login("netrcexample.org") == (
+    assert get_netrc("netrcexample.org") == (
         "example-username",
         None,
         "example-password",
