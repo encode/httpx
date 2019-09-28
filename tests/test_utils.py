@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from pathlib import Path
 
 import pytest
 
@@ -131,9 +132,9 @@ def test_get_ssl_cert_file():
     assert get_ca_bundle_from_env() == "tests"
 
     del os.environ["SSL_CERT_DIR"]
-    os.environ["SSL_CERT_FILE"] = "tests/test_utils.py"
+    os.environ["SSL_CERT_FILE"] = str(Path("tests", "test_utils.py"))
     # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
-    assert get_ca_bundle_from_env() == "tests/test_utils.py"
+    assert get_ca_bundle_from_env() == str(Path("tests", "test_utils.py"))
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
@@ -145,9 +146,9 @@ def test_get_ssl_cert_file():
     assert get_ca_bundle_from_env() is None
 
     os.environ["SSL_CERT_DIR"] = "tests/"
-    os.environ["SSL_CERT_FILE"] = "tests/test_utils.py"
+    os.environ["SSL_CERT_FILE"] = str(Path("tests", "test_utils.py"))
     # Two environments is correctly set.
-    assert get_ca_bundle_from_env() == "tests/test_utils.py"
+    assert get_ca_bundle_from_env() == str(Path("tests", "test_utils.py"))
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # Two environments is set but SSL_CERT_FILE is not a file.
@@ -179,11 +180,11 @@ async def test_elapsed_timer():
             {"https": "http://127.0.0.1", "http": "https://127.0.0.1"},
         ),
         (
-            {"all_proxy": "http://127.0.0.1", "ALL_PROXY": "https://1.1.1.1"},
+            {"all_proxy": "http://127.0.0.1", "_ALL_PROXY": "https://1.1.1.1"},
             {"all": "http://127.0.0.1"},
         ),
         (
-            {"https_proxy": "http://127.0.0.1", "HTTPS_PROXY": "https://1.1.1.1"},
+            {"https_proxy": "http://127.0.0.1", "_HTTPS_PROXY": "https://1.1.1.1"},
             {"https": "http://127.0.0.1"},
         ),
         ({"TRAVIS_APT_PROXY": "http://127.0.0.1"}, {}),
