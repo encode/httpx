@@ -261,8 +261,8 @@ def patch(
 def delete(
     url: URLTypes,
     *,
-    data: RequestData = None,
-    files: RequestFiles = None,
+    params: QueryParamTypes = None,
+    headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     stream: bool = False,
     auth: AuthTypes = None,
