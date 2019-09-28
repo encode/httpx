@@ -77,6 +77,12 @@ class TCPStream(BaseTCPStream):
             except asyncio.TimeoutError:
                 if should_raise:
                     raise ReadTimeout() from None
+                # FIX(py3.6): yield control back to the event loop to give it a chance
+                # to cancel `.read(n)` before we retry.
+                # This prevents concurrent `.read()` calls, which asyncio
+                # doesn't seem to allow on 3.6.
+                # See: https://github.com/encode/httpx/issues/382
+                await asyncio.sleep(0)
 
         return data
 

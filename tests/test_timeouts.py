@@ -2,6 +2,7 @@ import pytest
 
 from httpx import (
     AsyncClient,
+    Client,
     ConnectTimeout,
     PoolLimits,
     PoolTimeout,
@@ -47,3 +48,13 @@ async def test_pool_timeout(server, backend):
             await client.get("http://localhost:8000/")
 
         await response.read()
+
+
+def test_sync_infinite_timeout(server):
+    """Regression test for a bug that occurred under Python 3.6.
+
+    See: https://github.com/encode/httpx/issues/382
+    """
+    no_timeout = TimeoutConfig()
+    with Client(timeout=no_timeout) as client:
+        client.get(server.url.copy_with(path="/slow_response/50"))

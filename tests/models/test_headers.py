@@ -1,3 +1,5 @@
+import pytest
+
 import httpx
 
 
@@ -151,3 +153,13 @@ def test_multiple_headers():
 
     h = httpx.Headers([("vary", "a, b"), ("vary", "c")])
     h.getlist("Vary") == ["a", "b", "c"]
+
+
+@pytest.mark.parametrize("header", ["authorization", "proxy-authorization"])
+def test_sensitive_headers(header):
+    """
+    Some headers should be obfuscated because they contain sensitive data.
+    """
+    value = "s3kr3t"
+    h = httpx.Headers({header: value})
+    assert repr(h) == "Headers({'%s': '[secure]'})" % header
