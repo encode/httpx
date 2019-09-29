@@ -257,7 +257,6 @@ class BaseClient:
     def _get_auth_middleware(
         self, request: AsyncRequest, trust_env: bool, auth: AuthTypes = None
     ) -> typing.Optional[BaseMiddleware]:
-
         if isinstance(auth, tuple):
             return BasicAuthMiddleware(username=auth[0], password=auth[1])
         elif isinstance(auth, BaseMiddleware):
