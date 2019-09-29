@@ -120,9 +120,17 @@ $ mkdocs serve
 Once you've submitted your pull request, the test suite will automatically run, and the results will show up in GitHub.
 If the test suite fails, you'll want to click through to the "Details" link, and try to identify why the test suite failed.
 
+<p align="center" style="margin: 0 0 10px">
+  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail.png" alt='Failing PR commit status'>
+</p>
+
 Here are some common ways the test suite can fail:
 
 ### NOX_SESSION=check Job Failed
+
+<p align="center" style="margin: 0 0 10px">
+  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail-check.png" alt='Failing Travis lint job'>
+</p>
 
 This job failing means there is either a code formatting issue or type-annotation issue.
 You can look at the job output to figure out why it's failed or within a shell run:
@@ -138,6 +146,10 @@ This job failing means the documentation failed to build. This can happen for
 a variety of reasons like invalid markdown or missing configuration within `mkdocs.yml`.
 
 ### NOX_SESSION=test-3.X Job Failed
+
+<p align="center" style="margin: 0 0 10px">
+  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail-test.png" alt='Failing Travis test job'>
+</p>
 
 This job failing means the unit tests failed or not all code paths are covered by a unit tests.
 
