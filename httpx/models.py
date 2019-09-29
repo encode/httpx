@@ -41,7 +41,7 @@ from .utils import (
     str_query_param,
 )
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from .middleware.base import BaseMiddleware  # noqa: F401
     from .dispatch.base import AsyncDispatcher  # noqa: F401
 

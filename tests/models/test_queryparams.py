@@ -51,3 +51,14 @@ def test_queryparam_types():
 
     q = QueryParams({"a": 123})
     assert str(q) == "a=123"
+
+
+def test_queryparam_setters():
+    q = QueryParams({"a": 1})
+    q.update([])
+
+    assert str(q) == "a=1"
+
+    q = QueryParams([("a", 1), ("a", 2)])
+    q["a"] = "3"
+    assert str(q) == "a=3"

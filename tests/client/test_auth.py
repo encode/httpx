@@ -91,9 +91,6 @@ class MockDigestAuthDispatch(AsyncDispatcher):
         ]
         return AsyncResponse(401, headers=headers, content=b"", request=request)
 
-    def reset(self) -> None:
-        self._response_count = 0
-
 
 def test_basic_auth():
     url = "https://example.org/"
