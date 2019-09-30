@@ -401,3 +401,4 @@ as above:
 >>> auth = httpx.DigestAuth("my_user", "password123")
 >>> httpx.get("https://example.com", auth=auth)
 <Response [200 OK]>
+```
