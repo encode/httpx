@@ -277,12 +277,16 @@ class BaseClient:
             )
 
         if trust_env:
-            netrc_login = get_netrc_login(request.url.authority)
+            netrc_login = self._get_netrc_login(request.url.authority)
             if netrc_login:
                 username, _, password = netrc_login
                 return BasicAuthMiddleware(username=username, password=password)
 
         return None
+
+    @functools.lru_cache(1)
+    def _get_netrc_login(self, host: str) -> typing.Optional[typing.Tuple[str, str, str]]:
+        return get_netrc_login(host)
 
     def _dispatcher_for_request(
         self, request: AsyncRequest, proxies: typing.Dict[str, AsyncDispatcher]

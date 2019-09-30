@@ -1,5 +1,4 @@
 import codecs
-import functools
 import logging
 import netrc
 import os
@@ -95,7 +94,6 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
 NETRC_STATIC_FILES = (Path("~/.netrc"), Path("~/_netrc"))
 
 
-@functools.lru_cache(1)
 def get_netrc(netrc_env: str) -> typing.Optional[netrc.netrc]:
     NETRC_FILES = (Path(netrc_env),) + NETRC_STATIC_FILES
     netrc_path = None
