@@ -325,7 +325,7 @@ class BaseClient:
         headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
         params = self.merge_queryparams(params)
-        request = AsyncRequest(
+        return AsyncRequest(
             method,
             url,
             data=data,
@@ -335,7 +335,6 @@ class BaseClient:
             headers=headers,
             cookies=cookies,
         )
-        return request
 
 
 class AsyncClient(BaseClient):
@@ -718,7 +717,7 @@ class Client(BaseClient):
             headers=headers,
             cookies=cookies,
         )
-        response = self.send(
+        return self.send(
             request,
             stream=stream,
             auth=auth,
@@ -728,7 +727,6 @@ class Client(BaseClient):
             timeout=timeout,
             trust_env=trust_env,
         )
-        return response
 
     def send(
         self,
