@@ -10,7 +10,7 @@ from httpx.utils import (
     ElapsedTimer,
     get_ca_bundle_from_env,
     get_environment_proxies,
-    get_netrc_login,
+    get_netrc,
     guess_json_utf,
     obfuscate_sensitive_headers,
     parse_header_links,
@@ -54,28 +54,25 @@ def test_guess_by_bom(encoding, expected):
 
 
 def test_bad_get_netrc_login():
-    assert get_netrc_login("url") is None
-
     os.environ["NETRC"] = "tests/.netrc"
-    assert get_netrc_login("url") is None
-
-    os.environ["NETRC"] = "wrongpath"
-    assert get_netrc_login("url") is None
+    assert str(get_netrc()) is not None
 
     from httpx import utils
 
     utils.NETRC_STATIC_FILES = ()
+
+    os.environ["NETRC"] = "wrongpath"
+    assert utils.get_netrc() is None
+
     os.environ["NETRC"] = ""
-    assert utils.get_netrc_login("url") is None
+    assert utils.get_netrc() is None
 
 
 def test_get_netrc_login():
     os.environ["NETRC"] = "tests/.netrc"
-    assert get_netrc_login("netrcexample.org") == (
-        "example-username",
-        None,
-        "example-password",
-    )
+    netrc_content = str(get_netrc())
+    assert "example-username" in netrc_content
+    assert "example-password" in netrc_content
 
 
 @pytest.mark.parametrize(
