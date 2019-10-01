@@ -158,6 +158,10 @@ class URL:
         return int(port)
 
     @property
+    def port_no_format(self) -> str:
+        return self._uri_reference.port
+
+    @property
     def path(self) -> str:
         return self._uri_reference.path or "/"
 
@@ -208,6 +212,9 @@ class URL:
 
     def copy_with(self, **kwargs: typing.Any) -> "URL":
         return URL(self._uri_reference.copy_with(**kwargs).unsplit())
+
+    def copy_with_urlparse(self, **kwargs: typing.Any) -> "URL":
+        return rfc3986.urlparse(str(self)).copy_with(**kwargs)
 
     def join(self, relative_url: URLTypes) -> "URL":
         """
@@ -614,32 +621,23 @@ class BaseRequest:
         has_connection = "connection" in self.headers
 
         if not has_host:
-            _params: typing.Dict[str, None] = {}
-            if self.url._uri_reference.userinfo:
-                _params["userinfo"] = None
-                if self.url.username:
+            for userinfo in ("username", "password"):
+                value = getattr(self.url, userinfo)
+                if value:
                     auto_headers.append(
-                        (b"username", self.url.username.encode("ascii"))
+                        (userinfo.encode("ascii"), value.encode("ascii"))
                     )
-                if self.url.password:
-                    auto_headers.append(
-                        (b"password", self.url.password.encode("ascii"))
-                    )
-            if self.url._uri_reference.port:
-                _params["port"] = None
-            url_without_userinfo = (
-                rfc3986.urlparse(str(self.url)).copy_with(**_params)
-                if _params
-                else self.url
-            )
             auto_headers.append(
-                (b"host", url_without_userinfo.authority.encode("ascii"))
+                (
+                    b"host",
+                    self.url.copy_with_urlparse(
+                        userinfo=None, port=None
+                    ).authority.encode("ascii"),
+                )
             )
         if not has_port:
-            if self.url._uri_reference.port:
-                auto_headers.append(
-                    (b"port", self.url._uri_reference.port.encode("ascii"))
-                )
+            if self.url.port_no_format:
+                auto_headers.append((b"port", self.url.port_no_format.encode("ascii")))
         if not has_user_agent:
             auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
         if not has_accept:
