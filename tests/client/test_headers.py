@@ -131,3 +131,25 @@ def test_header_does_not_exist():
     headers = models.Headers({"foo": "bar"})
     with pytest.raises(KeyError):
         del headers["baz"]
+
+
+def test_host_without_auth_in_header():
+    url = "http://username:password@example.org:80/echo_headers"
+
+    with Client(dispatch=MockDispatch()) as client:
+        response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "connection": "keep-alive",
+            "host": "example.org",
+            "port": "80",
+            "username": "username",
+            "password": "password",
+            "user-agent": f"python-httpx/{__version__}",
+            "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+        }
+    }

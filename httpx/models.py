@@ -604,6 +604,7 @@ class BaseRequest:
         auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
 
         has_host = "host" in self.headers
+        has_port = "port" in self.headers
         has_user_agent = "user-agent" in self.headers
         has_accept = "accept" in self.headers
         has_content_length = (
@@ -613,7 +614,32 @@ class BaseRequest:
         has_connection = "connection" in self.headers
 
         if not has_host:
-            auto_headers.append((b"host", self.url.authority.encode("ascii")))
+            _params: typing.Dict[str, None] = {}
+            if self.url._uri_reference.userinfo:
+                _params["userinfo"] = None
+                if self.url.username:
+                    auto_headers.append(
+                        (b"username", self.url.username.encode("ascii"))
+                    )
+                if self.url.password:
+                    auto_headers.append(
+                        (b"password", self.url.password.encode("ascii"))
+                    )
+            if self.url._uri_reference.port:
+                _params["port"] = None
+            url_without_userinfo = (
+                rfc3986.urlparse(str(self.url)).copy_with(**_params)
+                if _params
+                else self.url
+            )
+            auto_headers.append(
+                (b"host", url_without_userinfo.authority.encode("ascii"))
+            )
+        if not has_port:
+            if self.url._uri_reference.port:
+                auto_headers.append(
+                    (b"port", self.url._uri_reference.port.encode("ascii"))
+                )
         if not has_user_agent:
             auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
         if not has_accept:

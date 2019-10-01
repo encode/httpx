@@ -38,9 +38,7 @@ async def test_proxy_tunnel_success(backend):
     recv = raw_io.received_data
     assert len(recv) == 3
     assert recv[0] == b"--- CONNECT(127.0.0.1, 8000) ---"
-    assert recv[1].startswith(
-        b"CONNECT example.com:80 HTTP/1.1\r\nhost: 127.0.0.1:8000\r\n"
-    )
+    assert recv[1].startswith(b"CONNECT example.com:80 HTTP/1.1\r\nhost: 127.0.0.1\r\n")
     assert recv[2].startswith(b"GET / HTTP/1.1\r\nhost: example.com\r\n")
 
 
@@ -68,7 +66,8 @@ async def test_proxy_tunnel_non_2xx_response(backend, status_code):
 
     # ProxyError.request should be the CONNECT request not the original request
     assert e.value.request.method == "CONNECT"
-    assert e.value.request.headers["Host"] == "127.0.0.1:8000"
+    assert e.value.request.headers["Host"] == "127.0.0.1"
+    assert e.value.request.headers["Port"] == "8000"
     assert e.value.request.url.full_path == "example.com:80"
 
     # ProxyError.response should be the CONNECT response
@@ -79,9 +78,7 @@ async def test_proxy_tunnel_non_2xx_response(backend, status_code):
     recv = raw_io.received_data
     assert len(recv) == 2
     assert recv[0] == b"--- CONNECT(127.0.0.1, 8000) ---"
-    assert recv[1].startswith(
-        b"CONNECT example.com:80 HTTP/1.1\r\nhost: 127.0.0.1:8000\r\n"
-    )
+    assert recv[1].startswith(b"CONNECT example.com:80 HTTP/1.1\r\nhost: 127.0.0.1\r\n")
 
 
 async def test_proxy_tunnel_start_tls(backend):
@@ -143,7 +140,7 @@ async def test_proxy_tunnel_start_tls(backend):
     assert len(recv) == 5
     assert recv[0] == b"--- CONNECT(127.0.0.1, 8000) ---"
     assert recv[1].startswith(
-        b"CONNECT example.com:443 HTTP/1.1\r\nhost: 127.0.0.1:8000\r\n"
+        b"CONNECT example.com:443 HTTP/1.1\r\nhost: 127.0.0.1\r\n"
     )
     assert recv[2] == b"--- START_TLS(example.com) ---"
     assert recv[3].startswith(b"GET / HTTP/1.1\r\nhost: example.com\r\n")
