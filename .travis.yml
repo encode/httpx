@@ -73,7 +73,7 @@ matrix:
         PATH=/c/Python38:/c/Python38/Scripts:$PATH
         NOX_SESSION=test-3.8
       before_install:
-        - choco install python --version 3.8.0-b4
+        - choco install python --pre
         - python -m pip install --upgrade pip
 
 install:
