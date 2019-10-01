@@ -95,7 +95,7 @@ async def test_raise_for_status(server, backend):
             )
 
             if 400 <= status_code < 600:
-                with pytest.raises(httpx.exceptions.HTTPError) as exc_info:
+                with pytest.raises(httpx.HTTPError) as exc_info:
                     response.raise_for_status()
                 assert exc_info.value.response == response
             else:
