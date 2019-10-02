@@ -22,6 +22,12 @@ matrix:
       env: NOX_SESSION=test-3.8
       dist: bionic # Required to get OpenSSL 1.1.1+
 
+  # Allow builds to fail when using '-dev' Python versions
+  # Should still investigate failures periodically for new APIs.
+  fast_finish: true
+  allow_failures:
+    - python: 3.8-dev
+
 install:
   - pip install --upgrade nox
 
