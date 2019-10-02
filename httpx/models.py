@@ -137,6 +137,10 @@ class URL:
         return self._uri_reference.authority or ""
 
     @property
+    def userinfo(self) -> str:
+        return self._uri_reference.userinfo or ""
+
+    @property
     def username(self) -> str:
         userinfo = self._uri_reference.userinfo or ""
         return userinfo.partition(":")[0]
@@ -156,10 +160,6 @@ class URL:
         if port is None:
             return {"https": 443, "http": 80}[self.scheme]
         return int(port)
-
-    @property
-    def port_no_format(self) -> str:
-        return self._uri_reference.port
 
     @property
     def path(self) -> str:
@@ -214,7 +214,7 @@ class URL:
         return URL(self._uri_reference.copy_with(**kwargs).unsplit())
 
     def copy_with_urlparse(self, **kwargs: typing.Any) -> "URL":
-        return rfc3986.urlparse(str(self)).copy_with(**kwargs)
+        return URL(rfc3986.urlparse(str(self)).copy_with(**kwargs).unsplit())
 
     def join(self, relative_url: URLTypes) -> "URL":
         """
@@ -611,7 +611,6 @@ class BaseRequest:
         auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
 
         has_host = "host" in self.headers
-        has_port = "port" in self.headers
         has_user_agent = "user-agent" in self.headers
         has_accept = "accept" in self.headers
         has_content_length = (
@@ -621,23 +620,16 @@ class BaseRequest:
         has_connection = "connection" in self.headers
 
         if not has_host:
-            for userinfo in ("username", "password"):
-                value = getattr(self.url, userinfo)
-                if value:
-                    auto_headers.append(
-                        (userinfo.encode("ascii"), value.encode("ascii"))
-                    )
-            auto_headers.append(
-                (
-                    b"host",
-                    self.url.copy_with_urlparse(
-                        userinfo=None, port=None
-                    ).authority.encode("ascii"),
-                )
-            )
-        if not has_port:
-            if self.url.port_no_format:
-                auto_headers.append((b"port", self.url.port_no_format.encode("ascii")))
+            url = self.url
+            if url.userinfo:
+                url = url.copy_with_urlparse(userinfo=None)
+                for userinfo in ("username", "password"):
+                    value = getattr(self.url, userinfo)
+                    if value:
+                        auto_headers.append(
+                            (userinfo.encode("ascii"), value.encode("ascii"))
+                        )
+            auto_headers.append((b"host", url.authority.encode("ascii")))
         if not has_user_agent:
             auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
         if not has_accept:
