@@ -146,8 +146,6 @@ def test_host_without_auth_in_header():
             "accept-encoding": "gzip, deflate, br",
             "connection": "keep-alive",
             "host": "example.org:80",
-            "username": "username",
-            "password": "password",
             "user-agent": f"python-httpx/{__version__}",
             "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
         }

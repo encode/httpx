@@ -623,12 +623,6 @@ class BaseRequest:
             url = self.url
             if url.userinfo:
                 url = url.copy_with_urlparse(userinfo=None)
-                for userinfo in ("username", "password"):
-                    value = getattr(self.url, userinfo)
-                    if value:
-                        auto_headers.append(
-                            (userinfo.encode("ascii"), value.encode("ascii"))
-                        )
             auto_headers.append((b"host", url.authority.encode("ascii")))
         if not has_user_agent:
             auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
