@@ -37,15 +37,14 @@ as soon as it's available:
 
 ## Exceptions and Cancellations
 
-The style of using `parallel` blocks ensures that you'll always have well
-defined exception and cancellation behaviours. Request exceptions are only ever
-raised when calling either `get_response` or `next_response`, and any pending
-requests are cancelled on exiting the block.
+The style of using `parallel` blocks ensures that you'll always have a well-defined exception and cancellation behaviors. Request exceptions are only ever
+raised when calling either `get_response` or `next_response` and any pending
+requests are canceled on exiting the block.
 
 ## Parallel requests with a Client
 
 You can also call `parallel()` from a client instance, which allows you to
-control the authentication or dispatch behaviour for all requests within the
+control the authentication or dispatch behavior for all requests within the
 block.
 
 ```python

@@ -6,7 +6,7 @@ This documentation outlines places where the API differs...
 
 ## QuickStart
 
-Pretty much all the API mentioned in the `requests` QuickStart should be identical
+Pretty much any API mentioned in the `requests` QuickStart should be identical
 to the API in our own documentation. The following exceptions apply:
 
 * `Response.url` - Returns a `URL` instance, rather than a string. Use `str(response.url)` if you need a string instance.
