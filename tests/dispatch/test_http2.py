@@ -218,3 +218,11 @@ async def test_http2_connection_renewed(backend):
         await response.read()
         response = await http.request("GET", server.url)
         assert len(http.keepalive_connections) == 2
+
+
+async def test_http2_live_request(backend):
+    async with AsyncClient(backend=backend) as client:
+        resp = await client.get("https://nghttp2.org/httpbin/anything")
+
+        assert resp.status_code == 200
+        assert resp.http_version == "HTTP/2"

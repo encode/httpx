@@ -1,7 +1,7 @@
 # Contributing
 
-Thank you for being interested in contributing with HTTPX.
-There are many ways you can contribute with the project:
+Thank you for being interested in contributing to HTTPX.
+There are many ways you can contribute to the project:
 
 - Try HTTPX and [report bugs/issues you find](https://github.com/encode/httpx/issues/new)
 - [Implement new features](https://github.com/encode/httpx/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
@@ -59,7 +59,7 @@ We use [nox](https://nox.thea.codes/en/stable/) to automate testing, linting,
 and documentation building workflow. Make sure you have it installed
 at your system before starting.
 
-Install nox with:
+Install `nox` with:
 
 ```shell
 $ python3 -m pip install --user nox
@@ -72,7 +72,7 @@ to keep it into an isolated environment:
 $ pipx install nox
 ```
 
-Now, with nox installed run the complete pipeline with:
+Now, with nox installed, run the complete pipeline with:
 
 ```shell
 $ nox

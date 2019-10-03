@@ -103,7 +103,7 @@ The HTTPX project relies on these excellent libraries:
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
-inspiration around the lower level networking details.
+inspiration around the lower-level networking details.
 
 ## Installation
 

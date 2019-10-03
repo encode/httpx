@@ -42,7 +42,7 @@ assert r.status_code == 200
 assert r.text == "Hello World!"
 ```
 
-For some more complex cases you might need to customize the WSGI or ASGI
+For some more complex cases, you might need to customize the WSGI or ASGI
 dispatch. This allows you to:
 
 * Inspect 500 error responses, rather than raise exceptions, by setting `raise_app_exceptions=False`.
@@ -53,7 +53,7 @@ For example:
 
 ```python
 # Instantiate a client that makes WSGI requests with a client IP of "1.2.3.4".
-dispatch = httpx.WSGIDispatch(app=app, remote_addr="1.2.3.4")
+dispatch = httpx.dispatch.WSGIDispatch(app=app, remote_addr="1.2.3.4")
 client = httpx.Client(dispatch=dispatch)
 ```
 
@@ -70,9 +70,9 @@ make modifications before sending the request.
 <Response [200 OK]>
 ```
 
-## Specify the version of HTTP protocol
+## Specify the version of the HTTP protocol
 
-One can set the version of HTTP protocol for the client in case you want to make the requests using specific version.
+One can set the version of the HTTP protocol for the client in case you want to make the requests using a specific version.
 
 For example:
 
@@ -157,6 +157,6 @@ proxy = httpx.HTTPProxy(
 )
 client = httpx.Client(proxies=proxy)
 
-# This request will be tunnelled instead of forwarded.
+# This request will be tunneled instead of forwarded.
 client.get("http://example.com")
 ```
