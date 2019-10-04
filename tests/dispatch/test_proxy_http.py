@@ -26,7 +26,7 @@ async def test_proxy_tunnel_success(backend):
         backend=raw_io,
         proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY,
     ) as proxy:
-        response = await proxy.request("GET", f"http://example.com")
+        response = await proxy.request("GET", "http://example.com")
 
         assert response.status_code == 404
         assert response.headers["Server"] == "origin-server"
@@ -64,7 +64,7 @@ async def test_proxy_tunnel_non_2xx_response(backend, status_code):
             backend=raw_io,
             proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY,
         ) as proxy:
-            await proxy.request("GET", f"http://example.com")
+            await proxy.request("GET", "http://example.com")
 
     # ProxyError.request should be the CONNECT request not the original request
     assert e.value.request.method == "CONNECT"
@@ -116,7 +116,7 @@ async def test_proxy_tunnel_start_tls(backend):
         backend=raw_io,
         proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY,
     ) as proxy:
-        resp = await proxy.request("GET", f"https://example.com")
+        resp = await proxy.request("GET", "https://example.com")
 
         assert resp.status_code == 404
         assert resp.headers["Server"] == "origin-server"
@@ -128,7 +128,7 @@ async def test_proxy_tunnel_start_tls(backend):
         await resp.read()
 
         # Make another request to see that the tunnel is re-used.
-        resp = await proxy.request("GET", f"https://example.com/target")
+        resp = await proxy.request("GET", "https://example.com/target")
 
         assert resp.status_code == 200
         assert resp.headers["Server"] == "origin-server"
@@ -172,7 +172,7 @@ async def test_proxy_forwarding(backend, proxy_mode):
         proxy_headers={"Proxy-Authorization": "test", "Override": "2"},
     ) as proxy:
         response = await proxy.request(
-            "GET", f"http://example.com", headers={"override": "1"}
+            "GET", "http://example.com", headers={"override": "1"}
         )
 
         assert response.status_code == 200
