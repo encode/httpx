@@ -24,7 +24,7 @@ fi
 find ${PACKAGE} -type f -name "*.py[co]" -delete
 find ${PACKAGE} -type d -name __pycache__ -delete
 
-${PREFIX}python setup.py sdist bdist_wheel
+${PREFIX}python setup.py sdist
 ${PREFIX}twine upload dist/*
 ${PREFIX}mkdocs gh-deploy
 
