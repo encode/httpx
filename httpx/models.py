@@ -235,9 +235,6 @@ class URL:
 
         return URL(self._uri_reference.copy_with(**kwargs).unsplit())
 
-    def copy_with_urlparse(self, **kwargs: typing.Any) -> "URL":
-        return URL(rfc3986.urlparse(str(self)).copy_with(**kwargs).unsplit())
-
     def join(self, relative_url: URLTypes) -> "URL":
         """
         Return an absolute URL, using given this URL as the base.
@@ -644,7 +641,7 @@ class BaseRequest:
         if not has_host:
             url = self.url
             if url.userinfo:
-                url = url.copy_with_urlparse(userinfo=None)
+                url = url.copy_with(username=None, password=None)
             auto_headers.append((b"host", url.authority.encode("ascii")))
         if not has_user_agent:
             auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
