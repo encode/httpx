@@ -137,6 +137,10 @@ class URL:
         return self._uri_reference.authority or ""
 
     @property
+    def userinfo(self) -> str:
+        return self._uri_reference.userinfo or ""
+
+    @property
     def username(self) -> str:
         userinfo = self._uri_reference.userinfo or ""
         return userinfo.partition(":")[0]
@@ -635,7 +639,10 @@ class BaseRequest:
         has_connection = "connection" in self.headers
 
         if not has_host:
-            auto_headers.append((b"host", self.url.authority.encode("ascii")))
+            url = self.url
+            if url.userinfo:
+                url = url.copy_with(username=None, password=None)
+            auto_headers.append((b"host", url.authority.encode("ascii")))
         if not has_user_agent:
             auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
         if not has_accept:
