@@ -1,11 +1,14 @@
 import asyncio
+import functools
 import json
 import os
 import threading
 import time
 import typing
+import sys
 
 import pytest
+import trio
 import trustme
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import (
@@ -14,6 +17,8 @@ from cryptography.hazmat.primitives.serialization import (
     PrivateFormat,
     load_pem_private_key,
 )
+import hypercorn.config
+import hypercorn.trio
 from uvicorn.config import Config
 from uvicorn.main import Server
 
@@ -287,4 +292,84 @@ def https_server(cert_pem_file, cert_private_key_file):
         loop="asyncio",
     )
     server = TestServer(config=config)
+    yield from serve_in_thread(server)
+
+
+async def h2_app(scope, receive, send):
+    assert scope["type"] == "http"
+    assert scope["http_version"] == "2"
+
+    body = b""
+    more_body = True
+
+    while more_body:
+        message = await receive()
+        body += message.get("body", b"")
+        more_body = message.get("more_body", False)
+
+    data = {"method": scope["method"], "path": scope["path"], "body": body.decode()}
+    content = json.dumps(data).encode()
+    headers = [(b"content-length", b"%d" % len(content))]
+
+    await send({"type": "http.response.start", "status": 200, "headers": headers})
+    await send({"type": "http.response.body", "body": content})
+
+
+class H2Server:
+    """
+    An HTTP/2 ASGI server class.
+
+    This is a wrapper around Hypercorn that matches the parts of the
+    uvicorn `Server` interface we use in our tests.
+    """
+
+    def __init__(
+        self, app: typing.Callable, host: str, port: int, certfile: str, keyfile: str
+    ):
+        self.app = app
+        self.config = hypercorn.config.Config()
+        self.config.bind = [f"{host}:{port}"]
+        self.config.certfile = certfile
+        self.config.keyfile = keyfile
+        self.config.worker_class = "trio"
+        self.started = False
+        self.should_exit = False
+
+    @property
+    def url(self) -> URL:
+        authority = self.config.bind[0]
+        return URL(f"https://{authority}")
+
+    def run(self) -> None:
+        async def shutdown_trigger() -> None:
+            while not self.should_exit:
+                await trio.sleep(0.1)
+
+        bound_serve = functools.partial(
+            hypercorn.trio.serve, shutdown_trigger=shutdown_trigger
+        )
+
+        async def main() -> None:
+            async with trio.open_nursery() as nursery:
+                await nursery.start(bound_serve, self.app, self.config)
+                self.started = True
+
+        trio.run(main)
+
+
+@pytest.fixture(scope=SERVER_SCOPE)
+def h2_server(
+    cert_pem_file: str, cert_private_key_file: str
+) -> typing.Iterator[H2Server]:
+    if sys.version_info < (3, 7):
+        pytest.skip(reason="Hypercorn requires Python 3.7 or higher")
+
+    server = H2Server(
+        app=h2_app,
+        host="127.0.0.1",
+        port=8002,
+        certfile=cert_pem_file,
+        keyfile=cert_private_key_file,
+    )
+
     yield from serve_in_thread(server)
