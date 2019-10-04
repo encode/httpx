@@ -190,3 +190,17 @@ def test_origin_from_url_string():
     assert origin.is_ssl
     assert origin.host == "example.com"
     assert origin.port == 443
+
+
+def test_url_copywith_for_authority():
+    copy_with_kwargs = {
+        "username": "username",
+        "password": "password",
+        "port": 444,
+        "host": "example.net",
+    }
+    url = URL("https://example.org")
+    new = url.copy_with(**copy_with_kwargs)
+    for k, v in copy_with_kwargs.items():
+        assert getattr(new, k) == v
+    assert str(new) == "https://username:password@example.net:444"
