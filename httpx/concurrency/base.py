@@ -53,11 +53,22 @@ class BaseTCPStream:
         raise NotImplementedError()  # pragma: no cover
 
     async def read_or_timeout(self, n: int, timeout: typing.Optional[float]) -> bytes:
+        """
+        Read data from the network, or fail in case or timeout.
+
+        Implementations should raise a `WriteTimeout` exception in case of timeout.
+        """
         raise NotImplementedError()  # pragma: no cover
 
     async def read(
         self, n: int, timeout: TimeoutConfig = None, flag: typing.Any = None
     ) -> bytes:
+        """
+        Read data from the network.
+
+        Handles common timeout logic, such as switching from read to write timeout
+        and determining the appropriate numeric read timeout value.
+        """
         if timeout is None:
             timeout = self.timeout
 
@@ -81,11 +92,22 @@ class BaseTCPStream:
     async def write_or_timeout(
         self, data: bytes, timeout: typing.Optional[float]
     ) -> None:
+        """
+        Send `data` to the network, or fail in case of timeout.
+
+        Implementations should raise a `WriteTimeout` exception in case of timeout.
+        """
         raise NotImplementedError()  # pragma: no cover
 
     async def write(
         self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
     ) -> None:
+        """
+        Flush the write buffer and send `data` to the network.
+
+        Handles common timeout logic, such as switching from read to write timeout
+        and determining the appropriate numeric write timeout value.
+        """
         if self.write_buffer:
             write_buffer = self.write_buffer
             # Reset write buffer before recursive call,
