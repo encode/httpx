@@ -13,6 +13,7 @@ to the API in our own documentation. The following exceptions apply:
 * `httpx.codes` - In our documentation we prefer the uppercased versions, such as `codes.NOT_FOUND`,
 but also provide lower-cased versions for API compatibility with `requests`.
 * `stream=True`. - Streaming responses provide the `.stream()` and `.raw()` byte iterator interfaces, rather than the `.iter_content()` method and the `.raw` socket interface.
+* `.get`, `.delete`, `.head`, `.options` -  These methods do not support `files`, `data`, or `json` arguments. Use `.request` if you need to need to send data using these http methods.
 
 ## Advanced Usage
 
