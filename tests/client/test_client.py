@@ -165,12 +165,14 @@ def test_client_backend_must_be_asyncio_based():
 def test_elapsed_delay(server):
     with httpx.Client() as http:
         response = http.get(server.url.copy_with(path="/slow_response/100"))
-    assert response.elapsed.total_seconds() == pytest.approx(0.1, abs=0.01)
+    assert response.elapsed.total_seconds() == pytest.approx(0.1, rel=0.2)
 
 
 def test_elapsed_delay_ignores_read_time(server):
     with httpx.Client() as http:
-        response = http.get(server.url.copy_with(path="/slow_response/50"), stream=True)
-    sleep(0.1)
+        response = http.get(
+            server.url.copy_with(path="/slow_response/100"), stream=True
+        )
+    sleep(0.2)
     response.read()
-    assert response.elapsed.total_seconds() == pytest.approx(0.05, abs=0.01)
+    assert response.elapsed.total_seconds() == pytest.approx(0.1, rel=0.2)
