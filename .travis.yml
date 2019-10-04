@@ -13,6 +13,8 @@ matrix:
       env: NOX_SESSION=check
     - python: 3.7
       env: NOX_SESSION=docs
+    - python: 3.7
+      env: NOX_SESSION=check_dist
 
     - python: 3.6
       env: NOX_SESSION=test-3.6
