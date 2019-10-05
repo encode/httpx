@@ -15,7 +15,6 @@ from .base import (
     BaseQueue,
     BaseTCPStream,
     ConcurrencyBackend,
-    TimeoutFlag,
 )
 
 
@@ -29,9 +28,8 @@ class TCPStream(BaseTCPStream):
         stream: typing.Union[trio.SocketStream, trio.SSLStream],
         timeout: TimeoutConfig,
     ) -> None:
+        super().__init__(timeout)
         self.stream = stream
-        self.timeout = timeout
-        self.write_buffer = b""
         self.write_lock = trio.Lock()
 
     def get_http_version(self) -> str:
@@ -69,43 +67,6 @@ class TCPStream(BaseTCPStream):
         # called `.recv()` on it, indicating that the other end has closed the socket.
         # See: https://github.com/encode/httpx/pull/143#issuecomment-515181778
         return stream.socket.is_readable()
-
-    def write_no_block(self, data: bytes) -> None:
-        self.write_buffer += data  # pragma: no cover
-
-    async def write(
-        self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
-    ) -> None:
-        if self.write_buffer:
-            previous_data = self.write_buffer
-            # Reset before recursive call, otherwise we'll go through
-            # this branch indefinitely.
-            self.write_buffer = b""
-            try:
-                await self.write(previous_data, timeout=timeout, flag=flag)
-            except WriteTimeout:
-                self.writer_buffer = previous_data
-                raise
-
-        if not data:
-            return
-
-        if timeout is None:
-            timeout = self.timeout
-
-        write_timeout = _or_inf(timeout.write_timeout)
-
-        while True:
-            with trio.move_on_after(write_timeout):
-                async with self.write_lock:
-                    await self.stream.send_all(data)
-                break
-            # We check our flag at the first possible moment, in order to
-            # allow us to suppress write timeouts, if we've since
-            # switched over to read-timeout mode.
-            should_raise = flag is None or flag.raise_on_write_timeout
-            if should_raise:
-                raise WriteTimeout() from None
 
     async def close(self) -> None:
         await self.stream.aclose()
