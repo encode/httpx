@@ -102,17 +102,12 @@ $ nox -s test -- tests/test_multipart.py
 
 ## Documenting
 
-To work with the documentation, make sure you have `mkdocs` and
-`mkdocs-material` installed on your environment:
+Documentation pages are located under the `docs/` folder.
+
+To run the documentation site locally (useful for previewing changes), use:
 
 ```shell
-$ pip install mkdocs mkdocs-material
-```
-
-To spawn the docs server run:
-
-```shell
-$ mkdocs serve
+$ nox -s serve
 ```
 
 ## Releasing
