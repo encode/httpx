@@ -75,6 +75,11 @@ matrix:
       before_install:
         - choco install python --pre
         - python -m pip install --upgrade pip
+  # Allow builds to fail when using '-dev' Python versions
+  # Should still investigate failures periodically for new APIs.
+  fast_finish: true
+  allow_failures:
+    - python: 3.8-dev
 
 install:
   - pip install --upgrade nox

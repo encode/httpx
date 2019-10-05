@@ -41,7 +41,7 @@ from .utils import (
     str_query_param,
 )
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from .middleware.base import BaseMiddleware  # noqa: F401
     from .dispatch.base import AsyncDispatcher  # noqa: F401
 
@@ -137,6 +137,10 @@ class URL:
         return self._uri_reference.authority or ""
 
     @property
+    def userinfo(self) -> str:
+        return self._uri_reference.userinfo or ""
+
+    @property
     def username(self) -> str:
         userinfo = self._uri_reference.userinfo or ""
         return userinfo.partition(":")[0]
@@ -207,6 +211,28 @@ class URL:
         return Origin(self)
 
     def copy_with(self, **kwargs: typing.Any) -> "URL":
+        if (
+            "username" in kwargs
+            or "password" in kwargs
+            or "host" in kwargs
+            or "port" in kwargs
+        ):
+            host = kwargs.pop("host", self.host)
+            port = kwargs.pop("port", self.port)
+            username = kwargs.pop("username", self.username)
+            password = kwargs.pop("password", self.password)
+
+            authority = host
+            if port is not None:
+                authority += f":{port}"
+            if username is not None:
+                userpass = username
+                if password is not None:
+                    userpass += f":{password}"
+                authority = f"{userpass}@{authority}"
+
+            kwargs["authority"] = authority
+
         return URL(self._uri_reference.copy_with(**kwargs).unsplit())
 
     def join(self, relative_url: URLTypes) -> "URL":
@@ -613,7 +639,10 @@ class BaseRequest:
         has_connection = "connection" in self.headers
 
         if not has_host:
-            auto_headers.append((b"host", self.url.authority.encode("ascii")))
+            url = self.url
+            if url.userinfo:
+                url = url.copy_with(username=None, password=None)
+            auto_headers.append((b"host", url.authority.encode("ascii")))
         if not has_user_agent:
             auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
         if not has_accept:

@@ -39,9 +39,6 @@ class TCPStream(BaseTCPStream):
             return "HTTP/1.1"
 
         ident = self.stream.selected_alpn_protocol()
-        if ident is None:
-            return "HTTP/1.1"
-
         return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
     async def read(
@@ -78,7 +75,7 @@ class TCPStream(BaseTCPStream):
         return stream.socket.is_readable()
 
     def write_no_block(self, data: bytes) -> None:
-        self.write_buffer += data
+        self.write_buffer += data  # pragma: no cover
 
     async def write(
         self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None

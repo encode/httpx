@@ -221,7 +221,7 @@ class HTTP2Connection:
                     else:
                         try:
                             self.window_update_received[event_stream_id].set()
-                        except KeyError:
+                        except KeyError:  # pragma: no cover
                             # the window_update_received dictionary is only relevant
                             # when sending data, which should never raise a KeyError
                             # here.

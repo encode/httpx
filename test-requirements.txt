@@ -1,4 +1,4 @@
--e .[trio]
+-e .
 
 # Optional
 brotlipy==0.7.*
@@ -7,12 +7,14 @@ cryptography
 flake8
 flake8-bugbear
 flake8-comprehensions
+flake8-pie
 isort
 mypy
 pytest
 pytest-asyncio
 pytest-trio
 pytest-cov
+trio
 trustme
 uvicorn
 

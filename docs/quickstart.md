@@ -5,7 +5,7 @@
     The `httpx` library is designed to be API compatible with `requests` wherever
     possible.
 
-First start by importing HTTPX:
+First, start by importing HTTPX:
 
 ```
 >>> import httpx
@@ -62,7 +62,7 @@ URL('https://httpbin.org/get?key1=value1&key2=value2&key2=value3')
 
 ## Response Content
 
-HTTPX will automatically handle decoding the response content into unicode text.
+HTTPX will automatically handle decoding the response content into Unicode text.
 
 ```python
 >>> r = httpx.get('https://www.example.org/')
@@ -128,7 +128,7 @@ To include additional headers in the outgoing request, use the `headers` keyword
 ## Sending Form Encoded Data
 
 Some types of HTTP requests, such as `POST` and `PUT` requests, can include data
-in the request body. One common way of including that is as form encoded data,
+in the request body. One common way of including that is as form-encoded data,
 which is used for HTML forms.
 
 ```python
@@ -198,7 +198,7 @@ of items for the file value:
 
 ## Sending JSON Encoded Data
 
-Form encoded data is okay if all you need is simple key-value data structure.
+Form encoded data is okay if all you need is a simple key-value data structure.
 For more complicated data structures you'll often want to use JSON encoding instead.
 
 ```python
@@ -222,7 +222,7 @@ For more complicated data structures you'll often want to use JSON encoding inst
 
 ## Sending Binary Request Data
 
-For other encodings you should use either a `bytes` type, or a generator
+For other encodings, you should use either a `bytes` type or a generator
 that yields `bytes`.
 
 You'll probably also want to set a custom `Content-Type` header when uploading
@@ -291,10 +291,10 @@ The `Headers` data type is case-insensitive, so you can use any capitalization.
 'application/json'
 ```
 
-Multiple values for a single response header are represented as a single comma separated
+Multiple values for a single response header are represented as a single comma-separated
 value, as per [RFC 7230](https://tools.ietf.org/html/rfc7230#section-3.2):
 
-> A recipient MAY combine multiple header fields with the same field name into one “field-name: field-value” pair, without changing the semantics of the message, by appending each subsequent field value to the combined field value in order, separated by a comma.
+> A recipient MAY combine multiple header fields with the same field name into one “field-name: field-value” pair, without changing the semantics of the message, by appending each subsequent field-value to the combined field value in order, separated by a comma.
 
 ## Cookies
 
@@ -329,7 +329,7 @@ with additional API for accessing cookies by their domain or path.
 
 ## Redirection and History
 
-By default HTTPX will follow redirects for anything except `HEAD` requests.
+By default, HTTPX will follow redirects for anything except `HEAD` requests.
 
 The `history` property of the response can be used to inspect any followed redirects.
 It contains a list of all any redirect responses that were followed, in the order
@@ -401,3 +401,4 @@ as above:
 >>> auth = httpx.DigestAuth("my_user", "password123")
 >>> httpx.get("https://example.com", auth=auth)
 <Response [200 OK]>
+```

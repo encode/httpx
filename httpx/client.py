@@ -325,7 +325,7 @@ class BaseClient:
         headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
         params = self.merge_queryparams(params)
-        request = AsyncRequest(
+        return AsyncRequest(
             method,
             url,
             data=data,
@@ -335,7 +335,6 @@ class BaseClient:
             headers=headers,
             cookies=cookies,
         )
-        return request
 
 
 class AsyncClient(BaseClient):
@@ -541,9 +540,6 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: AsyncRequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
@@ -558,9 +554,6 @@ class AsyncClient(BaseClient):
         return await self.request(
             "DELETE",
             url,
-            data=data,
-            files=files,
-            json=json,
             params=params,
             headers=headers,
             cookies=cookies,
@@ -724,7 +717,7 @@ class Client(BaseClient):
             headers=headers,
             cookies=cookies,
         )
-        response = self.send(
+        return self.send(
             request,
             stream=stream,
             auth=auth,
@@ -734,7 +727,6 @@ class Client(BaseClient):
             timeout=timeout,
             trust_env=trust_env,
         )
-        return response
 
     def send(
         self,
@@ -992,9 +984,6 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
@@ -1009,9 +998,6 @@ class Client(BaseClient):
         return self.request(
             "DELETE",
             url,
-            data=data,
-            files=files,
-            json=json,
             params=params,
             headers=headers,
             cookies=cookies,

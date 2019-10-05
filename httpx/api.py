@@ -261,9 +261,6 @@ def patch(
 def delete(
     url: URLTypes,
     *,
-    data: RequestData = None,
-    files: RequestFiles = None,
-    json: typing.Any = None,
     params: QueryParamTypes = None,
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
@@ -279,9 +276,6 @@ def delete(
     return request(
         "DELETE",
         url,
-        data=data,
-        files=files,
-        json=json,
         params=params,
         headers=headers,
         cookies=cookies,

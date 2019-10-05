@@ -88,7 +88,7 @@ def test_raise_for_status(server):
                 "GET", server.url.copy_with(path="/status/{}".format(status_code))
             )
             if 400 <= status_code < 600:
-                with pytest.raises(httpx.exceptions.HTTPError) as exc_info:
+                with pytest.raises(httpx.HTTPError) as exc_info:
                     response.raise_for_status()
                 assert exc_info.value.response == response
             else:
@@ -165,12 +165,14 @@ def test_client_backend_must_be_asyncio_based():
 def test_elapsed_delay(server):
     with httpx.Client() as http:
         response = http.get(server.url.copy_with(path="/slow_response/100"))
-    assert response.elapsed.total_seconds() == pytest.approx(0.1, abs=0.02)
+    assert response.elapsed.total_seconds() == pytest.approx(0.1, rel=0.2)
 
 
 def test_elapsed_delay_ignores_read_time(server):
     with httpx.Client() as http:
-        response = http.get(server.url.copy_with(path="/slow_response/50"), stream=True)
-    sleep(0.1)
+        response = http.get(
+            server.url.copy_with(path="/slow_response/100"), stream=True
+        )
+    sleep(0.2)
     response.read()
-    assert response.elapsed.total_seconds() == pytest.approx(0.05, abs=0.01)
+    assert response.elapsed.total_seconds() == pytest.approx(0.1, rel=0.2)

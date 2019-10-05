@@ -37,6 +37,11 @@ def test_client_queryparams_string():
     assert isinstance(client.params, QueryParams)
     assert client.params["a"] == "b"
 
+    client = Client()
+    client.params = "a=b"
+    assert isinstance(client.params, QueryParams)
+    assert client.params["a"] == "b"
+
 
 def test_client_queryparams_echo():
     url = "http://example.org/echo_queryparams"

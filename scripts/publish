@@ -15,6 +15,12 @@ if ! command -v "${PREFIX}twine" &>/dev/null ; then
     exit 1
 fi
 
+if ! ${PREFIX}pip show wheel &>/dev/null ; then
+    echo "Unable to find the 'wheel' command."
+    echo "Install from PyPI, using '${PREFIX}pip install wheel'."
+    exit 1
+fi
+
 if ! command -v "${PREFIX}mkdocs" &>/dev/null ; then
     echo "Unable to find the 'mkdocs' command."
     echo "Install from PyPI, using '${PREFIX}pip install mkdocs'."
@@ -24,7 +30,7 @@ fi
 find ${PACKAGE} -type f -name "*.py[co]" -delete
 find ${PACKAGE} -type d -name __pycache__ -delete
 
-${PREFIX}python setup.py sdist
+${PREFIX}python setup.py sdist bdist_wheel
 ${PREFIX}twine upload dist/*
 ${PREFIX}mkdocs gh-deploy
 
