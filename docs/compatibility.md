@@ -23,8 +23,11 @@ The HTTPX equivalent of `requests.Session` is `httpx.Client`.
 ```python
 session = requests.Session(**kwargs)
 ```
+
 is equivalent to
+
 ```python
 client = httpx.Client(**kwargs)
 ```
+
 More detailed documentation and usage of `Client` can be found in [Advanced Usage](advanced.md).
