@@ -6,6 +6,8 @@ Using a Client instance to make requests will give you HTTP connection pooling,
 will provide cookie persistence, and allows you to apply configuration across
 all outgoing requests.
 
+A Client instance is equivalent to a Session instance of `requests`.
+
 ```python
 >>> client = httpx.Client()
 >>> r = client.get('https://example.org/')
