@@ -18,7 +18,7 @@ but also provide lower-cased versions for API compatibility with `requests`.
 ## Advanced Usage
 
 ### requests.Session
-HTTPX equivalent of `requests.Session` is `httpx.Client` for standard synchronous API.
+The HTTPX equivalent of `requests.Session` is `httpx.Client`.
 
 ```python
 session = requests.Session(**kwargs)
@@ -27,4 +27,4 @@ is equivalent to
 ```python
 client = httpx.Client(**kwargs)
 ```
-More detailed documentation and usage of `Client` can be found in [Advanced Usage](advanced.md)
+More detailed documentation and usage of `Client` can be found in [Advanced Usage](advanced.md).
