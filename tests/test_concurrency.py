@@ -15,7 +15,6 @@ async def test_start_tls_on_socket_stream(https_server):
     See that the backend can make a connection without TLS then
     start TLS on an existing connection.
     """
-
     backend = AsyncioBackend()
     ctx = SSLConfig().load_ssl_context_no_verify(HTTPVersionConfig())
     timeout = TimeoutConfig(5)
