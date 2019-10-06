@@ -25,10 +25,12 @@ async def test_read_timeout(server, backend):
 
 async def test_write_timeout(server, backend):
     # FIX: win32 doesn't raise asyncio.TimeoutError
-    # in 'asyncio.wait_for(writer.drain(), timeout.write_timeout)'
     if sys.platform == "win32":
         if isinstance(backend, AsyncioBackend):
-            pytest.skip()
+            pytest.xfail(
+                "'asyncio.wait_for(writer.drain())' does not raise a "
+                "'TimeoutError' on Windows."
+            )
     timeout = TimeoutConfig(write_timeout=1e-6)
 
     async with AsyncClient(timeout=timeout, backend=backend) as client:
