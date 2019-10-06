@@ -27,48 +27,11 @@ matrix:
       python: 3.7
       env:
         PATH=/c/Python37:/c/Python37/Scripts:$PATH
-        NOX_SESSION=check
-      before_install:
-        - choco install python --version 3.7
-        - python -m pip install --upgrade pip
-    - os: windows
-      language: shell
-      python: 3.7
-      env:
-        PATH=/c/Python37:/c/Python37/Scripts:$PATH
-        NOX_SESSION=docs
-      before_install:
-        - choco install python --version 3.7
-        - python -m pip install --upgrade pip
-
-    - os: windows
-      language: shell
-      python: 3.6
-      env:
-        PATH=/c/Python36:/c/Python36/Scripts:$PATH
-        NOX_SESSION=test-3.6
-      before_install:
-        - choco install python --version 3.6
-        - python -m pip install --upgrade pip
-    - os: windows
-      language: shell
-      python: 3.7
-      env:
-        PATH=/c/Python37:/c/Python37/Scripts:$PATH
         NOX_SESSION=test-3.7
       before_install:
         - choco install python --version 3.7
         - python -m pip install --upgrade pip
 
-    - os: windows
-      language: shell
-      python: 3.8-dev
-      env:
-        PATH=/c/Python38:/c/Python38/Scripts:$PATH
-        NOX_SESSION=test-3.8
-      before_install:
-        - choco install python --pre
-        - python -m pip install --upgrade pip
   # Allow builds to fail when using '-dev' Python versions
   # Should still investigate failures periodically for new APIs.
   fast_finish: true
