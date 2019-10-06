@@ -15,6 +15,12 @@ if ! command -v "${PREFIX}twine" &>/dev/null ; then
     exit 1
 fi
 
+if ! ${PREFIX}pip show wheel &>/dev/null ; then
+    echo "Unable to find the 'wheel' command."
+    echo "Install from PyPI, using '${PREFIX}pip install wheel'."
+    exit 1
+fi
+
 if ! command -v "${PREFIX}mkdocs" &>/dev/null ; then
     echo "Unable to find the 'mkdocs' command."
     echo "Install from PyPI, using '${PREFIX}pip install mkdocs'."

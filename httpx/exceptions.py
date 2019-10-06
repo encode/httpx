@@ -154,3 +154,10 @@ class CookieConflict(HTTPError):
     """
     Attempted to lookup a cookie by name, but multiple cookies existed.
     """
+
+
+class NewConnectionRequired(HTTPError):
+    """
+    Informs a new connection to the server is required, for example: in
+    case, stream ids expire
+    """

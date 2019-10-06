@@ -4,9 +4,10 @@ import h2.connection
 import h2.events
 from h2.settings import SettingCodes
 
+import httpx
 from httpx import AsyncClient, Client, Response
 
-from .utils import MockHTTP2Backend
+from .utils import MockHTTP2Backend, MockHTTP2Server
 
 
 def app(request):
