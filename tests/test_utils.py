@@ -132,9 +132,9 @@ def test_get_ssl_cert_file():
     assert get_ca_bundle_from_env() == "tests"
 
     del os.environ["SSL_CERT_DIR"]
-    os.environ["SSL_CERT_FILE"] = str(Path("tests", "test_utils.py"))
+    os.environ["SSL_CERT_FILE"] = str(Path("tests") / "test_utils.py")
     # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
-    assert get_ca_bundle_from_env() == str(Path("tests", "test_utils.py"))
+    assert get_ca_bundle_from_env() == str(Path("tests") / "test_utils.py")
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
@@ -146,9 +146,9 @@ def test_get_ssl_cert_file():
     assert get_ca_bundle_from_env() is None
 
     os.environ["SSL_CERT_DIR"] = "tests/"
-    os.environ["SSL_CERT_FILE"] = str(Path("tests", "test_utils.py"))
+    os.environ["SSL_CERT_FILE"] = str(Path("tests") / "test_utils.py")
     # Two environments is correctly set.
-    assert get_ca_bundle_from_env() == str(Path("tests", "test_utils.py"))
+    assert get_ca_bundle_from_env() == str(Path("tests") / "test_utils.py")
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # Two environments is set but SSL_CERT_FILE is not a file.
