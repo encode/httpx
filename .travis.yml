@@ -9,22 +9,17 @@ branches:
 
 matrix:
   include:
-    - os: linux
-      python: 3.7
+    - python: 3.7
       env: NOX_SESSION=check
-    - os: linux
-      python: 3.7
+    - python: 3.7
       env: NOX_SESSION=docs
 
-    - os: linux
-      python: 3.6
+    - python: 3.6
       env: NOX_SESSION=test-3.6
-    - os: linux
-      python: 3.7
+    - python: 3.7
       env: NOX_SESSION=test-3.7
 
-    - os: linux
-      python: 3.8-dev
+    - python: 3.8-dev
       env: NOX_SESSION=test-3.8
       dist: bionic # Required to get OpenSSL 1.1.1+
 
@@ -79,8 +74,10 @@ matrix:
   # Should still investigate failures periodically for new APIs.
   fast_finish: true
   allow_failures:
-    - python: 3.8-dev
     - os: windows
+    # Allow builds to fail when using '-dev' Python versions.
+    # We should still investigate failures periodically for new APIs.
+    - python: 3.8-dev
 
 install:
   - pip install --upgrade nox
