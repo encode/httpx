@@ -1,5 +1,7 @@
 import typing
 
+from h2.exceptions import NoAvailableStreamIDError
+
 from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
@@ -124,7 +126,13 @@ class ConnectionPool(AsyncDispatcher):
             self.active_connections.remove(connection)
             self.max_connections.release()
             raise exc
-
+        except NoAvailableStreamIDError:
+            # NoAvailableStreamIDError propogates from http2.HTTP2Connection
+            # raised when stream ids expire
+            logger.debug("HTTP2 connection streams maxed out")
+            connection = await self.acquire_connection(origin=request.url.origin)
+            response = await connection.send(
+                request, verify=verify, cert=cert, timeout=timeout)
         return response
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:

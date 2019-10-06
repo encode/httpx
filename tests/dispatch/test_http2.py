@@ -212,3 +212,18 @@ async def test_http2_live_request(backend):
 
         assert resp.status_code == 200
         assert resp.http_version == "HTTP/2"
+
+
+async def test_http2_connection_renewed(backend):
+    """Test new connection is formed when stream ids expire"""
+    server = MockHTTP2Server(app=app, backend=backend)
+    server.conn.HIGHEST_ALLOWED_STREAM_ID = 1
+
+    async with httpx.ConnectionPool(backend=backend) as http:
+        response = await http.request("GET", server.url)
+        assert len(http.keepalive_connections) == 1
+        await response.read()
+        response = await http.request("GET", server.url)
+        assert len(http.keepalive_connections) == 2
+        assert response.status_code == 200
+        assert response.http_version == "HTTP/2"
