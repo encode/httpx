@@ -1,11 +1,12 @@
 import nox
 
 nox.options.stop_on_first_error = True
+nox.options.reuse_existing_virtualenvs = True
 
 source_files = ("httpx", "tools", "tests", "setup.py", "noxfile.py")
 
 
-@nox.session(reuse_venv=True)
+@nox.session
 def lint(session):
     session.install("autoflake", "black", "flake8", "isort", "seed-isort-config")
 
@@ -17,7 +18,7 @@ def lint(session):
     check(session)
 
 
-@nox.session(reuse_venv=True)
+@nox.session
 def check(session):
     session.install(
         "black",
@@ -37,9 +38,9 @@ def check(session):
     )
 
 
-@nox.session(reuse_venv=True)
+@nox.session
 def docs(session):
-    session.install("mkdocs", "mkdocs-material")
+    session.install("mkdocs", "mkdocs-material", "pymdown-extensions")
 
     session.run("mkdocs", "build")
 
