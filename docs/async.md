@@ -48,7 +48,7 @@ The async response methods are:
 * `.raw()`
 * `.close()`
 
-If you're making [parallel requests](parallel.md), then you'll also need to use an async API:
+If you're making [parallel requests](../parallel/), then you'll also need to use an async API:
 
 ```python
 >>> async with httpx.AsyncClient() as client:
