@@ -48,7 +48,12 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .utils import ElapsedTimer, get_environment_proxies, get_netrc_login
+from .utils import (
+    ElapsedTimer,
+    get_environment_no_proxy,
+    get_environment_proxies,
+    get_netrc_login,
+)
 
 
 class BaseClient:
@@ -117,6 +122,7 @@ class BaseClient:
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
+        self.proxy_exempt_list: typing.List[str] = get_environment_no_proxy()
 
         if proxies is None and trust_env:
             proxies = typing.cast(ProxiesTypes, get_environment_proxies())
@@ -294,6 +300,10 @@ class BaseClient:
                 url.scheme == "https" and url.port == 443
             )
             hostname = f"{url.host}:{url.port}"
+            for exempt_url in self.proxy_exempt_list:
+                if exempt_url and url.host and url.host.endswith(exempt_url):
+                    # This URL should be exempted from going through proxy
+                    return self.dispatch
             proxy_keys = (
                 f"{url.scheme}://{hostname}",
                 f"{url.scheme}://{url.host}" if is_default_port else None,

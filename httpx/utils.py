@@ -208,6 +208,12 @@ def kv_format(**kwargs: typing.Any) -> str:
     return " ".join(f"{key}={value!r}" for key, value in kwargs.items())
 
 
+def get_environment_no_proxy() -> typing.List[str]:
+    """ Gets value of NO_PROXY environment value as a list"""
+    no_proxy = get_environ_lower_and_upper("NO_PROXY")
+    return no_proxy.split(",") if no_proxy else []
+
+
 def get_environment_proxies() -> typing.Dict[str, str]:
     """Gets proxy information from the environment"""
 
