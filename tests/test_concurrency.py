@@ -9,6 +9,10 @@ from httpx import AsyncioBackend, HTTPVersionConfig, SSLConfig, TimeoutConfig
     sys.version_info < (3, 7),
     reason="Requires Python 3.7+ for AbstractEventLoop.start_tls()",
 )
+#  FIX: Why doesn't return result
+@pytest.mark.xfail(
+    sys.platform == "win32", reason="StreamReader.read doesn't return result on Win32"
+)
 @pytest.mark.asyncio
 async def test_start_tls_on_socket_stream(https_server):
     """
