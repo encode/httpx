@@ -195,6 +195,7 @@ def test_get_environment_proxies(environment, proxies):
 
     assert get_environment_proxies() == proxies
 
+
 @pytest.mark.parametrize(
     ["no_proxy", "exempt_list"],
     [
@@ -205,7 +206,7 @@ def test_get_environment_proxies(environment, proxies):
         
     ],
 )
-def test_get_environment_no_proxy(no_proxy, exempt_list)
+def test_get_environment_no_proxy(no_proxy, exempt_list):
     os.environ.update(no_proxy)
     assert get_environment_no_proxy() == exempt_list
 
