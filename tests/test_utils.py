@@ -9,6 +9,7 @@ from httpx import utils
 from httpx.utils import (
     ElapsedTimer,
     get_ca_bundle_from_env,
+    get_environment_no_proxy,
     get_environment_proxies,
     get_netrc_login,
     guess_json_utf,
@@ -193,6 +194,20 @@ def test_get_environment_proxies(environment, proxies):
     os.environ.update(environment)
 
     assert get_environment_proxies() == proxies
+
+@pytest.mark.parametrize(
+    ["no_proxy", "exempt_list"],
+    [
+        ({}, []),
+        ({"NO_PROXY": ""}, []),
+        ({"NO_PROXY": "http://127.0.0.1"}, ["http://127.0.0.1"]),
+        ({"NO_PROXY": "127.0.0.1"}, ["127.0.0.1"]),
+        
+    ],
+)
+def test_get_environment_no_proxy(no_proxy, exempt_list)
+    os.environ.update(no_proxy)
+    assert get_environment_no_proxy() == exempt_list
 
 
 @pytest.mark.parametrize(
