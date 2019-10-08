@@ -121,19 +121,22 @@ def test_unsupported_proxy_scheme():
 
 
 @pytest.mark.parametrize(
-    ["passed_in_param", "passed_in_env", "expected_in_client"],
+    ["passed_in_param", "passed_in_env", "trust_env", "expected_in_client"],
     [
-        ("http://127.0.0.1", None, ["http://127.0.0.1"]),
-        (None, "http://127.0.0.2", ["http://127.0.0.2"]),
-        ("127.0.0.3,1.1.1.1", "http://127.0.0.3", ["127.0.0.3", "1.1.1.1"]),
-        (None, "127.0.0.4,1.1.1.1", ["127.0.0.4", "1.1.1.1"]),
+        ("http://127.0.0.1", None, True, ["http://127.0.0.1"]),
+        (None, "http://127.0.0.2", True, ["http://127.0.0.2"]),
+        ("127.0.0.3,1.1.1.1", "http://127.0.0.3", True, ["127.0.0.3", "1.1.1.1"]),
+        (None, "127.0.0.4,1.1.1.1", True, ["127.0.0.4", "1.1.1.1"]),
+        (None, "127.0.0.4,1.1.1.1", False, []),
     ],
 )
-def test_no_proxy_parameter(passed_in_param, passed_in_env, expected_in_client):
+def test_no_proxy_parameter(
+    passed_in_param, passed_in_env, trust_env, expected_in_client
+):
     "test that no_proxy passed in client takes priority"
     no_proxy = {"NO_PROXY": passed_in_env} if passed_in_env else {}
     os.environ.update(no_proxy)
-    client = httpx.Client(no_proxy=passed_in_param)
+    client = httpx.Client(no_proxy=passed_in_param, trust_env=trust_env)
 
     for proxy_url in expected_in_client:
         assert proxy_url in client.no_proxy_list

@@ -129,3 +129,17 @@ export HTTP_PROXY=http://127.0.0.1:3080
 # This request will be sent through the proxy
 python -c "import httpx; httpx.get('http://example.com')"
 ```
+
+`NO_PROXY`
+----------------------------------------
+
+Valid values: A comma separated list of hosts.
+
+This variable should contain a comma-separated list of domain extensions proxy should not be used for.
+
+```bash
+export NO_PROXY=example.com,localhost
+
+# This request will not be sent through the proxy
+python -c "import httpx; httpx.get('http://example.com')"
+```

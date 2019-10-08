@@ -126,7 +126,7 @@ class BaseClient:
         no_proxy_list: typing.List[str] = []
         if no_proxy:
             no_proxy_list = no_proxy.split(",")
-        else:
+        elif trust_env:
             no_proxy_list = get_environment_no_proxy()
         self.no_proxy_list: typing.List[str] = no_proxy_list
 
