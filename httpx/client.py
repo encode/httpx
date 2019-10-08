@@ -10,7 +10,7 @@ from .concurrency.base import ConcurrencyBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
-    DEFAULT_TIMEOUT_CONFIG,
+    UNSET,
     CertTypes,
     HTTPVersionTypes,
     PoolLimits,
@@ -63,7 +63,7 @@ class BaseClient:
         cert: CertTypes = None,
         http_versions: HTTPVersionTypes = None,
         proxies: ProxiesTypes = None,
-        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        timeout: TimeoutTypes = UNSET,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
@@ -201,7 +201,7 @@ class BaseClient:
         allow_redirects: bool = True,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> AsyncResponse:
         if request.url.scheme not in ("http", "https"):
@@ -350,7 +350,7 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
@@ -380,7 +380,7 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
@@ -410,7 +410,7 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
@@ -443,7 +443,7 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
@@ -479,7 +479,7 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
@@ -515,7 +515,7 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
@@ -548,7 +548,7 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
@@ -582,7 +582,7 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> AsyncResponse:
         request = self.build_request(
@@ -616,7 +616,7 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> AsyncResponse:
         return await self._get_response(
@@ -704,7 +704,7 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> Response:
         request = self.build_request(
@@ -737,7 +737,7 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> Response:
         concurrency_backend = self.concurrency_backend
@@ -794,7 +794,7 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return self.request(
@@ -824,7 +824,7 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return self.request(
@@ -854,7 +854,7 @@ class Client(BaseClient):
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return self.request(
@@ -887,7 +887,7 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return self.request(
@@ -923,7 +923,7 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return self.request(
@@ -959,7 +959,7 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return self.request(
@@ -992,7 +992,7 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return self.request(

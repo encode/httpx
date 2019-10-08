@@ -2,7 +2,7 @@ import typing
 
 from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
-from ..config import CertTypes, TimeoutTypes, VerifyTypes
+from ..config import UNSET, CertTypes, TimeoutTypes, VerifyTypes
 from ..models import AsyncRequest, AsyncResponse
 from ..utils import MessageLoggerASGIMiddleware, get_logger
 from .base import AsyncDispatcher
@@ -65,7 +65,7 @@ class ASGIDispatch(AsyncDispatcher):
         request: AsyncRequest,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
     ) -> AsyncResponse:
 
         scope = {

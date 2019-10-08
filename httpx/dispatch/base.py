@@ -1,7 +1,7 @@
 import typing
 from types import TracebackType
 
-from ..config import CertTypes, TimeoutTypes, VerifyTypes
+from ..config import UNSET, CertTypes, TimeoutTypes, VerifyTypes
 from ..models import (
     AsyncRequest,
     AsyncRequestData,
@@ -34,7 +34,7 @@ class AsyncDispatcher:
         headers: HeaderTypes = None,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
     ) -> AsyncResponse:
         request = AsyncRequest(method, url, data=data, params=params, headers=headers)
         return await self.send(request, verify=verify, cert=cert, timeout=timeout)
@@ -44,7 +44,7 @@ class AsyncDispatcher:
         request: AsyncRequest,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
     ) -> AsyncResponse:
         raise NotImplementedError()  # pragma: nocover
 
@@ -82,7 +82,7 @@ class Dispatcher:
         headers: HeaderTypes = None,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
     ) -> Response:
         request = Request(method, url, data=data, params=params, headers=headers)
         return self.send(request, verify=verify, cert=cert, timeout=timeout)
@@ -92,7 +92,7 @@ class Dispatcher:
         request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
     ) -> Response:
         raise NotImplementedError()  # pragma: nocover
 

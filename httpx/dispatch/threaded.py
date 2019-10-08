@@ -1,5 +1,5 @@
 from ..concurrency.base import ConcurrencyBackend
-from ..config import CertTypes, TimeoutTypes, VerifyTypes
+from ..config import UNSET, CertTypes, TimeoutTypes, VerifyTypes
 from ..models import (
     AsyncRequest,
     AsyncRequestData,
@@ -29,7 +29,7 @@ class ThreadedDispatcher(AsyncDispatcher):
         request: AsyncRequest,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
     ) -> AsyncResponse:
         concurrency_backend = self.backend
 

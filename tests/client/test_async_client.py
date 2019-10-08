@@ -146,3 +146,13 @@ async def test_100_continue(server, backend):
 
     assert response.status_code == 200
     assert response.content == data
+
+
+async def test_async_client_timeout_default(server, backend):
+    async with httpx.AsyncClient(backend=backend) as client:
+        assert client.dispatch.timeout == httpx.config.UNSET
+
+
+async def test_async_client_timeout_disabled(server, backend):
+    async with httpx.AsyncClient(backend=backend, timeout=None) as client:
+        assert client.dispatch.timeout is None

@@ -5,7 +5,7 @@ import typing
 from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
-    DEFAULT_TIMEOUT_CONFIG,
+    UNSET,
     CertTypes,
     HTTPVersionConfig,
     HTTPVersionTypes,
@@ -34,7 +34,7 @@ class HTTPConnection(AsyncDispatcher):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
-        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        timeout: TimeoutTypes = UNSET,
         http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,
@@ -53,8 +53,10 @@ class HTTPConnection(AsyncDispatcher):
         request: AsyncRequest,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
     ) -> AsyncResponse:
+        timeout = timeout if timeout is not UNSET else self.timeout
+
         if self.h11_connection is None and self.h2_connection is None:
             await self.connect(verify=verify, cert=cert, timeout=timeout)
 
@@ -70,10 +72,10 @@ class HTTPConnection(AsyncDispatcher):
         self,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
     ) -> None:
         ssl = self.ssl.with_overrides(verify=verify, cert=cert)
-        timeout = self.timeout if timeout is None else TimeoutConfig(timeout)
+        timeout = TimeoutConfig(timeout if timeout is not UNSET else self.timeout)
 
         host = self.origin.host
         port = self.origin.port

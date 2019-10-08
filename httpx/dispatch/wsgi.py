@@ -1,7 +1,7 @@
 import io
 import typing
 
-from ..config import CertTypes, TimeoutTypes, VerifyTypes
+from ..config import UNSET, CertTypes, TimeoutTypes, VerifyTypes
 from ..models import Request, Response
 from .base import Dispatcher
 
@@ -59,7 +59,7 @@ class WSGIDispatch(Dispatcher):
         request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
     ) -> Response:
         environ = {
             "wsgi.version": (1, 0),

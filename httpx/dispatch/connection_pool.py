@@ -4,7 +4,7 @@ from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
-    DEFAULT_TIMEOUT_CONFIG,
+    UNSET,
     CertTypes,
     HTTPVersionTypes,
     PoolLimits,
@@ -85,7 +85,7 @@ class ConnectionPool(AsyncDispatcher):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
-        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        timeout: TimeoutTypes = UNSET,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
@@ -113,9 +113,13 @@ class ConnectionPool(AsyncDispatcher):
         request: AsyncRequest,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
     ) -> AsyncResponse:
-        connection = await self.acquire_connection(origin=request.url.origin)
+        timeout = timeout if timeout is not UNSET else self.timeout
+
+        connection = await self.acquire_connection(
+            origin=request.url.origin, timeout=timeout
+        )
         try:
             response = await connection.send(
                 request, verify=verify, cert=cert, timeout=timeout
@@ -127,9 +131,12 @@ class ConnectionPool(AsyncDispatcher):
 
         return response
 
-    async def acquire_connection(self, origin: Origin) -> HTTPConnection:
+    async def acquire_connection(
+        self, origin: Origin, timeout: TimeoutTypes = UNSET
+    ) -> HTTPConnection:
         logger.debug(f"acquire_connection origin={origin!r}")
         connection = self.pop_connection(origin)
+        timeout = timeout if timeout is not UNSET else self.timeout
 
         if connection is None:
             await self.max_connections.acquire()
@@ -137,7 +144,7 @@ class ConnectionPool(AsyncDispatcher):
                 origin,
                 verify=self.verify,
                 cert=self.cert,
-                timeout=self.timeout,
+                timeout=timeout,
                 http_versions=self.http_versions,
                 backend=self.backend,
                 release_func=self.release_connection,

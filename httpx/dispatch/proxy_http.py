@@ -5,7 +5,7 @@ import h11
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
-    DEFAULT_TIMEOUT_CONFIG,
+    UNSET,
     CertTypes,
     HTTPVersionTypes,
     PoolLimits,
@@ -53,7 +53,7 @@ class HTTPProxy(ConnectionPool):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
-        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        timeout: TimeoutTypes = UNSET,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
@@ -84,12 +84,14 @@ class HTTPProxy(ConnectionPool):
             credentials, _, authority = url.authority.rpartition("@")
             self.proxy_url = url.copy_with(authority=authority)
 
-    async def acquire_connection(self, origin: Origin) -> HTTPConnection:
+    async def acquire_connection(
+        self, origin: Origin, timeout: TimeoutTypes = UNSET
+    ) -> HTTPConnection:
         if self.should_forward_origin(origin):
             logger.debug(
                 f"forward_connection proxy_url={self.proxy_url!r} origin={origin!r}"
             )
-            return await super().acquire_connection(self.proxy_url.origin)
+            return await super().acquire_connection(self.proxy_url.origin, timeout)
         else:
             logger.debug(
                 f"tunnel_connection proxy_url={self.proxy_url!r} origin={origin!r}"
@@ -231,7 +233,7 @@ class HTTPProxy(ConnectionPool):
         request: AsyncRequest,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: TimeoutTypes = UNSET,
     ) -> AsyncResponse:
 
         if self.should_forward_origin(request.url.origin):
