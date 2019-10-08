@@ -307,7 +307,7 @@ class BaseClient:
             )
             hostname = f"{url.host}:{url.port}"
             for exempt_url in self.no_proxy_list:
-                if exempt_url and url.host and url.host.endswith(exempt_url):
+                if exempt_url and url.host.endswith(exempt_url):
                     # This URL should be exempted from going through proxy
                     return self.dispatch
             proxy_keys = (

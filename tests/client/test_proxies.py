@@ -139,3 +139,24 @@ def test_no_proxy_parameter(passed_in_param, passed_in_env, expected_in_client):
         assert proxy_url in client.no_proxy_list
 
     assert len(expected_in_client) == len(client.no_proxy_list)
+
+
+@pytest.mark.parametrize(
+    ["url", "no_proxy", "proxy", "is_proxied"],
+    [
+        ("http://127.0.0.1", "127.0.0.1", "http://1.1.1.1", False),
+        ("http://127.0.0.1", ",,", "http://1.1.1.1", True),
+        ("http://127.0.0.1", "127.0.0.3", "http://1.1.1.1", True),
+    ],
+)
+def test_dispatcher_when_no_proxy_set(url, no_proxy, proxy, is_proxied):
+    client = httpx.AsyncClient(proxies=proxy, no_proxy=no_proxy)
+    request = httpx.AsyncRequest("GET", url)
+    dispatcher = client._dispatcher_for_request(request, client.proxies)
+
+    if not is_proxied:
+        assert isinstance(dispatcher, httpx.ConnectionPool)
+        assert dispatcher is client.dispatch
+    else:
+        assert isinstance(dispatcher, httpx.HTTPProxy)
+        assert dispatcher.proxy_url == proxy
