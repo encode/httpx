@@ -203,7 +203,7 @@ def test_get_environment_proxies(environment, proxies):
         ({"NO_PROXY": ""}, []),
         ({"NO_PROXY": "http://127.0.0.1"}, ["http://127.0.0.1"]),
         ({"NO_PROXY": "127.0.0.1"}, ["127.0.0.1"]),
-        
+        ({"NO_PROXY": "127.0.0.1,1.1.1.1"}, ["127.0.0.1", "1.1.1.1"]),
     ],
 )
 def test_get_environment_no_proxy(no_proxy, exempt_list):

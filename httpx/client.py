@@ -68,6 +68,7 @@ class BaseClient:
         cert: CertTypes = None,
         http_versions: HTTPVersionTypes = None,
         proxies: ProxiesTypes = None,
+        no_proxy: str = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
@@ -122,7 +123,12 @@ class BaseClient:
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
-        self.proxy_exempt_list: typing.List[str] = get_environment_no_proxy()
+        no_proxy_list: typing.List[str] = []
+        if no_proxy:
+            no_proxy_list = no_proxy.split(",")
+        else:
+            no_proxy_list = get_environment_no_proxy()
+        self.no_proxy_list: typing.List[str] = no_proxy_list
 
         if proxies is None and trust_env:
             proxies = typing.cast(ProxiesTypes, get_environment_proxies())
@@ -300,7 +306,7 @@ class BaseClient:
                 url.scheme == "https" and url.port == 443
             )
             hostname = f"{url.host}:{url.port}"
-            for exempt_url in self.proxy_exempt_list:
+            for exempt_url in self.no_proxy_list:
                 if exempt_url and url.host and url.host.endswith(exempt_url):
                     # This URL should be exempted from going through proxy
                     return self.dispatch
