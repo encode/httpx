@@ -1,7 +1,7 @@
 import typing
 
 from .client import Client
-from .config import CertTypes, TimeoutTypes, VerifyTypes
+from .config import UNSET, CertTypes, TimeoutTypes, VerifyTypes
 from .models import (
     AuthTypes,
     CookieTypes,
@@ -26,7 +26,7 @@ def request(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
-    timeout: TimeoutTypes = None,
+    timeout: TimeoutTypes = UNSET,
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
@@ -65,7 +65,7 @@ def get(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
+    timeout: TimeoutTypes = UNSET,
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
@@ -96,7 +96,7 @@ def options(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
+    timeout: TimeoutTypes = UNSET,
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
@@ -127,7 +127,7 @@ def head(
     allow_redirects: bool = False,  #  Note: Differs to usual default.
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
+    timeout: TimeoutTypes = UNSET,
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
@@ -161,7 +161,7 @@ def post(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
+    timeout: TimeoutTypes = UNSET,
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
@@ -198,7 +198,7 @@ def put(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
+    timeout: TimeoutTypes = UNSET,
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
@@ -235,7 +235,7 @@ def patch(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
+    timeout: TimeoutTypes = UNSET,
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
@@ -269,7 +269,7 @@ def delete(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
+    timeout: TimeoutTypes = UNSET,
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:

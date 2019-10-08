@@ -8,9 +8,18 @@ import certifi
 from .__version__ import __version__
 from .utils import get_ca_bundle_from_env, get_logger
 
+
+class UnsetType:
+    pass
+
+
+UNSET = UnsetType()
+
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
-TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
+TimeoutTypes = typing.Union[
+    float, typing.Tuple[float, float, float], "TimeoutConfig", UnsetType
+]
 HTTPVersionTypes = typing.Union[
     str, typing.List[str], typing.Tuple[str], "HTTPVersionConfig"
 ]
@@ -241,6 +250,10 @@ class TimeoutConfig:
                 self.connect_timeout = timeout.connect_timeout
                 self.read_timeout = timeout.read_timeout
                 self.write_timeout = timeout.write_timeout
+            elif isinstance(timeout, UnsetType):
+                self.connect_timeout = DEFAULT_TIMEOUT_CONFIG.connect_timeout
+                self.read_timeout = DEFAULT_TIMEOUT_CONFIG.read_timeout
+                self.write_timeout = DEFAULT_TIMEOUT_CONFIG.write_timeout
             elif isinstance(timeout, tuple):
                 self.connect_timeout = timeout[0]
                 self.read_timeout = timeout[1]

@@ -1,3 +1,6 @@
+from functools import partial
+from unittest import mock
+
 import pytest
 
 import httpx
@@ -61,3 +64,42 @@ def test_delete(server):
 def test_get_invalid_url(server):
     with pytest.raises(httpx.InvalidURL):
         httpx.get("invalid://example.org")
+
+
+@pytest.mark.parametrize(
+    "api_method",
+    [
+        httpx.get,
+        httpx.options,
+        httpx.head,
+        httpx.post,
+        httpx.put,
+        httpx.patch,
+        httpx.delete,
+        partial(httpx.request, "GET"),
+    ],
+)
+def test_api_timeout_default(server, api_method):
+    with mock.patch("httpx.api.Client.request") as mocked:
+        api_method(server.url)
+        assert mocked.call_args[1]["timeout"] is httpx.config.UNSET
+
+
+@pytest.mark.parametrize("timeout", [10, None])
+@pytest.mark.parametrize(
+    "api_method",
+    [
+        httpx.get,
+        httpx.options,
+        httpx.head,
+        httpx.post,
+        httpx.put,
+        httpx.patch,
+        httpx.delete,
+        partial(httpx.request, "GET"),
+    ],
+)
+def test_api_timeout_custom(server, api_method, timeout):
+    with mock.patch("httpx.api.Client.request") as mocked:
+        api_method(server.url, timeout=timeout)
+        assert mocked.call_args[1]["timeout"] == timeout

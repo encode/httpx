@@ -201,6 +201,11 @@ def test_timeout_from_config_instance():
     assert httpx.TimeoutConfig(timeout) == httpx.TimeoutConfig(timeout=5.0)
 
 
+def test_timeout_from_unset():
+    timeout = httpx.TimeoutConfig(timeout=httpx.config.UNSET)
+    assert timeout == httpx.config.DEFAULT_TIMEOUT_CONFIG
+
+
 @pytest.mark.skipif(
     not hasattr(ssl.SSLContext, "keylog_filename"),
     reason="requires OpenSSL 1.1.1 or higher",
