@@ -76,7 +76,7 @@ def request(
     >>> import httpx
     >>> response = httpx.request('GET', 'https://httpbin.org/get')
     >>> response
-    <Response [200]>
+    <Response [200 OK]>
     ```
     """
     with Client(http_versions=["HTTP/1.1"]) as client:
