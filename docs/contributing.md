@@ -151,7 +151,7 @@ a variety of reasons like invalid markdown or missing configuration within `mkdo
   <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail-test.png" alt='Failing Travis test job'>
 </p>
 
-This job failing means the unit tests failed or not all code paths are covered by a unit tests.
+This job failing means the unit tests failed or not all code paths are covered by unit tests.
 
 If tests are failing you will see this message under the coverage report:
 
