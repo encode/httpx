@@ -22,10 +22,23 @@ matrix:
       env: NOX_SESSION=test-3.8
       dist: bionic # Required to get OpenSSL 1.1.1+
 
-  # Allow builds to fail when using '-dev' Python versions
-  # Should still investigate failures periodically for new APIs.
+    - os: windows
+      language: shell
+      python: 3.7
+      env:
+        PATH=/c/Python37:/c/Python37/Scripts:$PATH
+        NOX_SESSION=test-3.7
+      before_install:
+        - choco install python --version 3.7
+        - python -m pip install --upgrade pip
+
   fast_finish: true
   allow_failures:
+    # FIX
+    # Some tests not yet resolved for Windows. (In progress)
+    - os: windows
+    # Allow builds to fail when using '-dev' Python versions.
+    # We should still investigate failures periodically for new APIs.
     - python: 3.8-dev
 
 install:
