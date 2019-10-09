@@ -22,3 +22,4 @@ nav:
 markdown_extensions:
   - admonition
   - codehilite
+  - mkautodoc
