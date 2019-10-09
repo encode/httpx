@@ -18,12 +18,12 @@ A Client instance is equivalent to a Session instance in `requests`.
 ## Calling into Python Web Apps
 
 You can configure an `httpx` client to call directly into a Python web
-application, using either the WSGI or ASGI protocol.
+application using either the WSGI or ASGI protocol.
 
 This is particularly useful for two main use-cases:
 
-* Using `httpx` as a client, inside test cases.
-* Mocking out external services, during tests or in dev/staging environments.
+* Using `httpx` as a client inside test cases.
+* Mocking out external services during tests or in dev/staging environments.
 
 Here's an example of integrating against a Flask application:
 
@@ -44,12 +44,12 @@ assert r.status_code == 200
 assert r.text == "Hello World!"
 ```
 
-For some more complex cases, you might need to customize the WSGI or ASGI
+For some more complex cases you might need to customize the WSGI or ASGI
 dispatch. This allows you to:
 
-* Inspect 500 error responses, rather than raise exceptions, by setting `raise_app_exceptions=False`.
-* Mount the WSGI or ASGI application at a subpath, by setting `script_name` (WSGI) or `root_path` (ASGI).
-* Use a given the client address for requests, by setting `remote_addr` (WSGI) or `client` (ASGI).
+* Inspect 500 error responses rather than raise exceptions by setting `raise_app_exceptions=False`.
+* Mount the WSGI or ASGI application at a subpath by setting `script_name` (WSGI) or `root_path` (ASGI).
+* Use a given client address for requests by setting `remote_addr` (WSGI) or `client` (ASGI).
 
 For example:
 
