@@ -8,7 +8,9 @@ source_files = ("httpx", "tools", "tests", "setup.py", "noxfile.py")
 
 @nox.session
 def lint(session):
-    session.install("autoflake", "black", "flake8", "isort", "seed-isort-config")
+    session.install(
+        "--upgrade", "autoflake", "black", "flake8", "isort", "seed-isort-config"
+    )
 
     session.run("autoflake", "--in-place", "--recursive", *source_files)
     session.run("seed-isort-config", "--application-directories=httpx")
@@ -21,6 +23,7 @@ def lint(session):
 @nox.session
 def check(session):
     session.install(
+        "--upgrade",
         "black",
         "flake8",
         "flake8-bugbear",
@@ -40,12 +43,12 @@ def check(session):
 
 @nox.session
 def docs(session):
-    session.install("mkdocs", "mkdocs-material", "pymdown-extensions")
+    session.install("--upgrade", "mkdocs", "mkdocs-material", "pymdown-extensions")
 
     session.run("mkdocs", "build")
 
 
 @nox.session(python=["3.6", "3.7", "3.8"])
 def test(session):
-    session.install("-r", "test-requirements.txt")
+    session.install("--upgrade", "-r", "test-requirements.txt")
     session.run("python", "-m", "pytest", *session.posargs)

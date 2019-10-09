@@ -100,13 +100,6 @@ You can also run a single test script like this:
 $ nox -s test -- tests/test_multipart.py
 ```
 
-!!! tip
-    `nox` is configured to [reuse existing virtual environments](https://nox.thea.codes/en/stable/usage.html#re-using-virtualenvs). To force tests to run in a clean virtual environment (e.g. because dependencies have changed), use:
-
-    ```shell
-    $ nox -s test --no-reuse-existing-virtualenvs
-    ```
-
 ## Documenting
 
 To work with the documentation, make sure you have `mkdocs` and
