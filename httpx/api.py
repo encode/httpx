@@ -35,7 +35,7 @@ def request(
     proxies: ProxiesTypes = None,
 ) -> Response:
     """
-    Constructs and sends a `Request`.
+    Sends an HTTP request.
 
     **Parameters:**
 
@@ -114,6 +114,14 @@ def get(
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
+    """
+    Sends a `GET` request.
+
+    **Parameters**: See `httpx.request`.
+
+    Note that the `data`, `files`, and `json` parameters are not available on
+    this function, as `GET` requests should not include a request body.
+    """
     return request(
         "GET",
         url,
@@ -145,6 +153,14 @@ def options(
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
+    """
+    Sends an `OPTIONS` request.
+
+    **Parameters**: See `httpx.request`.
+
+    Note that the `data`, `files`, and `json` parameters are not available on
+    this function, as `OPTIONS` requests should not include a request body.
+    """
     return request(
         "OPTIONS",
         url,
@@ -176,6 +192,16 @@ def head(
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
+    """
+    Sends a `HEAD` request.
+
+    **Parameters**: See `httpx.request`.
+
+    Note that the `data`, `files`, and `json` parameters are not available on
+    this function, as `HEAD` requests should not include a request body. The
+    `HEAD` method also differs from the other cases in that `allow_redirects`
+    defaults to `False`.
+    """
     return request(
         "HEAD",
         url,
@@ -210,6 +236,11 @@ def post(
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
+    """
+    Sends a `POST` request.
+
+    **Parameters**: See `httpx.request`.
+    """
     return request(
         "POST",
         url,
@@ -247,6 +278,11 @@ def put(
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
+    """
+    Sends a `PUT` request.
+
+    **Parameters**: See `httpx.request`.
+    """
     return request(
         "PUT",
         url,
@@ -284,6 +320,11 @@ def patch(
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
+    """
+    Sends a `PATCH` request.
+
+    **Parameters**: See `httpx.request`.
+    """
     return request(
         "PATCH",
         url,
@@ -318,6 +359,14 @@ def delete(
     trust_env: bool = None,
     proxies: ProxiesTypes = None,
 ) -> Response:
+    """
+    Sends a `DELETE` request.
+
+    **Parameters**: See `httpx.request`.
+
+    Note that the `data`, `files`, and `json` parameters are not available on
+    this function, as `DELETE` requests should not include a request body.
+    """
     return request(
         "DELETE",
         url,

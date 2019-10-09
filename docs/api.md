@@ -11,13 +11,26 @@
 ::: httpx.request
     :docstring:
 
-* `get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `post(url, [data], [files], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `put(url, [data], [files], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `patch(url, [data], [files], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `delete(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
+::: httpx.get
+    :docstring:
+
+::: httpx.options
+    :docstring:
+
+::: httpx.head
+    :docstring:
+
+::: httpx.post
+    :docstring:
+
+::: httpx.put
+    :docstring:
+
+::: httpx.patch
+    :docstring:
+
+::: httpx.delete
+    :docstring:
 
 ## `Client`
 
