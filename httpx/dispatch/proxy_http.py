@@ -91,7 +91,9 @@ class HTTPProxy(ConnectionPool):
             logger.debug(
                 f"forward_connection proxy_url={self.proxy_url!r} origin={origin!r}"
             )
-            return await super().acquire_connection(self.proxy_url.origin, timeout)
+            return await super().acquire_connection(
+                origin=self.proxy_url.origin, timeout=timeout
+            )
         else:
             logger.debug(
                 f"tunnel_connection proxy_url={self.proxy_url!r} origin={origin!r}"
