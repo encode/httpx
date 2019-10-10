@@ -43,7 +43,7 @@ def check(session):
 
 @nox.session
 def docs(session):
-    session.install("--upgrade", "mkdocs", "mkdocs-material", "mkautodoc>=0.0.2")
+    session.install("--upgrade", "mkdocs", "mkdocs-material", "mkautodoc>=0.0.3")
     session.install("-e", ".")
     session.run("mkdocs", "build")
 

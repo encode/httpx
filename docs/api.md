@@ -36,21 +36,7 @@
 
 ::: httpx.Client
     :docstring:
-
-* `.params` - **QueryParams**
-* `.headers` - **Headers**
-* `.cookies` - **Cookies**
-* `def .get(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `def .options(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `def .head(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `def .post(url, [data], [files], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `def .put(url, [data], [files], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `def .patch(url, [data], [files], [json], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `def .delete(url, [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `def .request(method, url, [data], [files], [params], [headers], [cookies], [auth], [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `def .build_request(method, url, [data], [files], [json], [params], [headers], [cookies])`
-* `def .send(request, [stream], [allow_redirects], [verify], [cert], [timeout], [proxies])`
-* `def .close()`
+    :members: headers cookies params request get head options post put patch delete build_request send close 
 
 ## `Response`
 
