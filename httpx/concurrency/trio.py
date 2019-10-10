@@ -171,6 +171,30 @@ class TrioBackend(ConcurrencyBackend):
 
         return TCPStream(stream=stream, timeout=timeout)
 
+    async def start_tls(
+        self,
+        stream: BaseTCPStream,
+        hostname: str,
+        ssl_context: ssl.SSLContext,
+        timeout: TimeoutConfig,
+    ) -> BaseTCPStream:
+        assert isinstance(stream, TCPStream)
+
+        connect_timeout = _or_inf(timeout.connect_timeout)
+        ssl_stream = trio.SSLStream(
+            stream.stream, ssl_context=ssl_context, server_hostname=hostname
+        )
+
+        with trio.move_on_after(connect_timeout) as cancel_scope:
+            await ssl_stream.do_handshake()
+
+        if cancel_scope.cancelled_caught:
+            raise ConnectTimeout()
+
+        stream.stream = ssl_stream
+
+        return stream
+
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
