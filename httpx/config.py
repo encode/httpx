@@ -233,19 +233,31 @@ class TimeoutConfig:
         self,
         timeout: TimeoutTypes = None,
         *,
-        connect_timeout: float = None,
-        read_timeout: float = None,
-        write_timeout: float = None,
+        connect_timeout: typing.Union[float, UnsetType, None] = UNSET,
+        read_timeout: typing.Union[float, UnsetType, None] = UNSET,
+        write_timeout: typing.Union[float, UnsetType, None] = UNSET,
     ):
         if timeout is None:
-            self.connect_timeout = connect_timeout
-            self.read_timeout = read_timeout
-            self.write_timeout = write_timeout
+            self.connect_timeout: typing.Optional[float] = (
+                connect_timeout
+                if not isinstance(connect_timeout, UnsetType)
+                else DEFAULT_TIMEOUT_CONFIG.connect_timeout
+            )
+            self.read_timeout: typing.Optional[float] = (
+                read_timeout
+                if not isinstance(read_timeout, UnsetType)
+                else DEFAULT_TIMEOUT_CONFIG.read_timeout
+            )
+            self.write_timeout: typing.Optional[float] = (
+                write_timeout
+                if not isinstance(write_timeout, UnsetType)
+                else DEFAULT_TIMEOUT_CONFIG.write_timeout
+            )
         else:
             # Specified as a single timeout value
-            assert connect_timeout is None
-            assert read_timeout is None
-            assert write_timeout is None
+            assert connect_timeout is UNSET
+            assert read_timeout is UNSET
+            assert write_timeout is UNSET
             if isinstance(timeout, TimeoutConfig):
                 self.connect_timeout = timeout.connect_timeout
                 self.read_timeout = timeout.read_timeout

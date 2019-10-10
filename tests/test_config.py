@@ -163,9 +163,12 @@ def test_timeout_repr():
     assert repr(timeout) == "TimeoutConfig(timeout=5.0)"
 
     timeout = httpx.TimeoutConfig(read_timeout=5.0)
+    assert repr(timeout) == "TimeoutConfig(timeout=5.0)"
+
+    timeout = httpx.TimeoutConfig(read_timeout=10.0)
     assert (
         repr(timeout)
-        == "TimeoutConfig(connect_timeout=None, read_timeout=5.0, write_timeout=None)"
+        == "TimeoutConfig(connect_timeout=5.0, read_timeout=10.0, write_timeout=5.0)"
     )
 
 
