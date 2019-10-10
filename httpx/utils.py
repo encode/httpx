@@ -219,10 +219,11 @@ def get_environment_proxies() -> typing.Dict[str, str]:
     # Registry and Config for proxies on Windows and macOS.
     # We don't want to propagate non-HTTP proxies into
     # our configuration such as 'TRAVIS_APT_PROXY'.
+    SUPPORTED_PROXY_PROTOCOLS = ("http", "https", "all")
     return {
         key: val
         for key, val in getproxies().items()
-        if ("://" in key or key in ("http", "https"))
+        if ("://" in key or key in SUPPORTED_PROXY_PROTOCOLS)
     }
 
 
