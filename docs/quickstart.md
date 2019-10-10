@@ -7,7 +7,7 @@
 
 First, start by importing HTTPX:
 
-```
+```python
 >>> import httpx
 ```
 
