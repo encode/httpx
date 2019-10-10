@@ -34,14 +34,9 @@
 
 ## `Client`
 
-*An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.*
+::: httpx.Client
+    :docstring:
 
-```python
->>> client = httpx.Client()
->>> response = client.get('https://example.org')
-```
-
-* `def __init__([auth], [params], [headers], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [app], [dispatch])`
 * `.params` - **QueryParams**
 * `.headers` - **Headers**
 * `.cookies` - **Cookies**
