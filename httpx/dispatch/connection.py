@@ -75,7 +75,7 @@ class HTTPConnection(AsyncDispatcher):
         timeout: TimeoutTypes = UNSET,
     ) -> None:
         ssl = self.ssl.with_overrides(verify=verify, cert=cert)
-        timeout = TimeoutConfig(timeout if timeout is not UNSET else self.timeout)
+        timeout = self.timeout if timeout is UNSET else TimeoutConfig(timeout)
 
         host = self.origin.host
         port = self.origin.port
