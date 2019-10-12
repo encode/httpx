@@ -196,6 +196,23 @@ def test_get_environment_proxies(environment, proxies):
 
 
 @pytest.mark.parametrize(
+    ["no_proxy", "proxies"],
+    [
+        ("", {"all": "https://1.1.1.1", "https": "https://1.1.1.2"}),
+        ("https://1.1.1.1", {"https": "https://1.1.1.2"}),
+        ("https://1.1.1.2", {"all": "https://1.1.1.1"}),
+        ("1.1.1.1, https://1.1.1.2", {}),
+    ],
+)
+def test_get_environment_no_proxies(no_proxy, proxies):
+    os.environ["ALL_PROXY"] = "https://1.1.1.1"
+    os.environ["HTTPS_PROXY"] = "https://1.1.1.2"
+
+    os.environ["NO_PROXY"] = no_proxy
+    assert get_environment_proxies() == proxies
+
+
+@pytest.mark.parametrize(
     "headers, output",
     [
         ([("content-type", "text/html")], [("content-type", "text/html")]),

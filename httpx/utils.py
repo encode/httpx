@@ -212,6 +212,16 @@ def kv_format(**kwargs: typing.Any) -> str:
     return " ".join(f"{key}={value!r}" for key, value in kwargs.items())
 
 
+def filter_no_proxy(val: str) -> bool:
+    no_proxy = get_environ_lower_and_upper("NO_PROXY")
+    if no_proxy:
+        no_proxy_list = [url.strip() for url in no_proxy.split(",") if url]
+        for host in no_proxy_list:
+            if host in val:
+                return False
+    return True
+
+
 def get_environment_proxies() -> typing.Dict[str, str]:
     """Gets proxy information from the environment"""
 
@@ -219,15 +229,16 @@ def get_environment_proxies() -> typing.Dict[str, str]:
     # Registry and Config for proxies on Windows and macOS.
     # We don't want to propagate non-HTTP proxies into
     # our configuration such as 'TRAVIS_APT_PROXY'.
+
     proxies = {
         key: val
         for key, val in getproxies().items()
-        if ("://" in key or key in ("http", "https"))
+        if ("://" in key or key in ("http", "https")) and filter_no_proxy(val)
     }
 
     # Favor lowercase environment variables over uppercase.
     all_proxy = get_environ_lower_and_upper("ALL_PROXY")
-    if all_proxy is not None:
+    if all_proxy is not None and filter_no_proxy(all_proxy):
         proxies["all"] = all_proxy
 
     return proxies
