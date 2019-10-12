@@ -216,7 +216,7 @@ def kv_format(**kwargs: typing.Any) -> str:
 def get_environment_no_proxy() -> typing.List[str]:
     """ Gets value of NO_PROXY environment value as a list"""
     no_proxy = get_environ_lower_and_upper("NO_PROXY")
-    return no_proxy.split(",") if no_proxy else []
+    return [proxy.strip() for proxy in no_proxy.split(",")] if no_proxy else []
 
 
 def should_be_proxied(url: "URL") -> bool:
@@ -224,10 +224,17 @@ def should_be_proxied(url: "URL") -> bool:
     return False otherwise.
     """
     no_proxy_list = get_environment_no_proxy()
-    for exempt_url in no_proxy_list:
-        if exempt_url and url.host.endswith(exempt_url):
-            # This URL should be exempted from going through proxy
-            return False
+    if no_proxy_list and no_proxy_list[0] == "*":
+        return False
+    for name in no_proxy_list:
+        if name:
+            name = name.lstrip(".")  # ignore leading dots
+            name = re.escape(name)
+            pattern = r"(.+\.)?%s$" % name
+            if re.match(pattern, url.host, re.I) or re.match(
+                pattern, url.authority, re.I
+            ):
+                return False
     return True
 
 

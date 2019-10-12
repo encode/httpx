@@ -176,7 +176,6 @@ async def test_elapsed_timer():
     [
         ({}, []),
         ({"NO_PROXY": ""}, []),
-        ({"NO_PROXY": "http://127.0.0.1"}, ["http://127.0.0.1"]),
         ({"NO_PROXY": "127.0.0.1"}, ["127.0.0.1"]),
         ({"NO_PROXY": "127.0.0.1,1.1.1.1"}, ["127.0.0.1", "1.1.1.1"]),
     ],
@@ -237,6 +236,10 @@ def test_obfuscate_sensitive_headers(headers, output):
         ("https://mit.edu.info", {"NO_PROXY": "mit.edu"}, True),
         ("https://mit.edu.info", {"NO_PROXY": "mit.edu,edu.info"}, False),
         ("https://mit.edu.info", {"NO_PROXY": "mit.edu,mit.info"}, True),
+        ("https://foo.example.com", {"NO_PROXY": "www.example.com"}, True),
+        ("https://www.example1.com", {"NO_PROXY": ".example1.com"}, False),
+        ("https://www.example2.com", {"NO_PROXY": "ample2.com"}, True),
+        ("https://www.example3.com", {"NO_PROXY": "*"}, False),
     ],
 )
 def test_should_be_proxied(url, no_proxy, expected):
