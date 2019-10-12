@@ -100,6 +100,14 @@ You can also run a single test script like this:
 $ nox -s test -- tests/test_multipart.py
 ```
 
+Lastly, to ensure you're on track to pass the CI build, run:
+
+```shell
+$ scripts/test
+```
+
+This command is a light wrapper around `nox` that will run code style checks and test the code against all installed Python versions.
+
 ## Documenting
 
 Documentation pages are located under the `docs/` folder.
