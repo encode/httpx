@@ -14,6 +14,7 @@ from urllib.request import getproxies
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from .models import PrimitiveData
+    from .models import URL
 
 
 def normalize_header_key(value: typing.AnyStr, encoding: str = None) -> bytes:
@@ -210,6 +211,24 @@ def kv_format(**kwargs: typing.Any) -> str:
     "x=1 name='Bob'"
     """
     return " ".join(f"{key}={value!r}" for key, value in kwargs.items())
+
+
+def get_environment_no_proxy() -> typing.List[str]:
+    """ Gets value of NO_PROXY environment value as a list"""
+    no_proxy = get_environ_lower_and_upper("NO_PROXY")
+    return no_proxy.split(",") if no_proxy else []
+
+
+def should_be_proxied(url: "URL") -> bool:
+    """ Return True if url should be proxied,
+    return False otherwise.
+    """
+    no_proxy_list = get_environment_no_proxy()
+    for exempt_url in no_proxy_list:
+        if exempt_url and url.host.endswith(exempt_url):
+            # This URL should be exempted from going through proxy
+            return False
+    return True
 
 
 def get_environment_proxies() -> typing.Dict[str, str]:
