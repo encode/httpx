@@ -219,29 +219,12 @@ def get_environment_proxies() -> typing.Dict[str, str]:
     # Registry and Config for proxies on Windows and macOS.
     # We don't want to propagate non-HTTP proxies into
     # our configuration such as 'TRAVIS_APT_PROXY'.
-    proxies = {
+    supported_proxy_schemes = ("http", "https", "all")
+    return {
         key: val
         for key, val in getproxies().items()
-        if ("://" in key or key in ("http", "https"))
+        if ("://" in key or key in supported_proxy_schemes)
     }
-
-    # Favor lowercase environment variables over uppercase.
-    all_proxy = get_environ_lower_and_upper("ALL_PROXY")
-    if all_proxy is not None:
-        proxies["all"] = all_proxy
-
-    return proxies
-
-
-def get_environ_lower_and_upper(key: str) -> typing.Optional[str]:
-    """Gets a value from os.environ with both the lowercase and uppercase
-    environment variable. Prioritizes the lowercase environment variable.
-    """
-    for key in (key.lower(), key.upper()):
-        value = os.environ.get(key, None)
-        if value is not None and isinstance(value, str):
-            return value
-    return None
 
 
 def to_bytes(value: typing.Union[str, bytes], encoding: str = "utf-8") -> bytes:
