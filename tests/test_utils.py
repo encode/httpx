@@ -9,13 +9,12 @@ from httpx import utils
 from httpx.utils import (
     ElapsedTimer,
     get_ca_bundle_from_env,
-    get_environment_no_proxy,
     get_environment_proxies,
     get_netrc_login,
     guess_json_utf,
     obfuscate_sensitive_headers,
     parse_header_links,
-    should_be_proxied,
+    should_not_be_proxied,
 )
 
 
@@ -172,20 +171,6 @@ async def test_elapsed_timer():
 
 
 @pytest.mark.parametrize(
-    ["no_proxy", "exempt_list"],
-    [
-        ({}, []),
-        ({"NO_PROXY": ""}, []),
-        ({"NO_PROXY": "127.0.0.1"}, ["127.0.0.1"]),
-        ({"NO_PROXY": "127.0.0.1,1.1.1.1"}, ["127.0.0.1", "1.1.1.1"]),
-    ],
-)
-def test_get_environment_no_proxy(no_proxy, exempt_list):
-    os.environ.update(no_proxy)
-    assert get_environment_no_proxy() == exempt_list
-
-
-@pytest.mark.parametrize(
     ["environment", "proxies"],
     [
         ({}, {}),
@@ -222,20 +207,20 @@ def test_obfuscate_sensitive_headers(headers, output):
 @pytest.mark.parametrize(
     ["url", "no_proxy", "expected"],
     [
-        ("http://127.0.0.1", {"NO_PROXY": ""}, True),
-        ("http://127.0.0.1", {"NO_PROXY": "127.0.0.1"}, False),
-        ("http://127.0.0.1", {"NO_PROXY": "1.1.1.1"}, True),
-        ("http://courses.mit.edu", {"NO_PROXY": "mit.edu"}, False),
-        ("https://mit.edu.info", {"NO_PROXY": "mit.edu"}, True),
-        ("https://mit.edu.info", {"NO_PROXY": "mit.edu,edu.info"}, False),
-        ("https://mit.edu.info", {"NO_PROXY": "mit.edu,mit.info"}, True),
-        ("https://foo.example.com", {"NO_PROXY": "www.example.com"}, True),
-        ("https://www.example1.com", {"NO_PROXY": ".example1.com"}, False),
-        ("https://www.example2.com", {"NO_PROXY": "ample2.com"}, True),
-        ("https://www.example3.com", {"NO_PROXY": "*"}, False),
+        ("http://127.0.0.1", {"NO_PROXY": ""}, False),
+        ("http://127.0.0.1", {"NO_PROXY": "127.0.0.1"}, True),
+        ("http://127.0.0.1", {"NO_PROXY": "1.1.1.1"}, False),
+        ("http://courses.mit.edu", {"NO_PROXY": "mit.edu"}, True),
+        ("https://mit.edu.info", {"NO_PROXY": "mit.edu"}, False),
+        ("https://mit.edu.info", {"NO_PROXY": "mit.edu,edu.info"}, True),
+        ("https://mit.edu.info", {"NO_PROXY": "mit.edu,mit.info"}, False),
+        ("https://foo.example.com", {"NO_PROXY": "www.example.com"}, False),
+        ("https://www.example1.com", {"NO_PROXY": ".example1.com"}, True),
+        ("https://www.example2.com", {"NO_PROXY": "ample2.com"}, False),
+        ("https://www.example3.com", {"NO_PROXY": "*"}, True),
     ],
 )
 def test_should_be_proxied(url, no_proxy, expected):
     os.environ.update(no_proxy)
     parsed_url = httpx.models.URL(url)
-    assert should_be_proxied(parsed_url) == expected
+    assert should_not_be_proxied(parsed_url) == expected
