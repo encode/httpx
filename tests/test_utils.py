@@ -220,7 +220,7 @@ def test_obfuscate_sensitive_headers(headers, output):
         ("https://www.example3.com", {"NO_PROXY": "*"}, True),
     ],
 )
-def test_should_be_proxied(url, no_proxy, expected):
+def test_should_not_be_proxied(url, no_proxy, expected):
     os.environ.update(no_proxy)
     parsed_url = httpx.models.URL(url)
     assert should_not_be_proxied(parsed_url) == expected

@@ -214,7 +214,7 @@ def kv_format(**kwargs: typing.Any) -> str:
 
 
 def should_not_be_proxied(url: "URL") -> bool:
-    """ Return True if url should be proxied,
+    """ Return True if url should not be proxied,
     return False otherwise.
     """
     no_proxy = getproxies().get("no")
