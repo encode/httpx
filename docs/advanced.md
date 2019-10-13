@@ -162,3 +162,61 @@ client = httpx.Client(proxies=proxy)
 # This request will be tunneled instead of forwarded.
 client.get("http://example.com")
 ```
+
+
+## Timeout fine-tuning
+HTTPX library offers many request timeout management options. HTTPX distinguish three types of timeouts: **connect** timeouts, 
+**write** timeouts and **read** timeouts.
+
+* Connect timeout specify time period within which a connection between a client and a server must be established.
+* Write timeout specify the maximum duration before timing out writes of the response.
+* Read timeout specify the maximum duration for reading the entire request.
+
+HTTPX allows you to manage timeout policy freely. You can set timeout parameter at client creation phase or pass it on every request.  
+In a nutshell, user can manage timeouts on three different levels of abstraction:
+
+**Request level:**
+```python
+httpx.get('http://example.com/api/v1/example', timeout=5)
+```
+
+**Client level:**
+```python
+client = httpx.Client(timeout=5)
+client.get('http://example.com/api/v1/example')
+```
+
+**TimeoutConfig level:**  
+Unlike request and client level configuration, TimeoutConfig object gives the ability to configure
+every distinct timeout type separately.
+```python
+timeout = httpx.TimeoutConfig(
+    connect_timeout=5, 
+    read_timeout=5, 
+    write_timeout=5
+)
+
+resp = httpx.get('http://example.com/api/v1/example', timeout=timeout)
+```
+
+By default all types of timeouts are set to 5 second, in order to **disable** them you have to pass ``None`` as timeout parameter.
+Unfortunately, at the moment timeout disabling works only with Client and TimeoutConfig configuration setup.
+
+
+```python
+url = "http://example.com/api/v1/delay/10"
+
+httpx.get(url, timeout=None)  # Times out after 5s
+
+
+client = httpx.Client(timeout=None)
+client.get(url)  # Does not timeout, returns after 10s
+
+
+timeout = httpx.TimeoutConfig(
+    connect_timeout=5, 
+    read_timeout=None, 
+    write_timeout=5
+)
+httpx.get(url, timeout=timeout) # Does not timeout, returns after 10s
+```
