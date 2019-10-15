@@ -70,9 +70,12 @@ def test_bad_get_netrc_login():
 
 def test_get_netrc_login():
     os.environ["NETRC"] = "tests/.netrc"
-    netrc_content = str(get_netrc())
-    assert "example-username" in netrc_content
-    assert "example-password" in netrc_content
+    netrc = get_netrc()
+    assert netrc.authenticators("netrcexample.org") == (
+        "example-username",
+        None,
+        "example-password",
+    )
 
 
 @pytest.mark.parametrize(

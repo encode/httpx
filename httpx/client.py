@@ -283,9 +283,8 @@ class BaseClient:
                 netrc_login = netrc_info.authenticators(request.url.authority)
                 if netrc_login:
                     username, _, password = netrc_login
-                    return BasicAuthMiddleware(  # type: ignore
-                        username=username, password=password
-                    )
+                    assert password is not None
+                    return BasicAuthMiddleware(username=username, password=password)
 
         return None
 
