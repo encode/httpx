@@ -209,10 +209,12 @@ def test_obfuscate_sensitive_headers(headers, output):
     [
         ("http://127.0.0.1", {"NO_PROXY": ""}, False),
         ("http://127.0.0.1", {"NO_PROXY": "127.0.0.1"}, True),
+        ("http://127.0.0.1", {"NO_PROXY": "https://127.0.0.1"}, False),
         ("http://127.0.0.1", {"NO_PROXY": "1.1.1.1"}, False),
         ("http://courses.mit.edu", {"NO_PROXY": "mit.edu"}, True),
         ("https://mit.edu.info", {"NO_PROXY": "mit.edu"}, False),
         ("https://mit.edu.info", {"NO_PROXY": "mit.edu,edu.info"}, True),
+        ("https://mit.edu.info", {"NO_PROXY": "mit.edu, edu.info"}, True),
         ("https://mit.edu.info", {"NO_PROXY": "mit.edu,mit.info"}, False),
         ("https://foo.example.com", {"NO_PROXY": "www.example.com"}, False),
         ("https://www.example1.com", {"NO_PROXY": ".example1.com"}, True),
