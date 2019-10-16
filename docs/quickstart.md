@@ -380,6 +380,8 @@ value to be more or less strict:
 >>> httpx.get('https://github.com/', timeout=0.001)
 ```
 
+For advanced timeout management, see [Timeout fine-tuning](https://www.encode.io/httpx/advanced/#timeout-fine-tuning).
+
 ## Authentication
 
 HTTPX supports Basic and Digest HTTP authentication.
