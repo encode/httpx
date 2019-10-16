@@ -18,7 +18,7 @@ matrix:
       env: NOX_SESSION=test-3.6
     - python: 3.7
       env: NOX_SESSION=test-3.7
-    - python: 3.8-dev
+    - python: 3.8
       env: NOX_SESSION=test-3.8
       dist: bionic # Required to get OpenSSL 1.1.1+
 
