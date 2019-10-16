@@ -37,9 +37,6 @@ matrix:
     # FIX
     # Some tests not yet resolved for Windows. (In progress)
     - os: windows
-    # Allow builds to fail when using '-dev' Python versions.
-    # We should still investigate failures periodically for new APIs.
-    - python: 3.8
 
 install:
   - pip install --upgrade nox
