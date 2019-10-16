@@ -91,6 +91,11 @@ h2_response = h2_client.get("https://myserver.com")
 HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is
 not defined, HTTPX tries to add auth into request's header from .netrc file.
 
+!!! note
+    The NETRC file is cached across requests made by a client.
+    If you need to refresh the cache (e.g. because the NETRC file has changed),
+    you should create a new client or restart the interpreter.
+
 As default `trust_env` is true. To set false:
 ```python
 >>> httpx.get('https://example.org/', trust_env=False)
