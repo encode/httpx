@@ -126,7 +126,6 @@ class ConnectionPool(AsyncDispatcher):
             self.max_connections.release()
             raise exc
         except NewConnectionRequired:
-            # raised when stream ids expire
             return await self.send(
                 request=request, verify=verify, cert=cert, timeout=timeout
             )
