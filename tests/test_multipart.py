@@ -143,6 +143,23 @@ def test_multipart_encode_files_allows_filenames_as_none():
         )
 
 
+def test_multipart_encode_files_allows_str_content():
+    files = {"file": ("test.txt", "<string content>", "text/plain")}
+    with mock.patch("os.urandom", return_value=os.urandom(16)):
+        boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
+
+        body, content_type = multipart.multipart_encode(data={}, files=files)
+
+        assert content_type == f"multipart/form-data; boundary={boundary}"
+        assert body == (
+            '--{0}\r\nContent-Disposition: form-data; name="file"; '
+            'filename="test.txt"\r\n'
+            "Content-Type: text/plain\r\n\r\n<string content>\r\n"
+            "--{0}--\r\n"
+            "".format(boundary).encode("ascii")
+        )
+
+
 class TestHeaderParamHTML5Formatting:
     def test_unicode(self):
         param = multipart._format_param("filename", "n\u00e4me")

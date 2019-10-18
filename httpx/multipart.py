@@ -74,7 +74,10 @@ class FileField(Field):
         return b"".join(parts)
 
     def render_data(self) -> bytes:
-        content = self.file.read()
+        if isinstance(self.file, str):
+            content = self.file
+        else:
+            content = self.file.read()
         return content.encode("utf-8") if isinstance(content, str) else content
 
 
