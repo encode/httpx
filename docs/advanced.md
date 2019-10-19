@@ -282,3 +282,47 @@ timeout = httpx.TimeoutConfig(
 )
 httpx.get(url, timeout=timeout) # Does not timeout, returns after 10s
 ```
+
+## Multipart file encoding
+
+As mentioned in the [quickstart](/quickstart#sending-multipart-file-uploads)
+multipart file encoding is available by passing a dictionary with the
+name of the payloads as keys and a tuple of elements as values.
+
+```python
+>>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
+>>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> print(r.text)
+{
+  ...
+  "files": {
+    "upload-file": "<... binary content ...>"
+  },
+  ...
+}
+```
+
+More specifically, this tuple must have at least two elements and maximum of three:
+- The first one an optional file name which can be set to `None`.
+- The second may be a file-like object or a string which will be automatically
+encoded in UTF-8.
+- An optional third element can be included with the
+[MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_Types)
+of the file being uploaded. If not specified HTTPX will attempt to guess the MIME type
+based on the file name specified as the first element or the tuple, if that
+is set to `None` or it cannot be inferred from it, HTTPX will default to
+`applicaction/octet-stream`.
+
+```python
+>>> files = {'upload-file': (None, 'text content', 'text/plain')}
+>>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> print(r.text)
+{
+  ...
+  "files": {},
+  "form": {
+    "upload-file": "text-content"
+  },
+  ...
+}
+```
