@@ -171,7 +171,7 @@ client.get("http://example.com")
 !!! note
 
     Per request proxy configuration, i.e. `client.get(url, proxies=...)`,
-    have not yet been implemented. To use proxies you must pass the proxy
+    has not been implemented yet. To use proxies you must pass the proxy
     information at `Client` initialization.
 
 ## Timeout fine-tuning
