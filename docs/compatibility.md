@@ -27,7 +27,8 @@ session = requests.Session(**kwargs)
 is equivalent to
 
 ```python
-client = httpx.Client(**kwargs)
+with httpx.Client(**kwargs) as client:
+    ...
 ```
 
 More detailed documentation and usage of `Client` can be found in [Advanced Usage](advanced.md).

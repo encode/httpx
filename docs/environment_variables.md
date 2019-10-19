@@ -26,10 +26,10 @@ Example:
 
 ```python
 # test_script.py
-
 import httpx
-client = httpx.Client()
-client.get("https://google.com")
+
+with httpx.Client() as client:
+    r = client.get("https://google.com")
 ```
 
 ```console
@@ -64,10 +64,10 @@ Example:
 
 ```python
 # test_script.py
-
 import httpx
-client = httpx.Client()
-client.get("https://google.com")
+
+with httpx.Client() as client:
+    r = client.get("https://google.com")
 ```
 
 ```console
