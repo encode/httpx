@@ -51,6 +51,8 @@ class TCPStream(BaseTCPStream):
         self.stream_writer = stream_writer
         self.timeout = timeout
 
+        self._inner: typing.Optional[TCPStream] = None
+
     async def start_tls(
         self, hostname: str, ssl_context: ssl.SSLContext, timeout: TimeoutConfig
     ) -> BaseTCPStream:
@@ -80,7 +82,12 @@ class TCPStream(BaseTCPStream):
             transport=transport, protocol=protocol, reader=stream_reader, loop=loop
         )
 
-        return TCPStream(stream_reader, stream_writer, self.timeout)
+        ssl_stream = TCPStream(stream_reader, stream_writer, self.timeout)
+        # When we return a new TCPStream with new StreamReader/StreamWriter instances,
+        # we need to keep references to the old StreamReader/StreamWriter so that they
+        # are not garbage collected and closed while we're still using them.
+        ssl_stream._inner = self
+        return ssl_stream
 
     def get_http_version(self) -> str:
         ssl_object = self.stream_writer.get_extra_info("ssl_object")
