@@ -49,7 +49,7 @@ For example, to apply a set of custom headers on every request:
 ...     r = client.get(url)
 ...
 >>> r.json()['headers']['User-Agent']
-'app-1.0'
+'my-app/0.0.1'
 ```
 
 !!! note
