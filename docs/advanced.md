@@ -8,12 +8,35 @@ all outgoing requests.
 
 A Client instance is equivalent to a Session instance in `requests`.
 
+!!! hint
+    A Client instance is equivalent to a Session instance in `requests`.
+
+### Usage
+
+The recommended way to use a `Client` is as a context manager. This will ensure that connections are properly cleaned up when leaving the `with` block:
+
 ```python
->>> client = httpx.Client()
->>> r = client.get('https://example.org/')
+>>> with httpx.Client() as client:
+...     r = client.get('https://example.com')
+... 
 >>> r
 <Response [200 OK]>
 ```
+
+Alternatively, you can explicitly close the connection pool without block-usage using `.close()`:
+
+```python
+>>> client = httpx.Client()
+>>> try:
+...     r = client.get('https://example.com')
+... finally:
+...     client.close()
+... 
+>>> r
+<Response [200 OK]>
+```
+
+Once you have a `Client`, you can use all the features documented in the [Quickstart](/quickstart) guide.
 
 ## Calling into Python Web Apps
 
