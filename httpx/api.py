@@ -6,7 +6,6 @@ from .models import (
     AuthTypes,
     CookieTypes,
     HeaderTypes,
-    ProxiesTypes,
     QueryParamTypes,
     RequestData,
     RequestFiles,
@@ -32,7 +31,6 @@ def request(
     verify: VerifyTypes = True,
     stream: bool = False,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     with Client(http_versions=["HTTP/1.1"]) as client:
         return client.request(
@@ -67,7 +65,6 @@ def get(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     return request(
         "GET",
@@ -98,7 +95,6 @@ def options(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     return request(
         "OPTIONS",
@@ -129,7 +125,6 @@ def head(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     return request(
         "HEAD",
@@ -163,7 +158,6 @@ def post(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     return request(
         "POST",
@@ -200,7 +194,6 @@ def put(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     return request(
         "PUT",
@@ -237,7 +230,6 @@ def patch(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     return request(
         "PATCH",
@@ -271,7 +263,6 @@ def delete(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     return request(
         "DELETE",
