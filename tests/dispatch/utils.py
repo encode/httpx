@@ -184,16 +184,6 @@ class MockRawSocketBackend:
         )
         return self.stream
 
-    async def start_tls(
-        self,
-        stream: BaseTCPStream,
-        hostname: str,
-        ssl_context: ssl.SSLContext,
-        timeout: TimeoutConfig,
-    ) -> BaseTCPStream:
-        self.received_data.append(b"--- START_TLS(%s) ---" % hostname.encode())
-        return self.stream
-
     # Defer all other attributes and methods to the underlying backend.
     def __getattr__(self, name: str) -> typing.Any:
         return getattr(self.backend, name)
@@ -202,6 +192,12 @@ class MockRawSocketBackend:
 class MockRawSocketStream(BaseTCPStream):
     def __init__(self, backend: MockRawSocketBackend):
         self.backend = backend
+
+    async def start_tls(
+        self, hostname: str, ssl_context: ssl.SSLContext, timeout: TimeoutConfig
+    ) -> BaseTCPStream:
+        self.backend.received_data.append(b"--- START_TLS(%s) ---" % hostname.encode())
+        return MockRawSocketStream(self.backend)
 
     def get_http_version(self) -> str:
         return "HTTP/1.1"

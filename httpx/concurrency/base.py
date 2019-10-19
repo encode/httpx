@@ -47,6 +47,11 @@ class BaseTCPStream:
     def get_http_version(self) -> str:
         raise NotImplementedError()  # pragma: no cover
 
+    async def start_tls(
+        self, hostname: str, ssl_context: ssl.SSLContext, timeout: TimeoutConfig
+    ) -> "BaseTCPStream":
+        raise NotImplementedError()  # pragma: no cover
+
     async def read(
         self, n: int, timeout: TimeoutConfig = None, flag: typing.Any = None
     ) -> bytes:
@@ -115,15 +120,6 @@ class ConcurrencyBackend:
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
-    ) -> BaseTCPStream:
-        raise NotImplementedError()  # pragma: no cover
-
-    async def start_tls(
-        self,
-        stream: BaseTCPStream,
-        hostname: str,
-        ssl_context: ssl.SSLContext,
         timeout: TimeoutConfig,
     ) -> BaseTCPStream:
         raise NotImplementedError()  # pragma: no cover

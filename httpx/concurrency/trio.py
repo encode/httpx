@@ -34,6 +34,26 @@ class TCPStream(BaseTCPStream):
         self.write_buffer = b""
         self.write_lock = trio.Lock()
 
+    async def start_tls(
+        self, hostname: str, ssl_context: ssl.SSLContext, timeout: TimeoutConfig
+    ) -> BaseTCPStream:
+        # Check that the write buffer is empty. We should never start a TLS stream
+        # while there is still pending data to write.
+        assert self.write_buffer == b""
+
+        connect_timeout = _or_inf(timeout.connect_timeout)
+        ssl_stream = trio.SSLStream(
+            self.stream, ssl_context=ssl_context, server_hostname=hostname
+        )
+
+        with trio.move_on_after(connect_timeout) as cancel_scope:
+            await ssl_stream.do_handshake()
+
+        if cancel_scope.cancelled_caught:
+            raise ConnectTimeout()
+
+        return TCPStream(ssl_stream, self.timeout)
+
     def get_http_version(self) -> str:
         if not isinstance(self.stream, trio.SSLStream):
             return "HTTP/1.1"
@@ -170,30 +190,6 @@ class TrioBackend(ConcurrencyBackend):
             raise ConnectTimeout()
 
         return TCPStream(stream=stream, timeout=timeout)
-
-    async def start_tls(
-        self,
-        stream: BaseTCPStream,
-        hostname: str,
-        ssl_context: ssl.SSLContext,
-        timeout: TimeoutConfig,
-    ) -> BaseTCPStream:
-        assert isinstance(stream, TCPStream)
-
-        connect_timeout = _or_inf(timeout.connect_timeout)
-        ssl_stream = trio.SSLStream(
-            stream.stream, ssl_context=ssl_context, server_hostname=hostname
-        )
-
-        with trio.move_on_after(connect_timeout) as cancel_scope:
-            await ssl_stream.do_handshake()
-
-        if cancel_scope.cancelled_caught:
-            raise ConnectTimeout()
-
-        stream.stream = ssl_stream
-
-        return stream
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
