@@ -198,6 +198,11 @@ with httpx.Client(proxies=proxy) as client:
     r = client.get("http://example.com")
 ```
 
+!!! note
+
+    Per request proxy configuration, i.e. `client.get(url, proxies=...)`,
+    has not been implemented yet. To use proxies you must pass the proxy
+    information at `Client` initialization.
 
 ## Timeout fine-tuning
 HTTPX offers various request timeout management options. Three types of timeouts are available: **connect** timeouts, 
