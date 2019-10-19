@@ -36,6 +36,42 @@ Alternatively, you can explicitly close the connection pool without block-usage 
 
 Once you have a `Client`, you can use all the features documented in the [Quickstart](/quickstart) guide.
 
+### Configuration
+
+Clients allow you to apply configuration to all outgoing requests by passing parameters to the `Client` constructor.
+
+For example, to apply a set of custom headers on every request:
+
+```python
+>>> url = 'http://httpbin.org/headers'
+>>> headers = {'user-agent': 'my-app/0.0.1'}
+>>> with httpx.Client(headers=headers) as client:
+...     r = client.get(url)
+...
+>>> r.json()['headers']['User-Agent']
+'my-app/0.0.1'
+```
+
+!!! note
+    When you provide a parameter at both the client and request levels, one of two things can happen:
+    
+    - For headers, query parameters and cookies, the values are merged into one.
+    - For all other parameters, the request-level value is used.
+
+Additionally, `Client` constructor accepts some parameters that aren't available at the request level.
+
+One particularly useful parameter is `base_url`, which allows you to define a base URL to prepend to all outgoing requests:
+
+```python
+>>> with httpx.Client(base_url='http://httpbin.org') as client:
+...     r = client.get('/headers')
+... 
+>>> r.request.url
+URL('http://httpbin.org/headers')
+```
+
+For a list of all available client-level parameters, see the [`Client` API reference](/api/#client).
+
 ## Calling into Python Web Apps
 
 You can configure an `httpx` client to call directly into a Python web
