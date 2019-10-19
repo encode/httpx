@@ -6,14 +6,35 @@ Using a Client instance to make requests will give you HTTP connection pooling,
 will provide cookie persistence, and allows you to apply configuration across
 all outgoing requests.
 
-A Client instance is equivalent to a Session instance in `requests`.
+!!! hint
+    A Client instance is equivalent to a Session instance in `requests`.
+
+### Usage
+
+The recommended way to use a `Client` is as a context manager. This will ensure that connections are properly cleaned up when leaving the `with` block:
 
 ```python
->>> client = httpx.Client()
->>> r = client.get('https://example.org/')
+>>> with httpx.Client() as client:
+...     r = client.get('https://example.com')
+... 
 >>> r
 <Response [200 OK]>
 ```
+
+Alternatively, you can explicitly close the connection pool without block-usage using `.close()`:
+
+```python
+>>> client = httpx.Client()
+>>> try:
+...     r = client.get('https://example.com')
+... finally:
+...     client.close()
+... 
+>>> r
+<Response [200 OK]>
+```
+
+Once you have a `Client`, you can use all the features documented in the [Quickstart](/quickstart) guide.
 
 ## Calling into Python Web Apps
 
@@ -38,10 +59,10 @@ app = Flask(__name__)
 def hello():
     return "Hello World!"
 
-client = httpx.Client(app=app)
-r = client.get('http://example/')
-assert r.status_code == 200
-assert r.text == "Hello World!"
+with httpx.Client(app=app) as client:
+    r = client.get('http://example/')
+    assert r.status_code == 200
+    assert r.text == "Hello World!"
 ```
 
 For some more complex cases you might need to customize the WSGI or ASGI
@@ -56,7 +77,8 @@ For example:
 ```python
 # Instantiate a client that makes WSGI requests with a client IP of "1.2.3.4".
 dispatch = httpx.dispatch.WSGIDispatch(app=app, remote_addr="1.2.3.4")
-client = httpx.Client(dispatch=dispatch)
+with httpx.Client(dispatch=dispatch) as client:
+    ...
 ```
 
 ## Build Request
@@ -65,10 +87,12 @@ You can use `Client.build_request()` to build a request and
 make modifications before sending the request.
 
 ```python
->>> client = httpx.Client()
->>> req = client.build_request("OPTIONS", "https://example.com")
->>> req.url.full_path = "*"  # Build an 'OPTIONS *' request for CORS
->>> client.send(r)
+>>> with httpx.Client() as client:
+...     req = client.build_request("OPTIONS", "https://example.com")
+...     req.url.full_path = "*"  # Build an 'OPTIONS *' request for CORS
+...     r = client.send(req)
+...
+>>> r
 <Response [200 OK]>
 ```
 
@@ -79,11 +103,11 @@ One can set the version of the HTTP protocol for the client in case you want to 
 For example:
 
 ```python
-h11_client = httpx.Client(http_versions=["HTTP/1.1"])
-h11_response = h11_client.get("https://myserver.com")
+with httpx.Client(http_versions=["HTTP/1.1"]) as h11_client:
+    h11_response = h11_client.get("https://myserver.com")
 
-h2_client = httpx.Client(http_versions=["HTTP/2"])
-h2_response = h2_client.get("https://myserver.com")
+with httpx.Client(http_versions=["HTTP/2"]) as h2_client:
+    h2_response = h2_client.get("https://myserver.com")
 ```
 
 ## .netrc Support
@@ -126,10 +150,12 @@ For example to forward all HTTP traffic to `http://127.0.0.1:3080` and all HTTPS
 to `http://127.0.0.1:3081` your `proxies` config would look like this:
 
 ```python
->>> client = httpx.Client(proxies={
-  "http": "http://127.0.0.1:3080",
-  "https": "http://127.0.0.1:3081"
-})
+>>> proxies = {
+...     "http": "http://127.0.0.1:3080",
+...     "https": "http://127.0.0.1:3081"
+... }
+>>> with httpx.Client(proxies=proxies) as client:
+...     ...
 ```
 
 Proxies can be configured for a specific scheme and host, all schemes of a host,
@@ -137,13 +163,18 @@ all hosts for a scheme, or for all requests. When determining which proxy config
 to use for a given request this same order is used.
 
 ```python
->>> client = httpx.Client(proxies={
-    "http://example.com":  "...",  # Host+Scheme
-    "all://example.com":  "...",  # Host
-    "http": "...",  # Scheme
-    "all": "...",  # All
-})
->>> client = httpx.Client(proxies="...")  # Shortcut for 'all'
+>>> proxies = {
+...     "http://example.com":  "...",  # Host+Scheme
+...     "all://example.com":  "...",  # Host
+...     "http": "...",  # Scheme
+...     "all": "...",  # All
+... }
+>>> with httpx.Client(proxies=proxies) as client:
+...     ...
+... 
+>>> proxy = "..."  # Shortcut for {'all': '...'}
+>>> with httpx.Client(proxies=proxy) as client:
+...     ...
 ```
 
 !!! warning
@@ -162,10 +193,9 @@ proxy = httpx.HTTPProxy(
     proxy_url="https://127.0.0.1",
     proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY
 )
-client = httpx.Client(proxies=proxy)
-
-# This request will be tunneled instead of forwarded.
-client.get("http://example.com")
+with httpx.Client(proxies=proxy) as client:
+    # This request will be tunneled instead of forwarded.
+    r = client.get("http://example.com")
 ```
 
 
@@ -190,15 +220,15 @@ You can set timeouts on two levels:
 httpx.get('http://example.com/api/v1/example', timeout=5)
 
 # Or, with a client:
-client = httpx.Client()
-client.get("http://example.com/api/v1/example", timeout=5)
+with httpx.Client() as client:
+    client.get("http://example.com/api/v1/example", timeout=5)
 ```
 
 - On a client instance, which results in the given `timeout` being used as a default for requests made with this client:
 
 ```python
-client = httpx.Client(timeout=5)
-client.get('http://example.com/api/v1/example')
+with httpx.Client(timeout=5) as client:
+    client.get('http://example.com/api/v1/example')
 ```
 
 Besides, you can pass timeouts in two forms:
@@ -229,8 +259,8 @@ url = "http://example.com/api/v1/delay/10"
 httpx.get(url, timeout=None)  # Times out after 5s
 
 
-client = httpx.Client(timeout=None)
-client.get(url)  # Does not timeout, returns after 10s
+with httpx.Client(timeout=None) as client:
+    client.get(url)  # Does not timeout, returns after 10s
 
 
 timeout = httpx.TimeoutConfig(

@@ -23,8 +23,8 @@
 *An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.*
 
 ```python
->>> client = httpx.Client()
->>> response = client.get('https://example.org')
+>>> with httpx.Client() as client:
+...   response = client.get('https://example.org')
 ```
 
 * `def __init__([auth], [params], [headers], [cookies], [verify], [cert], [timeout], [pool_limits], [max_redirects], [app], [dispatch])`

@@ -48,9 +48,9 @@ control the authentication or dispatch behavior for all requests within the
 block.
 
 ```python
->>> client = httpx.Client()
->>> with client.parallel() as parallel:
->>>     ...
+>>> with httpx.Client() as client:
+...     with client.parallel() as parallel:
+...         ...
 ```
 
 ## Async parallel requests
@@ -59,12 +59,12 @@ If you're working within an async framework, then you'll want to use a fully
 async API for making requests.
 
 ```python
->>> client = httpx.AsyncClient()
->>> async with client.parallel() as parallel:
->>>     pending_one = await parallel.get('https://example.com/1')
->>>     pending_two = await parallel.get('https://example.com/2')
->>>     response_one = await pending_one.get_response()
->>>     response_two = await pending_two.get_response()
+>>> async with httpx.AsyncClient() as client:
+...     async with client.parallel() as parallel:
+...         pending_one = await parallel.get('https://example.com/1')
+...         pending_two = await parallel.get('https://example.com/2')
+...         response_one = await pending_one.get_response()
+...         response_two = await pending_two.get_response()
 ```
 
 See [the Async Client documentation](async.md) for more details.
