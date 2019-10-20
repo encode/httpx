@@ -241,17 +241,22 @@ with httpx.Client(proxies=proxy) as client:
     information at `Client` initialization.
 
 ## Timeout fine-tuning
-HTTPX offers various request timeout management options. Three types of timeouts are available: **connect** timeouts, 
-**write** timeouts and **read** timeouts.
 
-* The **connect timeout** specifies the maximum amount of time to wait until a connection to the requested host is established.   
-If HTTPX is unable to connect within this time frame, a `ConnectTimeout` exception is raised.
-* The **write timeout** specifies the maximum duration to wait for a chunk of data to be sent (for example, a chunk of the request body).   
-If HTTPX is unable to send data within this time frame, a `WriteTimeout` exception is raised.
-* The **read timeout** specifies the maximum duration to wait for a chunk of data to be received (for example, a chunk of the response body).  
-If HTTPX is unable to receive data within this time frame, a `ReadTimeout` exception is raised.
+HTTPX offers various request timeout management options. Three types of timeouts
+are available: **connect** timeouts, **write** timeouts and **read** timeouts.
+
+* The **connect timeout** specifies the maximum amount of time to wait until
+a connection to the requested host is established. If HTTPX is unable to connect
+within this time frame, a `ConnectTimeout` exception is raised.
+* The **write timeout** specifies the maximum duration to wait for a chunk of
+data to be sent (for example, a chunk of the request body). If HTTPX is unable
+to send data within this time frame, a `WriteTimeout` exception is raised.
+* The **read timeout** specifies the maximum duration to wait for a chunk of
+data to be received (for example, a chunk of the response body). If HTTPX is
+unable to receive data within this time frame, a `ReadTimeout` exception is raised.
 
 ### Setting timeouts
+
 You can set timeouts on two levels:
 
 - For a given request:
@@ -274,13 +279,13 @@ with httpx.Client(timeout=5) as client:
 
 Besides, you can pass timeouts in two forms:
 
-- A number, which sets the read, write and connect timeouts to the same value, as in the examples above.  
+- A number, which sets the read, write and connect timeouts to the same value, as in the examples above.
 - A `TimeoutConfig` instance, which allows to define the read, write and connect timeouts independently:
 
 ```python
 timeout = httpx.TimeoutConfig(
-    connect_timeout=5, 
-    read_timeout=10, 
+    connect_timeout=5,
+    read_timeout=10,
     write_timeout=15
 )
 
@@ -288,10 +293,12 @@ resp = httpx.get('http://example.com/api/v1/example', timeout=timeout)
 ```
 
 ### Default timeouts
+
 By default all types of timeouts are set to 5 second.
- 
+
 ### Disabling timeouts
-To disable timeouts, you can pass `None` as a timeout parameter.  
+
+To disable timeouts, you can pass `None` as a timeout parameter.
 Note that currently this is not supported by the top-level API.
 
 ```python
@@ -305,9 +312,53 @@ with httpx.Client(timeout=None) as client:
 
 
 timeout = httpx.TimeoutConfig(
-    connect_timeout=5, 
-    read_timeout=None, 
+    connect_timeout=5,
+    read_timeout=None,
     write_timeout=5
 )
 httpx.get(url, timeout=timeout) # Does not timeout, returns after 10s
+```
+
+## Multipart file encoding
+
+As mentioned in the [quickstart](/quickstart#sending-multipart-file-uploads)
+multipart file encoding is available by passing a dictionary with the
+name of the payloads as keys and a tuple of elements as values.
+
+```python
+>>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
+>>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> print(r.text)
+{
+  ...
+  "files": {
+    "upload-file": "<... binary content ...>"
+  },
+  ...
+}
+```
+
+More specifically, this tuple must have at least two elements and maximum of three:
+- The first one is an optional file name which can be set to `None`.
+- The second may be a file-like object or a string which will be automatically
+encoded in UTF-8.
+- An optional third element can be included with the
+[MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_Types)
+of the file being uploaded. If not specified HTTPX will attempt to guess the MIME type
+based on the file name specified as the first element or the tuple, if that
+is set to `None` or it cannot be inferred from it, HTTPX will default to
+`applicaction/octet-stream`.
+
+```python
+>>> files = {'upload-file': (None, 'text content', 'text/plain')}
+>>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> print(r.text)
+{
+  ...
+  "files": {},
+  "form": {
+    "upload-file": "text-content"
+  },
+  ...
+}
 ```
