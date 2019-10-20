@@ -45,7 +45,7 @@ async def test_start_tls_on_socket_stream(https_server, backend, get_cipher):
         assert stream.is_connection_dropped() is False
         assert get_cipher(stream) is None
 
-        stream = await backend.start_tls(stream, https_server.url.host, ctx, timeout)
+        stream = await stream.start_tls(https_server.url.host, ctx, timeout)
         assert stream.is_connection_dropped() is False
         assert get_cipher(stream) is not None
 
