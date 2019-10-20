@@ -182,9 +182,7 @@ def test_timeout_eq():
 
 def test_timeout_from_nothing():
     timeout = httpx.TimeoutConfig()
-    assert timeout.connect_timeout is None
-    assert timeout.read_timeout is None
-    assert timeout.write_timeout is None
+    assert timeout == httpx.config.DEFAULT_TIMEOUT_CONFIG
 
 
 def test_timeout_from_none():
@@ -211,10 +209,10 @@ def test_timeout_repr():
     timeout = httpx.TimeoutConfig(timeout=5.0)
     assert repr(timeout) == "TimeoutConfig(timeout=5.0)"
 
-    timeout = httpx.TimeoutConfig(read_timeout=5.0)
+    timeout = httpx.TimeoutConfig(read_timeout=3.0)
     assert (
         repr(timeout)
-        == "TimeoutConfig(connect_timeout=None, read_timeout=5.0, write_timeout=None)"
+        == "TimeoutConfig(connect_timeout=5.0, read_timeout=3.0, write_timeout=5.0)"
     )
 
 
