@@ -303,7 +303,7 @@ name of the payloads as keys and a tuple of elements as values.
 ```
 
 More specifically, this tuple must have at least two elements and maximum of three:
-- The first one an optional file name which can be set to `None`.
+- The first one is an optional file name which can be set to `None`.
 - The second may be a file-like object or a string which will be automatically
 encoded in UTF-8.
 - An optional third element can be included with the
