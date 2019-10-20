@@ -11,7 +11,7 @@ from .utils import get_ca_bundle_from_env, get_logger, normalize_timeout_value
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
 TimeoutTypes = typing.Union[
-    None, float, typing.Tuple[float, float, float], "TimeoutConfig"
+    None, bool, float, typing.Tuple[float, float, float], "TimeoutConfig"
 ]
 HTTPVersionTypes = typing.Union[
     str, typing.List[str], typing.Tuple[str], "HTTPVersionConfig"
@@ -232,9 +232,9 @@ class TimeoutConfig:
         self,
         timeout: TimeoutTypes = None,
         *,
-        connect_timeout: float = None,
-        read_timeout: float = None,
-        write_timeout: float = None,
+        connect_timeout: typing.Union[float, bool] = None,
+        read_timeout: typing.Union[float, bool] = None,
+        write_timeout: typing.Union[float, bool] = None,
     ):
         if timeout is None:
             self.connect_timeout = normalize_timeout_value(
@@ -251,6 +251,13 @@ class TimeoutConfig:
             assert connect_timeout is None
             assert read_timeout is None
             assert write_timeout is None
+
+            if isinstance(timeout, bool):
+                assert timeout is False
+                timeout = TimeoutConfig(
+                    connect_timeout=False, read_timeout=False, write_timeout=False
+                )
+
             if isinstance(timeout, TimeoutConfig):
                 self.connect_timeout = timeout.connect_timeout
                 self.read_timeout = timeout.read_timeout

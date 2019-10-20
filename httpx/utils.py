@@ -36,14 +36,17 @@ def normalize_header_value(value: typing.AnyStr, encoding: str = None) -> bytes:
 
 
 def normalize_timeout_value(
-    value: typing.Optional[float], default: typing.Optional[float]
+    value: typing.Optional[typing.Union[float, bool]], default: typing.Optional[float]
 ) -> typing.Optional[float]:
     """
     Given a timeout value, normalize it so that `None` results in using
-    the default value.
+    the default value, and `False` results in no timeout.
     """
     if value is None:
         return default
+    if isinstance(value, bool):
+        assert value is False
+        return None
     return value
 
 

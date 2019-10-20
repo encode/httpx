@@ -324,7 +324,28 @@ httpx.get(url, timeout=httpx.TimeoutConfig(connect_timeout=3))
 
 ### Disabling timeouts
 
-Support for disabling timeouts is planned, but not currently supported.
+To disable timeouts, you must pass `False` as a timeout parameter.
+
+For example, none of these calls will time out:
+
+```python
+url = "https://httpbin.org/delay/10"
+
+# Timeouts are disabled for this request.
+httpx.get(url, timeout=False)
+
+# Timeouts are disabled for all requests made with this client.
+with httpx.Client(timeout=False) as client:
+    client.get(url)
+
+with httpx.Client() as client:
+    # Timeouts are disabled for this request only.
+    client.get(url, timeout=False)
+
+# Only read timeout is disabled for this request.
+timeout = httpx.TimeoutConfig(read_timeout=False)
+httpx.get(url, timeout=timeout)
+```
 
 ## Multipart file encoding
 

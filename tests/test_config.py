@@ -195,6 +195,22 @@ def test_timeout_from_one_none_value():
     assert timeout == httpx.TimeoutConfig()
 
 
+def test_timeout_from_false():
+    timeout = httpx.TimeoutConfig(timeout=False)
+    assert timeout.connect_timeout is None
+    assert timeout.read_timeout is None
+    assert timeout.write_timeout is None
+
+
+def test_timeout_from_one_false_timeout():
+    timeout = httpx.TimeoutConfig(read_timeout=False)
+    assert (
+        timeout.connect_timeout == httpx.config.DEFAULT_TIMEOUT_CONFIG.connect_timeout
+    )
+    assert timeout.read_timeout is None
+    assert timeout.write_timeout == httpx.config.DEFAULT_TIMEOUT_CONFIG.write_timeout
+
+
 def test_timeout_from_tuple():
     timeout = httpx.TimeoutConfig(timeout=(5.0, 5.0, 5.0))
     assert timeout == httpx.TimeoutConfig(timeout=5.0)
