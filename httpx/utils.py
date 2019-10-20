@@ -35,6 +35,18 @@ def normalize_header_value(value: typing.AnyStr, encoding: str = None) -> bytes:
     return value.encode(encoding or "ascii")
 
 
+def normalize_timeout_value(
+    value: typing.Optional[float], default: typing.Optional[float]
+) -> typing.Optional[float]:
+    """
+    Given a timeout value, normalize it so that `None` results in using
+    the default value.
+    """
+    if value is None:
+        return default
+    return value
+
+
 def str_query_param(value: "PrimitiveData") -> str:
     """
     Coerce a primitive data type into a string value for query params.

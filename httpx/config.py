@@ -6,11 +6,13 @@ from pathlib import Path
 import certifi
 
 from .__version__ import __version__
-from .utils import get_ca_bundle_from_env, get_logger
+from .utils import get_ca_bundle_from_env, get_logger, normalize_timeout_value
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
-TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
+TimeoutTypes = typing.Union[
+    None, float, typing.Tuple[float, float, float], "TimeoutConfig"
+]
 HTTPVersionTypes = typing.Union[
     str, typing.List[str], typing.Tuple[str], "HTTPVersionConfig"
 ]
@@ -220,6 +222,12 @@ class TimeoutConfig:
     Timeout values.
     """
 
+    # These annotations help type checkers know what the definitive type of these
+    # variables is without having to process the (fairly complex) constructor.
+    connect_timeout: typing.Optional[float]
+    read_timeout: typing.Optional[float]
+    write_timeout: typing.Optional[float]
+
     def __init__(
         self,
         timeout: TimeoutTypes = None,
@@ -229,9 +237,15 @@ class TimeoutConfig:
         write_timeout: float = None,
     ):
         if timeout is None:
-            self.connect_timeout = connect_timeout
-            self.read_timeout = read_timeout
-            self.write_timeout = write_timeout
+            self.connect_timeout = normalize_timeout_value(
+                connect_timeout, default=DEFAULT_TIMEOUT_CONFIG.connect_timeout
+            )
+            self.read_timeout = normalize_timeout_value(
+                read_timeout, default=DEFAULT_TIMEOUT_CONFIG.read_timeout
+            )
+            self.write_timeout = normalize_timeout_value(
+                write_timeout, default=DEFAULT_TIMEOUT_CONFIG.write_timeout
+            )
         else:
             # Specified as a single timeout value
             assert connect_timeout is None
