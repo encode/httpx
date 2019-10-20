@@ -158,17 +158,6 @@ def test_empty_http_version():
         httpx.HTTPVersionConfig([])
 
 
-def test_timeout_repr():
-    timeout = httpx.TimeoutConfig(timeout=5.0)
-    assert repr(timeout) == "TimeoutConfig(timeout=5.0)"
-
-    timeout = httpx.TimeoutConfig(read_timeout=5.0)
-    assert (
-        repr(timeout)
-        == "TimeoutConfig(connect_timeout=None, read_timeout=5.0, write_timeout=None)"
-    )
-
-
 def test_limits_repr():
     limits = httpx.PoolLimits(hard_limit=100)
     assert (
@@ -181,14 +170,50 @@ def test_ssl_eq():
     assert ssl == httpx.SSLConfig(verify=False)
 
 
+def test_limits_eq():
+    limits = httpx.PoolLimits(hard_limit=100)
+    assert limits == httpx.PoolLimits(hard_limit=100)
+
+
 def test_timeout_eq():
     timeout = httpx.TimeoutConfig(timeout=5.0)
     assert timeout == httpx.TimeoutConfig(timeout=5.0)
 
 
-def test_limits_eq():
-    limits = httpx.PoolLimits(hard_limit=100)
-    assert limits == httpx.PoolLimits(hard_limit=100)
+def test_timeout_from_defaults():
+    timeout = httpx.TimeoutConfig()
+    assert timeout == httpx.config.DEFAULT_TIMEOUT_CONFIG
+
+
+def test_timeout_from_none():
+    timeout = httpx.TimeoutConfig(timeout=None)
+    assert timeout == httpx.config.DEFAULT_TIMEOUT_CONFIG
+
+
+def test_timeout_from_one_none_value():
+    timeout = httpx.TimeoutConfig(read_timeout=None)
+    assert timeout == httpx.config.DEFAULT_TIMEOUT_CONFIG
+
+
+def test_timeout_from_true():
+    timeout = httpx.TimeoutConfig(timeout=True)
+    assert timeout == httpx.config.DEFAULT_TIMEOUT_CONFIG
+
+
+def test_timeout_from_false():
+    timeout = httpx.TimeoutConfig(timeout=False)
+    assert timeout.connect_timeout is None
+    assert timeout.read_timeout is None
+    assert timeout.write_timeout is None
+
+
+def test_timeout_from_one_false_timeout():
+    timeout = httpx.TimeoutConfig(read_timeout=False)
+    assert (
+        timeout.connect_timeout == httpx.config.DEFAULT_TIMEOUT_CONFIG.connect_timeout
+    )
+    assert timeout.read_timeout is None
+    assert timeout.write_timeout == httpx.config.DEFAULT_TIMEOUT_CONFIG.write_timeout
 
 
 def test_timeout_from_tuple():
@@ -199,6 +224,17 @@ def test_timeout_from_tuple():
 def test_timeout_from_config_instance():
     timeout = httpx.TimeoutConfig(timeout=5.0)
     assert httpx.TimeoutConfig(timeout) == httpx.TimeoutConfig(timeout=5.0)
+
+
+def test_timeout_repr():
+    timeout = httpx.TimeoutConfig(timeout=5.0)
+    assert repr(timeout) == "TimeoutConfig(timeout=5.0)"
+
+    timeout = httpx.TimeoutConfig(read_timeout=1.0)
+    assert (
+        repr(timeout)
+        == "TimeoutConfig(connect_timeout=5.0, read_timeout=1.0, write_timeout=5.0)"
+    )
 
 
 @pytest.mark.skipif(

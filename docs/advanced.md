@@ -294,29 +294,57 @@ resp = httpx.get('http://example.com/api/v1/example', timeout=timeout)
 
 ### Default timeouts
 
-By default all types of timeouts are set to 5 second.
+By default all types of timeouts are set to 5 seconds.
 
-### Disabling timeouts
+Default timeouts are applied whenever you don't specify a timeout, or you pass `None` as a timeout value.
 
-To disable timeouts, you can pass `None` as a timeout parameter.
-Note that currently this is not supported by the top-level API.
+For example, all the following calls will timeout because default timeouts are applied:
 
 ```python
-url = "http://example.com/api/v1/delay/10"
+url = "https://httpbin.org/delay/10"
 
-httpx.get(url, timeout=None)  # Times out after 5s
+# No timeout given.
+httpx.get(url)
 
+# Using 'None' does not disable timeouts -- see note below.
+httpx.get(url, timeout=None)
 
-with httpx.Client(timeout=None) as client:
-    client.get(url)  # Does not timeout, returns after 10s
+# 'TimeoutConfig()' returns the default timeout configuration.
+httpx.get(url, timeout=httpx.TimeoutConfig())
 
+# Again, passing 'None' as a timeout value does disable timeouts.
+httpx.get(url, timeout=httpx.TimeoutConfig(read_timeout=None))
 
-timeout = httpx.TimeoutConfig(
-    connect_timeout=5,
-    read_timeout=None,
-    write_timeout=5
-)
-httpx.get(url, timeout=timeout) # Does not timeout, returns after 10s
+# 'read_timeout' is not given, so the default value is used.
+httpx.get(url, timeout=httpx.TimeoutConfig(connect_timeout=3))
+```
+
+!!! question
+    The fact that using `timeout=None` results in HTTPX still applying default timeouts may be surprising to you. Indeed, this differs from what most HTTP libraries do. HTTPX does this so that disabling timeouts (as documented in the next section) is always a very explicit decision.
+ 
+### Disabling timeouts
+
+To disable timeouts, you must pass `False` as a timeout parameter.
+
+For example, none of these calls will time out:
+
+```python
+url = "https://httpbin.org/delay/10"
+
+# Timeouts are disabled for this request.
+httpx.get(url, timeout=False)
+
+# Timeouts are disabled for all requests made with this client.
+with httpx.Client(timeout=False) as client:
+    client.get(url)
+
+with httpx.Client() as client:
+    # Timeouts are disabled for this request only.
+    client.get(url, timeout=False)
+
+# Only read timeout is disabled for this request.
+timeout = httpx.TimeoutConfig(read_timeout=False)
+httpx.get(url, timeout=timeout)
 ```
 
 ## Multipart file encoding

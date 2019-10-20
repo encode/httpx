@@ -5,7 +5,6 @@ import typing
 from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
-    DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
     HTTPVersionConfig,
     HTTPVersionTypes,
@@ -34,7 +33,7 @@ class HTTPConnection(AsyncDispatcher):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
-        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        timeout: TimeoutTypes = None,
         http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,

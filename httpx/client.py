@@ -64,7 +64,7 @@ class BaseClient:
         cert: CertTypes = None,
         http_versions: HTTPVersionTypes = None,
         proxies: ProxiesTypes = None,
-        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        timeout: TimeoutTypes = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,

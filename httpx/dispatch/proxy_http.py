@@ -5,7 +5,6 @@ import h11
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
-    DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
     HTTPVersionTypes,
     PoolLimits,
@@ -53,7 +52,7 @@ class HTTPProxy(ConnectionPool):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
-        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        timeout: TimeoutTypes = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
