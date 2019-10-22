@@ -192,11 +192,8 @@ class HTTPProxy(ConnectionPool):
                 f"proxy_url={self.proxy_url!r} "
                 f"origin={origin!r}"
             )
-            stream = await self.backend.start_tls(
-                stream=stream,
-                hostname=origin.host,
-                ssl_context=ssl_context,
-                timeout=timeout,
+            stream = await stream.start_tls(
+                hostname=origin.host, ssl_context=ssl_context, timeout=timeout
             )
             http_version = stream.get_http_version()
             logger.debug(

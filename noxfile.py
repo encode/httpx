@@ -2,6 +2,7 @@ import nox
 
 nox.options.stop_on_first_error = True
 nox.options.reuse_existing_virtualenvs = True
+nox.options.keywords = "not serve"
 
 source_files = ("httpx", "tools", "tests", "setup.py", "noxfile.py")
 
@@ -46,6 +47,13 @@ def docs(session):
     session.install("--upgrade", "mkdocs", "mkdocs-material", "mkautodoc>=0.1.0")
     session.install("-e", ".")
     session.run("mkdocs", "build")
+
+
+@nox.session(reuse_venv=True)
+def serve(session):
+    session.install("--upgrade", "mkdocs", "mkdocs-material")
+
+    session.run("mkdocs", "serve")
 
 
 @nox.session(python=["3.6", "3.7", "3.8"])

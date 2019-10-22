@@ -1,5 +1,6 @@
 import functools
 import inspect
+import netrc
 import typing
 from types import TracebackType
 
@@ -48,7 +49,7 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .utils import ElapsedTimer, get_environment_proxies, get_netrc_login
+from .utils import ElapsedTimer, get_environment_proxies, get_netrc
 
 
 class BaseClient:
@@ -286,12 +287,19 @@ class BaseClient:
             )
 
         if trust_env:
-            netrc_login = get_netrc_login(request.url.authority)
-            if netrc_login:
-                username, _, password = netrc_login
-                return BasicAuthMiddleware(username=username, password=password)
+            netrc_info = self._get_netrc()
+            if netrc_info:
+                netrc_login = netrc_info.authenticators(request.url.authority)
+                if netrc_login:
+                    username, _, password = netrc_login
+                    assert password is not None
+                    return BasicAuthMiddleware(username=username, password=password)
 
         return None
+
+    @functools.lru_cache(1)
+    def _get_netrc(self) -> typing.Optional[netrc.netrc]:
+        return get_netrc()
 
     def _dispatcher_for_request(
         self, request: AsyncRequest, proxies: typing.Dict[str, AsyncDispatcher]

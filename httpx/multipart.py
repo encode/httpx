@@ -59,26 +59,25 @@ class FileField(Field):
             )
 
     def guess_content_type(self) -> str:
-        return mimetypes.guess_type(self.filename)[0] or "application/octet-stream"
+        if self.filename:
+            return mimetypes.guess_type(self.filename)[0] or "application/octet-stream"
+        else:
+            return "application/octet-stream"
 
     def render_headers(self) -> bytes:
-        name = _format_param("name", self.name)
-        filename = _format_param("filename", self.filename)
+        parts = [b"Content-Disposition: form-data; ", _format_param("name", self.name)]
+        if self.filename:
+            filename = _format_param("filename", self.filename)
+            parts.extend([b"; ", filename])
         content_type = self.content_type.encode()
-        return b"".join(
-            [
-                b"Content-Disposition: form-data; ",
-                name,
-                b"; ",
-                filename,
-                b"\r\nContent-Type: ",
-                content_type,
-                b"\r\n\r\n",
-            ]
-        )
+        parts.extend([b"\r\nContent-Type: ", content_type, b"\r\n\r\n"])
+        return b"".join(parts)
 
     def render_data(self) -> bytes:
-        content = self.file.read()
+        if isinstance(self.file, str):
+            content = self.file
+        else:
+            content = self.file.read()
         return content.encode("utf-8") if isinstance(content, str) else content
 
 

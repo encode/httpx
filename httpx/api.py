@@ -6,7 +6,6 @@ from .models import (
     AuthTypes,
     CookieTypes,
     HeaderTypes,
-    ProxiesTypes,
     QueryParamTypes,
     RequestData,
     RequestFiles,
@@ -32,7 +31,6 @@ def request(
     verify: VerifyTypes = True,
     stream: bool = False,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     """
     Sends an HTTP request.
@@ -112,7 +110,6 @@ def get(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     """
     Sends a `GET` request.
@@ -151,7 +148,6 @@ def options(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     """
     Sends an `OPTIONS` request.
@@ -190,7 +186,6 @@ def head(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     """
     Sends a `HEAD` request.
@@ -234,7 +229,6 @@ def post(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     """
     Sends a `POST` request.
@@ -276,7 +270,6 @@ def put(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     """
     Sends a `PUT` request.
@@ -318,7 +311,6 @@ def patch(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     """
     Sends a `PATCH` request.
@@ -357,7 +349,6 @@ def delete(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = None,
     trust_env: bool = None,
-    proxies: ProxiesTypes = None,
 ) -> Response:
     """
     Sends a `DELETE` request.

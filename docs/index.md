@@ -66,7 +66,7 @@ Plus all the standard features of `requests`...
 * Keep-Alive & Connection Pooling
 * Sessions with Cookie Persistence
 * Browser-style SSL Verification
-* Basic/Digest Authentication *(Digest is still TODO)*
+* Basic/Digest Authentication
 * Elegant Key/Value Cookies
 * Automatic Decompression
 * Automatic Content Decoding
