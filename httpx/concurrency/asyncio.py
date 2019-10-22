@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import ssl
+import sys
 import typing
 from types import TracebackType
 
@@ -170,6 +171,8 @@ class TCPStream(BaseTCPStream):
 
     async def close(self) -> None:
         self.stream_writer.close()
+        if sys.version_info >= (3, 7):
+            await self.stream_writer.wait_closed()
 
 
 class PoolSemaphore(BasePoolSemaphore):

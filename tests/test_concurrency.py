@@ -50,7 +50,21 @@ async def test_start_tls_on_socket_stream(https_server, backend, get_cipher):
         assert get_cipher(stream) is not None
 
         await stream.write(b"GET / HTTP/1.1\r\n\r\n")
-        assert (await stream.read(8192, timeout)).startswith(b"HTTP/1.1 200 OK\r\n")
+
+        # stream.read() only gives us *up to* as much data as we ask for. In order to
+        # cleanly close the stream, we must read until the end of the HTTP response.
+        read = b""
+        ended = False
+        for _ in range(5):  # Try read some (not too large) number of times...
+            read += await stream.read(8192, timeout)
+            # We know we're at the end of the response when we've received the body plus
+            # the terminating CRLFs.
+            if b"Hello, world!" in read and read.endswith(b"\r\n\r\n"):
+                ended = True
+                break
+
+        assert ended
+        assert read.startswith(b"HTTP/1.1 200 OK\r\n")
 
     finally:
         await stream.close()
