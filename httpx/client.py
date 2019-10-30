@@ -704,7 +704,7 @@ class Client(BaseClient):
     request URLs.
     * **dispatch** - *(optional)* A dispatch class to use for sending requests
     over the network.
-    * **app** - *(optional)* A WSGI or ASGI application to send requests too,
+    * **app** - *(optional)* A WSGI or ASGI application to send requests to,
     rather than sending actual network requests.
     * **backend** - *(optional)* A concurrency backend to use when issuing
     async requests.
