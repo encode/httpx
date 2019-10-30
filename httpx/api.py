@@ -48,7 +48,7 @@ def request(
     body of the request.
     * **json** - *(optional)* A JSON serializable object to include in the body
     of the request.
-    * **headers** - *(optional)* Dictionary of HTTP headers to include on the
+    * **headers** - *(optional)* Dictionary of HTTP headers to include in the
     request.
     * **cookies** - *(optional)* Dictionary of Cookie items to include in the
     request.
