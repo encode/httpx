@@ -135,6 +135,9 @@ class BaseClient:
 
     @property
     def headers(self) -> Headers:
+        """
+        HTTP headers to include when sending requests.
+        """
         return self._headers
 
     @headers.setter
@@ -143,6 +146,9 @@ class BaseClient:
 
     @property
     def cookies(self) -> Cookies:
+        """
+        Cookie values to include when sending requests.
+        """
         return self._cookies
 
     @cookies.setter
@@ -151,6 +157,9 @@ class BaseClient:
 
     @property
     def params(self) -> QueryParams:
+        """
+        Query parameters to include in the URL when sending requests.
+        """
         return self._params
 
     @params.setter
@@ -329,6 +338,9 @@ class BaseClient:
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
     ) -> AsyncRequest:
+        """
+        Build and return a request instance.
+        """
         url = self.merge_url(url)
         headers = self.merge_headers(headers)
         cookies = self.merge_cookies(cookies)
@@ -654,6 +666,52 @@ class AsyncClient(BaseClient):
 
 
 class Client(BaseClient):
+    """
+    An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.
+
+    Usage:
+
+    ```
+    >>> client = httpx.Client()
+    >>> response = client.get('https://example.org')
+    ```
+
+    **Parameters:**
+
+    * **auth** - *(optional)* An authentication class to use when sending
+    requests.
+    * **params** - *(optional)* Query parameters to include in request URLs, as
+    a string, dictionary, or list of two-tuples.
+    * **headers** - *(optional)* Dictionary of HTTP headers to include when
+    sending requests.
+    * **cookies** - *(optional)* Dictionary of Cookie items to include when
+    sending requests.
+    * **verify** - *(optional)* Enables or disables SSL verification.
+    * **cert** - *(optional)* Either a path to an SSL certificate file, or
+    two-tuple of (certificate file, key file), or a three-tuple of (certificate
+    file, key file, password).
+    * **http_versions** - *(optional)* A list of strings of HTTP protocol
+    versions to use when sending requests. eg. `http_versions=["HTTP/1.1"]`
+    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
+    URLs.
+    * **timeout** - *(optional)* The timeout configuration to use when sending
+    requests.
+    * **pool_limits** - *(optional)* The connection pool configuration to use
+    when determining the maximum number of concurrently open HTTP connections.
+    * **max_redirects** - *(optional)* The maximum number of redirect responses
+    that should be followed.
+    * **base_url** - *(optional)* A URL to use as the base when building
+    request URLs.
+    * **dispatch** - *(optional)* A dispatch class to use for sending requests
+    over the network.
+    * **app** - *(optional)* A WSGI or ASGI application to send requests to,
+    rather than sending actual network requests.
+    * **backend** - *(optional)* A concurrency backend to use when issuing
+    async requests.
+    * **trust_env** - *(optional)* Enables or disables usage of environment
+    variables for configuration.
+    """
+
     def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
         # Iterating over response content allocates an async environment on each step.
         # This is relatively cheap on asyncio, but cannot be guaranteed for all
@@ -715,6 +773,51 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
+        """
+        Sends an HTTP request.
+
+        **Parameters:**
+
+        * **method** - HTTP method for the new `Request` object: `GET`, `OPTIONS`,
+        `HEAD`, `POST`, `PUT`, `PATCH`, or `DELETE`.
+        * **url** - URL for the new `Request` object.
+        * **data** - *(optional)* Data to include in the body of the request, as a
+        dictionary
+        * **files** - *(optional)* A dictionary of upload files to include in the
+        body of the request.
+        * **json** - *(optional)* A JSON serializable object to include in the body
+        of the request.
+        * **params** - *(optional)* Query parameters to include in the URL, as a
+        string, dictionary, or list of two-tuples.
+        * **headers** - *(optional)* Dictionary of HTTP headers to include on the
+        request.
+        * **cookies** - *(optional)* Dictionary of Cookie items to include in the
+        request.
+        * **stream** - *(optional)* Enable/disable streaming responses.
+        * **auth** - *(optional)* An authentication class to use when sending the
+        request.
+        * **allow_redirects** - *(optional)* Enables or disables HTTP redirects.
+        * **cert** - *(optional)* Either a path to an SSL certificate file, or
+        two-tuple of (certificate file, key file), or a three-tuple of (certificate
+        file, key file, password).
+        * **verify** - *(optional)* Enables or disables SSL verification.
+        * **timeout** - *(optional)* The timeout configuration to use when sending
+        the request.
+        * **trust_env** - *(optional)* Enables or disables usage of environment
+        variables for configuration.
+
+        **Returns:** `Response`
+
+        Usage:
+
+        ```
+        >>> import httpx
+        >>> client = httpx.Client()
+        >>> response = client.request('GET', 'https://httpbin.org/get')
+        >>> response
+        <Response [200 OK]>
+        ```
+        """
         request = self.build_request(
             method=method,
             url=url,
@@ -748,6 +851,9 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
+        """
+        Sends a request over the network, returning a response.
+        """
         concurrency_backend = self.concurrency_backend
 
         coroutine = self._get_response
@@ -805,6 +911,14 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
+        """
+        Sends a `GET` request.
+
+        **Parameters**: See `Client.request`.
+
+        Note that the `data`, `files`, and `json` parameters are not available on
+        this function, as `GET` requests should not include a request body.
+        """
         return self.request(
             "GET",
             url,
@@ -835,6 +949,14 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
+        """
+        Sends an `OPTIONS` request.
+
+        **Parameters**: See `Client.request`.
+
+        Note that the `data`, `files`, and `json` parameters are not available on
+        this function, as `OPTIONS` requests should not include a request body.
+        """
         return self.request(
             "OPTIONS",
             url,
@@ -865,6 +987,16 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
+        """
+        Sends a `HEAD` request.
+
+        **Parameters**: See `Client.request`.
+
+        Note that the `data`, `files`, and `json` parameters are not available on
+        this function, as `HEAD` requests should not include a request body. The
+        `HEAD` method also differs from the other cases in that `allow_redirects`
+        defaults to `False`.
+        """
         return self.request(
             "HEAD",
             url,
@@ -898,6 +1030,11 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
+        """
+        Sends a `POST` request.
+
+        **Parameters**: See `Client.request`.
+        """
         return self.request(
             "POST",
             url,
@@ -934,6 +1071,11 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
+        """
+        Sends a `PUT` request.
+
+        **Parameters**: See `Client.request`.
+        """
         return self.request(
             "PUT",
             url,
@@ -970,6 +1112,11 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
+        """
+        Sends a `PATCH` request.
+
+        **Parameters**: See `Client.request`.
+        """
         return self.request(
             "PATCH",
             url,
@@ -1003,6 +1150,11 @@ class Client(BaseClient):
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
+        """
+        Sends a `DELETE` request.
+
+        **Parameters**: See `Client.request`.
+        """
         return self.request(
             "DELETE",
             url,
@@ -1019,6 +1171,9 @@ class Client(BaseClient):
         )
 
     def close(self) -> None:
+        """
+        Close any open connections in the connection pool.
+        """
         coroutine = self.dispatch.close
         self.concurrency_backend.run(coroutine)
 

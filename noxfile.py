@@ -44,8 +44,8 @@ def check(session):
 
 @nox.session
 def docs(session):
-    session.install("--upgrade", "mkdocs", "mkdocs-material", "pymdown-extensions")
-
+    session.install("--upgrade", "mkdocs", "mkdocs-material", "mkautodoc>=0.1.0")
+    session.install("-e", ".")
     session.run("mkdocs", "build")
 
 

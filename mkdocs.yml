@@ -22,4 +22,7 @@ nav:
 markdown_extensions:
   - admonition
   - codehilite
-  - pymdownx.superfences
+  - mkautodoc
+
+extra_css:
+    - css/custom.css
