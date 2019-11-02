@@ -108,6 +108,7 @@ async def test_logs_debug(server, capsys):
             response = await client.get(server.url)
             assert response.status_code == 200
     stderr = capsys.readouterr().err
+    assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
     assert "httpx.dispatch.connection_pool" not in stderr
 
 
@@ -118,7 +119,26 @@ async def test_logs_trace(server, capsys):
             response = await client.get(server.url)
             assert response.status_code == 200
     stderr = capsys.readouterr().err
+    assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
     assert "httpx.dispatch.connection_pool" in stderr
+
+
+@pytest.mark.asyncio
+async def test_logs_redirect_chain(server, capsys):
+    with override_log_level("debug"):
+        async with httpx.AsyncClient() as client:
+            response = await client.get(server.url.copy_with(path="/redirect_301"))
+            assert response.status_code == 200
+
+    stderr = capsys.readouterr().err.strip()
+    redirected_request_line, ok_request_line = stderr.split("\n")
+    assert redirected_request_line.endswith(
+        "HTTP Request: GET http://127.0.0.1:8000/redirect_301 "
+        '"HTTP/1.1 301 Moved Permanently"'
+    )
+    assert ok_request_line.endswith(
+        'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"'
+    )
 
 
 def test_get_ssl_cert_file():

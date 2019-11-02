@@ -49,7 +49,9 @@ from .models import (
     ResponseContent,
     URLTypes,
 )
-from .utils import ElapsedTimer, get_environment_proxies, get_netrc
+from .utils import ElapsedTimer, get_environment_proxies, get_logger, get_netrc
+
+logger = get_logger(__name__)
 
 
 class BaseClient:
@@ -240,6 +242,12 @@ class BaseClient:
                     await response.read()
                 finally:
                     await response.close()
+
+            status = f"{response.status_code} {response.reason_phrase}"
+            response_line = f"{response.http_version} {status}"
+            logger.debug(
+                f'HTTP Request: {request.method} {request.url} "{response_line}"'
+            )
 
             return response
 
