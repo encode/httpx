@@ -176,20 +176,29 @@ def obfuscate_sensitive_headers(
 
 
 _LOGGER_INITIALIZED = False
+TRACE_LOG_LEVEL = 5
 
 
-def get_logger(name: str) -> logging.Logger:
-    """Gets a `logging.Logger` instance and optionally
-    sets up debug logging if the user requests it via
-    the `HTTPX_DEBUG=1` environment variable.
+class Logger(logging.Logger):
+    # Stub for type checkers.
+    def trace(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
+        ...
+
+
+def get_logger(name: str) -> Logger:
+    """
+    Get a `logging.Logger` instance, and optionally
+    set up debug logging based on the HTTPX_LOG_LEVEL environment variable.
     """
     global _LOGGER_INITIALIZED
 
     if not _LOGGER_INITIALIZED:
         _LOGGER_INITIALIZED = True
-        if os.environ.get("HTTPX_DEBUG", "").lower() in ("1", "true"):
+
+        log_level = os.environ.get("HTTPX_LOG_LEVEL", "").upper()
+        if log_level in ("DEBUG", "TRACE"):
             logger = logging.getLogger("httpx")
-            logger.setLevel(logging.DEBUG)
+            logger.setLevel(logging.DEBUG if log_level == "DEBUG" else TRACE_LOG_LEVEL)
             handler = logging.StreamHandler(sys.stderr)
             handler.setFormatter(
                 logging.Formatter(
@@ -199,7 +208,14 @@ def get_logger(name: str) -> logging.Logger:
             )
             logger.addHandler(handler)
 
-    return logging.getLogger(name)
+    logger = logging.getLogger(name)
+
+    def trace(message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
+        logger.log(TRACE_LOG_LEVEL, message, *args, **kwargs)
+
+    logger.trace = trace  # type: ignore
+
+    return typing.cast(Logger, logger)
 
 
 def kv_format(**kwargs: typing.Any) -> str:
@@ -340,7 +356,7 @@ def asgi_message_with_placeholders(message: dict) -> dict:
 
 
 class MessageLoggerASGIMiddleware:
-    def __init__(self, app: typing.Callable, logger: logging.Logger) -> None:
+    def __init__(self, app: typing.Callable, logger: Logger) -> None:
         self.app = app
         self.logger = logger
 
@@ -350,12 +366,12 @@ class MessageLoggerASGIMiddleware:
         async def inner_receive() -> dict:
             message = await receive()
             logged_message = asgi_message_with_placeholders(message)
-            self.logger.debug(f"sent {kv_format(**logged_message)}")
+            self.logger.trace(f"sent {kv_format(**logged_message)}")
             return message
 
         async def inner_send(message: dict) -> None:
             logged_message = asgi_message_with_placeholders(message)
-            self.logger.debug(f"received {kv_format(**logged_message)}")
+            self.logger.trace(f"received {kv_format(**logged_message)}")
             await send(message)
 
         logged_scope = dict(scope)
@@ -363,12 +379,12 @@ class MessageLoggerASGIMiddleware:
             logged_scope["headers"] = list(
                 obfuscate_sensitive_headers(scope["headers"])
             )
-        self.logger.debug(f"started {kv_format(**logged_scope)}")
+        self.logger.trace(f"started {kv_format(**logged_scope)}")
 
         try:
             await self.app(scope, inner_receive, inner_send)
         except BaseException as exc:
-            self.logger.debug("raised_exception")
+            self.logger.trace("raised_exception")
             raise exc from None
         else:
-            self.logger.debug("completed")
+            self.logger.trace("completed")

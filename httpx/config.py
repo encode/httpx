@@ -94,7 +94,7 @@ class SSLConfig:
     ) -> ssl.SSLContext:
         http_versions = HTTPVersionConfig() if http_versions is None else http_versions
 
-        logger.debug(
+        logger.trace(
             f"load_ssl_context "
             f"verify={self.verify!r} "
             f"cert={self.cert!r} "
@@ -163,10 +163,10 @@ class SSLConfig:
             pass
 
         if ca_bundle_path.is_file():
-            logger.debug(f"load_verify_locations cafile={ca_bundle_path!s}")
+            logger.trace(f"load_verify_locations cafile={ca_bundle_path!s}")
             context.load_verify_locations(cafile=str(ca_bundle_path))
         elif ca_bundle_path.is_dir():
-            logger.debug(f"load_verify_locations capath={ca_bundle_path!s}")
+            logger.trace(f"load_verify_locations capath={ca_bundle_path!s}")
             context.load_verify_locations(capath=str(ca_bundle_path))
 
         self._load_client_certs(context)

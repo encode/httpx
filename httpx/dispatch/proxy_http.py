@@ -86,12 +86,12 @@ class HTTPProxy(ConnectionPool):
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:
         if self.should_forward_origin(origin):
-            logger.debug(
+            logger.trace(
                 f"forward_connection proxy_url={self.proxy_url!r} origin={origin!r}"
             )
             return await super().acquire_connection(self.proxy_url.origin)
         else:
-            logger.debug(
+            logger.trace(
                 f"tunnel_connection proxy_url={self.proxy_url!r} origin={origin!r}"
             )
             return await self.tunnel_connection(origin)
@@ -143,7 +143,7 @@ class HTTPProxy(ConnectionPool):
 
         # See if our tunnel has been opened successfully
         proxy_response = await connection.send(proxy_request)
-        logger.debug(
+        logger.trace(
             f"tunnel_response "
             f"proxy_url={self.proxy_url!r} "
             f"origin={origin!r} "
@@ -187,7 +187,7 @@ class HTTPProxy(ConnectionPool):
             ssl_context = await connection.get_ssl_context(ssl_config)
             assert ssl_context is not None
 
-            logger.debug(
+            logger.trace(
                 f"tunnel_start_tls "
                 f"proxy_url={self.proxy_url!r} "
                 f"origin={origin!r}"
@@ -196,7 +196,7 @@ class HTTPProxy(ConnectionPool):
                 hostname=origin.host, ssl_context=ssl_context, timeout=timeout
             )
             http_version = stream.get_http_version()
-            logger.debug(
+            logger.trace(
                 f"tunnel_tls_complete "
                 f"proxy_url={self.proxy_url!r} "
                 f"origin={origin!r} "

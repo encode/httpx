@@ -128,7 +128,7 @@ class ConnectionPool(AsyncDispatcher):
         return response
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:
-        logger.debug(f"acquire_connection origin={origin!r}")
+        logger.trace(f"acquire_connection origin={origin!r}")
         connection = self.pop_connection(origin)
 
         if connection is None:
@@ -143,16 +143,16 @@ class ConnectionPool(AsyncDispatcher):
                 release_func=self.release_connection,
                 trust_env=self.trust_env,
             )
-            logger.debug(f"new_connection connection={connection!r}")
+            logger.trace(f"new_connection connection={connection!r}")
         else:
-            logger.debug(f"reuse_connection connection={connection!r}")
+            logger.trace(f"reuse_connection connection={connection!r}")
 
         self.active_connections.add(connection)
 
         return connection
 
     async def release_connection(self, connection: HTTPConnection) -> None:
-        logger.debug(f"release_connection connection={connection!r}")
+        logger.trace(f"release_connection connection={connection!r}")
         if connection.is_closed:
             self.active_connections.remove(connection)
             self.max_connections.release()
