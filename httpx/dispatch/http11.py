@@ -65,7 +65,7 @@ class HTTP11Connection:
     async def close(self) -> None:
         event = h11.ConnectionClosed()
         try:
-            logger.debug(f"send_event event={event!r}")
+            logger.trace(f"send_event event={event!r}")
             self.h11_state.send(event)
         except h11.LocalProtocolError:  # pragma: no cover
             # Premature client disconnect
@@ -78,7 +78,7 @@ class HTTP11Connection:
         """
         Send the request method, URL, and headers to the network.
         """
-        logger.debug(
+        logger.trace(
             f"send_headers method={request.method!r} "
             f"target={request.url.full_path!r} "
             f"headers={request.headers!r}"
@@ -99,7 +99,7 @@ class HTTP11Connection:
         try:
             # Send the request body.
             async for chunk in data:
-                logger.debug(f"send_data data=Data(<{len(chunk)} bytes>)")
+                logger.trace(f"send_data data=Data(<{len(chunk)} bytes>)")
                 event = h11.Data(data=chunk)
                 await self._send_event(event, timeout)
 
@@ -164,9 +164,9 @@ class HTTP11Connection:
             event = self.h11_state.next_event()
 
             if isinstance(event, h11.Data):
-                logger.debug(f"receive_event event=Data(<{len(event.data)} bytes>)")
+                logger.trace(f"receive_event event=Data(<{len(event.data)} bytes>)")
             else:
-                logger.debug(f"receive_event event={event!r}")
+                logger.trace(f"receive_event event={event!r}")
 
             if event is h11.NEED_DATA:
                 try:
@@ -182,7 +182,7 @@ class HTTP11Connection:
         return event
 
     async def response_closed(self) -> None:
-        logger.debug(
+        logger.trace(
             f"response_closed "
             f"our_state={self.h11_state.our_state!r} "
             f"their_state={self.h11_state.their_state}"

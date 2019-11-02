@@ -104,7 +104,7 @@ class HTTP2Connection:
             (b":path", request.url.full_path.encode("ascii")),
         ] + [(k, v) for k, v in request.headers.raw if k != b"host"]
 
-        logger.debug(
+        logger.trace(
             f"send_headers "
             f"stream_id={stream_id} "
             f"method={request.method!r} "
@@ -156,7 +156,7 @@ class HTTP2Connection:
                 await self.stream.write(data_to_send, timeout)
 
     async def end_stream(self, stream_id: int, timeout: TimeoutConfig = None) -> None:
-        logger.debug(f"end_stream stream_id={stream_id}")
+        logger.trace(f"end_stream stream_id={stream_id}")
         self.h2_state.end_stream(stream_id)
         data_to_send = self.h2_state.data_to_send()
         await self.stream.write(data_to_send, timeout)
@@ -207,7 +207,7 @@ class HTTP2Connection:
             events = self.h2_state.receive_data(data)
             for event in events:
                 event_stream_id = getattr(event, "stream_id", 0)
-                logger.debug(
+                logger.trace(
                     f"receive_event stream_id={event_stream_id} event={event!r}"
                 )
 

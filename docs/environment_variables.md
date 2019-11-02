@@ -11,16 +11,14 @@ There are two ways to set `trust_env` to disable environment variables:
 Here is a list of environment variables that HTTPX recognizes
 and what function they serve:
 
-`HTTPX_DEBUG`
------------
+`HTTPX_LOG_LEVEL`
+-----------------
 
-Valid values: `1`, `true`
+Valid values: `debug`, `trace` (case-insensitive)
 
-If this environment variable is set to a valid value then low-level
-details about the execution of HTTP requests will be logged to `stderr`.
+If set to `trace`, then low-level details about the execution of HTTP requests will be logged to `stderr`. This can help you debug issues and see what's exactly being sent over the wire and to which location.
 
-This can help you debug issues and see what's exactly being sent
-over the wire and to which location.
+The `debug` log level is currently ignored, but is planned to issue high-level logs of HTTP requests.
 
 Example:
 
@@ -33,7 +31,7 @@ with httpx.Client() as client:
 ```
 
 ```console
-user@host:~$ HTTPX_DEBUG=1 python test_script.py
+user@host:~$ HTTPX_LOG_LEVEL=trace python test_script.py
 20:54:17.585 - httpx.dispatch.connection_pool - acquire_connection origin=Origin(scheme='https' host='www.google.com' port=443)
 20:54:17.585 - httpx.dispatch.connection_pool - new_connection connection=HTTPConnection(origin=Origin(scheme='https' host='www.google.com' port=443))
 20:54:17.590 - httpx.dispatch.connection - start_connect host='www.google.com' port=443 timeout=TimeoutConfig(timeout=5.0)

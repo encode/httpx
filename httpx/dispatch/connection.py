@@ -84,10 +84,10 @@ class HTTPConnection(AsyncDispatcher):
         else:
             on_release = functools.partial(self.release_func, self)
 
-        logger.debug(f"start_connect host={host!r} port={port!r} timeout={timeout!r}")
+        logger.trace(f"start_connect host={host!r} port={port!r} timeout={timeout!r}")
         stream = await self.backend.open_tcp_stream(host, port, ssl_context, timeout)
         http_version = stream.get_http_version()
-        logger.debug(f"connected http_version={http_version!r}")
+        logger.trace(f"connected http_version={http_version!r}")
 
         if http_version == "HTTP/2":
             self.h2_connection = HTTP2Connection(
@@ -109,7 +109,7 @@ class HTTPConnection(AsyncDispatcher):
         )
 
     async def close(self) -> None:
-        logger.debug("close_connection")
+        logger.trace("close_connection")
         if self.h2_connection is not None:
             await self.h2_connection.close()
         elif self.h11_connection is not None:
