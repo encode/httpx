@@ -103,9 +103,9 @@ def test_parse_header_links(value, expected):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("httpx_debug", ["0", "1", "True", "False"])
-async def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):
-    os.environ["HTTPX_DEBUG"] = httpx_debug
+@pytest.mark.parametrize("httpx_log_level", ["trace", "debug"])
+async def test_httpx_log_level_enabled_stderr_logging(server, capsys, httpx_log_level):
+    os.environ["HTTPX_LOG_LEVEL"] = httpx_log_level
 
     # Force a reload on the logging handlers
     utils._LOGGER_INITIALIZED = False
@@ -114,7 +114,7 @@ async def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):
     async with httpx.AsyncClient() as client:
         await client.get(server.url)
 
-    if httpx_debug in ("1", "True"):
+    if httpx_log_level == "trace":
         assert "httpx.dispatch.connection_pool" in capsys.readouterr().err
     else:
         assert "httpx.dispatch.connection_pool" not in capsys.readouterr().err
