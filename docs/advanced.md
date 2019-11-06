@@ -365,9 +365,6 @@ is set to `None` or it cannot be inferred from it, HTTPX will default to
 
 ## SSL certificates
 
-!!! warning
-    This is an advanced section. You typically won't need this, unless you have special needs regarding your SSL configuration.
-
 When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
 
 ### Default CA bundle
