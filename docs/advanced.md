@@ -383,11 +383,9 @@ r = httpx.get("https://example.org", verify="path/to/client.pem")
 
 ### Making HTTPS requests to a local server
 
-In some situations, you may have to make HTTPS requests to a server running on `localhost` (a.k.a. `127.0.0.1`, the loopback address). This is typically the case, for example, if you are making requests to a development server.
+When making requests to local servers, such as a development server running on `localhost`, you will typically be using unencrypted HTTP connections.
 
-Because `localhost` is a local and non-uniquely owned domain, you'll need to create your own certificates for HTTPS to work.
-
-Here's one way to create such certificates, and then use them in HTTPX:
+If you do need to make HTTPS connections to a local server, for example to test an HTTPS-only service, you will need to create and use your own certificates. Here's one way to do it:
 
 1. Use [trustme-cli](https://github.com/sethmlarson/trustme-cli/) to generate a pair of server key/cert files, and a client cert file.
 1. Pass the server key/cert files when starting your local server. (This depends on the particular web server you're using. For example, [Uvicorn](https://www.uvicorn.org) provides the `--ssl-keyfile` and `--ssl-certfile` options.)
