@@ -366,11 +366,13 @@ is set to `None` or it cannot be inferred from it, HTTPX will default to
 ## SSL certificates
 
 !!! warning
-    This is an advanced section. You most likely won't need to use the features documented here, unless you know what you're doing.
+    This is an advanced section. You typically won't need this, unless you have special needs regarding your SSL configuration.
 
-When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates delivered by a trusted certificate authority (CA).
+When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
 
-By default, HTTPX uses the CA bundle provided by [Certifi](https://pypi.org/project/certifi/). This works fine in most cases, however in some advanced situations you may want to tweak this.
+### Default CA bundle
+
+By default, HTTPX uses the CA bundle provided by [Certifi](https://pypi.org/project/certifi/). This is what you want in most cases, even though some advanced situations may require you to use a different set of certificates.
 
 ### Using a custom CA bundle
 
