@@ -362,3 +362,41 @@ is set to `None` or it cannot be inferred from it, HTTPX will default to
   ...
 }
 ```
+
+## SSL certificates
+
+!!! warning
+    This is an advanced section. You most likely won't need to use the features documented here, unless you know what you're doing.
+
+When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates delivered by a trusted certificate authority (CA).
+
+By default, HTTPX uses the CA bundle provided by [Certifi](https://pypi.org/project/certifi/). This works fine in most cases, however in some advanced situations you may want to tweak this.
+
+### Using a custom CA bundle
+
+If you'd like to use a custom CA bundle, you can use the `verify` parameter that is available on the high-level API as well as clients. For example:
+
+```python
+import httpx
+
+r = httpx.get("https://example.org", verify="path/to/client.pem")
+```
+
+### Making HTTPS requests to a local server
+
+In some cases, such as when using HTTPX to make requests against a development server, you may want to make HTTPS requests to a local server, i.e. a server running on `localhost` (a.k.a. `127.0.0.1`, the loopback address).
+
+Because `localhost` is a local and non-uniquely owned domain, you'll need to create your own certificates.
+
+Here's one way to do this, and then use them in HTTPX:
+
+1. Use [trustme-cli](https://github.com/sethmlarson/trustme-cli/) to generate a pair of server key/cert files, and a client cert file.
+1. Pass the server key/cert files when starting your local server. (This depends on the particular web server you're using. For example, [Uvicorn](https://www.uvicorn.org) provides the `--ssl-keyfile` and `--ssl-certfile` options.)
+1. Tell HTTPX to use the certificates stored in `client.pem`:
+
+```python
+>>> import httpx
+>>> r = httpx.get("https://localhost:8000", verify="/tmp/client.pem")
+>>> r
+Response <200 OK>
+```
