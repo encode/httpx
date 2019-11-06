@@ -69,6 +69,8 @@ async def app(scope, receive, send):
         await echo_body(scope, receive, send)
     elif scope["path"].startswith("/echo_headers"):
         await echo_headers(scope, receive, send)
+    elif scope["path"].startswith("/redirect_301"):
+        await redirect_301(scope, receive, send)
     else:
         await hello_world(scope, receive, send)
 
@@ -145,6 +147,17 @@ async def echo_headers(scope, receive, send):
         }
     )
     await send({"type": "http.response.body", "body": json.dumps(body).encode()})
+
+
+async def redirect_301(scope, receive, send):
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 301,
+            "headers": [[b"location", b"/"]],
+        }
+    )
+    await send({"type": "http.response.body"})
 
 
 SERVER_SCOPE = "session"

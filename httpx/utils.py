@@ -194,6 +194,7 @@ def get_logger(name: str) -> Logger:
 
     if not _LOGGER_INITIALIZED:
         _LOGGER_INITIALIZED = True
+        logging.addLevelName(TRACE_LOG_LEVEL, "TRACE")
 
         log_level = os.environ.get("HTTPX_LOG_LEVEL", "").upper()
         if log_level in ("DEBUG", "TRACE"):
@@ -202,8 +203,8 @@ def get_logger(name: str) -> Logger:
             handler = logging.StreamHandler(sys.stderr)
             handler.setFormatter(
                 logging.Formatter(
-                    fmt="%(asctime)s.%(msecs)03d - %(name)s - %(message)s",
-                    datefmt="%H:%M:%S",
+                    fmt="%(levelname)s [%(asctime)s] %(name)s - %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S",
                 )
             )
             logger.addHandler(handler)
