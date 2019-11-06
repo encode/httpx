@@ -5,26 +5,30 @@ from httpx import AsyncioBackend, HTTPVersionConfig, SSLConfig, TimeoutConfig
 from httpx.concurrency.trio import TrioBackend
 
 
+def get_asyncio_cipher(stream):
+    return stream.stream_writer.get_extra_info("cipher", default=None)
+
+
+def get_trio_cipher(stream):
+    return stream.stream.cipher() if isinstance(stream.stream, trio.SSLStream) else None
+
+
 @pytest.mark.parametrize(
-    "backend, get_cipher",
+    "backend, test_uds, get_cipher",
     [
         pytest.param(
-            AsyncioBackend(),
-            lambda stream: stream.stream_writer.get_extra_info("cipher", default=None),
-            marks=pytest.mark.asyncio,
+            AsyncioBackend(), False, get_asyncio_cipher, marks=pytest.mark.asyncio
         ),
         pytest.param(
-            TrioBackend(),
-            lambda stream: (
-                stream.stream.cipher()
-                if isinstance(stream.stream, trio.SSLStream)
-                else None
-            ),
-            marks=pytest.mark.trio,
+            AsyncioBackend(), True, get_asyncio_cipher, marks=pytest.mark.asyncio
         ),
+        pytest.param(TrioBackend(), False, get_trio_cipher, marks=pytest.mark.trio),
+        pytest.param(TrioBackend(), True, get_trio_cipher, marks=pytest.mark.trio),
     ],
 )
-async def test_start_tls_on_socket_stream(https_server, backend, get_cipher):
+async def test_start_tls_on_socket_stream(
+    https_server, https_uds_server, backend, test_uds, get_cipher
+):
     """
     See that the concurrency backend can make a connection without TLS then
     start TLS on an existing connection.
@@ -32,9 +36,15 @@ async def test_start_tls_on_socket_stream(https_server, backend, get_cipher):
     ctx = SSLConfig().load_ssl_context_no_verify(HTTPVersionConfig())
     timeout = TimeoutConfig(5)
 
-    stream = await backend.open_tcp_stream(
-        https_server.url.host, https_server.url.port, None, timeout
-    )
+    if test_uds:
+        assert https_uds_server.config.uds is not None
+        stream = await backend.open_uds_stream(
+            https_uds_server.config.uds, https_uds_server.url.host, None, timeout
+        )
+    else:
+        stream = await backend.open_tcp_stream(
+            https_server.url.host, https_server.url.port, None, timeout
+        )
 
     try:
         assert stream.is_connection_dropped() is False
