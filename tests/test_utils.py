@@ -1,11 +1,9 @@
 import asyncio
-import logging
 import os
 
 import pytest
 
 import httpx
-from httpx import utils
 from httpx.utils import (
     ElapsedTimer,
     get_ca_bundle_from_env,
@@ -16,6 +14,7 @@ from httpx.utils import (
     parse_header_links,
     should_not_be_proxied,
 )
+from tests.utils import override_log_level
 
 
 @pytest.mark.parametrize(
@@ -103,24 +102,23 @@ def test_parse_header_links(value, expected):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("httpx_log_level", ["trace", "debug"])
-async def test_httpx_log_level_enabled_stderr_logging(server, capsys, httpx_log_level):
-    os.environ["HTTPX_LOG_LEVEL"] = httpx_log_level
+async def test_logs_debug(server, capsys):
+    with override_log_level("debug"):
+        async with httpx.AsyncClient() as client:
+            response = await client.get(server.url)
+            assert response.status_code == 200
+    stderr = capsys.readouterr().err
+    assert "httpx.dispatch.connection_pool" not in stderr
 
-    # Force a reload on the logging handlers
-    utils._LOGGER_INITIALIZED = False
-    utils.get_logger("httpx")
 
-    async with httpx.AsyncClient() as client:
-        await client.get(server.url)
-
-    if httpx_log_level == "trace":
-        assert "httpx.dispatch.connection_pool" in capsys.readouterr().err
-    else:
-        assert "httpx.dispatch.connection_pool" not in capsys.readouterr().err
-
-    # Reset the logger so we don't have verbose output in all unit tests
-    logging.getLogger("httpx").handlers = []
+@pytest.mark.asyncio
+async def test_logs_trace(server, capsys):
+    with override_log_level("trace"):
+        async with httpx.AsyncClient() as client:
+            response = await client.get(server.url)
+            assert response.status_code == 200
+    stderr = capsys.readouterr().err
+    assert "httpx.dispatch.connection_pool" in stderr
 
 
 def test_get_ssl_cert_file():
