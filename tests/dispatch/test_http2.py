@@ -1,10 +1,12 @@
 import json
+import socket
 
 import h2.connection
 import h2.events
+import pytest
 from h2.settings import SettingCodes
 
-from httpx import AsyncClient, Client, Response
+from httpx import AsyncClient, Client, Response, Timeout
 
 from .utils import MockHTTP2Backend
 
@@ -208,7 +210,11 @@ async def test_http2_settings_in_handshake(backend):
 
 async def test_http2_live_request(backend):
     async with AsyncClient(backend=backend) as client:
-        resp = await client.get("https://nghttp2.org/httpbin/anything")
-
+        try:
+            resp = await client.get("https://nghttp2.org/httpbin/anything")
+        except Timeout:
+            pytest.xfail(reason="nghttp2.org appears to be unresponsive")
+        except socket.gaierror:
+            pytest.xfail(reason="You appear to be offline")
         assert resp.status_code == 200
         assert resp.http_version == "HTTP/2"
