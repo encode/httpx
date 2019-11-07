@@ -694,8 +694,11 @@ class Client(BaseClient):
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
     sending requests.
-    * **verify** - *(optional)* Enables or disables SSL verification.
-    * **cert** - *(optional)* Either a path to an SSL certificate file, or
+    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
+    verify the identity of requested hosts. Either `True` (default CA bundle),
+    a path to an SSL certificate file, or `False` (disable verification).
+    * **cert** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
     file, key file, password).
     * **http_versions** - *(optional)* A list of strings of HTTP protocol
@@ -776,8 +779,8 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
         verify: VerifyTypes = None,
+        cert: CertTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
@@ -805,10 +808,13 @@ class Client(BaseClient):
         * **auth** - *(optional)* An authentication class to use when sending the
         request.
         * **allow_redirects** - *(optional)* Enables or disables HTTP redirects.
-        * **cert** - *(optional)* Either a path to an SSL certificate file, or
+        * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
+        verify the identity of requested hosts. Either `True` (default CA bundle),
+        a path to an SSL certificate file, or `False` (disable verification).
+        * **cert** - *(optional)* An SSL certificate used by the requested host
+        to authenticate the client. Either a path to an SSL certificate file, or
         two-tuple of (certificate file, key file), or a three-tuple of (certificate
         file, key file, password).
-        * **verify** - *(optional)* Enables or disables SSL verification.
         * **timeout** - *(optional)* The timeout configuration to use when sending
         the request.
         * **trust_env** - *(optional)* Enables or disables usage of environment
