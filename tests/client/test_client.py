@@ -138,6 +138,25 @@ def test_base_url(server):
     assert response.url == base_url
 
 
+def test_uds(uds_server):
+    url = uds_server.url
+    uds = uds_server.config.uds
+    assert uds is not None
+    with httpx.Client(uds=uds) as http:
+        response = http.get(url)
+    assert response.status_code == 200
+    assert response.url == url
+    assert response.content == b"Hello, world!"
+    assert response.text == "Hello, world!"
+    assert response.http_version == "HTTP/1.1"
+    assert response.encoding == "iso-8859-1"
+    assert response.request.url == url
+    assert response.headers
+    assert response.is_redirect is False
+    assert repr(response) == "<Response [200 OK]>"
+    assert response.elapsed > timedelta(0)
+
+
 def test_merge_url():
     client = httpx.Client(base_url="https://www.paypal.com/")
     url = client.merge_url("http://www.paypal.com")

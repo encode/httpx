@@ -74,6 +74,7 @@ class BaseClient:
         app: typing.Callable = None,
         backend: ConcurrencyBackend = None,
         trust_env: bool = True,
+        uds: str = None,
     ):
         if backend is None:
             backend = AsyncioBackend()
@@ -99,6 +100,7 @@ class BaseClient:
                 pool_limits=pool_limits,
                 backend=backend,
                 trust_env=self.trust_env,
+                uds=uds,
             )
         elif isinstance(dispatch, Dispatcher):
             async_dispatch = ThreadedDispatcher(dispatch, backend)
@@ -721,6 +723,7 @@ class Client(BaseClient):
     async requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
+    * **uds** - *(optional)* A path to a Unix domain socket to connect through
     """
 
     def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:

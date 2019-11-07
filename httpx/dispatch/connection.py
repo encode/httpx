@@ -38,6 +38,7 @@ class HTTPConnection(AsyncDispatcher):
         http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,
+        uds: typing.Optional[str] = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env)
@@ -45,6 +46,7 @@ class HTTPConnection(AsyncDispatcher):
         self.http_versions = HTTPVersionConfig(http_versions)
         self.backend = AsyncioBackend() if backend is None else backend
         self.release_func = release_func
+        self.uds = uds
         self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
         self.h2_connection = None  # type: typing.Optional[HTTP2Connection]
 
@@ -84,8 +86,21 @@ class HTTPConnection(AsyncDispatcher):
         else:
             on_release = functools.partial(self.release_func, self)
 
-        logger.trace(f"start_connect host={host!r} port={port!r} timeout={timeout!r}")
-        stream = await self.backend.open_tcp_stream(host, port, ssl_context, timeout)
+        if self.uds is None:
+            logger.trace(
+                f"start_connect tcp host={host!r} port={port!r} timeout={timeout!r}"
+            )
+            stream = await self.backend.open_tcp_stream(
+                host, port, ssl_context, timeout
+            )
+        else:
+            logger.trace(
+                f"start_connect uds path={self.uds!r} host={host!r} timeout={timeout!r}"
+            )
+            stream = await self.backend.open_uds_stream(
+                self.uds, host, ssl_context, timeout
+            )
+
         http_version = stream.get_http_version()
         logger.trace(f"connected http_version={http_version!r}")
 

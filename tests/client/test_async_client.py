@@ -146,3 +146,17 @@ async def test_100_continue(server, backend):
 
     assert response.status_code == 200
     assert response.content == data
+
+
+async def test_uds(uds_server, backend):
+    url = uds_server.url
+    uds = uds_server.config.uds
+    assert uds is not None
+    async with httpx.AsyncClient(backend=backend, uds=uds) as client:
+        response = await client.get(url)
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+    assert response.http_version == "HTTP/1.1"
+    assert response.headers
+    assert repr(response) == "<Response [200 OK]>"
+    assert response.elapsed > timedelta(seconds=0)

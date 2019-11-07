@@ -130,7 +130,7 @@ class ConcurrencyBackend:
         hostname: typing.Optional[str],
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> BaseTCPStream:
+    ) -> BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
