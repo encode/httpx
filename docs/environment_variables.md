@@ -6,7 +6,7 @@ Environment variables are used by default. To ignore environment variables, `tru
 There are two ways to set `trust_env` to disable environment variables:
 
 * On the client via `httpx.Client(trust_env=False)`
-* Per request via `client.get("<url>", trust_env=False)`
+* Per request via `httpx.get("<url>", trust_env=False)`
 
 Here is a list of environment variables that HTTPX recognizes
 and what function they serve:

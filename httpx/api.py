@@ -1,7 +1,7 @@
 import typing
 
 from .client import Client
-from .config import CertTypes, TimeoutTypes, VerifyTypes
+from .config import DEFAULT_TIMEOUT_CONFIG, CertTypes, TimeoutTypes, VerifyTypes
 from .models import (
     AuthTypes,
     CookieTypes,
@@ -27,8 +27,8 @@ def request(
     auth: AuthTypes = None,
     timeout: TimeoutTypes = None,
     allow_redirects: bool = True,
-    cert: CertTypes = None,
     verify: VerifyTypes = True,
+    cert: CertTypes = None,
     stream: bool = False,
     trust_env: bool = None,
 ) -> Response:
@@ -57,10 +57,13 @@ def request(
     * **timeout** - *(optional)* The timeout configuration to use when sending
     the request.
     * **allow_redirects** - *(optional)* Enables or disables HTTP redirects.
-    * **cert** - *(optional)* Either a path to an SSL certificate file, or
+    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
+    verify the identity of requested hosts. Either `True` (default CA bundle),
+    a path to an SSL certificate file, or `False` (disable verification).
+    * **cert** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
     file, key file, password).
-    * **verify** - *(optional)* Enables or disables SSL verification.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
     * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
@@ -77,7 +80,13 @@ def request(
     <Response [200 OK]>
     ```
     """
-    with Client(http_versions=["HTTP/1.1"]) as client:
+    with Client(
+        http_versions=["HTTP/1.1"],
+        cert=cert,
+        verify=verify,
+        timeout=timeout or DEFAULT_TIMEOUT_CONFIG,
+        trust_env=trust_env or True,
+    ) as client:
         return client.request(
             method=method,
             url=url,
@@ -90,10 +99,6 @@ def request(
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            cert=cert,
-            verify=verify,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
 

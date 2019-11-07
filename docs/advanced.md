@@ -265,17 +265,13 @@ You can set timeouts on two levels:
 # Using top-level API
 httpx.get('http://example.com/api/v1/example', timeout=5)
 
-# Or, with a client:
-with httpx.Client() as client:
-    client.get("http://example.com/api/v1/example", timeout=5)
+# Or, with a client instance:
+with httpx.Client(timeout=5) as client:
+    client.get("http://example.com/api/v1/example")
 ```
 
 - On a client instance, which results in the given `timeout` being used as a default for requests made with this client:
 
-```python
-with httpx.Client(timeout=5) as client:
-    client.get('http://example.com/api/v1/example')
-```
 
 Besides, you can pass timeouts in two forms:
 
@@ -361,4 +357,39 @@ is set to `None` or it cannot be inferred from it, HTTPX will default to
   },
   ...
 }
+```
+
+## SSL certificates
+
+When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
+
+### Default CA bundle
+
+By default, HTTPX uses the CA bundle provided by [Certifi](https://pypi.org/project/certifi/). This is what you want in most cases, even though some advanced situations may require you to use a different set of certificates.
+
+### Using a custom CA bundle
+
+If you'd like to use a custom CA bundle, you can use the `verify` parameter that is available on the high-level API as well as clients. For example:
+
+```python
+import httpx
+
+r = httpx.get("https://example.org", verify="path/to/client.pem")
+```
+
+### Making HTTPS requests to a local server
+
+When making requests to local servers, such as a development server running on `localhost`, you will typically be using unencrypted HTTP connections.
+
+If you do need to make HTTPS connections to a local server, for example to test an HTTPS-only service, you will need to create and use your own certificates. Here's one way to do it:
+
+1. Use [trustme-cli](https://github.com/sethmlarson/trustme-cli/) to generate a pair of server key/cert files, and a client cert file.
+1. Pass the server key/cert files when starting your local server. (This depends on the particular web server you're using. For example, [Uvicorn](https://www.uvicorn.org) provides the `--ssl-keyfile` and `--ssl-certfile` options.)
+1. Tell HTTPX to use the certificates stored in `client.pem`:
+
+```python
+>>> import httpx
+>>> r = httpx.get("https://localhost:8000", verify="/tmp/client.pem")
+>>> r
+Response <200 OK>
 ```

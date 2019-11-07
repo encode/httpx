@@ -120,6 +120,9 @@ class BaseClient:
         self.max_redirects = max_redirects
         self.dispatch = async_dispatch
         self.concurrency_backend = backend
+        self.cert = cert
+        self.timeout = timeout
+        self.verify = verify
 
         if proxies is None and trust_env:
             proxies = typing.cast(ProxiesTypes, get_environment_proxies())
@@ -211,10 +214,6 @@ class BaseClient:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> AsyncResponse:
         if request.url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
@@ -225,7 +224,10 @@ class BaseClient:
             try:
                 with ElapsedTimer() as timer:
                     response = await dispatch.send(
-                        request, verify=verify, cert=cert, timeout=timeout
+                        request,
+                        verify=self.verify,
+                        cert=self.cert,
+                        timeout=self.timeout,
                     )
                 response.elapsed = timer.elapsed
             except HTTPError as exc:
@@ -263,7 +265,7 @@ class BaseClient:
 
         auth_middleware = self._get_auth_middleware(
             request=request,
-            trust_env=self.trust_env if trust_env is None else trust_env,
+            trust_env=self.trust_env,
             auth=self.auth if auth is None else auth,
         )
 
@@ -376,10 +378,6 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "GET",
@@ -390,10 +388,6 @@ class AsyncClient(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def options(
@@ -406,10 +400,6 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "OPTIONS",
@@ -420,10 +410,6 @@ class AsyncClient(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def head(
@@ -436,10 +422,6 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "HEAD",
@@ -450,10 +432,6 @@ class AsyncClient(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def post(
@@ -469,10 +447,6 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "POST",
@@ -486,10 +460,6 @@ class AsyncClient(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def put(
@@ -505,10 +475,6 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "PUT",
@@ -522,10 +488,6 @@ class AsyncClient(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def patch(
@@ -541,10 +503,6 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "PATCH",
@@ -558,10 +516,6 @@ class AsyncClient(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def delete(
@@ -574,10 +528,6 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self.request(
             "DELETE",
@@ -588,10 +538,6 @@ class AsyncClient(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def request(
@@ -608,10 +554,6 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> AsyncResponse:
         request = self.build_request(
             method=method,
@@ -624,14 +566,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
         )
         response = await self.send(
-            request,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
+            request, stream=stream, auth=auth, allow_redirects=allow_redirects,
         )
         return response
 
@@ -642,20 +577,9 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> AsyncResponse:
         return await self._get_response(
-            request=request,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
+            request=request, stream=stream, auth=auth, allow_redirects=allow_redirects,
         )
 
     async def close(self) -> None:
@@ -694,8 +618,11 @@ class Client(BaseClient):
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
     sending requests.
-    * **verify** - *(optional)* Enables or disables SSL verification.
-    * **cert** - *(optional)* Either a path to an SSL certificate file, or
+    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
+    verify the identity of requested hosts. Either `True` (default CA bundle),
+    a path to an SSL certificate file, or `False` (disable verification).
+    * **cert** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
     file, key file, password).
     * **http_versions** - *(optional)* A list of strings of HTTP protocol
@@ -776,10 +703,6 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> Response:
         """
         Sends an HTTP request.
@@ -805,14 +728,6 @@ class Client(BaseClient):
         * **auth** - *(optional)* An authentication class to use when sending the
         request.
         * **allow_redirects** - *(optional)* Enables or disables HTTP redirects.
-        * **cert** - *(optional)* Either a path to an SSL certificate file, or
-        two-tuple of (certificate file, key file), or a three-tuple of (certificate
-        file, key file, password).
-        * **verify** - *(optional)* Enables or disables SSL verification.
-        * **timeout** - *(optional)* The timeout configuration to use when sending
-        the request.
-        * **trust_env** - *(optional)* Enables or disables usage of environment
-        variables for configuration.
 
         **Returns:** `Response`
 
@@ -837,14 +752,7 @@ class Client(BaseClient):
             cookies=cookies,
         )
         return self.send(
-            request,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
+            request, stream=stream, auth=auth, allow_redirects=allow_redirects,
         )
 
     def send(
@@ -854,10 +762,6 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> Response:
         """
         Sends a request over the network, returning a response.
@@ -870,10 +774,6 @@ class Client(BaseClient):
             "stream": True,
             "auth": auth,
             "allow_redirects": allow_redirects,
-            "verify": verify,
-            "cert": cert,
-            "timeout": timeout,
-            "trust_env": trust_env,
         }
         async_response = concurrency_backend.run(coroutine, *args, **kwargs)
 
@@ -914,10 +814,6 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> Response:
         """
         Sends a `GET` request.
@@ -936,10 +832,6 @@ class Client(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     def options(
@@ -952,10 +844,6 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> Response:
         """
         Sends an `OPTIONS` request.
@@ -974,10 +862,6 @@ class Client(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     def head(
@@ -990,10 +874,6 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> Response:
         """
         Sends a `HEAD` request.
@@ -1014,10 +894,6 @@ class Client(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     def post(
@@ -1033,10 +909,6 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> Response:
         """
         Sends a `POST` request.
@@ -1055,10 +927,6 @@ class Client(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     def put(
@@ -1074,10 +942,6 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> Response:
         """
         Sends a `PUT` request.
@@ -1096,10 +960,6 @@ class Client(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     def patch(
@@ -1115,10 +975,6 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> Response:
         """
         Sends a `PATCH` request.
@@ -1137,10 +993,6 @@ class Client(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     def delete(
@@ -1153,10 +1005,6 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
     ) -> Response:
         """
         Sends a `DELETE` request.
@@ -1172,10 +1020,6 @@ class Client(BaseClient):
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
     def close(self) -> None:
