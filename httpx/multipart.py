@@ -69,8 +69,10 @@ class FileField(Field):
         if self.filename:
             filename = _format_param("filename", self.filename)
             parts.extend([b"; ", filename])
-        content_type = self.content_type.encode()
-        parts.extend([b"\r\nContent-Type: ", content_type, b"\r\n\r\n"])
+        if self.content_type is not None:
+            content_type = self.content_type.encode()
+            parts.extend([b"\r\nContent-Type: ", content_type])
+        parts.append(b"\r\n\r\n")
         return b"".join(parts)
 
     def render_data(self) -> bytes:
