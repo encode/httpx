@@ -5,7 +5,7 @@ import h2.config
 import h2.connection
 import h2.events
 
-from httpx import AsyncioBackend, BaseTCPStream, Request, TimeoutConfig
+from httpx import AsyncioBackend, BaseSocketStream, Request, TimeoutConfig
 from tests.concurrency import sleep
 
 
@@ -21,7 +21,7 @@ class MockHTTP2Backend:
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> BaseTCPStream:
+    ) -> BaseSocketStream:
         self.server = MockHTTP2Server(self.app, backend=self.backend)
         return self.server
 
@@ -30,7 +30,7 @@ class MockHTTP2Backend:
         return getattr(self.backend, name)
 
 
-class MockHTTP2Server(BaseTCPStream):
+class MockHTTP2Server(BaseSocketStream):
     def __init__(self, app, backend):
         config = h2.config.H2Configuration(client_side=False)
         self.conn = h2.connection.H2Connection(config=config)
@@ -43,7 +43,7 @@ class MockHTTP2Server(BaseTCPStream):
         self.returning = {}
         self.settings_changed = []
 
-    # TCP stream interface
+    # Socket stream interface
 
     def get_http_version(self) -> str:
         return "HTTP/2"
@@ -178,7 +178,7 @@ class MockRawSocketBackend:
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> BaseTCPStream:
+    ) -> BaseSocketStream:
         self.received_data.append(
             b"--- CONNECT(%s, %d) ---" % (hostname.encode(), port)
         )
@@ -189,13 +189,13 @@ class MockRawSocketBackend:
         return getattr(self.backend, name)
 
 
-class MockRawSocketStream(BaseTCPStream):
+class MockRawSocketStream(BaseSocketStream):
     def __init__(self, backend: MockRawSocketBackend):
         self.backend = backend
 
     async def start_tls(
         self, hostname: str, ssl_context: ssl.SSLContext, timeout: TimeoutConfig
-    ) -> BaseTCPStream:
+    ) -> BaseSocketStream:
         self.backend.received_data.append(b"--- START_TLS(%s) ---" % hostname.encode())
         return MockRawSocketStream(self.backend)
 

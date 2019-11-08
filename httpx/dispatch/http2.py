@@ -5,7 +5,12 @@ import h2.connection
 import h2.events
 from h2.settings import SettingCodes, Settings
 
-from ..concurrency.base import BaseEvent, BaseTCPStream, ConcurrencyBackend, TimeoutFlag
+from ..concurrency.base import (
+    BaseEvent,
+    BaseSocketStream,
+    ConcurrencyBackend,
+    TimeoutFlag,
+)
 from ..config import TimeoutConfig, TimeoutTypes
 from ..exceptions import ProtocolError
 from ..models import AsyncRequest, AsyncResponse
@@ -19,7 +24,7 @@ class HTTP2Connection:
 
     def __init__(
         self,
-        stream: BaseTCPStream,
+        stream: BaseSocketStream,
         backend: ConcurrencyBackend,
         on_release: typing.Callable = None,
     ):
