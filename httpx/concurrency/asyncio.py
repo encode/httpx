@@ -12,7 +12,7 @@ from .base import (
     BaseEvent,
     BasePoolSemaphore,
     BaseQueue,
-    BaseTCPStream,
+    BaseSocketStream,
     ConcurrencyBackend,
     TimeoutFlag,
 )
@@ -41,7 +41,7 @@ def ssl_monkey_patch() -> None:
     MonkeyPatch.write = _fixed_write
 
 
-class TCPStream(BaseTCPStream):
+class SocketStream(BaseSocketStream):
     def __init__(
         self,
         stream_reader: asyncio.StreamReader,
@@ -52,11 +52,11 @@ class TCPStream(BaseTCPStream):
         self.stream_writer = stream_writer
         self.timeout = timeout
 
-        self._inner: typing.Optional[TCPStream] = None
+        self._inner: typing.Optional[SocketStream] = None
 
     async def start_tls(
         self, hostname: str, ssl_context: ssl.SSLContext, timeout: TimeoutConfig
-    ) -> BaseTCPStream:
+    ) -> "SocketStream":
         loop = asyncio.get_event_loop()
         if not hasattr(loop, "start_tls"):  # pragma: no cover
             raise NotImplementedError(
@@ -83,8 +83,8 @@ class TCPStream(BaseTCPStream):
             transport=transport, protocol=protocol, reader=stream_reader, loop=loop
         )
 
-        ssl_stream = TCPStream(stream_reader, stream_writer, self.timeout)
-        # When we return a new TCPStream with new StreamReader/StreamWriter instances,
+        ssl_stream = SocketStream(stream_reader, stream_writer, self.timeout)
+        # When we return a new SocketStream with new StreamReader/StreamWriter instances
         # we need to keep references to the old StreamReader/StreamWriter so that they
         # are not garbage collected and closed while we're still using them.
         ssl_stream._inner = self
@@ -229,7 +229,7 @@ class AsyncioBackend(ConcurrencyBackend):
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> BaseTCPStream:
+    ) -> SocketStream:
         try:
             stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
                 asyncio.open_connection(hostname, port, ssl=ssl_context),
@@ -238,7 +238,7 @@ class AsyncioBackend(ConcurrencyBackend):
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
-        return TCPStream(
+        return SocketStream(
             stream_reader=stream_reader, stream_writer=stream_writer, timeout=timeout
         )
 

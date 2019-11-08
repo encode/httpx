@@ -13,7 +13,7 @@ from .base import (
     BaseEvent,
     BasePoolSemaphore,
     BaseQueue,
-    BaseTCPStream,
+    BaseSocketStream,
     ConcurrencyBackend,
     TimeoutFlag,
 )
@@ -23,7 +23,7 @@ def _or_inf(value: typing.Optional[float]) -> float:
     return value if value is not None else float("inf")
 
 
-class TCPStream(BaseTCPStream):
+class SocketStream(BaseSocketStream):
     def __init__(
         self,
         stream: typing.Union[trio.SocketStream, trio.SSLStream],
@@ -36,7 +36,7 @@ class TCPStream(BaseTCPStream):
 
     async def start_tls(
         self, hostname: str, ssl_context: ssl.SSLContext, timeout: TimeoutConfig
-    ) -> BaseTCPStream:
+    ) -> "SocketStream":
         # Check that the write buffer is empty. We should never start a TLS stream
         # while there is still pending data to write.
         assert self.write_buffer == b""
@@ -52,7 +52,7 @@ class TCPStream(BaseTCPStream):
         if cancel_scope.cancelled_caught:
             raise ConnectTimeout()
 
-        return TCPStream(ssl_stream, self.timeout)
+        return SocketStream(ssl_stream, self.timeout)
 
     def get_http_version(self) -> str:
         if not isinstance(self.stream, trio.SSLStream):
@@ -177,7 +177,7 @@ class TrioBackend(ConcurrencyBackend):
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: TimeoutConfig,
-    ) -> TCPStream:
+    ) -> SocketStream:
         connect_timeout = _or_inf(timeout.connect_timeout)
 
         with trio.move_on_after(connect_timeout) as cancel_scope:
@@ -189,7 +189,7 @@ class TrioBackend(ConcurrencyBackend):
         if cancel_scope.cancelled_caught:
             raise ConnectTimeout()
 
-        return TCPStream(stream=stream, timeout=timeout)
+        return SocketStream(stream=stream, timeout=timeout)
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any

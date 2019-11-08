@@ -179,7 +179,7 @@ class HTTPProxy(ConnectionPool):
         stream = http_connection.stream
 
         # If we need to start TLS again for the target server
-        # we need to pull the TCP stream off the internal
+        # we need to pull the socket stream off the internal
         # HTTP connection object and run start_tls()
         if origin.is_ssl:
             ssl_config = SSLConfig(cert=self.cert, verify=self.verify)
