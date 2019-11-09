@@ -85,7 +85,11 @@ RequestFiles = typing.Dict[
     str,
     typing.Union[
         typing.IO[typing.AnyStr],  # file
-        typing.Tuple[str, typing.IO[typing.AnyStr]],  # (filename, file)
+        typing.Tuple[
+            typing.Optional[str], typing.Union[
+                typing.IO[typing.AnyStr], typing.AnyStr
+            ]
+        ],  # (filename, file or str)
         typing.Tuple[
             str, typing.IO[typing.AnyStr], str
         ],  # (filename, file, content_type)
@@ -99,10 +103,10 @@ ResponseContent = typing.Union[bytes, typing.Iterator[bytes]]
 
 class URL:
     def __init__(
-        self,
-        url: URLTypes,
-        allow_relative: bool = False,
-        params: QueryParamTypes = None,
+            self,
+            url: URLTypes,
+            allow_relative: bool = False,
+            params: QueryParamTypes = None,
     ) -> None:
         if isinstance(url, str):
             self._uri_reference = rfc3986.api.iri_reference(url).encode()
@@ -213,10 +217,10 @@ class URL:
 
     def copy_with(self, **kwargs: typing.Any) -> "URL":
         if (
-            "username" in kwargs
-            or "password" in kwargs
-            or "host" in kwargs
-            or "port" in kwargs
+                "username" in kwargs
+                or "password" in kwargs
+                or "host" in kwargs
+                or "port" in kwargs
         ):
             host = kwargs.pop("host", self.host)
             port = kwargs.pop("port", self.port)
@@ -264,8 +268,8 @@ class URL:
         if self._uri_reference.userinfo:
             url_str = (
                 rfc3986.urlparse(url_str)
-                .copy_with(userinfo=f"{self.username}:[secure]")
-                .unsplit()
+                    .copy_with(userinfo=f"{self.username}:[secure]")
+                    .unsplit()
             )
         return f"{class_name}({url_str!r})"
 
@@ -285,10 +289,10 @@ class Origin:
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
-            isinstance(other, self.__class__)
-            and self.scheme == other.scheme
-            and self.host == other.host
-            and self.port == other.port
+                isinstance(other, self.__class__)
+                and self.scheme == other.scheme
+                and self.host == other.host
+                and self.port == other.port
         )
 
     def __hash__(self) -> int:
@@ -594,13 +598,13 @@ class Headers(typing.MutableMapping[str, str]):
 
 class BaseRequest:
     def __init__(
-        self,
-        method: str,
-        url: typing.Union[str, URL],
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+            self,
+            method: str,
+            url: typing.Union[str, URL],
+            *,
+            params: QueryParamTypes = None,
+            headers: HeaderTypes = None,
+            cookies: CookieTypes = None,
     ):
         self.method = method.upper()
         self.url = URL(url, params=params)
@@ -610,7 +614,7 @@ class BaseRequest:
             self._cookies.set_cookie_header(self)
 
     def encode_data(
-        self, data: dict = None, files: RequestFiles = None, json: typing.Any = None
+            self, data: dict = None, files: RequestFiles = None, json: typing.Any = None
     ) -> typing.Tuple[bytes, str]:
         if json is not None:
             content = jsonlib.dumps(json).encode("utf-8")
@@ -635,7 +639,7 @@ class BaseRequest:
         has_user_agent = "user-agent" in self.headers
         has_accept = "accept" in self.headers
         has_content_length = (
-            "content-length" in self.headers or "transfer-encoding" in self.headers
+                "content-length" in self.headers or "transfer-encoding" in self.headers
         )
         has_accept_encoding = "accept-encoding" in self.headers
         has_connection = "connection" in self.headers
@@ -677,16 +681,16 @@ class BaseRequest:
 
 class AsyncRequest(BaseRequest):
     def __init__(
-        self,
-        method: str,
-        url: typing.Union[str, URL],
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        data: AsyncRequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
+            self,
+            method: str,
+            url: typing.Union[str, URL],
+            *,
+            params: QueryParamTypes = None,
+            headers: HeaderTypes = None,
+            cookies: CookieTypes = None,
+            data: AsyncRequestData = None,
+            files: RequestFiles = None,
+            json: typing.Any = None,
     ):
         super().__init__(
             method=method, url=url, params=params, headers=headers, cookies=cookies
@@ -726,16 +730,16 @@ class AsyncRequest(BaseRequest):
 
 class Request(BaseRequest):
     def __init__(
-        self,
-        method: str,
-        url: typing.Union[str, URL],
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
+            self,
+            method: str,
+            url: typing.Union[str, URL],
+            *,
+            params: QueryParamTypes = None,
+            headers: HeaderTypes = None,
+            cookies: CookieTypes = None,
+            data: RequestData = None,
+            files: RequestFiles = None,
+            json: typing.Any = None,
     ):
         super().__init__(
             method=method, url=url, params=params, headers=headers, cookies=cookies
@@ -773,14 +777,14 @@ class Request(BaseRequest):
 
 class BaseResponse:
     def __init__(
-        self,
-        status_code: int,
-        *,
-        http_version: str = None,
-        headers: HeaderTypes = None,
-        request: BaseRequest = None,
-        on_close: typing.Callable = None,
-        elapsed: datetime.timedelta = None,
+            self,
+            status_code: int,
+            *,
+            http_version: str = None,
+            headers: HeaderTypes = None,
+            request: BaseRequest = None,
+            on_close: typing.Callable = None,
+            elapsed: datetime.timedelta = None,
     ):
         self.status_code = status_code
         self.http_version = http_version
@@ -957,16 +961,16 @@ class BaseResponse:
 
 class AsyncResponse(BaseResponse):
     def __init__(
-        self,
-        status_code: int,
-        *,
-        http_version: str = None,
-        headers: HeaderTypes = None,
-        content: AsyncResponseContent = None,
-        on_close: typing.Callable = None,
-        request: AsyncRequest = None,
-        history: typing.List["BaseResponse"] = None,
-        elapsed: datetime.timedelta = None,
+            self,
+            status_code: int,
+            *,
+            http_version: str = None,
+            headers: HeaderTypes = None,
+            content: AsyncResponseContent = None,
+            on_close: typing.Callable = None,
+            request: AsyncRequest = None,
+            history: typing.List["BaseResponse"] = None,
+            elapsed: datetime.timedelta = None,
     ):
         super().__init__(
             status_code=status_code,
@@ -1058,16 +1062,16 @@ class AsyncResponse(BaseResponse):
 
 class Response(BaseResponse):
     def __init__(
-        self,
-        status_code: int,
-        *,
-        http_version: str = None,
-        headers: HeaderTypes = None,
-        content: ResponseContent = None,
-        on_close: typing.Callable = None,
-        request: Request = None,
-        history: typing.List["BaseResponse"] = None,
-        elapsed: datetime.timedelta = None,
+            self,
+            status_code: int,
+            *,
+            http_version: str = None,
+            headers: HeaderTypes = None,
+            content: ResponseContent = None,
+            on_close: typing.Callable = None,
+            request: Request = None,
+            history: typing.List["BaseResponse"] = None,
+            elapsed: datetime.timedelta = None,
     ):
         super().__init__(
             status_code=status_code,
@@ -1210,7 +1214,7 @@ class Cookies(MutableMapping):
         self.jar.set_cookie(cookie)
 
     def get(  # type: ignore
-        self, name: str, default: str = None, domain: str = None, path: str = None
+            self, name: str, default: str = None, domain: str = None, path: str = None
     ) -> typing.Optional[str]:
         """
         Get a cookie by name. May optionally include domain and path
