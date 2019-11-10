@@ -93,7 +93,7 @@ RequestFiles = typing.Dict[
             typing.Tuple[
                 typing.Optional[str],
                 typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-                typing.Optional[str]
+                typing.Optional[str],
             ],  # (filename, file (or str), content_type)
         ],
     ],
