@@ -136,9 +136,8 @@ def test_multipart_encode_files_allows_filenames_as_none():
 
         assert content_type == f"multipart/form-data; boundary={boundary}"
         assert body == (
-            '--{0}\r\nContent-Disposition: form-data; name="file"\r\n'
-            "Content-Type: application/octet-stream\r\n\r\n<file content>\r\n"
-            "--{0}--\r\n"
+            '--{0}\r\nContent-Disposition: form-data; name="file"\r\n\r\n'
+            "<file content>\r\n--{0}--\r\n"
             "".format(boundary).encode("ascii")
         )
 
