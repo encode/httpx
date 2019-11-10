@@ -58,11 +58,11 @@ class FileField(Field):
                 value[2] if len(value) > 2 else self.guess_content_type()
             )
 
-    def guess_content_type(self) -> str:
+    def guess_content_type(self) -> typing.Optional[str]:
         if self.filename:
             return mimetypes.guess_type(self.filename)[0] or "application/octet-stream"
         else:
-            return "application/octet-stream"
+            return None
 
     def render_headers(self) -> bytes:
         parts = [b"Content-Disposition: form-data; ", _format_param("name", self.name)]
