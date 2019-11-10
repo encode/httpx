@@ -85,10 +85,17 @@ RequestFiles = typing.Dict[
     str,
     typing.Union[
         typing.IO[typing.AnyStr],  # file
-        typing.Tuple[str, typing.IO[typing.AnyStr]],  # (filename, file)
         typing.Tuple[
-            str, typing.IO[typing.AnyStr], str
-        ],  # (filename, file, content_type)
+            typing.Optional[str],
+            typing.Union[
+                typing.IO[typing.AnyStr], typing.AnyStr
+            ],  # (filename, file (or str))
+            typing.Tuple[
+                typing.Optional[str],
+                typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
+                typing.Optional[str]
+            ],  # (filename, file (or str), content_type)
+        ],
     ],
 ]
 
