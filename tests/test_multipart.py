@@ -140,9 +140,15 @@ def test_multipart_encode_files_allows_filenames_as_none():
             "<file content>\r\n--{0}--\r\n"
             "".format(boundary).encode("ascii")
         )
-@pytest.mark.parametrize('file_name,expected_content_type',
-                         [('example.json', 'application/json'), ('example.log', 'application/octet-stream')])
-def test_multipart_encode_files_guesses_correct_content_type(file_name, expected_content_type):
+
+
+@pytest.mark.parametrize(
+    "file_name,expected_content_type",
+    [("example.json", "application/json"), ("example.log", "application/octet-stream")],
+)
+def test_multipart_encode_files_guesses_correct_content_type(
+    file_name, expected_content_type
+):
     files = {"file": (file_name, io.BytesIO(b"<file content>"))}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
