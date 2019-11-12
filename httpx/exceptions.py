@@ -150,6 +150,12 @@ class InvalidURL(HTTPError):
     """
 
 
+class ConnectionClosed(HTTPError):
+    """
+    Expected more data from peer, but connection was closed.
+    """
+
+
 class CookieConflict(HTTPError):
     """
     Attempted to lookup a cookie by name, but multiple cookies existed.
