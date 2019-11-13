@@ -8,6 +8,7 @@ import hstspreload
 
 from .concurrency.asyncio import AsyncioBackend
 from .concurrency.base import ConcurrencyBackend
+from .concurrency.sync import SyncBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
@@ -76,9 +77,7 @@ class BaseClient:
         trust_env: bool = True,
     ):
         if backend is None:
-            backend = AsyncioBackend()
-
-        self.check_concurrency_backend(backend)
+            backend = self.get_default_concurrency_backend()
 
         if app is not None:
             param_count = len(inspect.signature(app).parameters)
@@ -168,8 +167,8 @@ class BaseClient:
     def params(self, params: QueryParamTypes) -> None:
         self._params = QueryParams(params)
 
-    def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
-        pass  # pragma: no cover
+    def get_default_concurrency_backend(self) -> ConcurrencyBackend:
+        raise NotImplementedError  # pragma: no cover
 
     def merge_url(self, url: URLTypes) -> URL:
         url = self.base_url.join(relative_url=url)
@@ -366,6 +365,9 @@ class BaseClient:
 
 
 class AsyncClient(BaseClient):
+    def get_default_concurrency_backend(self) -> ConcurrencyBackend:
+        return AsyncioBackend()
+
     async def get(
         self,
         url: URLTypes,
@@ -723,23 +725,8 @@ class Client(BaseClient):
     variables for configuration.
     """
 
-    def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
-        # Iterating over response content allocates an async environment on each step.
-        # This is relatively cheap on asyncio, but cannot be guaranteed for all
-        # concurrency backends.
-        # The sync client performs I/O on its own, so it doesn't need to support
-        # arbitrary concurrency backends.
-        # Therefore, we keep the `backend` parameter (for testing/mocking), but require
-        # that the concurrency backend relies on asyncio.
-
-        if isinstance(backend, AsyncioBackend):
-            return
-
-        if hasattr(backend, "loop"):
-            # Most likely a proxy class.
-            return
-
-        raise ValueError("'Client' only supports asyncio-based concurrency backends")
+    def get_default_concurrency_backend(self) -> ConcurrencyBackend:
+        return SyncBackend()
 
     def _async_request_data(
         self, data: RequestData = None

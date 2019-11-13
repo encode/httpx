@@ -146,22 +146,6 @@ def test_merge_url():
     assert url.is_ssl
 
 
-class DerivedFromAsyncioBackend(httpx.AsyncioBackend):
-    pass
-
-
-class AnyBackend:
-    pass
-
-
-def test_client_backend_must_be_asyncio_based():
-    httpx.Client(backend=httpx.AsyncioBackend())
-    httpx.Client(backend=DerivedFromAsyncioBackend())
-
-    with pytest.raises(ValueError):
-        httpx.Client(backend=AnyBackend())
-
-
 def test_elapsed_delay(server):
     with httpx.Client() as http:
         response = http.get(server.url.copy_with(path="/slow_response/100"))
