@@ -6,6 +6,7 @@ import h2.connection
 import h2.events
 
 from httpx import AsyncioBackend, BaseSocketStream, Request, TimeoutConfig
+from httpx.concurrency.base import TimeoutFlag
 from tests.concurrency import sleep
 
 
@@ -85,7 +86,9 @@ class MockHTTP2Server(BaseSocketStream):
             elif isinstance(event, h2.events.RemoteSettingsChanged):
                 self.settings_changed.append(event)
 
-    async def write(self, data: bytes, timeout) -> None:
+    async def write(
+        self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
+    ) -> None:
         self.write_no_block(data)
 
     async def close(self) -> None:
@@ -205,7 +208,9 @@ class MockRawSocketStream(BaseSocketStream):
     def write_no_block(self, data: bytes) -> None:
         self.backend.received_data.append(data)
 
-    async def write(self, data: bytes, timeout: TimeoutConfig = None) -> None:
+    async def write(
+        self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
+    ) -> None:
         if data:
             self.write_no_block(data)
 

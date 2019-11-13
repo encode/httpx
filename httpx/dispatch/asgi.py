@@ -124,17 +124,12 @@ class ASGIDispatch(AsyncDispatcher):
                 await response_body.mark_as_done()
                 response_started_or_failed.set()
 
-        # Using the background manager here *works*, but it is weak design because
-        # the background task isn't strictly context-managed.
-        # We could consider refactoring the other uses of this abstraction
-        # (mainly sending/receiving request/response data in h11 and h2 dispatchers),
-        # and see if that allows us to come back here and refactor things out.
-        background = await self.backend.background_manager(run_app).__aenter__()
+        terminate_app = await self.backend.start_in_background(run_app)
 
         await response_started_or_failed.wait()
 
         if app_exc is not None and self.raise_app_exceptions:
-            await background.close(app_exc)
+            await terminate_app(app_exc)
             raise app_exc
 
         assert status_code is not None, "application did not return a response."
@@ -142,7 +137,7 @@ class ASGIDispatch(AsyncDispatcher):
 
         async def on_close() -> None:
             await response_body.drain()
-            await background.close(app_exc)
+            await terminate_app(app_exc)
             if app_exc is not None and self.raise_app_exceptions:
                 raise app_exc
 

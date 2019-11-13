@@ -2,14 +2,13 @@ import functools
 import math
 import ssl
 import typing
-from types import TracebackType
+from contextlib import AsyncExitStack
 
 import trio
 
 from ..config import PoolLimits, TimeoutConfig
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import (
-    BaseBackgroundManager,
     BaseEvent,
     BasePoolSemaphore,
     BaseQueue,
@@ -205,6 +204,27 @@ class TrioBackend(ConcurrencyBackend):
             functools.partial(coroutine, **kwargs) if kwargs else coroutine, *args
         )
 
+    async def run_concurrently(
+        self, *coroutines: typing.Callable[[], typing.Awaitable[None]],
+    ) -> None:
+        async with trio.open_nursery() as nursery:
+            for coroutine in coroutines:
+                nursery.start_soon(coroutine)
+
+    async def start_in_background(self, coroutine: typing.Callable) -> typing.Callable:
+        nursery_manager = trio.open_nursery()
+        stack = AsyncExitStack()
+        nursery = await stack.enter_async_context(nursery_manager)
+        nursery.start_soon(coroutine)
+
+        async def close(exc: typing.Optional[Exception]) -> None:
+            if exc is None:
+                await stack.aclose()
+            else:
+                await stack.__aexit__(type(exc), exc, exc.__traceback__)
+
+        return close
+
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
 
@@ -213,11 +233,6 @@ class TrioBackend(ConcurrencyBackend):
 
     def create_event(self) -> BaseEvent:
         return Event()
-
-    def background_manager(
-        self, coroutine: typing.Callable, *args: typing.Any
-    ) -> "BackgroundManager":
-        return BackgroundManager(coroutine, *args)
 
 
 class Queue(BaseQueue):
@@ -248,25 +263,3 @@ class Event(BaseEvent):
         # trio.Event.clear() was deprecated in Trio 0.12.
         # https://github.com/python-trio/trio/issues/637
         self._event = trio.Event()
-
-
-class BackgroundManager(BaseBackgroundManager):
-    def __init__(self, coroutine: typing.Callable, *args: typing.Any) -> None:
-        self.coroutine = coroutine
-        self.args = args
-        self.nursery_manager = trio.open_nursery()
-        self.nursery: typing.Optional[trio.Nursery] = None
-
-    async def __aenter__(self) -> "BackgroundManager":
-        self.nursery = await self.nursery_manager.__aenter__()
-        self.nursery.start_soon(self.coroutine, *self.args)
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        assert self.nursery is not None
-        await self.nursery_manager.__aexit__(exc_type, exc_value, traceback)

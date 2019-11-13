@@ -46,11 +46,12 @@ class HTTP11Connection:
     ) -> AsyncResponse:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
-        await self._send_request(request, timeout)
+        (
+            http_version,
+            status_code,
+            headers,
+        ) = await self._send_request_and_receive_response(request, timeout)
 
-        task, args = self._send_request_data, [request.stream(), timeout]
-        async with self.backend.background_manager(task, *args):
-            http_version, status_code, headers = await self._receive_response(timeout)
         content = self._receive_response_data(timeout)
 
         return AsyncResponse(
@@ -72,11 +73,12 @@ class HTTP11Connection:
             pass
         await self.stream.close()
 
-    async def _send_request(
+    def _send_request(
         self, request: AsyncRequest, timeout: TimeoutConfig = None
-    ) -> None:
+    ) -> bytes:
         """
-        Send the request method, URL, and headers to the network.
+        Return bytes to send to the network in order to send the request method,
+        URL, and headers.
         """
         logger.trace(
             f"send_headers method={request.method!r} "
@@ -88,11 +90,11 @@ class HTTP11Connection:
         target = request.url.full_path.encode("ascii")
         headers = request.headers.raw
         event = h11.Request(method=method, target=target, headers=headers)
-        await self._send_event(event, timeout)
+        return self.h11_state.send(event)
 
     async def _send_request_data(
         self, data: typing.AsyncIterator[bytes], timeout: TimeoutConfig = None
-    ) -> None:
+    ) -> typing.AsyncIterator[bytes]:
         """
         Send the request body to the network.
         """
@@ -101,11 +103,11 @@ class HTTP11Connection:
             async for chunk in data:
                 logger.trace(f"send_data data=Data(<{len(chunk)} bytes>)")
                 event = h11.Data(data=chunk)
-                await self._send_event(event, timeout)
+                yield self.h11_state.send(event)
 
             # Finalize sending the request.
             event = h11.EndOfMessage()
-            await self._send_event(event, timeout)
+            yield self.h11_state.send(event)
         except OSError:  # pragma: nocover
             # Once we've sent the initial part of the request we don't actually
             # care about connection errors that occur when sending the body.
@@ -115,32 +117,75 @@ class HTTP11Connection:
             # Once we've sent the request, we enable read timeouts.
             self.timeout_flag.set_read_timeouts()
 
-    async def _send_event(self, event: H11Event, timeout: TimeoutConfig = None) -> None:
+    async def _send_request_and_receive_response(
+        self, request: AsyncRequest, timeout: TimeoutConfig = None
+    ) -> typing.Tuple[str, int, list]:
         """
-        Send a single `h11` event to the network, waiting for the data to
-        drain before returning.
+        Send the request to the network,
+        and receive the response (but not its body, yet) from the network.
         """
-        bytes_to_send = self.h11_state.send(event)
-        await self.stream.write(bytes_to_send, timeout)
 
-    async def _receive_response(
-        self, timeout: TimeoutConfig = None
-    ) -> typing.Tuple[str, int, typing.List[typing.Tuple[bytes, bytes]]]:
-        """
-        Read the response status and headers from the network.
-        """
-        while True:
-            event = await self._receive_event(timeout)
-            # As soon as we start seeing response events, we should enable
-            # read timeouts, if we haven't already.
-            self.timeout_flag.set_read_timeouts()
-            if isinstance(event, h11.InformationalResponse):
-                continue
-            else:
-                assert isinstance(event, h11.Response)
-                break  # pragma: no cover
-        http_version = "HTTP/%s" % event.http_version.decode("latin-1", errors="ignore")
-        return http_version, event.status_code, event.headers
+        class ResponseReceived(Exception):
+            pass
+
+        async def create_request_content_iterator() -> typing.AsyncIterator[bytes]:
+            yield self._send_request(request, timeout)
+            async for chunk in self._send_request_data(request.stream(), timeout):
+                yield chunk
+
+        request_content = create_request_content_iterator()
+
+        async def produce_bytes() -> typing.Optional[bytes]:
+            try:
+                return await request_content.__anext__()
+            except StopAsyncIteration:
+                return None
+
+        h11_response: typing.Optional[h11.Response] = None
+
+        async def consume_bytes(data: bytes) -> None:
+            nonlocal h11_response
+            self.h11_state.receive_data(data)
+
+            while True:
+                event = self.h11_state.next_event()
+                # As soon as we start seeing response events, we should enable
+                # read timeouts, if we haven't already.
+                self.timeout_flag.set_read_timeouts()
+
+                if event is h11.NEED_DATA:
+                    break
+                if isinstance(event, h11.InformationalResponse):
+                    continue
+                elif isinstance(event, h11.Response):
+                    h11_response = event
+                    raise ResponseReceived
+                else:
+                    raise RuntimeError(f"Unexpected h11 event: {event}")
+
+        writer, reader = self.stream.build_writer_reader_pair(
+            chunk_size=self.READ_NUM_BYTES,
+            produce_bytes=produce_bytes,
+            consume_bytes=consume_bytes,
+            timeout=timeout,
+            flag=self.timeout_flag,
+        )
+
+        try:
+            await self.backend.run_concurrently(writer, reader)
+        except ResponseReceived:
+            pass
+
+        assert h11_response is not None
+
+        http_version_number = h11_response.http_version.decode(
+            "latin-1", errors="ignore"
+        )
+        http_version = f"HTTP/{http_version_number}"
+        status_code = h11_response.status_code
+        headers = h11_response.headers
+
+        return http_version, status_code, headers
 
     async def _receive_response_data(
         self, timeout: TimeoutConfig = None

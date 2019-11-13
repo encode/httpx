@@ -46,15 +46,14 @@ class HTTP2Connection:
         if not self.initialized:
             self.initiate_connection()
 
-        stream_id = await self.send_headers(request, timeout)
-
+        stream_id = self.h2_state.get_next_available_stream_id()
         self.events[stream_id] = []
         self.timeout_flags[stream_id] = TimeoutFlag()
         self.window_update_received[stream_id] = self.backend.create_event()
 
-        task, args = self.send_request_data, [stream_id, request.stream(), timeout]
-        async with self.backend.background_manager(task, *args):
-            status_code, headers = await self.receive_response(stream_id, timeout)
+        status_code, headers = await self.send_request_and_receive_response(
+            stream_id, request, timeout=timeout
+        )
         content = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
 
@@ -98,10 +97,76 @@ class HTTP2Connection:
         self.stream.write_no_block(data_to_send)
         self.initialized = True
 
-    async def send_headers(
-        self, request: AsyncRequest, timeout: TimeoutConfig = None
-    ) -> int:
-        stream_id = self.h2_state.get_next_available_stream_id()
+    async def send_request_and_receive_response(
+        self, stream_id: int, request: AsyncRequest, timeout: TimeoutConfig = None
+    ) -> typing.Tuple[int, list]:
+        """
+        Send the request to the network, and
+        receive the response (but not its body, yet) from the network.
+        """
+
+        class ResponseReceived(Exception):
+            pass
+
+        async def create_request_content_iterator() -> typing.AsyncIterator[bytes]:
+            yield self.send_headers(stream_id, request, timeout)
+            async for data_to_send in self.send_request_data(
+                stream_id, request.stream(), timeout
+            ):
+                yield data_to_send
+
+        request_content = create_request_content_iterator()
+
+        async def produce_bytes() -> typing.Optional[bytes]:
+            try:
+                return await request_content.__anext__()
+            except StopAsyncIteration:
+                return None
+
+        h2_response: typing.Optional[h2.events.ResponseReceived] = None
+
+        async def consume_bytes(data: bytes) -> None:
+            nonlocal h2_response
+
+            await self.on_receive_response_data(stream_id, data, timeout)
+
+            try:
+                event = self.events[stream_id].pop(0)
+            except IndexError:
+                return
+
+            if isinstance(event, h2.events.ResponseReceived):
+                h2_response = event
+                raise ResponseReceived
+
+        writer, reader = self.stream.build_writer_reader_pair(
+            chunk_size=self.READ_NUM_BYTES,
+            produce_bytes=produce_bytes,
+            consume_bytes=consume_bytes,
+            timeout=timeout,
+            flag=self.timeout_flags[stream_id],
+        )
+
+        try:
+            await self.backend.run_concurrently(writer, reader)
+        except ResponseReceived:
+            pass
+
+        assert h2_response is not None
+
+        status_code = 200
+        headers = []
+        for k, v in h2_response.headers:
+            if k == b":status":
+                status_code = int(v.decode("ascii", errors="ignore"))
+            elif not k.startswith(b":"):
+                headers.append((k, v))
+
+        return status_code, headers
+
+    def send_headers(
+        self, stream_id: int, request: AsyncRequest, timeout: TimeoutConfig = None
+    ) -> bytes:
         headers = [
             (b":method", request.method.encode("ascii")),
             (b":authority", request.url.authority.encode("ascii")),
@@ -117,27 +182,26 @@ class HTTP2Connection:
             f"headers={headers!r}"
         )
         self.h2_state.send_headers(stream_id, headers)
-        data_to_send = self.h2_state.data_to_send()
-        await self.stream.write(data_to_send, timeout)
-        return stream_id
+        return self.h2_state.data_to_send()
 
     async def send_request_data(
         self,
         stream_id: int,
         stream: typing.AsyncIterator[bytes],
         timeout: TimeoutConfig = None,
-    ) -> None:
+    ) -> typing.AsyncIterator[bytes]:
         try:
             async for data in stream:
-                await self.send_data(stream_id, data, timeout)
-            await self.end_stream(stream_id, timeout)
+                async for data_to_send in self.send_data(stream_id, data):
+                    yield data_to_send
+            yield self.end_stream(stream_id)
         finally:
             # Once we've sent the request we should enable read timeouts.
             self.timeout_flags[stream_id].set_read_timeouts()
 
     async def send_data(
-        self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
-    ) -> None:
+        self, stream_id: int, data: bytes
+    ) -> typing.AsyncIterator[bytes]:
         while data:
             # The data will be divided into frames to send based on the flow control
             # window and the maximum frame size. Because the flow control window
@@ -157,44 +221,22 @@ class HTTP2Connection:
             else:
                 chunk, data = data[:chunk_size], data[chunk_size:]
                 self.h2_state.send_data(stream_id, chunk)
-                data_to_send = self.h2_state.data_to_send()
-                await self.stream.write(data_to_send, timeout)
+                yield self.h2_state.data_to_send()
 
-    async def end_stream(self, stream_id: int, timeout: TimeoutConfig = None) -> None:
+    def end_stream(self, stream_id: int) -> bytes:
         logger.trace(f"end_stream stream_id={stream_id}")
         self.h2_state.end_stream(stream_id)
-        data_to_send = self.h2_state.data_to_send()
-        await self.stream.write(data_to_send, timeout)
-
-    async def receive_response(
-        self, stream_id: int, timeout: TimeoutConfig = None
-    ) -> typing.Tuple[int, typing.List[typing.Tuple[bytes, bytes]]]:
-        """
-        Read the response status and headers from the network.
-        """
-        while True:
-            event = await self.receive_event(stream_id, timeout)
-            # As soon as we start seeing response events, we should enable
-            # read timeouts, if we haven't already.
-            self.timeout_flags[stream_id].set_read_timeouts()
-            if isinstance(event, h2.events.ResponseReceived):
-                break
-
-        status_code = 200
-        headers = []
-        for k, v in event.headers:
-            if k == b":status":
-                status_code = int(v.decode("ascii", errors="ignore"))
-            elif not k.startswith(b":"):
-                headers.append((k, v))
-
-        return (status_code, headers)
+        return self.h2_state.data_to_send()
 
     async def body_iter(
         self, stream_id: int, timeout: TimeoutConfig = None
     ) -> typing.AsyncIterator[bytes]:
+        flag = self.timeout_flags[stream_id]
         while True:
-            event = await self.receive_event(stream_id, timeout)
+            while not self.events[stream_id]:
+                data = await self.stream.read(self.READ_NUM_BYTES, timeout, flag=flag)
+                await self.on_receive_response_data(stream_id, data, timeout)
+            event = self.events[stream_id].pop(0)
             if isinstance(event, h2.events.DataReceived):
                 self.h2_state.acknowledge_received_data(
                     event.flow_controlled_length, stream_id
@@ -203,42 +245,38 @@ class HTTP2Connection:
             elif isinstance(event, (h2.events.StreamEnded, h2.events.StreamReset)):
                 break
 
-    async def receive_event(
-        self, stream_id: int, timeout: TimeoutConfig = None
+    async def on_receive_response_data(
+        self, stream_id: int, data: bytes, timeout: TimeoutConfig = None
     ) -> h2.events.Event:
-        while not self.events[stream_id]:
-            flag = self.timeout_flags[stream_id]
-            data = await self.stream.read(self.READ_NUM_BYTES, timeout, flag=flag)
-            events = self.h2_state.receive_data(data)
-            for event in events:
-                event_stream_id = getattr(event, "stream_id", 0)
-                logger.trace(
-                    f"receive_event stream_id={event_stream_id} event={event!r}"
-                )
+        for event in self.h2_state.receive_data(data):
+            # As soon as we start seeing response events, we should enable
+            # read timeouts, if we haven't already.
+            self.timeout_flags[stream_id].set_read_timeouts()
 
-                if hasattr(event, "error_code"):
-                    raise ProtocolError(event)
+            event_stream_id = getattr(event, "stream_id", 0)
+            logger.trace(f"receive_event stream_id={event_stream_id} event={event!r}")
 
-                if isinstance(event, h2.events.WindowUpdated):
-                    if event_stream_id == 0:
-                        for window_update_event in self.window_update_received.values():
-                            window_update_event.set()
-                    else:
-                        try:
-                            self.window_update_received[event_stream_id].set()
-                        except KeyError:  # pragma: no cover
-                            # the window_update_received dictionary is only relevant
-                            # when sending data, which should never raise a KeyError
-                            # here.
-                            pass
+            if hasattr(event, "error_code"):
+                raise ProtocolError(event)
 
-                if event_stream_id:
-                    self.events[event.stream_id].append(event)
+            if isinstance(event, h2.events.WindowUpdated):
+                if event_stream_id == 0:
+                    for window_update_event in self.window_update_received.values():
+                        window_update_event.set()
+                else:
+                    try:
+                        self.window_update_received[event_stream_id].set()
+                    except KeyError:  # pragma: no cover
+                        # the window_update_received dictionary is only relevant
+                        # when sending data, which should never raise a KeyError
+                        # here.
+                        pass
 
-            data_to_send = self.h2_state.data_to_send()
-            await self.stream.write(data_to_send, timeout)
+            if event_stream_id:
+                self.events[event.stream_id].append(event)
 
-        return self.events[stream_id].pop(0)
+        data_to_send = self.h2_state.data_to_send()
+        await self.stream.write(data_to_send, timeout)
 
     async def response_closed(self, stream_id: int) -> None:
         del self.events[stream_id]

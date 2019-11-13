@@ -1,6 +1,5 @@
 import ssl
 import typing
-from types import TracebackType
 
 from ..config import PoolLimits, TimeoutConfig
 
@@ -53,15 +52,47 @@ class BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
     async def read(
-        self, n: int, timeout: TimeoutConfig = None, flag: typing.Any = None
+        self, n: int, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
     ) -> bytes:
         raise NotImplementedError()  # pragma: no cover
 
     def write_no_block(self, data: bytes) -> None:
         raise NotImplementedError()  # pragma: no cover
 
-    async def write(self, data: bytes, timeout: TimeoutConfig = None) -> None:
+    async def write(
+        self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
+    ) -> None:
         raise NotImplementedError()  # pragma: no cover
+
+    def build_writer_reader_pair(
+        self,
+        chunk_size: int,
+        produce_bytes: typing.Callable[[], typing.Awaitable[typing.Optional[bytes]]],
+        consume_bytes: typing.Callable[[bytes], typing.Awaitable[None]],
+        timeout: TimeoutConfig = None,
+        flag: TimeoutFlag = None,
+    ) -> typing.Tuple[typing.Callable, typing.Callable]:
+        """
+        Return the following pair of async functions:
+
+        * Writer: writes bytes yielded by `produce_bytes()` to the network.
+        * Reader: read bytes from the network in chunks, and pass them
+        to `consume_bytes()`.
+        """
+
+        async def writer() -> None:
+            while True:
+                outgoing = await produce_bytes()
+                if outgoing is None:
+                    return
+                await self.write(outgoing, timeout=timeout, flag=flag)
+
+        async def reader() -> None:
+            while True:
+                incoming = await self.read(chunk_size, timeout=timeout, flag=flag)
+                await consume_bytes(incoming)
+
+        return writer, reader
 
     async def close(self) -> None:
         raise NotImplementedError()  # pragma: no cover
@@ -153,6 +184,16 @@ class ConcurrencyBackend:
     ) -> typing.Any:
         raise NotImplementedError()  # pragma: no cover
 
+    async def run_concurrently(
+        self, *coroutines: typing.Callable[[], typing.Awaitable[None]],
+    ) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def start_in_background(
+        self, coroutine: typing.Callable
+    ) -> typing.Callable[[typing.Optional[BaseException]], typing.Awaitable[None]]:
+        raise NotImplementedError()  # pragma: no cover
+
     def iterate(self, async_iterator):  # type: ignore
         while True:
             try:
@@ -165,28 +206,3 @@ class ConcurrencyBackend:
 
     def create_event(self) -> BaseEvent:
         raise NotImplementedError()  # pragma: no cover
-
-    def background_manager(
-        self, coroutine: typing.Callable, *args: typing.Any
-    ) -> "BaseBackgroundManager":
-        raise NotImplementedError()  # pragma: no cover
-
-
-class BaseBackgroundManager:
-    async def __aenter__(self) -> "BaseBackgroundManager":
-        raise NotImplementedError()  # pragma: no cover
-
-    async def __aexit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
-    async def close(self, exception: BaseException = None) -> None:
-        if exception is None:
-            await self.__aexit__(None, None, None)
-        else:
-            traceback = exception.__traceback__  # type: ignore
-            await self.__aexit__(type(exception), exception, traceback)

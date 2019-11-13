@@ -17,7 +17,7 @@ async def test_read_timeout(server, backend):
 
     async with AsyncClient(timeout=timeout, backend=backend) as client:
         with pytest.raises(ReadTimeout):
-            await client.get(server.url.copy_with(path="/slow_response"))
+            await client.get(server.url.copy_with(path="/slow_response/100"))
 
 
 async def test_write_timeout(server, backend):
@@ -26,7 +26,7 @@ async def test_write_timeout(server, backend):
     async with AsyncClient(timeout=timeout, backend=backend) as client:
         with pytest.raises(WriteTimeout):
             data = b"*" * 1024 * 1024 * 100
-            await client.put(server.url.copy_with(path="/slow_response"), data=data)
+            await client.put(server.url.copy_with(path="/slow_response/200"), data=data)
 
 
 async def test_connect_timeout(server, backend):

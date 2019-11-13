@@ -3,12 +3,10 @@ import functools
 import ssl
 import sys
 import typing
-from types import TracebackType
 
 from ..config import PoolLimits, TimeoutConfig
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import (
-    BaseBackgroundManager,
     BaseEvent,
     BasePoolSemaphore,
     BaseQueue,
@@ -148,6 +146,7 @@ class SocketStream(BaseSocketStream):
                 # We check our flag at the first possible moment, in order to
                 # allow us to suppress write timeouts, if we've since
                 # switched over to read-timeout mode.
+                print("flag:", flag.__dict__)
                 should_raise = flag is None or flag.raise_on_write_timeout
                 if should_raise:
                     raise WriteTimeout() from None
@@ -261,6 +260,21 @@ class AsyncioBackend(ConcurrencyBackend):
         finally:
             self._loop = loop
 
+    async def run_concurrently(
+        self, *coroutines: typing.Callable[[], typing.Awaitable[None]],
+    ) -> None:
+        await asyncio.gather(*(coroutine() for coroutine in coroutines))
+
+    async def start_in_background(self, coroutine: typing.Callable) -> typing.Callable:
+        task = self.loop.create_task(coroutine())
+
+        async def close(exc: typing.Optional[Exception]) -> None:
+            await task
+            if exc is None:
+                task.result()
+
+        return close
+
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
 
@@ -269,29 +283,3 @@ class AsyncioBackend(ConcurrencyBackend):
 
     def create_event(self) -> BaseEvent:
         return typing.cast(BaseEvent, asyncio.Event())
-
-    def background_manager(
-        self, coroutine: typing.Callable, *args: typing.Any
-    ) -> "BackgroundManager":
-        return BackgroundManager(coroutine, args)
-
-
-class BackgroundManager(BaseBackgroundManager):
-    def __init__(self, coroutine: typing.Callable, args: typing.Any) -> None:
-        self.coroutine = coroutine
-        self.args = args
-
-    async def __aenter__(self) -> "BackgroundManager":
-        loop = asyncio.get_event_loop()
-        self.task = loop.create_task(self.coroutine(*self.args))
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        await self.task
-        if exc_type is None:
-            self.task.result()
