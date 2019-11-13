@@ -2,10 +2,10 @@ import functools
 import math
 import ssl
 import typing
-from contextlib import AsyncExitStack
 
 import trio
 
+from ..compat import AsyncExitStack
 from ..config import PoolLimits, TimeoutConfig
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import (

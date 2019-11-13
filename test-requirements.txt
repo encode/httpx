@@ -1,6 +1,7 @@
 -e .
 
 # Optional
+async_exit_stack; python_version < '3.7'
 brotlipy==0.7.*
 
 cryptography
