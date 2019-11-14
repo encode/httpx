@@ -80,7 +80,13 @@ def request(
     <Response [200 OK]>
     ```
     """
-    with Client(http_versions=["HTTP/1.1"]) as client:
+    with Client(
+        http_versions=["HTTP/1.1"],
+        cert=cert,
+        verify=verify,
+        timeout=timeout,
+        trust_env=trust_env,
+    ) as client:
         return client.request(
             method=method,
             url=url,
