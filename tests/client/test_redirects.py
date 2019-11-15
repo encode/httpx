@@ -312,7 +312,10 @@ class MockCookieDispatch(AsyncDispatcher):
             status_code = codes.SEE_OTHER
             headers = {
                 "location": "/",
-                "set-cookie": "session=eyJ1c2VybmFtZSI6ICJ0b21; path=/; Max-Age=1209600; httponly; samesite=lax",
+                "set-cookie": (
+                    "session=eyJ1c2VybmFtZSI6ICJ0b21; path=/; Max-Age=1209600; "
+                    "httponly; samesite=lax"
+                ),
             }
 
             return AsyncResponse(status_code, headers=headers, request=request)
@@ -321,7 +324,10 @@ class MockCookieDispatch(AsyncDispatcher):
             status_code = codes.SEE_OTHER
             headers = {
                 "location": "/",
-                "set-cookie": "session=null; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly; samesite=lax",
+                "set-cookie": (
+                    "session=null; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; "
+                    "httponly; samesite=lax"
+                ),
             }
             return AsyncResponse(status_code, headers=headers, request=request)
 
