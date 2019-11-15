@@ -115,6 +115,11 @@ class RedirectMiddleware(BaseMiddleware):
             # are only relevant to the request body.
             headers.pop("Content-Length", None)
             headers.pop("Transfer-Encoding", None)
+
+        # We should use the client cookie store to determine any cookie header,
+        # rather than whatever was on the original outgoing request.
+        headers.pop("Cookie", None)
+
         return headers
 
     def redirect_content(self, request: AsyncRequest, method: str) -> bytes:
