@@ -1,7 +1,7 @@
 import typing
 
 from .client import Client
-from .config import CertTypes, TimeoutTypes, VerifyTypes
+from .config import CertTypes, TimeoutTypes, VerifyTypes, DEFAULT_TIMEOUT_CONFIG
 from .models import (
     AuthTypes,
     CookieTypes,
@@ -25,12 +25,12 @@ def request(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
-    timeout: TimeoutTypes = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     allow_redirects: bool = True,
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     stream: bool = False,
-    trust_env: bool = None,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends an HTTP request.
@@ -117,8 +117,8 @@ def get(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `GET` request.
@@ -155,8 +155,8 @@ def options(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends an `OPTIONS` request.
@@ -193,8 +193,8 @@ def head(
     allow_redirects: bool = False,  #  Note: Differs to usual default.
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `HEAD` request.
@@ -236,8 +236,8 @@ def post(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `POST` request.
@@ -277,8 +277,8 @@ def put(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `PUT` request.
@@ -318,8 +318,8 @@ def patch(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `PATCH` request.
@@ -356,8 +356,8 @@ def delete(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `DELETE` request.
