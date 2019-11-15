@@ -28,7 +28,6 @@ def check(session):
         "black",
         "flake8",
         "flake8-bugbear",
-        "flake8-comprehensions",
         "flake8-pie",
         "isort",
         "mypy",
