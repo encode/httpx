@@ -290,3 +290,66 @@ async def test_cross_subdomain_redirect(backend):
     url = "https://example.com/cross_subdomain"
     response = await client.get(url)
     assert response.url == URL("https://www.example.org/cross_subdomain")
+
+
+class MockCookieDispatch(AsyncDispatcher):
+    async def send(
+        self,
+        request: AsyncRequest,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+    ) -> AsyncResponse:
+        if request.url.path == "/":
+            print(request.headers)
+            if 'cookie' in request.headers:
+                content = b'Logged in'
+            else:
+                content = b'Not logged in'
+            return AsyncResponse(codes.OK, content=content, request=request)
+
+        elif request.url.path == "/login":
+            status_code = codes.SEE_OTHER
+            headers = {
+                "location": "/",
+                "set-cookie": 'session=eyJ1c2VybmFtZSI6ICJ0b21; path=/; Max-Age=1209600; httponly; samesite=lax'
+            }
+
+            return AsyncResponse(status_code, headers=headers, request=request)
+
+        elif request.url.path == "/logout":
+            status_code = codes.SEE_OTHER
+            headers = {
+                "location": "/",
+                "set-cookie": 'session=null; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly; samesite=lax'
+            }
+            return AsyncResponse(status_code, headers=headers, request=request)
+
+
+async def test_redirect_cookie_behavior(backend):
+    client = AsyncClient(dispatch=MockCookieDispatch(), backend=backend)
+
+    # The client is not logged in.
+    response = await client.get("https://example.com/")
+    assert response.url == "https://example.com/"
+    assert response.text == 'Not logged in'
+
+    # Login redirects to the homepage, setting a session cookie.
+    response = await client.post("https://example.com/login")
+    assert response.url == "https://example.com/"
+    assert response.text == 'Logged in'
+
+    # The client is logged in.
+    response = await client.get("https://example.com/")
+    assert response.url == "https://example.com/"
+    assert response.text == 'Logged in'
+
+    # Logout redirects to the homepage, expiring the session cookie.
+    response = await client.post("https://example.com/logout")
+    assert response.url == "https://example.com/"
+    assert response.text == 'Not logged in'
+
+    # The client is not logged in.
+    response = await client.get("https://example.com/")
+    assert response.url == "https://example.com/"
+    assert response.text == 'Not logged in'

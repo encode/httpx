@@ -51,7 +51,6 @@ class RedirectMiddleware(BaseMiddleware):
         headers = self.redirect_headers(request, url, method)  # TODO: merge headers?
         content = self.redirect_content(request, method)
         cookies = Cookies(self.cookies)
-        cookies.update(request.cookies)
         return AsyncRequest(
             method=method, url=url, headers=headers, data=content, cookies=cookies
         )
