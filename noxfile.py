@@ -10,7 +10,7 @@ source_files = ("httpx", "tools", "tests", "setup.py", "noxfile.py")
 @nox.session
 def lint(session):
     session.install(
-        "--upgrade", "autoflake", "black", "flake8", "isort", "seed-isort-config"
+        "--upgrade", "autoflake", "black", "isort", "seed-isort-config"
     )
 
     session.run("autoflake", "--in-place", "--recursive", *source_files)
@@ -26,16 +26,11 @@ def check(session):
     session.install(
         "--upgrade",
         "black",
-        "flake8",
-        "flake8-bugbear",
-        "flake8-comprehensions",
-        "flake8-pie",
         "isort",
         "mypy",
     )
 
     session.run("black", "--check", "--diff", "--target-version=py36", *source_files)
-    session.run("flake8", *source_files)
     session.run("mypy", "httpx")
     session.run(
         "isort", "--check", "--diff", "--project=httpx", "--recursive", *source_files
