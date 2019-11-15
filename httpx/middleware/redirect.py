@@ -51,7 +51,6 @@ class RedirectMiddleware(BaseMiddleware):
         headers = self.redirect_headers(request, url, method)  # TODO: merge headers?
         content = self.redirect_content(request, method)
         cookies = Cookies(self.cookies)
-        cookies.update(request.cookies)
         return AsyncRequest(
             method=method, url=url, headers=headers, data=content, cookies=cookies
         )
@@ -115,6 +114,11 @@ class RedirectMiddleware(BaseMiddleware):
             # are only relevant to the request body.
             headers.pop("Content-Length", None)
             headers.pop("Transfer-Encoding", None)
+
+        # We should use the client cookie store to determine any cookie header,
+        # rather than whatever was on the original outgoing request.
+        headers.pop("Cookie", None)
+
         return headers
 
     def redirect_content(self, request: AsyncRequest, method: str) -> bytes:
