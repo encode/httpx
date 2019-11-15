@@ -1,7 +1,7 @@
 import typing
 
 from .client import Client
-from .config import CertTypes, TimeoutTypes, VerifyTypes, DEFAULT_TIMEOUT_CONFIG
+from .config import DEFAULT_TIMEOUT_CONFIG, CertTypes, TimeoutTypes, VerifyTypes
 from .models import (
     AuthTypes,
     CookieTypes,
