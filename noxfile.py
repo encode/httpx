@@ -24,13 +24,7 @@ def lint(session):
 @nox.session
 def check(session):
     session.install(
-        "--upgrade",
-        "black",
-        "flake8",
-        "flake8-bugbear",
-        "flake8-pie",
-        "isort",
-        "mypy",
+        "--upgrade", "black", "flake8", "flake8-bugbear", "flake8-pie", "isort", "mypy"
     )
 
     session.run("black", "--check", "--diff", "--target-version=py36", *source_files)
