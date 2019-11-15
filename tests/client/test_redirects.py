@@ -301,7 +301,6 @@ class MockCookieDispatch(AsyncDispatcher):
         timeout: TimeoutTypes = None,
     ) -> AsyncResponse:
         if request.url.path == "/":
-            print(request.headers)
             if "cookie" in request.headers:
                 content = b"Logged in"
             else:
