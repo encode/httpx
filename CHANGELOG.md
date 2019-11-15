@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.7.7 (November 15, 2019)
+
+### Fixed
+
+- Resolve an issue with cookies behavior on redirect requests. (Pull #529)
+
+### Added
+
+- Add request/response DEBUG logs. (Pull #502)
+- Use TRACE log level for low level info. (Pull #500)
+
 ## 0.7.6 (November 2, 2019)
 
 ### Removed
