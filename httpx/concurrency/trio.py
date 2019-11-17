@@ -32,6 +32,7 @@ class SocketStream(BaseSocketStream):
         self.stream = stream
         self.timeout = timeout
         self.write_buffer = b""
+        self.read_lock = trio.Lock()
         self.write_lock = trio.Lock()
 
     async def start_tls(
@@ -74,7 +75,8 @@ class SocketStream(BaseSocketStream):
             read_timeout = _or_inf(timeout.read_timeout if should_raise else 0.01)
 
             with trio.move_on_after(read_timeout):
-                return await self.stream.receive_some(max_bytes=n)
+                async with self.read_lock:
+                    return await self.stream.receive_some(max_bytes=n)
 
             if should_raise:
                 raise ReadTimeout() from None
