@@ -105,3 +105,78 @@ trio.run(main)
 
 !!! important
     `trio` must be installed to import and use the `TrioBackend`.
+
+## FAQ
+
+### When should I use an `AsyncClient`?
+
+You should use an `AsyncClient` whenever you are inside an *async environment*.
+
+In particular, using `httpx.get()` or `httpx.Client()` in an async environment is **not** supported. There are several technical reasons to this, but the rationale is that you shouldn't be doing blocking-style network calls in the context of an event loop (for more discussion, see [#179](https://github.com/encode/httpx/issues/179)).
+
+For example, this won't work:
+
+```python
+import asyncio
+import httpx
+
+async def main():
+    r = httpx.get("https://example.org")
+
+asyncio.run(main())
+```
+
+Instead, you should use an `AsyncClient`:
+
+```python
+import asyncio
+import httpx
+
+async def main():
+    async with httpx.AsyncClient() as client:
+        r = await client.get("https://example.org")
+
+asyncio.run(main())
+```
+
+Note that being in an async environment may not be immediately obvious. For example, you may be in a regular function that is called from an asynchronous function. So, this won't work either:
+
+```python
+import asyncio
+import httpx
+
+class Service:
+    def fetch_data(self):
+        r = httpx.get("https://example.org")
+        return r.text
+
+async def main():
+    service = Service()
+    data = service.fetch_data()
+
+asyncio.run(main())
+```
+
+Here, you should make `.fetch_data()` asynchronous. To use a shared client and benefit from connection pooling, you can also inject the `AsyncClient` as a parameter. This leads to the following code:
+
+```python
+import asyncio
+import httpx
+
+class Service:
+    async def fetch_data(self, client):
+        r = await client.get("https://example.org")
+        return r.text
+
+async def main():
+    service = Service()
+    async with httpx.AsyncClient() as client:
+        data = await service.fetch_data(client)
+        more_data = await service.fetch_data(client)
+
+asyncio.run(main())
+```
+
+If you do not have control over making `.fetch_data()` asynchronous (for example, if it is a synchronous hook provided by a third-party framework), then the only solution would be to make the HTTP request in a separate thread. At this point, you should probably consider using a regular threaded HTTP client such as [Requests](https://github.com/psf/requests).
+
+Lastly, if you are using HTTPX in the Jupyter REPL, you should also use an `AsyncClient`, as the Jupyter REPL secretly runs an event loop and lets you use `await` directly. For related discussion, see [#508](https://github.com/encode/httpx/issues/508)).
