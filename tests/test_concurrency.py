@@ -1,5 +1,3 @@
-import sys
-
 import pytest
 import trio
 
@@ -31,9 +29,6 @@ async def test_start_tls_on_socket_stream(https_server, backend, get_cipher):
     See that the concurrency backend can make a connection without TLS then
     start TLS on an existing connection.
     """
-    if isinstance(backend, AsyncioBackend) and sys.version_info < (3, 7):
-        pytest.xfail(reason="Requires Python 3.7+ for AbstractEventLoop.start_tls()")
-
     ctx = SSLConfig().load_ssl_context_no_verify(HTTPVersionConfig())
     timeout = TimeoutConfig(5)
 
