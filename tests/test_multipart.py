@@ -159,7 +159,7 @@ def test_multipart_encode_files_guesses_correct_content_type(
         assert body == (
             f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
             f'filename="{file_name}"\r\nContent-Type: '
-            f'{expected_content_type}\r\n\r\n<file content>\r\n--{boundary}--\r\n'
+            f"{expected_content_type}\r\n\r\n<file content>\r\n--{boundary}--\r\n"
             "".encode("ascii")
         )
 
