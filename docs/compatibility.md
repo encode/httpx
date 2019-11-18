@@ -32,3 +32,7 @@ with httpx.Client(**kwargs) as client:
 ```
 
 More detailed documentation and usage of `Client` can be found in [Advanced Usage](advanced.md).
+
+## Mocking
+
+If you need to mock HTTPX the same way that test utilities like `responses` and `requests-mock` does for `requests`, see [RESPX](https://github.com/lundberg/respx).
