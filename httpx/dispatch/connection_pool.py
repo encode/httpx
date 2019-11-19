@@ -89,6 +89,7 @@ class ConnectionPool(AsyncDispatcher):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http_versions: HTTPVersionTypes = None,
         backend: ConcurrencyBackend = None,
+        uds: typing.Optional[str] = None,
     ):
         self.verify = verify
         self.cert = cert
@@ -97,6 +98,7 @@ class ConnectionPool(AsyncDispatcher):
         self.http_versions = http_versions
         self.is_closed = False
         self.trust_env = trust_env
+        self.uds = uds
 
         self.keepalive_connections = ConnectionStore()
         self.active_connections = ConnectionStore()
@@ -142,6 +144,7 @@ class ConnectionPool(AsyncDispatcher):
                 backend=self.backend,
                 release_func=self.release_connection,
                 trust_env=self.trust_env,
+                uds=self.uds,
             )
             logger.trace(f"new_connection connection={connection!r}")
         else:

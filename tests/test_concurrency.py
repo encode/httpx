@@ -24,7 +24,10 @@ from httpx.concurrency.trio import TrioBackend
         ),
     ],
 )
-async def test_start_tls_on_socket_stream(https_server, backend, get_cipher):
+@pytest.mark.parametrize("use_uds", (False, True))
+async def test_start_tls_on_socket_stream(
+    https_server, https_uds_server, backend, get_cipher, use_uds
+):
     """
     See that the concurrency backend can make a connection without TLS then
     start TLS on an existing connection.
@@ -32,9 +35,15 @@ async def test_start_tls_on_socket_stream(https_server, backend, get_cipher):
     ctx = SSLConfig().load_ssl_context_no_verify(HTTPVersionConfig())
     timeout = TimeoutConfig(5)
 
-    stream = await backend.open_tcp_stream(
-        https_server.url.host, https_server.url.port, None, timeout
-    )
+    if use_uds:
+        assert https_uds_server.config.uds is not None
+        stream = await backend.open_uds_stream(
+            https_uds_server.config.uds, https_uds_server.url.host, None, timeout
+        )
+    else:
+        stream = await backend.open_tcp_stream(
+            https_server.url.host, https_server.url.port, None, timeout
+        )
 
     try:
         assert stream.is_connection_dropped() is False

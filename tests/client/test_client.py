@@ -138,6 +138,17 @@ def test_base_url(server):
     assert response.url == base_url
 
 
+def test_uds(uds_server):
+    url = uds_server.url
+    uds = uds_server.config.uds
+    assert uds is not None
+    with httpx.Client(uds=uds) as http:
+        response = http.get(url)
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+    assert response.encoding == "iso-8859-1"
+
+
 def test_merge_url():
     client = httpx.Client(base_url="https://www.paypal.com/")
     url = client.merge_url("http://www.paypal.com")
