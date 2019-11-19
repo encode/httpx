@@ -5,29 +5,28 @@ from httpx import AsyncioBackend, HTTPVersionConfig, SSLConfig, TimeoutConfig
 from httpx.concurrency.trio import TrioBackend
 
 
-def get_asyncio_cipher(stream):
-    return stream.stream_writer.get_extra_info("cipher", default=None)
-
-
-def get_trio_cipher(stream):
-    return stream.stream.cipher() if isinstance(stream.stream, trio.SSLStream) else None
-
-
 @pytest.mark.parametrize(
-    "backend, test_uds, get_cipher",
+    "backend, get_cipher",
     [
         pytest.param(
-            AsyncioBackend(), False, get_asyncio_cipher, marks=pytest.mark.asyncio
+            AsyncioBackend(),
+            lambda stream: stream.stream_writer.get_extra_info("cipher", default=None),
+            marks=pytest.mark.asyncio,
         ),
         pytest.param(
-            AsyncioBackend(), True, get_asyncio_cipher, marks=pytest.mark.asyncio
+            TrioBackend(),
+            lambda stream: (
+                stream.stream.cipher()
+                if isinstance(stream.stream, trio.SSLStream)
+                else None
+            ),
+            marks=pytest.mark.trio,
         ),
-        pytest.param(TrioBackend(), False, get_trio_cipher, marks=pytest.mark.trio),
-        pytest.param(TrioBackend(), True, get_trio_cipher, marks=pytest.mark.trio),
     ],
 )
+@pytest.mark.parametrize("use_uds", (False, True))
 async def test_start_tls_on_socket_stream(
-    https_server, https_uds_server, backend, test_uds, get_cipher
+    https_server, https_uds_server, backend, get_cipher, use_uds
 ):
     """
     See that the concurrency backend can make a connection without TLS then
@@ -36,7 +35,7 @@ async def test_start_tls_on_socket_stream(
     ctx = SSLConfig().load_ssl_context_no_verify(HTTPVersionConfig())
     timeout = TimeoutConfig(5)
 
-    if test_uds:
+    if use_uds:
         assert https_uds_server.config.uds is not None
         stream = await backend.open_uds_stream(
             https_uds_server.config.uds, https_uds_server.url.host, None, timeout
