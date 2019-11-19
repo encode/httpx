@@ -46,9 +46,10 @@ class HTTP2Connection:
         if not self.initialized:
             self.initiate_connection()
 
-        stream_id = await self.send_headers(request, timeout)
-
+        stream_id = self.h2_state.get_next_available_stream_id()
         self.events[stream_id] = []
+        await self.send_headers(request, stream_id, timeout)
+
         self.timeout_flags[stream_id] = TimeoutFlag()
         self.window_update_received[stream_id] = self.backend.create_event()
 
@@ -99,9 +100,9 @@ class HTTP2Connection:
         self.initialized = True
 
     async def send_headers(
-        self, request: AsyncRequest, timeout: TimeoutConfig = None
-    ) -> int:
-        stream_id = self.h2_state.get_next_available_stream_id()
+        self, request: AsyncRequest, stream_id: int, timeout: TimeoutConfig = None
+    ) -> None:
+        self.events[stream_id] = []
         headers = [
             (b":method", request.method.encode("ascii")),
             (b":authority", request.url.authority.encode("ascii")),
@@ -119,7 +120,6 @@ class HTTP2Connection:
         self.h2_state.send_headers(stream_id, headers)
         data_to_send = self.h2_state.data_to_send()
         await self.stream.write(data_to_send, timeout)
-        return stream_id
 
     async def send_request_data(
         self,
