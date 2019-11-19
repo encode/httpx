@@ -723,7 +723,7 @@ class Client(BaseClient):
     async requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
-    * **uds** - *(optional)* A path to a Unix domain socket to connect through
+    * **uds** - *(optional)* A path to a Unix domain socket to connect through.
     """
 
     def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
