@@ -179,6 +179,21 @@ password example-password
 ...
 ```
 
+## Unix Domain Sockets
+
+You can configure an `httpx` client to connect through a unix domain socket via the `uds` parameter. This is useful when making requests to a server that is bound to a socket file rather than an IP address.
+
+Here's an example requesting the Docker Engine API:
+
+```python
+import httpx
+
+
+with httpx.Client(uds="/var/run/docker.sock") as client:
+    # This request will connect through the socket file.
+    resp = client.get("http://localhost/version")
+```
+
 ## HTTP Proxying
 
 HTTPX supports setting up proxies the same way that Requests does via the `proxies` parameter.
