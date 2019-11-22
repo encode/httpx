@@ -1,5 +1,4 @@
 import functools
-import inspect
 import netrc
 import typing
 from types import TracebackType
@@ -41,7 +40,6 @@ from .models import (
     RequestData,
     RequestFiles,
     Response,
-    ResponseContent,
     URLTypes,
 )
 from .utils import ElapsedTimer, get_environment_proxies, get_logger, get_netrc
