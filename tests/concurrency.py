@@ -5,6 +5,7 @@ required as part of the ConcurrencyBackend API.
 
 import asyncio
 import functools
+import typing
 
 import trio
 
@@ -28,17 +29,18 @@ async def _sleep_trio(backend, seconds: int):
 
 
 @functools.singledispatch
-async def run_concurrently(backend, *async_fns):
+async def run_concurrently(backend, *coroutines: typing.Callable[[], typing.Awaitable]):
     raise NotImplementedError  # pragma: no cover
 
 
 @run_concurrently.register(AsyncioBackend)
-async def _run_concurrently_asyncio(backend, *async_fns):
-    await asyncio.gather(*(fn() for fn in async_fns))
+async def _run_concurrently_asyncio(backend, *coroutines):
+    coros = (coroutine() for coroutine in coroutines)
+    await asyncio.gather(*coros)
 
 
 @run_concurrently.register(TrioBackend)
-async def _run_concurrently_trio(backend, *async_fns):
+async def _run_concurrently_trio(backend, *coroutines):
     async with trio.open_nursery() as nursery:
-        for fn in async_fns:
-            nursery.start_soon(fn)
+        for coroutine in coroutines:
+            nursery.start_soon(coroutine)
