@@ -4,6 +4,7 @@ import h11
 
 from ..concurrency.base import BaseSocketStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
+from ..exceptions import ConnectionClosed, ProtocolError
 from ..models import AsyncRequest, AsyncResponse
 from ..utils import get_logger
 
@@ -161,7 +162,17 @@ class HTTP11Connection:
         Read a single `h11` event, reading more data from the network if needed.
         """
         while True:
-            event = self.h11_state.next_event()
+            try:
+                event = self.h11_state.next_event()
+            except h11.RemoteProtocolError as e:
+                logger.debug(
+                    "h11.RemoteProtocolError exception "
+                    + f"their_state={self.h11_state.their_state} "
+                    + f"error_status_hint={e.error_status_hint}"
+                )
+                if self.stream.is_connection_dropped():
+                    raise ConnectionClosed(e)
+                raise ProtocolError(e)
 
             if isinstance(event, h11.Data):
                 logger.trace(f"receive_event event=Data(<{len(event.data)} bytes>)")
