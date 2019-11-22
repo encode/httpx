@@ -3,6 +3,7 @@
 #
 # from httpx import AsyncioBackend, HTTPVersionConfig, SSLConfig, TimeoutConfig
 # from httpx.concurrency.trio import TrioBackend
+# from tests.concurrency import run_concurrently
 #
 #
 # @pytest.mark.parametrize(
@@ -70,5 +71,21 @@
 #         assert ended
 #         assert read.startswith(b"HTTP/1.1 200 OK\r\n")
 #
+#     finally:
+#         await stream.close()
+#
+#
+# async def test_concurrent_read(server, backend):
+#     """
+#     Regression test for: https://github.com/encode/httpx/issues/527
+#     """
+#     stream = await backend.open_tcp_stream(
+#         server.url.host, server.url.port, ssl_context=None, timeout=TimeoutConfig(5)
+#     )
+#     try:
+#         await stream.write(b"GET / HTTP/1.1\r\n\r\n")
+#         await run_concurrently(
+#             backend, lambda: stream.read(10), lambda: stream.read(10)
+#         )
 #     finally:
 #         await stream.close()

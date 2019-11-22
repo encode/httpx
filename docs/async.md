@@ -105,3 +105,38 @@ trio.run(main)
 
 !!! important
     `trio` must be installed to import and use the `TrioBackend`.
+
+## FAQ
+
+### When should I use an `AsyncClient`?
+
+You should use an `AsyncClient` whenever you are inside an *async environment*.
+
+In particular, using `httpx.get()` or `httpx.Client()` in an async environment is **not** supported. There are several technical reasons to this, but the rationale is that you shouldn't be doing blocking-style network calls in the context of an event loop (for more discussion, see [#179](https://github.com/encode/httpx/issues/179)).
+
+For example, this won't work:
+
+```python
+import asyncio
+import httpx
+
+async def main():
+    r = httpx.get("https://example.org")
+
+asyncio.run(main())
+```
+
+Instead, you should use an `AsyncClient`:
+
+```python
+import asyncio
+import httpx
+
+async def main():
+    async with httpx.AsyncClient() as client:
+        r = await client.get("https://example.org")
+
+asyncio.run(main())
+```
+
+If you *need* to make synchronous requests, or otherwise run into issues related to sync usage, you should probably consider using a regular threaded client such as [Requests](https://github.com/psf/requests) instead.

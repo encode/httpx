@@ -51,6 +51,7 @@ class SocketStream(BaseSocketStream):
         self.stream_reader = stream_reader
         self.stream_writer = stream_writer
         self.timeout = timeout
+        self.read_lock = asyncio.Lock()
 
         self._inner: typing.Optional[SocketStream] = None
 
@@ -144,8 +145,10 @@ class SocketStream(BaseSocketStream):
             should_raise = flag is None or flag.raise_on_read_timeout
             read_timeout = timeout.read_timeout if should_raise else 0.01
             try:
-                data = await asyncio.wait_for(self.stream_reader.read(n), read_timeout)
-                break
+                async with self.read_lock:
+                    data = await asyncio.wait_for(
+                        self.stream_reader.read(n), read_timeout
+                    )
             except asyncio.TimeoutError:
                 if should_raise:
                     raise ReadTimeout() from None
@@ -155,6 +158,8 @@ class SocketStream(BaseSocketStream):
                 # doesn't seem to allow on 3.6.
                 # See: https://github.com/encode/httpx/issues/382
                 await asyncio.sleep(0)
+            else:
+                break
 
         return data
 
