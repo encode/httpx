@@ -1,10 +1,10 @@
 import typing
 
-from ..models import AsyncRequest, AsyncResponse
+from ..models import Request, Response
 
 
 class BaseMiddleware:
     async def __call__(
-        self, request: AsyncRequest, get_response: typing.Callable
-    ) -> AsyncResponse:
+        self, request: Request, get_response: typing.Callable
+    ) -> Response:
         raise NotImplementedError  # pragma: no cover

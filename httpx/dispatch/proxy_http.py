@@ -15,15 +15,7 @@ from ..config import (
 )
 from ..exceptions import ProxyError
 from ..middleware.basic_auth import build_basic_auth_header
-from ..models import (
-    URL,
-    AsyncRequest,
-    AsyncResponse,
-    Headers,
-    HeaderTypes,
-    Origin,
-    URLTypes,
-)
+from ..models import URL, Request, Response, Headers, HeaderTypes, Origin, URLTypes
 from ..utils import get_logger
 from .connection import HTTPConnection
 from .connection_pool import ConnectionPool
@@ -122,7 +114,7 @@ class HTTPProxy(ConnectionPool):
         """Creates an HTTPConnection by setting up a TCP tunnel"""
         proxy_headers = self.proxy_headers.copy()
         proxy_headers.setdefault("Accept", "*/*")
-        proxy_request = AsyncRequest(
+        proxy_request = Request(
             method="CONNECT", url=self.proxy_url.copy_with(), headers=proxy_headers
         )
         proxy_request.url.full_path = f"{origin.host}:{origin.port}"
@@ -225,11 +217,11 @@ class HTTPProxy(ConnectionPool):
 
     async def send(
         self,
-        request: AsyncRequest,
+        request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> AsyncResponse:
+    ) -> Response:
 
         if self.should_forward_origin(request.url.origin):
             # Change the request to have the target URL

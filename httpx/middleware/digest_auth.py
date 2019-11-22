@@ -6,7 +6,7 @@ import typing
 from urllib.request import parse_http_list
 
 from ..exceptions import ProtocolError
-from ..models import AsyncRequest, AsyncResponse, StatusCode
+from ..models import Request, Response, StatusCode
 from ..utils import to_bytes, to_str, unquote
 from .base import BaseMiddleware
 
@@ -30,8 +30,8 @@ class DigestAuth(BaseMiddleware):
         self.password = to_bytes(password)
 
     async def __call__(
-        self, request: AsyncRequest, get_response: typing.Callable
-    ) -> AsyncResponse:
+        self, request: Request, get_response: typing.Callable
+    ) -> Response:
         response = await get_response(request)
         if not (
             StatusCode.is_client_error(response.status_code)
@@ -49,7 +49,7 @@ class DigestAuth(BaseMiddleware):
         return await get_response(request)
 
     def _build_auth_header(
-        self, request: AsyncRequest, challenge: "DigestAuthChallenge"
+        self, request: Request, challenge: "DigestAuthChallenge"
     ) -> str:
         hash_func = self.ALGORITHM_TO_HASH_FUNCTION[challenge.algorithm]
 

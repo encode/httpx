@@ -1,6 +1,5 @@
 from .__version__ import __description__, __title__, __version__
-from .api import delete, get, head, options, patch, post, put, request
-from .client import AsyncClient, Client
+from .client import Client
 from .concurrency.asyncio import AsyncioBackend
 from .concurrency.base import (
     BaseBackgroundManager,
@@ -19,7 +18,7 @@ from .config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from .dispatch.base import AsyncDispatcher, Dispatcher
+from .dispatch.base import Dispatcher
 from .dispatch.connection import HTTPConnection
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy, HTTPProxyMode
@@ -46,10 +45,6 @@ from .exceptions import (
 from .middleware.digest_auth import DigestAuth
 from .models import (
     URL,
-    AsyncRequest,
-    AsyncRequestData,
-    AsyncResponse,
-    AsyncResponseContent,
     AuthTypes,
     Cookies,
     CookieTypes,
@@ -71,16 +66,6 @@ __all__ = [
     "__description__",
     "__title__",
     "__version__",
-    "delete",
-    "get",
-    "head",
-    "options",
-    "patch",
-    "post",
-    "patch",
-    "put",
-    "request",
-    "AsyncClient",
     "Client",
     "AsyncioBackend",
     "USER_AGENT",
@@ -113,7 +98,6 @@ __all__ = [
     "Timeout",
     "TooManyRedirects",
     "WriteTimeout",
-    "AsyncDispatcher",
     "BaseSocketStream",
     "ConcurrencyBackend",
     "Dispatcher",
@@ -124,10 +108,6 @@ __all__ = [
     "TimeoutTypes",
     "HTTPVersionTypes",
     "HTTPVersionConfig",
-    "AsyncRequest",
-    "AsyncRequestData",
-    "AsyncResponse",
-    "AsyncResponseContent",
     "AuthTypes",
     "Cookies",
     "CookieTypes",

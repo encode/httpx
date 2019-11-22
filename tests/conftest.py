@@ -151,11 +151,7 @@ async def echo_headers(scope, receive, send):
 
 async def redirect_301(scope, receive, send):
     await send(
-        {
-            "type": "http.response.start",
-            "status": 301,
-            "headers": [[b"location", b"/"]],
-        }
+        {"type": "http.response.start", "status": 301, "headers": [[b"location", b"/"]]}
     )
     await send({"type": "http.response.body"})
 

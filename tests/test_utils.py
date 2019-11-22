@@ -104,7 +104,7 @@ def test_parse_header_links(value, expected):
 @pytest.mark.asyncio
 async def test_logs_debug(server, capsys):
     with override_log_level("debug"):
-        async with httpx.AsyncClient() as client:
+        async with httpx.Client() as client:
             response = await client.get(server.url)
             assert response.status_code == 200
     stderr = capsys.readouterr().err
@@ -115,7 +115,7 @@ async def test_logs_debug(server, capsys):
 @pytest.mark.asyncio
 async def test_logs_trace(server, capsys):
     with override_log_level("trace"):
-        async with httpx.AsyncClient() as client:
+        async with httpx.Client() as client:
             response = await client.get(server.url)
             assert response.status_code == 200
     stderr = capsys.readouterr().err
@@ -126,7 +126,7 @@ async def test_logs_trace(server, capsys):
 @pytest.mark.asyncio
 async def test_logs_redirect_chain(server, capsys):
     with override_log_level("debug"):
-        async with httpx.AsyncClient() as client:
+        async with httpx.Client() as client:
             response = await client.get(server.url.copy_with(path="/redirect_301"))
             assert response.status_code == 200
 

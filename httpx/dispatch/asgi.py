@@ -3,14 +3,14 @@ import typing
 from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
-from ..models import AsyncRequest, AsyncResponse
+from ..models import Request, Response
 from ..utils import MessageLoggerASGIMiddleware, get_logger
-from .base import AsyncDispatcher
+from .base import Dispatcher
 
 logger = get_logger(__name__)
 
 
-class ASGIDispatch(AsyncDispatcher):
+class ASGIDispatch(Dispatcher):
     """
     A custom dispatcher that handles sending requests directly to an ASGI app.
 
@@ -62,11 +62,11 @@ class ASGIDispatch(AsyncDispatcher):
 
     async def send(
         self,
-        request: AsyncRequest,
+        request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> AsyncResponse:
+    ) -> Response:
 
         scope = {
             "type": "http",
@@ -146,7 +146,7 @@ class ASGIDispatch(AsyncDispatcher):
             if app_exc is not None and self.raise_app_exceptions:
                 raise app_exc
 
-        return AsyncResponse(
+        return Response(
             status_code=status_code,
             http_version="HTTP/1.1",
             headers=headers,

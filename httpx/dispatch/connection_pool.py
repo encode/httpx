@@ -11,9 +11,9 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..models import AsyncRequest, AsyncResponse, Origin
+from ..models import Request, Response, Origin
 from ..utils import get_logger
-from .base import AsyncDispatcher
+from .base import Dispatcher
 from .connection import HTTPConnection
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
@@ -78,7 +78,7 @@ class ConnectionStore:
         return len(self.all)
 
 
-class ConnectionPool(AsyncDispatcher):
+class ConnectionPool(Dispatcher):
     def __init__(
         self,
         *,
@@ -112,11 +112,11 @@ class ConnectionPool(AsyncDispatcher):
 
     async def send(
         self,
-        request: AsyncRequest,
+        request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         connection = await self.acquire_connection(origin=request.url.origin)
         try:
             response = await connection.send(

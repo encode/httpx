@@ -3,7 +3,7 @@ import typing
 
 from ..config import DEFAULT_MAX_REDIRECTS
 from ..exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
-from ..models import URL, AsyncRequest, AsyncResponse, Cookies, Headers
+from ..models import URL, Request, Response, Cookies, Headers
 from ..status_codes import codes
 from .base import BaseMiddleware
 
@@ -18,11 +18,11 @@ class RedirectMiddleware(BaseMiddleware):
         self.allow_redirects = allow_redirects
         self.max_redirects = max_redirects
         self.cookies = cookies
-        self.history: typing.List[AsyncResponse] = []
+        self.history: typing.List[Response] = []
 
     async def __call__(
-        self, request: AsyncRequest, get_response: typing.Callable
-    ) -> AsyncResponse:
+        self, request: Request, get_response: typing.Callable
+    ) -> Response:
         if len(self.history) > self.max_redirects:
             raise TooManyRedirects()
         if request.url in (response.url for response in self.history):
@@ -43,19 +43,17 @@ class RedirectMiddleware(BaseMiddleware):
         response.call_next = functools.partial(self, next_request, get_response)
         return response
 
-    def build_redirect_request(
-        self, request: AsyncRequest, response: AsyncResponse
-    ) -> AsyncRequest:
+    def build_redirect_request(self, request: Request, response: Response) -> Request:
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
         headers = self.redirect_headers(request, url, method)  # TODO: merge headers?
         content = self.redirect_content(request, method)
         cookies = Cookies(self.cookies)
-        return AsyncRequest(
+        return Request(
             method=method, url=url, headers=headers, data=content, cookies=cookies
         )
 
-    def redirect_method(self, request: AsyncRequest, response: AsyncResponse) -> str:
+    def redirect_method(self, request: Request, response: Response) -> str:
         """
         When being redirected we may want to change the method of the request
         based on certain specs or browser behavior.
@@ -78,7 +76,7 @@ class RedirectMiddleware(BaseMiddleware):
 
         return method
 
-    def redirect_url(self, request: AsyncRequest, response: AsyncResponse) -> URL:
+    def redirect_url(self, request: Request, response: Response) -> URL:
         """
         Return the URL for the redirect to follow.
         """
@@ -97,7 +95,7 @@ class RedirectMiddleware(BaseMiddleware):
 
         return url
 
-    def redirect_headers(self, request: AsyncRequest, url: URL, method: str) -> Headers:
+    def redirect_headers(self, request: Request, url: URL, method: str) -> Headers:
         """
         Return the headers that should be used for the redirect request.
         """
@@ -121,7 +119,7 @@ class RedirectMiddleware(BaseMiddleware):
 
         return headers
 
-    def redirect_content(self, request: AsyncRequest, method: str) -> bytes:
+    def redirect_content(self, request: Request, method: str) -> bytes:
         """
         Return the body that should be used for the redirect request.
         """
