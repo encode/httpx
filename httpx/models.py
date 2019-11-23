@@ -351,7 +351,12 @@ class QueryParams(typing.Mapping[str, str]):
 
         params = QueryParams(params)
         for param in params:
-            self[param] = params[param]
+            item, *extras = params.getlist(param)
+            self[param] = item
+            if extras:
+                self._list.extend((param, e) for e in extras)
+                # ensure getter matches merged QueryParams getter
+                self._dict[param] = params[param]
 
     def __getitem__(self, key: typing.Any) -> str:
         return self._dict[key]
