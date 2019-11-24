@@ -11,6 +11,7 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
+from ..exceptions import NewConnectionRequired
 from ..models import AsyncRequest, AsyncResponse, Origin
 from ..utils import get_logger
 from .base import AsyncDispatcher
@@ -121,6 +122,10 @@ class ConnectionPool(AsyncDispatcher):
         try:
             response = await connection.send(
                 request, verify=verify, cert=cert, timeout=timeout
+            )
+        except NewConnectionRequired:
+            return await self.send(
+                request=request, verify=verify, cert=cert, timeout=timeout
             )
         except BaseException as exc:
             self.active_connections.remove(connection)

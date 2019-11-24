@@ -3,6 +3,7 @@ import typing
 
 import h2.connection
 import h2.events
+from h2.exceptions import NoAvailableStreamIDError
 from h2.settings import SettingCodes, Settings
 
 from ..concurrency.base import (
@@ -12,7 +13,7 @@ from ..concurrency.base import (
     TimeoutFlag,
 )
 from ..config import TimeoutConfig, TimeoutTypes
-from ..exceptions import ProtocolError
+from ..exceptions import NewConnectionRequired, ProtocolError
 from ..models import AsyncRequest, AsyncResponse
 from ..utils import get_logger
 
@@ -101,7 +102,10 @@ class HTTP2Connection:
     async def send_headers(
         self, request: AsyncRequest, timeout: TimeoutConfig = None
     ) -> int:
-        stream_id = self.h2_state.get_next_available_stream_id()
+        try:
+            stream_id = self.h2_state.get_next_available_stream_id()
+        except NoAvailableStreamIDError:
+            raise NewConnectionRequired("HTTP2 connection streams maxed out")
         headers = [
             (b":method", request.method.encode("ascii")),
             (b":authority", request.url.authority.encode("ascii")),
