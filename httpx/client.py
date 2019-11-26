@@ -22,9 +22,14 @@ from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import Dispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
-from .exceptions import HTTPError, InvalidURL
-from .middleware.base import BaseMiddleware
-from .middleware.redirect import RedirectMiddleware
+from .exceptions import (
+    HTTPError,
+    InvalidURL,
+    RedirectBodyUnavailable,
+    RedirectLoop,
+    TooManyRedirects,
+)
+from .middleware import Middleware
 from .models import (
     URL,
     AuthTypes,
@@ -41,6 +46,7 @@ from .models import (
     Response,
     URLTypes,
 )
+from .status_codes import codes
 from .utils import ElapsedTimer, get_environment_proxies, get_logger, get_netrc
 
 logger = get_logger(__name__)
@@ -120,8 +126,6 @@ class Client:
         if app is not None:
             dispatch = ASGIDispatch(app=app, backend=backend)
 
-        self.trust_env = True if trust_env is None else trust_env
-
         if dispatch is None:
             dispatch = ConnectionPool(
                 verify=verify,
@@ -130,7 +134,7 @@ class Client:
                 http_versions=http_versions,
                 pool_limits=pool_limits,
                 backend=backend,
-                trust_env=self.trust_env,
+                trust_env=trust_env,
                 uds=uds,
             )
 
@@ -147,7 +151,8 @@ class Client:
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
         self.max_redirects = max_redirects
-        self.dispatch = dispatch
+        self.trust_env = trust_env
+        self.dispatcher = dispatch
         self.concurrency_backend = backend
 
         if proxies is None and trust_env:
@@ -197,92 +202,46 @@ class Client:
     def params(self, params: QueryParamTypes) -> None:
         self._params = QueryParams(params)
 
-    def merge_url(self, url: URLTypes) -> URL:
-        url = self.base_url.join(relative_url=url)
-        if url.scheme == "http" and hstspreload.in_hsts_preload(url.host):
-            url = url.copy_with(scheme="https")
-        return url
-
-    def merge_cookies(
-        self, cookies: CookieTypes = None
-    ) -> typing.Optional[CookieTypes]:
-        if cookies or self.cookies:
-            merged_cookies = Cookies(self.cookies)
-            merged_cookies.update(cookies)
-            return merged_cookies
-        return cookies
-
-    def merge_headers(
-        self, headers: HeaderTypes = None
-    ) -> typing.Optional[HeaderTypes]:
-        if headers or self.headers:
-            merged_headers = Headers(self.headers)
-            merged_headers.update(headers)
-            return merged_headers
-        return headers
-
-    def merge_queryparams(
-        self, params: QueryParamTypes = None
-    ) -> typing.Optional[QueryParamTypes]:
-        if params or self.params:
-            merged_queryparams = QueryParams(self.params)
-            merged_queryparams.update(params)
-            return merged_queryparams
-        return params
-
-    def authenticate(
-        self, request: Request, trust_env: bool, auth: AuthTypes = None
-    ) -> "Request":
-        if auth is not None:
-            if isinstance(auth, tuple):
-                auth = BasicAuth(username=auth[0], password=auth[1])
-            return auth(request)
-
-        username, password = request.url.username, request.url.password
-        if username or password:
-            auth = BasicAuth(username=username, password=password)
-            return auth(request)
-
-        if trust_env:
-            netrc_info = self._get_netrc()
-            if netrc_info:
-                netrc_login = netrc_info.authenticators(request.url.authority)
-                if netrc_login:
-                    username, _, password = netrc_login
-                    assert password is not None
-                    auth = BasicAuth(username=username, password=password)
-                    return auth(request)
-
-        return request
-
-    @functools.lru_cache(1)
-    def _get_netrc(self) -> typing.Optional[netrc.netrc]:
-        return get_netrc()
-
-    def _dispatcher_for_request(
-        self, request: Request, proxies: typing.Dict[str, Dispatcher]
-    ) -> Dispatcher:
-        """Gets the Dispatcher instance that should be used for a given Request"""
-        if proxies:
-            url = request.url
-            is_default_port = (url.scheme == "http" and url.port == 80) or (
-                url.scheme == "https" and url.port == 443
-            )
-            hostname = f"{url.host}:{url.port}"
-            proxy_keys = (
-                f"{url.scheme}://{hostname}",
-                f"{url.scheme}://{url.host}" if is_default_port else None,
-                f"all://{hostname}",
-                f"all://{url.host}" if is_default_port else None,
-                url.scheme,
-                "all",
-            )
-            for proxy_key in proxy_keys:
-                if proxy_key and proxy_key in proxies:
-                    dispatcher = proxies[proxy_key]
-                    return dispatcher
-
-        return self.dispatch
+    async def request(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        stream: bool = False,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
+        trust_env: bool = None,
+    ) -> Response:
+        request = self.build_request(
+            method=method,
+            url=url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        response = await self.send(
+            request,
+            stream=stream,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            trust_env=trust_env,
+        )
+        return response
 
     def build_request(
         self,
@@ -313,6 +272,314 @@ class Client:
             headers=headers,
             cookies=cookies,
         )
+
+    def merge_url(self, url: URLTypes) -> URL:
+        """
+        Merge a URL argument together with any 'base_url' on the client,
+        to create the URL used for the outgoing request.
+        """
+        url = self.base_url.join(relative_url=url)
+        if url.scheme == "http" and hstspreload.in_hsts_preload(url.host):
+            url = url.copy_with(scheme="https")
+        return url
+
+    def merge_cookies(
+        self, cookies: CookieTypes = None
+    ) -> typing.Optional[CookieTypes]:
+        """
+        Merge a cookies argument together with any cookies on the client,
+        to create the cookies used for the outgoing request.
+        """
+        if cookies or self.cookies:
+            merged_cookies = Cookies(self.cookies)
+            merged_cookies.update(cookies)
+            return merged_cookies
+        return cookies
+
+    def merge_headers(
+        self, headers: HeaderTypes = None
+    ) -> typing.Optional[HeaderTypes]:
+        """
+        Merge a headers argument together with any headers on the client,
+        to create the headers used for the outgoing request.
+        """
+        if headers or self.headers:
+            merged_headers = Headers(self.headers)
+            merged_headers.update(headers)
+            return merged_headers
+        return headers
+
+    def merge_queryparams(
+        self, params: QueryParamTypes = None
+    ) -> typing.Optional[QueryParamTypes]:
+        """
+        Merge a queryparams argument together with any queryparams on the client,
+        to create the queryparams used for the outgoing request.
+        """
+        if params or self.params:
+            merged_queryparams = QueryParams(self.params)
+            merged_queryparams.update(params)
+            return merged_queryparams
+        return params
+
+    async def send(
+        self,
+        request: Request,
+        *,
+        stream: bool = False,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+        trust_env: bool = None,
+    ) -> Response:
+        if request.url.scheme not in ("http", "https"):
+            raise InvalidURL('URL scheme must be "http" or "https".')
+
+        auth = self.auth if auth is None else auth
+        trust_env = self.trust_env if trust_env is None else trust_env
+
+        if not isinstance(auth, Middleware):
+            request = self.authenticate(request, trust_env, auth)
+            response = await self.send_handling_redirects(
+                request,
+                verify=verify,
+                cert=cert,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+            )
+        else:
+            get_response = functools.partial(
+                self.send_handling_redirects,
+                verify=verify,
+                cert=cert,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+            )
+            response = await auth(request, get_response)
+
+        if not stream:
+            try:
+                await response.read()
+            finally:
+                await response.close()
+
+        return response
+
+    def authenticate(
+        self, request: Request, trust_env: bool, auth: AuthTypes = None
+    ) -> "Request":
+        if auth is not None:
+            if isinstance(auth, tuple):
+                auth = BasicAuth(username=auth[0], password=auth[1])
+            return auth(request)
+
+        username, password = request.url.username, request.url.password
+        if username or password:
+            auth = BasicAuth(username=username, password=password)
+            return auth(request)
+
+        if trust_env:
+            netrc_info = self._get_netrc()
+            if netrc_info:
+                netrc_login = netrc_info.authenticators(request.url.authority)
+                if netrc_login:
+                    username, _, password = netrc_login
+                    assert password is not None
+                    auth = BasicAuth(username=username, password=password)
+                    return auth(request)
+
+        return request
+
+    async def send_handling_redirects(
+        self,
+        request: Request,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+        allow_redirects: bool = True,
+        history: typing.List[Response] = None,
+    ) -> Response:
+        if history is None:
+            history = []
+
+        while True:
+            if len(history) > self.max_redirects:
+                raise TooManyRedirects()
+            if request.url in (response.url for response in history):
+                raise RedirectLoop()
+
+            response = await self.dispatch(
+                request, verify=verify, cert=cert, timeout=timeout
+            )
+            response.history = list(history)
+
+            if not response.is_redirect:
+                return response
+
+            await response.close()
+            request = self.build_redirect_request(request, response)
+            history = history + [response]
+
+            if not allow_redirects:
+                response.call_next = functools.partial(
+                    self.send_handling_redirects,
+                    request=request,
+                    verify=verify,
+                    cert=cert,
+                    timeout=timeout,
+                    allow_redirects=False,
+                    history=history,
+                )
+                return response
+
+    def build_redirect_request(self, request: Request, response: Response) -> Request:
+        method = self.redirect_method(request, response)
+        url = self.redirect_url(request, response)
+        headers = self.redirect_headers(request, url, method)  # TODO: merge headers?
+        content = self.redirect_content(request, method)
+        cookies = Cookies(self.cookies)
+        return Request(
+            method=method, url=url, headers=headers, data=content, cookies=cookies
+        )
+
+    def redirect_method(self, request: Request, response: Response) -> str:
+        """
+        When being redirected we may want to change the method of the request
+        based on certain specs or browser behavior.
+        """
+        method = request.method
+
+        # https://tools.ietf.org/html/rfc7231#section-6.4.4
+        if response.status_code == codes.SEE_OTHER and method != "HEAD":
+            method = "GET"
+
+        # Do what the browsers do, despite standards...
+        # Turn 302s into GETs.
+        if response.status_code == codes.FOUND and method != "HEAD":
+            method = "GET"
+
+        # If a POST is responded to with a 301, turn it into a GET.
+        # This bizarre behaviour is explained in 'requests' issue 1704.
+        if response.status_code == codes.MOVED_PERMANENTLY and method == "POST":
+            method = "GET"
+
+        return method
+
+    def redirect_url(self, request: Request, response: Response) -> URL:
+        """
+        Return the URL for the redirect to follow.
+        """
+        location = response.headers["Location"]
+
+        url = URL(location, allow_relative=True)
+
+        # Facilitate relative 'Location' headers, as allowed by RFC 7231.
+        # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
+        if url.is_relative_url:
+            url = request.url.join(url)
+
+        # Attach previous fragment if needed (RFC 7231 7.1.2)
+        if request.url.fragment and not url.fragment:
+            url = url.copy_with(fragment=request.url.fragment)
+
+        return url
+
+    def redirect_headers(self, request: Request, url: URL, method: str) -> Headers:
+        """
+        Return the headers that should be used for the redirect request.
+        """
+        headers = Headers(request.headers)
+
+        if url.origin != request.url.origin:
+            # Strip Authorization headers when responses are redirected away from
+            # the origin.
+            headers.pop("Authorization", None)
+            headers["Host"] = url.authority
+
+        if method != request.method and method == "GET":
+            # If we've switch to a 'GET' request, then strip any headers which
+            # are only relevant to the request body.
+            headers.pop("Content-Length", None)
+            headers.pop("Transfer-Encoding", None)
+
+        # We should use the client cookie store to determine any cookie header,
+        # rather than whatever was on the original outgoing request.
+        headers.pop("Cookie", None)
+
+        return headers
+
+    def redirect_content(self, request: Request, method: str) -> bytes:
+        """
+        Return the body that should be used for the redirect request.
+        """
+        if method != request.method and method == "GET":
+            return b""
+        if request.is_streaming:
+            raise RedirectBodyUnavailable()
+        return request.content
+
+    async def dispatch(
+        self,
+        request: Request,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+    ) -> Response:
+        dispatcher = self._dispatcher_for_request(request, self.proxies)
+
+        try:
+            with ElapsedTimer() as timer:
+                response = await dispatcher.send(
+                    request, verify=verify, cert=cert, timeout=timeout
+                )
+            response.elapsed = timer.elapsed
+            response.request = request
+        except HTTPError as exc:
+            # Add the original request to any HTTPError unless
+            # there'a already a request attached in the case of
+            # a ProxyError.
+            if exc.request is None:
+                exc.request = request
+            raise
+
+        self.cookies.extract_cookies(response)
+
+        status = f"{response.status_code} {response.reason_phrase}"
+        response_line = f"{response.http_version} {status}"
+        logger.debug(f'HTTP Request: {request.method} {request.url} "{response_line}"')
+
+        return response
+
+    @functools.lru_cache(1)
+    def _get_netrc(self) -> typing.Optional[netrc.netrc]:
+        return get_netrc()
+
+    def _dispatcher_for_request(
+        self, request: Request, proxies: typing.Dict[str, Dispatcher]
+    ) -> Dispatcher:
+        """Gets the Dispatcher instance that should be used for a given Request"""
+        if proxies:
+            url = request.url
+            is_default_port = (url.scheme == "http" and url.port == 80) or (
+                url.scheme == "https" and url.port == 443
+            )
+            hostname = f"{url.host}:{url.port}"
+            proxy_keys = (
+                f"{url.scheme}://{hostname}",
+                f"{url.scheme}://{url.host}" if is_default_port else None,
+                f"all://{hostname}",
+                f"all://{url.host}" if is_default_port else None,
+                url.scheme,
+                "all",
+            )
+            for proxy_key in proxy_keys:
+                if proxy_key and proxy_key in proxies:
+                    dispatcher = proxies[proxy_key]
+                    return dispatcher
+
+        return self.dispatcher
 
     async def get(
         self,
@@ -542,118 +809,8 @@ class Client:
             trust_env=trust_env,
         )
 
-    async def request(
-        self,
-        method: str,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        request = self.build_request(
-            method=method,
-            url=url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-        )
-        response = await self.send(
-            request,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
-        return response
-
-    async def send(
-        self,
-        request: Request,
-        *,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        if request.url.scheme not in ("http", "https"):
-            raise InvalidURL('URL scheme must be "http" or "https".')
-
-        auth = self.auth if auth is None else auth
-        trust_env = self.trust_env if trust_env is None else trust_env
-
-        if not isinstance(auth, BaseMiddleware):
-            request = self.authenticate(request, trust_env, auth)
-
-        dispatch = self._dispatcher_for_request(request, self.proxies)
-
-        async def get_response(request: Request) -> Response:
-            try:
-                with ElapsedTimer() as timer:
-                    response = await dispatch.send(
-                        request, verify=verify, cert=cert, timeout=timeout
-                    )
-                response.elapsed = timer.elapsed
-                response.request = request
-            except HTTPError as exc:
-                # Add the original request to any HTTPError unless
-                # there'a already a request attached in the case of
-                # a ProxyError.
-                if exc.request is None:
-                    exc.request = request
-                raise
-
-            self.cookies.extract_cookies(response)
-            if not stream:
-                try:
-                    await response.read()
-                finally:
-                    await response.close()
-
-            status = f"{response.status_code} {response.reason_phrase}"
-            response_line = f"{response.http_version} {status}"
-            logger.debug(
-                f'HTTP Request: {request.method} {request.url} "{response_line}"'
-            )
-
-            return response
-
-        def wrap(
-            get_response: typing.Callable, middleware: BaseMiddleware
-        ) -> typing.Callable:
-            return functools.partial(middleware, get_response=get_response)
-
-        get_response = wrap(
-            get_response,
-            RedirectMiddleware(allow_redirects=allow_redirects, cookies=self.cookies),
-        )
-
-        if isinstance(auth, BaseMiddleware):
-            get_response = wrap(get_response, auth)
-
-        return await get_response(request)
-
     async def close(self) -> None:
-        await self.dispatch.close()
+        await self.dispatcher.close()
 
     async def __aenter__(self) -> "Client":
         return self

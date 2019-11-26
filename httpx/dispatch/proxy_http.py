@@ -77,7 +77,7 @@ class HTTPProxy(ConnectionPool):
             self.proxy_url = url.copy_with(authority=authority)
 
     def build_auth_header(self, username: str, password: str) -> str:
-        userpass = (username.encode('utf-8'), password.encode('utf-8'))
+        userpass = (username.encode("utf-8"), password.encode("utf-8"))
         token = b64encode(b":".join(userpass)).decode().strip()
         return f"Basic {token}"
 

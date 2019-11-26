@@ -1,9 +1,9 @@
 import typing
 
-from ..models import Request, Response
+from .models import Request, Response
 
 
-class BaseMiddleware:
+class Middleware:
     async def __call__(
         self, request: Request, get_response: typing.Callable
     ) -> Response:
