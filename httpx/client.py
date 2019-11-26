@@ -152,7 +152,7 @@ class Client:
         self._cookies = Cookies(cookies)
         self.max_redirects = max_redirects
         self.trust_env = trust_env
-        self.dispatcher = dispatch
+        self.dispatch = dispatch
         self.concurrency_backend = backend
 
         if proxies is None and trust_env:
@@ -410,7 +410,7 @@ class Client:
             if request.url in (response.url for response in history):
                 raise RedirectLoop()
 
-            response = await self.dispatch(
+            response = await self.send_single_request(
                 request, verify=verify, cert=cert, timeout=timeout
             )
             response.history = list(history)
@@ -435,9 +435,13 @@ class Client:
                 return response
 
     def build_redirect_request(self, request: Request, response: Response) -> Request:
+        """
+        Given a request and a redirect response, return a new request that
+        should be used to effect the redirect.
+        """
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
-        headers = self.redirect_headers(request, url, method)  # TODO: merge headers?
+        headers = self.redirect_headers(request, url, method)
         content = self.redirect_content(request, method)
         cookies = Cookies(self.cookies)
         return Request(
@@ -520,13 +524,17 @@ class Client:
             raise RedirectBodyUnavailable()
         return request.content
 
-    async def dispatch(
+    async def send_single_request(
         self,
         request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> Response:
+        """
+        Sends a single request, without handling any redirections.
+        """
+
         dispatcher = self._dispatcher_for_request(request, self.proxies)
 
         try:
@@ -579,7 +587,7 @@ class Client:
                     dispatcher = proxies[proxy_key]
                     return dispatcher
 
-        return self.dispatcher
+        return self.dispatch
 
     async def get(
         self,
@@ -810,7 +818,7 @@ class Client:
         )
 
     async def close(self) -> None:
-        await self.dispatcher.close()
+        await self.dispatch.close()
 
     async def __aenter__(self) -> "Client":
         return self

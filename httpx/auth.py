@@ -56,6 +56,7 @@ class DigestAuth(Middleware):
         if response.status_code != 401 or "www-authenticate" not in response.headers:
             return response
 
+        await response.close()
         header = response.headers["www-authenticate"]
         try:
             challenge = DigestAuthChallenge.from_header(header)
