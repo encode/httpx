@@ -138,7 +138,7 @@ async def test_text_decoder(data, encoding):
 
     response = httpx.Response(200, content=iterator())
     await response.read()
-    assert "".join(response.text) == (b"".join(data)).decode(encoding)
+    assert response.text == (b"".join(data)).decode(encoding)
 
 
 @pytest.mark.asyncio
