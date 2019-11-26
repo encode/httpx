@@ -3,7 +3,7 @@ import typing
 
 from ..config import DEFAULT_MAX_REDIRECTS
 from ..exceptions import RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
-from ..models import URL, Request, Response, Cookies, Headers
+from ..models import URL, Cookies, Headers, Request, Response
 from ..status_codes import codes
 from .base import BaseMiddleware
 

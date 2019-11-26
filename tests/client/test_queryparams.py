@@ -1,12 +1,14 @@
 import json
+
 import pytest
+
 from httpx import (
-    Dispatcher,
-    Request,
-    Response,
     CertTypes,
     Client,
+    Dispatcher,
     QueryParams,
+    Request,
+    Response,
     TimeoutTypes,
     VerifyTypes,
 )

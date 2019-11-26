@@ -14,7 +14,7 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..models import Request, Response, Origin
+from ..models import Origin, Request, Response
 from ..utils import get_logger
 from .base import Dispatcher
 from .http2 import HTTP2Connection

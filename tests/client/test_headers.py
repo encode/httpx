@@ -5,11 +5,11 @@ import json
 import pytest
 
 from httpx import (
+    CertTypes,
+    Client,
     Dispatcher,
     Request,
     Response,
-    CertTypes,
-    Client,
     TimeoutTypes,
     VerifyTypes,
     __version__,

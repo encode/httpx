@@ -1,14 +1,15 @@
 import json
-import pytest
 from http.cookiejar import Cookie, CookieJar
 
+import pytest
+
 from httpx import (
-    Dispatcher,
-    Request,
-    Response,
     CertTypes,
     Client,
     Cookies,
+    Dispatcher,
+    Request,
+    Response,
     TimeoutTypes,
     VerifyTypes,
 )

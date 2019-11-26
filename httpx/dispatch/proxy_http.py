@@ -15,7 +15,7 @@ from ..config import (
 )
 from ..exceptions import ProxyError
 from ..middleware.basic_auth import build_basic_auth_header
-from ..models import URL, Request, Response, Headers, HeaderTypes, Origin, URLTypes
+from ..models import URL, Headers, HeaderTypes, Origin, Request, Response, URLTypes
 from ..utils import get_logger
 from .connection import HTTPConnection
 from .connection_pool import ConnectionPool

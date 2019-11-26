@@ -6,13 +6,13 @@ import pytest
 
 from httpx import (
     URL,
-    Dispatcher,
-    Request,
-    Response,
     CertTypes,
     Client,
     DigestAuth,
+    Dispatcher,
     ProtocolError,
+    Request,
+    Response,
     TimeoutTypes,
     VerifyTypes,
 )

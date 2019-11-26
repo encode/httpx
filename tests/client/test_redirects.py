@@ -5,14 +5,14 @@ import pytest
 
 from httpx import (
     URL,
+    CertTypes,
     Client,
     Dispatcher,
-    Request,
-    Response,
-    CertTypes,
     NotRedirectResponse,
     RedirectBodyUnavailable,
     RedirectLoop,
+    Request,
+    Response,
     TimeoutTypes,
     TooManyRedirects,
     VerifyTypes,
