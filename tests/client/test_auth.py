@@ -215,7 +215,7 @@ async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response():
 
 
 @pytest.mark.asyncio
-async def test_digest_auth_200_response_including_digest_auth_header_is_returned_as_is():
+async def test_digest_auth_200_response_including_digest_auth_header():
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
     auth_header = 'Digest realm="realm@host.com",qop="auth",nonce="abc",opaque="xyz"'
@@ -228,7 +228,7 @@ async def test_digest_auth_200_response_including_digest_auth_header_is_returned
 
 
 @pytest.mark.asyncio
-async def test_digest_auth_401_response_without_digest_auth_header_is_returned_as_is():
+async def test_digest_auth_401_response_without_digest_auth_header():
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
 

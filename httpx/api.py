@@ -177,7 +177,7 @@ async def head(
     cookies: CookieTypes = None,
     stream: bool = False,
     auth: AuthTypes = None,
-    allow_redirects: bool = False,  #  Note: Differs to usual default.
+    allow_redirects: bool = False,  # Note: Differs to usual default.
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
