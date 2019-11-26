@@ -1,9 +1,9 @@
-from base64 import b64encode
 import hashlib
 import os
 import re
 import time
 import typing
+from base64 import b64encode
 from urllib.request import parse_http_list
 
 from .exceptions import ProtocolError
