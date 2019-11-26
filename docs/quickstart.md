@@ -1,9 +1,14 @@
 # QuickStart
 
 !!! note
+    The standard Python REPL does not allow top-level async statements.
+
+    To run async examples directly you'll probably want to either use `ipython`,
+    or use Python 3.8 with `python -m asyncio`.
+
     This page closely follows the layout of the `requests` QuickStart documentation.
-    The `httpx` library is designed to be API compatible with `requests` wherever
-    possible.
+    The `httpx` library is designed to follow API compatibility with `requests`
+    wherever possible.
 
 First, start by importing HTTPX:
 
