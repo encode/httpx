@@ -18,17 +18,17 @@ but also provide lower-cased versions for API compatibility with `requests`.
 ## Advanced Usage
 
 ### requests.Session
+
 The HTTPX equivalent of `requests.Session` is `httpx.Client`.
 
 ```python
 session = requests.Session(**kwargs)
 ```
 
-is equivalent to
+is generally equivalent to
 
 ```python
-with httpx.Client(**kwargs) as client:
-    ...
+client = httpx.Client(**kwargs)
 ```
 
 More detailed documentation and usage of `Client` can be found in [Advanced Usage](advanced.md).
