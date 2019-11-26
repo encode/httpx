@@ -34,7 +34,9 @@ async def request(
 ) -> Response:
     """
     Sends an HTTP request.
+
     **Parameters:**
+
     * **method** - HTTP method for the new `Request` object: `GET`, `OPTIONS`,
     `HEAD`, `POST`, `PUT`, `PATCH`, or `DELETE`.
     * **url** - URL for the new `Request` object.
@@ -66,11 +68,14 @@ async def request(
     variables for configuration.
     * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
     URLs.
+
     **Returns:** `Response`
+
     Usage:
+
     ```
     >>> import httpx
-    >>> response = httpx.request('GET', 'https://httpbin.org/get')
+    >>> response = await httpx.request('GET', 'https://httpbin.org/get')
     >>> response
     <Response [200 OK]>
     ```
@@ -113,7 +118,9 @@ async def get(
 ) -> Response:
     """
     Sends a `GET` request.
+
     **Parameters**: See `httpx.request`.
+
     Note that the `data`, `files`, and `json` parameters are not available on
     this function, as `GET` requests should not include a request body.
     """
@@ -149,7 +156,9 @@ async def options(
 ) -> Response:
     """
     Sends an `OPTIONS` request.
+
     **Parameters**: See `httpx.request`.
+
     Note that the `data`, `files`, and `json` parameters are not available on
     this function, as `OPTIONS` requests should not include a request body.
     """
@@ -185,7 +194,9 @@ async def head(
 ) -> Response:
     """
     Sends a `HEAD` request.
+
     **Parameters**: See `httpx.request`.
+
     Note that the `data`, `files`, and `json` parameters are not available on
     this function, as `HEAD` requests should not include a request body. The
     `HEAD` method also differs from the other cases in that `allow_redirects`
@@ -226,6 +237,7 @@ async def post(
 ) -> Response:
     """
     Sends a `POST` request.
+
     **Parameters**: See `httpx.request`.
     """
     return await request(
@@ -266,6 +278,7 @@ async def put(
 ) -> Response:
     """
     Sends a `PUT` request.
+
     **Parameters**: See `httpx.request`.
     """
     return await request(
@@ -306,6 +319,7 @@ async def patch(
 ) -> Response:
     """
     Sends a `PATCH` request.
+
     **Parameters**: See `httpx.request`.
     """
     return await request(
@@ -343,7 +357,9 @@ async def delete(
 ) -> Response:
     """
     Sends a `DELETE` request.
+
     **Parameters**: See `httpx.request`.
+
     Note that the `data`, `files`, and `json` parameters are not available on
     this function, as `DELETE` requests should not include a request body.
     """

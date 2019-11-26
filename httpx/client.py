@@ -55,12 +55,16 @@ logger = get_logger(__name__)
 class Client:
     """
     An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.
+
     Usage:
+
     ```
     >>> client = httpx.Client()
     >>> response = client.get('https://example.org')
     ```
+
     **Parameters:**
+
     * **auth** - *(optional)* An authentication class to use when sending
     requests.
     * **params** - *(optional)* Query parameters to include in request URLs, as
