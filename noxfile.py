@@ -44,8 +44,8 @@ def docs(session):
 
 @nox.session(reuse_venv=True)
 def serve(session):
-    session.install("--upgrade", "mkdocs", "mkdocs-material")
-
+    session.install("--upgrade", "mkdocs", "mkdocs-material", "mkautodoc>=0.1.0")
+    session.install("-e", ".")
     session.run("mkdocs", "serve")
 
 
