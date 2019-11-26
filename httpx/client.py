@@ -5,6 +5,7 @@ from types import TracebackType
 
 import hstspreload
 
+from .auth import BasicAuth
 from .concurrency.asyncio import AsyncioBackend
 from .concurrency.base import ConcurrencyBackend
 from .config import (
@@ -23,8 +24,6 @@ from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
 from .exceptions import HTTPError, InvalidURL
 from .middleware.base import BaseMiddleware
-from .middleware.basic_auth import BasicAuthMiddleware
-from .middleware.custom_auth import CustomAuthMiddleware
 from .middleware.redirect import RedirectMiddleware
 from .models import (
     URL,
@@ -231,96 +230,18 @@ class Client:
             return merged_queryparams
         return params
 
-    async def _get_response(
-        self,
-        request: Request,
-        *,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        if request.url.scheme not in ("http", "https"):
-            raise InvalidURL('URL scheme must be "http" or "https".')
-
-        dispatch = self._dispatcher_for_request(request, self.proxies)
-
-        async def get_response(request: Request) -> Response:
-            try:
-                with ElapsedTimer() as timer:
-                    response = await dispatch.send(
-                        request, verify=verify, cert=cert, timeout=timeout
-                    )
-                response.elapsed = timer.elapsed
-                response.request = request
-            except HTTPError as exc:
-                # Add the original request to any HTTPError unless
-                # there'a already a request attached in the case of
-                # a ProxyError.
-                if exc.request is None:
-                    exc.request = request
-                raise
-
-            self.cookies.extract_cookies(response)
-            if not stream:
-                try:
-                    await response.read()
-                finally:
-                    await response.close()
-
-            status = f"{response.status_code} {response.reason_phrase}"
-            response_line = f"{response.http_version} {status}"
-            logger.debug(
-                f'HTTP Request: {request.method} {request.url} "{response_line}"'
-            )
-
-            return response
-
-        def wrap(
-            get_response: typing.Callable, middleware: BaseMiddleware
-        ) -> typing.Callable:
-            return functools.partial(middleware, get_response=get_response)
-
-        get_response = wrap(
-            get_response,
-            RedirectMiddleware(allow_redirects=allow_redirects, cookies=self.cookies),
-        )
-
-        auth_middleware = self._get_auth_middleware(
-            request=request,
-            trust_env=self.trust_env if trust_env is None else trust_env,
-            auth=self.auth if auth is None else auth,
-        )
-
-        if auth_middleware is not None:
-            get_response = wrap(get_response, auth_middleware)
-
-        return await get_response(request)
-
-    def _get_auth_middleware(
+    def authenticate(
         self, request: Request, trust_env: bool, auth: AuthTypes = None
-    ) -> typing.Optional[BaseMiddleware]:
-        if isinstance(auth, tuple):
-            return BasicAuthMiddleware(username=auth[0], password=auth[1])
-        elif isinstance(auth, BaseMiddleware):
-            return auth
-        elif callable(auth):
-            return CustomAuthMiddleware(auth=auth)
-
+    ) -> "Request":
         if auth is not None:
-            raise TypeError(
-                'When specified, "auth" must be a (username, password) tuple or '
-                "a callable with signature (Request) -> Request "
-                f"(got {auth!r})"
-            )
+            if isinstance(auth, tuple):
+                auth = BasicAuth(username=auth[0], password=auth[1])
+            return auth(request)
 
-        if request.url.username or request.url.password:
-            return BasicAuthMiddleware(
-                username=request.url.username, password=request.url.password
-            )
+        username, password = request.url.username, request.url.password
+        if username or password:
+            auth = BasicAuth(username=username, password=password)
+            return auth(request)
 
         if trust_env:
             netrc_info = self._get_netrc()
@@ -329,9 +250,10 @@ class Client:
                 if netrc_login:
                     username, _, password = netrc_login
                     assert password is not None
-                    return BasicAuthMiddleware(username=username, password=password)
+                    auth = BasicAuth(username=username, password=password)
+                    return auth(request)
 
-        return None
+        return request
 
     @functools.lru_cache(1)
     def _get_netrc(self) -> typing.Optional[netrc.netrc]:
@@ -673,16 +595,62 @@ class Client:
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
     ) -> Response:
-        return await self._get_response(
-            request=request,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
+        if request.url.scheme not in ("http", "https"):
+            raise InvalidURL('URL scheme must be "http" or "https".')
+
+        auth = self.auth if auth is None else auth
+        trust_env = self.trust_env if trust_env is None else trust_env
+
+        if not isinstance(auth, BaseMiddleware):
+            request = self.authenticate(request, trust_env, auth)
+
+        dispatch = self._dispatcher_for_request(request, self.proxies)
+
+        async def get_response(request: Request) -> Response:
+            try:
+                with ElapsedTimer() as timer:
+                    response = await dispatch.send(
+                        request, verify=verify, cert=cert, timeout=timeout
+                    )
+                response.elapsed = timer.elapsed
+                response.request = request
+            except HTTPError as exc:
+                # Add the original request to any HTTPError unless
+                # there'a already a request attached in the case of
+                # a ProxyError.
+                if exc.request is None:
+                    exc.request = request
+                raise
+
+            self.cookies.extract_cookies(response)
+            if not stream:
+                try:
+                    await response.read()
+                finally:
+                    await response.close()
+
+            status = f"{response.status_code} {response.reason_phrase}"
+            response_line = f"{response.http_version} {status}"
+            logger.debug(
+                f'HTTP Request: {request.method} {request.url} "{response_line}"'
+            )
+
+            return response
+
+        def wrap(
+            get_response: typing.Callable, middleware: BaseMiddleware
+        ) -> typing.Callable:
+            return functools.partial(middleware, get_response=get_response)
+
+        get_response = wrap(
+            get_response,
+            RedirectMiddleware(allow_redirects=allow_redirects, cookies=self.cookies),
         )
+
+        if isinstance(auth, BaseMiddleware):
+            get_response = wrap(get_response, auth)
+
+        return await get_response(request)
 
     async def close(self) -> None:
         await self.dispatch.close()
