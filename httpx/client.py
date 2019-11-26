@@ -382,12 +382,11 @@ class Client:
 
         if trust_env:
             netrc_info = self._get_netrc()
-            if netrc_info:
+            if netrc_info is not None:
                 netrc_login = netrc_info.authenticators(request.url.authority)
-                if netrc_login:
-                    username, _, password = netrc_login
-                    assert password is not None
-                    auth = BasicAuth(username=username, password=password)
+                netrc_username, _, netrc_password = netrc_login or ("", None, None)
+                if netrc_password is not None:
+                    auth = BasicAuth(username=netrc_username, password=netrc_password)
                     return auth(request)
 
         return request
