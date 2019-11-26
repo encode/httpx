@@ -14,7 +14,7 @@ First, start by importing HTTPX:
 Now, let’s try to get a webpage.
 
 ```python
->>> r = httpx.get('https://httpbin.org/get')
+>>> r = await httpx.get('https://httpbin.org/get')
 >>> r
 <Response [200 OK]>
 ```
@@ -22,16 +22,16 @@ Now, let’s try to get a webpage.
 Similarly, to make an HTTP POST request:
 
 ```python
->>> r = httpx.post('https://httpbin.org/post', data={'key': 'value'})
+>>> r = await httpx.post('https://httpbin.org/post', data={'key': 'value'})
 ```
 
 The PUT, DELETE, HEAD, and OPTIONS requests all follow the same style:
 
 ```python
->>> r = httpx.put('https://httpbin.org/put', data={'key': 'value'})
->>> r = httpx.delete('https://httpbin.org/delete')
->>> r = httpx.head('https://httpbin.org/get')
->>> r = httpx.options('https://httpbin.org/get')
+>>> r = await httpx.put('https://httpbin.org/put', data={'key': 'value'})
+>>> r = await httpx.delete('https://httpbin.org/delete')
+>>> r = await httpx.head('https://httpbin.org/get')
+>>> r = await httpx.options('https://httpbin.org/get')
 ```
 
 ## Passing Parameters in URLs
@@ -40,7 +40,7 @@ To include URL query parameters in the request, use the `params` keyword:
 
 ```python
 >>> params = {'key1': 'value1', 'key2': 'value2'}
->>> r = httpx.get('https://httpbin.org/get', params=params)
+>>> r = await httpx.get('https://httpbin.org/get', params=params)
 ```
 
 To see how the values get encoding into the URL string, we can inspect the
@@ -55,7 +55,7 @@ You can also pass a list of items as a value:
 
 ```python
 >>> params = {'key1': 'value1', 'key2': ['value2', 'value3']}
->>> r = httpx.get('https://httpbin.org/get', params=params)
+>>> r = await httpx.get('https://httpbin.org/get', params=params)
 >>> r.url
 URL('https://httpbin.org/get?key1=value1&key2=value2&key2=value3')
 ```
@@ -65,7 +65,7 @@ URL('https://httpbin.org/get?key1=value1&key2=value2&key2=value3')
 HTTPX will automatically handle decoding the response content into Unicode text.
 
 ```python
->>> r = httpx.get('https://www.example.org/')
+>>> r = await httpx.get('https://www.example.org/')
 >>> r.text
 '<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 ```
@@ -110,7 +110,7 @@ For example, to create an image from binary data returned by a request, you can 
 Often Web API responses will be encoded as JSON.
 
 ```python
->>> r = httpx.get('https://api.github.com/events')
+>>> r = await httpx.get('https://api.github.com/events')
 >>> r.json()
 [{u'repository': {u'open_issues': 0, u'url': 'https://github.com/...' ...  }}]
 ```
@@ -122,7 +122,7 @@ To include additional headers in the outgoing request, use the `headers` keyword
 ```python
 >>> url = 'http://httpbin.org/headers'
 >>> headers = {'user-agent': 'my-app/0.0.1'}
->>> r = httpx.get(url, headers=headers)
+>>> r = await httpx.get(url, headers=headers)
 ```
 
 ## Sending Form Encoded Data
@@ -133,7 +133,7 @@ which is used for HTML forms.
 
 ```python
 >>> data = {'key1': 'value1', 'key2': 'value2'}
->>> r = httpx.post("https://httpbin.org/post", data=data)
+>>> r = await httpx.post("https://httpbin.org/post", data=data)
 >>> print(r.text)
 {
   ...
@@ -149,7 +149,7 @@ Form encoded data can also include multiple values form a given key.
 
 ```python
 >>> data = {'key1': ['value1', 'value2']}
->>> r = httpx.post("https://httpbin.org/post", data=data)
+>>> r = await httpx.post("https://httpbin.org/post", data=data)
 >>> print(r.text)
 {
   ...
@@ -169,7 +169,7 @@ You can also upload files, using HTTP multipart encoding:
 
 ```python
 >>> files = {'upload-file': open('report.xls', 'rb')}
->>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> r = await httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
 {
   ...
@@ -185,7 +185,7 @@ of items for the file value:
 
 ```python
 >>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
->>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> r = await httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
 {
   ...
@@ -203,7 +203,7 @@ For more complicated data structures you'll often want to use JSON encoding inst
 
 ```python
 >>> data = {'integer': 123, 'boolean': True, 'list': ['a', 'b', 'c']}
->>> r = httpx.post("https://httpbin.org/post", json=data)
+>>> r = await httpx.post("https://httpbin.org/post", json=data)
 >>> print(r.text)
 {
   ...
@@ -233,7 +233,7 @@ binary data.
 We can inspect the HTTP status code of the response:
 
 ```python
->>> r = httpx.get('https://httpbin.org/get')
+>>> r = await httpx.get('https://httpbin.org/get')
 >>> r.status_code
 200
 ```
@@ -248,7 +248,7 @@ True
 We can raise an exception for any Client or Server error responses (4xx or 5xx status codes):
 
 ```python
->>> not_found = httpx.get('https://httpbin.org/status/404')
+>>> not_found = await httpx.get('https://httpbin.org/status/404')
 >>> not_found.status_code
 404
 >>> not_found.raise_for_status()
@@ -301,7 +301,7 @@ value, as per [RFC 7230](https://tools.ietf.org/html/rfc7230#section-3.2):
 Any cookies that are set on the response can be easily accessed:
 
 ```python
->>> r = httpx.get('http://httpbin.org/cookies/set?chocolate=chip', allow_redirects=False)
+>>> r = await httpx.get('http://httpbin.org/cookies/set?chocolate=chip', allow_redirects=False)
 >>> r.cookies['chocolate']
 'chip'
 ```
@@ -310,7 +310,7 @@ To include cookies in an outgoing request, use the `cookies` parameter:
 
 ```python
 >>> cookies = {"peanut": "butter"}
->>> r = httpx.get('http://httpbin.org/cookies', cookies=cookies)
+>>> r = await httpx.get('http://httpbin.org/cookies', cookies=cookies)
 >>> r.json()
 {'cookies': {'peanut': 'butter'}}
 ```
@@ -322,7 +322,7 @@ with additional API for accessing cookies by their domain or path.
 >>> cookies = httpx.Cookies()
 >>> cookies.set('cookie_on_domain', 'hello, there!', domain='httpbin.org')
 >>> cookies.set('cookie_off_domain', 'nope.', domain='example.org')
->>> r = httpx.get('http://httpbin.org/cookies', cookies=cookies)
+>>> r = await httpx.get('http://httpbin.org/cookies', cookies=cookies)
 >>> r.json()
 {'cookies': {'cookie_on_domain': 'hello, there!'}}
 ```
@@ -338,7 +338,7 @@ in which they were made.
 For example, GitHub redirects all HTTP requests to HTTPS.
 
 ```python
->>> r = httpx.get('http://github.com/')
+>>> r = await httpx.get('http://github.com/')
 >>> r.url
 URL('https://github.com/')
 >>> r.status_code
@@ -350,7 +350,7 @@ URL('https://github.com/')
 You can modify the default redirection handling with the allow_redirects parameter:
 
 ```python
->>> r = httpx.get('http://github.com/', allow_redirects=False)
+>>> r = await httpx.get('http://github.com/', allow_redirects=False)
 >>> r.status_code
 301
 >>> r.history
@@ -360,7 +360,7 @@ You can modify the default redirection handling with the allow_redirects paramet
 If you’re making a `HEAD` request, you can use this to enable redirection:
 
 ```python
->>> r = httpx.head('http://github.com/', allow_redirects=True)
+>>> r = await httpx.head('http://github.com/', allow_redirects=True)
 >>> r.url
 'https://github.com/'
 >>> r.history
@@ -377,7 +377,7 @@ The default timeout for network inactivity is five seconds. You can modify the
 value to be more or less strict:
 
 ```python
->>> httpx.get('https://github.com/', timeout=0.001)
+>>> await httpx.get('https://github.com/', timeout=0.001)
 ```
 
 For advanced timeout management, see [Timeout fine-tuning](https://www.encode.io/httpx/advanced/#timeout-fine-tuning).
@@ -391,7 +391,7 @@ plaintext `str` or `bytes` objects as the `auth` argument to the request
 functions:
 
 ```python
->>> httpx.get("https://example.com", auth=("my_user", "password123"))
+>>> await httpx.get("https://example.com", auth=("my_user", "password123"))
 ```
 
 To provide credentials for Digest authentication you'll need to instantiate
@@ -401,6 +401,6 @@ as above:
 
 ```python
 >>> auth = httpx.DigestAuth("my_user", "password123")
->>> httpx.get("https://example.com", auth=auth)
+>>> await httpx.get("https://example.com", auth=auth)
 <Response [200 OK]>
 ```
