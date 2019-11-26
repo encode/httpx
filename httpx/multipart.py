@@ -48,7 +48,7 @@ class FileField(Field):
     ) -> None:
         self.name = name
         if not isinstance(value, tuple):
-            self.filename = Path(getattr(value, "name", "upload")).name
+            self.filename = Path(str(getattr(value, "name", "upload"))).name
             self.file = value  # type: typing.Union[typing.IO[str], typing.IO[bytes]]
             self.content_type = self.guess_content_type()
         else:
