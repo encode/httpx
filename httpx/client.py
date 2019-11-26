@@ -48,6 +48,52 @@ logger = get_logger(__name__)
 
 
 class Client:
+    """
+    An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.
+    Usage:
+    ```
+    >>> client = httpx.Client()
+    >>> response = client.get('https://example.org')
+    ```
+    **Parameters:**
+    * **auth** - *(optional)* An authentication class to use when sending
+    requests.
+    * **params** - *(optional)* Query parameters to include in request URLs, as
+    a string, dictionary, or list of two-tuples.
+    * **headers** - *(optional)* Dictionary of HTTP headers to include when
+    sending requests.
+    * **cookies** - *(optional)* Dictionary of Cookie items to include when
+    sending requests.
+    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
+    verify the identity of requested hosts. Either `True` (default CA bundle),
+    a path to an SSL certificate file, or `False` (disable verification).
+    * **cert** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client. Either a path to an SSL certificate file, or
+    two-tuple of (certificate file, key file), or a three-tuple of (certificate
+    file, key file, password).
+    * **http_versions** - *(optional)* A list of strings of HTTP protocol
+    versions to use when sending requests. eg. `http_versions=["HTTP/1.1"]`
+    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
+    URLs.
+    * **timeout** - *(optional)* The timeout configuration to use when sending
+    requests.
+    * **pool_limits** - *(optional)* The connection pool configuration to use
+    when determining the maximum number of concurrently open HTTP connections.
+    * **max_redirects** - *(optional)* The maximum number of redirect responses
+    that should be followed.
+    * **base_url** - *(optional)* A URL to use as the base when building
+    request URLs.
+    * **dispatch** - *(optional)* A dispatch class to use for sending requests
+    over the network.
+    * **app** - *(optional)* An ASGI application to send requests to,
+    rather than sending actual network requests.
+    * **backend** - *(optional)* A concurrency backend to use when issuing
+    async requests.
+    * **trust_env** - *(optional)* Enables or disables usage of environment
+    variables for configuration.
+    * **uds** - *(optional)* A path to a Unix domain socket to connect through.
+    """
+
     def __init__(
         self,
         *,

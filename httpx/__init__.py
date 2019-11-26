@@ -1,4 +1,5 @@
 from .__version__ import __description__, __title__, __version__
+from .api import delete, get, head, options, patch, post, put, request
 from .client import Client
 from .concurrency.asyncio import AsyncioBackend
 from .concurrency.base import (
@@ -66,6 +67,15 @@ __all__ = [
     "__description__",
     "__title__",
     "__version__",
+    "delete",
+    "get",
+    "head",
+    "options",
+    "patch",
+    "post",
+    "patch",
+    "put",
+    "request",
     "Client",
     "AsyncioBackend",
     "USER_AGENT",
