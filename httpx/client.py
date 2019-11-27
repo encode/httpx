@@ -421,7 +421,7 @@ class Client:
             if not response.is_redirect:
                 return response
 
-            await response.close()
+            await response.read()
             request = self.build_redirect_request(request, response)
             history = history + [response]
 
