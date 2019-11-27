@@ -8,7 +8,7 @@ from urllib.request import parse_http_list
 
 from .exceptions import ProtocolError
 from .middleware import Middleware
-from .models import Request, Response
+from .models import Request, Response, StatusCode
 from .utils import to_bytes, to_str, unquote
 
 

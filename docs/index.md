@@ -60,7 +60,8 @@ or use Python 3.8 with `python -m asyncio`.
 
 ## Features
 
-HTTPX builds on the well-established usability of `requests`, and gives you:
+HTTPX is a high performance asynchronous HTTP client, that builds on the
+well-established usability of `requests`, and gives you:
 
 * A broadly requests-compatible API.
 * HTTP/2 and HTTP/1.1 support.

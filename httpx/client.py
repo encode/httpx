@@ -22,13 +22,7 @@ from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import Dispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
-from .exceptions import (
-    HTTPError,
-    InvalidURL,
-    RedirectBodyUnavailable,
-    RedirectLoop,
-    TooManyRedirects,
-)
+from .exceptions import HTTPError, InvalidURL, RedirectBodyUnavailable, RedirectLoop, TooManyRedirects
 from .middleware import Middleware
 from .models import (
     URL,
