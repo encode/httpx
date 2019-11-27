@@ -1,4 +1,5 @@
 import enum
+from base64 import b64encode
 
 import h11
 
@@ -14,7 +15,6 @@ from ..config import (
     VerifyTypes,
 )
 from ..exceptions import ProxyError
-from ..middleware.basic_auth import build_basic_auth_header
 from ..models import URL, Headers, HeaderTypes, Origin, Request, Response, URLTypes
 from ..utils import get_logger
 from .connection import HTTPConnection
@@ -69,12 +69,17 @@ class HTTPProxy(ConnectionPool):
         if url.username or url.password:
             self.proxy_headers.setdefault(
                 "Proxy-Authorization",
-                build_basic_auth_header(url.username, url.password),
+                self.build_auth_header(url.username, url.password),
             )
             # Remove userinfo from the URL authority, e.g.:
             # 'username:password@proxy_host:proxy_port' -> 'proxy_host:proxy_port'
             credentials, _, authority = url.authority.rpartition("@")
             self.proxy_url = url.copy_with(authority=authority)
+
+    def build_auth_header(self, username: str, password: str) -> str:
+        userpass = (username.encode("utf-8"), password.encode("utf-8"))
+        token = b64encode(b":".join(userpass)).decode().strip()
+        return f"Basic {token}"
 
     async def acquire_connection(self, origin: Origin) -> HTTPConnection:
         if self.should_forward_origin(origin):

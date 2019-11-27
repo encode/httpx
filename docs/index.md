@@ -24,13 +24,13 @@ HTTPX
 <em>A next-generation HTTP client for Python.</em>
 </div>
 
-HTTPX is an asynchronous HTTP client, that supports HTTP/2 and HTTP/1.1.
+HTTPX is an asynchronous client library that supports HTTP/1.1 and HTTP/2.
 
 It can be used in high-performance async web frameworks, using either asyncio
-or trio, and is able to support making large numbers of requests concurrently.
+or trio, and is able to support making large numbers of concurrent requests.
 
 !!! note
-    The 0.8 release switched HTTPX into focusing exclusively on the async
+    The 0.8 release switched HTTPX into focusing exclusively on providing an async
     client. It is possible that we'll look at re-introducing a sync API at a
     later date.
 
@@ -38,11 +38,10 @@ or trio, and is able to support making large numbers of requests concurrently.
 
 Let's get started...
 
-!!! note
-    The standard Python REPL does not allow top-level async statements.
+The standard Python REPL does not allow top-level async statements.
 
-    To run async examples directly you'll probably want to either use `ipython`,
-    or use Python 3.8 with `python -m asyncio`.
+To run these async examples you'll probably want to either use `ipython`,
+or use Python 3.8 with `python -m asyncio`.
 
 ```python
 >>> import httpx

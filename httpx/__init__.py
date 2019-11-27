@@ -1,5 +1,6 @@
 from .__version__ import __description__, __title__, __version__
 from .api import delete, get, head, options, patch, post, put, request
+from .auth import BasicAuth, DigestAuth
 from .client import Client
 from .concurrency.asyncio import AsyncioBackend
 from .concurrency.base import (
@@ -43,7 +44,6 @@ from .exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
-from .middleware.digest_auth import DigestAuth
 from .models import (
     URL,
     AuthTypes,
@@ -76,7 +76,9 @@ __all__ = [
     "patch",
     "put",
     "request",
+    "BasicAuth",
     "Client",
+    "DigestAuth",
     "AsyncioBackend",
     "USER_AGENT",
     "CertTypes",
