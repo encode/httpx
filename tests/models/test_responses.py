@@ -115,7 +115,8 @@ def test_response_force_encoding():
     assert response.encoding == "iso-8859-1"
 
 
-def test_read_response():
+@pytest.mark.asyncio
+async def test_read_response():
     response = httpx.Response(200, content=b"Hello, world!")
 
     assert response.status_code == 200
@@ -123,34 +124,26 @@ def test_read_response():
     assert response.encoding == "ascii"
     assert response.is_closed
 
-    content = response.read()
+    content = await response.read()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
     assert response.is_closed
 
 
-def test_raw_interface():
+@pytest.mark.asyncio
+async def test_raw_interface():
     response = httpx.Response(200, content=b"Hello, world!")
 
     raw = b""
-    for part in response.raw():
+    async for part in response.raw():
         raw += part
     assert raw == b"Hello, world!"
 
 
-def test_stream_interface():
-    response = httpx.Response(200, content=b"Hello, world!")
-
-    content = b""
-    for part in response.stream():
-        content += part
-    assert content == b"Hello, world!"
-
-
 @pytest.mark.asyncio
-async def test_async_stream_interface():
-    response = httpx.AsyncResponse(200, content=b"Hello, world!")
+async def test_stream_interface():
+    response = httpx.Response(200, content=b"Hello, world!")
 
     content = b""
     async for part in response.stream():
@@ -158,20 +151,21 @@ async def test_async_stream_interface():
     assert content == b"Hello, world!"
 
 
-def test_stream_interface_after_read():
+@pytest.mark.asyncio
+async def test_stream_text():
     response = httpx.Response(200, content=b"Hello, world!")
 
-    response.read()
+    await response.read()
 
-    content = b""
-    for part in response.stream():
+    content = ""
+    async for part in response.stream_text():
         content += part
-    assert content == b"Hello, world!"
+    assert content == "Hello, world!"
 
 
 @pytest.mark.asyncio
-async def test_async_stream_interface_after_read():
-    response = httpx.AsyncResponse(200, content=b"Hello, world!")
+async def test_stream_interface_after_read():
+    response = httpx.Response(200, content=b"Hello, world!")
 
     await response.read()
 
@@ -181,22 +175,9 @@ async def test_async_stream_interface_after_read():
     assert content == b"Hello, world!"
 
 
-def test_streaming_response():
-    response = httpx.Response(200, content=streaming_body())
-
-    assert response.status_code == 200
-    assert not response.is_closed
-
-    content = response.read()
-
-    assert content == b"Hello, world!"
-    assert response.content == b"Hello, world!"
-    assert response.is_closed
-
-
 @pytest.mark.asyncio
-async def test_async_streaming_response():
-    response = httpx.AsyncResponse(200, content=async_streaming_body())
+async def test_streaming_response():
+    response = httpx.Response(200, content=async_streaming_body())
 
     assert response.status_code == 200
     assert not response.is_closed
@@ -208,20 +189,9 @@ async def test_async_streaming_response():
     assert response.is_closed
 
 
-def test_cannot_read_after_stream_consumed():
-    response = httpx.Response(200, content=streaming_body())
-
-    content = b""
-    for part in response.stream():
-        content += part
-
-    with pytest.raises(httpx.StreamConsumed):
-        response.read()
-
-
 @pytest.mark.asyncio
-async def test_async_cannot_read_after_stream_consumed():
-    response = httpx.AsyncResponse(200, content=async_streaming_body())
+async def test_cannot_read_after_stream_consumed():
+    response = httpx.Response(200, content=async_streaming_body())
 
     content = b""
     async for part in response.stream():
@@ -231,18 +201,9 @@ async def test_async_cannot_read_after_stream_consumed():
         await response.read()
 
 
-def test_cannot_read_after_response_closed():
-    response = httpx.Response(200, content=streaming_body())
-
-    response.close()
-
-    with pytest.raises(httpx.ResponseClosed):
-        response.read()
-
-
 @pytest.mark.asyncio
-async def test_async_cannot_read_after_response_closed():
-    response = httpx.AsyncResponse(200, content=async_streaming_body())
+async def test_cannot_read_after_response_closed():
+    response = httpx.Response(200, content=async_streaming_body())
 
     await response.close()
 
@@ -311,18 +272,3 @@ def test_json_without_specified_encoding_decode_error():
 def test_link_headers(headers, expected):
     response = httpx.Response(200, content=None, headers=headers)
     assert response.links == expected
-
-
-@pytest.mark.asyncio
-async def test_stream_text():
-    async def iterator():
-        yield b"Hello, world!"
-
-    response = httpx.AsyncResponse(200, content=iterator().__aiter__())
-
-    await response.read()
-
-    content = ""
-    async for part in response.stream_text():
-        content += part
-    assert content == "Hello, world!"

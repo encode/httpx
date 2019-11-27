@@ -19,21 +19,19 @@ def test_content_length_header():
 
 
 def test_url_encoded_data():
-    for RequestClass in (httpx.Request, httpx.AsyncRequest):
-        request = RequestClass("POST", "http://example.org", data={"test": "123"})
-        assert request.headers["Content-Type"] == "application/x-www-form-urlencoded"
-        assert request.content == b"test=123"
+    request = httpx.Request("POST", "http://example.org", data={"test": "123"})
+    assert request.headers["Content-Type"] == "application/x-www-form-urlencoded"
+    assert request.content == b"test=123"
 
 
 def test_json_encoded_data():
-    for RequestClass in (httpx.Request, httpx.AsyncRequest):
-        request = RequestClass("POST", "http://example.org", json={"test": 123})
-        assert request.headers["Content-Type"] == "application/json"
-        assert request.content == b'{"test": 123}'
+    request = httpx.Request("POST", "http://example.org", json={"test": 123})
+    assert request.headers["Content-Type"] == "application/json"
+    assert request.content == b'{"test": 123}'
 
 
 def test_transfer_encoding_header():
-    def streaming_body(data):
+    async def streaming_body(data):
         yield data  # pragma: nocover
 
     data = streaming_body(b"test 123")
@@ -58,7 +56,7 @@ def test_override_accept_encoding_header():
 
 
 def test_override_content_length_header():
-    def streaming_body(data):
+    async def streaming_body(data):
         yield data  # pragma: nocover
 
     data = streaming_body(b"test 123")

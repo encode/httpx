@@ -14,9 +14,9 @@ all outgoing requests.
 The recommended way to use a `Client` is as a context manager. This will ensure that connections are properly cleaned up when leaving the `with` block:
 
 ```python
->>> with httpx.Client() as client:
-...     r = client.get('https://example.com')
-... 
+>>> async with httpx.Client() as client:
+...     r = await client.get('https://example.com')
+...
 >>> r
 <Response [200 OK]>
 ```
@@ -26,10 +26,10 @@ Alternatively, you can explicitly close the connection pool without block-usage 
 ```python
 >>> client = httpx.Client()
 >>> try:
-...     r = client.get('https://example.com')
+...     r = await client.get('https://example.com')
 ... finally:
-...     client.close()
-... 
+...     await client.close()
+...
 >>> r
 <Response [200 OK]>
 ```
@@ -45,8 +45,8 @@ For example, to apply a set of custom headers on every request:
 ```python
 >>> url = 'http://httpbin.org/headers'
 >>> headers = {'user-agent': 'my-app/0.0.1'}
->>> with httpx.Client(headers=headers) as client:
-...     r = client.get(url)
+>>> async with httpx.Client(headers=headers) as client:
+...     r = await client.get(url)
 ...
 >>> r.json()['headers']['User-Agent']
 'my-app/0.0.1'
@@ -54,7 +54,7 @@ For example, to apply a set of custom headers on every request:
 
 !!! note
     When you provide a parameter at both the client and request levels, one of two things can happen:
-    
+
     - For headers, query parameters and cookies, the values are merged into one.
     - For all other parameters, the request-level value is used.
 
@@ -63,9 +63,9 @@ Additionally, `Client` constructor accepts some parameters that aren't available
 One particularly useful parameter is `base_url`, which allows you to define a base URL to prepend to all outgoing requests:
 
 ```python
->>> with httpx.Client(base_url='http://httpbin.org') as client:
-...     r = client.get('/headers')
-... 
+>>> async with httpx.Client(base_url='http://httpbin.org') as client:
+...     r = await client.get('/headers')
+...
 >>> r.request.url
 URL('http://httpbin.org/headers')
 ```
@@ -75,45 +75,51 @@ For a list of all available client-level parameters, see the [`Client` API refer
 ## Calling into Python Web Apps
 
 You can configure an `httpx` client to call directly into a Python web
-application using either the WSGI or ASGI protocol.
+application using either the ASGI protocol.
 
 This is particularly useful for two main use-cases:
 
 * Using `httpx` as a client inside test cases.
 * Mocking out external services during tests or in dev/staging environments.
 
-Here's an example of integrating against a Flask application:
+Let's take this Starlette application as an example:
 
 ```python
-from flask import Flask
-import httpx
+from starlette.applications import Starlette
+from starlette.responses import HTMLResponse
+from starlette.routing import Route
 
 
-app = Flask(__name__)
+async def hello():
+    return HTMLResponse("Hello World!")
 
-@app.route("/")
-def hello():
-    return "Hello World!"
 
-with httpx.Client(app=app) as client:
-    r = client.get('http://example/')
-    assert r.status_code == 200
-    assert r.text == "Hello World!"
+app = Starlette(routes=[Route("/", hello)])
+```
+
+We can make requests directly against the application, like so:
+
+```python
+>>> import httpx
+>>> async with httpx.Client(app=app) as client:
+...     r = client.get('http://example/')
+...     assert r.status_code == 200
+...     assert r.text == "Hello World!"
 ```
 
 For some more complex cases you might need to customize the WSGI or ASGI
 dispatch. This allows you to:
 
 * Inspect 500 error responses rather than raise exceptions by setting `raise_app_exceptions=False`.
-* Mount the WSGI or ASGI application at a subpath by setting `script_name` (WSGI) or `root_path` (ASGI).
-* Use a given client address for requests by setting `remote_addr` (WSGI) or `client` (ASGI).
+* Mount the WSGI or ASGI application at a subpath by setting `root_path`.
+* Use a given client address for requests by setting `client`.
 
 For example:
 
 ```python
 # Instantiate a client that makes WSGI requests with a client IP of "1.2.3.4".
-dispatch = httpx.dispatch.WSGIDispatch(app=app, remote_addr="1.2.3.4")
-with httpx.Client(dispatch=dispatch) as client:
+dispatch = httpx.dispatch.ASGIDispatch(app=app, remote_addr="1.2.3.4")
+async with httpx.Client(dispatch=dispatch) as client:
     ...
 ```
 
@@ -123,10 +129,10 @@ You can use `Client.build_request()` to build a request and
 make modifications before sending the request.
 
 ```python
->>> with httpx.Client() as client:
+>>> async with httpx.Client() as client:
 ...     req = client.build_request("OPTIONS", "https://example.com")
 ...     req.url.full_path = "*"  # Build an 'OPTIONS *' request for CORS
-...     r = client.send(req)
+...     r = await client.send(req)
 ...
 >>> r
 <Response [200 OK]>
@@ -139,11 +145,11 @@ One can set the version of the HTTP protocol for the client in case you want to 
 For example:
 
 ```python
-with httpx.Client(http_versions=["HTTP/1.1"]) as h11_client:
-    h11_response = h11_client.get("https://myserver.com")
+async with httpx.Client(http_versions=["HTTP/1.1"]) as h11_client:
+    h11_response = await h11_client.get("https://myserver.com")
 
-with httpx.Client(http_versions=["HTTP/2"]) as h2_client:
-    h2_response = h2_client.get("https://myserver.com")
+async with httpx.Client(http_versions=["HTTP/2"]) as h2_client:
+    h2_response = await h2_client.get("https://myserver.com")
 ```
 
 ## .netrc Support
@@ -158,7 +164,7 @@ not defined, HTTPX tries to add auth into request's header from .netrc file.
 
 As default `trust_env` is true. To set false:
 ```python
->>> httpx.get('https://example.org/', trust_env=False)
+>>> await httpx.get('https://example.org/', trust_env=False)
 ```
 
 If `NETRC` environment is empty, HTTPX tries to use default files.
@@ -189,9 +195,9 @@ Here's an example requesting the Docker Engine API:
 import httpx
 
 
-with httpx.Client(uds="/var/run/docker.sock") as client:
+async with httpx.Client(uds="/var/run/docker.sock") as client:
     # This request will connect through the socket file.
-    resp = client.get("http://localhost/version")
+    resp = await client.get("http://localhost/version")
 ```
 
 ## HTTP Proxying
@@ -205,7 +211,7 @@ to `http://127.0.0.1:3081` your `proxies` config would look like this:
 ...     "http": "http://127.0.0.1:3080",
 ...     "https": "http://127.0.0.1:3081"
 ... }
->>> with httpx.Client(proxies=proxies) as client:
+>>> async with httpx.Client(proxies=proxies) as client:
 ...     ...
 ```
 
@@ -220,11 +226,11 @@ to use for a given request this same order is used.
 ...     "http": "...",  # Scheme
 ...     "all": "...",  # All
 ... }
->>> with httpx.Client(proxies=proxies) as client:
+>>> async with httpx.Client(proxies=proxies) as client:
 ...     ...
-... 
+...
 >>> proxy = "..."  # Shortcut for {'all': '...'}
->>> with httpx.Client(proxies=proxy) as client:
+>>> async with httpx.Client(proxies=proxy) as client:
 ...     ...
 ```
 
@@ -244,9 +250,9 @@ proxy = httpx.HTTPProxy(
     proxy_url="https://127.0.0.1",
     proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY
 )
-with httpx.Client(proxies=proxy) as client:
+async with httpx.Client(proxies=proxy) as client:
     # This request will be tunneled instead of forwarded.
-    r = client.get("http://example.com")
+    r = await client.get("http://example.com")
 ```
 
 !!! note
@@ -278,18 +284,18 @@ You can set timeouts on two levels:
 
 ```python
 # Using top-level API
-httpx.get('http://example.com/api/v1/example', timeout=5)
+await httpx.get('http://example.com/api/v1/example', timeout=5)
 
 # Or, with a client:
-with httpx.Client() as client:
-    client.get("http://example.com/api/v1/example", timeout=5)
+async with httpx.Client() as client:
+    await client.get("http://example.com/api/v1/example", timeout=5)
 ```
 
 - On a client instance, which results in the given `timeout` being used as a default for requests made with this client:
 
 ```python
-with httpx.Client(timeout=5) as client:
-    client.get('http://example.com/api/v1/example')
+async with httpx.Client(timeout=5) as client:
+    await client.get('http://example.com/api/v1/example')
 ```
 
 Besides, you can pass timeouts in two forms:
@@ -304,7 +310,7 @@ timeout = httpx.TimeoutConfig(
     write_timeout=15
 )
 
-resp = httpx.get('http://example.com/api/v1/example', timeout=timeout)
+resp = await httpx.get('http://example.com/api/v1/example', timeout=timeout)
 ```
 
 ### Default timeouts
@@ -319,11 +325,11 @@ Note that currently this is not supported by the top-level API.
 ```python
 url = "http://example.com/api/v1/delay/10"
 
-httpx.get(url, timeout=None)  # Times out after 5s
+await httpx.get(url, timeout=None)  # Times out after 5s
 
 
-with httpx.Client(timeout=None) as client:
-    client.get(url)  # Does not timeout, returns after 10s
+async with httpx.Client(timeout=None) as client:
+    await client.get(url)  # Does not timeout, returns after 10s
 
 
 timeout = httpx.TimeoutConfig(
@@ -331,7 +337,7 @@ timeout = httpx.TimeoutConfig(
     read_timeout=None,
     write_timeout=5
 )
-httpx.get(url, timeout=timeout) # Does not timeout, returns after 10s
+await httpx.get(url, timeout=timeout) # Does not timeout, returns after 10s
 ```
 
 ## Multipart file encoding
@@ -342,7 +348,7 @@ name of the payloads as keys and a tuple of elements as values.
 
 ```python
 >>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
->>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> r = await httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
 {
   ...
@@ -366,7 +372,7 @@ is set to `None` or it cannot be inferred from it, HTTPX will default to
 
 ```python
 >>> files = {'upload-file': (None, 'text content', 'text/plain')}
->>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> r = await httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
 {
   ...
@@ -393,7 +399,7 @@ If you'd like to use a custom CA bundle, you can use the `verify` parameter that
 ```python
 import httpx
 
-r = httpx.get("https://example.org", verify="path/to/client.pem")
+r = await httpx.get("https://example.org", verify="path/to/client.pem")
 ```
 
 ### Making HTTPS requests to a local server
@@ -408,7 +414,32 @@ If you do need to make HTTPS connections to a local server, for example to test 
 
 ```python
 >>> import httpx
->>> r = httpx.get("https://localhost:8000", verify="/tmp/client.pem")
+>>> r = await httpx.get("https://localhost:8000", verify="/tmp/client.pem")
 >>> r
 Response <200 OK>
 ```
+
+## Support async environments
+
+### [asyncio](https://docs.python.org/3/library/asyncio.html) (Default)
+
+By default, `AsyncClient` uses `asyncio` to perform asynchronous operations and I/O calls.
+
+### [trio](https://github.com/python-trio/trio)
+
+To make asynchronous requests in `trio` programs, pass a `TrioBackend` to the `AsyncClient`:
+
+```python
+import trio
+import httpx
+from httpx.concurrency.trio import TrioBackend
+
+async def main():
+    async with httpx.AsyncClient(backend=TrioBackend()) as client:
+        ...
+
+trio.run(main)
+```
+
+!!! important
+    `trio` must be installed to import and use the `TrioBackend`.

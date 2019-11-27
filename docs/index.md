@@ -24,17 +24,29 @@ HTTPX
 <em>A next-generation HTTP client for Python.</em>
 </div>
 
-!!! warning
-    This project should be considered as an "alpha" release. It is substantially
-    API complete, but there are still some areas that need more work.
+HTTPX is an asynchronous HTTP client, that supports HTTP/2 and HTTP/1.1.
+
+It can be used in high-performance async web frameworks, using either asyncio
+or trio, and is able to support making large numbers of requests concurrently.
+
+!!! note
+    The 0.8 release switched HTTPX into focusing exclusively on the async
+    client. It is possible that we'll look at re-introducing a sync API at a
+    later date.
 
 ---
 
 Let's get started...
 
+!!! note
+    The standard Python REPL does not allow top-level async statements.
+
+    To run async examples directly you'll probably want to either use `ipython`,
+    or use Python 3.8 with `python -m asyncio`.
+
 ```python
 >>> import httpx
->>> r = httpx.get('https://www.example.org/')
+>>> r = await httpx.get('https://www.example.org/')
 >>> r
 <Response [200 OK]>
 >>> r.status_code
@@ -49,13 +61,12 @@ Let's get started...
 
 ## Features
 
-HTTPX builds on the well-established usability of `requests`, and gives you:
+HTTPX is a high performance asynchronous HTTP client, that builds on the
+well-established usability of `requests`, and gives you:
 
-* A requests-compatible API.
+* A broadly requests-compatible API.
 * HTTP/2 and HTTP/1.1 support.
-* Support for [issuing HTTP requests in parallel](parallel.md). *(Coming soon)*
-* Standard synchronous interface, but [with `async`/`await` support if you need it](async.md).
-* Ability to [make requests directly to WSGI or ASGI applications](advanced.md#calling-into-python-web-apps).
+* Ability to [make requests directly to ASGI applications](advanced.md#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 100% test coverage.
@@ -72,7 +83,7 @@ Plus all the standard features of `requests`...
 * Automatic Content Decoding
 * Unicode Response Bodies
 * Multipart File Uploads
-* HTTP(S) Proxy Support *(TODO)*
+* HTTP(S) Proxy Support
 * Connection Timeouts
 * Streaming Downloads
 * .netrc Support
@@ -82,9 +93,7 @@ Plus all the standard features of `requests`...
 
 For a run-through of all the basics, head over to the [QuickStart](quickstart.md).
 
-For more advanced topics, see the [Advanced Usage](advanced.md) section, or
-the specific topics on making [Parallel Requests](parallel.md) or using the
-[Async Client](async.md).
+For more advanced topics, see the [Advanced Usage](advanced.md) section.
 
 The [Developer Interface](api.md) provides a comprehensive API reference.
 

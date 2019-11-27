@@ -1,29 +1,31 @@
 import json
 
+import pytest
+
 from httpx import (
-    AsyncDispatcher,
-    AsyncRequest,
-    AsyncResponse,
     CertTypes,
     Client,
+    Dispatcher,
     QueryParams,
+    Request,
+    Response,
     TimeoutTypes,
     VerifyTypes,
 )
 from httpx.models import URL
 
 
-class MockDispatch(AsyncDispatcher):
+class MockDispatch(Dispatcher):
     async def send(
         self,
-        request: AsyncRequest,
+        request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         if request.url.path.startswith("/echo_queryparams"):
             body = json.dumps({"ok": "ok"}).encode()
-            return AsyncResponse(200, content=body, request=request)
+            return Response(200, content=body, request=request)
 
 
 def test_client_queryparams():
@@ -43,12 +45,13 @@ def test_client_queryparams_string():
     assert client.params["a"] == "b"
 
 
-def test_client_queryparams_echo():
+@pytest.mark.asyncio
+async def test_client_queryparams_echo():
     url = "http://example.org/echo_queryparams"
     client_queryparams = "first=str"
     request_queryparams = {"second": "dict"}
-    with Client(dispatch=MockDispatch(), params=client_queryparams) as client:
-        response = client.get(url, params=request_queryparams)
+    client = Client(dispatch=MockDispatch(), params=client_queryparams)
+    response = await client.get(url, params=request_queryparams)
 
     assert response.status_code == 200
     assert response.url == URL(

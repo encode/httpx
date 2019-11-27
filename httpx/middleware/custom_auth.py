@@ -1,15 +1,15 @@
 import typing
 
-from ..models import AsyncRequest, AsyncResponse
+from ..models import Request, Response
 from .base import BaseMiddleware
 
 
 class CustomAuthMiddleware(BaseMiddleware):
-    def __init__(self, auth: typing.Callable[[AsyncRequest], AsyncRequest]):
+    def __init__(self, auth: typing.Callable[[Request], Request]):
         self.auth = auth
 
     async def __call__(
-        self, request: AsyncRequest, get_response: typing.Callable
-    ) -> AsyncResponse:
+        self, request: Request, get_response: typing.Callable
+    ) -> Response:
         request = self.auth(request)
         return await get_response(request)

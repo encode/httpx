@@ -14,9 +14,9 @@ from ..config import (
     TimeoutTypes,
     VerifyTypes,
 )
-from ..models import AsyncRequest, AsyncResponse, Origin
+from ..models import Origin, Request, Response
 from ..utils import get_logger
-from .base import AsyncDispatcher
+from .base import Dispatcher
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
@@ -27,7 +27,7 @@ ReleaseCallback = typing.Callable[["HTTPConnection"], typing.Awaitable[None]]
 logger = get_logger(__name__)
 
 
-class HTTPConnection(AsyncDispatcher):
+class HTTPConnection(Dispatcher):
     def __init__(
         self,
         origin: typing.Union[str, Origin],
@@ -52,11 +52,11 @@ class HTTPConnection(AsyncDispatcher):
 
     async def send(
         self,
-        request: AsyncRequest,
+        request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         if self.h11_connection is None and self.h2_connection is None:
             await self.connect(verify=verify, cert=cert, timeout=timeout)
 

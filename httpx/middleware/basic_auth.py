@@ -1,7 +1,7 @@
 import typing
 from base64 import b64encode
 
-from ..models import AsyncRequest, AsyncResponse
+from ..models import Request, Response
 from ..utils import to_bytes
 from .base import BaseMiddleware
 
@@ -13,8 +13,8 @@ class BasicAuthMiddleware(BaseMiddleware):
         self.authorization_header = build_basic_auth_header(username, password)
 
     async def __call__(
-        self, request: AsyncRequest, get_response: typing.Callable
-    ) -> AsyncResponse:
+        self, request: Request, get_response: typing.Callable
+    ) -> Response:
         request.headers["Authorization"] = self.authorization_header
         return await get_response(request)
 

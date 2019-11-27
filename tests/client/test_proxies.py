@@ -30,7 +30,7 @@ def test_proxies_parameter(proxies, expected_proxies):
 
 
 def test_proxies_has_same_properties_as_dispatch():
-    client = httpx.AsyncClient(
+    client = httpx.Client(
         proxies="http://127.0.0.1",
         verify="/path/to/verify",
         cert="/path/to/cert",
@@ -101,8 +101,8 @@ PROXY_URL = "http://[::1]"
     ],
 )
 def test_dispatcher_for_request(url, proxies, expected):
-    client = httpx.AsyncClient(proxies=proxies)
-    request = httpx.AsyncRequest("GET", url)
+    client = httpx.Client(proxies=proxies)
+    request = httpx.Request("GET", url)
     dispatcher = client._dispatcher_for_request(request, client.proxies)
 
     if expected is None:
@@ -115,4 +115,4 @@ def test_dispatcher_for_request(url, proxies, expected):
 
 def test_unsupported_proxy_scheme():
     with pytest.raises(ValueError):
-        httpx.AsyncClient(proxies="ftp://127.0.0.1")
+        httpx.Client(proxies="ftp://127.0.0.1")
