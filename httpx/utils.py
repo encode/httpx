@@ -104,7 +104,7 @@ class NetRCInfo:
 
     @property
     def netrc_info(self) -> typing.Optional[netrc.netrc]:
-        if not hasattr(self, '_netrc_info'):
+        if not hasattr(self, "_netrc_info"):
             self._netrc_info = None
             for file_path in self.netrc_files:
                 expanded_path = Path(file_path).expanduser()
@@ -113,7 +113,9 @@ class NetRCInfo:
                     break
         return self._netrc_info
 
-    def get_credentials(self, authority: str) -> typing.Optional[typing.Tuple[str, str]]:
+    def get_credentials(
+        self, authority: str
+    ) -> typing.Optional[typing.Tuple[str, str]]:
         if self.netrc_info is None:
             return None
 

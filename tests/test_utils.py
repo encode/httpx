@@ -12,7 +12,7 @@ from httpx.utils import (
     obfuscate_sensitive_headers,
     parse_header_links,
     should_not_be_proxied,
-    NetRCInfo
+    NetRCInfo,
 )
 from tests.utils import override_log_level
 
