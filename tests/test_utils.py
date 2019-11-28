@@ -6,13 +6,13 @@ import pytest
 import httpx
 from httpx.utils import (
     ElapsedTimer,
+    NetRCInfo,
     get_ca_bundle_from_env,
     get_environment_proxies,
     guess_json_utf,
     obfuscate_sensitive_headers,
     parse_header_links,
     should_not_be_proxied,
-    NetRCInfo,
 )
 from tests.utils import override_log_level
 
