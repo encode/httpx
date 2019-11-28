@@ -131,6 +131,6 @@ class ASGIDispatch(Dispatcher):
             status_code=status_code,
             http_version="HTTP/1.1",
             headers=headers,
-            content=b''.join(body_parts),
+            content=b"".join(body_parts),
             request=request,
         )
