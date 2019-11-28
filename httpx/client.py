@@ -1,5 +1,4 @@
 import functools
-import netrc
 import typing
 from types import TracebackType
 
@@ -47,7 +46,7 @@ from .models import (
     URLTypes,
 )
 from .status_codes import codes
-from .utils import ElapsedTimer, get_environment_proxies, get_logger, get_netrc
+from .utils import ElapsedTimer, NetRCInfo, get_environment_proxies, get_logger
 
 logger = get_logger(__name__)
 
@@ -158,6 +157,7 @@ class Client:
         self.trust_env = trust_env
         self.dispatch = dispatch
         self.concurrency_backend = backend
+        self.netrc = NetRCInfo()
 
         if proxies is None and trust_env:
             proxies = typing.cast(ProxiesTypes, get_environment_proxies())
@@ -385,13 +385,10 @@ class Client:
             return auth(request)
 
         if trust_env:
-            netrc_info = self._get_netrc()
-            if netrc_info is not None:
-                netrc_login = netrc_info.authenticators(request.url.authority)
-                netrc_username, _, netrc_password = netrc_login or ("", None, None)
-                if netrc_password is not None:
-                    auth = BasicAuth(username=netrc_username, password=netrc_password)
-                    return auth(request)
+            credentials = self.netrc.get_credentials(request.url.authority)
+            if credentials is not None:
+                auth = BasicAuth(username=credentials[0], password=credentials[1])
+                return auth(request)
 
         return request
 
@@ -562,10 +559,6 @@ class Client:
         logger.debug(f'HTTP Request: {request.method} {request.url} "{response_line}"')
 
         return response
-
-    @functools.lru_cache(1)
-    def _get_netrc(self) -> typing.Optional[netrc.netrc]:
-        return get_netrc()
 
     def _dispatcher_for_request(
         self, request: Request, proxies: typing.Dict[str, Dispatcher]

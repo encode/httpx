@@ -96,22 +96,33 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
     return None
 
 
-NETRC_STATIC_FILES = (Path("~/.netrc"), Path("~/_netrc"))
+class NetRCInfo:
+    def __init__(self, files: typing.Optional[typing.List[str]] = None) -> None:
+        if files is None:
+            files = [os.getenv("NETRC", ""), "~/.netrc", "~/_netrc"]
+        self.netrc_files = files
 
+    @property
+    def netrc_info(self) -> typing.Optional[netrc.netrc]:
+        if not hasattr(self, "_netrc_info"):
+            self._netrc_info = None
+            for file_path in self.netrc_files:
+                expanded_path = Path(file_path).expanduser()
+                if expanded_path.is_file():
+                    self._netrc_info = netrc.netrc(str(expanded_path))
+                    break
+        return self._netrc_info
 
-def get_netrc() -> typing.Optional[netrc.netrc]:
-    NETRC_FILES = (Path(os.getenv("NETRC", "")),) + NETRC_STATIC_FILES
-    netrc_path = None
+    def get_credentials(
+        self, authority: str
+    ) -> typing.Optional[typing.Tuple[str, str]]:
+        if self.netrc_info is None:
+            return None
 
-    for file_path in NETRC_FILES:
-        expanded_path = file_path.expanduser()
-        if expanded_path.is_file():
-            netrc_path = expanded_path
-            break
-
-    if netrc_path is None:
-        return None
-    return netrc.netrc(str(netrc_path))
+        auth_info = self.netrc_info.authenticators(authority)
+        if auth_info is None or auth_info[2] is None:
+            return None
+        return (auth_info[0], auth_info[2])
 
 
 def get_ca_bundle_from_env() -> typing.Optional[str]:
@@ -182,7 +193,7 @@ TRACE_LOG_LEVEL = 5
 class Logger(logging.Logger):
     # Stub for type checkers.
     def trace(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
-        ...
+        ...  # pragma: nocover
 
 
 def get_logger(name: str) -> Logger:
