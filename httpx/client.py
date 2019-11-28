@@ -46,7 +46,7 @@ from .models import (
     URLTypes,
 )
 from .status_codes import codes
-from .utils import ElapsedTimer, get_environment_proxies, get_logger, NetRCInfo
+from .utils import ElapsedTimer, NetRCInfo, get_environment_proxies, get_logger
 
 logger = get_logger(__name__)
 
