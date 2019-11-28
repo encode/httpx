@@ -423,11 +423,11 @@ Response <200 OK>
 
 ### [asyncio](https://docs.python.org/3/library/asyncio.html) (Default)
 
-By default, `AsyncClient` uses `asyncio` to perform asynchronous operations and I/O calls.
+By default, `Client` uses `asyncio` to perform asynchronous operations and I/O calls.
 
 ### [trio](https://github.com/python-trio/trio)
 
-To make asynchronous requests in `trio` programs, pass a `TrioBackend` to the `AsyncClient`:
+To make asynchronous requests in `trio` programs, pass a `TrioBackend` to the `Client`:
 
 ```python
 import trio
@@ -435,7 +435,7 @@ import httpx
 from httpx.concurrency.trio import TrioBackend
 
 async def main():
-    async with httpx.AsyncClient(backend=TrioBackend()) as client:
+    async with httpx.Client(backend=TrioBackend()) as client:
         ...
 
 trio.run(main)
