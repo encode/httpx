@@ -97,7 +97,8 @@ class ASGIDispatch(Dispatcher):
             return {"type": "http.request", "body": body, "more_body": True}
 
         async def send(message: dict) -> None:
-            nonlocal status_code, headers, body_parts, response_started, response_complete
+            nonlocal status_code, headers, body_parts
+            nonlocal response_started, response_complete
 
             if message["type"] == "http.response.start":
                 assert not response_started
@@ -119,7 +120,7 @@ class ASGIDispatch(Dispatcher):
 
         try:
             await app(scope, receive, send)
-        except:
+        except Exception:
             if self.raise_app_exceptions or not response_complete:
                 raise
 
