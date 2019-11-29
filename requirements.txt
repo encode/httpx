@@ -4,6 +4,7 @@
 brotlipy==0.7.*
 
 autoflake
+black
 cryptography
 flake8
 flake8-bugbear
