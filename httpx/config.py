@@ -267,7 +267,17 @@ class TimeoutConfig:
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        if len({self.connect_timeout, self.read_timeout, self.write_timeout, self.pool_timeout}) == 1:
+        if (
+            len(
+                {
+                    self.connect_timeout,
+                    self.read_timeout,
+                    self.write_timeout,
+                    self.pool_timeout,
+                }
+            )
+            == 1
+        ):
             return f"{class_name}(timeout={self.connect_timeout})"
         return (
             f"{class_name}(connect_timeout={self.connect_timeout}, "
@@ -328,10 +338,7 @@ class PoolLimits:
     """
 
     def __init__(
-        self,
-        *,
-        soft_limit: int = None,
-        hard_limit: int = None,
+        self, *, soft_limit: int = None, hard_limit: int = None,
     ):
         self.soft_limit = soft_limit
         self.hard_limit = hard_limit
@@ -345,7 +352,9 @@ class PoolLimits:
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        return f"{class_name}(soft_limit={self.soft_limit}, hard_limit={self.hard_limit})"
+        return (
+            f"{class_name}(soft_limit={self.soft_limit}, hard_limit={self.hard_limit})"
+        )
 
 
 DEFAULT_SSL_CONFIG = SSLConfig(cert=None, verify=True)

@@ -8,8 +8,8 @@ from ..config import (
     CertTypes,
     HTTPVersionTypes,
     PoolLimits,
-    TimeoutTypes,
     TimeoutConfig,
+    TimeoutTypes,
     VerifyTypes,
 )
 from ..models import Origin, Request, Response
@@ -118,7 +118,9 @@ class ConnectionPool(Dispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> Response:
-        connection = await self.acquire_connection(origin=request.url.origin, timeout=timeout)
+        connection = await self.acquire_connection(
+            origin=request.url.origin, timeout=timeout
+        )
         try:
             response = await connection.send(
                 request, verify=verify, cert=cert, timeout=timeout
@@ -130,7 +132,9 @@ class ConnectionPool(Dispatcher):
 
         return response
 
-    async def acquire_connection(self, origin: Origin, timeout: TimeoutTypes = None) -> HTTPConnection:
+    async def acquire_connection(
+        self, origin: Origin, timeout: TimeoutTypes = None
+    ) -> HTTPConnection:
         logger.trace(f"acquire_connection origin={origin!r}")
         connection = self.pop_connection(origin)
 

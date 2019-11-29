@@ -160,9 +160,7 @@ def test_empty_http_version():
 
 def test_limits_repr():
     limits = httpx.PoolLimits(hard_limit=100)
-    assert (
-        repr(limits) == "PoolLimits(soft_limit=None, hard_limit=100)"
-    )
+    assert repr(limits) == "PoolLimits(soft_limit=None, hard_limit=100)"
 
 
 def test_ssl_eq():
