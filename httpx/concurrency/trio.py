@@ -1,5 +1,4 @@
 import functools
-import math
 import ssl
 import typing
 from types import TracebackType
