@@ -134,13 +134,6 @@ class ConcurrencyBackend:
     ) -> typing.Any:
         raise NotImplementedError()  # pragma: no cover
 
-    def iterate(self, async_iterator):  # type: ignore
-        while True:
-            try:
-                yield self.run(async_iterator.__anext__)
-            except StopAsyncIteration:
-                break
-
     def create_event(self) -> BaseEvent:
         raise NotImplementedError()  # pragma: no cover
 
