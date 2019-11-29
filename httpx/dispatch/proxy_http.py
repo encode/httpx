@@ -81,12 +81,12 @@ class HTTPProxy(ConnectionPool):
         token = b64encode(b":".join(userpass)).decode().strip()
         return f"Basic {token}"
 
-    async def acquire_connection(self, origin: Origin) -> HTTPConnection:
+    async def acquire_connection(self, origin: Origin, timeout: TimeoutTypes = None) -> HTTPConnection:
         if self.should_forward_origin(origin):
             logger.trace(
                 f"forward_connection proxy_url={self.proxy_url!r} origin={origin!r}"
             )
-            return await super().acquire_connection(self.proxy_url.origin)
+            return await super().acquire_connection(self.proxy_url.origin, timeout)
         else:
             logger.trace(
                 f"tunnel_connection proxy_url={self.proxy_url!r} origin={origin!r}"

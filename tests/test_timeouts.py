@@ -38,9 +38,10 @@ async def test_connect_timeout(server, backend):
 
 
 async def test_pool_timeout(server, backend):
-    pool_limits = PoolLimits(hard_limit=1, pool_timeout=1e-4)
+    pool_limits = PoolLimits(hard_limit=1)
+    timeout = TimeoutConfig(pool_timeout=1e-4)
 
-    async with Client(pool_limits=pool_limits, backend=backend) as client:
+    async with Client(pool_limits=pool_limits, timeout=timeout, backend=backend) as client:
         response = await client.get(server.url, stream=True)
 
         with pytest.raises(PoolTimeout):

@@ -227,11 +227,10 @@ class PoolSemaphore(BasePoolSemaphore):
                 self._semaphore = asyncio.BoundedSemaphore(value=max_connections)
         return self._semaphore
 
-    async def acquire(self) -> None:
+    async def acquire(self, timeout: float = None) -> None:
         if self.semaphore is None:
             return
 
-        timeout = self.pool_limits.pool_timeout
         try:
             await asyncio.wait_for(self.semaphore.acquire(), timeout)
         except asyncio.TimeoutError:

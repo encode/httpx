@@ -9,6 +9,7 @@ from ..config import (
     HTTPVersionTypes,
     PoolLimits,
     TimeoutTypes,
+    TimeoutConfig,
     VerifyTypes,
 )
 from ..models import Origin, Request, Response
@@ -93,7 +94,7 @@ class ConnectionPool(Dispatcher):
     ):
         self.verify = verify
         self.cert = cert
-        self.timeout = timeout
+        self.timeout = TimeoutConfig(timeout)
         self.pool_limits = pool_limits
         self.http_versions = http_versions
         self.is_closed = False
@@ -117,7 +118,7 @@ class ConnectionPool(Dispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> Response:
-        connection = await self.acquire_connection(origin=request.url.origin)
+        connection = await self.acquire_connection(origin=request.url.origin, timeout=timeout)
         try:
             response = await connection.send(
                 request, verify=verify, cert=cert, timeout=timeout
@@ -129,12 +130,17 @@ class ConnectionPool(Dispatcher):
 
         return response
 
-    async def acquire_connection(self, origin: Origin) -> HTTPConnection:
+    async def acquire_connection(self, origin: Origin, timeout: TimeoutTypes = None) -> HTTPConnection:
         logger.trace(f"acquire_connection origin={origin!r}")
         connection = self.pop_connection(origin)
 
         if connection is None:
-            await self.max_connections.acquire()
+            if timeout is None:
+                pool_timeout = self.timeout.pool_timeout
+            else:
+                pool_timeout = TimeoutConfig(timeout).pool_timeout
+
+            await self.max_connections.acquire(timeout=pool_timeout)
             connection = HTTPConnection(
                 origin,
                 verify=self.verify,
