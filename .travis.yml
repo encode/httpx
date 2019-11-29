@@ -25,7 +25,7 @@ matrix:
       script: scripts/check
     - stage: docs
       python: 3.7
-      script: scripts/docs
+      script: scripts/docs-build
     - stage: test
       os: windows
       language: shell

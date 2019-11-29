@@ -84,7 +84,7 @@ Documentation pages are located under the `docs/` folder.
 To run the documentation site locally (useful for previewing changes), use:
 
 ```shell
-$ scripts/serve
+$ scripts/docs-serve
 ```
 
 ## Resolving Build / Travis Failures
