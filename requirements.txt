@@ -3,11 +3,14 @@
 # Optional
 brotlipy==0.7.*
 
+autoflake
 cryptography
 flake8
 flake8-bugbear
 flake8-pie
 isort
+mkdocs
+mkdocs-material
 mypy
 pytest
 pytest-asyncio
@@ -16,3 +19,4 @@ pytest-cov
 trio
 trustme
 uvicorn
+seed-isort-config
