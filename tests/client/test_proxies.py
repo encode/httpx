@@ -102,8 +102,7 @@ PROXY_URL = "http://[::1]"
 )
 def test_dispatcher_for_request(url, proxies, expected):
     client = httpx.Client(proxies=proxies)
-    request = httpx.Request("GET", url)
-    dispatcher = client._dispatcher_for_request(request, client.proxies)
+    dispatcher = client.dispatcher_for_url(httpx.URL(url))
 
     if expected is None:
         assert isinstance(dispatcher, httpx.ConnectionPool)

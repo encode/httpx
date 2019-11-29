@@ -535,7 +535,7 @@ class Client:
         Sends a single request, without handling any redirections.
         """
 
-        dispatcher = self._dispatcher_for_request(request, self.proxies)
+        dispatcher = self.dispatcher_for_url(request.url)
 
         try:
             with ElapsedTimer() as timer:
@@ -560,12 +560,12 @@ class Client:
 
         return response
 
-    def _dispatcher_for_request(
-        self, request: Request, proxies: typing.Dict[str, Dispatcher]
-    ) -> Dispatcher:
-        """Gets the Dispatcher instance that should be used for a given Request"""
-        if proxies:
-            url = request.url
+    def dispatcher_for_url(self, url: URL) -> Dispatcher:
+        """
+        Returns the Dispatcher instance that should be used for a given URL.
+        This will either be the standard connection pool, or a proxy.
+        """
+        if self.proxies:
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
             )
@@ -579,8 +579,8 @@ class Client:
                 "all",
             )
             for proxy_key in proxy_keys:
-                if proxy_key and proxy_key in proxies:
-                    dispatcher = proxies[proxy_key]
+                if proxy_key and proxy_key in self.proxies:
+                    dispatcher = self.proxies[proxy_key]
                     return dispatcher
 
         return self.dispatch
