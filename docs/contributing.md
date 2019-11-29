@@ -47,8 +47,7 @@ $ scripts/install
 ## Testing and Linting
 
 We use custom shell scripts to automate testing, linting,
-and documentation building workflow. Make sure you have it installed
-at your system before starting.
+and documentation building workflow.
 
 To run the tests, use:
 
@@ -57,8 +56,8 @@ $ scripts/test
 ```
 
 !!! warning
-    The test suite spawns a testing server at the port **8000**.
-    Make sure this isn't being used, so the tests can run properly.
+    The test suite spawns testing servers on ports **8000** and **8001**.
+    Make sure these are not in use, so the tests can run properly.
 
 You can run a single test script like this:
 
@@ -72,7 +71,7 @@ To run the code auto-formatting:
 $ scripts/lint
 ```
 
-Lastly, to run code checks separately, run:
+Lastly, to run code checks separately (they are also run as part of `scripts/test`), run:
 
 ```shell
 $ scripts/check
