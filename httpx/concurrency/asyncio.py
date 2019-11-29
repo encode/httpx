@@ -11,7 +11,6 @@ from .base import (
     BaseBackgroundManager,
     BaseEvent,
     BasePoolSemaphore,
-    BaseQueue,
     BaseSocketStream,
     ConcurrencyBackend,
     TimeoutFlag,
@@ -324,9 +323,6 @@ class AsyncioBackend(ConcurrencyBackend):
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
-
-    def create_queue(self, max_size: int) -> BaseQueue:
-        return typing.cast(BaseQueue, asyncio.Queue(maxsize=max_size))
 
     def create_event(self) -> BaseEvent:
         return typing.cast(BaseEvent, asyncio.Event())

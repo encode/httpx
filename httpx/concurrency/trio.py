@@ -12,7 +12,6 @@ from .base import (
     BaseBackgroundManager,
     BaseEvent,
     BasePoolSemaphore,
-    BaseQueue,
     BaseSocketStream,
     ConcurrencyBackend,
     TimeoutFlag,
@@ -230,9 +229,6 @@ class TrioBackend(ConcurrencyBackend):
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
 
-    def create_queue(self, max_size: int) -> BaseQueue:
-        return Queue(max_size=max_size)
-
     def create_event(self) -> BaseEvent:
         return Event()
 
@@ -240,17 +236,6 @@ class TrioBackend(ConcurrencyBackend):
         self, coroutine: typing.Callable, *args: typing.Any
     ) -> "BackgroundManager":
         return BackgroundManager(coroutine, *args)
-
-
-class Queue(BaseQueue):
-    def __init__(self, max_size: int) -> None:
-        self.send_channel, self.receive_channel = trio.open_memory_channel(math.inf)
-
-    async def get(self) -> typing.Any:
-        return await self.receive_channel.receive()
-
-    async def put(self, value: typing.Any) -> None:
-        await self.send_channel.send(value)
 
 
 class Event(BaseEvent):
