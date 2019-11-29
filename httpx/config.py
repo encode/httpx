@@ -10,7 +10,9 @@ from .utils import get_ca_bundle_from_env, get_logger
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
-TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float, float], "TimeoutConfig"]
+TimeoutTypes = typing.Union[
+    float, typing.Tuple[float, float, float, float], "TimeoutConfig"
+]
 HTTPVersionTypes = typing.Union[
     str, typing.List[str], typing.Tuple[str], "HTTPVersionConfig"
 ]
