@@ -30,6 +30,7 @@ matrix:
       before_install:
         - choco install python --version 3.7
         - python -m pip install --upgrade pip
+      install: pip install -r requirements.txt
       script: scripts/test
 
   fast_finish: true
