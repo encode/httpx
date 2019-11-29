@@ -14,11 +14,15 @@ python:
 
 matrix:
   include:
-    - python: 3.7
+    -
+      stage: Check
+      python: 3.7
       script: scripts/check
-    - python: 3.7
+    - stage: Docs
+      python: 3.7
       script: scripts/docs
-    - os: windows
+    - stage: Test
+      os: windows
       language: shell
       python: 3.7
       env:
