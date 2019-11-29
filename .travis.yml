@@ -12,16 +12,21 @@ python:
   - 3.7
   - 3.8
 
+stages:
+  - check
+  - docs
+  - test
+
 matrix:
   include:
     -
-      stage: Check
+      stage: check
       python: 3.7
       script: scripts/check
-    - stage: Docs
+    - stage: docs
       python: 3.7
       script: scripts/docs
-    - stage: Test
+    - stage: test
       os: windows
       language: shell
       python: 3.7
