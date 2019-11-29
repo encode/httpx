@@ -14,21 +14,22 @@ def get_trio_cipher(stream):
     return stream.stream.cipher() if isinstance(stream.stream, trio.SSLStream) else None
 
 
-async def read_response(stream, timeout: float, should_contain: bytes):
+async def read_response(stream, timeout: float, should_contain: bytes) -> bytes:
     # stream.read() only gives us *up to* as much data as we ask for. In order to
     # cleanly close the stream, we must read until the end of the HTTP response.
-    read = b""
+    response = b""
     ended = False
+
     for _ in range(5):  # Try read some (not too large) number of times...
-        read += await stream.read(8192, timeout)
+        response += await stream.read(8192, timeout)
         # We know we're at the end of the response when we've received the body plus
         # the terminating CRLFs.
-        if should_contain in read and read.endswith(b"\r\n\r\n"):
+        if should_contain in response and response.endswith(b"\r\n\r\n"):
             ended = True
             break
 
     assert ended
-    return read
+    return response
 
 
 @pytest.mark.parametrize(
