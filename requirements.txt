@@ -10,6 +10,7 @@ flake8-bugbear
 flake8-pie
 isort
 mkdocs
+mkautodoc
 mkdocs-material
 mypy
 pytest
