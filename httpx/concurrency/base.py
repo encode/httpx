@@ -95,7 +95,7 @@ class BasePoolSemaphore:
     Abstracts away any asyncio-specific interfaces.
     """
 
-    async def acquire(self) -> None:
+    async def acquire(self, timeout: float = None) -> None:
         raise NotImplementedError()  # pragma: no cover
 
     def release(self) -> None:

@@ -151,11 +151,11 @@ class PoolSemaphore(BasePoolSemaphore):
                 )
         return self._semaphore
 
-    async def acquire(self) -> None:
+    async def acquire(self, timeout: float = None) -> None:
         if self.semaphore is None:
             return
 
-        timeout = _or_inf(self.pool_limits.pool_timeout)
+        timeout = _or_inf(timeout)
 
         with trio.move_on_after(timeout):
             await self.semaphore.acquire()

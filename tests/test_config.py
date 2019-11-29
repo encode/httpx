@@ -160,9 +160,7 @@ def test_empty_http_version():
 
 def test_limits_repr():
     limits = httpx.PoolLimits(hard_limit=100)
-    assert (
-        repr(limits) == "PoolLimits(soft_limit=None, hard_limit=100, pool_timeout=None)"
-    )
+    assert repr(limits) == "PoolLimits(soft_limit=None, hard_limit=100)"
 
 
 def test_ssl_eq():
@@ -185,6 +183,7 @@ def test_timeout_from_nothing():
     assert timeout.connect_timeout is None
     assert timeout.read_timeout is None
     assert timeout.write_timeout is None
+    assert timeout.pool_timeout is None
 
 
 def test_timeout_from_none():
@@ -198,7 +197,7 @@ def test_timeout_from_one_none_value():
 
 
 def test_timeout_from_tuple():
-    timeout = httpx.TimeoutConfig(timeout=(5.0, 5.0, 5.0))
+    timeout = httpx.TimeoutConfig(timeout=(5.0, 5.0, 5.0, 5.0))
     assert timeout == httpx.TimeoutConfig(timeout=5.0)
 
 
@@ -212,9 +211,9 @@ def test_timeout_repr():
     assert repr(timeout) == "TimeoutConfig(timeout=5.0)"
 
     timeout = httpx.TimeoutConfig(read_timeout=5.0)
-    assert (
-        repr(timeout)
-        == "TimeoutConfig(connect_timeout=None, read_timeout=5.0, write_timeout=None)"
+    assert repr(timeout) == (
+        "TimeoutConfig(connect_timeout=None, read_timeout=5.0, "
+        "write_timeout=None, pool_timeout=None)"
     )
 
 
