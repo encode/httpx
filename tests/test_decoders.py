@@ -9,6 +9,7 @@ from httpx.decoders import (
     DeflateDecoder,
     GZipDecoder,
     IdentityDecoder,
+    LineDecoder,
     TextDecoder,
 )
 
@@ -165,6 +166,48 @@ def test_text_decoder_empty_cases():
     decoder = TextDecoder()
     assert decoder.decode(b"") == ""
     assert decoder.flush() == ""
+
+
+def test_line_decoder_nl():
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("a\n\nb\nc") == ["a\n", "\n", "b\n"]
+    assert decoder.flush() == ["c"]
+
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("a\n\nb\nc\n") == ["a\n", "\n", "b\n", "c\n"]
+    assert decoder.flush() == []
+
+
+def test_line_decoder_cr():
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("a\r\rb\rc") == ["a\n", "\n", "b\n"]
+    assert decoder.flush() == ["c"]
+
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("a\r\rb\rc\r") == ["a\n", "\n", "b\n"]
+    assert decoder.flush() == ["c\n"]
+
+
+def test_line_decoder_crnl():
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("a\r\n\r\nb\r\nc") == ["a\n", "\n", "b\n"]
+    assert decoder.flush() == ["c"]
+
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("a\r\n\r\nb\r\nc\r\n") == ["a\n", "\n", "b\n", "c\n"]
+    assert decoder.flush() == []
+
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("a\r") == []
+    assert decoder.decode("\n\r\nb\r\nc") == ["a\n", "\n", "b\n"]
+    assert decoder.flush() == ["c"]
 
 
 def test_invalid_content_encoding_header():

@@ -17,6 +17,7 @@ from .decoders import (
     SUPPORTED_DECODERS,
     Decoder,
     IdentityDecoder,
+    LineDecoder,
     MultiDecoder,
     TextDecoder,
 )
@@ -935,6 +936,14 @@ class Response:
         async for chunk in self.stream():
             yield decoder.decode(chunk)
         yield decoder.flush()
+
+    async def stream_lines(self) -> typing.AsyncIterator[str]:
+        decoder = LineDecoder()
+        async for text in self.stream_text():
+            for line in decoder.decode(text):
+                yield line
+        for line in decoder.flush():
+            yield line
 
     async def raw(self) -> typing.AsyncIterator[bytes]:
         """

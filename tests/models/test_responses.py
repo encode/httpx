@@ -165,6 +165,18 @@ async def test_stream_text():
 
 
 @pytest.mark.asyncio
+async def test_stream_lines():
+    response = httpx.Response(200, content=b"Hello,\nworld!")
+
+    await response.read()
+
+    content = []
+    async for line in response.stream_lines():
+        content.append(line)
+    assert content == ["Hello,\n", "world!"]
+
+
+@pytest.mark.asyncio
 async def test_stream_interface_after_read():
     response = httpx.Response(200, content=b"Hello, world!")
 
