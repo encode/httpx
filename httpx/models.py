@@ -84,7 +84,7 @@ RequestData = typing.Union[dict, str, bytes, typing.Iterator[bytes]]
 RequestFiles = typing.Dict[
     str,
     typing.Union[
-        # file
+        # file (or str)
         typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
         # (filename, file (or str))
         typing.Tuple[
