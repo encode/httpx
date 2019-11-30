@@ -347,7 +347,7 @@ await httpx.get(url, timeout=timeout) # Does not timeout, returns after 10s
 
 As mentioned in the [quickstart](/quickstart#sending-multipart-file-uploads)
 multipart file encoding is available by passing a dictionary with the
-name of the payloads as keys and a tuple of elements as values.
+name of the payloads as keys and either tuple of elements or a file-like object or a string as values.
 
 ```python
 >>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
@@ -362,17 +362,17 @@ name of the payloads as keys and a tuple of elements as values.
 }
 ```
 
-More specifically, this tuple must have at least two elements and maximum of three:
+More specifically, this tuple must have between 2 and 3 elements:
 
-- The first one is an optional file name which can be set to `None`.
-- The second may be a file-like object or a string which will be automatically
+- The first element is an optional file name which can be set to `None`.
+- The second element may be a file-like object or a string which will be automatically
 encoded in UTF-8.
-- An optional third element can be included with the
+- An optional third element can be used to specify the 
 [MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_Types)
 of the file being uploaded. If not specified HTTPX will attempt to guess the MIME type
-based on the file name specified as the first element or the tuple, if that
-is set to `None` or it cannot be inferred from it, HTTPX will default to
-`applicaction/octet-stream`.
+based on the file name. If the MIME type cannot be inferred from the file name, HTTPX will default to
+`applicaction/octet-stream` unless the the file name is set to `None` is which case HTTPX will not
+specify a content-type MIME header field.
 
 ```python
 >>> files = {'upload-file': (None, 'text content', 'text/plain')}
