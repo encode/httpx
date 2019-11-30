@@ -4,10 +4,7 @@ from ..concurrency.asyncio import AsyncioBackend
 from ..concurrency.base import ConcurrencyBackend
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
 from ..models import Request, Response
-from ..utils import MessageLoggerASGIMiddleware, get_logger
 from .base import Dispatcher
-
-logger = get_logger(__name__)
 
 
 class ASGIDispatch(Dispatcher):
@@ -81,7 +78,6 @@ class ASGIDispatch(Dispatcher):
             "client": self.client,
             "root_path": self.root_path,
         }
-        app = MessageLoggerASGIMiddleware(self.app, logger=logger)
         status_code = None
         headers = None
         body_parts = []
@@ -119,7 +115,7 @@ class ASGIDispatch(Dispatcher):
                     response_complete = True
 
         try:
-            await app(scope, receive, send)
+            await self.app(scope, receive, send)
         except Exception:
             if self.raise_app_exceptions or not response_complete:
                 raise
