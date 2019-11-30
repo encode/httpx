@@ -847,6 +847,10 @@ class Response:
         return self._decoder
 
     @property
+    def is_error(self) -> bool:
+        return StatusCode.is_error(self.status_code)
+
+    @property
     def is_redirect(self) -> bool:
         return StatusCode.is_redirect(self.status_code) and "location" in self.headers
 
@@ -861,11 +865,9 @@ class Response:
 
         if StatusCode.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
+            raise HTTPError(message, response=self)
         elif StatusCode.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
-        else:
-            message = ""
-        if message:
             raise HTTPError(message, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Union[dict, list]:
