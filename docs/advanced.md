@@ -362,7 +362,7 @@ name of the payloads as keys and either tuple of elements or a file-like object 
 }
 ```
 
-More specifically, this tuple must have between 2 and 3 elements:
+More specifically, if a tuple is used as a value, it must have between 2 and 3 elements:
 
 - The first element is an optional file name which can be set to `None`.
 - The second element may be a file-like object or a string which will be automatically
