@@ -157,6 +157,18 @@ async def test_netrc_auth():
 
 
 @pytest.mark.asyncio
+async def test_auth_header_has_priority_over_netrc():
+    os.environ["NETRC"] = "tests/.netrc"
+    url = "http://netrcexample.org"
+
+    client = Client(dispatch=MockDispatch())
+    response = await client.get(url, headers={"Authorization": "Override"})
+
+    assert response.status_code == 200
+    assert response.json() == {"auth": "Override"}
+
+
+@pytest.mark.asyncio
 async def test_trust_env_auth():
     os.environ["NETRC"] = "tests/.netrc"
     url = "http://netrcexample.org"

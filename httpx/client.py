@@ -384,7 +384,7 @@ class Client:
             auth = BasicAuth(username=username, password=password)
             return auth(request)
 
-        if trust_env:
+        if trust_env and "Authorization" not in request.headers:
             credentials = self.netrc.get_credentials(request.url.authority)
             if credentials is not None:
                 auth = BasicAuth(username=credentials[0], password=credentials[1])
