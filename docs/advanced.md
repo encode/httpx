@@ -75,7 +75,7 @@ For a list of all available client-level parameters, see the [`Client` API refer
 ## Calling into Python Web Apps
 
 You can configure an `httpx` client to call directly into a Python web
-application using either the ASGI protocol.
+application using the ASGI protocol.
 
 This is particularly useful for two main use-cases:
 
@@ -107,21 +107,24 @@ We can make requests directly against the application, like so:
 ...     assert r.text == "Hello World!"
 ```
 
-For some more complex cases you might need to customize the WSGI or ASGI
-dispatch. This allows you to:
+For some more complex cases you might need to customise the ASGI dispatch. This allows you to:
 
 * Inspect 500 error responses rather than raise exceptions by setting `raise_app_exceptions=False`.
-* Mount the WSGI or ASGI application at a subpath by setting `root_path`.
+* Mount the ASGI application at a subpath by setting `root_path`.
 * Use a given client address for requests by setting `client`.
 
 For example:
 
 ```python
-# Instantiate a client that makes WSGI requests with a client IP of "1.2.3.4".
-dispatch = httpx.dispatch.ASGIDispatch(app=app, remote_addr="1.2.3.4")
+# Instantiate a client that makes ASGI requests with a client IP of "1.2.3.4",
+# on port 123.
+dispatch = httpx.dispatch.ASGIDispatch(app=app, client=("1.2.3.4", 123))
 async with httpx.Client(dispatch=dispatch) as client:
     ...
 ```
+
+See [the ASGI documentation](https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope) for more details on the `client` and `root_path`
+keys.
 
 ## Build Request
 
