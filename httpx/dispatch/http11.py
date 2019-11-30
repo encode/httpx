@@ -46,10 +46,8 @@ class HTTP11Connection:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
         await self._send_request(request, timeout)
-
-        task, args = self._send_request_data, [request.stream(), timeout]
-        async with self.backend.background_manager(task, *args):
-            http_version, status_code, headers = await self._receive_response(timeout)
+        await self._send_request_body(request, timeout)
+        http_version, status_code, headers = await self._receive_response(timeout)
         content = self._receive_response_data(timeout)
 
         return Response(
@@ -89,15 +87,15 @@ class HTTP11Connection:
         event = h11.Request(method=method, target=target, headers=headers)
         await self._send_event(event, timeout)
 
-    async def _send_request_data(
-        self, data: typing.AsyncIterator[bytes], timeout: TimeoutConfig = None
+    async def _send_request_body(
+        self, request: Request, timeout: TimeoutConfig = None
     ) -> None:
         """
         Send the request body to the network.
         """
         try:
             # Send the request body.
-            async for chunk in data:
+            async for chunk in request.stream():
                 logger.trace(f"send_data data=Data(<{len(chunk)} bytes>)")
                 event = h11.Data(data=chunk)
                 await self._send_event(event, timeout)
