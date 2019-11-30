@@ -69,11 +69,12 @@ class HTTP11Connection:
             pass
         await self.stream.close()
 
-    async def _send_request(
+    def _get_request_bytes(
         self, request: Request, timeout: TimeoutConfig = None
-    ) -> None:
+    ) -> bytes:
         """
-        Send the request method, URL, and headers to the network.
+        Return bytes to send to the network in order to send
+        the request method, URL, and headers.
         """
         logger.trace(
             f"send_headers method={request.method!r} "
@@ -85,7 +86,33 @@ class HTTP11Connection:
         target = request.url.full_path.encode("ascii")
         headers = request.headers.raw
         event = h11.Request(method=method, target=target, headers=headers)
-        await self._send_event(event, timeout)
+        return self.h11_state.send(event)
+
+    async def _send_request(
+        self, request: Request, timeout: TimeoutConfig = None
+    ) -> None:
+        """
+        Send the request method, URL, and headers to the network.
+        """
+        request_bytes = self._get_request_bytes(request)
+        await self.stream.write(request_bytes, timeout)
+
+    async def _get_request_body_bytes(
+        self, request: Request, timeout: TimeoutConfig = None
+    ) -> typing.AsyncIterator[bytes]:
+        """
+        Return an iterator of bytes to send to the network in order to send
+        the request body.
+        """
+        # Send the request body.
+        async for chunk in request.stream():
+            logger.trace(f"send_data data=Data(<{len(chunk)} bytes>)")
+            event = h11.Data(data=chunk)
+            yield self.h11_state.send(event)
+
+        # Finalize sending the request.
+        event = h11.EndOfMessage()
+        yield self.h11_state.send(event)
 
     async def _send_request_body(
         self, request: Request, timeout: TimeoutConfig = None
@@ -93,32 +120,17 @@ class HTTP11Connection:
         """
         Send the request body to the network.
         """
-        try:
-            # Send the request body.
-            async for chunk in request.stream():
-                logger.trace(f"send_data data=Data(<{len(chunk)} bytes>)")
-                event = h11.Data(data=chunk)
-                await self._send_event(event, timeout)
-
-            # Finalize sending the request.
-            event = h11.EndOfMessage()
-            await self._send_event(event, timeout)
-        except OSError:  # pragma: nocover
-            # Once we've sent the initial part of the request we don't actually
-            # care about connection errors that occur when sending the body.
-            # Ignore these, and defer to any exceptions on reading the response.
-            self.h11_state.send_failed()
-        finally:
-            # Once we've sent the request, we enable read timeouts.
-            self.timeout_flag.set_read_timeouts()
-
-    async def _send_event(self, event: H11Event, timeout: TimeoutConfig = None) -> None:
-        """
-        Send a single `h11` event to the network, waiting for the data to
-        drain before returning.
-        """
-        bytes_to_send = self.h11_state.send(event)
-        await self.stream.write(bytes_to_send, timeout)
+        async for chunk in self._get_request_body_bytes(request, timeout):
+            try:
+                await self.stream.write(chunk)
+            except OSError:  # pragma: nocover
+                # Once we've sent the initial part of the request we don't actually
+                # care about connection errors that occur when sending the body.
+                # Ignore these, and defer to any exceptions on reading the response.
+                self.h11_state.send_failed()
+            finally:
+                # Once we've sent the request, we enable read timeouts.
+                self.timeout_flag.set_read_timeouts()
 
     async def _receive_response(
         self, timeout: TimeoutConfig = None
