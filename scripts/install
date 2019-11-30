@@ -1,0 +1,15 @@
+#!/bin/sh -e
+
+export PREFIX="venv/bin/"
+
+set -x
+
+python -m venv venv
+${PREFIX}python -m pip install -U pip
+${PREFIX}python -m pip install -r requirements.txt
+
+set +x
+
+echo
+echo "Success! You can now activate your virtual environment using:"
+echo "source ${PREFIX}activate"

@@ -7,8 +7,4 @@ fi
 
 set -x
 
-if [ -z $CI ]; then
-    scripts/check
-fi
-
-${PREFIX}pytest $@
+${PREFIX}mkdocs build

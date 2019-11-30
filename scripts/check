@@ -1,0 +1,14 @@
+#!/bin/sh -e
+
+export PREFIX=""
+if [ -d 'venv' ] ; then
+    export PREFIX="venv/bin/"
+fi
+export SOURCE_FILES="httpx tests"
+
+set -x
+
+${PREFIX}black --check --diff --target-version=py36 $SOURCE_FILES
+${PREFIX}flake8 $SOURCE_FILES
+${PREFIX}mypy httpx
+${PREFIX}isort --check --diff --project=httpx --recursive $SOURCE_FILES

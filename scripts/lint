@@ -1,0 +1,14 @@
+#!/bin/sh -e
+
+export PREFIX=""
+if [ -d 'venv' ] ; then
+    export PREFIX="venv/bin/"
+fi
+export SOURCE_FILES="httpx tests"
+
+set -x
+
+${PREFIX}autoflake --in-place --recursive $SOURCE_FILES
+${PREFIX}seed-isort-config --application-directories=httpx
+${PREFIX}isort --project=httpx --recursive --apply $SOURCE_FILES
+${PREFIX}black --target-version=py36 $SOURCE_FILES

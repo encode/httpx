@@ -37,76 +37,45 @@ your GitHub username:
 $ git clone https://github.com/YOUR-USERNAME/httpx
 ```
 
-With the repository cloned you can access its folder, set up the
-virtual environment, install the project requirements,
-and then install HTTPX on edit mode:
+You can now install the project and its dependencies using:
 
 ```shell
 $ cd httpx
-$ python3 -m venv venv
-$ source venv/bin/activate
-$ pip install -r test-requirements.txt
-$ pip install -e .
+$ scripts/install
 ```
-
-!!! note
-    Feel free to replace this step with your development environment setup
-    (pyenv, pipenv, virtualenvwrapper, docker, etc).
 
 ## Testing and Linting
 
-We use [nox](https://nox.thea.codes/en/stable/) to automate testing, linting,
-and documentation building workflow. Make sure you have it installed
-at your system before starting.
+We use custom shell scripts to automate testing, linting,
+and documentation building workflow.
 
-Install `nox` with:
-
-```shell
-$ python3 -m pip install --user nox
-```
-
-Alternatively, use [pipx](https://github.com/pipxproject/pipx) if you prefer
-to keep it into an isolated environment:
-
-```shell
-$ pipx install nox
-```
-
-Now, with nox installed, run the complete pipeline with:
-
-```shell
-$ nox
-```
-
-!!! warning
-    The test suite spawns a testing server at the port **8000**.
-    Make sure this isn't being used, so the tests can run properly.
-
-To run the code auto-formatting separately:
-
-```shell
-$ nox -s lint
-```
-
-Also, if you need to run the tests only:
-
-```shell
-$ nox -s test
-```
-
-You can also run a single test script like this:
-
-```shell
-$ nox -s test -- tests/test_multipart.py
-```
-
-Lastly, to ensure you're on track to pass the CI build, run:
+To run the tests, use:
 
 ```shell
 $ scripts/test
 ```
 
-This command is a light wrapper around `nox` that will run code style checks and test the code against all installed Python versions.
+!!! warning
+    The test suite spawns testing servers on ports **8000** and **8001**.
+    Make sure these are not in use, so the tests can run properly.
+
+You can run a single test script like this:
+
+```shell
+$ scripts/test -- tests/test_multipart.py
+```
+
+To run the code auto-formatting:
+
+```shell
+$ scripts/lint
+```
+
+Lastly, to run code checks separately (they are also run as part of `scripts/test`), run:
+
+```shell
+$ scripts/check
+```
 
 ## Documenting
 
@@ -115,7 +84,7 @@ Documentation pages are located under the `docs/` folder.
 To run the documentation site locally (useful for previewing changes), use:
 
 ```shell
-$ nox -s serve
+$ scripts/docs-serve
 ```
 
 ## Resolving Build / Travis Failures
@@ -129,7 +98,7 @@ If the test suite fails, you'll want to click through to the "Details" link, and
 
 Here are some common ways the test suite can fail:
 
-### NOX_SESSION=check Job Failed
+### Check Job Failed
 
 <p align="center" style="margin: 0 0 10px">
   <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail-check.png" alt='Failing Travis lint job'>
@@ -138,17 +107,19 @@ Here are some common ways the test suite can fail:
 This job failing means there is either a code formatting issue or type-annotation issue.
 You can look at the job output to figure out why it's failed or within a shell run:
 
-`nox -s check`
+```shell
+$ scripts/check
+```
 
-It may be worth it to run `nox -s lint` to attempt auto-formatting the code
+It may be worth it to run `$ scripts/lint` to attempt auto-formatting the code
 and if that job succeeds commit the changes.
 
-### NOX_SESSION=docs Job Failed
+### Docs Job Failed
 
 This job failing means the documentation failed to build. This can happen for
 a variety of reasons like invalid markdown or missing configuration within `mkdocs.yml`.
 
-### NOX_SESSION=test-3.X Job Failed
+### Python 3.X Job Failed
 
 <p align="center" style="margin: 0 0 10px">
   <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail-test.png" alt='Failing Travis test job'>
