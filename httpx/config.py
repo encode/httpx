@@ -16,6 +16,7 @@ TimeoutTypes = typing.Union[
 HTTPVersionTypes = typing.Union[
     str, typing.List[str], typing.Tuple[str], "HTTPVersionConfig"
 ]
+PoolLimitTypes = typing.Union[int, typing.Tuple[int, int], "PoolLimits"]
 
 
 USER_AGENT = f"python-httpx/{__version__}"
@@ -337,13 +338,42 @@ class HTTPVersionConfig:
 class PoolLimits:
     """
     Limits on the number of connections in a connection pool.
+
+    **Parameters:**
+
+    * soft_limit - The number of idle connections that should be preserved in
+                   the connection pool. When there are fewer connections than
+                   this in the pool and a connection is released, it will
+                   be held in the pool, ready to be reused. When there are
+                   more connections that this in the pool, and a connection is
+                   released, it will be closed.
+    * hard_limit - The maximum number of concurrent connections that the
+                   pool may hold open. If there are already this many
+                   connections in the pool then any new connections will block
+                   until more space is available. Note that this blocking
+                   may cause a `PoolTimeout` to occur, depending on the
+                   timeout configuration.
     """
 
     def __init__(
-        self, *, soft_limit: int = None, hard_limit: int = None,
+        self,
+        limits: PoolLimitTypes = None,
+        *,
+        soft_limit: int = None,
+        hard_limit: int = None,
     ):
-        self.soft_limit = soft_limit
-        self.hard_limit = hard_limit
+        if limits is None:
+            self.soft_limit = soft_limit
+            self.hard_limit = hard_limit
+        else:
+            if isinstance(limits, int):
+                self.soft_limit = limits
+                self.hard_limit = limits
+            elif isinstance(limits, (list, tuple)):
+                self.soft_limit, self.hard_limit = limits
+            else:
+                self.soft_limit = limits.soft_limit
+                self.hard_limit = limits.hard_limit
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
