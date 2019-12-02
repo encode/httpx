@@ -369,10 +369,10 @@ More specifically, if a tuple is used as a value, it must have between 2 and 3 e
 encoded in UTF-8.
 - An optional third element can be used to specify the 
 [MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_Types)
-of the file being uploaded. If not specified HTTPX will attempt to guess the MIME type
-based on the file name. If the MIME type cannot be inferred from the file name, HTTPX will default to
-`applicaction/octet-stream` unless the the file name is set to `None` is which case HTTPX will not
-specify a content-type MIME header field.
+of the file being uploaded. If not specified HTTPX will attempt to guess the MIME type based
+on the file name, with unknown file extensions defaulting to "application/octet-stream".
+If the file name is explicitly set to `None` then HTTPX will not include a content-type
+MIME header field.
 
 ```python
 >>> files = {'upload-file': (None, 'text content', 'text/plain')}
