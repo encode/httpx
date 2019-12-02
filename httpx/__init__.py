@@ -12,8 +12,6 @@ from .concurrency.base import (
 from .config import (
     USER_AGENT,
     CertTypes,
-    HTTPVersionConfig,
-    HTTPVersionTypes,
     PoolLimits,
     SSLConfig,
     TimeoutConfig,
@@ -118,8 +116,6 @@ __all__ = [
     "StatusCode",
     "codes",
     "TimeoutTypes",
-    "HTTPVersionTypes",
-    "HTTPVersionConfig",
     "AuthTypes",
     "Cookies",
     "CookieTypes",

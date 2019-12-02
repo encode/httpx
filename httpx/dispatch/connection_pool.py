@@ -6,7 +6,6 @@ from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
-    HTTPVersionTypes,
     PoolLimits,
     TimeoutConfig,
     TimeoutTypes,
@@ -88,7 +87,7 @@ class ConnectionPool(Dispatcher):
         trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        http_versions: HTTPVersionTypes = None,
+        http_2: bool = False,
         backend: ConcurrencyBackend = None,
         uds: typing.Optional[str] = None,
     ):
@@ -96,7 +95,7 @@ class ConnectionPool(Dispatcher):
         self.cert = cert
         self.timeout = TimeoutConfig(timeout)
         self.pool_limits = pool_limits
-        self.http_versions = http_versions
+        self.http_2 = http_2
         self.is_closed = False
         self.trust_env = trust_env
         self.uds = uds
@@ -150,7 +149,7 @@ class ConnectionPool(Dispatcher):
                 verify=self.verify,
                 cert=self.cert,
                 timeout=self.timeout,
-                http_versions=self.http_versions,
+                http_2=self.http_2,
                 backend=self.backend,
                 release_func=self.release_connection,
                 trust_env=self.trust_env,

@@ -10,7 +10,6 @@ from httpx import (
     CertTypes,
     Client,
     Dispatcher,
-    HTTPVersionTypes,
     Request,
     Response,
     TimeoutTypes,
@@ -26,7 +25,6 @@ class MockDispatch(Dispatcher):
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-        http_versions: HTTPVersionTypes = None,
     ) -> Response:
         content = await request.read()
         return Response(200, content=content)

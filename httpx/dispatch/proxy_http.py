@@ -8,7 +8,6 @@ from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
-    HTTPVersionTypes,
     PoolLimits,
     SSLConfig,
     TimeoutTypes,
@@ -47,7 +46,7 @@ class HTTPProxy(ConnectionPool):
         trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        http_versions: HTTPVersionTypes = None,
+        http_2: bool = False,
         backend: ConcurrencyBackend = None,
     ):
 
@@ -58,7 +57,7 @@ class HTTPProxy(ConnectionPool):
             pool_limits=pool_limits,
             backend=backend,
             trust_env=trust_env,
-            http_versions=http_versions,
+            http_2=http_2,
         )
 
         self.proxy_url = URL(proxy_url)
@@ -134,7 +133,7 @@ class HTTPProxy(ConnectionPool):
             cert=self.cert,
             timeout=self.timeout,
             backend=self.backend,
-            http_versions=["HTTP/1.1"],  # Short-lived 'connection'
+            http_2=False,  # Short-lived 'connection'
             trust_env=self.trust_env,
             release_func=self.release_connection,
         )
