@@ -52,12 +52,13 @@ setup(
     zip_safe=False,
     install_requires=[
         "certifi",
+        "hstspreload",
         "chardet==3.*",
         "h11==0.8.*",
         "h2==3.*",
-        "hstspreload>=2019.8.27",
         "idna==2.*",
         "rfc3986==1.*",
+        "sniffio==1.*",
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
