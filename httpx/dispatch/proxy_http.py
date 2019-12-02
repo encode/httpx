@@ -134,7 +134,7 @@ class HTTPProxy(ConnectionPool):
             cert=self.cert,
             timeout=self.timeout,
             backend=self.backend,
-            http_2=False,  # Short-lived 'connection'
+            http2=False,  # Short-lived 'connection'
             trust_env=self.trust_env,
             release_func=self.release_connection,
         )

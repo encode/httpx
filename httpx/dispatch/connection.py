@@ -114,7 +114,7 @@ class HTTPConnection(Dispatcher):
             return None
 
         # Run the SSL loading in a threadpool, since it may make disk accesses.
-        return await self.backend.run_in_threadpool(ssl.load_ssl_context, self.http_2)
+        return await self.backend.run_in_threadpool(ssl.load_ssl_context, self.http2)
 
     async def close(self) -> None:
         logger.trace("close_connection")
