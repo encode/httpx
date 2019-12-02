@@ -5,6 +5,28 @@ from types import TracebackType
 from ..config import PoolLimits, TimeoutConfig
 
 
+def lookup_backend(
+    backend: typing.Union[str, "ConcurrencyBackend"] = "auto"
+) -> "ConcurrencyBackend":
+    if not isinstance(backend, str):
+        return backend
+
+    if backend == "auto":
+        from .auto import AutoBackend
+
+        return AutoBackend()
+    elif backend == "asyncio":
+        from .asyncio import AsyncioBackend
+
+        return AsyncioBackend()
+    elif backend == "trio":
+        from .trio import TrioBackend
+
+        return TrioBackend()
+
+    raise RuntimeError(f"Unknown or unsupported concurrency backend {backend!r}")
+
+
 class TimeoutFlag:
     """
     A timeout flag holds a state of either read-timeout or write-timeout mode.
