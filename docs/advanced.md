@@ -141,20 +141,6 @@ make modifications before sending the request.
 <Response [200 OK]>
 ```
 
-## Specify the version of the HTTP protocol
-
-One can set the version of the HTTP protocol for the client in case you want to make the requests using a specific version.
-
-For example:
-
-```python
-async with httpx.Client(http_versions=["HTTP/1.1"]) as h11_client:
-    h11_response = await h11_client.get("https://myserver.com")
-
-async with httpx.Client(http_versions=["HTTP/2"]) as h2_client:
-    h2_response = await h2_client.get("https://myserver.com")
-```
-
 ## .netrc Support
 
 HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is
@@ -367,7 +353,7 @@ More specifically, if a tuple is used as a value, it must have between 2 and 3 e
 - The first element is an optional file name which can be set to `None`.
 - The second element may be a file-like object or a string which will be automatically
 encoded in UTF-8.
-- An optional third element can be used to specify the 
+- An optional third element can be used to specify the
 [MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_Types)
 of the file being uploaded. If not specified HTTPX will attempt to guess the MIME type based
 on the file name, with unknown file extensions defaulting to "application/octet-stream".

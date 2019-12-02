@@ -64,7 +64,7 @@ HTTPX is a high performance asynchronous HTTP client, that builds on the
 well-established usability of `requests`, and gives you:
 
 * A broadly requests-compatible API.
-* HTTP/2 and HTTP/1.1 support.
+* HTTP/1.1 and [HTTP/2 support](http2.md).
 * Ability to [make requests directly to ASGI applications](advanced.md#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
@@ -92,7 +92,8 @@ Plus all the standard features of `requests`...
 
 For a run-through of all the basics, head over to the [QuickStart](quickstart.md).
 
-For more advanced topics, see the [Advanced Usage](advanced.md) section.
+For more advanced topics, see the [Advanced Usage](advanced.md) section,
+or the [HTTP/2](http2.md) section.
 
 The [Developer Interface](api.md) provides a comprehensive API reference.
 
