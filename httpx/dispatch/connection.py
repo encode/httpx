@@ -32,7 +32,7 @@ class HTTPConnection(Dispatcher):
         cert: CertTypes = None,
         trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-        http_2: bool = False,
+        http2: bool = False,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         release_func: typing.Optional[ReleaseCallback] = None,
         uds: typing.Optional[str] = None,
@@ -40,7 +40,7 @@ class HTTPConnection(Dispatcher):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env)
         self.timeout = TimeoutConfig(timeout)
-        self.http_2 = http_2
+        self.http2 = http2
         self.backend = lookup_backend(backend)
         self.release_func = release_func
         self.uds = uds
@@ -114,7 +114,7 @@ class HTTPConnection(Dispatcher):
             return None
 
         # Run the SSL loading in a threadpool, since it may make disk accesses.
-        return await self.backend.run_in_threadpool(ssl.load_ssl_context, self.http_2)
+        return await self.backend.run_in_threadpool(ssl.load_ssl_context, self.http2)
 
     async def close(self) -> None:
         logger.trace("close_connection")

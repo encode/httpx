@@ -30,7 +30,7 @@ trying out our HTTP/2 support. You can do so by instantiating a client with
 HTTP/2 support enabled:
 
 ```python
-client = httpx.Client(http_2=True)
+client = httpx.Client(http2=True)
 ...
 ```
 
@@ -39,7 +39,7 @@ HTTP connections are nicely scoped, and will be closed once the context block
 is exited.
 
 ```python
-async with httpx.Client(http_2=True) as client:
+async with httpx.Client(http2=True) as client:
     ...
 ```
 
@@ -54,7 +54,7 @@ You can determine which version of the HTTP protocol was used by examining
 the `.http_version` property on the response.
 
 ```python
-client = httpx.Client(http_2=True)
+client = httpx.Client(http2=True)
 response = await client.get(...)
 print(response.http_version)  # "HTTP/1.0", "HTTP/1.1", or "HTTP/2".
 ```

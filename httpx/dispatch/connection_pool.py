@@ -86,7 +86,7 @@ class ConnectionPool(Dispatcher):
         trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        http_2: bool = False,
+        http2: bool = False,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         uds: typing.Optional[str] = None,
     ):
@@ -94,7 +94,7 @@ class ConnectionPool(Dispatcher):
         self.cert = cert
         self.timeout = TimeoutConfig(timeout)
         self.pool_limits = pool_limits
-        self.http_2 = http_2
+        self.http2 = http2
         self.is_closed = False
         self.trust_env = trust_env
         self.uds = uds
@@ -155,7 +155,7 @@ class ConnectionPool(Dispatcher):
                 verify=self.verify,
                 cert=self.cert,
                 timeout=self.timeout,
-                http_2=self.http_2,
+                http2=self.http2,
                 backend=self.backend,
                 release_func=self.release_connection,
                 trust_env=self.trust_env,

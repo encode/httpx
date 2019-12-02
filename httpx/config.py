@@ -86,35 +86,35 @@ class SSLConfig:
             return self
         return SSLConfig(cert=cert, verify=verify)
 
-    def load_ssl_context(self, http_2: bool = False) -> ssl.SSLContext:
+    def load_ssl_context(self, http2: bool = False) -> ssl.SSLContext:
         logger.trace(
             f"load_ssl_context "
             f"verify={self.verify!r} "
             f"cert={self.cert!r} "
             f"trust_env={self.trust_env!r} "
-            f"http_2={http_2!r}"
+            f"http2={http2!r}"
         )
 
         if self.ssl_context is None:
             self.ssl_context = (
-                self.load_ssl_context_verify(http_2=http_2)
+                self.load_ssl_context_verify(http2=http2)
                 if self.verify
-                else self.load_ssl_context_no_verify(http_2=http_2)
+                else self.load_ssl_context_no_verify(http2=http2)
             )
 
         assert self.ssl_context is not None
         return self.ssl_context
 
-    def load_ssl_context_no_verify(self, http_2: bool = False) -> ssl.SSLContext:
+    def load_ssl_context_no_verify(self, http2: bool = False) -> ssl.SSLContext:
         """
         Return an SSL context for unverified connections.
         """
-        context = self._create_default_ssl_context(http_2=http_2)
+        context = self._create_default_ssl_context(http2=http2)
         context.verify_mode = ssl.CERT_NONE
         context.check_hostname = False
         return context
 
-    def load_ssl_context_verify(self, http_2: bool = False) -> ssl.SSLContext:
+    def load_ssl_context_verify(self, http2: bool = False) -> ssl.SSLContext:
         """
         Return an SSL context for verified connections.
         """
@@ -133,7 +133,7 @@ class SSLConfig:
                 "invalid path: {}".format(self.verify)
             )
 
-        context = self._create_default_ssl_context(http_2=http_2)
+        context = self._create_default_ssl_context(http2=http2)
         context.verify_mode = ssl.CERT_REQUIRED
         context.check_hostname = True
 
@@ -162,7 +162,7 @@ class SSLConfig:
 
         return context
 
-    def _create_default_ssl_context(self, http_2: bool) -> ssl.SSLContext:
+    def _create_default_ssl_context(self, http2: bool) -> ssl.SSLContext:
         """
         Creates the default SSLContext object that's used for both verified
         and unverified connections.
@@ -176,7 +176,7 @@ class SSLConfig:
         context.set_ciphers(DEFAULT_CIPHERS)
 
         if ssl.HAS_ALPN:
-            alpn_idents = ["http/1.1", "h2"] if http_2 else ["http/1.1"]
+            alpn_idents = ["http/1.1", "h2"] if http2 else ["http/1.1"]
             context.set_alpn_protocols(alpn_idents)
 
         if hasattr(context, "keylog_filename"):
