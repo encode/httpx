@@ -81,11 +81,7 @@ async def request(
     ```
     """
     async with Client(
-        http_versions=["HTTP/1.1"],
-        cert=cert,
-        verify=verify,
-        timeout=timeout,
-        trust_env=trust_env,
+        cert=cert, verify=verify, timeout=timeout, trust_env=trust_env,
     ) as client:
         return await client.request(
             method=method,

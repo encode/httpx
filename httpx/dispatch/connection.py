@@ -7,8 +7,6 @@ from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
-    HTTPVersionConfig,
-    HTTPVersionTypes,
     SSLConfig,
     TimeoutConfig,
     TimeoutTypes,
@@ -35,7 +33,7 @@ class HTTPConnection(Dispatcher):
         cert: CertTypes = None,
         trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-        http_versions: HTTPVersionTypes = None,
+        http_2: bool = False,
         backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,
         uds: typing.Optional[str] = None,
@@ -43,7 +41,7 @@ class HTTPConnection(Dispatcher):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env)
         self.timeout = TimeoutConfig(timeout)
-        self.http_versions = HTTPVersionConfig(http_versions)
+        self.http_2 = http_2
         self.backend = AsyncioBackend() if backend is None else backend
         self.release_func = release_func
         self.uds = uds
@@ -119,9 +117,7 @@ class HTTPConnection(Dispatcher):
             return None
 
         # Run the SSL loading in a threadpool, since it may make disk accesses.
-        return await self.backend.run_in_threadpool(
-            ssl.load_ssl_context, self.http_versions
-        )
+        return await self.backend.run_in_threadpool(ssl.load_ssl_context, self.http_2)
 
     async def close(self) -> None:
         logger.trace("close_connection")

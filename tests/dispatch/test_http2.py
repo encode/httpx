@@ -27,7 +27,7 @@ def app(request):
 async def test_http2_get_request():
     backend = MockHTTP2Backend(app=app)
 
-    async with Client(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         response = await client.get("http://example.org")
 
     assert response.status_code == 200
@@ -38,7 +38,7 @@ async def test_http2_get_request():
 async def test_http2_post_request():
     backend = MockHTTP2Backend(app=app)
 
-    async with Client(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         response = await client.post("http://example.org", data=b"<data>")
 
     assert response.status_code == 200
@@ -54,7 +54,7 @@ async def test_http2_large_post_request():
     backend = MockHTTP2Backend(app=app)
 
     data = b"a" * 100000
-    async with Client(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         response = await client.post("http://example.org", data=data)
     assert response.status_code == 200
     assert json.loads(response.content) == {
@@ -68,7 +68,7 @@ async def test_http2_large_post_request():
 async def test_http2_multiple_requests():
     backend = MockHTTP2Backend(app=app)
 
-    async with Client(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         response_1 = await client.get("http://example.org/1")
         response_2 = await client.get("http://example.org/2")
         response_3 = await client.get("http://example.org/3")
@@ -91,7 +91,7 @@ async def test_http2_reconnect():
     """
     backend = MockHTTP2Backend(app=app)
 
-    async with Client(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         response_1 = await client.get("http://example.org/1")
         backend.server.close_connection = True
         response_2 = await client.get("http://example.org/2")
@@ -106,7 +106,7 @@ async def test_http2_reconnect():
 async def test_http2_settings_in_handshake(backend):
     backend = MockHTTP2Backend(app=app, backend=backend)
 
-    async with Client(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         await client.get("http://example.org")
 
     h2_conn = backend.server.conn
@@ -139,7 +139,7 @@ async def test_http2_settings_in_handshake(backend):
 
 
 async def test_http2_live_request(backend):
-    async with Client(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         try:
             resp = await client.get("https://nghttp2.org/httpbin/anything")
         except Timeout:

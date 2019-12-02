@@ -36,7 +36,6 @@ def test_proxies_has_same_properties_as_dispatch():
         cert="/path/to/cert",
         trust_env=False,
         timeout=30,
-        http_versions=["HTTP/1.1"],
     )
     pool = client.dispatch
     proxy = client.proxies["all"]
@@ -49,7 +48,6 @@ def test_proxies_has_same_properties_as_dispatch():
         "cert",
         "timeout",
         "pool_limits",
-        "http_versions",
         "backend",
     ]:
         assert getattr(pool, prop) == getattr(proxy, prop)
