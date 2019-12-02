@@ -149,7 +149,7 @@ def test_multipart_encode_files_allows_filenames_as_none():
 
 @pytest.mark.parametrize(
     "file_name,expected_content_type",
-    [("example.json", "application/json"), ("example.log", "application/octet-stream")],
+    [("example.json", "application/json"), ("example.log", "text/plain")],
 )
 def test_multipart_encode_files_guesses_correct_content_type(
     file_name, expected_content_type

@@ -222,7 +222,7 @@ def test_timeout_repr():
     reason="requires OpenSSL 1.1.1 or higher",
 )
 @pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python3.8 or higher")
-def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):
+def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: nocover
     with monkeypatch.context() as m:
         m.delenv("SSLKEYLOGFILE", raising=False)
 
