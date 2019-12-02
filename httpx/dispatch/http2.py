@@ -10,6 +10,7 @@ from ..concurrency.base import (
     BaseSocketStream,
     ConcurrencyBackend,
     TimeoutFlag,
+    lookup_backend,
 )
 from ..config import TimeoutConfig, TimeoutTypes
 from ..exceptions import ProtocolError
@@ -25,11 +26,11 @@ class HTTP2Connection:
     def __init__(
         self,
         stream: BaseSocketStream,
-        backend: ConcurrencyBackend,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         on_release: typing.Callable = None,
     ):
         self.stream = stream
-        self.backend = backend
+        self.backend = lookup_backend(backend)
         self.on_release = on_release
         self.h2_state = h2.connection.H2Connection()
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]

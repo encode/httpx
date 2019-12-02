@@ -2,7 +2,7 @@ import typing
 
 import h11
 
-from ..concurrency.base import BaseSocketStream, ConcurrencyBackend, TimeoutFlag
+from ..concurrency.base import BaseSocketStream, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectionClosed, ProtocolError
 from ..models import Request, Response
@@ -33,11 +33,9 @@ class HTTP11Connection:
     def __init__(
         self,
         stream: BaseSocketStream,
-        backend: ConcurrencyBackend,
         on_release: typing.Optional[OnReleaseCallback] = None,
     ):
         self.stream = stream
-        self.backend = backend
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
         self.timeout_flag = TimeoutFlag()

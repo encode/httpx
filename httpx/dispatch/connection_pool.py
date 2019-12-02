@@ -1,7 +1,6 @@
 import typing
 
-from ..concurrency.asyncio import AsyncioBackend
-from ..concurrency.base import ConcurrencyBackend
+from ..concurrency.base import BasePoolSemaphore, ConcurrencyBackend, lookup_backend
 from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
@@ -88,7 +87,7 @@ class ConnectionPool(Dispatcher):
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http_2: bool = False,
-        backend: ConcurrencyBackend = None,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         uds: typing.Optional[str] = None,
     ):
         self.verify = verify
@@ -103,8 +102,15 @@ class ConnectionPool(Dispatcher):
         self.keepalive_connections = ConnectionStore()
         self.active_connections = ConnectionStore()
 
-        self.backend = AsyncioBackend() if backend is None else backend
-        self.max_connections = self.backend.get_semaphore(pool_limits)
+        self.backend = lookup_backend(backend)
+
+    @property
+    def max_connections(self) -> BasePoolSemaphore:
+        # We do this lazily, to make sure backend autodetection always
+        # runs within an async context.
+        if not hasattr(self, "_max_connections"):
+            self._max_connections = self.backend.get_semaphore(self.pool_limits)
+        return self._max_connections
 
     @property
     def num_connections(self) -> int:

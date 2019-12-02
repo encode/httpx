@@ -1,4 +1,5 @@
 import enum
+import typing
 from base64 import b64encode
 
 import h11
@@ -47,7 +48,7 @@ class HTTPProxy(ConnectionPool):
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http_2: bool = False,
-        backend: ConcurrencyBackend = None,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
     ):
 
         super(HTTPProxy, self).__init__(
@@ -207,9 +208,7 @@ class HTTPProxy(ConnectionPool):
             )
         else:
             assert http_version == "HTTP/1.1"
-            connection.h11_connection = HTTP11Connection(
-                stream, self.backend, on_release=on_release
-            )
+            connection.h11_connection = HTTP11Connection(stream, on_release=on_release)
 
     def should_forward_origin(self, origin: Origin) -> bool:
         """Determines if the given origin should

@@ -5,7 +5,6 @@ from types import TracebackType
 import hstspreload
 
 from .auth import BasicAuth
-from .concurrency.asyncio import AsyncioBackend
 from .concurrency.base import ConcurrencyBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
@@ -95,7 +94,8 @@ class Client:
     * **app** - *(optional)* An ASGI application to send requests to,
     rather than sending actual network requests.
     * **backend** - *(optional)* A concurrency backend to use when issuing
-    async requests.
+    async requests. Either 'auto', 'asyncio', 'trio', or a `ConcurrencyBackend`
+    instance. Defaults to 'auto', for autodetection.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
     * **uds** - *(optional)* A path to a Unix domain socket to connect through.
@@ -118,15 +118,12 @@ class Client:
         base_url: URLTypes = None,
         dispatch: Dispatcher = None,
         app: typing.Callable = None,
-        backend: ConcurrencyBackend = None,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
         uds: str = None,
     ):
-        if backend is None:
-            backend = AsyncioBackend()
-
         if app is not None:
-            dispatch = ASGIDispatch(app=app, backend=backend)
+            dispatch = ASGIDispatch(app=app)
 
         if dispatch is None:
             dispatch = ConnectionPool(
@@ -155,7 +152,6 @@ class Client:
         self.max_redirects = max_redirects
         self.trust_env = trust_env
         self.dispatch = dispatch
-        self.concurrency_backend = backend
         self.netrc = NetRCInfo()
 
         if proxies is None and trust_env:
@@ -834,7 +830,7 @@ def _proxies_to_dispatchers(
     timeout: TimeoutTypes,
     http_2: bool,
     pool_limits: PoolLimits,
-    backend: ConcurrencyBackend,
+    backend: typing.Union[str, ConcurrencyBackend],
     trust_env: bool,
 ) -> typing.Dict[str, Dispatcher]:
     def _proxy_from_url(url: URLTypes) -> Dispatcher:

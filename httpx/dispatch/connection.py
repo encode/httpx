@@ -2,8 +2,7 @@ import functools
 import ssl
 import typing
 
-from ..concurrency.asyncio import AsyncioBackend
-from ..concurrency.base import ConcurrencyBackend
+from ..concurrency.base import ConcurrencyBackend, lookup_backend
 from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
@@ -34,7 +33,7 @@ class HTTPConnection(Dispatcher):
         trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         http_2: bool = False,
-        backend: ConcurrencyBackend = None,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         release_func: typing.Optional[ReleaseCallback] = None,
         uds: typing.Optional[str] = None,
     ):
@@ -42,7 +41,7 @@ class HTTPConnection(Dispatcher):
         self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env)
         self.timeout = TimeoutConfig(timeout)
         self.http_2 = http_2
-        self.backend = AsyncioBackend() if backend is None else backend
+        self.backend = lookup_backend(backend)
         self.release_func = release_func
         self.uds = uds
         self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
@@ -104,13 +103,11 @@ class HTTPConnection(Dispatcher):
 
         if http_version == "HTTP/2":
             self.h2_connection = HTTP2Connection(
-                stream, self.backend, on_release=on_release
+                stream, backend=self.backend, on_release=on_release
             )
         else:
             assert http_version == "HTTP/1.1"
-            self.h11_connection = HTTP11Connection(
-                stream, self.backend, on_release=on_release
-            )
+            self.h11_connection = HTTP11Connection(stream, on_release=on_release)
 
     async def get_ssl_context(self, ssl: SSLConfig) -> typing.Optional[ssl.SSLContext]:
         if not self.origin.is_ssl:
