@@ -77,7 +77,7 @@ class Client:
     to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
     file, key file, password).
-    * **http_2** - *(optional)* A boolean indicating if HTTP/2 support should be
+    * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
     * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
     URLs.
@@ -110,7 +110,7 @@ class Client:
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
-        http_2: bool = False,
+        http2: bool = False,
         proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
@@ -130,7 +130,7 @@ class Client:
                 verify=verify,
                 cert=cert,
                 timeout=timeout,
-                http_2=http_2,
+                http2=http2,
                 pool_limits=pool_limits,
                 backend=backend,
                 trust_env=trust_env,
@@ -162,7 +162,7 @@ class Client:
             verify=verify,
             cert=cert,
             timeout=timeout,
-            http_2=http_2,
+            http2=http2,
             pool_limits=pool_limits,
             backend=backend,
             trust_env=trust_env,
@@ -828,13 +828,13 @@ def _proxies_to_dispatchers(
     verify: VerifyTypes,
     cert: typing.Optional[CertTypes],
     timeout: TimeoutTypes,
-    http_2: bool,
+    http2: bool,
     pool_limits: PoolLimits,
     backend: typing.Union[str, ConcurrencyBackend],
     trust_env: bool,
 ) -> typing.Dict[str, Dispatcher]:
     def _proxy_from_url(url: URLTypes) -> Dispatcher:
-        nonlocal verify, cert, timeout, http_2, pool_limits, backend, trust_env
+        nonlocal verify, cert, timeout, http2, pool_limits, backend, trust_env
         url = URL(url)
         if url.scheme in ("http", "https"):
             return HTTPProxy(
@@ -845,7 +845,7 @@ def _proxies_to_dispatchers(
                 pool_limits=pool_limits,
                 backend=backend,
                 trust_env=trust_env,
-                http_2=http_2,
+                http2=http2,
             )
         raise ValueError(f"Unknown proxy for {url!r}")
 

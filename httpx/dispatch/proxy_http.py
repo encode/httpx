@@ -47,7 +47,7 @@ class HTTPProxy(ConnectionPool):
         trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        http_2: bool = False,
+        http2: bool = False,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
     ):
 
@@ -58,7 +58,7 @@ class HTTPProxy(ConnectionPool):
             pool_limits=pool_limits,
             backend=backend,
             trust_env=trust_env,
-            http_2=http_2,
+            http2=http2,
         )
 
         self.proxy_url = URL(proxy_url)
