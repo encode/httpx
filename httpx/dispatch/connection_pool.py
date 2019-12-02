@@ -6,15 +6,16 @@ from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
-    HTTPVersionTypes,
     PoolLimits,
+    TimeoutConfig,
     TimeoutTypes,
     VerifyTypes,
 )
 from ..exceptions import NewConnectionRequired
 from ..models import AsyncRequest, AsyncResponse, Origin
+from ..models import Origin, Request, Response
 from ..utils import get_logger
-from .base import AsyncDispatcher
+from .base import Dispatcher
 from .connection import HTTPConnection
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
@@ -79,7 +80,7 @@ class ConnectionStore:
         return len(self.all)
 
 
-class ConnectionPool(AsyncDispatcher):
+class ConnectionPool(Dispatcher):
     def __init__(
         self,
         *,
@@ -88,15 +89,15 @@ class ConnectionPool(AsyncDispatcher):
         trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        http_versions: HTTPVersionTypes = None,
+        http_2: bool = False,
         backend: ConcurrencyBackend = None,
         uds: typing.Optional[str] = None,
     ):
         self.verify = verify
         self.cert = cert
-        self.timeout = timeout
+        self.timeout = TimeoutConfig(timeout)
         self.pool_limits = pool_limits
-        self.http_versions = http_versions
+        self.http_2 = http_2
         self.is_closed = False
         self.trust_env = trust_env
         self.uds = uds
@@ -113,12 +114,14 @@ class ConnectionPool(AsyncDispatcher):
 
     async def send(
         self,
-        request: AsyncRequest,
+        request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> AsyncResponse:
-        connection = await self.acquire_connection(origin=request.url.origin)
+    ) -> Response:
+        connection = await self.acquire_connection(
+            origin=request.url.origin, timeout=timeout
+        )
         try:
             response = await connection.send(
                 request, verify=verify, cert=cert, timeout=timeout
@@ -134,18 +137,25 @@ class ConnectionPool(AsyncDispatcher):
 
         return response
 
-    async def acquire_connection(self, origin: Origin) -> HTTPConnection:
+    async def acquire_connection(
+        self, origin: Origin, timeout: TimeoutTypes = None
+    ) -> HTTPConnection:
         logger.trace(f"acquire_connection origin={origin!r}")
         connection = self.pop_connection(origin)
 
         if connection is None:
-            await self.max_connections.acquire()
+            if timeout is None:
+                pool_timeout = self.timeout.pool_timeout
+            else:
+                pool_timeout = TimeoutConfig(timeout).pool_timeout
+
+            await self.max_connections.acquire(timeout=pool_timeout)
             connection = HTTPConnection(
                 origin,
                 verify=self.verify,
                 cert=self.cert,
                 timeout=self.timeout,
-                http_versions=self.http_versions,
+                http_2=self.http_2,
                 backend=self.backend,
                 release_func=self.release_connection,
                 trust_env=self.trust_env,

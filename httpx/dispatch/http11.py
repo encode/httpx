@@ -5,7 +5,7 @@ import h11
 from ..concurrency.base import BaseSocketStream, ConcurrencyBackend, TimeoutFlag
 from ..config import TimeoutConfig, TimeoutTypes
 from ..exceptions import ConnectionClosed, ProtocolError
-from ..models import AsyncRequest, AsyncResponse
+from ..models import Request, Response
 from ..utils import get_logger
 
 H11Event = typing.Union[
@@ -42,19 +42,15 @@ class HTTP11Connection:
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
         self.timeout_flag = TimeoutFlag()
 
-    async def send(
-        self, request: AsyncRequest, timeout: TimeoutTypes = None
-    ) -> AsyncResponse:
+    async def send(self, request: Request, timeout: TimeoutTypes = None) -> Response:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
         await self._send_request(request, timeout)
-
-        task, args = self._send_request_data, [request.stream(), timeout]
-        async with self.backend.background_manager(task, *args):
-            http_version, status_code, headers = await self._receive_response(timeout)
+        await self._send_request_body(request, timeout)
+        http_version, status_code, headers = await self._receive_response(timeout)
         content = self._receive_response_data(timeout)
 
-        return AsyncResponse(
+        return Response(
             status_code=status_code,
             http_version=http_version,
             headers=headers,
@@ -74,7 +70,7 @@ class HTTP11Connection:
         await self.stream.close()
 
     async def _send_request(
-        self, request: AsyncRequest, timeout: TimeoutConfig = None
+        self, request: Request, timeout: TimeoutConfig = None
     ) -> None:
         """
         Send the request method, URL, and headers to the network.
@@ -91,15 +87,15 @@ class HTTP11Connection:
         event = h11.Request(method=method, target=target, headers=headers)
         await self._send_event(event, timeout)
 
-    async def _send_request_data(
-        self, data: typing.AsyncIterator[bytes], timeout: TimeoutConfig = None
+    async def _send_request_body(
+        self, request: Request, timeout: TimeoutConfig = None
     ) -> None:
         """
         Send the request body to the network.
         """
         try:
             # Send the request body.
-            async for chunk in data:
+            async for chunk in request.stream():
                 logger.trace(f"send_data data=Data(<{len(chunk)} bytes>)")
                 event = h11.Data(data=chunk)
                 await self._send_event(event, timeout)

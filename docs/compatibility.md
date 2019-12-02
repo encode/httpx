@@ -14,21 +14,22 @@ to the API in our own documentation. The following exceptions apply:
 but also provide lower-cased versions for API compatibility with `requests`.
 * `stream=True`. - Streaming responses provide the `.stream()` and `.raw()` byte iterator interfaces, rather than the `.iter_content()` method and the `.raw` socket interface.
 * `.get`, `.delete`, `.head`, `.options` -  These methods do not support `files`, `data`, or `json` arguments. Use `.request` if you need to need to send data using these http methods.
+* We don't support `response.is_ok` since the naming is ambiguous there, and might incorrectly imply an equivalence to `response.status_code == codes.OK`. Instead we provide an `.is_error` property.
 
 ## Advanced Usage
 
 ### requests.Session
+
 The HTTPX equivalent of `requests.Session` is `httpx.Client`.
 
 ```python
 session = requests.Session(**kwargs)
 ```
 
-is equivalent to
+is generally equivalent to
 
 ```python
-with httpx.Client(**kwargs) as client:
-    ...
+client = httpx.Client(**kwargs)
 ```
 
 More detailed documentation and usage of `Client` can be found in [Advanced Usage](advanced.md).

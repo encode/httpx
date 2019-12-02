@@ -70,18 +70,6 @@ class BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
 
-class BaseQueue:
-    """
-    A FIFO queue. Abstracts away any asyncio-specific interfaces.
-    """
-
-    async def get(self) -> typing.Any:
-        raise NotImplementedError()  # pragma: no cover
-
-    async def put(self, value: typing.Any) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
-
 class BaseEvent:
     """
     An event object. Abstracts away any asyncio-specific interfaces.
@@ -107,7 +95,7 @@ class BasePoolSemaphore:
     Abstracts away any asyncio-specific interfaces.
     """
 
-    async def acquire(self) -> None:
+    async def acquire(self, timeout: float = None) -> None:
         raise NotImplementedError()  # pragma: no cover
 
     def release(self) -> None:
@@ -141,35 +129,9 @@ class ConcurrencyBackend:
     ) -> typing.Any:
         raise NotImplementedError()  # pragma: no cover
 
-    async def iterate_in_threadpool(self, iterator):  # type: ignore
-        class IterationComplete(Exception):
-            pass
-
-        def next_wrapper(iterator):  # type: ignore
-            try:
-                return next(iterator)
-            except StopIteration:
-                raise IterationComplete()
-
-        while True:
-            try:
-                yield await self.run_in_threadpool(next_wrapper, iterator)
-            except IterationComplete:
-                break
-
     def run(
         self, coroutine: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
-        raise NotImplementedError()  # pragma: no cover
-
-    def iterate(self, async_iterator):  # type: ignore
-        while True:
-            try:
-                yield self.run(async_iterator.__anext__)
-            except StopAsyncIteration:
-                break
-
-    def create_queue(self, max_size: int) -> BaseQueue:
         raise NotImplementedError()  # pragma: no cover
 
     def create_event(self) -> BaseEvent:

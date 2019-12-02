@@ -1,11 +1,10 @@
 import functools
-import inspect
-import netrc
 import typing
 from types import TracebackType
 
 import hstspreload
 
+from .auth import BasicAuth
 from .concurrency.asyncio import AsyncioBackend
 from .concurrency.base import ConcurrencyBackend
 from .config import (
@@ -13,28 +12,24 @@ from .config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
-    HTTPVersionTypes,
     PoolLimits,
     TimeoutTypes,
     VerifyTypes,
 )
 from .dispatch.asgi import ASGIDispatch
-from .dispatch.base import AsyncDispatcher, Dispatcher
+from .dispatch.base import Dispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
-from .dispatch.threaded import ThreadedDispatcher
-from .dispatch.wsgi import WSGIDispatch
-from .exceptions import HTTPError, InvalidURL
-from .middleware.base import BaseMiddleware
-from .middleware.basic_auth import BasicAuthMiddleware
-from .middleware.custom_auth import CustomAuthMiddleware
-from .middleware.redirect import RedirectMiddleware
+from .exceptions import (
+    HTTPError,
+    InvalidURL,
+    RedirectBodyUnavailable,
+    RedirectLoop,
+    TooManyRedirects,
+)
+from .middleware import Middleware
 from .models import (
     URL,
-    AsyncRequest,
-    AsyncRequestData,
-    AsyncResponse,
-    AsyncResponseContent,
     AuthTypes,
     Cookies,
     CookieTypes,
@@ -43,18 +38,69 @@ from .models import (
     ProxiesTypes,
     QueryParams,
     QueryParamTypes,
+    Request,
     RequestData,
     RequestFiles,
     Response,
-    ResponseContent,
     URLTypes,
 )
-from .utils import ElapsedTimer, get_environment_proxies, get_logger, get_netrc
+from .status_codes import codes
+from .utils import ElapsedTimer, NetRCInfo, get_environment_proxies, get_logger
 
 logger = get_logger(__name__)
 
 
-class BaseClient:
+class Client:
+    """
+    An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.
+
+    Usage:
+
+    ```
+    >>> client = httpx.Client()
+    >>> response = client.get('https://example.org')
+    ```
+
+    **Parameters:**
+
+    * **auth** - *(optional)* An authentication class to use when sending
+    requests.
+    * **params** - *(optional)* Query parameters to include in request URLs, as
+    a string, dictionary, or list of two-tuples.
+    * **headers** - *(optional)* Dictionary of HTTP headers to include when
+    sending requests.
+    * **cookies** - *(optional)* Dictionary of Cookie items to include when
+    sending requests.
+    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
+    verify the identity of requested hosts. Either `True` (default CA bundle),
+    a path to an SSL certificate file, or `False` (disable verification).
+    * **cert** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client. Either a path to an SSL certificate file, or
+    two-tuple of (certificate file, key file), or a three-tuple of (certificate
+    file, key file, password).
+    * **http_2** - *(optional)* A boolean indicating if HTTP/2 support should be
+    enabled. Defaults to `False`.
+    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
+    URLs.
+    * **timeout** - *(optional)* The timeout configuration to use when sending
+    requests.
+    * **pool_limits** - *(optional)* The connection pool configuration to use
+    when determining the maximum number of concurrently open HTTP connections.
+    * **max_redirects** - *(optional)* The maximum number of redirect responses
+    that should be followed.
+    * **base_url** - *(optional)* A URL to use as the base when building
+    request URLs.
+    * **dispatch** - *(optional)* A dispatch class to use for sending requests
+    over the network.
+    * **app** - *(optional)* An ASGI application to send requests to,
+    rather than sending actual network requests.
+    * **backend** - *(optional)* A concurrency backend to use when issuing
+    async requests.
+    * **trust_env** - *(optional)* Enables or disables usage of environment
+    variables for configuration.
+    * **uds** - *(optional)* A path to a Unix domain socket to connect through.
+    """
+
     def __init__(
         self,
         *,
@@ -64,13 +110,13 @@ class BaseClient:
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
-        http_versions: HTTPVersionTypes = None,
+        http_2: bool = False,
         proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
-        dispatch: typing.Union[AsyncDispatcher, Dispatcher] = None,
+        dispatch: Dispatcher = None,
         app: typing.Callable = None,
         backend: ConcurrencyBackend = None,
         trust_env: bool = True,
@@ -79,33 +125,20 @@ class BaseClient:
         if backend is None:
             backend = AsyncioBackend()
 
-        self.check_concurrency_backend(backend)
-
         if app is not None:
-            param_count = len(inspect.signature(app).parameters)
-            assert param_count in (2, 3)
-            if param_count == 2:
-                dispatch = WSGIDispatch(app=app)
-            else:
-                dispatch = ASGIDispatch(app=app, backend=backend)
-
-        self.trust_env = True if trust_env is None else trust_env
+            dispatch = ASGIDispatch(app=app, backend=backend)
 
         if dispatch is None:
-            async_dispatch: AsyncDispatcher = ConnectionPool(
+            dispatch = ConnectionPool(
                 verify=verify,
                 cert=cert,
                 timeout=timeout,
-                http_versions=http_versions,
+                http_2=http_2,
                 pool_limits=pool_limits,
                 backend=backend,
-                trust_env=self.trust_env,
+                trust_env=trust_env,
                 uds=uds,
             )
-        elif isinstance(dispatch, Dispatcher):
-            async_dispatch = ThreadedDispatcher(dispatch, backend)
-        else:
-            async_dispatch = dispatch
 
         if base_url is None:
             self.base_url = URL("", allow_relative=True)
@@ -120,18 +153,20 @@ class BaseClient:
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
         self.max_redirects = max_redirects
-        self.dispatch = async_dispatch
+        self.trust_env = trust_env
+        self.dispatch = dispatch
         self.concurrency_backend = backend
+        self.netrc = NetRCInfo()
 
         if proxies is None and trust_env:
             proxies = typing.cast(ProxiesTypes, get_environment_proxies())
 
-        self.proxies: typing.Dict[str, AsyncDispatcher] = _proxies_to_dispatchers(
+        self.proxies: typing.Dict[str, Dispatcher] = _proxies_to_dispatchers(
             proxies,
             verify=verify,
             cert=cert,
             timeout=timeout,
-            http_versions=http_versions,
+            http_2=http_2,
             pool_limits=pool_limits,
             backend=backend,
             trust_env=trust_env,
@@ -170,10 +205,82 @@ class BaseClient:
     def params(self, params: QueryParamTypes) -> None:
         self._params = QueryParams(params)
 
-    def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
-        pass  # pragma: no cover
+    async def request(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        stream: bool = False,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: TimeoutTypes = None,
+        trust_env: bool = None,
+    ) -> Response:
+        request = self.build_request(
+            method=method,
+            url=url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        response = await self.send(
+            request,
+            stream=stream,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            trust_env=trust_env,
+        )
+        return response
+
+    def build_request(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+    ) -> Request:
+        """
+        Build and return a request instance.
+        """
+        url = self.merge_url(url)
+        headers = self.merge_headers(headers)
+        cookies = self.merge_cookies(cookies)
+        params = self.merge_queryparams(params)
+        return Request(
+            method,
+            url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
 
     def merge_url(self, url: URLTypes) -> URL:
+        """
+        Merge a URL argument together with any 'base_url' on the client,
+        to create the URL used for the outgoing request.
+        """
         url = self.base_url.join(relative_url=url)
         if url.scheme == "http" and hstspreload.in_hsts_preload(url.host):
             url = url.copy_with(scheme="https")
@@ -182,6 +289,10 @@ class BaseClient:
     def merge_cookies(
         self, cookies: CookieTypes = None
     ) -> typing.Optional[CookieTypes]:
+        """
+        Merge a cookies argument together with any cookies on the client,
+        to create the cookies used for the outgoing request.
+        """
         if cookies or self.cookies:
             merged_cookies = Cookies(self.cookies)
             merged_cookies.update(cookies)
@@ -191,6 +302,10 @@ class BaseClient:
     def merge_headers(
         self, headers: HeaderTypes = None
     ) -> typing.Optional[HeaderTypes]:
+        """
+        Merge a headers argument together with any headers on the client,
+        to create the headers used for the outgoing request.
+        """
         if headers or self.headers:
             merged_headers = Headers(self.headers)
             merged_headers.update(headers)
@@ -200,15 +315,19 @@ class BaseClient:
     def merge_queryparams(
         self, params: QueryParamTypes = None
     ) -> typing.Optional[QueryParamTypes]:
+        """
+        Merge a queryparams argument together with any queryparams on the client,
+        to create the queryparams used for the outgoing request.
+        """
         if params or self.params:
             merged_queryparams = QueryParams(self.params)
             merged_queryparams.update(params)
             return merged_queryparams
         return params
 
-    async def _get_response(
+    async def send(
         self,
-        request: AsyncRequest,
+        request: Request,
         *,
         stream: bool = False,
         auth: AuthTypes = None,
@@ -217,106 +336,235 @@ class BaseClient:
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         if request.url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
 
-        dispatch = self._dispatcher_for_request(request, self.proxies)
+        auth = self.auth if auth is None else auth
+        trust_env = self.trust_env if trust_env is None else trust_env
 
-        async def get_response(request: AsyncRequest) -> AsyncResponse:
+        if not isinstance(auth, Middleware):
+            request = self.authenticate(request, trust_env, auth)
+            response = await self.send_handling_redirects(
+                request,
+                verify=verify,
+                cert=cert,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+            )
+        else:
+            get_response = functools.partial(
+                self.send_handling_redirects,
+                verify=verify,
+                cert=cert,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+            )
+            response = await auth(request, get_response)
+
+        if not stream:
             try:
-                with ElapsedTimer() as timer:
-                    response = await dispatch.send(
-                        request, verify=verify, cert=cert, timeout=timeout
-                    )
-                response.elapsed = timer.elapsed
-            except HTTPError as exc:
-                # Add the original request to any HTTPError unless
-                # there'a already a request attached in the case of
-                # a ProxyError.
-                if exc.request is None:
-                    exc.request = request
-                raise
+                await response.read()
+            finally:
+                await response.close()
 
-            self.cookies.extract_cookies(response)
-            if not stream:
-                try:
-                    await response.read()
-                finally:
-                    await response.close()
+        return response
 
-            status = f"{response.status_code} {response.reason_phrase}"
-            response_line = f"{response.http_version} {status}"
-            logger.debug(
-                f'HTTP Request: {request.method} {request.url} "{response_line}"'
-            )
-
-            return response
-
-        def wrap(
-            get_response: typing.Callable, middleware: BaseMiddleware
-        ) -> typing.Callable:
-            return functools.partial(middleware, get_response=get_response)
-
-        get_response = wrap(
-            get_response,
-            RedirectMiddleware(allow_redirects=allow_redirects, cookies=self.cookies),
-        )
-
-        auth_middleware = self._get_auth_middleware(
-            request=request,
-            trust_env=self.trust_env if trust_env is None else trust_env,
-            auth=self.auth if auth is None else auth,
-        )
-
-        if auth_middleware is not None:
-            get_response = wrap(get_response, auth_middleware)
-
-        return await get_response(request)
-
-    def _get_auth_middleware(
-        self, request: AsyncRequest, trust_env: bool, auth: AuthTypes = None
-    ) -> typing.Optional[BaseMiddleware]:
-        if isinstance(auth, tuple):
-            return BasicAuthMiddleware(username=auth[0], password=auth[1])
-        elif isinstance(auth, BaseMiddleware):
-            return auth
-        elif callable(auth):
-            return CustomAuthMiddleware(auth=auth)
-
+    def authenticate(
+        self, request: Request, trust_env: bool, auth: AuthTypes = None
+    ) -> "Request":
         if auth is not None:
-            raise TypeError(
-                'When specified, "auth" must be a (username, password) tuple or '
-                "a callable with signature (AsyncRequest) -> AsyncRequest "
-                f"(got {auth!r})"
+            if isinstance(auth, tuple):
+                auth = BasicAuth(username=auth[0], password=auth[1])
+            return auth(request)
+
+        username, password = request.url.username, request.url.password
+        if username or password:
+            auth = BasicAuth(username=username, password=password)
+            return auth(request)
+
+        if trust_env and "Authorization" not in request.headers:
+            credentials = self.netrc.get_credentials(request.url.authority)
+            if credentials is not None:
+                auth = BasicAuth(username=credentials[0], password=credentials[1])
+                return auth(request)
+
+        return request
+
+    async def send_handling_redirects(
+        self,
+        request: Request,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+        allow_redirects: bool = True,
+        history: typing.List[Response] = None,
+    ) -> Response:
+        if history is None:
+            history = []
+
+        while True:
+            if len(history) > self.max_redirects:
+                raise TooManyRedirects()
+            if request.url in (response.url for response in history):
+                raise RedirectLoop()
+
+            response = await self.send_single_request(
+                request, verify=verify, cert=cert, timeout=timeout
             )
+            response.history = list(history)
 
-        if request.url.username or request.url.password:
-            return BasicAuthMiddleware(
-                username=request.url.username, password=request.url.password
-            )
+            if not response.is_redirect:
+                return response
 
-        if trust_env:
-            netrc_info = self._get_netrc()
-            if netrc_info:
-                netrc_login = netrc_info.authenticators(request.url.authority)
-                if netrc_login:
-                    username, _, password = netrc_login
-                    assert password is not None
-                    return BasicAuthMiddleware(username=username, password=password)
+            await response.read()
+            request = self.build_redirect_request(request, response)
+            history = history + [response]
 
-        return None
+            if not allow_redirects:
+                response.call_next = functools.partial(
+                    self.send_handling_redirects,
+                    request=request,
+                    verify=verify,
+                    cert=cert,
+                    timeout=timeout,
+                    allow_redirects=False,
+                    history=history,
+                )
+                return response
 
-    @functools.lru_cache(1)
-    def _get_netrc(self) -> typing.Optional[netrc.netrc]:
-        return get_netrc()
+    def build_redirect_request(self, request: Request, response: Response) -> Request:
+        """
+        Given a request and a redirect response, return a new request that
+        should be used to effect the redirect.
+        """
+        method = self.redirect_method(request, response)
+        url = self.redirect_url(request, response)
+        headers = self.redirect_headers(request, url, method)
+        content = self.redirect_content(request, method)
+        cookies = Cookies(self.cookies)
+        return Request(
+            method=method, url=url, headers=headers, data=content, cookies=cookies
+        )
 
-    def _dispatcher_for_request(
-        self, request: AsyncRequest, proxies: typing.Dict[str, AsyncDispatcher]
-    ) -> AsyncDispatcher:
-        """Gets the AsyncDispatcher instance that should be used for a given Request"""
-        if proxies:
-            url = request.url
+    def redirect_method(self, request: Request, response: Response) -> str:
+        """
+        When being redirected we may want to change the method of the request
+        based on certain specs or browser behavior.
+        """
+        method = request.method
+
+        # https://tools.ietf.org/html/rfc7231#section-6.4.4
+        if response.status_code == codes.SEE_OTHER and method != "HEAD":
+            method = "GET"
+
+        # Do what the browsers do, despite standards...
+        # Turn 302s into GETs.
+        if response.status_code == codes.FOUND and method != "HEAD":
+            method = "GET"
+
+        # If a POST is responded to with a 301, turn it into a GET.
+        # This bizarre behaviour is explained in 'requests' issue 1704.
+        if response.status_code == codes.MOVED_PERMANENTLY and method == "POST":
+            method = "GET"
+
+        return method
+
+    def redirect_url(self, request: Request, response: Response) -> URL:
+        """
+        Return the URL for the redirect to follow.
+        """
+        location = response.headers["Location"]
+
+        url = URL(location, allow_relative=True)
+
+        # Facilitate relative 'Location' headers, as allowed by RFC 7231.
+        # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
+        if url.is_relative_url:
+            url = request.url.join(url)
+
+        # Attach previous fragment if needed (RFC 7231 7.1.2)
+        if request.url.fragment and not url.fragment:
+            url = url.copy_with(fragment=request.url.fragment)
+
+        return url
+
+    def redirect_headers(self, request: Request, url: URL, method: str) -> Headers:
+        """
+        Return the headers that should be used for the redirect request.
+        """
+        headers = Headers(request.headers)
+
+        if url.origin != request.url.origin:
+            # Strip Authorization headers when responses are redirected away from
+            # the origin.
+            headers.pop("Authorization", None)
+            headers["Host"] = url.authority
+
+        if method != request.method and method == "GET":
+            # If we've switch to a 'GET' request, then strip any headers which
+            # are only relevant to the request body.
+            headers.pop("Content-Length", None)
+            headers.pop("Transfer-Encoding", None)
+
+        # We should use the client cookie store to determine any cookie header,
+        # rather than whatever was on the original outgoing request.
+        headers.pop("Cookie", None)
+
+        return headers
+
+    def redirect_content(self, request: Request, method: str) -> bytes:
+        """
+        Return the body that should be used for the redirect request.
+        """
+        if method != request.method and method == "GET":
+            return b""
+        if request.is_streaming:
+            raise RedirectBodyUnavailable()
+        return request.content
+
+    async def send_single_request(
+        self,
+        request: Request,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+        timeout: TimeoutTypes = None,
+    ) -> Response:
+        """
+        Sends a single request, without handling any redirections.
+        """
+
+        dispatcher = self.dispatcher_for_url(request.url)
+
+        try:
+            with ElapsedTimer() as timer:
+                response = await dispatcher.send(
+                    request, verify=verify, cert=cert, timeout=timeout
+                )
+            response.elapsed = timer.elapsed
+            response.request = request
+        except HTTPError as exc:
+            # Add the original request to any HTTPError unless
+            # there'a already a request attached in the case of
+            # a ProxyError.
+            if exc.request is None:
+                exc.request = request
+            raise
+
+        self.cookies.extract_cookies(response)
+
+        status = f"{response.status_code} {response.reason_phrase}"
+        response_line = f"{response.http_version} {status}"
+        logger.debug(f'HTTP Request: {request.method} {request.url} "{response_line}"')
+
+        return response
+
+    def dispatcher_for_url(self, url: URL) -> Dispatcher:
+        """
+        Returns the Dispatcher instance that should be used for a given URL.
+        This will either be the standard connection pool, or a proxy.
+        """
+        if self.proxies:
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
             )
@@ -330,44 +578,12 @@ class BaseClient:
                 "all",
             )
             for proxy_key in proxy_keys:
-                if proxy_key and proxy_key in proxies:
-                    dispatcher = proxies[proxy_key]
+                if proxy_key and proxy_key in self.proxies:
+                    dispatcher = self.proxies[proxy_key]
                     return dispatcher
 
         return self.dispatch
 
-    def build_request(
-        self,
-        method: str,
-        url: URLTypes,
-        *,
-        data: AsyncRequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-    ) -> AsyncRequest:
-        """
-        Build and return a request instance.
-        """
-        url = self.merge_url(url)
-        headers = self.merge_headers(headers)
-        cookies = self.merge_cookies(cookies)
-        params = self.merge_queryparams(params)
-        return AsyncRequest(
-            method,
-            url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-        )
-
-
-class AsyncClient(BaseClient):
     async def get(
         self,
         url: URLTypes,
@@ -382,7 +598,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         return await self.request(
             "GET",
             url,
@@ -412,7 +628,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         return await self.request(
             "OPTIONS",
             url,
@@ -442,7 +658,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         return await self.request(
             "HEAD",
             url,
@@ -462,7 +678,7 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: AsyncRequestData = None,
+        data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
@@ -475,7 +691,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         return await self.request(
             "POST",
             url,
@@ -498,7 +714,7 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: AsyncRequestData = None,
+        data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
@@ -511,7 +727,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         return await self.request(
             "PUT",
             url,
@@ -534,7 +750,7 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        data: AsyncRequestData = None,
+        data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
         params: QueryParamTypes = None,
@@ -547,7 +763,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         return await self.request(
             "PATCH",
             url,
@@ -580,7 +796,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = None,
         timeout: TimeoutTypes = None,
         trust_env: bool = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         return await self.request(
             "DELETE",
             url,
@@ -596,74 +812,10 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
-    async def request(
-        self,
-        method: str,
-        url: URLTypes,
-        *,
-        data: AsyncRequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> AsyncResponse:
-        request = self.build_request(
-            method=method,
-            url=url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-        )
-        response = await self.send(
-            request,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
-        return response
-
-    async def send(
-        self,
-        request: AsyncRequest,
-        *,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> AsyncResponse:
-        return await self._get_response(
-            request=request,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
-
     async def close(self) -> None:
         await self.dispatch.close()
 
-    async def __aenter__(self) -> "AsyncClient":
+    async def __aenter__(self) -> "Client":
         return self
 
     async def __aexit__(
@@ -675,549 +827,18 @@ class AsyncClient(BaseClient):
         await self.close()
 
 
-class Client(BaseClient):
-    """
-    An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.
-
-    Usage:
-
-    ```
-    >>> client = httpx.Client()
-    >>> response = client.get('https://example.org')
-    ```
-
-    **Parameters:**
-
-    * **auth** - *(optional)* An authentication class to use when sending
-    requests.
-    * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
-    * **headers** - *(optional)* Dictionary of HTTP headers to include when
-    sending requests.
-    * **cookies** - *(optional)* Dictionary of Cookie items to include when
-    sending requests.
-    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
-    verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, or `False` (disable verification).
-    * **cert** - *(optional)* An SSL certificate used by the requested host
-    to authenticate the client. Either a path to an SSL certificate file, or
-    two-tuple of (certificate file, key file), or a three-tuple of (certificate
-    file, key file, password).
-    * **http_versions** - *(optional)* A list of strings of HTTP protocol
-    versions to use when sending requests. eg. `http_versions=["HTTP/1.1"]`
-    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
-    URLs.
-    * **timeout** - *(optional)* The timeout configuration to use when sending
-    requests.
-    * **pool_limits** - *(optional)* The connection pool configuration to use
-    when determining the maximum number of concurrently open HTTP connections.
-    * **max_redirects** - *(optional)* The maximum number of redirect responses
-    that should be followed.
-    * **base_url** - *(optional)* A URL to use as the base when building
-    request URLs.
-    * **dispatch** - *(optional)* A dispatch class to use for sending requests
-    over the network.
-    * **app** - *(optional)* A WSGI or ASGI application to send requests to,
-    rather than sending actual network requests.
-    * **backend** - *(optional)* A concurrency backend to use when issuing
-    async requests.
-    * **trust_env** - *(optional)* Enables or disables usage of environment
-    variables for configuration.
-    * **uds** - *(optional)* A path to a Unix domain socket to connect through.
-    """
-
-    def check_concurrency_backend(self, backend: ConcurrencyBackend) -> None:
-        # Iterating over response content allocates an async environment on each step.
-        # This is relatively cheap on asyncio, but cannot be guaranteed for all
-        # concurrency backends.
-        # The sync client performs I/O on its own, so it doesn't need to support
-        # arbitrary concurrency backends.
-        # Therefore, we keep the `backend` parameter (for testing/mocking), but require
-        # that the concurrency backend relies on asyncio.
-
-        if isinstance(backend, AsyncioBackend):
-            return
-
-        if hasattr(backend, "loop"):
-            # Most likely a proxy class.
-            return
-
-        raise ValueError("'Client' only supports asyncio-based concurrency backends")
-
-    def _async_request_data(
-        self, data: RequestData = None
-    ) -> typing.Optional[AsyncRequestData]:
-        """
-        If the request data is an bytes iterator then return an async bytes
-        iterator onto the request data.
-        """
-        if data is None or isinstance(data, (str, bytes, dict)):
-            return data
-
-        # Coerce an iterator into an async iterator, with each item in the
-        # iteration running as a thread-pooled operation.
-        assert hasattr(data, "__iter__")
-        return self.concurrency_backend.iterate_in_threadpool(data)
-
-    def _sync_data(self, data: AsyncResponseContent) -> ResponseContent:
-        if isinstance(data, bytes):
-            return data
-
-        # Coerce an async iterator into an iterator, with each item in the
-        # iteration run within the event loop.
-        assert hasattr(data, "__aiter__")
-        return self.concurrency_backend.iterate(data)
-
-    def request(
-        self,
-        method: str,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        """
-        Sends an HTTP request.
-
-        **Parameters:**
-
-        * **method** - HTTP method for the new `Request` object: `GET`, `OPTIONS`,
-        `HEAD`, `POST`, `PUT`, `PATCH`, or `DELETE`.
-        * **url** - URL for the new `Request` object.
-        * **data** - *(optional)* Data to include in the body of the request, as a
-        dictionary
-        * **files** - *(optional)* A dictionary of upload files to include in the
-        body of the request.
-        * **json** - *(optional)* A JSON serializable object to include in the body
-        of the request.
-        * **params** - *(optional)* Query parameters to include in the URL, as a
-        string, dictionary, or list of two-tuples.
-        * **headers** - *(optional)* Dictionary of HTTP headers to include on the
-        request.
-        * **cookies** - *(optional)* Dictionary of Cookie items to include in the
-        request.
-        * **stream** - *(optional)* Enable/disable streaming responses.
-        * **auth** - *(optional)* An authentication class to use when sending the
-        request.
-        * **allow_redirects** - *(optional)* Enables or disables HTTP redirects.
-        * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
-        verify the identity of requested hosts. Either `True` (default CA bundle),
-        a path to an SSL certificate file, or `False` (disable verification).
-        * **cert** - *(optional)* An SSL certificate used by the requested host
-        to authenticate the client. Either a path to an SSL certificate file, or
-        two-tuple of (certificate file, key file), or a three-tuple of (certificate
-        file, key file, password).
-        * **timeout** - *(optional)* The timeout configuration to use when sending
-        the request.
-        * **trust_env** - *(optional)* Enables or disables usage of environment
-        variables for configuration.
-
-        **Returns:** `Response`
-
-        Usage:
-
-        ```
-        >>> import httpx
-        >>> client = httpx.Client()
-        >>> response = client.request('GET', 'https://httpbin.org/get')
-        >>> response
-        <Response [200 OK]>
-        ```
-        """
-        request = self.build_request(
-            method=method,
-            url=url,
-            data=self._async_request_data(data),
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-        )
-        return self.send(
-            request,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
-
-    def send(
-        self,
-        request: AsyncRequest,
-        *,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        """
-        Sends a request over the network, returning a response.
-        """
-        concurrency_backend = self.concurrency_backend
-
-        coroutine = self._get_response
-        args = [request]
-        kwargs = {
-            "stream": True,
-            "auth": auth,
-            "allow_redirects": allow_redirects,
-            "verify": verify,
-            "cert": cert,
-            "timeout": timeout,
-            "trust_env": trust_env,
-        }
-        async_response = concurrency_backend.run(coroutine, *args, **kwargs)
-
-        content = getattr(
-            async_response, "_raw_content", getattr(async_response, "_raw_stream", None)
-        )
-
-        sync_content = self._sync_data(content)
-
-        def sync_on_close() -> None:
-            nonlocal concurrency_backend, async_response
-            concurrency_backend.run(async_response.on_close)
-
-        response = Response(
-            status_code=async_response.status_code,
-            http_version=async_response.http_version,
-            headers=async_response.headers,
-            content=sync_content,
-            on_close=sync_on_close,
-            request=async_response.request,
-            history=async_response.history,
-            elapsed=async_response.elapsed,
-        )
-        if not stream:
-            try:
-                response.read()
-            finally:
-                response.close()
-        return response
-
-    def get(
-        self,
-        url: URLTypes,
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        """
-        Sends a `GET` request.
-
-        **Parameters**: See `Client.request`.
-
-        Note that the `data`, `files`, and `json` parameters are not available on
-        this function, as `GET` requests should not include a request body.
-        """
-        return self.request(
-            "GET",
-            url,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
-
-    def options(
-        self,
-        url: URLTypes,
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        """
-        Sends an `OPTIONS` request.
-
-        **Parameters**: See `Client.request`.
-
-        Note that the `data`, `files`, and `json` parameters are not available on
-        this function, as `OPTIONS` requests should not include a request body.
-        """
-        return self.request(
-            "OPTIONS",
-            url,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
-
-    def head(
-        self,
-        url: URLTypes,
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = False,  # NOTE: Differs to usual default.
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        """
-        Sends a `HEAD` request.
-
-        **Parameters**: See `Client.request`.
-
-        Note that the `data`, `files`, and `json` parameters are not available on
-        this function, as `HEAD` requests should not include a request body. The
-        `HEAD` method also differs from the other cases in that `allow_redirects`
-        defaults to `False`.
-        """
-        return self.request(
-            "HEAD",
-            url,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
-
-    def post(
-        self,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        """
-        Sends a `POST` request.
-
-        **Parameters**: See `Client.request`.
-        """
-        return self.request(
-            "POST",
-            url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
-
-    def put(
-        self,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        """
-        Sends a `PUT` request.
-
-        **Parameters**: See `Client.request`.
-        """
-        return self.request(
-            "PUT",
-            url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
-
-    def patch(
-        self,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        """
-        Sends a `PATCH` request.
-
-        **Parameters**: See `Client.request`.
-        """
-        return self.request(
-            "PATCH",
-            url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
-
-    def delete(
-        self,
-        url: URLTypes,
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
-        trust_env: bool = None,
-    ) -> Response:
-        """
-        Sends a `DELETE` request.
-
-        **Parameters**: See `Client.request`.
-        """
-        return self.request(
-            "DELETE",
-            url,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            trust_env=trust_env,
-        )
-
-    def close(self) -> None:
-        """
-        Close any open connections in the connection pool.
-        """
-        coroutine = self.dispatch.close
-        self.concurrency_backend.run(coroutine)
-
-    def __enter__(self) -> "Client":
-        return self
-
-    def __exit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        self.close()
-
-
 def _proxies_to_dispatchers(
     proxies: typing.Optional[ProxiesTypes],
     verify: VerifyTypes,
     cert: typing.Optional[CertTypes],
     timeout: TimeoutTypes,
-    http_versions: typing.Optional[HTTPVersionTypes],
+    http_2: bool,
     pool_limits: PoolLimits,
     backend: ConcurrencyBackend,
     trust_env: bool,
-) -> typing.Dict[str, AsyncDispatcher]:
-    def _proxy_from_url(url: URLTypes) -> AsyncDispatcher:
-        nonlocal verify, cert, timeout, http_versions, pool_limits, backend, trust_env
+) -> typing.Dict[str, Dispatcher]:
+    def _proxy_from_url(url: URLTypes) -> Dispatcher:
+        nonlocal verify, cert, timeout, http_2, pool_limits, backend, trust_env
         url = URL(url)
         if url.scheme in ("http", "https"):
             return HTTPProxy(
@@ -1228,7 +849,7 @@ def _proxies_to_dispatchers(
                 pool_limits=pool_limits,
                 backend=backend,
                 trust_env=trust_env,
-                http_versions=http_versions,
+                http_2=http_2,
             )
         raise ValueError(f"Unknown proxy for {url!r}")
 
@@ -1236,7 +857,7 @@ def _proxies_to_dispatchers(
         return {}
     elif isinstance(proxies, (str, URL)):
         return {"all": _proxy_from_url(proxies)}
-    elif isinstance(proxies, AsyncDispatcher):
+    elif isinstance(proxies, Dispatcher):
         return {"all": proxies}
     else:
         new_proxies = {}

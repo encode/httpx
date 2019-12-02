@@ -6,7 +6,7 @@ import h2.events
 import pytest
 from h2.settings import SettingCodes
 
-from httpx import AsyncClient, Client, Response, Timeout
+from httpx import Client, Response, Timeout
 
 from .utils import MockHTTP2Backend
 
@@ -23,44 +23,22 @@ def app(request):
     return Response(200, headers=headers, content=content)
 
 
-def test_http2_get_request():
+@pytest.mark.asyncio
+async def test_http2_get_request():
     backend = MockHTTP2Backend(app=app)
 
-    with Client(backend=backend) as client:
-        response = client.get("http://example.org")
-
-    assert response.status_code == 200
-    assert json.loads(response.content) == {"method": "GET", "path": "/", "body": ""}
-
-
-async def test_async_http2_get_request(backend):
-    backend = MockHTTP2Backend(app=app, backend=backend)
-
-    async with AsyncClient(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         response = await client.get("http://example.org")
 
     assert response.status_code == 200
     assert json.loads(response.content) == {"method": "GET", "path": "/", "body": ""}
 
 
-def test_http2_post_request():
+@pytest.mark.asyncio
+async def test_http2_post_request():
     backend = MockHTTP2Backend(app=app)
 
-    with Client(backend=backend) as client:
-        response = client.post("http://example.org", data=b"<data>")
-
-    assert response.status_code == 200
-    assert json.loads(response.content) == {
-        "method": "POST",
-        "path": "/",
-        "body": "<data>",
-    }
-
-
-async def test_async_http2_post_request(backend):
-    backend = MockHTTP2Backend(app=app, backend=backend)
-
-    async with AsyncClient(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         response = await client.post("http://example.org", data=b"<data>")
 
     assert response.status_code == 200
@@ -71,25 +49,12 @@ async def test_async_http2_post_request(backend):
     }
 
 
-def test_http2_large_post_request():
+@pytest.mark.asyncio
+async def test_http2_large_post_request():
     backend = MockHTTP2Backend(app=app)
 
     data = b"a" * 100000
-    with Client(backend=backend) as client:
-        response = client.post("http://example.org", data=data)
-    assert response.status_code == 200
-    assert json.loads(response.content) == {
-        "method": "POST",
-        "path": "/",
-        "body": data.decode(),
-    }
-
-
-async def test_async_http2_large_post_request(backend):
-    backend = MockHTTP2Backend(app=app, backend=backend)
-
-    data = b"a" * 100000
-    async with AsyncClient(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         response = await client.post("http://example.org", data=data)
     assert response.status_code == 200
     assert json.loads(response.content) == {
@@ -99,28 +64,11 @@ async def test_async_http2_large_post_request(backend):
     }
 
 
-def test_http2_multiple_requests():
+@pytest.mark.asyncio
+async def test_http2_multiple_requests():
     backend = MockHTTP2Backend(app=app)
 
-    with Client(backend=backend) as client:
-        response_1 = client.get("http://example.org/1")
-        response_2 = client.get("http://example.org/2")
-        response_3 = client.get("http://example.org/3")
-
-    assert response_1.status_code == 200
-    assert json.loads(response_1.content) == {"method": "GET", "path": "/1", "body": ""}
-
-    assert response_2.status_code == 200
-    assert json.loads(response_2.content) == {"method": "GET", "path": "/2", "body": ""}
-
-    assert response_3.status_code == 200
-    assert json.loads(response_3.content) == {"method": "GET", "path": "/3", "body": ""}
-
-
-async def test_async_http2_multiple_requests(backend):
-    backend = MockHTTP2Backend(app=app, backend=backend)
-
-    async with AsyncClient(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         response_1 = await client.get("http://example.org/1")
         response_2 = await client.get("http://example.org/2")
         response_3 = await client.get("http://example.org/3")
@@ -135,33 +83,15 @@ async def test_async_http2_multiple_requests(backend):
     assert json.loads(response_3.content) == {"method": "GET", "path": "/3", "body": ""}
 
 
-def test_http2_reconnect():
+@pytest.mark.asyncio
+async def test_http2_reconnect():
     """
     If a connection has been dropped between requests, then we should
     be seemlessly reconnected.
     """
     backend = MockHTTP2Backend(app=app)
 
-    with Client(backend=backend) as client:
-        response_1 = client.get("http://example.org/1")
-        backend.server.close_connection = True
-        response_2 = client.get("http://example.org/2")
-
-    assert response_1.status_code == 200
-    assert json.loads(response_1.content) == {"method": "GET", "path": "/1", "body": ""}
-
-    assert response_2.status_code == 200
-    assert json.loads(response_2.content) == {"method": "GET", "path": "/2", "body": ""}
-
-
-async def test_async_http2_reconnect(backend):
-    """
-    If a connection has been dropped between requests, then we should
-    be seemlessly reconnected.
-    """
-    backend = MockHTTP2Backend(app=app, backend=backend)
-
-    async with AsyncClient(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         response_1 = await client.get("http://example.org/1")
         backend.server.close_connection = True
         response_2 = await client.get("http://example.org/2")
@@ -176,7 +106,7 @@ async def test_async_http2_reconnect(backend):
 async def test_http2_settings_in_handshake(backend):
     backend = MockHTTP2Backend(app=app, backend=backend)
 
-    async with AsyncClient(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         await client.get("http://example.org")
 
     h2_conn = backend.server.conn
@@ -209,7 +139,7 @@ async def test_http2_settings_in_handshake(backend):
 
 
 async def test_http2_live_request(backend):
-    async with AsyncClient(backend=backend) as client:
+    async with Client(backend=backend, http_2=True) as client:
         try:
             resp = await client.get("https://nghttp2.org/httpbin/anything")
         except Timeout:

@@ -17,6 +17,7 @@ from .decoders import (
     SUPPORTED_DECODERS,
     Decoder,
     IdentityDecoder,
+    LineDecoder,
     MultiDecoder,
     TextDecoder,
 )
@@ -44,7 +45,7 @@ from .utils import (
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from .middleware.base import BaseMiddleware  # noqa: F401
-    from .dispatch.base import AsyncDispatcher  # noqa: F401
+    from .dispatch.base import Dispatcher  # noqa: F401
 
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
@@ -67,34 +68,35 @@ CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
-    typing.Callable[["AsyncRequest"], "AsyncRequest"],
+    typing.Callable[["Request"], "Request"],
     "BaseMiddleware",
 ]
 
 ProxiesTypes = typing.Union[
-    URLTypes,
-    "AsyncDispatcher",
-    typing.Dict[URLTypes, typing.Union[URLTypes, "AsyncDispatcher"]],
+    URLTypes, "Dispatcher", typing.Dict[URLTypes, typing.Union[URLTypes, "Dispatcher"]]
 ]
 
-AsyncRequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
-
-RequestData = typing.Union[dict, str, bytes, typing.Iterator[bytes]]
+RequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
 
 RequestFiles = typing.Dict[
     str,
     typing.Union[
-        typing.IO[typing.AnyStr],  # file
-        typing.Tuple[str, typing.IO[typing.AnyStr]],  # (filename, file)
+        # file (or str)
+        typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
+        # (filename, file (or str))
         typing.Tuple[
-            str, typing.IO[typing.AnyStr], str
-        ],  # (filename, file, content_type)
+            typing.Optional[str], typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
+        ],
+        # (filename, file (or str), content_type)
+        typing.Tuple[
+            typing.Optional[str],
+            typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
+            typing.Optional[str],
+        ],
     ],
 ]
 
-AsyncResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
-
-ResponseContent = typing.Union[bytes, typing.Iterator[bytes]]
+ResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 
 class URL:
@@ -351,7 +353,12 @@ class QueryParams(typing.Mapping[str, str]):
 
         params = QueryParams(params)
         for param in params:
-            self[param] = params[param]
+            item, *extras = params.getlist(param)
+            self[param] = item
+            if extras:
+                self._list.extend((param, e) for e in extras)
+                # ensure getter matches merged QueryParams getter
+                self._dict[param] = params[param]
 
     def __getitem__(self, key: typing.Any) -> str:
         return self._dict[key]
@@ -592,7 +599,7 @@ class Headers(typing.MutableMapping[str, str]):
         return f"{class_name}({as_list!r}{encoding_str})"
 
 
-class BaseRequest:
+class Request:
     def __init__(
         self,
         method: str,
@@ -601,6 +608,9 @@ class BaseRequest:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
     ):
         self.method = method.upper()
         self.url = URL(url, params=params)
@@ -608,6 +618,21 @@ class BaseRequest:
         if cookies:
             self._cookies = Cookies(cookies)
             self._cookies.set_cookie_header(self)
+        if data is None or isinstance(data, dict):
+            content, content_type = self.encode_data(data, files, json)
+            self.is_streaming = False
+            self.content = content
+            if content_type:
+                self.headers["Content-Type"] = content_type
+        elif isinstance(data, (str, bytes)):
+            data = data.encode("utf-8") if isinstance(data, str) else data
+            self.is_streaming = False
+            self.content = data
+        else:
+            assert hasattr(data, "__aiter__")
+            self.is_streaming = True
+            self.content_aiter = data
+        self.prepare()
 
     def encode_data(
         self, data: dict = None, files: RequestFiles = None, json: typing.Any = None
@@ -674,40 +699,6 @@ class BaseRequest:
         url = str(self.url)
         return f"<{class_name}({self.method!r}, {url!r})>"
 
-
-class AsyncRequest(BaseRequest):
-    def __init__(
-        self,
-        method: str,
-        url: typing.Union[str, URL],
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        data: AsyncRequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-    ):
-        super().__init__(
-            method=method, url=url, params=params, headers=headers, cookies=cookies
-        )
-
-        if data is None or isinstance(data, dict):
-            content, content_type = self.encode_data(data, files, json)
-            self.is_streaming = False
-            self.content = content
-            if content_type:
-                self.headers["Content-Type"] = content_type
-        elif isinstance(data, (str, bytes)):
-            data = data.encode("utf-8") if isinstance(data, str) else data
-            self.is_streaming = False
-            self.content = data
-        else:
-            assert hasattr(data, "__aiter__")
-            self.is_streaming = True
-            self.content_aiter = data
-        self.prepare()
-
     async def read(self) -> bytes:
         """
         Read and return the response content.
@@ -724,62 +715,17 @@ class AsyncRequest(BaseRequest):
             yield self.content
 
 
-class Request(BaseRequest):
-    def __init__(
-        self,
-        method: str,
-        url: typing.Union[str, URL],
-        *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-    ):
-        super().__init__(
-            method=method, url=url, params=params, headers=headers, cookies=cookies
-        )
-
-        if data is None or isinstance(data, dict):
-            content, content_type = self.encode_data(data, files, json)
-            self.is_streaming = False
-            self.content = content
-            if content_type:
-                self.headers["Content-Type"] = content_type
-        elif isinstance(data, (str, bytes)):
-            data = data.encode("utf-8") if isinstance(data, str) else data
-            self.is_streaming = False
-            self.content = data
-        else:
-            assert hasattr(data, "__iter__")
-            self.is_streaming = True
-            self.content_iter = data
-
-        self.prepare()
-
-    def read(self) -> bytes:
-        if not hasattr(self, "content"):
-            self.content = b"".join([part for part in self.stream()])
-        return self.content
-
-    def stream(self) -> typing.Iterator[bytes]:
-        if self.is_streaming:
-            for part in self.content_iter:
-                yield part
-        elif self.content:
-            yield self.content
-
-
-class BaseResponse:
+class Response:
     def __init__(
         self,
         status_code: int,
         *,
         http_version: str = None,
         headers: HeaderTypes = None,
-        request: BaseRequest = None,
+        content: ResponseContent = None,
         on_close: typing.Callable = None,
+        request: Request = None,
+        history: typing.List["Response"] = None,
         elapsed: datetime.timedelta = None,
     ):
         self.status_code = status_code
@@ -790,6 +736,17 @@ class BaseResponse:
         self.on_close = on_close
         self.elapsed = datetime.timedelta(0) if elapsed is None else elapsed
         self.call_next: typing.Optional[typing.Callable] = None
+
+        self.history = [] if history is None else list(history)
+
+        if content is None or isinstance(content, bytes):
+            self.is_closed = True
+            self.is_stream_consumed = True
+            self._raw_content = content or b""
+        else:
+            self.is_closed = False
+            self.is_stream_consumed = False
+            self._raw_stream = content
 
     @property
     def reason_phrase(self) -> str:
@@ -898,6 +855,10 @@ class BaseResponse:
         return self._decoder
 
     @property
+    def is_error(self) -> bool:
+        return StatusCode.is_error(self.status_code)
+
+    @property
     def is_redirect(self) -> bool:
         return StatusCode.is_redirect(self.status_code) and "location" in self.headers
 
@@ -912,11 +873,9 @@ class BaseResponse:
 
         if StatusCode.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
+            raise HTTPError(message, response=self)
         elif StatusCode.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
-        else:
-            message = ""
-        if message:
             raise HTTPError(message, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Union[dict, list]:
@@ -954,40 +913,6 @@ class BaseResponse:
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
-
-class AsyncResponse(BaseResponse):
-    def __init__(
-        self,
-        status_code: int,
-        *,
-        http_version: str = None,
-        headers: HeaderTypes = None,
-        content: AsyncResponseContent = None,
-        on_close: typing.Callable = None,
-        request: AsyncRequest = None,
-        history: typing.List["BaseResponse"] = None,
-        elapsed: datetime.timedelta = None,
-    ):
-        super().__init__(
-            status_code=status_code,
-            http_version=http_version,
-            headers=headers,
-            request=request,
-            on_close=on_close,
-            elapsed=elapsed,
-        )
-
-        self.history = [] if history is None else list(history)
-
-        if content is None or isinstance(content, bytes):
-            self.is_closed = True
-            self.is_stream_consumed = True
-            self._raw_content = content or b""
-        else:
-            self.is_closed = False
-            self.is_stream_consumed = False
-            self._raw_stream = content
-
     async def read(self) -> bytes:
         """
         Read and return the response content.
@@ -1019,6 +944,14 @@ class AsyncResponse(BaseResponse):
             yield decoder.decode(chunk)
         yield decoder.flush()
 
+    async def stream_lines(self) -> typing.AsyncIterator[str]:
+        decoder = LineDecoder()
+        async for text in self.stream_text():
+            for line in decoder.decode(text):
+                yield line
+        for line in decoder.flush():
+            yield line
+
     async def raw(self) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the raw response content.
@@ -1036,7 +969,7 @@ class AsyncResponse(BaseResponse):
                 yield part
             await self.close()
 
-    async def next(self) -> "AsyncResponse":
+    async def next(self) -> "Response":
         """
         Get the next response from a redirect response.
         """
@@ -1054,98 +987,6 @@ class AsyncResponse(BaseResponse):
             self.is_closed = True
             if self.on_close is not None:
                 await self.on_close()
-
-
-class Response(BaseResponse):
-    def __init__(
-        self,
-        status_code: int,
-        *,
-        http_version: str = None,
-        headers: HeaderTypes = None,
-        content: ResponseContent = None,
-        on_close: typing.Callable = None,
-        request: Request = None,
-        history: typing.List["BaseResponse"] = None,
-        elapsed: datetime.timedelta = None,
-    ):
-        super().__init__(
-            status_code=status_code,
-            http_version=http_version,
-            headers=headers,
-            request=request,
-            on_close=on_close,
-            elapsed=elapsed,
-        )
-
-        self.history = [] if history is None else list(history)
-
-        if content is None or isinstance(content, bytes):
-            self.is_closed = True
-            self.is_stream_consumed = True
-            self._raw_content = content or b""
-        else:
-            self.is_closed = False
-            self.is_stream_consumed = False
-            self._raw_stream = content
-
-    def read(self) -> bytes:
-        """
-        Read and return the response content.
-        """
-        if not hasattr(self, "_content"):
-            self._content = b"".join([part for part in self.stream()])
-        return self._content
-
-    def stream(self) -> typing.Iterator[bytes]:
-        """
-        A byte-iterator over the decoded response content.
-        This allows us to handle gzip, deflate, and brotli encoded responses.
-        """
-        if hasattr(self, "_content"):
-            yield self._content
-        else:
-            for chunk in self.raw():
-                yield self.decoder.decode(chunk)
-            yield self.decoder.flush()
-
-    def stream_text(self) -> typing.Iterator[str]:
-        """
-        A str-iterator over the decoded response content
-        that handles both gzip, deflate, etc but also detects the content's
-        string encoding.
-        """
-        decoder = TextDecoder(encoding=self.charset_encoding)
-        for chunk in self.stream():
-            yield decoder.decode(chunk)
-        yield decoder.flush()
-
-    def raw(self) -> typing.Iterator[bytes]:
-        """
-        A byte-iterator over the raw response content.
-        """
-        if hasattr(self, "_raw_content"):
-            yield self._raw_content
-        else:
-            if self.is_stream_consumed:
-                raise StreamConsumed()
-            if self.is_closed:
-                raise ResponseClosed()
-
-            self.is_stream_consumed = True
-            for part in self._raw_stream:
-                yield part
-            self.close()
-
-    def close(self) -> None:
-        """
-        Close the response and release the connection.
-        Automatically called if the response body is read to completion.
-        """
-        if not self.is_closed:
-            self.is_closed = True
-            if self.on_close is not None:
-                self.on_close()
 
 
 class Cookies(MutableMapping):
@@ -1166,7 +1007,7 @@ class Cookies(MutableMapping):
         else:
             self.jar = cookies
 
-    def extract_cookies(self, response: BaseResponse) -> None:
+    def extract_cookies(self, response: Response) -> None:
         """
         Loads any cookies based on the response `Set-Cookie` headers.
         """
@@ -1176,7 +1017,7 @@ class Cookies(MutableMapping):
 
         self.jar.extract_cookies(urlib_response, urllib_request)  # type: ignore
 
-    def set_cookie_header(self, request: BaseRequest) -> None:
+    def set_cookie_header(self, request: Request) -> None:
         """
         Sets an appropriate 'Cookie:' HTTP header on the `Request`.
         """
@@ -1295,7 +1136,7 @@ class Cookies(MutableMapping):
         for use with `CookieJar` operations.
         """
 
-        def __init__(self, request: BaseRequest) -> None:
+        def __init__(self, request: Request) -> None:
             super().__init__(
                 url=str(request.url),
                 headers=dict(request.headers),
@@ -1313,7 +1154,7 @@ class Cookies(MutableMapping):
         for use with `CookieJar` operations.
         """
 
-        def __init__(self, response: BaseResponse):
+        def __init__(self, response: Response):
             self.response = response
 
         def info(self) -> email.message.Message:

@@ -1,7 +1,7 @@
 import typing
 
 from .client import Client
-from .config import CertTypes, TimeoutTypes, VerifyTypes
+from .config import DEFAULT_TIMEOUT_CONFIG, CertTypes, TimeoutTypes, VerifyTypes
 from .models import (
     AuthTypes,
     CookieTypes,
@@ -14,7 +14,7 @@ from .models import (
 )
 
 
-def request(
+async def request(
     method: str,
     url: URLTypes,
     *,
@@ -25,12 +25,12 @@ def request(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
-    timeout: TimeoutTypes = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     allow_redirects: bool = True,
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     stream: bool = False,
-    trust_env: bool = None,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends an HTTP request.
@@ -75,13 +75,15 @@ def request(
 
     ```
     >>> import httpx
-    >>> response = httpx.request('GET', 'https://httpbin.org/get')
+    >>> response = await httpx.request('GET', 'https://httpbin.org/get')
     >>> response
     <Response [200 OK]>
     ```
     """
-    with Client(http_versions=["HTTP/1.1"]) as client:
-        return client.request(
+    async with Client(
+        cert=cert, verify=verify, timeout=timeout, trust_env=trust_env,
+    ) as client:
+        return await client.request(
             method=method,
             url=url,
             data=data,
@@ -93,14 +95,10 @@ def request(
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            cert=cert,
-            verify=verify,
-            timeout=timeout,
-            trust_env=trust_env,
         )
 
 
-def get(
+async def get(
     url: URLTypes,
     *,
     params: QueryParamTypes = None,
@@ -111,8 +109,8 @@ def get(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `GET` request.
@@ -122,7 +120,7 @@ def get(
     Note that the `data`, `files`, and `json` parameters are not available on
     this function, as `GET` requests should not include a request body.
     """
-    return request(
+    return await request(
         "GET",
         url,
         params=params,
@@ -138,7 +136,7 @@ def get(
     )
 
 
-def options(
+async def options(
     url: URLTypes,
     *,
     params: QueryParamTypes = None,
@@ -149,8 +147,8 @@ def options(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends an `OPTIONS` request.
@@ -160,7 +158,7 @@ def options(
     Note that the `data`, `files`, and `json` parameters are not available on
     this function, as `OPTIONS` requests should not include a request body.
     """
-    return request(
+    return await request(
         "OPTIONS",
         url,
         params=params,
@@ -176,7 +174,7 @@ def options(
     )
 
 
-def head(
+async def head(
     url: URLTypes,
     *,
     params: QueryParamTypes = None,
@@ -184,11 +182,11 @@ def head(
     cookies: CookieTypes = None,
     stream: bool = False,
     auth: AuthTypes = None,
-    allow_redirects: bool = False,  #  Note: Differs to usual default.
+    allow_redirects: bool = False,  # Note: Differs to usual default.
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `HEAD` request.
@@ -200,7 +198,7 @@ def head(
     `HEAD` method also differs from the other cases in that `allow_redirects`
     defaults to `False`.
     """
-    return request(
+    return await request(
         "HEAD",
         url,
         params=params,
@@ -216,7 +214,7 @@ def head(
     )
 
 
-def post(
+async def post(
     url: URLTypes,
     *,
     data: RequestData = None,
@@ -230,15 +228,15 @@ def post(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `POST` request.
 
     **Parameters**: See `httpx.request`.
     """
-    return request(
+    return await request(
         "POST",
         url,
         data=data,
@@ -257,7 +255,7 @@ def post(
     )
 
 
-def put(
+async def put(
     url: URLTypes,
     *,
     data: RequestData = None,
@@ -271,15 +269,15 @@ def put(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `PUT` request.
 
     **Parameters**: See `httpx.request`.
     """
-    return request(
+    return await request(
         "PUT",
         url,
         data=data,
@@ -298,7 +296,7 @@ def put(
     )
 
 
-def patch(
+async def patch(
     url: URLTypes,
     *,
     data: RequestData = None,
@@ -312,15 +310,15 @@ def patch(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `PATCH` request.
 
     **Parameters**: See `httpx.request`.
     """
-    return request(
+    return await request(
         "PATCH",
         url,
         data=data,
@@ -339,7 +337,7 @@ def patch(
     )
 
 
-def delete(
+async def delete(
     url: URLTypes,
     *,
     params: QueryParamTypes = None,
@@ -350,8 +348,8 @@ def delete(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    timeout: TimeoutTypes = None,
-    trust_env: bool = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    trust_env: bool = True,
 ) -> Response:
     """
     Sends a `DELETE` request.
@@ -361,7 +359,7 @@ def delete(
     Note that the `data`, `files`, and `json` parameters are not available on
     this function, as `DELETE` requests should not include a request body.
     """
-    return request(
+    return await request(
         "DELETE",
         url,
         params=params,

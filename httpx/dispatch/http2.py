@@ -15,6 +15,7 @@ from ..concurrency.base import (
 from ..config import TimeoutConfig, TimeoutTypes
 from ..exceptions import NewConnectionRequired, ProtocolError
 from ..models import AsyncRequest, AsyncResponse
+from ..models import Request, Response
 from ..utils import get_logger
 
 logger = get_logger(__name__)
@@ -38,9 +39,7 @@ class HTTP2Connection:
         self.initialized = False
         self.window_update_received = {}  # type: typing.Dict[int, BaseEvent]
 
-    async def send(
-        self, request: AsyncRequest, timeout: TimeoutTypes = None
-    ) -> AsyncResponse:
+    async def send(self, request: Request, timeout: TimeoutTypes = None) -> Response:
         timeout = None if timeout is None else TimeoutConfig(timeout)
 
         # Start sending the request.
@@ -59,7 +58,7 @@ class HTTP2Connection:
         content = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
 
-        return AsyncResponse(
+        return Response(
             status_code=status_code,
             http_version="HTTP/2",
             headers=headers,
@@ -100,7 +99,7 @@ class HTTP2Connection:
         self.initialized = True
 
     async def send_headers(
-        self, request: AsyncRequest, timeout: TimeoutConfig = None
+        self, request: Request, timeout: TimeoutConfig = None
     ) -> int:
         try:
             stream_id = self.h2_state.get_next_available_stream_id()

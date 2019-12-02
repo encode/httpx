@@ -6,9 +6,9 @@ import pytest
 import httpx
 from httpx.utils import (
     ElapsedTimer,
+    NetRCInfo,
     get_ca_bundle_from_env,
     get_environment_proxies,
-    get_netrc,
     guess_json_utf,
     obfuscate_sensitive_headers,
     parse_header_links,
@@ -54,28 +54,17 @@ def test_guess_by_bom(encoding, expected):
 
 
 def test_bad_get_netrc_login():
-    os.environ["NETRC"] = "tests/.netrc"
-    assert str(get_netrc()) is not None
-
-    from httpx import utils
-
-    utils.NETRC_STATIC_FILES = ()
-
-    os.environ["NETRC"] = "wrongpath"
-    assert utils.get_netrc() is None
-
-    os.environ["NETRC"] = ""
-    assert utils.get_netrc() is None
+    netrc_info = NetRCInfo(["tests/does-not-exist"])
+    assert netrc_info.get_credentials("netrcexample.org") is None
 
 
 def test_get_netrc_login():
-    os.environ["NETRC"] = "tests/.netrc"
-    netrc = get_netrc()
-    assert netrc.authenticators("netrcexample.org") == (
+    netrc_info = NetRCInfo(["tests/.netrc"])
+    expected_credentials = (
         "example-username",
-        None,
         "example-password",
     )
+    assert netrc_info.get_credentials("netrcexample.org") == expected_credentials
 
 
 @pytest.mark.parametrize(
@@ -104,7 +93,7 @@ def test_parse_header_links(value, expected):
 @pytest.mark.asyncio
 async def test_logs_debug(server, capsys):
     with override_log_level("debug"):
-        async with httpx.AsyncClient() as client:
+        async with httpx.Client() as client:
             response = await client.get(server.url)
             assert response.status_code == 200
     stderr = capsys.readouterr().err
@@ -115,7 +104,7 @@ async def test_logs_debug(server, capsys):
 @pytest.mark.asyncio
 async def test_logs_trace(server, capsys):
     with override_log_level("trace"):
-        async with httpx.AsyncClient() as client:
+        async with httpx.Client() as client:
             response = await client.get(server.url)
             assert response.status_code == 200
     stderr = capsys.readouterr().err
@@ -126,7 +115,7 @@ async def test_logs_trace(server, capsys):
 @pytest.mark.asyncio
 async def test_logs_redirect_chain(server, capsys):
     with override_log_level("debug"):
-        async with httpx.AsyncClient() as client:
+        async with httpx.Client() as client:
             response = await client.get(server.url.copy_with(path="/redirect_301"))
             assert response.status_code == 200
 

@@ -48,7 +48,7 @@ class FileField(Field):
     ) -> None:
         self.name = name
         if not isinstance(value, tuple):
-            self.filename = Path(getattr(value, "name", "upload")).name
+            self.filename = Path(str(getattr(value, "name", "upload"))).name
             self.file = value  # type: typing.Union[typing.IO[str], typing.IO[bytes]]
             self.content_type = self.guess_content_type()
         else:
@@ -58,19 +58,21 @@ class FileField(Field):
                 value[2] if len(value) > 2 else self.guess_content_type()
             )
 
-    def guess_content_type(self) -> str:
+    def guess_content_type(self) -> typing.Optional[str]:
         if self.filename:
             return mimetypes.guess_type(self.filename)[0] or "application/octet-stream"
         else:
-            return "application/octet-stream"
+            return None
 
     def render_headers(self) -> bytes:
         parts = [b"Content-Disposition: form-data; ", _format_param("name", self.name)]
         if self.filename:
             filename = _format_param("filename", self.filename)
             parts.extend([b"; ", filename])
-        content_type = self.content_type.encode()
-        parts.extend([b"\r\nContent-Type: ", content_type, b"\r\n\r\n"])
+        if self.content_type is not None:
+            content_type = self.content_type.encode()
+            parts.extend([b"\r\nContent-Type: ", content_type])
+        parts.append(b"\r\n\r\n")
         return b"".join(parts)
 
     def render_data(self) -> bytes:

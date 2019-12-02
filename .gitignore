@@ -7,5 +7,4 @@ htmlcov/
 site/
 *.egg-info/
 venv*/
-.nox
 .python-version

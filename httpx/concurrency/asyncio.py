@@ -11,7 +11,6 @@ from .base import (
     BaseBackgroundManager,
     BaseEvent,
     BasePoolSemaphore,
-    BaseQueue,
     BaseSocketStream,
     ConcurrencyBackend,
     TimeoutFlag,
@@ -227,11 +226,10 @@ class PoolSemaphore(BasePoolSemaphore):
                 self._semaphore = asyncio.BoundedSemaphore(value=max_connections)
         return self._semaphore
 
-    async def acquire(self) -> None:
+    async def acquire(self, timeout: float = None) -> None:
         if self.semaphore is None:
             return
 
-        timeout = self.pool_limits.pool_timeout
         try:
             await asyncio.wait_for(self.semaphore.acquire(), timeout)
         except asyncio.TimeoutError:
@@ -324,9 +322,6 @@ class AsyncioBackend(ConcurrencyBackend):
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
-
-    def create_queue(self, max_size: int) -> BaseQueue:
-        return typing.cast(BaseQueue, asyncio.Queue(maxsize=max_size))
 
     def create_event(self) -> BaseEvent:
         return typing.cast(BaseEvent, asyncio.Event())

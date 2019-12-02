@@ -3,15 +3,34 @@ import os
 import re
 import time
 import typing
+from base64 import b64encode
 from urllib.request import parse_http_list
 
-from ..exceptions import ProtocolError
-from ..models import AsyncRequest, AsyncResponse, StatusCode
-from ..utils import to_bytes, to_str, unquote
-from .base import BaseMiddleware
+from .exceptions import ProtocolError
+from .middleware import Middleware
+from .models import Request, Response
+from .utils import to_bytes, to_str, unquote
 
 
-class DigestAuth(BaseMiddleware):
+class BasicAuth:
+    def __init__(
+        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
+    ):
+        self.auth_header = self.build_auth_header(username, password)
+
+    def __call__(self, request: Request) -> Request:
+        request.headers["Authorization"] = self.auth_header
+        return request
+
+    def build_auth_header(
+        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
+    ) -> str:
+        userpass = b":".join((to_bytes(username), to_bytes(password)))
+        token = b64encode(userpass).decode().strip()
+        return f"Basic {token}"
+
+
+class DigestAuth(Middleware):
     ALGORITHM_TO_HASH_FUNCTION: typing.Dict[str, typing.Callable] = {
         "MD5": hashlib.md5,
         "MD5-SESS": hashlib.md5,
@@ -30,15 +49,13 @@ class DigestAuth(BaseMiddleware):
         self.password = to_bytes(password)
 
     async def __call__(
-        self, request: AsyncRequest, get_response: typing.Callable
-    ) -> AsyncResponse:
+        self, request: Request, get_response: typing.Callable
+    ) -> Response:
         response = await get_response(request)
-        if not (
-            StatusCode.is_client_error(response.status_code)
-            and "www-authenticate" in response.headers
-        ):
+        if response.status_code != 401 or "www-authenticate" not in response.headers:
             return response
 
+        await response.close()
         header = response.headers["www-authenticate"]
         try:
             challenge = DigestAuthChallenge.from_header(header)
@@ -49,7 +66,7 @@ class DigestAuth(BaseMiddleware):
         return await get_response(request)
 
     def _build_auth_header(
-        self, request: AsyncRequest, challenge: "DigestAuthChallenge"
+        self, request: Request, challenge: "DigestAuthChallenge"
     ) -> str:
         hash_func = self.ALGORITHM_TO_HASH_FUNCTION[challenge.algorithm]
 

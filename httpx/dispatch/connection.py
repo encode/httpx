@@ -7,16 +7,14 @@ from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
-    HTTPVersionConfig,
-    HTTPVersionTypes,
     SSLConfig,
     TimeoutConfig,
     TimeoutTypes,
     VerifyTypes,
 )
-from ..models import AsyncRequest, AsyncResponse, Origin
+from ..models import Origin, Request, Response
 from ..utils import get_logger
-from .base import AsyncDispatcher
+from .base import Dispatcher
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
@@ -27,7 +25,7 @@ ReleaseCallback = typing.Callable[["HTTPConnection"], typing.Awaitable[None]]
 logger = get_logger(__name__)
 
 
-class HTTPConnection(AsyncDispatcher):
+class HTTPConnection(Dispatcher):
     def __init__(
         self,
         origin: typing.Union[str, Origin],
@@ -35,7 +33,7 @@ class HTTPConnection(AsyncDispatcher):
         cert: CertTypes = None,
         trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-        http_versions: HTTPVersionTypes = None,
+        http_2: bool = False,
         backend: ConcurrencyBackend = None,
         release_func: typing.Optional[ReleaseCallback] = None,
         uds: typing.Optional[str] = None,
@@ -43,7 +41,7 @@ class HTTPConnection(AsyncDispatcher):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env)
         self.timeout = TimeoutConfig(timeout)
-        self.http_versions = HTTPVersionConfig(http_versions)
+        self.http_2 = http_2
         self.backend = AsyncioBackend() if backend is None else backend
         self.release_func = release_func
         self.uds = uds
@@ -52,11 +50,11 @@ class HTTPConnection(AsyncDispatcher):
 
     async def send(
         self,
-        request: AsyncRequest,
+        request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         if self.h11_connection is None and self.h2_connection is None:
             await self.connect(verify=verify, cert=cert, timeout=timeout)
 
@@ -119,9 +117,7 @@ class HTTPConnection(AsyncDispatcher):
             return None
 
         # Run the SSL loading in a threadpool, since it may make disk accesses.
-        return await self.backend.run_in_threadpool(
-            ssl.load_ssl_context, self.http_versions
-        )
+        return await self.backend.run_in_threadpool(ssl.load_ssl_context, self.http_2)
 
     async def close(self) -> None:
         logger.trace("close_connection")

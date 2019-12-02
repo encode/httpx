@@ -118,51 +118,9 @@ def test_ssl_repr():
     assert repr(ssl) == "SSLConfig(cert=None, verify=False)"
 
 
-def test_http_versions_repr():
-    http_versions = httpx.HTTPVersionConfig()
-    assert repr(http_versions) == "HTTPVersionConfig(['HTTP/1.1', 'HTTP/2'])"
-
-
-def test_http_versions_from_string():
-    http_versions = httpx.HTTPVersionConfig("HTTP/1.1")
-    assert repr(http_versions) == "HTTPVersionConfig(['HTTP/1.1'])"
-
-
-def test_http_versions_from_list():
-    http_versions = httpx.HTTPVersionConfig(["http/1.1"])
-    assert repr(http_versions) == "HTTPVersionConfig(['HTTP/1.1'])"
-
-
-def test_http_versions_from_config():
-    http_versions = httpx.HTTPVersionConfig(httpx.HTTPVersionConfig("HTTP/1.1"))
-    assert repr(http_versions) == "HTTPVersionConfig(['HTTP/1.1'])"
-
-
-def test_invalid_http_version():
-    with pytest.raises(ValueError):
-        httpx.HTTPVersionConfig("HTTP/9")
-
-
-def test_invalid_http_version_type():
-    with pytest.raises(TypeError):
-        httpx.HTTPVersionConfig(123)
-
-
-def test_invalid_http_version_list_type():
-    with pytest.raises(ValueError):
-        httpx.HTTPVersionConfig([123])
-
-
-def test_empty_http_version():
-    with pytest.raises(ValueError):
-        httpx.HTTPVersionConfig([])
-
-
 def test_limits_repr():
     limits = httpx.PoolLimits(hard_limit=100)
-    assert (
-        repr(limits) == "PoolLimits(soft_limit=None, hard_limit=100, pool_timeout=None)"
-    )
+    assert repr(limits) == "PoolLimits(soft_limit=None, hard_limit=100)"
 
 
 def test_ssl_eq():
@@ -185,6 +143,7 @@ def test_timeout_from_nothing():
     assert timeout.connect_timeout is None
     assert timeout.read_timeout is None
     assert timeout.write_timeout is None
+    assert timeout.pool_timeout is None
 
 
 def test_timeout_from_none():
@@ -198,7 +157,7 @@ def test_timeout_from_one_none_value():
 
 
 def test_timeout_from_tuple():
-    timeout = httpx.TimeoutConfig(timeout=(5.0, 5.0, 5.0))
+    timeout = httpx.TimeoutConfig(timeout=(5.0, 5.0, 5.0, 5.0))
     assert timeout == httpx.TimeoutConfig(timeout=5.0)
 
 
@@ -212,9 +171,9 @@ def test_timeout_repr():
     assert repr(timeout) == "TimeoutConfig(timeout=5.0)"
 
     timeout = httpx.TimeoutConfig(read_timeout=5.0)
-    assert (
-        repr(timeout)
-        == "TimeoutConfig(connect_timeout=None, read_timeout=5.0, write_timeout=None)"
+    assert repr(timeout) == (
+        "TimeoutConfig(connect_timeout=None, read_timeout=5.0, "
+        "write_timeout=None, pool_timeout=None)"
     )
 
 
@@ -223,7 +182,7 @@ def test_timeout_repr():
     reason="requires OpenSSL 1.1.1 or higher",
 )
 @pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python3.8 or higher")
-def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):
+def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: nocover
     with monkeypatch.context() as m:
         m.delenv("SSLKEYLOGFILE", raising=False)
 

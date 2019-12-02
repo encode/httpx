@@ -10,15 +10,12 @@ from .utils import get_ca_bundle_from_env, get_logger
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
-TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float], "TimeoutConfig"]
-HTTPVersionTypes = typing.Union[
-    str, typing.List[str], typing.Tuple[str], "HTTPVersionConfig"
+TimeoutTypes = typing.Union[
+    float, typing.Tuple[float, float, float, float], "TimeoutConfig"
 ]
 
 
 USER_AGENT = f"python-httpx/{__version__}"
-
-HTTP_VERSIONS_TO_ALPN_IDENTIFIERS = {"HTTP/1.1": "http/1.1", "HTTP/2": "h2"}
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -89,43 +86,35 @@ class SSLConfig:
             return self
         return SSLConfig(cert=cert, verify=verify)
 
-    def load_ssl_context(
-        self, http_versions: "HTTPVersionConfig" = None
-    ) -> ssl.SSLContext:
-        http_versions = HTTPVersionConfig() if http_versions is None else http_versions
-
+    def load_ssl_context(self, http_2: bool = False) -> ssl.SSLContext:
         logger.trace(
             f"load_ssl_context "
             f"verify={self.verify!r} "
             f"cert={self.cert!r} "
             f"trust_env={self.trust_env!r} "
-            f"http_versions={http_versions!r}"
+            f"http_2={http_2!r}"
         )
 
         if self.ssl_context is None:
             self.ssl_context = (
-                self.load_ssl_context_verify(http_versions=http_versions)
+                self.load_ssl_context_verify(http_2=http_2)
                 if self.verify
-                else self.load_ssl_context_no_verify(http_versions=http_versions)
+                else self.load_ssl_context_no_verify(http_2=http_2)
             )
 
         assert self.ssl_context is not None
         return self.ssl_context
 
-    def load_ssl_context_no_verify(
-        self, http_versions: "HTTPVersionConfig"
-    ) -> ssl.SSLContext:
+    def load_ssl_context_no_verify(self, http_2: bool = False) -> ssl.SSLContext:
         """
         Return an SSL context for unverified connections.
         """
-        context = self._create_default_ssl_context(http_versions=http_versions)
+        context = self._create_default_ssl_context(http_2=http_2)
         context.verify_mode = ssl.CERT_NONE
         context.check_hostname = False
         return context
 
-    def load_ssl_context_verify(
-        self, http_versions: "HTTPVersionConfig"
-    ) -> ssl.SSLContext:
+    def load_ssl_context_verify(self, http_2: bool = False) -> ssl.SSLContext:
         """
         Return an SSL context for verified connections.
         """
@@ -144,7 +133,7 @@ class SSLConfig:
                 "invalid path: {}".format(self.verify)
             )
 
-        context = self._create_default_ssl_context(http_versions=http_versions)
+        context = self._create_default_ssl_context(http_2=http_2)
         context.verify_mode = ssl.CERT_REQUIRED
         context.check_hostname = True
 
@@ -173,9 +162,7 @@ class SSLConfig:
 
         return context
 
-    def _create_default_ssl_context(
-        self, http_versions: "HTTPVersionConfig"
-    ) -> ssl.SSLContext:
+    def _create_default_ssl_context(self, http_2: bool) -> ssl.SSLContext:
         """
         Creates the default SSLContext object that's used for both verified
         and unverified connections.
@@ -189,7 +176,8 @@ class SSLConfig:
         context.set_ciphers(DEFAULT_CIPHERS)
 
         if ssl.HAS_ALPN:
-            context.set_alpn_protocols(http_versions.alpn_identifiers)
+            alpn_idents = ["http/1.1", "h2"] if http_2 else ["http/1.1"]
+            context.set_alpn_protocols(alpn_idents)
 
         if hasattr(context, "keylog_filename"):
             keylogfile = os.environ.get("SSLKEYLOGFILE")
@@ -227,28 +215,34 @@ class TimeoutConfig:
         connect_timeout: float = None,
         read_timeout: float = None,
         write_timeout: float = None,
+        pool_timeout: float = None,
     ):
         if timeout is None:
             self.connect_timeout = connect_timeout
             self.read_timeout = read_timeout
             self.write_timeout = write_timeout
+            self.pool_timeout = pool_timeout
         else:
             # Specified as a single timeout value
             assert connect_timeout is None
             assert read_timeout is None
             assert write_timeout is None
+            assert pool_timeout is None
             if isinstance(timeout, TimeoutConfig):
                 self.connect_timeout = timeout.connect_timeout
                 self.read_timeout = timeout.read_timeout
                 self.write_timeout = timeout.write_timeout
+                self.pool_timeout = timeout.pool_timeout
             elif isinstance(timeout, tuple):
                 self.connect_timeout = timeout[0]
                 self.read_timeout = timeout[1]
-                self.write_timeout = timeout[2]
+                self.write_timeout = None if len(timeout) < 3 else timeout[2]
+                self.pool_timeout = None if len(timeout) < 4 else timeout[3]
             else:
                 self.connect_timeout = timeout
                 self.read_timeout = timeout
                 self.write_timeout = timeout
+                self.pool_timeout = timeout
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -256,62 +250,28 @@ class TimeoutConfig:
             and self.connect_timeout == other.connect_timeout
             and self.read_timeout == other.read_timeout
             and self.write_timeout == other.write_timeout
+            and self.pool_timeout == other.pool_timeout
         )
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        if len({self.connect_timeout, self.read_timeout, self.write_timeout}) == 1:
+        if (
+            len(
+                {
+                    self.connect_timeout,
+                    self.read_timeout,
+                    self.write_timeout,
+                    self.pool_timeout,
+                }
+            )
+            == 1
+        ):
             return f"{class_name}(timeout={self.connect_timeout})"
         return (
             f"{class_name}(connect_timeout={self.connect_timeout}, "
-            f"read_timeout={self.read_timeout}, write_timeout={self.write_timeout})"
+            f"read_timeout={self.read_timeout}, write_timeout={self.write_timeout}, "
+            f"pool_timeout={self.pool_timeout})"
         )
-
-
-class HTTPVersionConfig:
-    """
-    Configure which HTTP protocol versions are supported.
-    """
-
-    def __init__(self, http_versions: HTTPVersionTypes = None):
-        if http_versions is None:
-            http_versions = ["HTTP/1.1", "HTTP/2"]
-
-        if isinstance(http_versions, str):
-            self.http_versions = {http_versions.upper()}
-        elif isinstance(http_versions, HTTPVersionConfig):
-            self.http_versions = http_versions.http_versions
-        elif isinstance(http_versions, typing.Iterable):
-            self.http_versions = {
-                version.upper() if isinstance(version, str) else version
-                for version in http_versions
-            }
-        else:
-            raise TypeError(
-                "HTTP version should be a string or list of strings, "
-                f"but got {type(http_versions)}"
-            )
-
-        for version in self.http_versions:
-            if version not in ("HTTP/1.1", "HTTP/2"):
-                raise ValueError(f"Unsupported HTTP version {version!r}.")
-
-        if not self.http_versions:
-            raise ValueError("HTTP versions cannot be an empty list.")
-
-    @property
-    def alpn_identifiers(self) -> typing.List[str]:
-        """
-        Returns a list of supported ALPN identifiers. (One or more of "http/1.1", "h2").
-        """
-        return [
-            HTTP_VERSIONS_TO_ALPN_IDENTIFIERS[version] for version in self.http_versions
-        ]
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        value = sorted(list(self.http_versions))
-        return f"{class_name}({value!r})"
 
 
 class PoolLimits:
@@ -320,34 +280,27 @@ class PoolLimits:
     """
 
     def __init__(
-        self,
-        *,
-        soft_limit: int = None,
-        hard_limit: int = None,
-        pool_timeout: float = None,
+        self, *, soft_limit: int = None, hard_limit: int = None,
     ):
         self.soft_limit = soft_limit
         self.hard_limit = hard_limit
-        self.pool_timeout = pool_timeout
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
             and self.soft_limit == other.soft_limit
             and self.hard_limit == other.hard_limit
-            and self.pool_timeout == other.pool_timeout
         )
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return (
-            f"{class_name}(soft_limit={self.soft_limit}, "
-            f"hard_limit={self.hard_limit}, pool_timeout={self.pool_timeout})"
+            f"{class_name}(soft_limit={self.soft_limit}, hard_limit={self.hard_limit})"
         )
 
 
 DEFAULT_SSL_CONFIG = SSLConfig(cert=None, verify=True)
 DEFAULT_TIMEOUT_CONFIG = TimeoutConfig(timeout=5.0)
-DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100, pool_timeout=5.0)
+DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
 DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
 DEFAULT_MAX_REDIRECTS = 20

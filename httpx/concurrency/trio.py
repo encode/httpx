@@ -1,5 +1,4 @@
 import functools
-import math
 import ssl
 import typing
 from types import TracebackType
@@ -12,7 +11,6 @@ from .base import (
     BaseBackgroundManager,
     BaseEvent,
     BasePoolSemaphore,
-    BaseQueue,
     BaseSocketStream,
     ConcurrencyBackend,
     TimeoutFlag,
@@ -153,11 +151,11 @@ class PoolSemaphore(BasePoolSemaphore):
                 )
         return self._semaphore
 
-    async def acquire(self) -> None:
+    async def acquire(self, timeout: float = None) -> None:
         if self.semaphore is None:
             return
 
-        timeout = _or_inf(self.pool_limits.pool_timeout)
+        timeout = _or_inf(timeout)
 
         with trio.move_on_after(timeout):
             await self.semaphore.acquire()
@@ -230,9 +228,6 @@ class TrioBackend(ConcurrencyBackend):
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
 
-    def create_queue(self, max_size: int) -> BaseQueue:
-        return Queue(max_size=max_size)
-
     def create_event(self) -> BaseEvent:
         return Event()
 
@@ -240,17 +235,6 @@ class TrioBackend(ConcurrencyBackend):
         self, coroutine: typing.Callable, *args: typing.Any
     ) -> "BackgroundManager":
         return BackgroundManager(coroutine, *args)
-
-
-class Queue(BaseQueue):
-    def __init__(self, max_size: int) -> None:
-        self.send_channel, self.receive_channel = trio.open_memory_channel(math.inf)
-
-    async def get(self) -> typing.Any:
-        return await self.receive_channel.receive()
-
-    async def put(self, value: typing.Any) -> None:
-        await self.send_channel.send(value)
 
 
 class Event(BaseEvent):

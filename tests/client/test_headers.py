@@ -5,11 +5,11 @@ import json
 import pytest
 
 from httpx import (
-    AsyncDispatcher,
-    AsyncRequest,
-    AsyncResponse,
     CertTypes,
     Client,
+    Dispatcher,
+    Request,
+    Response,
     TimeoutTypes,
     VerifyTypes,
     __version__,
@@ -17,29 +17,30 @@ from httpx import (
 )
 
 
-class MockDispatch(AsyncDispatcher):
+class MockDispatch(Dispatcher):
     async def send(
         self,
-        request: AsyncRequest,
+        request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> AsyncResponse:
+    ) -> Response:
         if request.url.path.startswith("/echo_headers"):
             request_headers = dict(request.headers.items())
             body = json.dumps({"headers": request_headers}).encode()
-            return AsyncResponse(200, content=body, request=request)
+            return Response(200, content=body, request=request)
 
 
-def test_client_header():
+@pytest.mark.asyncio
+async def test_client_header():
     """
     Set a header in the Client.
     """
     url = "http://example.org/echo_headers"
     headers = {"Example-Header": "example-value"}
 
-    with Client(dispatch=MockDispatch(), headers=headers) as client:
-        response = client.get(url)
+    client = Client(dispatch=MockDispatch(), headers=headers)
+    response = await client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {
@@ -54,12 +55,13 @@ def test_client_header():
     }
 
 
-def test_header_merge():
+@pytest.mark.asyncio
+async def test_header_merge():
     url = "http://example.org/echo_headers"
     client_headers = {"User-Agent": "python-myclient/0.2.1"}
     request_headers = {"X-Auth-Token": "FooBarBazToken"}
-    with Client(dispatch=MockDispatch(), headers=client_headers) as client:
-        response = client.get(url, headers=request_headers)
+    client = Client(dispatch=MockDispatch(), headers=client_headers)
+    response = await client.get(url, headers=request_headers)
 
     assert response.status_code == 200
     assert response.json() == {
@@ -74,12 +76,13 @@ def test_header_merge():
     }
 
 
-def test_header_merge_conflicting_headers():
+@pytest.mark.asyncio
+async def test_header_merge_conflicting_headers():
     url = "http://example.org/echo_headers"
     client_headers = {"X-Auth-Token": "FooBar"}
     request_headers = {"X-Auth-Token": "BazToken"}
-    with Client(dispatch=MockDispatch(), headers=client_headers) as client:
-        response = client.get(url, headers=request_headers)
+    client = Client(dispatch=MockDispatch(), headers=client_headers)
+    response = await client.get(url, headers=request_headers)
 
     assert response.status_code == 200
     assert response.json() == {
@@ -94,14 +97,15 @@ def test_header_merge_conflicting_headers():
     }
 
 
-def test_header_update():
+@pytest.mark.asyncio
+async def test_header_update():
     url = "http://example.org/echo_headers"
-    with Client(dispatch=MockDispatch()) as client:
-        first_response = client.get(url)
-        client.headers.update(
-            {"User-Agent": "python-myclient/0.2.1", "Another-Header": "AThing"}
-        )
-        second_response = client.get(url)
+    client = Client(dispatch=MockDispatch())
+    first_response = await client.get(url)
+    client.headers.update(
+        {"User-Agent": "python-myclient/0.2.1", "Another-Header": "AThing"}
+    )
+    second_response = await client.get(url)
 
     assert first_response.status_code == 200
     assert first_response.json() == {
@@ -133,11 +137,12 @@ def test_header_does_not_exist():
         del headers["baz"]
 
 
-def test_host_without_auth_in_header():
+@pytest.mark.asyncio
+async def test_host_without_auth_in_header():
     url = "http://username:password@example.org:80/echo_headers"
 
-    with Client(dispatch=MockDispatch()) as client:
-        response = client.get(url)
+    client = Client(dispatch=MockDispatch())
+    response = await client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {

@@ -30,13 +30,12 @@ def test_proxies_parameter(proxies, expected_proxies):
 
 
 def test_proxies_has_same_properties_as_dispatch():
-    client = httpx.AsyncClient(
+    client = httpx.Client(
         proxies="http://127.0.0.1",
         verify="/path/to/verify",
         cert="/path/to/cert",
         trust_env=False,
         timeout=30,
-        http_versions=["HTTP/1.1"],
     )
     pool = client.dispatch
     proxy = client.proxies["all"]
@@ -49,7 +48,6 @@ def test_proxies_has_same_properties_as_dispatch():
         "cert",
         "timeout",
         "pool_limits",
-        "http_versions",
         "backend",
     ]:
         assert getattr(pool, prop) == getattr(proxy, prop)
@@ -101,9 +99,8 @@ PROXY_URL = "http://[::1]"
     ],
 )
 def test_dispatcher_for_request(url, proxies, expected):
-    client = httpx.AsyncClient(proxies=proxies)
-    request = httpx.AsyncRequest("GET", url)
-    dispatcher = client._dispatcher_for_request(request, client.proxies)
+    client = httpx.Client(proxies=proxies)
+    dispatcher = client.dispatcher_for_url(httpx.URL(url))
 
     if expected is None:
         assert isinstance(dispatcher, httpx.ConnectionPool)
@@ -115,4 +112,4 @@ def test_dispatcher_for_request(url, proxies, expected):
 
 def test_unsupported_proxy_scheme():
     with pytest.raises(ValueError):
-        httpx.AsyncClient(proxies="ftp://127.0.0.1")
+        httpx.Client(proxies="ftp://127.0.0.1")

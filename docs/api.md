@@ -36,7 +36,7 @@
 
 ::: httpx.Client
     :docstring:
-    :members: headers cookies params request get head options post put patch delete build_request send close 
+    :members: headers cookies params request get head options post put patch delete build_request send close
 
 ## `Response`
 
@@ -75,7 +75,7 @@ what gets sent over the wire.*
 
 ```python
 >>> request = httpx.Request("GET", "https://example.org", headers={'host': 'example.org'})
->>> response = client.send(request)
+>>> response = await client.send(request)
 ```
 
 * `def __init__(method, url, [params], [data], [json], [headers], [cookies])`

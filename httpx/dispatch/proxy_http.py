@@ -1,4 +1,5 @@
 import enum
+from base64 import b64encode
 
 import h11
 
@@ -7,23 +8,13 @@ from ..config import (
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
-    HTTPVersionTypes,
     PoolLimits,
     SSLConfig,
     TimeoutTypes,
     VerifyTypes,
 )
 from ..exceptions import ProxyError
-from ..middleware.basic_auth import build_basic_auth_header
-from ..models import (
-    URL,
-    AsyncRequest,
-    AsyncResponse,
-    Headers,
-    HeaderTypes,
-    Origin,
-    URLTypes,
-)
+from ..models import URL, Headers, HeaderTypes, Origin, Request, Response, URLTypes
 from ..utils import get_logger
 from .connection import HTTPConnection
 from .connection_pool import ConnectionPool
@@ -55,7 +46,7 @@ class HTTPProxy(ConnectionPool):
         trust_env: bool = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        http_versions: HTTPVersionTypes = None,
+        http_2: bool = False,
         backend: ConcurrencyBackend = None,
     ):
 
@@ -66,7 +57,7 @@ class HTTPProxy(ConnectionPool):
             pool_limits=pool_limits,
             backend=backend,
             trust_env=trust_env,
-            http_versions=http_versions,
+            http_2=http_2,
         )
 
         self.proxy_url = URL(proxy_url)
@@ -77,19 +68,26 @@ class HTTPProxy(ConnectionPool):
         if url.username or url.password:
             self.proxy_headers.setdefault(
                 "Proxy-Authorization",
-                build_basic_auth_header(url.username, url.password),
+                self.build_auth_header(url.username, url.password),
             )
             # Remove userinfo from the URL authority, e.g.:
             # 'username:password@proxy_host:proxy_port' -> 'proxy_host:proxy_port'
             credentials, _, authority = url.authority.rpartition("@")
             self.proxy_url = url.copy_with(authority=authority)
 
-    async def acquire_connection(self, origin: Origin) -> HTTPConnection:
+    def build_auth_header(self, username: str, password: str) -> str:
+        userpass = (username.encode("utf-8"), password.encode("utf-8"))
+        token = b64encode(b":".join(userpass)).decode().strip()
+        return f"Basic {token}"
+
+    async def acquire_connection(
+        self, origin: Origin, timeout: TimeoutTypes = None
+    ) -> HTTPConnection:
         if self.should_forward_origin(origin):
             logger.trace(
                 f"forward_connection proxy_url={self.proxy_url!r} origin={origin!r}"
             )
-            return await super().acquire_connection(self.proxy_url.origin)
+            return await super().acquire_connection(self.proxy_url.origin, timeout)
         else:
             logger.trace(
                 f"tunnel_connection proxy_url={self.proxy_url!r} origin={origin!r}"
@@ -122,7 +120,7 @@ class HTTPProxy(ConnectionPool):
         """Creates an HTTPConnection by setting up a TCP tunnel"""
         proxy_headers = self.proxy_headers.copy()
         proxy_headers.setdefault("Accept", "*/*")
-        proxy_request = AsyncRequest(
+        proxy_request = Request(
             method="CONNECT", url=self.proxy_url.copy_with(), headers=proxy_headers
         )
         proxy_request.url.full_path = f"{origin.host}:{origin.port}"
@@ -135,7 +133,7 @@ class HTTPProxy(ConnectionPool):
             cert=self.cert,
             timeout=self.timeout,
             backend=self.backend,
-            http_versions=["HTTP/1.1"],  # Short-lived 'connection'
+            http_2=False,  # Short-lived 'connection'
             trust_env=self.trust_env,
             release_func=self.release_connection,
         )
@@ -225,11 +223,11 @@ class HTTPProxy(ConnectionPool):
 
     async def send(
         self,
-        request: AsyncRequest,
+        request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> AsyncResponse:
+    ) -> Response:
 
         if self.should_forward_origin(request.url.origin):
             # Change the request to have the target URL

@@ -96,22 +96,33 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
     return None
 
 
-NETRC_STATIC_FILES = (Path("~/.netrc"), Path("~/_netrc"))
+class NetRCInfo:
+    def __init__(self, files: typing.Optional[typing.List[str]] = None) -> None:
+        if files is None:
+            files = [os.getenv("NETRC", ""), "~/.netrc", "~/_netrc"]
+        self.netrc_files = files
 
+    @property
+    def netrc_info(self) -> typing.Optional[netrc.netrc]:
+        if not hasattr(self, "_netrc_info"):
+            self._netrc_info = None
+            for file_path in self.netrc_files:
+                expanded_path = Path(file_path).expanduser()
+                if expanded_path.is_file():
+                    self._netrc_info = netrc.netrc(str(expanded_path))
+                    break
+        return self._netrc_info
 
-def get_netrc() -> typing.Optional[netrc.netrc]:
-    NETRC_FILES = (Path(os.getenv("NETRC", "")),) + NETRC_STATIC_FILES
-    netrc_path = None
+    def get_credentials(
+        self, authority: str
+    ) -> typing.Optional[typing.Tuple[str, str]]:
+        if self.netrc_info is None:
+            return None
 
-    for file_path in NETRC_FILES:
-        expanded_path = file_path.expanduser()
-        if expanded_path.is_file():
-            netrc_path = expanded_path
-            break
-
-    if netrc_path is None:
-        return None
-    return netrc.netrc(str(netrc_path))
+        auth_info = self.netrc_info.authenticators(authority)
+        if auth_info is None or auth_info[2] is None:
+            return None
+        return (auth_info[0], auth_info[2])
 
 
 def get_ca_bundle_from_env() -> typing.Optional[str]:
@@ -182,7 +193,7 @@ TRACE_LOG_LEVEL = 5
 class Logger(logging.Logger):
     # Stub for type checkers.
     def trace(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
-        ...
+        ...  # pragma: nocover
 
 
 def get_logger(name: str) -> Logger:
@@ -328,64 +339,3 @@ class ElapsedTimer:
         if self.end is None:
             return timedelta(seconds=perf_counter() - self.start)
         return timedelta(seconds=self.end - self.start)
-
-
-ASGI_PLACEHOLDER_FORMAT = {
-    "body": "<{length} bytes>",
-    "bytes": "<{length} bytes>",
-    "text": "<{length} chars>",
-}
-
-
-def asgi_message_with_placeholders(message: dict) -> dict:
-    """
-    Return an ASGI message, with any body-type content omitted and replaced
-    with a placeholder.
-    """
-    new_message = message.copy()
-
-    for attr in ASGI_PLACEHOLDER_FORMAT:
-        if attr in message:
-            content = message[attr]
-            placeholder = ASGI_PLACEHOLDER_FORMAT[attr].format(length=len(content))
-            new_message[attr] = placeholder
-
-    if "headers" in message:
-        new_message["headers"] = list(obfuscate_sensitive_headers(message["headers"]))
-
-    return new_message
-
-
-class MessageLoggerASGIMiddleware:
-    def __init__(self, app: typing.Callable, logger: Logger) -> None:
-        self.app = app
-        self.logger = logger
-
-    async def __call__(
-        self, scope: dict, receive: typing.Callable, send: typing.Callable
-    ) -> None:
-        async def inner_receive() -> dict:
-            message = await receive()
-            logged_message = asgi_message_with_placeholders(message)
-            self.logger.trace(f"sent {kv_format(**logged_message)}")
-            return message
-
-        async def inner_send(message: dict) -> None:
-            logged_message = asgi_message_with_placeholders(message)
-            self.logger.trace(f"received {kv_format(**logged_message)}")
-            await send(message)
-
-        logged_scope = dict(scope)
-        if "headers" in scope:
-            logged_scope["headers"] = list(
-                obfuscate_sensitive_headers(scope["headers"])
-            )
-        self.logger.trace(f"started {kv_format(**logged_scope)}")
-
-        try:
-            await self.app(scope, inner_receive, inner_send)
-        except BaseException as exc:
-            self.logger.trace("raised_exception")
-            raise exc from None
-        else:
-            self.logger.trace("completed")
