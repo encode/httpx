@@ -290,10 +290,10 @@ async with httpx.Client(timeout=5) as client:
 Besides, you can pass timeouts in two forms:
 
 - A number, which sets the read, write and connect timeouts to the same value, as in the examples above.
-- A `TimeoutConfig` instance, which allows to define the read, write and connect timeouts independently:
+- A `Timeout` instance, which allows to define the read, write and connect timeouts independently:
 
 ```python
-timeout = httpx.TimeoutConfig(
+timeout = httpx.Timeout(
     connect_timeout=5,
     read_timeout=10,
     write_timeout=15
@@ -321,7 +321,7 @@ async with httpx.Client(timeout=None) as client:
     await client.get(url)  # Does not timeout, returns after 10s
 
 
-timeout = httpx.TimeoutConfig(
+timeout = httpx.Timeout(
     connect_timeout=5,
     read_timeout=None,
     write_timeout=5

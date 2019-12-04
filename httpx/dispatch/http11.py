@@ -3,7 +3,7 @@ import typing
 import h11
 
 from ..concurrency.base import BaseSocketStream, TimeoutFlag
-from ..config import TimeoutConfig, TimeoutTypes
+from ..config import Timeout, TimeoutTypes
 from ..exceptions import ConnectionClosed, ProtocolError
 from ..models import Request, Response
 from ..utils import get_logger
@@ -41,7 +41,7 @@ class HTTP11Connection:
         self.timeout_flag = TimeoutFlag()
 
     async def send(self, request: Request, timeout: TimeoutTypes = None) -> Response:
-        timeout = None if timeout is None else TimeoutConfig(timeout)
+        timeout = None if timeout is None else Timeout(timeout)
 
         await self._send_request(request, timeout)
         await self._send_request_body(request, timeout)
@@ -67,9 +67,7 @@ class HTTP11Connection:
             pass
         await self.stream.close()
 
-    async def _send_request(
-        self, request: Request, timeout: TimeoutConfig = None
-    ) -> None:
+    async def _send_request(self, request: Request, timeout: Timeout = None) -> None:
         """
         Send the request method, URL, and headers to the network.
         """
@@ -86,7 +84,7 @@ class HTTP11Connection:
         await self._send_event(event, timeout)
 
     async def _send_request_body(
-        self, request: Request, timeout: TimeoutConfig = None
+        self, request: Request, timeout: Timeout = None
     ) -> None:
         """
         Send the request body to the network.
@@ -110,7 +108,7 @@ class HTTP11Connection:
             # Once we've sent the request, we enable read timeouts.
             self.timeout_flag.set_read_timeouts()
 
-    async def _send_event(self, event: H11Event, timeout: TimeoutConfig = None) -> None:
+    async def _send_event(self, event: H11Event, timeout: Timeout = None) -> None:
         """
         Send a single `h11` event to the network, waiting for the data to
         drain before returning.
@@ -119,7 +117,7 @@ class HTTP11Connection:
         await self.stream.write(bytes_to_send, timeout)
 
     async def _receive_response(
-        self, timeout: TimeoutConfig = None
+        self, timeout: Timeout = None
     ) -> typing.Tuple[str, int, typing.List[typing.Tuple[bytes, bytes]]]:
         """
         Read the response status and headers from the network.
@@ -138,7 +136,7 @@ class HTTP11Connection:
         return http_version, event.status_code, event.headers
 
     async def _receive_response_data(
-        self, timeout: TimeoutConfig = None
+        self, timeout: Timeout = None
     ) -> typing.AsyncIterator[bytes]:
         """
         Read the response data from the network.
@@ -151,7 +149,7 @@ class HTTP11Connection:
                 assert isinstance(event, h11.EndOfMessage) or event is h11.PAUSED
                 break  # pragma: no cover
 
-    async def _receive_event(self, timeout: TimeoutConfig = None) -> H11Event:
+    async def _receive_event(self, timeout: Timeout = None) -> H11Event:
         """
         Read a single `h11` event, reading more data from the network if needed.
         """

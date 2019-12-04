@@ -5,7 +5,7 @@ import sys
 import typing
 from types import TracebackType
 
-from ..config import PoolLimits, TimeoutConfig
+from ..config import PoolLimits, Timeout
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import (
     BaseBackgroundManager,
@@ -45,7 +45,7 @@ class SocketStream(BaseSocketStream):
         self,
         stream_reader: asyncio.StreamReader,
         stream_writer: asyncio.StreamWriter,
-        timeout: TimeoutConfig,
+        timeout: Timeout,
     ):
         self.stream_reader = stream_reader
         self.stream_writer = stream_writer
@@ -55,7 +55,7 @@ class SocketStream(BaseSocketStream):
         self._inner: typing.Optional[SocketStream] = None
 
     async def start_tls(
-        self, hostname: str, ssl_context: ssl.SSLContext, timeout: TimeoutConfig
+        self, hostname: str, ssl_context: ssl.SSLContext, timeout: Timeout
     ) -> "SocketStream":
         loop = asyncio.get_event_loop()
 
@@ -133,7 +133,7 @@ class SocketStream(BaseSocketStream):
         return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
     async def read(
-        self, n: int, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
+        self, n: int, timeout: Timeout = None, flag: TimeoutFlag = None
     ) -> bytes:
         if timeout is None:
             timeout = self.timeout
@@ -166,7 +166,7 @@ class SocketStream(BaseSocketStream):
         self.stream_writer.write(data)  # pragma: nocover
 
     async def write(
-        self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
+        self, data: bytes, timeout: Timeout = None, flag: TimeoutFlag = None
     ) -> None:
         if not data:
             return
@@ -264,7 +264,7 @@ class AsyncioBackend(ConcurrencyBackend):
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
+        timeout: Timeout,
     ) -> SocketStream:
         try:
             stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
@@ -283,7 +283,7 @@ class AsyncioBackend(ConcurrencyBackend):
         path: str,
         hostname: typing.Optional[str],
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
+        timeout: Timeout,
     ) -> SocketStream:
         server_hostname = hostname if ssl_context else None
 

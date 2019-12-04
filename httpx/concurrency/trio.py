@@ -5,7 +5,7 @@ from types import TracebackType
 
 import trio
 
-from ..config import PoolLimits, TimeoutConfig
+from ..config import PoolLimits, Timeout
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import (
     BaseBackgroundManager,
@@ -23,9 +23,7 @@ def _or_inf(value: typing.Optional[float]) -> float:
 
 class SocketStream(BaseSocketStream):
     def __init__(
-        self,
-        stream: typing.Union[trio.SocketStream, trio.SSLStream],
-        timeout: TimeoutConfig,
+        self, stream: typing.Union[trio.SocketStream, trio.SSLStream], timeout: Timeout,
     ) -> None:
         self.stream = stream
         self.timeout = timeout
@@ -34,7 +32,7 @@ class SocketStream(BaseSocketStream):
         self.write_lock = trio.Lock()
 
     async def start_tls(
-        self, hostname: str, ssl_context: ssl.SSLContext, timeout: TimeoutConfig
+        self, hostname: str, ssl_context: ssl.SSLContext, timeout: Timeout
     ) -> "SocketStream":
         # Check that the write buffer is empty. We should never start a TLS stream
         # while there is still pending data to write.
@@ -61,7 +59,7 @@ class SocketStream(BaseSocketStream):
         return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
     async def read(
-        self, n: int, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
+        self, n: int, timeout: Timeout = None, flag: TimeoutFlag = None
     ) -> bytes:
         if timeout is None:
             timeout = self.timeout
@@ -98,7 +96,7 @@ class SocketStream(BaseSocketStream):
         self.write_buffer += data  # pragma: no cover
 
     async def write(
-        self, data: bytes, timeout: TimeoutConfig = None, flag: TimeoutFlag = None
+        self, data: bytes, timeout: Timeout = None, flag: TimeoutFlag = None
     ) -> None:
         if self.write_buffer:
             previous_data = self.write_buffer
@@ -176,7 +174,7 @@ class TrioBackend(ConcurrencyBackend):
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
+        timeout: Timeout,
     ) -> SocketStream:
         connect_timeout = _or_inf(timeout.connect_timeout)
 
@@ -196,7 +194,7 @@ class TrioBackend(ConcurrencyBackend):
         path: str,
         hostname: typing.Optional[str],
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
+        timeout: Timeout,
     ) -> SocketStream:
         connect_timeout = _or_inf(timeout.connect_timeout)
 

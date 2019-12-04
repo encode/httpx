@@ -134,12 +134,12 @@ def test_limits_eq():
 
 
 def test_timeout_eq():
-    timeout = httpx.TimeoutConfig(timeout=5.0)
-    assert timeout == httpx.TimeoutConfig(timeout=5.0)
+    timeout = httpx.Timeout(timeout=5.0)
+    assert timeout == httpx.Timeout(timeout=5.0)
 
 
 def test_timeout_from_nothing():
-    timeout = httpx.TimeoutConfig()
+    timeout = httpx.Timeout()
     assert timeout.connect_timeout is None
     assert timeout.read_timeout is None
     assert timeout.write_timeout is None
@@ -147,32 +147,32 @@ def test_timeout_from_nothing():
 
 
 def test_timeout_from_none():
-    timeout = httpx.TimeoutConfig(timeout=None)
-    assert timeout == httpx.TimeoutConfig()
+    timeout = httpx.Timeout(timeout=None)
+    assert timeout == httpx.Timeout()
 
 
 def test_timeout_from_one_none_value():
-    timeout = httpx.TimeoutConfig(read_timeout=None)
-    assert timeout == httpx.TimeoutConfig()
+    timeout = httpx.Timeout(read_timeout=None)
+    assert timeout == httpx.Timeout()
 
 
 def test_timeout_from_tuple():
-    timeout = httpx.TimeoutConfig(timeout=(5.0, 5.0, 5.0, 5.0))
-    assert timeout == httpx.TimeoutConfig(timeout=5.0)
+    timeout = httpx.Timeout(timeout=(5.0, 5.0, 5.0, 5.0))
+    assert timeout == httpx.Timeout(timeout=5.0)
 
 
 def test_timeout_from_config_instance():
-    timeout = httpx.TimeoutConfig(timeout=5.0)
-    assert httpx.TimeoutConfig(timeout) == httpx.TimeoutConfig(timeout=5.0)
+    timeout = httpx.Timeout(timeout=5.0)
+    assert httpx.Timeout(timeout) == httpx.Timeout(timeout=5.0)
 
 
 def test_timeout_repr():
-    timeout = httpx.TimeoutConfig(timeout=5.0)
-    assert repr(timeout) == "TimeoutConfig(timeout=5.0)"
+    timeout = httpx.Timeout(timeout=5.0)
+    assert repr(timeout) == "Timeout(timeout=5.0)"
 
-    timeout = httpx.TimeoutConfig(read_timeout=5.0)
+    timeout = httpx.Timeout(read_timeout=5.0)
     assert repr(timeout) == (
-        "TimeoutConfig(connect_timeout=None, read_timeout=5.0, "
+        "Timeout(connect_timeout=None, read_timeout=5.0, "
         "write_timeout=None, pool_timeout=None)"
     )
 

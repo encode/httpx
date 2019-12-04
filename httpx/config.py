@@ -10,9 +10,7 @@ from .utils import get_ca_bundle_from_env, get_logger
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
-TimeoutTypes = typing.Union[
-    float, typing.Tuple[float, float, float, float], "TimeoutConfig"
-]
+TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float, float], "Timeout"]
 
 
 USER_AGENT = f"python-httpx/{__version__}"
@@ -203,7 +201,7 @@ class SSLConfig:
                 )
 
 
-class TimeoutConfig:
+class Timeout:
     """
     Timeout values.
     """
@@ -228,7 +226,7 @@ class TimeoutConfig:
             assert read_timeout is None
             assert write_timeout is None
             assert pool_timeout is None
-            if isinstance(timeout, TimeoutConfig):
+            if isinstance(timeout, Timeout):
                 self.connect_timeout = timeout.connect_timeout
                 self.read_timeout = timeout.read_timeout
                 self.write_timeout = timeout.write_timeout
@@ -299,8 +297,11 @@ class PoolLimits:
         )
 
 
+TimeoutConfig = Timeout  # Synonym for backwards compat
+
+
 DEFAULT_SSL_CONFIG = SSLConfig(cert=None, verify=True)
-DEFAULT_TIMEOUT_CONFIG = TimeoutConfig(timeout=5.0)
+DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
 DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
 DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
 DEFAULT_MAX_REDIRECTS = 20

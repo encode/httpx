@@ -46,7 +46,7 @@ TRACE [2019-11-06 19:18:56] httpx.dispatch.connection_pool - acquire_connection 
 TRACE [2019-11-06 19:18:56] httpx.dispatch.connection_pool - new_connection connection=HTTPConnection(origin=Origin(scheme='https' host='google.com' port=443))
 TRACE [2019-11-06 19:18:56] httpx.config - load_ssl_context verify=True cert=None trust_env=True http_versions=HTTPVersionConfig(['HTTP/1.1', 'HTTP/2'])
 TRACE [2019-11-06 19:18:56] httpx.config - load_verify_locations cafile=/Users/florimond/Developer/python-projects/httpx/venv/lib/python3.8/site-packages/certifi/cacert.pem
-TRACE [2019-11-06 19:18:56] httpx.dispatch.connection - start_connect host='google.com' port=443 timeout=TimeoutConfig(timeout=5.0)
+TRACE [2019-11-06 19:18:56] httpx.dispatch.connection - start_connect host='google.com' port=443 timeout=Timeout(timeout=5.0)
 TRACE [2019-11-06 19:18:56] httpx.dispatch.connection - connected http_version='HTTP/2'
 TRACE [2019-11-06 19:18:56] httpx.dispatch.http2 - send_headers stream_id=1 method='GET' target='/' headers=[(b':method', b'GET'), (b':authority', b'google.com'), (b':scheme', b'https'), (b':path', b'/'), (b'user-agent', b'python-httpx/0.7.6'), (b'accept', b'*/*'), (b'accept-encoding', b'gzip, deflate, br'), (b'connection', b'keep-alive')]
 TRACE [2019-11-06 19:18:56] httpx.dispatch.http2 - end_stream stream_id=1
@@ -59,7 +59,7 @@ TRACE [2019-11-06 19:18:56] httpx.dispatch.connection_pool - acquire_connection 
 TRACE [2019-11-06 19:18:56] httpx.dispatch.connection_pool - new_connection connection=HTTPConnection(origin=Origin(scheme='https' host='www.google.com' port=443))
 TRACE [2019-11-06 19:18:56] httpx.config - load_ssl_context verify=True cert=None trust_env=True http_versions=HTTPVersionConfig(['HTTP/1.1', 'HTTP/2'])
 TRACE [2019-11-06 19:18:56] httpx.config - load_verify_locations cafile=/Users/florimond/Developer/python-projects/httpx/venv/lib/python3.8/site-packages/certifi/cacert.pem
-TRACE [2019-11-06 19:18:56] httpx.dispatch.connection - start_connect host='www.google.com' port=443 timeout=TimeoutConfig(timeout=5.0)
+TRACE [2019-11-06 19:18:56] httpx.dispatch.connection - start_connect host='www.google.com' port=443 timeout=Timeout(timeout=5.0)
 TRACE [2019-11-06 19:18:56] httpx.dispatch.connection - connected http_version='HTTP/2'
 TRACE [2019-11-06 19:18:56] httpx.dispatch.http2 - send_headers stream_id=1 method='GET' target='/' headers=[(b':method', b'GET'), (b':authority', b'www.google.com'), (b':scheme', b'https'), (b':path', b'/'), (b'user-agent', b'python-httpx/0.7.6'), (b'accept', b'*/*'), (b'accept-encoding', b'gzip, deflate, br'), (b'connection', b'keep-alive')]
 TRACE [2019-11-06 19:18:56] httpx.dispatch.http2 - end_stream stream_id=1

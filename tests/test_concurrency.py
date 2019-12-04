@@ -1,7 +1,7 @@
 import pytest
 import trio
 
-from httpx import AsyncioBackend, SSLConfig, TimeoutConfig
+from httpx import AsyncioBackend, SSLConfig, Timeout
 from httpx.concurrency.trio import TrioBackend
 from tests.concurrency import run_concurrently
 
@@ -41,7 +41,7 @@ async def read_response(stream, timeout: float, should_contain: bytes) -> bytes:
 )
 async def test_start_tls_on_tcp_socket_stream(https_server, backend, get_cipher):
     ctx = SSLConfig().load_ssl_context_no_verify()
-    timeout = TimeoutConfig(5)
+    timeout = Timeout(5)
 
     stream = await backend.open_tcp_stream(
         https_server.url.host, https_server.url.port, None, timeout
@@ -73,7 +73,7 @@ async def test_start_tls_on_tcp_socket_stream(https_server, backend, get_cipher)
 )
 async def test_start_tls_on_uds_socket_stream(https_uds_server, backend, get_cipher):
     ctx = SSLConfig().load_ssl_context_no_verify()
-    timeout = TimeoutConfig(5)
+    timeout = Timeout(5)
 
     stream = await backend.open_uds_stream(
         https_uds_server.config.uds, https_uds_server.url.host, None, timeout
@@ -101,7 +101,7 @@ async def test_concurrent_read(server, backend):
     Regression test for: https://github.com/encode/httpx/issues/527
     """
     stream = await backend.open_tcp_stream(
-        server.url.host, server.url.port, ssl_context=None, timeout=TimeoutConfig(5)
+        server.url.host, server.url.port, ssl_context=None, timeout=Timeout(5)
     )
     try:
         await stream.write(b"GET / HTTP/1.1\r\n\r\n")

@@ -20,31 +20,31 @@ class HTTPError(Exception):
 # Timeout exceptions...
 
 
-class Timeout(HTTPError):
+class RequestTimeout(HTTPError):
     """
     A base class for all timeouts.
     """
 
 
-class ConnectTimeout(Timeout):
+class ConnectTimeout(RequestTimeout):
     """
     Timeout while establishing a connection.
     """
 
 
-class ReadTimeout(Timeout):
+class ReadTimeout(RequestTimeout):
     """
     Timeout while reading response data.
     """
 
 
-class WriteTimeout(Timeout):
+class WriteTimeout(RequestTimeout):
     """
     Timeout while writing request data.
     """
 
 
-class PoolTimeout(Timeout):
+class PoolTimeout(RequestTimeout):
     """
     Timeout while waiting to acquire a connection from the pool.
     """

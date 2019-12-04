@@ -6,7 +6,7 @@ from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
     PoolLimits,
-    TimeoutConfig,
+    Timeout,
     TimeoutTypes,
     VerifyTypes,
 )
@@ -92,7 +92,7 @@ class ConnectionPool(Dispatcher):
     ):
         self.verify = verify
         self.cert = cert
-        self.timeout = TimeoutConfig(timeout)
+        self.timeout = Timeout(timeout)
         self.pool_limits = pool_limits
         self.http2 = http2
         self.is_closed = False
@@ -147,7 +147,7 @@ class ConnectionPool(Dispatcher):
             if timeout is None:
                 pool_timeout = self.timeout.pool_timeout
             else:
-                pool_timeout = TimeoutConfig(timeout).pool_timeout
+                pool_timeout = Timeout(timeout).pool_timeout
 
             await self.max_connections.acquire(timeout=pool_timeout)
             connection = HTTPConnection(
