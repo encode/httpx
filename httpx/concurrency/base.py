@@ -2,7 +2,7 @@ import ssl
 import typing
 from types import TracebackType
 
-from ..config import PoolLimits, TimeoutConfig
+from ..config import PoolLimits, Timeout
 
 
 def lookup_backend(
@@ -70,19 +70,19 @@ class BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
     async def start_tls(
-        self, hostname: str, ssl_context: ssl.SSLContext, timeout: TimeoutConfig
+        self, hostname: str, ssl_context: ssl.SSLContext, timeout: Timeout
     ) -> "BaseSocketStream":
         raise NotImplementedError()  # pragma: no cover
 
     async def read(
-        self, n: int, timeout: TimeoutConfig = None, flag: typing.Any = None
+        self, n: int, timeout: Timeout = None, flag: typing.Any = None
     ) -> bytes:
         raise NotImplementedError()  # pragma: no cover
 
     def write_no_block(self, data: bytes) -> None:
         raise NotImplementedError()  # pragma: no cover
 
-    async def write(self, data: bytes, timeout: TimeoutConfig = None) -> None:
+    async def write(self, data: bytes, timeout: Timeout = None) -> None:
         raise NotImplementedError()  # pragma: no cover
 
     async def close(self) -> None:
@@ -130,7 +130,7 @@ class ConcurrencyBackend:
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
+        timeout: Timeout,
     ) -> BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
@@ -139,7 +139,7 @@ class ConcurrencyBackend:
         path: str,
         hostname: typing.Optional[str],
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
+        timeout: Timeout,
     ) -> BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 

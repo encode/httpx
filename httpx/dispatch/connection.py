@@ -7,7 +7,7 @@ from ..config import (
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
     SSLConfig,
-    TimeoutConfig,
+    Timeout,
     TimeoutTypes,
     VerifyTypes,
 )
@@ -39,7 +39,7 @@ class HTTPConnection(Dispatcher):
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env)
-        self.timeout = TimeoutConfig(timeout)
+        self.timeout = Timeout(timeout)
         self.http2 = http2
         self.backend = lookup_backend(backend)
         self.release_func = release_func
@@ -72,7 +72,7 @@ class HTTPConnection(Dispatcher):
         timeout: TimeoutTypes = None,
     ) -> None:
         ssl = self.ssl.with_overrides(verify=verify, cert=cert)
-        timeout = self.timeout if timeout is None else TimeoutConfig(timeout)
+        timeout = self.timeout if timeout is None else Timeout(timeout)
 
         host = self.origin.host
         port = self.origin.port

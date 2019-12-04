@@ -5,7 +5,7 @@ import h2.config
 import h2.connection
 import h2.events
 
-from httpx import AsyncioBackend, BaseSocketStream, Request, TimeoutConfig
+from httpx import AsyncioBackend, BaseSocketStream, Request, Timeout
 from tests.concurrency import sleep
 
 
@@ -20,7 +20,7 @@ class MockHTTP2Backend:
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
+        timeout: Timeout,
     ) -> BaseSocketStream:
         self.server = MockHTTP2Server(self.app, backend=self.backend)
         return self.server
@@ -177,7 +177,7 @@ class MockRawSocketBackend:
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
+        timeout: Timeout,
     ) -> BaseSocketStream:
         self.received_data.append(
             b"--- CONNECT(%s, %d) ---" % (hostname.encode(), port)
@@ -194,7 +194,7 @@ class MockRawSocketStream(BaseSocketStream):
         self.backend = backend
 
     async def start_tls(
-        self, hostname: str, ssl_context: ssl.SSLContext, timeout: TimeoutConfig
+        self, hostname: str, ssl_context: ssl.SSLContext, timeout: Timeout
     ) -> BaseSocketStream:
         self.backend.received_data.append(b"--- START_TLS(%s) ---" % hostname.encode())
         return MockRawSocketStream(self.backend)
@@ -205,7 +205,7 @@ class MockRawSocketStream(BaseSocketStream):
     def write_no_block(self, data: bytes) -> None:
         self.backend.received_data.append(data)
 
-    async def write(self, data: bytes, timeout: TimeoutConfig = None) -> None:
+    async def write(self, data: bytes, timeout: Timeout = None) -> None:
         if data:
             self.write_no_block(data)
 

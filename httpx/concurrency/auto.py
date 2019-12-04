@@ -3,7 +3,7 @@ import typing
 
 import sniffio
 
-from ..config import PoolLimits, TimeoutConfig
+from ..config import PoolLimits, Timeout
 from .base import (
     BaseBackgroundManager,
     BaseEvent,
@@ -29,7 +29,7 @@ class AutoBackend(ConcurrencyBackend):
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
+        timeout: Timeout,
     ) -> BaseSocketStream:
         return await self.backend.open_tcp_stream(hostname, port, ssl_context, timeout)
 
@@ -38,7 +38,7 @@ class AutoBackend(ConcurrencyBackend):
         path: str,
         hostname: typing.Optional[str],
         ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: TimeoutConfig,
+        timeout: Timeout,
     ) -> BaseSocketStream:
         return await self.backend.open_uds_stream(path, hostname, ssl_context, timeout)
 
