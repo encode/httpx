@@ -92,9 +92,6 @@ class SocketStream(BaseSocketStream):
         # See: https://github.com/encode/httpx/pull/143#issuecomment-515181778
         return stream.socket.is_readable()
 
-    def write_no_block(self, data: bytes) -> None:
-        self.write_buffer += data  # pragma: no cover
-
     async def write(
         self, data: bytes, timeout: Timeout = None, flag: TimeoutFlag = None
     ) -> None:

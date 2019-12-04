@@ -162,9 +162,6 @@ class SocketStream(BaseSocketStream):
 
         return data
 
-    def write_no_block(self, data: bytes) -> None:
-        self.stream_writer.write(data)  # pragma: nocover
-
     async def write(
         self, data: bytes, timeout: Timeout = None, flag: TimeoutFlag = None
     ) -> None:

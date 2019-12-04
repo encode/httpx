@@ -35,15 +35,29 @@ class HTTP2Connection:
         self.h2_state = h2.connection.H2Connection()
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
         self.timeout_flags = {}  # type: typing.Dict[int, TimeoutFlag]
-        self.initialized = False
         self.window_update_received = {}  # type: typing.Dict[int, BaseEvent]
+
+        self.init_started = False
+
+    @property
+    def init_complete(self) -> BaseEvent:
+        # We do this lazily, to make sure backend autodetection always
+        # runs within an async context.
+        if not hasattr(self, "_initialization_complete"):
+            self._initialization_complete = self.backend.create_event()
+        return self._initialization_complete
 
     async def send(self, request: Request, timeout: Timeout = None) -> Response:
         timeout = Timeout() if timeout is None else timeout
 
-        # Start sending the request.
-        if not self.initialized:
-            self.initiate_connection()
+        if not self.init_started:
+            # The very first stream is responsible for initiating the connection.
+            self.init_started = True
+            await self.send_connection_init(timeout)
+            self.init_complete.set()
+        else:
+            # All other streams need to wait until the connection is established.
+            await self.init_complete.wait()
 
         stream_id = await self.send_headers(request, timeout)
 
@@ -69,7 +83,7 @@ class HTTP2Connection:
     async def close(self) -> None:
         await self.stream.close()
 
-    def initiate_connection(self) -> None:
+    async def send_connection_init(self, timeout: Timeout) -> None:
         # Need to set these manually here instead of manipulating via
         # __setitem__() otherwise the H2Connection will emit SettingsUpdate
         # frames in addition to sending the undesired defaults.
@@ -94,8 +108,7 @@ class HTTP2Connection:
 
         self.h2_state.initiate_connection()
         data_to_send = self.h2_state.data_to_send()
-        self.stream.write_no_block(data_to_send)
-        self.initialized = True
+        await self.stream.write(data_to_send, timeout)
 
     async def send_headers(self, request: Request, timeout: Timeout) -> int:
         stream_id = self.h2_state.get_next_available_stream_id()
