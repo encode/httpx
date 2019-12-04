@@ -1,7 +1,7 @@
 import typing
 from types import TracebackType
 
-from ..config import CertTypes, TimeoutTypes, VerifyTypes
+from ..config import CertTypes, Timeout, VerifyTypes
 from ..models import (
     HeaderTypes,
     QueryParamTypes,
@@ -31,7 +31,7 @@ class Dispatcher:
         headers: HeaderTypes = None,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: Timeout = None,
     ) -> Response:
         request = Request(method, url, data=data, params=params, headers=headers)
         return await self.send(request, verify=verify, cert=cert, timeout=timeout)
@@ -41,7 +41,7 @@ class Dispatcher:
         request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: Timeout = None,
     ) -> Response:
         raise NotImplementedError()  # pragma: nocover
 

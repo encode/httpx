@@ -7,11 +7,10 @@ import h11
 from ..concurrency.base import ConcurrencyBackend
 from ..config import (
     DEFAULT_POOL_LIMITS,
-    DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
     PoolLimits,
     SSLConfig,
-    TimeoutTypes,
+    Timeout,
     VerifyTypes,
 )
 from ..exceptions import ProxyError
@@ -45,7 +44,6 @@ class HTTPProxy(ConnectionPool):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
-        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http2: bool = False,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
@@ -54,7 +52,6 @@ class HTTPProxy(ConnectionPool):
         super(HTTPProxy, self).__init__(
             verify=verify,
             cert=cert,
-            timeout=timeout,
             pool_limits=pool_limits,
             backend=backend,
             trust_env=trust_env,
@@ -82,7 +79,7 @@ class HTTPProxy(ConnectionPool):
         return f"Basic {token}"
 
     async def acquire_connection(
-        self, origin: Origin, timeout: TimeoutTypes = None
+        self, origin: Origin, timeout: Timeout = None
     ) -> HTTPConnection:
         if self.should_forward_origin(origin):
             logger.trace(
@@ -93,9 +90,11 @@ class HTTPProxy(ConnectionPool):
             logger.trace(
                 f"tunnel_connection proxy_url={self.proxy_url!r} origin={origin!r}"
             )
-            return await self.tunnel_connection(origin)
+            return await self.tunnel_connection(origin, timeout)
 
-    async def tunnel_connection(self, origin: Origin) -> HTTPConnection:
+    async def tunnel_connection(
+        self, origin: Origin, timeout: Timeout = None
+    ) -> HTTPConnection:
         """Creates a new HTTPConnection via the CONNECT method
         usually reserved for proxying HTTPS connections.
         """
@@ -111,7 +110,8 @@ class HTTPProxy(ConnectionPool):
             connection.origin = origin
             self.active_connections.add(connection)
 
-            await self.tunnel_start_tls(origin, connection)
+            timeout = Timeout() if timeout is None else timeout
+            await self.tunnel_start_tls(origin, connection, timeout)
         else:
             self.active_connections.add(connection)
 
@@ -132,7 +132,6 @@ class HTTPProxy(ConnectionPool):
             self.proxy_url.origin,
             verify=self.verify,
             cert=self.cert,
-            timeout=self.timeout,
             backend=self.backend,
             http2=False,  # Short-lived 'connection'
             trust_env=self.trust_env,
@@ -163,9 +162,10 @@ class HTTPProxy(ConnectionPool):
         return connection
 
     async def tunnel_start_tls(
-        self, origin: Origin, connection: HTTPConnection
+        self, origin: Origin, connection: HTTPConnection, timeout: Timeout = None
     ) -> None:
         """Runs start_tls() on a TCP-tunneled connection"""
+        timeout = Timeout() if timeout is None else timeout
 
         # Store this information here so that we can transfer
         # it to the new internal connection object after
@@ -182,7 +182,6 @@ class HTTPProxy(ConnectionPool):
         # HTTP connection object and run start_tls()
         if origin.is_ssl:
             ssl_config = SSLConfig(cert=self.cert, verify=self.verify)
-            timeout = connection.timeout
             ssl_context = await connection.get_ssl_context(ssl_config)
             assert ssl_context is not None
 
@@ -225,7 +224,7 @@ class HTTPProxy(ConnectionPool):
         request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: Timeout = None,
     ) -> Response:
 
         if self.should_forward_origin(request.url.origin):

@@ -46,7 +46,6 @@ def test_proxies_has_same_properties_as_dispatch():
     for prop in [
         "verify",
         "cert",
-        "timeout",
         "pool_limits",
     ]:
         assert getattr(pool, prop) == getattr(proxy, prop)
