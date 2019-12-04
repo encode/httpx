@@ -45,6 +45,8 @@ class HTTPConnection(Dispatcher):
         cert: CertTypes = None,
         timeout: Timeout = None,
     ) -> Response:
+        timeout = Timeout() if timeout is None else timeout
+
         if self.h11_connection is None and self.h2_connection is None:
             await self.connect(verify=verify, cert=cert, timeout=timeout)
 
@@ -57,10 +59,7 @@ class HTTPConnection(Dispatcher):
         return response
 
     async def connect(
-        self,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: Timeout = None,
+        self, timeout: Timeout, verify: VerifyTypes = None, cert: CertTypes = None,
     ) -> None:
         ssl = self.ssl.with_overrides(verify=verify, cert=cert)
 
@@ -73,7 +72,6 @@ class HTTPConnection(Dispatcher):
         else:
             on_release = functools.partial(self.release_func, self)
 
-        timeout = Timeout() if timeout is None else timeout
         if self.uds is None:
             logger.trace(
                 f"start_connect tcp host={host!r} port={port!r} timeout={timeout!r}"
