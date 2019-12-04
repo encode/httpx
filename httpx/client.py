@@ -10,10 +10,12 @@ from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
+    UNSET,
     CertTypes,
     PoolLimits,
     Timeout,
     TimeoutTypes,
+    UnsetType,
     VerifyTypes,
 )
 from .dispatch.asgi import ASGIDispatch
@@ -48,13 +50,6 @@ from .status_codes import codes
 from .utils import ElapsedTimer, NetRCInfo, get_environment_proxies, get_logger
 
 logger = get_logger(__name__)
-
-
-class UnsetType:
-    pass  # pragma: nocover
-
-
-UNSET = UnsetType()
 
 
 class Client:

@@ -156,6 +156,16 @@ def test_timeout_from_one_none_value():
     assert timeout == httpx.Timeout()
 
 
+def test_timeout_from_one_value():
+    timeout = httpx.Timeout(read_timeout=5.0)
+    assert timeout == httpx.Timeout(timeout=(None, 5.0, None, None))
+
+
+def test_timeout_from_one_value_and_default():
+    timeout = httpx.Timeout(5.0, pool_timeout=60.0)
+    assert timeout == httpx.Timeout(timeout=(5.0, 5.0, 5.0, 60.0))
+
+
 def test_timeout_from_tuple():
     timeout = httpx.Timeout(timeout=(5.0, 5.0, 5.0, 5.0))
     assert timeout == httpx.Timeout(timeout=5.0)
