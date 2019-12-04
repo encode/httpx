@@ -3,14 +3,7 @@ import ssl
 import typing
 
 from ..concurrency.base import ConcurrencyBackend, lookup_backend
-from ..config import (
-    DEFAULT_TIMEOUT_CONFIG,
-    CertTypes,
-    SSLConfig,
-    Timeout,
-    TimeoutTypes,
-    VerifyTypes,
-)
+from ..config import CertTypes, SSLConfig, Timeout, VerifyTypes
 from ..models import Origin, Request, Response
 from ..utils import get_logger
 from .base import Dispatcher
@@ -31,7 +24,6 @@ class HTTPConnection(Dispatcher):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
-        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         http2: bool = False,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         release_func: typing.Optional[ReleaseCallback] = None,
@@ -39,7 +31,6 @@ class HTTPConnection(Dispatcher):
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env)
-        self.timeout = Timeout(timeout)
         self.http2 = http2
         self.backend = lookup_backend(backend)
         self.release_func = release_func
@@ -52,7 +43,7 @@ class HTTPConnection(Dispatcher):
         request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: Timeout = None,
     ) -> Response:
         if self.h11_connection is None and self.h2_connection is None:
             await self.connect(verify=verify, cert=cert, timeout=timeout)
@@ -69,10 +60,9 @@ class HTTPConnection(Dispatcher):
         self,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: Timeout = None,
     ) -> None:
         ssl = self.ssl.with_overrides(verify=verify, cert=cert)
-        timeout = self.timeout if timeout is None else Timeout(timeout)
 
         host = self.origin.host
         port = self.origin.port
@@ -83,6 +73,7 @@ class HTTPConnection(Dispatcher):
         else:
             on_release = functools.partial(self.release_func, self)
 
+        timeout = Timeout() if timeout is None else timeout
         if self.uds is None:
             logger.trace(
                 f"start_connect tcp host={host!r} port={port!r} timeout={timeout!r}"

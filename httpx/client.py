@@ -12,6 +12,7 @@ from .config import (
     DEFAULT_TIMEOUT_CONFIG,
     CertTypes,
     PoolLimits,
+    Timeout,
     TimeoutTypes,
     VerifyTypes,
 )
@@ -47,6 +48,13 @@ from .status_codes import codes
 from .utils import ElapsedTimer, NetRCInfo, get_environment_proxies, get_logger
 
 logger = get_logger(__name__)
+
+
+class UnsetType:
+    pass  # pragma: nocover
+
+
+UNSET = UnsetType()
 
 
 class Client:
@@ -129,7 +137,6 @@ class Client:
             dispatch = ConnectionPool(
                 verify=verify,
                 cert=cert,
-                timeout=timeout,
                 http2=http2,
                 pool_limits=pool_limits,
                 backend=backend,
@@ -149,6 +156,7 @@ class Client:
         self._params = QueryParams(params)
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
+        self.timeout = Timeout(timeout)
         self.max_redirects = max_redirects
         self.trust_env = trust_env
         self.dispatch = dispatch
@@ -161,7 +169,6 @@ class Client:
             proxies,
             verify=verify,
             cert=cert,
-            timeout=timeout,
             http2=http2,
             pool_limits=pool_limits,
             backend=backend,
@@ -217,7 +224,7 @@ class Client:
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
         request = self.build_request(
@@ -330,7 +337,7 @@ class Client:
         allow_redirects: bool = True,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
         if request.url.scheme not in ("http", "https"):
@@ -338,6 +345,7 @@ class Client:
 
         auth = self.auth if auth is None else auth
         trust_env = self.trust_env if trust_env is None else trust_env
+        timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         if not isinstance(auth, Middleware):
             request = self.authenticate(request, trust_env, auth)
@@ -392,7 +400,7 @@ class Client:
         request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: Timeout = None,
         allow_redirects: bool = True,
         history: typing.List[Response] = None,
     ) -> Response:
@@ -524,7 +532,7 @@ class Client:
         request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: Timeout = None,
     ) -> Response:
         """
         Sends a single request, without handling any redirections.
@@ -592,7 +600,7 @@ class Client:
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return await self.request(
@@ -622,7 +630,7 @@ class Client:
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return await self.request(
@@ -652,7 +660,7 @@ class Client:
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return await self.request(
@@ -685,7 +693,7 @@ class Client:
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return await self.request(
@@ -721,7 +729,7 @@ class Client:
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return await self.request(
@@ -757,7 +765,7 @@ class Client:
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return await self.request(
@@ -790,7 +798,7 @@ class Client:
         allow_redirects: bool = True,
         cert: CertTypes = None,
         verify: VerifyTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
         return await self.request(
@@ -827,21 +835,19 @@ def _proxies_to_dispatchers(
     proxies: typing.Optional[ProxiesTypes],
     verify: VerifyTypes,
     cert: typing.Optional[CertTypes],
-    timeout: TimeoutTypes,
     http2: bool,
     pool_limits: PoolLimits,
     backend: typing.Union[str, ConcurrencyBackend],
     trust_env: bool,
 ) -> typing.Dict[str, Dispatcher]:
     def _proxy_from_url(url: URLTypes) -> Dispatcher:
-        nonlocal verify, cert, timeout, http2, pool_limits, backend, trust_env
+        nonlocal verify, cert, http2, pool_limits, backend, trust_env
         url = URL(url)
         if url.scheme in ("http", "https"):
             return HTTPProxy(
                 url,
                 verify=verify,
                 cert=cert,
-                timeout=timeout,
                 pool_limits=pool_limits,
                 backend=backend,
                 trust_env=trust_env,

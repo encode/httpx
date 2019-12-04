@@ -1,15 +1,7 @@
 import typing
 
 from ..concurrency.base import BasePoolSemaphore, ConcurrencyBackend, lookup_backend
-from ..config import (
-    DEFAULT_POOL_LIMITS,
-    DEFAULT_TIMEOUT_CONFIG,
-    CertTypes,
-    PoolLimits,
-    Timeout,
-    TimeoutTypes,
-    VerifyTypes,
-)
+from ..config import DEFAULT_POOL_LIMITS, CertTypes, PoolLimits, Timeout, VerifyTypes
 from ..models import Origin, Request, Response
 from ..utils import get_logger
 from .base import Dispatcher
@@ -84,7 +76,6 @@ class ConnectionPool(Dispatcher):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
-        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http2: bool = False,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
@@ -92,7 +83,6 @@ class ConnectionPool(Dispatcher):
     ):
         self.verify = verify
         self.cert = cert
-        self.timeout = Timeout(timeout)
         self.pool_limits = pool_limits
         self.http2 = http2
         self.is_closed = False
@@ -121,7 +111,7 @@ class ConnectionPool(Dispatcher):
         request: Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
+        timeout: Timeout = None,
     ) -> Response:
         connection = await self.acquire_connection(
             origin=request.url.origin, timeout=timeout
@@ -138,23 +128,19 @@ class ConnectionPool(Dispatcher):
         return response
 
     async def acquire_connection(
-        self, origin: Origin, timeout: TimeoutTypes = None
+        self, origin: Origin, timeout: Timeout = None
     ) -> HTTPConnection:
         logger.trace(f"acquire_connection origin={origin!r}")
         connection = self.pop_connection(origin)
 
         if connection is None:
-            if timeout is None:
-                pool_timeout = self.timeout.pool_timeout
-            else:
-                pool_timeout = Timeout(timeout).pool_timeout
+            pool_timeout = None if timeout is None else timeout.pool_timeout
 
             await self.max_connections.acquire(timeout=pool_timeout)
             connection = HTTPConnection(
                 origin,
                 verify=self.verify,
                 cert=self.cert,
-                timeout=self.timeout,
                 http2=self.http2,
                 backend=self.backend,
                 release_func=self.release_connection,
