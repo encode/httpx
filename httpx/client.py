@@ -398,9 +398,9 @@ class Client:
     async def send_handling_redirects(
         self,
         request: Request,
+        timeout: Timeout,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: Timeout = None,
         allow_redirects: bool = True,
         history: typing.List[Response] = None,
     ) -> Response:
@@ -530,9 +530,9 @@ class Client:
     async def send_single_request(
         self,
         request: Request,
+        timeout: Timeout,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
-        timeout: Timeout = None,
     ) -> Response:
         """
         Sends a single request, without handling any redirections.
