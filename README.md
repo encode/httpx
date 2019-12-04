@@ -21,9 +21,16 @@ HTTPX is an asynchronous HTTP client, that supports HTTP/2 and HTTP/1.1.
 It can be used in high-performance async web frameworks, using either asyncio
 or trio, and is able to support making large numbers of requests concurrently.
 
-**Note**: *The 0.8 release switched HTTPX into focusing exclusively on the async
-client. It is possible that we'll look at re-introducing a sync API at a
-later date.*
+**Note**: *HTTPX should still be considered in alpha. We'd love early users and feedback,
+but would strongly recommend pinning your dependencies to the latest median
+release, so that you're able to properly review API changes between package
+updates. Currently you should be using `http==0.8.*`.*
+
+*In particular, the 0.8 release switched HTTPX into focusing exclusively on
+providing an async client, in order to move the project forward, and help
+us [change our approach to providing sync+async support][sync-support]. If
+you have been using the sync client, you may want to pin to `http==0.7.*`,
+and wait until our sync client is reintroduced.*
 
 ---
 
@@ -122,3 +129,5 @@ inspiration around the lower-level networking details.
 
 <p align="center">&mdash; ⭐️ &mdash;</p>
 <p align="center"><i>HTTPX is <a href="https://github.com/encode/httpx/blob/master/LICENSE.md">BSD licensed</a> code. Designed & built in Brighton, England.</i></p>
+
+[sync-support]: https://github.com/encode/httpx/issues/572
