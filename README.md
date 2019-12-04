@@ -24,12 +24,12 @@ or trio, and is able to support making large numbers of requests concurrently.
 **Note**: *HTTPX should still be considered in alpha. We'd love early users and feedback,
 but would strongly recommend pinning your dependencies to the latest median
 release, so that you're able to properly review API changes between package
-updates. Currently you should be using `http==0.8.*`.*
+updates. Currently you should be using `httpx==0.8.*`.*
 
 *In particular, the 0.8 release switched HTTPX into focusing exclusively on
 providing an async client, in order to move the project forward, and help
 us [change our approach to providing sync+async support][sync-support]. If
-you have been using the sync client, you may want to pin to `http==0.7.*`,
+you have been using the sync client, you may want to pin to `httpx==0.7.*`,
 and wait until our sync client is reintroduced.*
 
 ---
