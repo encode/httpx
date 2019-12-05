@@ -25,11 +25,11 @@ class HTTP2Connection:
 
     def __init__(
         self,
-        stream: BaseSocketStream,
+        socket: BaseSocketStream,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         on_release: typing.Callable = None,
     ):
-        self.stream = stream
+        self.socket = socket
         self.backend = lookup_backend(backend)
         self.on_release = on_release
         self.h2_state = h2.connection.H2Connection()
@@ -81,7 +81,7 @@ class HTTP2Connection:
         )
 
     async def close(self) -> None:
-        await self.stream.close()
+        await self.socket.close()
 
     async def send_connection_init(self, timeout: Timeout) -> None:
         # Need to set these manually here instead of manipulating via
@@ -108,7 +108,7 @@ class HTTP2Connection:
 
         self.h2_state.initiate_connection()
         data_to_send = self.h2_state.data_to_send()
-        await self.stream.write(data_to_send, timeout)
+        await self.socket.write(data_to_send, timeout)
 
     async def send_headers(self, request: Request, timeout: Timeout) -> int:
         stream_id = self.h2_state.get_next_available_stream_id()
@@ -128,7 +128,7 @@ class HTTP2Connection:
         )
         self.h2_state.send_headers(stream_id, headers)
         data_to_send = self.h2_state.data_to_send()
-        await self.stream.write(data_to_send, timeout)
+        await self.socket.write(data_to_send, timeout)
         return stream_id
 
     async def send_request_data(
@@ -163,13 +163,13 @@ class HTTP2Connection:
                 chunk, data = data[:chunk_size], data[chunk_size:]
                 self.h2_state.send_data(stream_id, chunk)
                 data_to_send = self.h2_state.data_to_send()
-                await self.stream.write(data_to_send, timeout)
+                await self.socket.write(data_to_send, timeout)
 
     async def end_stream(self, stream_id: int, timeout: Timeout) -> None:
         logger.trace(f"end_stream stream_id={stream_id}")
         self.h2_state.end_stream(stream_id)
         data_to_send = self.h2_state.data_to_send()
-        await self.stream.write(data_to_send, timeout)
+        await self.socket.write(data_to_send, timeout)
 
     async def receive_response(
         self, stream_id: int, timeout: Timeout
@@ -211,7 +211,7 @@ class HTTP2Connection:
     async def receive_event(self, stream_id: int, timeout: Timeout) -> h2.events.Event:
         while not self.events[stream_id]:
             flag = self.timeout_flags[stream_id]
-            data = await self.stream.read(self.READ_NUM_BYTES, timeout, flag=flag)
+            data = await self.socket.read(self.READ_NUM_BYTES, timeout, flag=flag)
             events = self.h2_state.receive_data(data)
             for event in events:
                 event_stream_id = getattr(event, "stream_id", 0)
@@ -239,7 +239,7 @@ class HTTP2Connection:
                     self.events[event.stream_id].append(event)
 
             data_to_send = self.h2_state.data_to_send()
-            await self.stream.write(data_to_send, timeout)
+            await self.socket.write(data_to_send, timeout)
 
         return self.events[stream_id].pop(0)
 
@@ -256,4 +256,4 @@ class HTTP2Connection:
         return False
 
     def is_connection_dropped(self) -> bool:
-        return self.stream.is_connection_dropped()
+        return self.socket.is_connection_dropped()

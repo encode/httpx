@@ -175,7 +175,7 @@ class HTTPProxy(ConnectionPool):
         assert http_connection is not None
         assert http_connection.h11_state.our_state == h11.SWITCHED_PROTOCOL
         on_release = http_connection.on_release
-        stream = http_connection.stream
+        socket = http_connection.socket
 
         # If we need to start TLS again for the target server
         # we need to pull the socket stream off the internal
@@ -190,10 +190,10 @@ class HTTPProxy(ConnectionPool):
                 f"proxy_url={self.proxy_url!r} "
                 f"origin={origin!r}"
             )
-            stream = await stream.start_tls(
+            socket = await socket.start_tls(
                 hostname=origin.host, ssl_context=ssl_context, timeout=timeout
             )
-            http_version = stream.get_http_version()
+            http_version = socket.get_http_version()
             logger.trace(
                 f"tunnel_tls_complete "
                 f"proxy_url={self.proxy_url!r} "
@@ -203,11 +203,11 @@ class HTTPProxy(ConnectionPool):
 
         if http_version == "HTTP/2":
             connection.h2_connection = HTTP2Connection(
-                stream, self.backend, on_release=on_release
+                socket, self.backend, on_release=on_release
             )
         else:
             assert http_version == "HTTP/1.1"
-            connection.h11_connection = HTTP11Connection(stream, on_release=on_release)
+            connection.h11_connection = HTTP11Connection(socket, on_release=on_release)
 
     def should_forward_origin(self, origin: Origin) -> bool:
         """Determines if the given origin should
