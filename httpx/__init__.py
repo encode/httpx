@@ -1,5 +1,5 @@
 from .__version__ import __description__, __title__, __version__
-from .api import delete, get, head, options, patch, post, put, request
+from .api import delete, get, head, options, patch, post, put, request, stream
 from .auth import BasicAuth, DigestAuth
 from .client import Client
 from .concurrency.asyncio import AsyncioBackend
@@ -75,6 +75,7 @@ __all__ = [
     "patch",
     "put",
     "request",
+    "stream",
     "BasicAuth",
     "Client",
     "DigestAuth",

@@ -1,12 +1,13 @@
 import typing
 
-from .client import Client
+from .client import Client, StreamContextManager
 from .config import DEFAULT_TIMEOUT_CONFIG, CertTypes, TimeoutTypes, VerifyTypes
 from .models import (
     AuthTypes,
     CookieTypes,
     HeaderTypes,
     QueryParamTypes,
+    Request,
     RequestData,
     RequestFiles,
     Response,
@@ -96,6 +97,44 @@ async def request(
             auth=auth,
             allow_redirects=allow_redirects,
         )
+
+
+def stream(
+    method: str,
+    url: URLTypes,
+    *,
+    params: QueryParamTypes = None,
+    data: RequestData = None,
+    files: RequestFiles = None,
+    json: typing.Any = None,
+    headers: HeaderTypes = None,
+    cookies: CookieTypes = None,
+    auth: AuthTypes = None,
+    timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    allow_redirects: bool = True,
+    verify: VerifyTypes = True,
+    cert: CertTypes = None,
+    trust_env: bool = True,
+) -> StreamContextManager:
+    client = Client(cert=cert, verify=verify, trust_env=trust_env)
+    request = Request(
+        method=method,
+        url=url,
+        params=params,
+        data=data,
+        files=files,
+        json=json,
+        headers=headers,
+        cookies=cookies,
+    )
+    return StreamContextManager(
+        client=client,
+        request=request,
+        auth=auth,
+        timeout=timeout,
+        allow_redirects=allow_redirects,
+        close_client=True,
+    )
 
 
 async def get(

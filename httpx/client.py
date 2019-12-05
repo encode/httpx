@@ -1,5 +1,6 @@
 import functools
 import typing
+import warnings
 from types import TracebackType
 
 import hstspreload
@@ -222,6 +223,12 @@ class Client:
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
+        if stream:
+            warnings.warn(
+                "The 'stream=True' argument is due to be deprecated. "
+                "Use 'async with client.stream(method, url, ...) as response' instead."
+            )
+
         request = self.build_request(
             method=method,
             url=url,
@@ -243,6 +250,39 @@ class Client:
             trust_env=trust_env,
         )
         return response
+
+    def stream(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> "StreamContextManager":
+        request = self.build_request(
+            method=method,
+            url=url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        return StreamContextManager(
+            client=self,
+            request=request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
 
     def build_request(
         self,
@@ -864,3 +904,42 @@ def _proxies_to_dispatchers(
             else:
                 new_proxies[str(key)] = dispatcher_or_url
         return new_proxies
+
+
+class StreamContextManager:
+    def __init__(
+        self,
+        client: Client,
+        request: Request,
+        *,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        close_client: bool = False,
+    ) -> None:
+        self.client = client
+        self.request = request
+        self.auth = auth
+        self.allow_redirects = allow_redirects
+        self.timeout = timeout
+        self.close_client = close_client
+
+    async def __aenter__(self) -> "Response":
+        self.response = await self.client.send(
+            request=self.request,
+            auth=self.auth,
+            allow_redirects=self.allow_redirects,
+            timeout=self.timeout,
+            stream=True,
+        )
+        return self.response
+
+    async def __aexit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        await self.response.close()
+        if self.close_client:
+            await self.client.close()
