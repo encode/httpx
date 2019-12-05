@@ -27,17 +27,12 @@ class SocketStream(BaseSocketStream):
     ) -> None:
         self.stream = stream
         self.timeout = timeout
-        self.write_buffer = b""
         self.read_lock = trio.Lock()
         self.write_lock = trio.Lock()
 
     async def start_tls(
         self, hostname: str, ssl_context: ssl.SSLContext, timeout: Timeout
     ) -> "SocketStream":
-        # Check that the write buffer is empty. We should never start a TLS stream
-        # while there is still pending data to write.
-        assert self.write_buffer == b""
-
         connect_timeout = _or_inf(timeout.connect_timeout)
         ssl_stream = trio.SSLStream(
             self.stream, ssl_context=ssl_context, server_hostname=hostname
@@ -92,23 +87,9 @@ class SocketStream(BaseSocketStream):
         # See: https://github.com/encode/httpx/pull/143#issuecomment-515181778
         return stream.socket.is_readable()
 
-    def write_no_block(self, data: bytes) -> None:
-        self.write_buffer += data  # pragma: no cover
-
     async def write(
         self, data: bytes, timeout: Timeout = None, flag: TimeoutFlag = None
     ) -> None:
-        if self.write_buffer:
-            previous_data = self.write_buffer
-            # Reset before recursive call, otherwise we'll go through
-            # this branch indefinitely.
-            self.write_buffer = b""
-            try:
-                await self.write(previous_data, timeout=timeout, flag=flag)
-            except WriteTimeout:
-                self.writer_buffer = previous_data
-                raise
-
         if not data:
             return
 

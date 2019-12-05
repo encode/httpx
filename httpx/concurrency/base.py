@@ -77,9 +77,6 @@ class BaseSocketStream:
     async def read(self, n: int, timeout: Timeout, flag: typing.Any = None) -> bytes:
         raise NotImplementedError()  # pragma: no cover
 
-    def write_no_block(self, data: bytes) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
     async def write(self, data: bytes, timeout: Timeout) -> None:
         raise NotImplementedError()  # pragma: no cover
 
