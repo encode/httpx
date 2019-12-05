@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.8.0 (November 27, 2019)
+
+### Removed
+
+- The syncronous API has been removed, in order to allow us to fundamentally change how we approach supporting both sync and async variants. (See #588 for more details.)
+
 ## 0.7.8 (November 17, 2019)
 
 ### Added
