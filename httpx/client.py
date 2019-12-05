@@ -1,5 +1,6 @@
 import functools
 import typing
+import warnings
 from types import TracebackType
 
 import hstspreload
@@ -222,6 +223,19 @@ class Client:
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
+        if cert is not None:
+            warnings.warn(
+                "Passing a 'cert' argument when making a request on a client "
+                "is due to be deprecated. Instantiate a new client instead, "
+                "passing any 'cert' or 'verify' arugments to the client itself."
+            )
+        if verify is not None:
+            warnings.warn(
+                "Passing a 'verify' argument when making a request on a client "
+                "is due to be deprecated. Instantiate a new client instead, "
+                "passing any 'cert' or 'verify' arugments to the client itself."
+            )
+
         request = self.build_request(
             method=method,
             url=url,
