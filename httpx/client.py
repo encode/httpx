@@ -915,12 +915,14 @@ class StreamContextManager:
         auth: AuthTypes = None,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        close_client: bool = False,
     ) -> None:
         self.client = client
         self.request = request
         self.auth = auth
         self.allow_redirects = allow_redirects
         self.timeout = timeout
+        self.close_client = close_client
 
     async def __aenter__(self) -> "Response":
         self.response = await self.client.send(
@@ -939,3 +941,5 @@ class StreamContextManager:
         traceback: TracebackType = None,
     ) -> None:
         await self.response.close()
+        if self.close_client:
+            await self.client.close()
