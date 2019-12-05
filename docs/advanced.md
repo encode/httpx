@@ -404,27 +404,55 @@ If you do need to make HTTPS connections to a local server, for example to test 
 Response <200 OK>
 ```
 
-## Support async environments
+## Supported async environments
 
-### [asyncio](https://docs.python.org/3/library/asyncio.html) (Default)
+HTTPX supports either `asyncio` or `trio` as an async environment.
 
-By default, `Client` uses `asyncio` to perform asynchronous operations and I/O calls.
+By default it will auto-detect which of those two to use as the backend
+for socket operations and concurrency primitives.
 
-### [trio](https://github.com/python-trio/trio)
-
-To make asynchronous requests in `trio` programs, pass a `TrioBackend` to the `Client`:
+You can also explicitly select a backend by instantiating a client with the
+`backend` argument...
 
 ```python
-import trio
+client = httpx.Client(backend='auto')     # Autodetection. The default case.
+client = httpx.Client(backend='asyncio')  # Use asyncio as the backend.
+client = httpx.Client(backend='trio')     # Use trio as the backend.
+```
+
+### [AsyncIO](https://docs.python.org/3/library/asyncio.html)
+
+AsyncIO is Python's [built-in library](https://docs.python.org/3/library/asyncio.html)
+for writing concurrent code with the async/await syntax.
+
+```python
+import asyncio
 import httpx
-from httpx.concurrency.trio import TrioBackend
 
 async def main():
-    async with httpx.Client(backend=TrioBackend()) as client:
-        ...
+    client = httpx.Client()
+    response = await client.get('https://www.example.com/')
+    print(response)
+
+asyncio.run(main())
+```
+
+### [Trio](https://github.com/python-trio/trio)
+
+Trio is [an alternative async library](https://trio.readthedocs.io/en/stable/),
+designed around the [the principles of structured concurrency](https://en.wikipedia.org/wiki/Structured_concurrency).
+
+```python
+import httpx
+import trio
+
+async def main():
+    client = httpx.Client()
+    response = await client.get('https://www.example.com/')
+    print(response)
 
 trio.run(main)
 ```
 
 !!! important
-    `trio` must be installed to import and use the `TrioBackend`.
+    The `trio` package must be installed to use the Trio backend.
