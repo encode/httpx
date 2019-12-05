@@ -62,16 +62,19 @@ async def test_post_json(server, backend):
 
 async def test_stream_response(server, backend):
     async with httpx.Client(backend=backend) as client:
-        response = await client.request("GET", server.url, stream=True)
+        async with client.stream("GET", server.url) as response:
+            body = await response.read()
+
     assert response.status_code == 200
-    body = await response.read()
     assert body == b"Hello, world!"
     assert response.content == b"Hello, world!"
 
 
 async def test_access_content_stream_response(server, backend):
     async with httpx.Client(backend=backend) as client:
-        response = await client.request("GET", server.url, stream=True)
+        async with client.stream("GET", server.url) as response:
+            pass
+
     assert response.status_code == 200
     with pytest.raises(httpx.ResponseNotRead):
         response.content

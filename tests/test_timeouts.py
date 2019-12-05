@@ -44,9 +44,6 @@ async def test_pool_timeout(server, backend):
     async with Client(
         pool_limits=pool_limits, timeout=timeout, backend=backend
     ) as client:
-        response = await client.get(server.url, stream=True)
-
-        with pytest.raises(PoolTimeout):
-            await client.get("http://localhost:8000/")
-
-        await response.read()
+        async with client.stream("GET", server.url):
+            with pytest.raises(PoolTimeout):
+                await client.get("http://localhost:8000/")
