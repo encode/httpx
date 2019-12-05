@@ -137,7 +137,7 @@ async def test_raw_interface():
     response = httpx.Response(200, content=b"Hello, world!")
 
     raw = b""
-    async for part in response.raw():
+    async for part in response.stream_raw():
         raw += part
     assert raw == b"Hello, world!"
 
@@ -147,7 +147,7 @@ async def test_stream_interface():
     response = httpx.Response(200, content=b"Hello, world!")
 
     content = b""
-    async for part in response.stream():
+    async for part in response.stream_bytes():
         content += part
     assert content == b"Hello, world!"
 
@@ -183,7 +183,7 @@ async def test_stream_interface_after_read():
     await response.read()
 
     content = b""
-    async for part in response.stream():
+    async for part in response.stream_bytes():
         content += part
     assert content == b"Hello, world!"
 
@@ -207,7 +207,7 @@ async def test_cannot_read_after_stream_consumed():
     response = httpx.Response(200, content=async_streaming_body())
 
     content = b""
-    async for part in response.stream():
+    async for part in response.stream_bytes():
         content += part
 
     with pytest.raises(httpx.StreamConsumed):

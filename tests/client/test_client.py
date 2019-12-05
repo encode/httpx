@@ -71,7 +71,7 @@ async def test_stream_iterator(server):
         response = await client.get(server.url, stream=True)
     assert response.status_code == 200
     body = b""
-    async for chunk in response.stream():
+    async for chunk in response.stream_bytes():
         body += chunk
     assert body == b"Hello, world!"
 
@@ -82,7 +82,7 @@ async def test_raw_iterator(server):
         response = await client.get(server.url, stream=True)
     assert response.status_code == 200
     body = b""
-    async for chunk in response.raw():
+    async for chunk in response.stream_raw():
         body += chunk
     assert body == b"Hello, world!"
     await response.close()
