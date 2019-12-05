@@ -112,7 +112,7 @@ async def test_no_redirect(backend):
     response = await client.get(url)
     assert response.status_code == 200
     with pytest.raises(NotRedirectResponse):
-        await response.next()
+        response.next()
 
 
 async def test_redirect_301(backend):
@@ -149,7 +149,7 @@ async def test_disallow_redirects(backend):
     assert response.is_redirect is True
     assert len(response.history) == 0
 
-    response = await response.next()
+    response = await client.send_handling_redirects(response.next())
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert response.is_redirect is False
@@ -208,7 +208,7 @@ async def test_too_many_redirects_calling_next(backend):
     response = await client.get(url, allow_redirects=False)
     with pytest.raises(TooManyRedirects):
         while response.is_redirect:
-            response = await response.next()
+            response = await client.send_handling_redirects(response.next())
 
 
 async def test_redirect_loop(backend):
@@ -223,7 +223,7 @@ async def test_redirect_loop_calling_next(backend):
     response = await client.get(url, allow_redirects=False)
     with pytest.raises(RedirectLoop):
         while response.is_redirect:
-            response = await response.next()
+            response = await client.send_handling_redirects(response.next())
 
 
 async def test_cross_domain_redirect(backend):

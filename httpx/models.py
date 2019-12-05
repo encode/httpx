@@ -716,6 +716,12 @@ class Request:
             yield self.content
 
 
+class RequestForRedirect:
+    def __init__(self, request: Request, **kwargs: typing.Any) -> None:
+        self.request = request
+        self.kwargs = kwargs
+
+
 class Response:
     def __init__(
         self,
@@ -736,7 +742,7 @@ class Response:
         self.request = request
         self.on_close = on_close
         self.elapsed = datetime.timedelta(0) if elapsed is None else elapsed
-        self.call_next: typing.Optional[typing.Callable] = None
+        self.request_for_redirect: typing.Optional[RequestForRedirect] = None
 
         self.history = [] if history is None else list(history)
 
@@ -986,14 +992,17 @@ class Response:
                 yield part
             await self.close()
 
-    async def next(self) -> "Response":
+    def next(self) -> RequestForRedirect:
         """
-        Get the next response from a redirect response.
+        Get the next request to send from a redirect response.
+
+        This returns an opaque object that should be
+        given to `Client.send_handling_redirects()`.
         """
         if not self.is_redirect:
             raise NotRedirectResponse()
-        assert self.call_next is not None
-        return await self.call_next()
+        assert self.request_for_redirect is not None
+        return self.request_for_redirect
 
     async def close(self) -> None:
         """

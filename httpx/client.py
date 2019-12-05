@@ -44,6 +44,7 @@ from .models import (
     Request,
     RequestData,
     RequestFiles,
+    RequestForRedirect,
     Response,
     URLTypes,
 )
@@ -432,13 +433,18 @@ class Client:
 
     async def send_handling_redirects(
         self,
-        request: Request,
-        timeout: Timeout,
+        request: typing.Union[Request, RequestForRedirect],
+        timeout: Timeout = None,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         allow_redirects: bool = True,
         history: typing.List[Response] = None,
     ) -> Response:
+        if isinstance(request, RequestForRedirect):
+            return await self.send_handling_redirects(request.request, **request.kwargs)
+
+        assert timeout is not None
+
         if history is None:
             history = []
 
@@ -461,9 +467,8 @@ class Client:
             history = history + [response]
 
             if not allow_redirects:
-                response.call_next = functools.partial(
-                    self.send_handling_redirects,
-                    request=request,
+                response.request_for_redirect = RequestForRedirect(
+                    request,
                     verify=verify,
                     cert=cert,
                     timeout=timeout,
