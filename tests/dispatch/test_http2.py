@@ -6,7 +6,7 @@ import h2.events
 import pytest
 from h2.settings import SettingCodes
 
-from httpx import Client, Response, Timeout
+from httpx import Client, Response, TimeoutException
 
 from .utils import MockHTTP2Backend
 
@@ -142,7 +142,7 @@ async def test_http2_live_request(backend):
     async with Client(backend=backend, http2=True) as client:
         try:
             resp = await client.get("https://nghttp2.org/httpbin/anything")
-        except Timeout:
+        except TimeoutException:
             pytest.xfail(reason="nghttp2.org appears to be unresponsive")
         except socket.gaierror:
             pytest.xfail(reason="You appear to be offline")
