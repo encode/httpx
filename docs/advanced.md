@@ -254,7 +254,7 @@ async with httpx.Client(proxies=proxy) as client:
 
 HTTPX is careful to enforce timeouts everywhere by default.
 
-The default behavior is to raise a `RequestException` after 5 seconds of
+The default behavior is to raise a `TimeoutException` after 5 seconds of
 network inactivity.
 
 #### Setting and disabling timeouts
@@ -262,10 +262,10 @@ network inactivity.
 You can set timeouts for an individual request:
 
 ```python
-# Using top-level API
+# Using the top-level API:
 await httpx.get('http://example.com/api/v1/example', timeout=10.0)
 
-# Or, with a client:
+# Using a client instance:
 async with httpx.Client() as client:
     await client.get("http://example.com/api/v1/example", timeout=10.0)
 ```
@@ -273,10 +273,10 @@ async with httpx.Client() as client:
 Or disable timeouts for an individual request:
 
 ```python
-# Using top-level API
+# Using the top-level API:
 await httpx.get('http://example.com/api/v1/example', timeout=None)
 
-# Or, with a client:
+# Using a client instance:
 async with httpx.Client() as client:
     await client.get("http://example.com/api/v1/example", timeout=None)
 ```
@@ -317,9 +317,11 @@ connection pool, which is configured by the `pool_limits`.
 You can configure the timeout behavior for any of these values...
 
 ```python
-# Use a 60s timeout for connecting, and a 10s timeout elsewhere.
+# A client with a 60s timeout for connecting, and a 10s timeout elsewhere.
 timeout = httpx.Timeout(10.0, connect_timeout=60.0)
-resp = await httpx.get('http://example.com/api/v1/example', timeout=timeout)
+client = httpx.Client(timeout=timeout)
+
+response = await client.get('http://example.com/')
 ```
 
 ## Multipart file encoding
