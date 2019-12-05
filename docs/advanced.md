@@ -411,7 +411,7 @@ HTTPX supports either `asyncio` or `trio` as an async environment.
 By default it will auto-detect which of those two to use as the backend
 for socket operations and concurrency primitives.
 
-You can also explicit select a backend by instantiating a client with the
+You can also explicitly select a backend by instantiating a client with the
 `backend` argument...
 
 ```python
