@@ -250,83 +250,78 @@ async with httpx.Client(proxies=proxy) as client:
     has not been implemented yet. To use proxies you must pass the proxy
     information at `Client` initialization.
 
-## Timeout fine-tuning
+## Timeout Configuration
 
-HTTPX offers various request timeout management options. Three types of timeouts
-are available: **connect** timeouts, **write** timeouts and **read** timeouts.
+HTTPX is careful to enforce timeouts everywhere by default.
+
+The default behavior is to raise a `TimeoutException` after 5 seconds of
+network inactivity.
+
+### Setting and disabling timeouts
+
+You can set timeouts for an individual request:
+
+```python
+# Using the top-level API:
+await httpx.get('http://example.com/api/v1/example', timeout=10.0)
+
+# Using a client instance:
+async with httpx.Client() as client:
+    await client.get("http://example.com/api/v1/example", timeout=10.0)
+```
+
+Or disable timeouts for an individual request:
+
+```python
+# Using the top-level API:
+await httpx.get('http://example.com/api/v1/example', timeout=None)
+
+# Using a client instance:
+async with httpx.Client() as client:
+    await client.get("http://example.com/api/v1/example", timeout=None)
+```
+
+### Setting a default timeout on a client
+
+You can set a timeout on a client instance, which results in the given
+`timeout` being used as the default for requests made with this client:
+
+```python
+client = httpx.Client()              # Use a default 5s timeout everywhere.
+client = httpx.Client(timeout=10.0)  # Use a default 10s timeout everywhere.
+client = httpx.Client(timeout=None)  # Disable all timeouts by default.
+```
+
+### Fine tuning the configuration
+
+HTTPX also allows you to specify the timeout behavior in more fine grained detail.
+
+There are four different types of timeouts that may occur. These are **connect**,
+**read**, **write**, and **pool** timeouts.
 
 * The **connect timeout** specifies the maximum amount of time to wait until
 a connection to the requested host is established. If HTTPX is unable to connect
 within this time frame, a `ConnectTimeout` exception is raised.
-* The **write timeout** specifies the maximum duration to wait for a chunk of
-data to be sent (for example, a chunk of the request body). If HTTPX is unable
-to send data within this time frame, a `WriteTimeout` exception is raised.
 * The **read timeout** specifies the maximum duration to wait for a chunk of
 data to be received (for example, a chunk of the response body). If HTTPX is
 unable to receive data within this time frame, a `ReadTimeout` exception is raised.
+* The **write timeout** specifies the maximum duration to wait for a chunk of
+data to be sent (for example, a chunk of the request body). If HTTPX is unable
+to send data within this time frame, a `WriteTimeout` exception is raised.
+* The **pool timeout** specifies the maximum duration to wait for acquiring
+a connection from the connection pool. If HTTPX is unable to acquire a connection
+within this time frame, a `PoolTimeout` exception is raised. A related
+configuration here is the maximum number of allowable connections in the
+connection pool, which is configured by the `pool_limits`.
 
-### Setting timeouts
-
-You can set timeouts on two levels:
-
-- For a given request:
-
-```python
-# Using top-level API
-await httpx.get('http://example.com/api/v1/example', timeout=5)
-
-# Or, with a client:
-async with httpx.Client() as client:
-    await client.get("http://example.com/api/v1/example", timeout=5)
-```
-
-- On a client instance, which results in the given `timeout` being used as a default for requests made with this client:
+You can configure the timeout behavior for any of these values...
 
 ```python
-async with httpx.Client(timeout=5) as client:
-    await client.get('http://example.com/api/v1/example')
-```
+# A client with a 60s timeout for connecting, and a 10s timeout elsewhere.
+timeout = httpx.Timeout(10.0, connect_timeout=60.0)
+client = httpx.Client(timeout=timeout)
 
-Besides, you can pass timeouts in two forms:
-
-- A number, which sets the read, write and connect timeouts to the same value, as in the examples above.
-- A `Timeout` instance, which allows to define the read, write and connect timeouts independently:
-
-```python
-timeout = httpx.Timeout(
-    connect_timeout=5,
-    read_timeout=10,
-    write_timeout=15
-)
-
-resp = await httpx.get('http://example.com/api/v1/example', timeout=timeout)
-```
-
-### Default timeouts
-
-By default all types of timeouts are set to 5 second.
-
-### Disabling timeouts
-
-To disable timeouts, you can pass `None` as a timeout parameter.
-Note that currently this is not supported by the top-level API.
-
-```python
-url = "http://example.com/api/v1/delay/10"
-
-await httpx.get(url, timeout=None)  # Times out after 5s
-
-
-async with httpx.Client(timeout=None) as client:
-    await client.get(url)  # Does not timeout, returns after 10s
-
-
-timeout = httpx.Timeout(
-    connect_timeout=5,
-    read_timeout=None,
-    write_timeout=5
-)
-await httpx.get(url, timeout=timeout) # Does not timeout, returns after 10s
+response = await client.get('http://example.com/')
 ```
 
 ## Multipart file encoding

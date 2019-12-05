@@ -38,6 +38,13 @@ DEFAULT_CIPHERS = ":".join(
 logger = get_logger(__name__)
 
 
+class UnsetType:
+    pass  # pragma: nocover
+
+
+UNSET = UnsetType()
+
+
 class SSLConfig:
     """
     SSL Configuration.
@@ -203,44 +210,58 @@ class SSLConfig:
 
 class Timeout:
     """
-    Timeout values.
+    Timeout configuration.
+
+    **Usage**:
+
+    Timeout()                           # No timeout.
+    Timeout(5.0)                        # 5s timeout on all operations.
+    Timeout(connect_timeout=5.0)        # 5s timeout on connect, no other timeouts.
+    Timeout(5.0, connect_timeout=10.0)  # 10s timeout on connect. 5s timeout elsewhere.
+    Timeout(5.0, pool_timeout=None)     # No timeout on acquiring connection from pool.
+                                        # 5s timeout elsewhere.
     """
 
     def __init__(
         self,
         timeout: TimeoutTypes = None,
         *,
-        connect_timeout: float = None,
-        read_timeout: float = None,
-        write_timeout: float = None,
-        pool_timeout: float = None,
+        connect_timeout: typing.Union[None, float, UnsetType] = UNSET,
+        read_timeout: typing.Union[None, float, UnsetType] = UNSET,
+        write_timeout: typing.Union[None, float, UnsetType] = UNSET,
+        pool_timeout: typing.Union[None, float, UnsetType] = UNSET,
     ):
-        if timeout is None:
-            self.connect_timeout = connect_timeout
-            self.read_timeout = read_timeout
-            self.write_timeout = write_timeout
-            self.pool_timeout = pool_timeout
+        if isinstance(timeout, Timeout):
+            # Passed as a single explicit Timeout.
+            assert connect_timeout is UNSET
+            assert read_timeout is UNSET
+            assert write_timeout is UNSET
+            assert pool_timeout is UNSET
+            self.connect_timeout = (
+                timeout.connect_timeout
+            )  # type: typing.Optional[float]
+            self.read_timeout = timeout.read_timeout  # type: typing.Optional[float]
+            self.write_timeout = timeout.write_timeout  # type: typing.Optional[float]
+            self.pool_timeout = timeout.pool_timeout  # type: typing.Optional[float]
+        elif isinstance(timeout, tuple):
+            # Passed as a tuple.
+            self.connect_timeout = timeout[0]
+            self.read_timeout = timeout[1]
+            self.write_timeout = None if len(timeout) < 3 else timeout[2]
+            self.pool_timeout = None if len(timeout) < 4 else timeout[3]
         else:
-            # Specified as a single timeout value
-            assert connect_timeout is None
-            assert read_timeout is None
-            assert write_timeout is None
-            assert pool_timeout is None
-            if isinstance(timeout, Timeout):
-                self.connect_timeout = timeout.connect_timeout
-                self.read_timeout = timeout.read_timeout
-                self.write_timeout = timeout.write_timeout
-                self.pool_timeout = timeout.pool_timeout
-            elif isinstance(timeout, tuple):
-                self.connect_timeout = timeout[0]
-                self.read_timeout = timeout[1]
-                self.write_timeout = None if len(timeout) < 3 else timeout[2]
-                self.pool_timeout = None if len(timeout) < 4 else timeout[3]
-            else:
-                self.connect_timeout = timeout
-                self.read_timeout = timeout
-                self.write_timeout = timeout
-                self.pool_timeout = timeout
+            self.connect_timeout = (
+                timeout if isinstance(connect_timeout, UnsetType) else connect_timeout
+            )
+            self.read_timeout = (
+                timeout if isinstance(read_timeout, UnsetType) else read_timeout
+            )
+            self.write_timeout = (
+                timeout if isinstance(write_timeout, UnsetType) else write_timeout
+            )
+            self.pool_timeout = (
+                timeout if isinstance(pool_timeout, UnsetType) else pool_timeout
+            )
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
