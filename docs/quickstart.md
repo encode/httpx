@@ -381,7 +381,7 @@ value to be more or less strict:
 >>> await httpx.get('https://github.com/', timeout=0.001)
 ```
 
-You can also disable the timeout behaviour completely...
+You can also disable the timeout behavior completely...
 
 ```python
 >>> await httpx.get('https://github.com/', timeout=None)
