@@ -227,13 +227,19 @@ class Client:
             warnings.warn(
                 "Passing a 'cert' argument when making a request on a client "
                 "is due to be deprecated. Instantiate a new client instead, "
-                "passing any 'cert' or 'verify' arguments to the client itself."
+                "passing any 'cert' arguments to the client itself."
             )
         if verify is not None:
             warnings.warn(
                 "Passing a 'verify' argument when making a request on a client "
                 "is due to be deprecated. Instantiate a new client instead, "
-                "passing any 'cert' or 'verify' arguments to the client itself."
+                "passing any 'verify' arguments to the client itself."
+            )
+        if trust_env is not None:
+            warnings.warn(
+                "Passing a 'trust_env' argument when making a request on a client "
+                "is due to be deprecated. Instantiate a new client instead, "
+                "passing any 'trust_env' argument to the client itself."
             )
 
         request = self.build_request(
