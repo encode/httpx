@@ -227,7 +227,7 @@ class Client:
             warnings.warn(
                 "Passing a 'cert' argument when making a request on a client "
                 "is due to be deprecated. Instantiate a new client instead, "
-                "passing any 'cert' or 'verify' arugments to the client itself."
+                "passing any 'cert' or 'verify' arguments to the client itself."
             )
         if verify is not None:
             warnings.warn(
