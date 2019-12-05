@@ -292,10 +292,56 @@ The `Headers` data type is case-insensitive, so you can use any capitalization.
 'application/json'
 ```
 
-Multiple values for a single response header are represented as a single comma-separated
-value, as per [RFC 7230](https://tools.ietf.org/html/rfc7230#section-3.2):
+Multiple values for a single response header are represented as a single comma-separated value, as per [RFC 7230](https://tools.ietf.org/html/rfc7230#section-3.2):
 
 > A recipient MAY combine multiple header fields with the same field name into one “field-name: field-value” pair, without changing the semantics of the message, by appending each subsequent field-value to the combined field value in order, separated by a comma.
+
+## Streaming Responses
+
+For large downloads you may want to use streaming responses that do not load the entire response body into memory at once.
+
+You can stream the binary content of the response...
+
+```
+>>> async with httpx.stream("GET", "https://www.example.com") as r:
+...     async for data in r.stream_bytes():
+...         print(data)
+```
+
+Or the text of the response...
+
+```
+>>> async with httpx.stream("GET", "https://www.example.com") as r:
+...     async for text in r.stream_text():
+...         print(text)
+```
+
+Or stream the text, on a line-by-line basis...
+
+```
+>>> async with httpx.stream("GET", "https://www.example.com") as r:
+...     async for line in r.stream_lines():
+...         print(line)
+```
+
+HTTPX will use universal line endings, normalising all cases to `\n`.
+
+In some cases you might want to access the raw bytes on the response without applying any HTTP content decoding. In this case any content encoding that the web server has applied such as `gzip`, `deflate`, or `brotli` will not be automatically decoded.
+
+```
+>>> async with httpx.stream("GET", "https://www.example.com") as r:
+...     async for chunk in r.stream_raw():
+...         print(chunk)
+```
+
+If you're using streaming responses in any of these ways then the `response.content` and `response.text` attributes will not be available, and will raise errors if accessed. However you can also use the response streaming functionality to conditionally load the response body:
+
+```
+>>> async with httpx.stream("GET", "https://www.example.com") as r:
+...     if r.headers['Content-Length'] < TOO_LONG:
+...         await r.read()
+...         print(r.text)
+```
 
 ## Cookies
 
