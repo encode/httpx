@@ -233,7 +233,7 @@ class Client:
             warnings.warn(
                 "Passing a 'verify' argument when making a request on a client "
                 "is due to be deprecated. Instantiate a new client instead, "
-                "passing any 'cert' or 'verify' arugments to the client itself."
+                "passing any 'cert' or 'verify' arguments to the client itself."
             )
 
         request = self.build_request(
