@@ -243,7 +243,7 @@ Proxies can be configured to have different behavior such as forwarding or tunne
 ```python
 proxy = httpx.HTTPProxy(
     proxy_url="https://127.0.0.1",
-    proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY
+    proxy_mode="TUNNEL_ONLY"  # May be "TUNNEL_ONLY" or "FORWARD_ONLY". Defaults to "DEFAULT".
 )
 async with httpx.Client(proxies=proxy) as client:
     # This request will be tunneled instead of forwarded.

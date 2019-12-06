@@ -4,7 +4,7 @@ from .auth import BasicAuth, DigestAuth
 from .client import Client
 from .config import TimeoutConfig  # For 0.8 backwards compat.
 from .config import PoolLimits, Timeout
-from .dispatch.proxy_http import HTTPProxy
+from .dispatch.proxy_http import HTTPProxy, HTTPProxyMode
 from .exceptions import (
     ConnectionClosed,
     ConnectTimeout,
@@ -51,6 +51,7 @@ __all__ = [
     "Timeout",
     "TimeoutConfig",  # For 0.8 backwards compat.
     "HTTPProxy",
+    "HTTPProxyMode",  # For 0.8 backwards compat.
     "ConnectTimeout",
     "CookieConflict",
     "ConnectionClosed",
