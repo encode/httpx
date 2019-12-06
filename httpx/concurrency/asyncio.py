@@ -40,14 +40,10 @@ def ssl_monkey_patch() -> None:
 
 class SocketStream(BaseSocketStream):
     def __init__(
-        self,
-        stream_reader: asyncio.StreamReader,
-        stream_writer: asyncio.StreamWriter,
-        timeout: Timeout,
+        self, stream_reader: asyncio.StreamReader, stream_writer: asyncio.StreamWriter,
     ):
         self.stream_reader = stream_reader
         self.stream_writer = stream_writer
-        self.timeout = timeout
         self.read_lock = asyncio.Lock()
 
         self._inner: typing.Optional[SocketStream] = None
@@ -114,7 +110,7 @@ class SocketStream(BaseSocketStream):
             transport=transport, protocol=protocol, reader=stream_reader, loop=loop
         )
 
-        ssl_stream = SocketStream(stream_reader, stream_writer, self.timeout)
+        ssl_stream = SocketStream(stream_reader, stream_writer)
         # When we return a new SocketStream with new StreamReader/StreamWriter instances
         # we need to keep references to the old StreamReader/StreamWriter so that they
         # are not garbage collected and closed while we're still using them.
@@ -130,12 +126,7 @@ class SocketStream(BaseSocketStream):
         ident = ssl_object.selected_alpn_protocol()
         return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
-    async def read(
-        self, n: int, timeout: Timeout = None, flag: TimeoutFlag = None
-    ) -> bytes:
-        if timeout is None:
-            timeout = self.timeout
-
+    async def read(self, n: int, timeout: Timeout, flag: TimeoutFlag = None) -> bytes:
         while True:
             # Check our flag at the first possible moment, and use a fine
             # grained retry loop if we're not yet in read-timeout mode.
@@ -161,13 +152,10 @@ class SocketStream(BaseSocketStream):
         return data
 
     async def write(
-        self, data: bytes, timeout: Timeout = None, flag: TimeoutFlag = None
+        self, data: bytes, timeout: Timeout, flag: TimeoutFlag = None
     ) -> None:
         if not data:
             return
-
-        if timeout is None:
-            timeout = self.timeout
 
         self.stream_writer.write(data)
         while True:
@@ -269,9 +257,7 @@ class AsyncioBackend(ConcurrencyBackend):
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
-        return SocketStream(
-            stream_reader=stream_reader, stream_writer=stream_writer, timeout=timeout
-        )
+        return SocketStream(stream_reader=stream_reader, stream_writer=stream_writer)
 
     async def open_uds_stream(
         self,
@@ -292,9 +278,7 @@ class AsyncioBackend(ConcurrencyBackend):
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
-        return SocketStream(
-            stream_reader=stream_reader, stream_writer=stream_writer, timeout=timeout
-        )
+        return SocketStream(stream_reader=stream_reader, stream_writer=stream_writer)
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
