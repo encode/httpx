@@ -3,7 +3,7 @@ import trio
 
 from httpx import AsyncioBackend, SSLConfig, Timeout
 from httpx.concurrency.trio import TrioBackend
-from tests.concurrency import run_concurrently
+from tests.concurrency import run_concurrently, sleep
 
 
 def get_asyncio_cipher(stream):
@@ -110,3 +110,49 @@ async def test_concurrent_read(server, backend):
         )
     finally:
         await stream.close()
+
+
+async def test_fork(backend):
+    ok_counter = 0
+
+    async def ok(delay: int) -> None:
+        nonlocal ok_counter
+        await sleep(backend, delay)
+        ok_counter += 1
+
+    async def fail(message: str, delay: int) -> None:
+        await sleep(backend, delay)
+        raise RuntimeError(message)
+
+    await backend.fork(ok, [0], ok, [0])
+    assert ok_counter == 2
+
+    with pytest.raises(RuntimeError, match="Oops"):
+        await backend.fork(ok, [0], fail, ["Oops", 0.01])
+
+    assert ok_counter == 3
+
+    with pytest.raises(RuntimeError, match="Oops"):
+        await backend.fork(ok, [0.01], fail, ["Oops", 0])
+
+    assert ok_counter == 3
+
+    with pytest.raises(RuntimeError, match="Oops"):
+        await backend.fork(fail, ["Oops", 0.01], ok, [0])
+
+    assert ok_counter == 4
+
+    with pytest.raises(RuntimeError, match="Oops"):
+        await backend.fork(fail, ["Oops", 0], ok, [0.01])
+
+    assert ok_counter == 4
+
+    with pytest.raises(RuntimeError, match="My bad"):
+        await backend.fork(fail, ["My bad", 0], fail, ["Oops", 0.01])
+
+    with pytest.raises(RuntimeError, match="Oops"):
+        await backend.fork(fail, ["My bad", 0.01], fail, ["Oops", 0])
+
+    # No 'match', since we can't know which will be raised first.
+    with pytest.raises(RuntimeError):
+        await backend.fork(fail, ["My bad", 0], fail, ["Oops", 0])

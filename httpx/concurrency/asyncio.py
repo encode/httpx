@@ -3,12 +3,10 @@ import functools
 import ssl
 import sys
 import typing
-from types import TracebackType
 
 from ..config import PoolLimits, Timeout
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import (
-    BaseBackgroundManager,
     BaseEvent,
     BasePoolSemaphore,
     BaseSocketStream,
@@ -317,34 +315,30 @@ class AsyncioBackend(ConcurrencyBackend):
         finally:
             self._loop = loop
 
+    async def fork(
+        self,
+        coroutine1: typing.Callable,
+        args1: typing.Sequence,
+        coroutine2: typing.Callable,
+        args2: typing.Sequence,
+    ) -> None:
+        task1 = self.loop.create_task(coroutine1(*args1))
+        task2 = self.loop.create_task(coroutine2(*args2))
+
+        try:
+            await asyncio.gather(task1, task2)
+        finally:
+            pending: typing.Set[asyncio.Future[typing.Any]]  # Please mypy.
+            _, pending = await asyncio.wait({task1, task2}, timeout=0)
+            for task in pending:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
 
     def create_event(self) -> BaseEvent:
         return typing.cast(BaseEvent, asyncio.Event())
-
-    def background_manager(
-        self, coroutine: typing.Callable, *args: typing.Any
-    ) -> "BackgroundManager":
-        return BackgroundManager(coroutine, args)
-
-
-class BackgroundManager(BaseBackgroundManager):
-    def __init__(self, coroutine: typing.Callable, args: typing.Any) -> None:
-        self.coroutine = coroutine
-        self.args = args
-
-    async def __aenter__(self) -> "BackgroundManager":
-        loop = asyncio.get_event_loop()
-        self.task = loop.create_task(self.coroutine(*self.args))
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        await self.task
-        if exc_type is None:
-            self.task.result()

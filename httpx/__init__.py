@@ -3,12 +3,7 @@ from .api import delete, get, head, options, patch, post, put, request, stream
 from .auth import BasicAuth, DigestAuth
 from .client import Client
 from .concurrency.asyncio import AsyncioBackend
-from .concurrency.base import (
-    BaseBackgroundManager,
-    BasePoolSemaphore,
-    BaseSocketStream,
-    ConcurrencyBackend,
-)
+from .concurrency.base import BasePoolSemaphore, BaseSocketStream, ConcurrencyBackend
 from .config import (
     USER_AGENT,
     CertTypes,
@@ -89,7 +84,6 @@ __all__ = [
     "VerifyTypes",
     "HTTPConnection",
     "BasePoolSemaphore",
-    "BaseBackgroundManager",
     "ConnectionPool",
     "HTTPProxy",
     "HTTPProxyMode",
