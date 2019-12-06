@@ -7,6 +7,7 @@ from ..config import Timeout
 from ..exceptions import ConnectionClosed, ProtocolError
 from ..models import Request, Response
 from ..utils import get_logger
+from .base import OpenedHTTPConnection
 
 H11Event = typing.Union[
     h11.Request,
@@ -27,7 +28,7 @@ OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
 logger = get_logger(__name__)
 
 
-class HTTP11Connection:
+class HTTP11Connection(OpenedHTTPConnection):
     READ_NUM_BYTES = 4096
 
     def __init__(

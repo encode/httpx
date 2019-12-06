@@ -6,7 +6,7 @@ from ..concurrency.base import ConcurrencyBackend, lookup_backend
 from ..config import CertTypes, SSLConfig, Timeout, VerifyTypes
 from ..models import Origin, Request, Response
 from ..utils import get_logger
-from .base import Dispatcher
+from .base import Dispatcher, OpenedHTTPConnection
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
@@ -35,8 +35,8 @@ class HTTPConnection(Dispatcher):
         self.backend = lookup_backend(backend)
         self.release_func = release_func
         self.uds = uds
-        self.h11_connection = None  # type: typing.Optional[HTTP11Connection]
-        self.h2_connection = None  # type: typing.Optional[HTTP2Connection]
+        self.h11_connection = None  # type: typing.Optional[OpenedHTTPConnection]
+        self.h2_connection = None  # type: typing.Optional[OpenedHTTPConnection]
 
     async def send(
         self,

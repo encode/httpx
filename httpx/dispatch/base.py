@@ -1,6 +1,7 @@
 import typing
 from types import TracebackType
 
+from ..concurrency.base import BaseSocketStream, ConcurrencyBackend
 from ..config import CertTypes, Timeout, VerifyTypes
 from ..models import (
     HeaderTypes,
@@ -58,3 +59,30 @@ class Dispatcher:
         traceback: TracebackType = None,
     ) -> None:
         await self.close()
+
+
+class OpenedHTTPConnection:
+    """
+    An HTTP connection that has already been established.
+    """
+
+    def __init__(
+        self,
+        socket: BaseSocketStream,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        on_release: typing.Callable = None,
+    ):
+        raise NotImplementedError()  # pragma: nocover
+
+    async def send(self, request: Request, timeout: Timeout = None) -> Response:
+        raise NotImplementedError()  # pragma: nocover
+
+    async def close(self) -> None:
+        raise NotImplementedError()  # pragma: nocover
+
+    @property
+    def is_closed(self) -> bool:
+        raise NotImplementedError()  # pragma: nocover
+
+    def is_connection_dropped(self) -> bool:
+        raise NotImplementedError()  # pragma: nocover

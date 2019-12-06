@@ -16,11 +16,12 @@ from ..config import Timeout
 from ..exceptions import ProtocolError
 from ..models import Request, Response
 from ..utils import get_logger
+from .base import OpenedHTTPConnection
 
 logger = get_logger(__name__)
 
 
-class HTTP2Connection:
+class HTTP2Connection(OpenedHTTPConnection):
     READ_NUM_BYTES = 4096
 
     def __init__(
