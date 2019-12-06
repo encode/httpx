@@ -137,41 +137,41 @@ async def test_raw_interface():
     response = httpx.Response(200, content=b"Hello, world!")
 
     raw = b""
-    async for part in response.stream_raw():
+    async for part in response.aiter_raw():
         raw += part
     assert raw == b"Hello, world!"
 
 
 @pytest.mark.asyncio
-async def test_stream_interface():
+async def test_bytes_interface():
     response = httpx.Response(200, content=b"Hello, world!")
 
     content = b""
-    async for part in response.stream_bytes():
+    async for part in response.aiter_bytes():
         content += part
     assert content == b"Hello, world!"
 
 
 @pytest.mark.asyncio
-async def test_stream_text():
+async def test_text_interface():
     response = httpx.Response(200, content=b"Hello, world!")
 
     await response.read()
 
     content = ""
-    async for part in response.stream_text():
+    async for part in response.aiter_text():
         content += part
     assert content == "Hello, world!"
 
 
 @pytest.mark.asyncio
-async def test_stream_lines():
+async def test_lines_interface():
     response = httpx.Response(200, content=b"Hello,\nworld!")
 
     await response.read()
 
     content = []
-    async for line in response.stream_lines():
+    async for line in response.aiter_lines():
         content.append(line)
     assert content == ["Hello,\n", "world!"]
 
@@ -183,7 +183,7 @@ async def test_stream_interface_after_read():
     await response.read()
 
     content = b""
-    async for part in response.stream_bytes():
+    async for part in response.aiter_bytes():
         content += part
     assert content == b"Hello, world!"
 
@@ -207,7 +207,7 @@ async def test_cannot_read_after_stream_consumed():
     response = httpx.Response(200, content=async_streaming_body())
 
     content = b""
-    async for part in response.stream_bytes():
+    async for part in response.aiter_bytes():
         content += part
 
     with pytest.raises(httpx.StreamConsumed):

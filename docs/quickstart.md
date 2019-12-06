@@ -304,7 +304,7 @@ You can stream the binary content of the response...
 
 ```
 >>> async with httpx.stream("GET", "https://www.example.com") as r:
-...     async for data in r.stream_bytes():
+...     async for data in r.aiter_bytes():
 ...         print(data)
 ```
 
@@ -312,7 +312,7 @@ Or the text of the response...
 
 ```
 >>> async with httpx.stream("GET", "https://www.example.com") as r:
-...     async for text in r.stream_text():
+...     async for text in r.aiter_text():
 ...         print(text)
 ```
 
@@ -320,7 +320,7 @@ Or stream the text, on a line-by-line basis...
 
 ```
 >>> async with httpx.stream("GET", "https://www.example.com") as r:
-...     async for line in r.stream_lines():
+...     async for line in r.aiter_lines():
 ...         print(line)
 ```
 
@@ -330,7 +330,7 @@ In some cases you might want to access the raw bytes on the response without app
 
 ```
 >>> async with httpx.stream("GET", "https://www.example.com") as r:
-...     async for chunk in r.stream_raw():
+...     async for chunk in r.aiter_raw():
 ...         print(chunk)
 ```
 
