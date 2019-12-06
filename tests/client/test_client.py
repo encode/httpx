@@ -59,33 +59,36 @@ async def test_post_json(server):
 @pytest.mark.asyncio
 async def test_stream_response(server):
     async with httpx.Client() as client:
-        response = await client.get(server.url, stream=True)
+        async with client.stream("GET", server.url) as response:
+            content = await response.read()
     assert response.status_code == 200
-    content = await response.read()
     assert content == b"Hello, world!"
 
 
 @pytest.mark.asyncio
 async def test_stream_iterator(server):
-    async with httpx.Client() as client:
-        response = await client.get(server.url, stream=True)
-    assert response.status_code == 200
     body = b""
-    async for chunk in response.stream():
-        body += chunk
+
+    async with httpx.Client() as client:
+        async with client.stream("GET", server.url) as response:
+            async for chunk in response.stream_bytes():
+                body += chunk
+
+    assert response.status_code == 200
     assert body == b"Hello, world!"
 
 
 @pytest.mark.asyncio
 async def test_raw_iterator(server):
-    async with httpx.Client() as client:
-        response = await client.get(server.url, stream=True)
-    assert response.status_code == 200
     body = b""
-    async for chunk in response.raw():
-        body += chunk
+
+    async with httpx.Client() as client:
+        async with client.stream("GET", server.url) as response:
+            async for chunk in response.stream_raw():
+                body += chunk
+
+    assert response.status_code == 200
     assert body == b"Hello, world!"
-    await response.close()
 
 
 @pytest.mark.asyncio
@@ -174,17 +177,18 @@ def test_merge_url():
 
 @pytest.mark.asyncio
 async def test_elapsed_delay(server):
+    url = server.url.copy_with(path="/slow_response/100")
     async with httpx.Client() as client:
-        response = await client.get(server.url.copy_with(path="/slow_response/100"))
+        response = await client.get(url)
     assert response.elapsed.total_seconds() == pytest.approx(0.1, rel=0.2)
 
 
 @pytest.mark.asyncio
 async def test_elapsed_delay_ignores_read_time(server):
+    url = server.url.copy_with(path="/slow_response/100")
     async with httpx.Client() as client:
-        response = await client.get(
-            server.url.copy_with(path="/slow_response/100"), stream=True
-        )
-    sleep(0.2)
-    await response.read()
+        async with client.stream("GET", url) as response:
+            sleep(0.2)
+            await response.read()
+
     assert response.elapsed.total_seconds() == pytest.approx(0.1, rel=0.2)

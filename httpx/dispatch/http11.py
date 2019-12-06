@@ -32,10 +32,10 @@ class HTTP11Connection:
 
     def __init__(
         self,
-        stream: BaseSocketStream,
+        socket: BaseSocketStream,
         on_release: typing.Optional[OnReleaseCallback] = None,
     ):
-        self.stream = stream
+        self.socket = socket
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
         self.timeout_flag = TimeoutFlag()
@@ -65,7 +65,7 @@ class HTTP11Connection:
         except h11.LocalProtocolError:  # pragma: no cover
             # Premature client disconnect
             pass
-        await self.stream.close()
+        await self.socket.close()
 
     async def _send_request(self, request: Request, timeout: Timeout) -> None:
         """
@@ -112,7 +112,7 @@ class HTTP11Connection:
         drain before returning.
         """
         bytes_to_send = self.h11_state.send(event)
-        await self.stream.write(bytes_to_send, timeout)
+        await self.socket.write(bytes_to_send, timeout)
 
     async def _receive_response(
         self, timeout: Timeout
@@ -160,7 +160,7 @@ class HTTP11Connection:
                     + f"their_state={self.h11_state.their_state} "
                     + f"error_status_hint={e.error_status_hint}"
                 )
-                if self.stream.is_connection_dropped():
+                if self.socket.is_connection_dropped():
                     raise ConnectionClosed(e)
                 raise ProtocolError(e)
 
@@ -171,7 +171,7 @@ class HTTP11Connection:
 
             if event is h11.NEED_DATA:
                 try:
-                    data = await self.stream.read(
+                    data = await self.socket.read(
                         self.READ_NUM_BYTES, timeout, flag=self.timeout_flag
                     )
                 except OSError:  # pragma: nocover
@@ -206,4 +206,4 @@ class HTTP11Connection:
         return self.h11_state.our_state in (h11.CLOSED, h11.ERROR)
 
     def is_connection_dropped(self) -> bool:
-        return self.stream.is_connection_dropped()
+        return self.socket.is_connection_dropped()

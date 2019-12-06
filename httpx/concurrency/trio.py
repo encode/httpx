@@ -1,14 +1,12 @@
 import functools
 import ssl
 import typing
-from types import TracebackType
 
 import trio
 
 from ..config import PoolLimits, Timeout
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import (
-    BaseBackgroundManager,
     BaseEvent,
     BasePoolSemaphore,
     BaseSocketStream,
@@ -27,17 +25,12 @@ class SocketStream(BaseSocketStream):
     ) -> None:
         self.stream = stream
         self.timeout = timeout
-        self.write_buffer = b""
         self.read_lock = trio.Lock()
         self.write_lock = trio.Lock()
 
     async def start_tls(
         self, hostname: str, ssl_context: ssl.SSLContext, timeout: Timeout
     ) -> "SocketStream":
-        # Check that the write buffer is empty. We should never start a TLS stream
-        # while there is still pending data to write.
-        assert self.write_buffer == b""
-
         connect_timeout = _or_inf(timeout.connect_timeout)
         ssl_stream = trio.SSLStream(
             self.stream, ssl_context=ssl_context, server_hostname=hostname
@@ -92,23 +85,9 @@ class SocketStream(BaseSocketStream):
         # See: https://github.com/encode/httpx/pull/143#issuecomment-515181778
         return stream.socket.is_readable()
 
-    def write_no_block(self, data: bytes) -> None:
-        self.write_buffer += data  # pragma: no cover
-
     async def write(
         self, data: bytes, timeout: Timeout = None, flag: TimeoutFlag = None
     ) -> None:
-        if self.write_buffer:
-            previous_data = self.write_buffer
-            # Reset before recursive call, otherwise we'll go through
-            # this branch indefinitely.
-            self.write_buffer = b""
-            try:
-                await self.write(previous_data, timeout=timeout, flag=flag)
-            except WriteTimeout:
-                self.writer_buffer = previous_data
-                raise
-
         if not data:
             return
 
@@ -223,16 +202,30 @@ class TrioBackend(ConcurrencyBackend):
             functools.partial(coroutine, **kwargs) if kwargs else coroutine, *args
         )
 
+    async def fork(
+        self,
+        coroutine1: typing.Callable,
+        args1: typing.Sequence,
+        coroutine2: typing.Callable,
+        args2: typing.Sequence,
+    ) -> None:
+        try:
+            async with trio.open_nursery() as nursery:
+                nursery.start_soon(coroutine1, *args1)
+                nursery.start_soon(coroutine2, *args2)
+        except trio.MultiError as exc:
+            # NOTE: asyncio doesn't handle multi-errors yet, so we must align on its
+            # behavior here, and need to arbitrarily decide which exception to raise.
+            # We may want to add an 'httpx.MultiError', manually add support
+            # for this situation in the asyncio backend, and re-raise
+            # an 'httpx.MultiError' from trio's here.
+            raise exc.exceptions[0]
+
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
 
     def create_event(self) -> BaseEvent:
         return Event()
-
-    def background_manager(
-        self, coroutine: typing.Callable, *args: typing.Any
-    ) -> "BackgroundManager":
-        return BackgroundManager(coroutine, *args)
 
 
 class Event(BaseEvent):
@@ -252,25 +245,3 @@ class Event(BaseEvent):
         # trio.Event.clear() was deprecated in Trio 0.12.
         # https://github.com/python-trio/trio/issues/637
         self._event = trio.Event()
-
-
-class BackgroundManager(BaseBackgroundManager):
-    def __init__(self, coroutine: typing.Callable, *args: typing.Any) -> None:
-        self.coroutine = coroutine
-        self.args = args
-        self.nursery_manager = trio.open_nursery()
-        self.nursery: typing.Optional[trio.Nursery] = None
-
-    async def __aenter__(self) -> "BackgroundManager":
-        self.nursery = await self.nursery_manager.__aenter__()
-        self.nursery.start_soon(self.coroutine, *self.args)
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        assert self.nursery is not None
-        await self.nursery_manager.__aexit__(exc_type, exc_value, traceback)

@@ -4,6 +4,7 @@ import email.message
 import json as jsonlib
 import typing
 import urllib.request
+import warnings
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
@@ -701,7 +702,7 @@ class Request:
 
     async def read(self) -> bytes:
         """
-        Read and return the response content.
+        Read and return the request content.
         """
         if not hasattr(self, "content"):
             self.content = b"".join([part async for part in self.stream()])
@@ -918,10 +919,26 @@ class Response:
         Read and return the response content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part async for part in self.stream()])
+            self._content = b"".join([part async for part in self.stream_bytes()])
         return self._content
 
-    async def stream(self) -> typing.AsyncIterator[bytes]:
+    @property
+    def stream(self):  # type: ignore
+        warnings.warn(
+            "Response.stream() is due to be deprecated. "
+            "Use Response.stream_bytes() instead."
+        )
+        return self.stream_bytes
+
+    @property
+    def raw(self):  # type: ignore
+        warnings.warn(
+            "Response.raw() is due to be deprecated. "
+            "Use Response.stream_raw() instead."
+        )
+        return self.stream_raw
+
+    async def stream_bytes(self) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
@@ -929,7 +946,7 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
-            async for chunk in self.raw():
+            async for chunk in self.stream_raw():
                 yield self.decoder.decode(chunk)
             yield self.decoder.flush()
 
@@ -940,7 +957,7 @@ class Response:
         string encoding.
         """
         decoder = TextDecoder(encoding=self.charset_encoding)
-        async for chunk in self.stream():
+        async for chunk in self.stream_bytes():
             yield decoder.decode(chunk)
         yield decoder.flush()
 
@@ -952,7 +969,7 @@ class Response:
         for line in decoder.flush():
             yield line
 
-    async def raw(self) -> typing.AsyncIterator[bytes]:
+    async def stream_raw(self) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the raw response content.
         """

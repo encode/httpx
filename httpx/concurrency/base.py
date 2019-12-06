@@ -1,6 +1,5 @@
 import ssl
 import typing
-from types import TracebackType
 
 from ..config import PoolLimits, Timeout
 
@@ -75,9 +74,6 @@ class BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
     async def read(self, n: int, timeout: Timeout, flag: typing.Any = None) -> bytes:
-        raise NotImplementedError()  # pragma: no cover
-
-    def write_no_block(self, data: bytes) -> None:
         raise NotImplementedError()  # pragma: no cover
 
     async def write(self, data: bytes, timeout: Timeout) -> None:
@@ -157,27 +153,20 @@ class ConcurrencyBackend:
     def create_event(self) -> BaseEvent:
         raise NotImplementedError()  # pragma: no cover
 
-    def background_manager(
-        self, coroutine: typing.Callable, *args: typing.Any
-    ) -> "BaseBackgroundManager":
-        raise NotImplementedError()  # pragma: no cover
-
-
-class BaseBackgroundManager:
-    async def __aenter__(self) -> "BaseBackgroundManager":
-        raise NotImplementedError()  # pragma: no cover
-
-    async def __aexit__(
+    async def fork(
         self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
+        coroutine1: typing.Callable,
+        args1: typing.Sequence,
+        coroutine2: typing.Callable,
+        args2: typing.Sequence,
     ) -> None:
-        raise NotImplementedError()  # pragma: no cover
+        """
+        Run two coroutines concurrently.
 
-    async def close(self, exception: BaseException = None) -> None:
-        if exception is None:
-            await self.__aexit__(None, None, None)
-        else:
-            traceback = exception.__traceback__  # type: ignore
-            await self.__aexit__(type(exception), exception, traceback)
+        This should start 'coroutine1' with '*args1' and 'coroutine2' with '*args2',
+        and wait for them to finish.
+
+        In case one of the coroutines raises an exception, cancel the other one then
+        raise. If the other coroutine had also raised an exception, ignore it (for now).
+        """
+        raise NotImplementedError()  # pragma: no cover

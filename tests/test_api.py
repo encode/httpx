@@ -67,6 +67,17 @@ async def test_delete(server):
 
 
 @pytest.mark.asyncio
+async def test_stream(server):
+    async with httpx.stream("GET", server.url) as response:
+        await response.read()
+
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+    assert response.text == "Hello, world!"
+    assert response.http_version == "HTTP/1.1"
+
+
+@pytest.mark.asyncio
 async def test_get_invalid_url(server):
     with pytest.raises(httpx.InvalidURL):
         await httpx.get("invalid://example.org")

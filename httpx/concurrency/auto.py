@@ -5,7 +5,6 @@ import sniffio
 
 from ..config import PoolLimits, Timeout
 from .base import (
-    BaseBackgroundManager,
     BaseEvent,
     BasePoolSemaphore,
     BaseSocketStream,
@@ -52,8 +51,3 @@ class AutoBackend(ConcurrencyBackend):
 
     def create_event(self) -> BaseEvent:
         return self.backend.create_event()
-
-    def background_manager(
-        self, coroutine: typing.Callable, *args: typing.Any
-    ) -> BaseBackgroundManager:
-        return self.backend.background_manager(coroutine, *args)
