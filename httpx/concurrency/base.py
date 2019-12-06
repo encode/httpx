@@ -167,6 +167,6 @@ class ConcurrencyBackend:
         and wait for them to finish.
 
         In case one of the coroutines raises an exception, cancel the other one then
-        raise. If the other coroutine had also raised an exception, ignore it (for now).
+        raise. If the other coroutine had also raised an exception, ignore it.
         """
         raise NotImplementedError()  # pragma: no cover
