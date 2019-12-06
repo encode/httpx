@@ -174,6 +174,12 @@ password example-password
 ...
 ```
 
+When using `Client` instances, `trust_env` should be set on the client itself, rather that on the request methods:
+
+```python
+client = httpx.Client(trust_env=False)
+```
+
 ## Unix Domain Sockets
 
 You can configure an `httpx` client to connect through a unix domain socket via the `uds` parameter. This is useful when making requests to a server that is bound to a socket file rather than an IP address.
@@ -373,19 +379,35 @@ MIME header field.
 
 When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
 
-### Default CA bundle
+### Changing the verification defaults
 
 By default, HTTPX uses the CA bundle provided by [Certifi](https://pypi.org/project/certifi/). This is what you want in most cases, even though some advanced situations may require you to use a different set of certificates.
 
-### Using a custom CA bundle
-
-If you'd like to use a custom CA bundle, you can use the `verify` parameter that is available on the high-level API as well as clients. For example:
+If you'd like to use a custom CA bundle, you can use the `verify` parameter.
 
 ```python
 import httpx
 
 r = await httpx.get("https://example.org", verify="path/to/client.pem")
 ```
+
+You can also disable the SSL verification...
+
+```python
+import httpx
+
+r = await httpx.get("https://example.org", verify=False)
+```
+
+### SSL configuration on client instances
+
+If you're using a `Client()` instance, then you should pass any SSL settings when instantiating the client.
+
+```python
+client = httpx.Client(verify=False)
+```
+
+The `client.get(...)` method and other request methods *do not* changing the SSL settings on a per-request basis. If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
 
 ### Making HTTPS requests to a local server
 
