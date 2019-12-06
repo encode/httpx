@@ -6,34 +6,28 @@ from unittest import mock
 
 import pytest
 
-from httpx import (
-    CertTypes,
-    Client,
-    Dispatcher,
-    Request,
-    Response,
-    TimeoutTypes,
-    VerifyTypes,
-    multipart,
-)
+import httpx
+from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx.dispatch.base import Dispatcher
+from httpx.multipart import _format_param, multipart_encode
 
 
 class MockDispatch(Dispatcher):
     async def send(
         self,
-        request: Request,
+        request: httpx.Request,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> httpx.Response:
         content = await request.read()
-        return Response(200, content=content)
+        return httpx.Response(200, content=content)
 
 
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
 @pytest.mark.asyncio
 async def test_multipart(value, output):
-    client = Client(dispatch=MockDispatch())
+    client = httpx.Client(dispatch=MockDispatch())
 
     # Test with a single-value 'data' argument, and a plain file 'files' argument.
     data = {"text": value}
@@ -57,7 +51,7 @@ async def test_multipart(value, output):
 @pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))
 @pytest.mark.asyncio
 async def test_multipart_invalid_key(key):
-    client = Client(dispatch=MockDispatch())
+    client = httpx.Client(dispatch=MockDispatch())
     data = {key: "abc"}
     files = {"file": io.BytesIO(b"<file content>")}
     with pytest.raises(TypeError) as e:
@@ -68,7 +62,7 @@ async def test_multipart_invalid_key(key):
 @pytest.mark.parametrize(("value"), (1, 2.3, None, [None, "abc"], {None: "abc"}))
 @pytest.mark.asyncio
 async def test_multipart_invalid_value(value):
-    client = Client(dispatch=MockDispatch())
+    client = httpx.Client(dispatch=MockDispatch())
     data = {"text": value}
     files = {"file": io.BytesIO(b"<file content>")}
     with pytest.raises(TypeError) as e:
@@ -78,7 +72,7 @@ async def test_multipart_invalid_value(value):
 
 @pytest.mark.asyncio
 async def test_multipart_file_tuple():
-    client = Client(dispatch=MockDispatch())
+    client = httpx.Client(dispatch=MockDispatch())
 
     # Test with a list of values 'data' argument, and a tuple style 'files' argument.
     data = {"text": ["abc"]}
@@ -111,7 +105,7 @@ def test_multipart_encode():
 
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
-        body, content_type = multipart.multipart_encode(data=data, files=files)
+        body, content_type = multipart_encode(data=data, files=files)
         assert content_type == f"multipart/form-data; boundary={boundary}"
         assert body == (
             '--{0}\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n'
@@ -135,7 +129,7 @@ def test_multipart_encode_files_allows_filenames_as_none():
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        body, content_type = multipart.multipart_encode(data={}, files=files)
+        body, content_type = multipart_encode(data={}, files=files)
 
         assert content_type == f"multipart/form-data; boundary={boundary}"
         assert body == (
@@ -160,7 +154,7 @@ def test_multipart_encode_files_guesses_correct_content_type(
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        body, content_type = multipart.multipart_encode(data={}, files=files)
+        body, content_type = multipart_encode(data={}, files=files)
 
         assert content_type == f"multipart/form-data; boundary={boundary}"
         assert body == (
@@ -176,7 +170,7 @@ def test_multipart_encode_files_allows_str_content():
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        body, content_type = multipart.multipart_encode(data={}, files=files)
+        body, content_type = multipart_encode(data={}, files=files)
 
         assert content_type == f"multipart/form-data; boundary={boundary}"
         assert body == (
@@ -190,17 +184,17 @@ def test_multipart_encode_files_allows_str_content():
 
 class TestHeaderParamHTML5Formatting:
     def test_unicode(self):
-        param = multipart._format_param("filename", "n\u00e4me")
+        param = _format_param("filename", "n\u00e4me")
         assert param == b'filename="n\xc3\xa4me"'
 
     def test_ascii(self):
-        param = multipart._format_param("filename", b"name")
+        param = _format_param("filename", b"name")
         assert param == b'filename="name"'
 
     def test_unicode_escape(self):
-        param = multipart._format_param("filename", "hello\\world\u0022")
+        param = _format_param("filename", "hello\\world\u0022")
         assert param == b'filename="hello\\\\world%22"'
 
     def test_unicode_with_control_character(self):
-        param = multipart._format_param("filename", "hello\x1A\x1B\x1C")
+        param = _format_param("filename", "hello\x1A\x1B\x1C")
         assert param == b'filename="hello%1A\x1B%1C"'

@@ -22,9 +22,7 @@ async def test_proxy_tunnel_success(backend):
         backend=backend,
     )
     async with httpx.HTTPProxy(
-        proxy_url="http://127.0.0.1:8000",
-        backend=raw_io,
-        proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY,
+        proxy_url="http://127.0.0.1:8000", backend=raw_io, proxy_mode="TUNNEL_ONLY",
     ) as proxy:
         response = await proxy.request("GET", "http://example.com")
 
@@ -60,9 +58,7 @@ async def test_proxy_tunnel_non_2xx_response(backend, status_code):
 
     with pytest.raises(httpx.ProxyError) as e:
         async with httpx.HTTPProxy(
-            proxy_url="http://127.0.0.1:8000",
-            backend=raw_io,
-            proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY,
+            proxy_url="http://127.0.0.1:8000", backend=raw_io, proxy_mode="TUNNEL_ONLY",
         ) as proxy:
             await proxy.request("GET", "http://example.com")
 
@@ -112,9 +108,7 @@ async def test_proxy_tunnel_start_tls(backend):
         backend=backend,
     )
     async with httpx.HTTPProxy(
-        proxy_url="http://127.0.0.1:8000",
-        backend=raw_io,
-        proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY,
+        proxy_url="http://127.0.0.1:8000", backend=raw_io, proxy_mode="TUNNEL_ONLY",
     ) as proxy:
         resp = await proxy.request("GET", "https://example.com")
 
@@ -150,9 +144,7 @@ async def test_proxy_tunnel_start_tls(backend):
     assert recv[4].startswith(b"GET /target HTTP/1.1\r\nhost: example.com\r\n")
 
 
-@pytest.mark.parametrize(
-    "proxy_mode", [httpx.HTTPProxyMode.FORWARD_ONLY, httpx.HTTPProxyMode.DEFAULT]
-)
+@pytest.mark.parametrize("proxy_mode", ["FORWARD_ONLY", "DEFAULT"])
 async def test_proxy_forwarding(backend, proxy_mode):
     raw_io = MockRawSocketBackend(
         data_to_send=(
@@ -204,11 +196,11 @@ def test_proxy_repr():
     proxy = httpx.HTTPProxy(
         "http://127.0.0.1:1080",
         proxy_headers={"Custom": "Header"},
-        proxy_mode=httpx.HTTPProxyMode.DEFAULT,
+        proxy_mode="DEFAULT",
     )
 
     assert repr(proxy) == (
         "HTTPProxy(proxy_url=URL('http://127.0.0.1:1080') "
         "proxy_headers=Headers({'custom': 'Header'}) "
-        "proxy_mode=<HTTPProxyMode.DEFAULT: 'DEFAULT'>)"
+        "proxy_mode='DEFAULT')"
     )

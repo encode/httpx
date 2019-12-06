@@ -1,5 +1,6 @@
 import enum
 import typing
+import warnings
 from base64 import b64encode
 
 from ..concurrency.base import ConcurrencyBackend
@@ -14,9 +15,16 @@ logger = get_logger(__name__)
 
 
 class HTTPProxyMode(enum.Enum):
+    # This enum is pending deprecation in order to reduce API surface area,
+    # but is currently still around for 0.8 backwards compat.
     DEFAULT = "DEFAULT"
     FORWARD_ONLY = "FORWARD_ONLY"
     TUNNEL_ONLY = "TUNNEL_ONLY"
+
+
+DEFAULT_MODE = "DEFAULT"
+FORWARD_ONLY = "FORWARD_ONLY"
+TUNNEL_ONLY = "TUNNEL_ONLY"
 
 
 class HTTPProxy(ConnectionPool):
@@ -29,7 +37,7 @@ class HTTPProxy(ConnectionPool):
         proxy_url: URLTypes,
         *,
         proxy_headers: HeaderTypes = None,
-        proxy_mode: HTTPProxyMode = HTTPProxyMode.DEFAULT,
+        proxy_mode: str = "DEFAULT",
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
@@ -37,6 +45,15 @@ class HTTPProxy(ConnectionPool):
         http2: bool = False,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
     ):
+
+        if isinstance(proxy_mode, HTTPProxyMode):
+            warnings.warn(
+                "The 'HTTPProxyMode' enum is pending deprecation. "
+                "Use a plain string instead. proxy_mode='FORWARD_ONLY', or "
+                "proxy_mode='TUNNEL_ONLY'."
+            )
+            proxy_mode = proxy_mode.value
+        assert proxy_mode in ("DEFAULT", "FORWARD_ONLY", "TUNNEL_ONLY")
 
         super(HTTPProxy, self).__init__(
             verify=verify,
@@ -162,8 +179,8 @@ class HTTPProxy(ConnectionPool):
         tunnel all 'HTTPS' requests.
         """
         return (
-            self.proxy_mode == HTTPProxyMode.DEFAULT and not origin.is_ssl
-        ) or self.proxy_mode == HTTPProxyMode.FORWARD_ONLY
+            self.proxy_mode == DEFAULT_MODE and not origin.is_ssl
+        ) or self.proxy_mode == FORWARD_ONLY
 
     async def send(
         self,

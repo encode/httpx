@@ -5,19 +5,17 @@ import pytest
 
 from httpx import (
     URL,
-    CertTypes,
     Client,
-    Dispatcher,
     NotRedirectResponse,
     RedirectBodyUnavailable,
     RedirectLoop,
     Request,
     Response,
-    TimeoutTypes,
     TooManyRedirects,
-    VerifyTypes,
     codes,
 )
+from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx.dispatch.base import Dispatcher
 
 
 class MockDispatch(Dispatcher):

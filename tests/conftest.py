@@ -17,7 +17,8 @@ from cryptography.hazmat.primitives.serialization import (
 from uvicorn.config import Config
 from uvicorn.main import Server
 
-from httpx import URL, AsyncioBackend
+from httpx import URL
+from httpx.concurrency.asyncio import AsyncioBackend
 from httpx.concurrency.trio import TrioBackend
 
 ENVIRONMENT_VARIABLES = {

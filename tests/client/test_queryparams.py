@@ -2,17 +2,9 @@ import json
 
 import pytest
 
-from httpx import (
-    CertTypes,
-    Client,
-    Dispatcher,
-    QueryParams,
-    Request,
-    Response,
-    TimeoutTypes,
-    VerifyTypes,
-)
-from httpx.models import URL
+from httpx import URL, Client, QueryParams, Request, Response
+from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx.dispatch.base import Dispatcher
 
 
 class MockDispatch(Dispatcher):

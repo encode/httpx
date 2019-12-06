@@ -1,6 +1,7 @@
 import pytest
 
-from httpx import HTTPConnection, exceptions
+import httpx
+from httpx.dispatch.connection import HTTPConnection
 
 
 async def test_get(server, backend):
@@ -18,7 +19,7 @@ async def test_post(server, backend):
 
 
 async def test_premature_close(server, backend):
-    with pytest.raises(exceptions.ConnectionClosed):
+    with pytest.raises(httpx.ConnectionClosed):
         async with HTTPConnection(origin=server.url, backend=backend) as conn:
             response = await conn.request(
                 "GET", server.url.copy_with(path="/premature_close")
