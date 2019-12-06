@@ -1,3 +1,4 @@
+import enum
 import typing
 import warnings
 from base64 import b64encode
