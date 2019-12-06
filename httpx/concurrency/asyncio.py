@@ -328,6 +328,7 @@ class AsyncioBackend(ConcurrencyBackend):
         try:
             await asyncio.gather(task1, task2)
         finally:
+            pending: typing.Set[asyncio.Future[typing.Any]]  # Please mypy.
             _, pending = await asyncio.wait({task1, task2}, timeout=0)
             for task in pending:
                 task.cancel()
