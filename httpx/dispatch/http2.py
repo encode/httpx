@@ -104,39 +104,59 @@ class HTTP2Connection:
     async def close(self) -> None:
         await self.socket.close()
 
-    async def receive_event(self, stream_id: int, timeout: Timeout) -> h2.events.Event:
+    async def wait_for_outgoing_flow(self, stream_id: int, timeout: Timeout) -> int:
         """
-        Streams call into `connection.receive_event()` in order to read events
-        from the network. The connection manages holding onto any events that
-        have not yet been pulled by a stream.
+        Returns the maximum allowable outgoing flow for a given stream.
+
+        If the allowable flow is zero, then waits on the network until
+        WindowUpdated frames have increased the flow rate.
+
+        https://tools.ietf.org/html/rfc7540#section-6.9
+        """
+        local_flow = self.state.local_flow_control_window(stream_id)
+        connection_flow = self.state.max_outbound_frame_size
+        flow = min(local_flow, connection_flow)
+        while flow == 0:
+            await self.receive_events(timeout)
+            local_flow = self.state.local_flow_control_window(stream_id)
+            connection_flow = self.state.max_outbound_frame_size
+            flow = min(local_flow, connection_flow)
+        return flow
+
+    async def wait_for_event(self, stream_id: int, timeout: Timeout) -> h2.events.Event:
+        """
+        Returns the next event for a given stream.
+
+        If no events are available yet, then waits on the network until
+        an event is available.
         """
         while not self.events[stream_id]:
-            data = await self.socket.read(self.READ_NUM_BYTES, timeout)
-            events = self.state.receive_data(data)
-            for event in events:
-                event_stream_id = getattr(event, "stream_id", 0)
-                logger.trace(
-                    f"receive_event stream_id={event_stream_id} event={event!r}"
-                )
-
-                if hasattr(event, "error_code"):
-                    raise ProtocolError(event)
-
-                if isinstance(event, h2.events.WindowUpdated) and event_stream_id == 0:
-                    for events in self.events.values():
-                        events.append(event)
-
-                if event_stream_id in self.events:
-                    self.events[event_stream_id].append(event)
-
-            data_to_send = self.state.data_to_send()
-            await self.socket.write(data_to_send, timeout)
-
+            await self.receive_events(timeout)
         return self.events[stream_id].pop(0)
 
-    async def send_data(self, timeout: Timeout) -> None:
+    async def receive_events(self, timeout: Timeout) -> None:
+        """
+        Read some data from the network, and update the H2 state.
+        """
+        data = await self.socket.read(self.READ_NUM_BYTES, timeout)
+        events = self.state.receive_data(data)
+        for event in events:
+            event_stream_id = getattr(event, "stream_id", 0)
+            logger.trace(f"receive_event stream_id={event_stream_id} event={event!r}")
+
+            if hasattr(event, "error_code"):
+                raise ProtocolError(event)
+
+            if event_stream_id in self.events:
+                self.events[event_stream_id].append(event)
+
         data_to_send = self.state.data_to_send()
         await self.socket.write(data_to_send, timeout)
+
+    async def send_outgoing_data(self, timeout: Timeout) -> None:
+        data_to_send = self.state.data_to_send()
+        if data_to_send:
+            await self.socket.write(data_to_send, timeout)
 
     async def close_stream(self, stream_id: int) -> None:
         del self.streams[stream_id]
@@ -160,9 +180,7 @@ class HTTP2Stream:
     async def send(self, request: Request, timeout: Timeout) -> Response:
         # Send the request.
         await self.send_headers(request, timeout)
-        async for data in request.stream():
-            await self.send_data(data, timeout)
-        await self.end_stream(timeout)
+        await self.send_body(request, timeout)
 
         # Receive the response.
         status_code, headers = await self.receive_response(timeout)
@@ -192,36 +210,22 @@ class HTTP2Stream:
             f"headers={headers!r}"
         )
         self.state.send_headers(self.stream_id, headers)
-        await self.connection.send_data(timeout)
+        await self.connection.send_outgoing_data(timeout)
 
-    async def send_data(self, data: bytes, timeout: Timeout) -> None:
-        while data:
-            # The data will be divided into frames to send based on the flow control
-            # window and the maximum frame size. Because the flow control window
-            # can decrease in size, even possibly to zero, this will loop until all the
-            # data is sent. In http2 specification:
-            # https://tools.ietf.org/html/rfc7540#section-6.9
-            flow_control = self.state.local_flow_control_window(self.stream_id)
-            chunk_size = min(
-                len(data), flow_control, self.state.max_outbound_frame_size
-            )
-            if chunk_size == 0:
-                # The flow control window is 0 (either for the stream or the
-                # connection one), and no data can be sent until the flow
-                # control window is updated.
-                while True:
-                    event = await self.connection.receive_event(self.stream_id, timeout)
-                    if isinstance(event, h2.events.WindowUpdated):
-                        break
-            else:
+    async def send_body(self, request: Request, timeout: Timeout) -> None:
+        logger.trace(f"send_body stream_id={self.stream_id}")
+        async for data in request.stream():
+            while data:
+                max_flow = await self.connection.wait_for_outgoing_flow(
+                    self.stream_id, timeout
+                )
+                chunk_size = min(len(data), max_flow)
                 chunk, data = data[:chunk_size], data[chunk_size:]
                 self.state.send_data(self.stream_id, chunk)
-                await self.connection.send_data(timeout)
+                await self.connection.send_outgoing_data(timeout)
 
-    async def end_stream(self, timeout: Timeout) -> None:
-        logger.trace(f"end_stream stream_id={self.stream_id}")
         self.state.end_stream(self.stream_id)
-        await self.connection.send_data(timeout)
+        await self.connection.send_outgoing_data(timeout)
 
     async def receive_response(
         self, timeout: Timeout
@@ -230,7 +234,7 @@ class HTTP2Stream:
         Read the response status and headers from the network.
         """
         while True:
-            event = await self.connection.receive_event(self.stream_id, timeout)
+            event = await self.connection.wait_for_event(self.stream_id, timeout)
 
             if isinstance(event, h2.events.ResponseReceived):
                 break
@@ -247,11 +251,12 @@ class HTTP2Stream:
 
     async def body_iter(self, timeout: Timeout) -> typing.AsyncIterator[bytes]:
         while True:
-            event = await self.connection.receive_event(self.stream_id, timeout)
+            event = await self.connection.wait_for_event(self.stream_id, timeout)
             if isinstance(event, h2.events.DataReceived):
                 self.state.acknowledge_received_data(
                     event.flow_controlled_length, self.stream_id
                 )
+                await self.connection.send_outgoing_data(timeout)
                 yield event.data
             elif isinstance(event, (h2.events.StreamEnded, h2.events.StreamReset)):
                 break
