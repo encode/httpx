@@ -407,7 +407,7 @@ If you're using a `Client()` instance, then you should pass any SSL settings whe
 client = httpx.Client(verify=False)
 ```
 
-The `client.get(...)` method and other request methods *do not* changing the SSL settings on a per-request basis. If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
+The `client.get(...)` method and other request methods *do not* support changing the SSL settings on a per-request basis. If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
 
 ### Making HTTPS requests to a local server
 
