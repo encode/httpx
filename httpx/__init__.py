@@ -2,23 +2,11 @@ from .__version__ import __description__, __title__, __version__
 from .api import delete, get, head, options, patch, post, put, request, stream
 from .auth import BasicAuth, DigestAuth
 from .client import Client
-from .concurrency.asyncio import AsyncioBackend
-from .concurrency.base import BasePoolSemaphore, BaseSocketStream, ConcurrencyBackend
-from .config import (
-    USER_AGENT,
-    CertTypes,
-    PoolLimits,
-    SSLConfig,
-    Timeout,
-    TimeoutConfig,
-    TimeoutTypes,
-    VerifyTypes,
-)
-from .dispatch.base import Dispatcher
-from .dispatch.connection import HTTPConnection
-from .dispatch.connection_pool import ConnectionPool
-from .dispatch.proxy_http import HTTPProxy, HTTPProxyMode
+from .config import TimeoutConfig  # For 0.8 backwards compat.
+from .config import PoolLimits, Timeout
+from .dispatch.proxy_http import HTTPProxy
 from .exceptions import (
+    ConnectionClosed,
     ConnectTimeout,
     CookieConflict,
     DecodingError,
@@ -38,23 +26,7 @@ from .exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
-from .models import (
-    URL,
-    AuthTypes,
-    Cookies,
-    CookieTypes,
-    Headers,
-    HeaderTypes,
-    Origin,
-    QueryParams,
-    QueryParamTypes,
-    Request,
-    RequestData,
-    RequestFiles,
-    Response,
-    ResponseContent,
-    URLTypes,
-)
+from .models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
 from .status_codes import StatusCode, codes
 
 __all__ = [
@@ -71,24 +43,17 @@ __all__ = [
     "put",
     "request",
     "stream",
+    "codes",
     "BasicAuth",
     "Client",
     "DigestAuth",
-    "AsyncioBackend",
-    "USER_AGENT",
-    "CertTypes",
     "PoolLimits",
-    "SSLConfig",
     "Timeout",
-    "TimeoutConfig",
-    "VerifyTypes",
-    "HTTPConnection",
-    "BasePoolSemaphore",
-    "ConnectionPool",
+    "TimeoutConfig",  # For 0.8 backwards compat.
     "HTTPProxy",
-    "HTTPProxyMode",
     "ConnectTimeout",
     "CookieConflict",
+    "ConnectionClosed",
     "DecodingError",
     "HTTPError",
     "InvalidURL",
@@ -106,25 +71,14 @@ __all__ = [
     "WriteTimeout",
     "BaseSocketStream",
     "ConcurrencyBackend",
-    "Dispatcher",
     "URL",
-    "URLTypes",
     "StatusCode",
-    "codes",
-    "TimeoutTypes",
-    "AuthTypes",
     "Cookies",
-    "CookieTypes",
     "Headers",
-    "HeaderTypes",
     "Origin",
     "QueryParams",
-    "QueryParamTypes",
     "Request",
-    "RequestData",
     "TimeoutException",
     "Response",
-    "ResponseContent",
-    "RequestFiles",
     "DigestAuth",
 ]

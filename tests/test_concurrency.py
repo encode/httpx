@@ -1,8 +1,10 @@
 import pytest
 import trio
 
-from httpx import AsyncioBackend, SSLConfig, Timeout
+from httpx import Timeout
+from httpx.concurrency.asyncio import AsyncioBackend
 from httpx.concurrency.trio import TrioBackend
+from httpx.config import SSLConfig
 from tests.concurrency import run_concurrently, sleep
 
 

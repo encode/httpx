@@ -3,16 +3,9 @@ from http.cookiejar import Cookie, CookieJar
 
 import pytest
 
-from httpx import (
-    CertTypes,
-    Client,
-    Cookies,
-    Dispatcher,
-    Request,
-    Response,
-    TimeoutTypes,
-    VerifyTypes,
-)
+from httpx import Client, Cookies, Request, Response
+from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx.dispatch.base import Dispatcher
 
 
 class MockDispatch(Dispatcher):

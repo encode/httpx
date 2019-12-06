@@ -9,7 +9,7 @@ import typing
 
 import trio
 
-from httpx import AsyncioBackend
+from httpx.concurrency.asyncio import AsyncioBackend
 from httpx.concurrency.trio import TrioBackend
 
 

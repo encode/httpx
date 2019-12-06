@@ -1,4 +1,3 @@
-import enum
 import typing
 from base64 import b64encode
 
@@ -24,10 +23,9 @@ from .http11 import HTTP11Connection
 logger = get_logger(__name__)
 
 
-class HTTPProxyMode(enum.Enum):
-    DEFAULT = "DEFAULT"
-    FORWARD_ONLY = "FORWARD_ONLY"
-    TUNNEL_ONLY = "TUNNEL_ONLY"
+DEFAULT_MODE = "DEFAULT"
+FORWARD_ONLY = "FORWARD_ONLY"
+TUNNEL_ONLY = "TUNNEL_ONLY"
 
 
 class HTTPProxy(ConnectionPool):
@@ -40,7 +38,7 @@ class HTTPProxy(ConnectionPool):
         proxy_url: URLTypes,
         *,
         proxy_headers: HeaderTypes = None,
-        proxy_mode: HTTPProxyMode = HTTPProxyMode.DEFAULT,
+        proxy_mode: str = "DEFAULT",
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
@@ -48,6 +46,8 @@ class HTTPProxy(ConnectionPool):
         http2: bool = False,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
     ):
+
+        assert proxy_mode in ("DEFAULT", "FORWARD_ONLY", "TUNNEL_ONLY")
 
         super(HTTPProxy, self).__init__(
             verify=verify,
@@ -216,8 +216,8 @@ class HTTPProxy(ConnectionPool):
         tunnel all 'HTTPS' requests.
         """
         return (
-            self.proxy_mode == HTTPProxyMode.DEFAULT and not origin.is_ssl
-        ) or self.proxy_mode == HTTPProxyMode.FORWARD_ONLY
+            self.proxy_mode == DEFAULT_MODE and not origin.is_ssl
+        ) or self.proxy_mode == FORWARD_ONLY
 
     async def send(
         self,
