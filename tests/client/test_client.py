@@ -71,7 +71,7 @@ async def test_stream_iterator(server):
 
     async with httpx.Client() as client:
         async with client.stream("GET", server.url) as response:
-            async for chunk in response.stream_bytes():
+            async for chunk in response.aiter_bytes():
                 body += chunk
 
     assert response.status_code == 200
@@ -84,7 +84,7 @@ async def test_raw_iterator(server):
 
     async with httpx.Client() as client:
         async with client.stream("GET", server.url) as response:
-            async for chunk in response.stream_raw():
+            async for chunk in response.aiter_raw():
                 body += chunk
 
     assert response.status_code == 200

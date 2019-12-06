@@ -28,10 +28,10 @@ async with request.stream("GET", "https://www.example.com") as response:
 
 Within a `stream()` block request data is made available with:
 
-* `.stream_bytes()` - Instead of `response.iter_content()`
-* `.stream_text()` - Instead of `response.iter_content(decode_unicode=True)`
-* `.stream_lines()` - Instead of `response.iter_lines()`
-* `.stream_raw()` - Use this instead of `response.raw`
+* `.aiter_bytes()` - Instead of `response.iter_content()`
+* `.aiter_text()` - Instead of `response.iter_content(decode_unicode=True)`
+* `.aiter_lines()` - Instead of `response.iter_lines()`
+* `.aiter_raw()` - Use this instead of `response.raw`
 * `.read()` - Read the entire response body, making `request.text` and `response.content` available.
 
 ## SSL configuration
