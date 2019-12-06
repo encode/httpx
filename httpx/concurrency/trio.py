@@ -214,11 +214,8 @@ class TrioBackend(ConcurrencyBackend):
                 nursery.start_soon(coroutine1, *args1)
                 nursery.start_soon(coroutine2, *args2)
         except trio.MultiError as exc:
-            # NOTE: asyncio doesn't handle multi-errors yet, so we must align on its
-            # behavior here, and need to arbitrarily decide which exception to raise.
-            # We may want to add an 'httpx.MultiError', manually add support
-            # for this situation in the asyncio backend, and re-raise
-            # an 'httpx.MultiError' from trio's here.
+            # In practice, we don't actually care about raising both
+            # exceptions, so let's raise either indeterminantly.
             raise exc.exceptions[0]
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
