@@ -65,9 +65,23 @@ class HTTP2Connection:
         self.timeout_flags[stream_id] = TimeoutFlag()
         self.window_update_received[stream_id] = self.backend.create_event()
 
-        task, args = self.send_request_data, [stream_id, request.stream(), timeout]
-        async with self.backend.background_manager(task, *args):
+        status_code: typing.Optional[int] = None
+        headers: typing.Optional[list] = None
+
+        async def receive_response(stream_id: int, timeout: Timeout) -> None:
+            nonlocal status_code, headers
             status_code, headers = await self.receive_response(stream_id, timeout)
+
+        await self.backend.fork(
+            self.send_request_data,
+            [stream_id, request.stream(), timeout],
+            receive_response,
+            [stream_id, timeout],
+        )
+
+        assert status_code is not None
+        assert headers is not None
+
         content = self.body_iter(stream_id, timeout)
         on_close = functools.partial(self.response_closed, stream_id=stream_id)
 
