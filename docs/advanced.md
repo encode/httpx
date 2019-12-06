@@ -243,7 +243,7 @@ Proxies can be configured to have different behavior such as forwarding or tunne
 ```python
 proxy = httpx.HTTPProxy(
     proxy_url="https://127.0.0.1",
-    proxy_mode=httpx.HTTPProxyMode.TUNNEL_ONLY
+    proxy_mode="TUNNEL_ONLY"  # May be "TUNNEL_ONLY" or "FORWARD_ONLY". Defaults to "DEFAULT".
 )
 async with httpx.Client(proxies=proxy) as client:
     # This request will be tunneled instead of forwarded.
@@ -407,7 +407,7 @@ If you're using a `Client()` instance, then you should pass any SSL settings whe
 client = httpx.Client(verify=False)
 ```
 
-The `client.get(...)` method and other request methods *do not* changing the SSL settings on a per-request basis. If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
+The `client.get(...)` method and other request methods *do not* support changing the SSL settings on a per-request basis. If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
 
 ### Making HTTPS requests to a local server
 

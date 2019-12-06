@@ -40,7 +40,6 @@ def test_proxies_has_same_properties_as_dispatch():
     pool = client.dispatch
     proxy = client.proxies["all"]
 
-    assert isinstance(pool, httpx.ConnectionPool)
     assert isinstance(proxy, httpx.HTTPProxy)
 
     for prop in [
@@ -101,7 +100,6 @@ def test_dispatcher_for_request(url, proxies, expected):
     dispatcher = client.dispatcher_for_url(httpx.URL(url))
 
     if expected is None:
-        assert isinstance(dispatcher, httpx.ConnectionPool)
         assert dispatcher is client.dispatch
     else:
         assert isinstance(dispatcher, httpx.HTTPProxy)

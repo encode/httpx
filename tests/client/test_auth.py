@@ -4,18 +4,9 @@ import os
 
 import pytest
 
-from httpx import (
-    URL,
-    CertTypes,
-    Client,
-    DigestAuth,
-    Dispatcher,
-    ProtocolError,
-    Request,
-    Response,
-    TimeoutTypes,
-    VerifyTypes,
-)
+from httpx import URL, Client, DigestAuth, ProtocolError, Request, Response
+from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx.dispatch.base import Dispatcher
 
 
 class MockDispatch(Dispatcher):

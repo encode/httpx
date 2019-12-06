@@ -4,17 +4,9 @@ import json
 
 import pytest
 
-from httpx import (
-    CertTypes,
-    Client,
-    Dispatcher,
-    Request,
-    Response,
-    TimeoutTypes,
-    VerifyTypes,
-    __version__,
-    models,
-)
+from httpx import Client, Headers, Request, Response, __version__
+from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx.dispatch.base import Dispatcher
 
 
 class MockDispatch(Dispatcher):
@@ -132,7 +124,7 @@ async def test_header_update():
 
 
 def test_header_does_not_exist():
-    headers = models.Headers({"foo": "bar"})
+    headers = Headers({"foo": "bar"})
     with pytest.raises(KeyError):
         del headers["baz"]
 

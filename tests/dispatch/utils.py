@@ -5,7 +5,9 @@ import h2.config
 import h2.connection
 import h2.events
 
-from httpx import AsyncioBackend, BaseSocketStream, Request, Timeout
+from httpx import Request, Timeout
+from httpx.concurrency.asyncio import AsyncioBackend
+from httpx.concurrency.base import BaseSocketStream
 from tests.concurrency import sleep
 
 

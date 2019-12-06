@@ -919,26 +919,26 @@ class Response:
         Read and return the response content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part async for part in self.stream_bytes()])
+            self._content = b"".join([part async for part in self.aiter_bytes()])
         return self._content
 
     @property
     def stream(self):  # type: ignore
         warnings.warn(
             "Response.stream() is due to be deprecated. "
-            "Use Response.stream_bytes() instead."
+            "Use Response.aiter_bytes() instead."
         )
-        return self.stream_bytes
+        return self.aiter_bytes
 
     @property
     def raw(self):  # type: ignore
         warnings.warn(
             "Response.raw() is due to be deprecated. "
-            "Use Response.stream_raw() instead."
+            "Use Response.aiter_raw() instead."
         )
-        return self.stream_raw
+        return self.aiter_raw
 
-    async def stream_bytes(self) -> typing.AsyncIterator[bytes]:
+    async def aiter_bytes(self) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
@@ -946,30 +946,30 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
-            async for chunk in self.stream_raw():
+            async for chunk in self.aiter_raw():
                 yield self.decoder.decode(chunk)
             yield self.decoder.flush()
 
-    async def stream_text(self) -> typing.AsyncIterator[str]:
+    async def aiter_text(self) -> typing.AsyncIterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
         decoder = TextDecoder(encoding=self.charset_encoding)
-        async for chunk in self.stream_bytes():
+        async for chunk in self.aiter_bytes():
             yield decoder.decode(chunk)
         yield decoder.flush()
 
-    async def stream_lines(self) -> typing.AsyncIterator[str]:
+    async def aiter_lines(self) -> typing.AsyncIterator[str]:
         decoder = LineDecoder()
-        async for text in self.stream_text():
+        async for text in self.aiter_text():
             for line in decoder.decode(text):
                 yield line
         for line in decoder.flush():
             yield line
 
-    async def stream_raw(self) -> typing.AsyncIterator[bytes]:
+    async def aiter_raw(self) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the raw response content.
         """
