@@ -164,14 +164,14 @@ async def test_trust_env_auth():
     os.environ["NETRC"] = "tests/.netrc"
     url = "http://netrcexample.org"
 
-    client = Client(dispatch=MockDispatch())
-    response = await client.get(url, trust_env=False)
+    client = Client(dispatch=MockDispatch(), trust_env=False)
+    response = await client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
 
-    client = Client(dispatch=MockDispatch(), trust_env=False)
-    response = await client.get(url, trust_env=True)
+    client = Client(dispatch=MockDispatch(), trust_env=True)
+    response = await client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {
