@@ -235,7 +235,6 @@ class HTTP2Stream:
         """
         while True:
             event = await self.connection.wait_for_event(self.stream_id, timeout)
-
             if isinstance(event, h2.events.ResponseReceived):
                 break
 
