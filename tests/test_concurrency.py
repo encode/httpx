@@ -154,7 +154,8 @@ def test_lookup_backend():
         auto_backend = lookup_backend("auto")
         return auto_backend.backend
 
-    backend = asyncio.run(get_backend_from_auto())
+    loop = asyncio.get_event_loop()
+    backend = loop.run_until_complete(get_backend_from_auto())
     assert isinstance(backend, AsyncioBackend)
 
     backend = trio.run(get_backend_from_auto)
