@@ -27,23 +27,12 @@ async def test_premature_close(server, backend):
             await response.read()
 
 
-async def test_https_get_with_ssl_defaults(https_server, ca_cert_pem_file, backend):
+async def test_https_get_with_ssl(https_server, ca_cert_pem_file, backend):
     """
-    An HTTPS request, with default SSL configuration set on the client.
+    An HTTPS request, with SSL configuration set on the client.
     """
     async with HTTPConnection(origin=https_server.url, verify=ca_cert_pem_file) as conn:
         response = await conn.request("GET", https_server.url)
-        await response.read()
-        assert response.status_code == 200
-        assert response.content == b"Hello, world!"
-
-
-async def test_https_get_with_sll_overrides(https_server, ca_cert_pem_file, backend):
-    """
-    An HTTPS request, with SSL configuration set on the request.
-    """
-    async with HTTPConnection(origin=https_server.url) as conn:
-        response = await conn.request("GET", https_server.url, verify=ca_cert_pem_file)
         await response.read()
         assert response.status_code == 200
         assert response.content == b"Hello, world!"

@@ -1,6 +1,6 @@
 import typing
 
-from ..config import CertTypes, TimeoutTypes, VerifyTypes
+from ..config import TimeoutTypes
 from ..models import Request, Response
 from .base import Dispatcher
 
@@ -53,14 +53,7 @@ class ASGIDispatch(Dispatcher):
         self.root_path = root_path
         self.client = client
 
-    async def send(
-        self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-    ) -> Response:
-
+    async def send(self, request: Request, timeout: TimeoutTypes = None) -> Response:
         scope = {
             "type": "http",
             "asgi": {"version": "3.0"},
