@@ -1,19 +1,14 @@
+import asyncio
+
 import pytest
 import trio
 
 from httpx import Timeout
 from httpx.concurrency.asyncio import AsyncioBackend
+from httpx.concurrency.base import lookup_backend
 from httpx.concurrency.trio import TrioBackend
 from httpx.config import SSLConfig
-from tests.concurrency import run_concurrently, sleep
-
-
-def get_asyncio_cipher(stream):
-    return stream.stream_writer.get_extra_info("cipher", default=None)
-
-
-def get_trio_cipher(stream):
-    return stream.stream.cipher() if isinstance(stream.stream, trio.SSLStream) else None
+from tests.concurrency import get_cipher, run_concurrently, sleep
 
 
 async def read_response(stream, timeout: Timeout, should_contain: bytes) -> bytes:
@@ -34,14 +29,8 @@ async def read_response(stream, timeout: Timeout, should_contain: bytes) -> byte
     return response
 
 
-@pytest.mark.parametrize(
-    "backend, get_cipher",
-    [
-        pytest.param(AsyncioBackend(), get_asyncio_cipher, marks=pytest.mark.asyncio),
-        pytest.param(TrioBackend(), get_trio_cipher, marks=pytest.mark.trio),
-    ],
-)
-async def test_start_tls_on_tcp_socket_stream(https_server, backend, get_cipher):
+async def test_start_tls_on_tcp_socket_stream(https_server, backend):
+    backend = lookup_backend(backend)
     ctx = SSLConfig().load_ssl_context_no_verify()
     timeout = Timeout(5)
 
@@ -51,11 +40,11 @@ async def test_start_tls_on_tcp_socket_stream(https_server, backend, get_cipher)
 
     try:
         assert stream.is_connection_dropped() is False
-        assert get_cipher(stream) is None
+        assert get_cipher(backend, stream) is None
 
         stream = await stream.start_tls(https_server.url.host, ctx, timeout)
         assert stream.is_connection_dropped() is False
-        assert get_cipher(stream) is not None
+        assert get_cipher(backend, stream) is not None
 
         await stream.write(b"GET / HTTP/1.1\r\n\r\n", timeout)
 
@@ -66,14 +55,8 @@ async def test_start_tls_on_tcp_socket_stream(https_server, backend, get_cipher)
         await stream.close()
 
 
-@pytest.mark.parametrize(
-    "backend, get_cipher",
-    [
-        pytest.param(AsyncioBackend(), get_asyncio_cipher, marks=pytest.mark.asyncio),
-        pytest.param(TrioBackend(), get_trio_cipher, marks=pytest.mark.trio),
-    ],
-)
-async def test_start_tls_on_uds_socket_stream(https_uds_server, backend, get_cipher):
+async def test_start_tls_on_uds_socket_stream(https_uds_server, backend):
+    backend = lookup_backend(backend)
     ctx = SSLConfig().load_ssl_context_no_verify()
     timeout = Timeout(5)
 
@@ -83,11 +66,11 @@ async def test_start_tls_on_uds_socket_stream(https_uds_server, backend, get_cip
 
     try:
         assert stream.is_connection_dropped() is False
-        assert get_cipher(stream) is None
+        assert get_cipher(backend, stream) is None
 
         stream = await stream.start_tls(https_uds_server.url.host, ctx, timeout)
         assert stream.is_connection_dropped() is False
-        assert get_cipher(stream) is not None
+        assert get_cipher(backend, stream) is not None
 
         await stream.write(b"GET / HTTP/1.1\r\n\r\n", timeout)
 
@@ -102,6 +85,7 @@ async def test_concurrent_read(server, backend):
     """
     Regression test for: https://github.com/encode/httpx/issues/527
     """
+    backend = lookup_backend(backend)
     stream = await backend.open_tcp_stream(
         server.url.host, server.url.port, ssl_context=None, timeout=Timeout(5)
     )
@@ -116,6 +100,7 @@ async def test_concurrent_read(server, backend):
 
 
 async def test_fork(backend):
+    backend = lookup_backend(backend)
     ok_counter = 0
 
     async def ok(delay: int) -> None:
@@ -159,3 +144,23 @@ async def test_fork(backend):
     # No 'match', since we can't know which will be raised first.
     with pytest.raises(RuntimeError):
         await backend.fork(fail, ["My bad", 0], fail, ["Oops", 0])
+
+
+def test_lookup_backend():
+    assert isinstance(lookup_backend("asyncio"), AsyncioBackend)
+    assert isinstance(lookup_backend("trio"), TrioBackend)
+    assert isinstance(lookup_backend(AsyncioBackend()), AsyncioBackend)
+
+    async def get_backend_from_auto():
+        auto_backend = lookup_backend("auto")
+        return auto_backend.backend
+
+    loop = asyncio.get_event_loop()
+    backend = loop.run_until_complete(get_backend_from_auto())
+    assert isinstance(backend, AsyncioBackend)
+
+    backend = trio.run(get_backend_from_auto)
+    assert isinstance(backend, TrioBackend)
+
+    with pytest.raises(Exception, match="unknownio"):
+        lookup_backend("unknownio")
