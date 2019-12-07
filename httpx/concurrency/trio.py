@@ -21,10 +21,9 @@ def _or_inf(value: typing.Optional[float]) -> float:
 
 class SocketStream(BaseSocketStream):
     def __init__(
-        self, stream: typing.Union[trio.SocketStream, trio.SSLStream], timeout: Timeout,
+        self, stream: typing.Union[trio.SocketStream, trio.SSLStream],
     ) -> None:
         self.stream = stream
-        self.timeout = timeout
         self.read_lock = trio.Lock()
         self.write_lock = trio.Lock()
 
@@ -42,7 +41,7 @@ class SocketStream(BaseSocketStream):
         if cancel_scope.cancelled_caught:
             raise ConnectTimeout()
 
-        return SocketStream(ssl_stream, self.timeout)
+        return SocketStream(ssl_stream)
 
     def get_http_version(self) -> str:
         if not isinstance(self.stream, trio.SSLStream):
@@ -51,12 +50,7 @@ class SocketStream(BaseSocketStream):
         ident = self.stream.selected_alpn_protocol()
         return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
-    async def read(
-        self, n: int, timeout: Timeout = None, flag: TimeoutFlag = None
-    ) -> bytes:
-        if timeout is None:
-            timeout = self.timeout
-
+    async def read(self, n: int, timeout: Timeout, flag: TimeoutFlag = None) -> bytes:
         while True:
             # Check our flag at the first possible moment, and use a fine
             # grained retry loop if we're not yet in read-timeout mode.
@@ -86,13 +80,10 @@ class SocketStream(BaseSocketStream):
         return stream.socket.is_readable()
 
     async def write(
-        self, data: bytes, timeout: Timeout = None, flag: TimeoutFlag = None
+        self, data: bytes, timeout: Timeout, flag: TimeoutFlag = None
     ) -> None:
         if not data:
             return
-
-        if timeout is None:
-            timeout = self.timeout
 
         write_timeout = _or_inf(timeout.write_timeout)
 
@@ -166,7 +157,7 @@ class TrioBackend(ConcurrencyBackend):
         if cancel_scope.cancelled_caught:
             raise ConnectTimeout()
 
-        return SocketStream(stream=stream, timeout=timeout)
+        return SocketStream(stream=stream)
 
     async def open_uds_stream(
         self,
@@ -186,7 +177,7 @@ class TrioBackend(ConcurrencyBackend):
         if cancel_scope.cancelled_caught:
             raise ConnectTimeout()
 
-        return SocketStream(stream=stream, timeout=timeout)
+        return SocketStream(stream=stream)
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
