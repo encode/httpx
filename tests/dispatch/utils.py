@@ -6,15 +6,14 @@ import h2.connection
 import h2.events
 
 from httpx import Request, Timeout
-from httpx.concurrency.asyncio import AsyncioBackend
-from httpx.concurrency.base import BaseSocketStream
+from httpx.concurrency.base import BaseSocketStream, lookup_backend
 from tests.concurrency import sleep
 
 
 class MockHTTP2Backend:
-    def __init__(self, app, backend=None):
+    def __init__(self, app, backend="auto"):
         self.app = app
-        self.backend = AsyncioBackend() if backend is None else backend
+        self.backend = lookup_backend(backend)
         self.server = None
 
     async def open_tcp_stream(
@@ -168,8 +167,8 @@ class MockHTTP2Server(BaseSocketStream):
 
 
 class MockRawSocketBackend:
-    def __init__(self, data_to_send=b"", backend=None):
-        self.backend = AsyncioBackend() if backend is None else backend
+    def __init__(self, data_to_send=b"", backend="auto"):
+        self.backend = lookup_backend(backend)
         self.data_to_send = data_to_send
         self.received_data = []
         self.stream = MockRawSocketStream(self)

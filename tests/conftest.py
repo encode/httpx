@@ -19,7 +19,7 @@ from uvicorn.main import Server
 
 from httpx import URL
 from httpx.concurrency.asyncio import AsyncioBackend
-from httpx.concurrency.trio import TrioBackend
+from httpx.concurrency.base import lookup_backend
 
 ENVIRONMENT_VARIABLES = {
     "SSL_CERT_FILE",
@@ -51,13 +51,18 @@ def clean_environ() -> typing.Dict[str, typing.Any]:
 
 @pytest.fixture(
     params=[
-        pytest.param(AsyncioBackend, marks=pytest.mark.asyncio),
-        pytest.param(TrioBackend, marks=pytest.mark.trio),
+        # pytest uses the marks to set up the specified async environment and run
+        # 'async def' test functions. The "auto" backend should then auto-detect
+        # the environment it's running in.
+        pytest.param("auto", marks=pytest.mark.asyncio),
+        pytest.param("auto", marks=pytest.mark.trio),
+        # We also test the cases when the backend is passed explicitly.
+        pytest.param("asyncio", marks=pytest.mark.asyncio),
+        pytest.param("trio", marks=pytest.mark.trio),
     ]
 )
 def backend(request):
-    backend_cls = request.param
-    return backend_cls()
+    return request.param
 
 
 async def app(scope, receive, send):
@@ -271,9 +276,13 @@ def restart(backend):
     This fixture deals with possible differences between the environment of the
     test function and that of the server.
     """
+    asyncio_backend = AsyncioBackend()
+    backend_implementation = lookup_backend(backend)
 
     async def restart(server):
-        await backend.run_in_threadpool(AsyncioBackend().run, server.restart)
+        await backend_implementation.run_in_threadpool(
+            asyncio_backend.run, server.restart
+        )
 
     return restart
 
