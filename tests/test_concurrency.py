@@ -1,7 +1,12 @@
+import asyncio
+
 import pytest
+import trio
 
 from httpx import Timeout
+from httpx.concurrency.asyncio import AsyncioBackend
 from httpx.concurrency.base import lookup_backend
+from httpx.concurrency.trio import TrioBackend
 from httpx.config import SSLConfig
 from tests.concurrency import get_cipher, run_concurrently, sleep
 
@@ -138,3 +143,22 @@ async def test_fork(backend):
     # No 'match', since we can't know which will be raised first.
     with pytest.raises(RuntimeError):
         await backend.fork(fail, ["My bad", 0], fail, ["Oops", 0])
+
+
+def test_lookup_backend():
+    assert isinstance(lookup_backend("asyncio"), AsyncioBackend)
+    assert isinstance(lookup_backend("trio"), TrioBackend)
+    assert isinstance(lookup_backend(AsyncioBackend()), AsyncioBackend)
+
+    async def get_backend_from_auto():
+        auto_backend = lookup_backend("auto")
+        return auto_backend.backend
+
+    backend = asyncio.run(get_backend_from_auto())
+    assert isinstance(backend, AsyncioBackend)
+
+    backend = trio.run(get_backend_from_auto)
+    assert isinstance(backend, TrioBackend)
+
+    with pytest.raises(Exception, match="unknownio"):
+        lookup_backend("unknownio")

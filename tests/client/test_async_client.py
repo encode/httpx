@@ -160,3 +160,17 @@ async def test_uds(uds_server, backend):
     assert response.status_code == 200
     assert response.text == "Hello, world!"
     assert response.encoding == "iso-8859-1"
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        pytest.param("asyncio", marks=pytest.mark.asyncio),
+        pytest.param("trio", marks=pytest.mark.trio),
+    ],
+)
+async def test_explicit_backend(server, backend):
+    async with httpx.Client(backend=backend) as client:
+        response = await client.get(server.url)
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"

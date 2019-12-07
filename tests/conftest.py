@@ -54,11 +54,10 @@ def clean_environ() -> typing.Dict[str, typing.Any]:
         # pytest uses the marks to set up the specified async environment and run
         # 'async def' test functions. The "auto" backend should then auto-detect
         # the environment it's running in.
+        # Passing the backend explicitly, e.g. `backend="asyncio"`,
+        # is tested separately.
         pytest.param("auto", marks=pytest.mark.asyncio),
         pytest.param("auto", marks=pytest.mark.trio),
-        # We also test the cases when the backend is passed explicitly.
-        pytest.param("asyncio", marks=pytest.mark.asyncio),
-        pytest.param("trio", marks=pytest.mark.trio),
     ]
 )
 def backend(request):
