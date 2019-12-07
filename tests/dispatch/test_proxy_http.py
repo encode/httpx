@@ -19,7 +19,6 @@ async def test_proxy_tunnel_success(backend):
                 b"\r\n",
             ]
         ),
-        backend=backend,
     )
     async with httpx.HTTPProxy(
         proxy_url="http://127.0.0.1:8000", backend=raw_io, proxy_mode="TUNNEL_ONLY",
@@ -53,7 +52,6 @@ async def test_proxy_tunnel_non_2xx_response(backend, status_code):
                 b"\r\n",
             ]
         ),
-        backend=backend,
     )
 
     with pytest.raises(httpx.ProxyError) as e:
@@ -105,7 +103,6 @@ async def test_proxy_tunnel_start_tls(backend):
                 b"\r\n",
             ]
         ),
-        backend=backend,
     )
     async with httpx.HTTPProxy(
         proxy_url="http://127.0.0.1:8000", backend=raw_io, proxy_mode="TUNNEL_ONLY",
@@ -155,7 +152,6 @@ async def test_proxy_forwarding(backend, proxy_mode):
                 b"\r\n"
             ]
         ),
-        backend=backend,
     )
     async with httpx.HTTPProxy(
         proxy_url="http://127.0.0.1:8000",

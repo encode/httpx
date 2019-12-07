@@ -104,7 +104,7 @@ async def test_http2_reconnect():
 
 
 async def test_http2_settings_in_handshake(backend):
-    backend = MockHTTP2Backend(app=app, backend=backend)
+    backend = MockHTTP2Backend(app=app)
 
     async with Client(backend=backend, http2=True) as client:
         await client.get("http://example.org")
@@ -139,7 +139,7 @@ async def test_http2_settings_in_handshake(backend):
 
 
 async def test_http2_live_request(backend):
-    async with Client(backend=backend, http2=True) as client:
+    async with Client(http2=True) as client:
         try:
             resp = await client.get("https://nghttp2.org/httpbin/anything")
         except TimeoutException:

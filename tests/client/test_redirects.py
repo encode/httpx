@@ -105,7 +105,7 @@ class MockDispatch(Dispatcher):
 
 
 async def test_no_redirect(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     url = "https://example.com/no_redirect"
     response = await client.get(url)
     assert response.status_code == 200
@@ -114,7 +114,7 @@ async def test_no_redirect(backend):
 
 
 async def test_redirect_301(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     response = await client.post("https://example.org/redirect_301")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
@@ -122,7 +122,7 @@ async def test_redirect_301(backend):
 
 
 async def test_redirect_302(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     response = await client.post("https://example.org/redirect_302")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
@@ -130,7 +130,7 @@ async def test_redirect_302(backend):
 
 
 async def test_redirect_303(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     response = await client.get("https://example.org/redirect_303")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
@@ -138,7 +138,7 @@ async def test_redirect_303(backend):
 
 
 async def test_disallow_redirects(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     response = await client.post(
         "https://example.org/redirect_303", allow_redirects=False
     )
@@ -155,7 +155,7 @@ async def test_disallow_redirects(backend):
 
 
 async def test_relative_redirect(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     response = await client.get("https://example.org/relative_redirect")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
@@ -163,7 +163,7 @@ async def test_relative_redirect(backend):
 
 
 async def test_no_scheme_redirect(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     response = await client.get("https://example.org/no_scheme_redirect")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
@@ -171,7 +171,7 @@ async def test_no_scheme_redirect(backend):
 
 
 async def test_fragment_redirect(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     response = await client.get("https://example.org/relative_redirect#fragment")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/#fragment")
@@ -179,7 +179,7 @@ async def test_fragment_redirect(backend):
 
 
 async def test_multiple_redirects(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     response = await client.get("https://example.org/multiple_redirects?count=20")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/multiple_redirects")
@@ -195,13 +195,13 @@ async def test_multiple_redirects(backend):
 
 
 async def test_too_many_redirects(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     with pytest.raises(TooManyRedirects):
         await client.get("https://example.org/multiple_redirects?count=21")
 
 
 async def test_too_many_redirects_calling_next(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     url = "https://example.org/multiple_redirects?count=21"
     response = await client.get(url, allow_redirects=False)
     with pytest.raises(TooManyRedirects):
@@ -210,13 +210,13 @@ async def test_too_many_redirects_calling_next(backend):
 
 
 async def test_redirect_loop(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     with pytest.raises(RedirectLoop):
         await client.get("https://example.org/redirect_loop")
 
 
 async def test_redirect_loop_calling_next(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     url = "https://example.org/redirect_loop"
     response = await client.get(url, allow_redirects=False)
     with pytest.raises(RedirectLoop):
@@ -225,7 +225,7 @@ async def test_redirect_loop_calling_next(backend):
 
 
 async def test_cross_domain_redirect(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     url = "https://example.com/cross_domain"
     headers = {"Authorization": "abc"}
     response = await client.get(url, headers=headers)
@@ -234,7 +234,7 @@ async def test_cross_domain_redirect(backend):
 
 
 async def test_same_domain_redirect(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     url = "https://example.org/cross_domain"
     headers = {"Authorization": "abc"}
     response = await client.get(url, headers=headers)
@@ -246,7 +246,7 @@ async def test_body_redirect(backend):
     """
     A 308 redirect should preserve the request body.
     """
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     url = "https://example.org/redirect_body"
     data = b"Example request body"
     response = await client.post(url, data=data)
@@ -259,7 +259,7 @@ async def test_no_body_redirect(backend):
     """
     A 303 redirect should remove the request body.
     """
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     url = "https://example.org/redirect_no_body"
     data = b"Example request body"
     response = await client.post(url, data=data)
@@ -269,7 +269,7 @@ async def test_no_body_redirect(backend):
 
 
 async def test_cannot_redirect_streaming_body(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     url = "https://example.org/redirect_body"
 
     async def streaming_body():
@@ -280,7 +280,7 @@ async def test_cannot_redirect_streaming_body(backend):
 
 
 async def test_cross_subdomain_redirect(backend):
-    client = Client(dispatch=MockDispatch(), backend=backend)
+    client = Client(dispatch=MockDispatch())
     url = "https://example.com/cross_subdomain"
     response = await client.get(url)
     assert response.url == URL("https://www.example.org/cross_subdomain")
@@ -326,7 +326,7 @@ class MockCookieDispatch(Dispatcher):
 
 
 async def test_redirect_cookie_behavior(backend):
-    client = Client(dispatch=MockCookieDispatch(), backend=backend)
+    client = Client(dispatch=MockCookieDispatch())
 
     # The client is not logged in.
     response = await client.get("https://example.com/")
