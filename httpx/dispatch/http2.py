@@ -14,11 +14,12 @@ from ..config import Timeout
 from ..exceptions import ProtocolError
 from ..models import Request, Response
 from ..utils import get_logger
+from .base import OpenConnection
 
 logger = get_logger(__name__)
 
 
-class HTTP2Connection:
+class HTTP2Connection(OpenConnection):
     READ_NUM_BYTES = 4096
 
     def __init__(
@@ -36,6 +37,10 @@ class HTTP2Connection:
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
 
         self.init_started = False
+
+    @property
+    def is_http2(self) -> bool:
+        return True
 
     @property
     def init_complete(self) -> BaseEvent:
