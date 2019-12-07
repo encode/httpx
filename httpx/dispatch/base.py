@@ -65,11 +65,11 @@ class OpenConnection:
     Base class for connection classes that interact with a host via HTTP.
     """
 
-    async def send(self, request: Request, timeout: Timeout = None,) -> Response:
-        raise NotImplementedError()  # pragma: no cover
-
     @property
     def is_http2(self) -> bool:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def send(self, request: Request, timeout: Timeout = None,) -> Response:
         raise NotImplementedError()  # pragma: no cover
 
     @property
