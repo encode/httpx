@@ -51,12 +51,3 @@ class AutoBackend(ConcurrencyBackend):
 
     def create_event(self) -> BaseEvent:
         return self.backend.create_event()
-
-    async def fork(
-        self,
-        coroutine1: typing.Callable,
-        args1: typing.Sequence,
-        coroutine2: typing.Callable,
-        args2: typing.Sequence,
-    ) -> None:
-        return await self.backend.fork(coroutine1, args1, coroutine2, args2)

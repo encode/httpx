@@ -152,21 +152,3 @@ class ConcurrencyBackend:
 
     def create_event(self) -> BaseEvent:
         raise NotImplementedError()  # pragma: no cover
-
-    async def fork(
-        self,
-        coroutine1: typing.Callable,
-        args1: typing.Sequence,
-        coroutine2: typing.Callable,
-        args2: typing.Sequence,
-    ) -> None:
-        """
-        Run two coroutines concurrently.
-
-        This should start 'coroutine1' with '*args1' and 'coroutine2' with '*args2',
-        and wait for them to finish.
-
-        In case one of the coroutines raises an exception, cancel the other one then
-        raise. If the other coroutine had also raised an exception, ignore it.
-        """
-        raise NotImplementedError()  # pragma: no cover
