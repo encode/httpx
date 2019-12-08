@@ -168,22 +168,6 @@ class TrioBackend(ConcurrencyBackend):
             functools.partial(coroutine, **kwargs) if kwargs else coroutine, *args
         )
 
-    async def fork(
-        self,
-        coroutine1: typing.Callable,
-        args1: typing.Sequence,
-        coroutine2: typing.Callable,
-        args2: typing.Sequence,
-    ) -> None:
-        try:
-            async with trio.open_nursery() as nursery:
-                nursery.start_soon(coroutine1, *args1)
-                nursery.start_soon(coroutine2, *args2)
-        except trio.MultiError as exc:
-            # In practice, we don't actually care about raising both
-            # exceptions, so let's raise either indeterminantly.
-            raise exc.exceptions[0]
-
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
 

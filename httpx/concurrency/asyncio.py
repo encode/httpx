@@ -268,28 +268,6 @@ class AsyncioBackend(ConcurrencyBackend):
         finally:
             self._loop = loop
 
-    async def fork(
-        self,
-        coroutine1: typing.Callable,
-        args1: typing.Sequence,
-        coroutine2: typing.Callable,
-        args2: typing.Sequence,
-    ) -> None:
-        task1 = self.loop.create_task(coroutine1(*args1))
-        task2 = self.loop.create_task(coroutine2(*args2))
-
-        try:
-            await asyncio.gather(task1, task2)
-        finally:
-            pending: typing.Set[asyncio.Future[typing.Any]]  # Please mypy.
-            _, pending = await asyncio.wait({task1, task2}, timeout=0)
-            for task in pending:
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
-
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)
 
