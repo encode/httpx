@@ -6,13 +6,7 @@ import typing
 
 from ..config import PoolLimits, Timeout
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
-from .base import (
-    BaseEvent,
-    BasePoolSemaphore,
-    BaseSocketStream,
-    ConcurrencyBackend,
-    TimeoutFlag,
-)
+from .base import BaseEvent, BasePoolSemaphore, BaseSocketStream, ConcurrencyBackend
 
 SSL_MONKEY_PATCH_APPLIED = False
 
@@ -126,51 +120,26 @@ class SocketStream(BaseSocketStream):
         ident = ssl_object.selected_alpn_protocol()
         return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
-    async def read(self, n: int, timeout: Timeout, flag: TimeoutFlag = None) -> bytes:
-        while True:
-            # Check our flag at the first possible moment, and use a fine
-            # grained retry loop if we're not yet in read-timeout mode.
-            should_raise = flag is None or flag.raise_on_read_timeout
-            read_timeout = timeout.read_timeout if should_raise else 0.01
-            try:
-                async with self.read_lock:
-                    data = await asyncio.wait_for(
-                        self.stream_reader.read(n), read_timeout
-                    )
-            except asyncio.TimeoutError:
-                if should_raise:
-                    raise ReadTimeout() from None
-                # FIX(py3.6): yield control back to the event loop to give it a chance
-                # to cancel `.read(n)` before we retry.
-                # This prevents concurrent `.read()` calls, which asyncio
-                # doesn't seem to allow on 3.6.
-                # See: https://github.com/encode/httpx/issues/382
-                await asyncio.sleep(0)
-            else:
-                break
+    async def read(self, n: int, timeout: Timeout) -> bytes:
+        try:
+            async with self.read_lock:
+                return await asyncio.wait_for(
+                    self.stream_reader.read(n), timeout.read_timeout
+                )
+        except asyncio.TimeoutError:
+            raise ReadTimeout() from None
 
-        return data
-
-    async def write(
-        self, data: bytes, timeout: Timeout, flag: TimeoutFlag = None
-    ) -> None:
+    async def write(self, data: bytes, timeout: Timeout) -> None:
         if not data:
             return
 
         self.stream_writer.write(data)
-        while True:
-            try:
-                await asyncio.wait_for(  # type: ignore
-                    self.stream_writer.drain(), timeout.write_timeout
-                )
-                break
-            except asyncio.TimeoutError:
-                # We check our flag at the first possible moment, in order to
-                # allow us to suppress write timeouts, if we've since
-                # switched over to read-timeout mode.
-                should_raise = flag is None or flag.raise_on_write_timeout
-                if should_raise:
-                    raise WriteTimeout() from None
+        try:
+            return await asyncio.wait_for(
+                self.stream_writer.drain(), timeout.write_timeout
+            )
+        except asyncio.TimeoutError:
+            raise WriteTimeout() from None
 
     def is_connection_dropped(self) -> bool:
         # Counter-intuitively, what we really want to know here is whether the socket is

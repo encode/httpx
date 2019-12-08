@@ -6,16 +6,10 @@ import trio
 
 from ..config import PoolLimits, Timeout
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
-from .base import (
-    BaseEvent,
-    BasePoolSemaphore,
-    BaseSocketStream,
-    ConcurrencyBackend,
-    TimeoutFlag,
-)
+from .base import BaseEvent, BasePoolSemaphore, BaseSocketStream, ConcurrencyBackend
 
 
-def _or_inf(value: typing.Optional[float]) -> float:
+def none_as_inf(value: typing.Optional[float]) -> float:
     return value if value is not None else float("inf")
 
 
@@ -30,18 +24,16 @@ class SocketStream(BaseSocketStream):
     async def start_tls(
         self, hostname: str, ssl_context: ssl.SSLContext, timeout: Timeout
     ) -> "SocketStream":
-        connect_timeout = _or_inf(timeout.connect_timeout)
+        connect_timeout = none_as_inf(timeout.connect_timeout)
         ssl_stream = trio.SSLStream(
             self.stream, ssl_context=ssl_context, server_hostname=hostname
         )
 
-        with trio.move_on_after(connect_timeout) as cancel_scope:
+        with trio.move_on_after(connect_timeout):
             await ssl_stream.do_handshake()
+            return SocketStream(ssl_stream)
 
-        if cancel_scope.cancelled_caught:
-            raise ConnectTimeout()
-
-        return SocketStream(ssl_stream)
+        raise ConnectTimeout()
 
     def get_http_version(self) -> str:
         if not isinstance(self.stream, trio.SSLStream):
@@ -50,19 +42,26 @@ class SocketStream(BaseSocketStream):
         ident = self.stream.selected_alpn_protocol()
         return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
-    async def read(self, n: int, timeout: Timeout, flag: TimeoutFlag = None) -> bytes:
-        while True:
-            # Check our flag at the first possible moment, and use a fine
-            # grained retry loop if we're not yet in read-timeout mode.
-            should_raise = flag is None or flag.raise_on_read_timeout
-            read_timeout = _or_inf(timeout.read_timeout if should_raise else 0.01)
+    async def read(self, n: int, timeout: Timeout) -> bytes:
+        read_timeout = none_as_inf(timeout.read_timeout)
 
-            with trio.move_on_after(read_timeout):
-                async with self.read_lock:
-                    return await self.stream.receive_some(max_bytes=n)
+        with trio.move_on_after(read_timeout):
+            async with self.read_lock:
+                return await self.stream.receive_some(max_bytes=n)
 
-            if should_raise:
-                raise ReadTimeout() from None
+        raise ReadTimeout()
+
+    async def write(self, data: bytes, timeout: Timeout) -> None:
+        if not data:
+            return
+
+        write_timeout = none_as_inf(timeout.write_timeout)
+
+        with trio.move_on_after(write_timeout):
+            async with self.write_lock:
+                return await self.stream.send_all(data)
+
+        raise WriteTimeout()
 
     def is_connection_dropped(self) -> bool:
         # Adapted from: https://github.com/encode/httpx/pull/143#issuecomment-515202982
@@ -78,26 +77,6 @@ class SocketStream(BaseSocketStream):
         # called `.recv()` on it, indicating that the other end has closed the socket.
         # See: https://github.com/encode/httpx/pull/143#issuecomment-515181778
         return stream.socket.is_readable()
-
-    async def write(
-        self, data: bytes, timeout: Timeout, flag: TimeoutFlag = None
-    ) -> None:
-        if not data:
-            return
-
-        write_timeout = _or_inf(timeout.write_timeout)
-
-        while True:
-            with trio.move_on_after(write_timeout):
-                async with self.write_lock:
-                    await self.stream.send_all(data)
-                break
-            # We check our flag at the first possible moment, in order to
-            # allow us to suppress write timeouts, if we've since
-            # switched over to read-timeout mode.
-            should_raise = flag is None or flag.raise_on_write_timeout
-            if should_raise:
-                raise WriteTimeout() from None
 
     async def close(self) -> None:
         await self.stream.aclose()
@@ -123,7 +102,7 @@ class PoolSemaphore(BasePoolSemaphore):
         if self.semaphore is None:
             return
 
-        timeout = _or_inf(timeout)
+        timeout = none_as_inf(timeout)
 
         with trio.move_on_after(timeout):
             await self.semaphore.acquire()
@@ -146,18 +125,16 @@ class TrioBackend(ConcurrencyBackend):
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: Timeout,
     ) -> SocketStream:
-        connect_timeout = _or_inf(timeout.connect_timeout)
+        connect_timeout = none_as_inf(timeout.connect_timeout)
 
-        with trio.move_on_after(connect_timeout) as cancel_scope:
+        with trio.move_on_after(connect_timeout):
             stream: trio.SocketStream = await trio.open_tcp_stream(hostname, port)
             if ssl_context is not None:
                 stream = trio.SSLStream(stream, ssl_context, server_hostname=hostname)
                 await stream.do_handshake()
+            return SocketStream(stream=stream)
 
-        if cancel_scope.cancelled_caught:
-            raise ConnectTimeout()
-
-        return SocketStream(stream=stream)
+        raise ConnectTimeout()
 
     async def open_uds_stream(
         self,
@@ -166,18 +143,16 @@ class TrioBackend(ConcurrencyBackend):
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: Timeout,
     ) -> SocketStream:
-        connect_timeout = _or_inf(timeout.connect_timeout)
+        connect_timeout = none_as_inf(timeout.connect_timeout)
 
-        with trio.move_on_after(connect_timeout) as cancel_scope:
+        with trio.move_on_after(connect_timeout):
             stream: trio.SocketStream = await trio.open_unix_socket(path)
             if ssl_context is not None:
                 stream = trio.SSLStream(stream, ssl_context, server_hostname=hostname)
                 await stream.do_handshake()
+            return SocketStream(stream=stream)
 
-        if cancel_scope.cancelled_caught:
-            raise ConnectTimeout()
-
-        return SocketStream(stream=stream)
+        raise ConnectTimeout()
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
