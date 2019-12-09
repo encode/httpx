@@ -7,6 +7,7 @@ from ..config import Timeout
 from ..exceptions import ConnectionClosed, ProtocolError
 from ..models import Request, Response
 from ..utils import get_logger
+from .base import OpenConnection
 
 H11Event = typing.Union[
     h11.Request,
@@ -27,7 +28,7 @@ OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
 logger = get_logger(__name__)
 
 
-class HTTP11Connection:
+class HTTP11Connection(OpenConnection):
     READ_NUM_BYTES = 4096
 
     def __init__(
@@ -38,6 +39,10 @@ class HTTP11Connection:
         self.socket = socket
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
+
+    @property
+    def is_http2(self) -> bool:
+        return False
 
     async def send(self, request: Request, timeout: Timeout = None) -> Response:
         timeout = Timeout() if timeout is None else timeout
