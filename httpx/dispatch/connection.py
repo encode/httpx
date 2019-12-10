@@ -47,6 +47,7 @@ class HTTPConnection(Dispatcher):
         self.uds = uds
         self.connection: typing.Optional[OpenConnection] = None
         self.state = ConnectionState.PENDING
+        self.num_current_requests = 0
 
     async def send(
         self,
@@ -58,6 +59,7 @@ class HTTPConnection(Dispatcher):
         timeout = Timeout() if timeout is None else timeout
 
         if self.state == ConnectionState.PENDING:
+            self.num_current_requests += 1
             try:
                 await self.connect(verify=verify, cert=cert, timeout=timeout)
                 assert self.connection is not None
@@ -66,11 +68,14 @@ class HTTPConnection(Dispatcher):
                 else:
                     self.state = ConnectionState.ACTIVE_HTTP_11
             except BaseException as exc:
+                self.num_current_requests -= 1
                 self.state = ConnectionState.CLOSED
                 raise exc
         elif self.state == ConnectionState.IDLE_HTTP_11:
+            self.num_current_requests += 1
             self.state = ConnectionState.ACTIVE_HTTP_11
         elif self.state == ConnectionState.IDLE_HTTP_2:
+            self.num_current_requests += 1
             self.state = ConnectionState.ACTIVE_HTTP_2
         # elif self.state == ConnectionState.ACTIVE_HTTP_2:
         #     pass
@@ -82,6 +87,7 @@ class HTTPConnection(Dispatcher):
             return await self.connection.send(request, timeout=timeout)
         except BaseException as exc:
             self.state = ConnectionState.CLOSED
+            self.num_current_requests -= 1
             raise exc from None
 
     async def connect(
@@ -160,15 +166,25 @@ class HTTPConnection(Dispatcher):
 
     async def release(self) -> None:
         logger.trace("Connection released")
+
+        self.num_current_requests -= 1
+
         if self.state == ConnectionState.ACTIVE_HTTP_11:
             self.state = ConnectionState.IDLE_HTTP_11
-        elif self.state == ConnectionState.ACTIVE_HTTP_2:
+        elif (
+            self.state == ConnectionState.ACTIVE_HTTP_2
+            and not self.num_current_requests
+        ):
             self.state = ConnectionState.IDLE_HTTP_2
-        elif self.state == ConnectionState.ACTIVE_HTTP_2_NO_STREAMS:
+        elif (
+            self.state == ConnectionState.ACTIVE_HTTP_2_NO_STREAMS
+            and not self.num_current_requests
+        ):
             self.state = ConnectionState.CLOSED
 
         if self.release_func is not None:
-            await self.release_func(self)
+            if self.num_current_requests == 0:
+                await self.release_func(self)
 
     def __repr__(self) -> str:
         return f"<Connection [{self.origin!r} {self.state.name}]>"

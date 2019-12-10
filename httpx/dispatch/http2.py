@@ -167,7 +167,7 @@ class HTTP2Connection(OpenConnection):
         del self.streams[stream_id]
         del self.events[stream_id]
 
-        if not self.streams and self.on_release is not None:
+        if self.on_release is not None:
             await self.on_release()
 
 
