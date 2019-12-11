@@ -62,15 +62,15 @@ class HTTPConnection(Dispatcher):
             self.num_current_requests += 1
             try:
                 await self.connect(verify=verify, cert=cert, timeout=timeout)
-                assert self.connection is not None
-                if self.connection.is_http2:
-                    self.state = ConnectionState.ACTIVE_HTTP_2
-                else:
-                    self.state = ConnectionState.ACTIVE_HTTP_11
             except BaseException as exc:
                 self.num_current_requests -= 1
                 self.state = ConnectionState.CLOSED
                 raise exc
+            assert self.connection is not None
+            if self.connection.is_http2:
+                self.state = ConnectionState.ACTIVE_HTTP_2
+            else:
+                self.state = ConnectionState.ACTIVE_HTTP_11
         elif self.state == ConnectionState.IDLE_HTTP_11:
             self.num_current_requests += 1
             self.state = ConnectionState.ACTIVE_HTTP_11
