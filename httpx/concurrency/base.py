@@ -1,7 +1,7 @@
 import ssl
 import typing
 
-from ..config import PoolLimits, Timeout
+from ..config import Timeout
 
 
 def lookup_backend(
@@ -105,7 +105,7 @@ class ConcurrencyBackend:
     ) -> BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
-    def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
+    def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
         raise NotImplementedError()  # pragma: no cover
 
     async def run_in_threadpool(

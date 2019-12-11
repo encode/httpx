@@ -13,6 +13,14 @@ CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
 logger = get_logger(__name__)
 
 
+class NullSemaphore(BasePoolSemaphore):
+    async def acquire(self, timeout: float = None) -> None:
+        return
+
+    def release(self) -> None:
+        return
+
+
 class ConnectionStore:
     """
     We need to maintain collections of connections in a way that allows us to:
@@ -99,7 +107,11 @@ class ConnectionPool(Dispatcher):
         # We do this lazily, to make sure backend autodetection always
         # runs within an async context.
         if not hasattr(self, "_max_connections"):
-            self._max_connections = self.backend.get_semaphore(self.pool_limits)
+            limit = self.pool_limits.hard_limit
+            if not limit:
+                self._max_connections = NullSemaphore()  # type: BasePoolSemaphore
+            else:
+                self._max_connections = self.backend.get_semaphore(limit)
         return self._max_connections
 
     @property
