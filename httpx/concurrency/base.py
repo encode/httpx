@@ -105,6 +105,9 @@ class ConcurrencyBackend:
     ) -> BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
+    def time(self) -> float:
+        raise NotImplementedError()  # pragma: no cover
+
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         raise NotImplementedError()  # pragma: no cover
 
