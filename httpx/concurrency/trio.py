@@ -157,7 +157,7 @@ class TrioBackend(ConcurrencyBackend):
         )
 
     def time(self) -> float:
-        raise NotImplementedError()  # pragma: no cover
+        return trio.current_time()
 
     def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
         return PoolSemaphore(max_value)

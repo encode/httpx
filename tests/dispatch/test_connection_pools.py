@@ -29,13 +29,13 @@ async def test_keepalive_timeout(server, backend):
         assert len(http.keepalive_connections) == 1
 
         http.next_keepalive_check = 0.0
-        await http.keepalive_timeouts()
+        await http.check_keepalive_expiry()
 
         assert len(http.active_connections) == 0
         assert len(http.keepalive_connections) == 1
 
     async with ConnectionPool() as http:
-        http.KEEP_ALIVE_TIMEOUT = 0.0
+        http.KEEP_ALIVE_EXPIRY = 0.0
 
         response = await http.request("GET", server.url)
         await response.read()
@@ -43,7 +43,7 @@ async def test_keepalive_timeout(server, backend):
         assert len(http.keepalive_connections) == 1
 
         http.next_keepalive_check = 0.0
-        await http.keepalive_timeouts()
+        await http.check_keepalive_expiry()
 
         assert len(http.active_connections) == 0
         assert len(http.keepalive_connections) == 0
