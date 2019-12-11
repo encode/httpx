@@ -265,4 +265,15 @@ class AsyncioBackend(ConcurrencyBackend):
         return PoolSemaphore(max_value)
 
     def create_event(self) -> BaseEvent:
-        return typing.cast(BaseEvent, asyncio.Event())
+        return Event()
+
+
+class Event(BaseEvent):
+    def __init__(self) -> None:
+        self._event = asyncio.Event()
+
+    def set(self) -> None:
+        self._event.set()
+
+    async def wait(self) -> None:
+        await self._event.wait()
