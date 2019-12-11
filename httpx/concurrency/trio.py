@@ -182,13 +182,5 @@ class Event(BaseEvent):
     def set(self) -> None:
         self._event.set()
 
-    def is_set(self) -> bool:
-        return self._event.is_set()
-
     async def wait(self) -> None:
         await self._event.wait()
-
-    def clear(self) -> None:
-        # trio.Event.clear() was deprecated in Trio 0.12.
-        # https://github.com/python-trio/trio/issues/637
-        self._event = trio.Event()

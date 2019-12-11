@@ -62,12 +62,6 @@ class BaseEvent:
     def set(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 
-    def is_set(self) -> bool:
-        raise NotImplementedError()  # pragma: no cover
-
-    def clear(self) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
     async def wait(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 
