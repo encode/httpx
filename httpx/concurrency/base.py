@@ -1,7 +1,7 @@
 import ssl
 import typing
 
-from ..config import PoolLimits, Timeout
+from ..config import Timeout
 
 
 def lookup_backend(
@@ -62,12 +62,6 @@ class BaseEvent:
     def set(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 
-    def is_set(self) -> bool:
-        raise NotImplementedError()  # pragma: no cover
-
-    def clear(self) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
     async def wait(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 
@@ -108,7 +102,7 @@ class ConcurrencyBackend:
     def time(self) -> float:
         raise NotImplementedError()  # pragma: no cover
 
-    def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
+    def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
         raise NotImplementedError()  # pragma: no cover
 
     async def run_in_threadpool(

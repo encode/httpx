@@ -4,7 +4,7 @@ import typing
 
 import trio
 
-from ..config import PoolLimits, Timeout
+from ..config import Timeout
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import BaseEvent, BasePoolSemaphore, BaseSocketStream, ConcurrencyBackend
 
@@ -83,25 +83,16 @@ class SocketStream(BaseSocketStream):
 
 
 class PoolSemaphore(BasePoolSemaphore):
-    def __init__(self, pool_limits: PoolLimits):
-        self.pool_limits = pool_limits
+    def __init__(self, max_value: int):
+        self.max_value = max_value
 
     @property
-    def semaphore(self) -> typing.Optional[trio.Semaphore]:
+    def semaphore(self) -> trio.Semaphore:
         if not hasattr(self, "_semaphore"):
-            max_connections = self.pool_limits.hard_limit
-            if max_connections is None:
-                self._semaphore = None
-            else:
-                self._semaphore = trio.Semaphore(
-                    max_connections, max_value=max_connections
-                )
+            self._semaphore = trio.Semaphore(self.max_value, max_value=self.max_value)
         return self._semaphore
 
     async def acquire(self, timeout: float = None) -> None:
-        if self.semaphore is None:
-            return
-
         timeout = none_as_inf(timeout)
 
         with trio.move_on_after(timeout):
@@ -111,9 +102,6 @@ class PoolSemaphore(BasePoolSemaphore):
         raise PoolTimeout()
 
     def release(self) -> None:
-        if self.semaphore is None:
-            return
-
         self.semaphore.release()
 
 
@@ -169,10 +157,10 @@ class TrioBackend(ConcurrencyBackend):
         )
 
     def time(self) -> float:
-        return trio.current_time()
+        raise NotImplementedError()  # pragma: no cover
 
-    def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
-        return PoolSemaphore(limits)
+    def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
+        return PoolSemaphore(max_value)
 
     def create_event(self) -> BaseEvent:
         return Event()
@@ -185,13 +173,5 @@ class Event(BaseEvent):
     def set(self) -> None:
         self._event.set()
 
-    def is_set(self) -> bool:
-        return self._event.is_set()
-
     async def wait(self) -> None:
         await self._event.wait()
-
-    def clear(self) -> None:
-        # trio.Event.clear() was deprecated in Trio 0.12.
-        # https://github.com/python-trio/trio/issues/637
-        self._event = trio.Event()

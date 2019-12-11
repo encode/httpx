@@ -3,7 +3,7 @@ import typing
 
 import sniffio
 
-from ..config import PoolLimits, Timeout
+from ..config import Timeout
 from .base import (
     BaseEvent,
     BasePoolSemaphore,
@@ -44,8 +44,8 @@ class AutoBackend(ConcurrencyBackend):
     def time(self) -> float:
         return self.backend.time()
 
-    def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
-        return self.backend.get_semaphore(limits)
+    def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
+        return self.backend.get_semaphore(max_value)
 
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any

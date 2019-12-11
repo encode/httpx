@@ -4,7 +4,7 @@ import ssl
 import sys
 import typing
 
-from ..config import PoolLimits, Timeout
+from ..config import Timeout
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
 from .base import BaseEvent, BasePoolSemaphore, BaseSocketStream, ConcurrencyBackend
 
@@ -168,32 +168,22 @@ class SocketStream(BaseSocketStream):
 
 
 class PoolSemaphore(BasePoolSemaphore):
-    def __init__(self, pool_limits: PoolLimits):
-        self.pool_limits = pool_limits
+    def __init__(self, max_value: int) -> None:
+        self.max_value = max_value
 
     @property
-    def semaphore(self) -> typing.Optional[asyncio.BoundedSemaphore]:
+    def semaphore(self) -> asyncio.BoundedSemaphore:
         if not hasattr(self, "_semaphore"):
-            max_connections = self.pool_limits.hard_limit
-            if max_connections is None:
-                self._semaphore = None
-            else:
-                self._semaphore = asyncio.BoundedSemaphore(value=max_connections)
+            self._semaphore = asyncio.BoundedSemaphore(value=self.max_value)
         return self._semaphore
 
     async def acquire(self, timeout: float = None) -> None:
-        if self.semaphore is None:
-            return
-
         try:
             await asyncio.wait_for(self.semaphore.acquire(), timeout)
         except asyncio.TimeoutError:
             raise PoolTimeout()
 
     def release(self) -> None:
-        if self.semaphore is None:
-            return
-
         self.semaphore.release()
 
 
@@ -275,8 +265,19 @@ class AsyncioBackend(ConcurrencyBackend):
         finally:
             self._loop = loop
 
-    def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
-        return PoolSemaphore(limits)
+    def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
+        return PoolSemaphore(max_value)
 
     def create_event(self) -> BaseEvent:
-        return typing.cast(BaseEvent, asyncio.Event())
+        return Event()
+
+
+class Event(BaseEvent):
+    def __init__(self) -> None:
+        self._event = asyncio.Event()
+
+    def set(self) -> None:
+        self._event.set()
+
+    async def wait(self) -> None:
+        await self._event.wait()
