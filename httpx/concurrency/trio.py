@@ -169,7 +169,7 @@ class TrioBackend(ConcurrencyBackend):
         )
 
     def time(self) -> float:
-        return trio.time()
+        return trio.current_time()
 
     def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
         return PoolSemaphore(limits)

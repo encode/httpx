@@ -38,6 +38,7 @@ class HTTPConnection(Dispatcher):
         self.release_func = release_func
         self.uds = uds
         self.open_connection: typing.Optional[OpenConnection] = None
+        self.timeout_at: typing.Optional[float] = None
 
     async def send(
         self,
