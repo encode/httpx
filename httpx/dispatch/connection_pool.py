@@ -120,6 +120,7 @@ class ConnectionPool(Dispatcher):
                 self.keepalive_connections.remove(connection)
                 self.max_connections.release()
                 await connection.close()
+                print("closed", connection)
 
     async def send(
         self,
