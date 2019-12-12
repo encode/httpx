@@ -131,7 +131,7 @@ class ConnectionPool(Dispatcher):
         # We create a list here to avoid any 'changed during iteration' errors.
         keepalives = list(self.keepalive_connections.all.keys())
         for connection in keepalives:
-            if connection.timeout_at is not None and now > connection.timeout_at:
+            if connection.expires_at is not None and now > connection.expires_at:
                 self.keepalive_connections.remove(connection)
                 self.max_connections.release()
                 await connection.close()
@@ -199,7 +199,8 @@ class ConnectionPool(Dispatcher):
             self.max_connections.release()
             await connection.close()
         else:
-            connection.timeout_at = self.backend.time() + self.KEEP_ALIVE_EXPIRY
+            now = self.backend.time()
+            connection.expires_at = now + self.KEEP_ALIVE_EXPIRY
             self.active_connections.remove(connection)
             self.keepalive_connections.add(connection)
 
