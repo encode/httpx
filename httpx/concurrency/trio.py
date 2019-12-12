@@ -156,6 +156,9 @@ class TrioBackend(ConcurrencyBackend):
             functools.partial(coroutine, **kwargs) if kwargs else coroutine, *args
         )
 
+    def time(self) -> float:
+        return trio.current_time()
+
     def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
         return PoolSemaphore(max_value)
 

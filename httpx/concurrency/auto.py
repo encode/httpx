@@ -41,6 +41,9 @@ class AutoBackend(ConcurrencyBackend):
     ) -> BaseSocketStream:
         return await self.backend.open_uds_stream(path, hostname, ssl_context, timeout)
 
+    def time(self) -> float:
+        return self.backend.time()
+
     def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
         return self.backend.get_semaphore(max_value)
 

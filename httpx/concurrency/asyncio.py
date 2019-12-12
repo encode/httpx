@@ -242,6 +242,10 @@ class AsyncioBackend(ConcurrencyBackend):
 
         return SocketStream(stream_reader=stream_reader, stream_writer=stream_writer)
 
+    def time(self) -> float:
+        loop = asyncio.get_event_loop()
+        return loop.time()
+
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:

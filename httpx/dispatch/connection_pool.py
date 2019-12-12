@@ -78,6 +78,8 @@ class ConnectionStore:
 
 
 class ConnectionPool(Dispatcher):
+    KEEP_ALIVE_EXPIRY = 5.0
+
     def __init__(
         self,
         *,
@@ -101,6 +103,7 @@ class ConnectionPool(Dispatcher):
         self.active_connections = ConnectionStore()
 
         self.backend = lookup_backend(backend)
+        self.next_keepalive_check = 0.0
 
     @property
     def max_connections(self) -> BasePoolSemaphore:
@@ -118,6 +121,21 @@ class ConnectionPool(Dispatcher):
     def num_connections(self) -> int:
         return len(self.keepalive_connections) + len(self.active_connections)
 
+    async def check_keepalive_expiry(self) -> None:
+        now = self.backend.time()
+        if now < self.next_keepalive_check:
+            return
+        self.next_keepalive_check = now + 1.0
+
+        # Iterate through all the keep alive connections.
+        # We create a list here to avoid any 'changed during iteration' errors.
+        keepalives = list(self.keepalive_connections.all.keys())
+        for connection in keepalives:
+            if connection.expires_at is not None and now > connection.expires_at:
+                self.keepalive_connections.remove(connection)
+                self.max_connections.release()
+                await connection.close()
+
     async def send(
         self,
         request: Request,
@@ -125,6 +143,7 @@ class ConnectionPool(Dispatcher):
         cert: CertTypes = None,
         timeout: Timeout = None,
     ) -> Response:
+        await self.check_keepalive_expiry()
         connection = await self.acquire_connection(
             origin=request.url.origin, timeout=timeout
         )
@@ -180,6 +199,8 @@ class ConnectionPool(Dispatcher):
             self.max_connections.release()
             await connection.close()
         else:
+            now = self.backend.time()
+            connection.expires_at = now + self.KEEP_ALIVE_EXPIRY
             self.active_connections.remove(connection)
             self.keepalive_connections.add(connection)
 
