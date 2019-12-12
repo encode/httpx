@@ -4,7 +4,7 @@ HTTPX aims to be compatible with the `requests` API wherever possible.
 
 This documentation outlines places where the API differs...
 
-## Request URLS
+## Request URLs
 
 Accessing `response.url` will return a `URL` instance, rather than a string.
 Use `str(response.url)` if you need a string instance.
