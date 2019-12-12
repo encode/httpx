@@ -194,7 +194,7 @@ class HTTP2Connection(OpenConnection):
 
 
 class HTTP2Stream:
-    def __init__(self, stream_id: int, connection: HTTP2Connection,) -> None:
+    def __init__(self, stream_id: int, connection: HTTP2Connection) -> None:
         self.stream_id = stream_id
         self.connection = connection
 
