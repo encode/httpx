@@ -41,7 +41,6 @@ class MockHTTP2Server(BaseSocketStream):
         self.requests = {}
         self.close_connection = False
         self.return_data = {}
-        self.returning = {}
         self.settings_changed = []
 
     # Socket stream interface
@@ -75,14 +74,6 @@ class MockHTTP2Server(BaseSocketStream):
                     self.buffer += self.conn.data_to_send()
             elif isinstance(event, h2.events.StreamEnded):
                 self.stream_complete(event.stream_id)
-            elif isinstance(event, h2.events.WindowUpdated):
-                if event.stream_id == 0:
-                    for key, value in self.returning.items():
-                        if value:
-                            self.send_return_data(key)
-                # This will throw an error if the event is for a not-yet created stream
-                elif self.returning[event.stream_id]:
-                    self.send_return_data(event.stream_id)
             elif isinstance(event, h2.events.RemoteSettingsChanged):
                 self.settings_changed.append(event)
 
@@ -141,7 +132,6 @@ class MockHTTP2Server(BaseSocketStream):
         self.conn.send_headers(stream_id, response_headers)
         self.buffer += self.conn.data_to_send()
         self.return_data[stream_id] = response.content
-        self.returning[stream_id] = True
         self.send_return_data(stream_id)
 
     def send_return_data(self, stream_id):
@@ -161,7 +151,6 @@ class MockHTTP2Server(BaseSocketStream):
                 )
                 self.conn.send_data(stream_id, chunk)
                 self.buffer += self.conn.data_to_send()
-        self.returning[stream_id] = False
         self.conn.end_stream(stream_id)
         self.buffer += self.conn.data_to_send()
 
