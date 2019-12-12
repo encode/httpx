@@ -96,6 +96,7 @@ class HTTP2Connection(OpenConnection):
         del self.state.local_settings[h2.settings.SettingCodes.ENABLE_CONNECT_PROTOCOL]
 
         self.state.initiate_connection()
+        self.state.increment_flow_control_window(2**24)
         data_to_send = self.state.data_to_send()
         await self.socket.write(data_to_send, timeout)
 
@@ -165,6 +166,7 @@ class HTTP2Connection(OpenConnection):
         timeout: Timeout,
     ) -> None:
         self.state.send_headers(stream_id, headers)
+        self.state.increment_flow_control_window(2**24, stream_id=stream_id)
         data_to_send = self.state.data_to_send()
         await self.socket.write(data_to_send, timeout)
 
