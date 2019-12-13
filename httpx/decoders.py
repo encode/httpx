@@ -7,7 +7,7 @@ import codecs
 import typing
 import zlib
 
-import chardet
+from charset_normalizer import CharsetDetector
 
 from .exceptions import DecodingError
 
@@ -156,7 +156,6 @@ class TextDecoder:
         self.decoder: typing.Optional[codecs.IncrementalDecoder] = (
             None if encoding is None else codecs.getincrementaldecoder(encoding)()
         )
-        self.detector = chardet.universaldetector.UniversalDetector()
 
         # This buffer is only needed if 'decoder' is 'None'
         # we want to trigger errors if data is getting added to
@@ -171,13 +170,10 @@ class TextDecoder:
             else:
                 assert self.buffer is not None
                 text = ""
-                self.detector.feed(data)
+
                 self.buffer += data
 
-                # Should be more than enough data to process, we don't
-                # want to buffer too long as chardet will wait until
-                # detector.close() is used to give back common
-                # encodings like 'utf-8'.
+                # Should be more than enough data to process
                 if len(self.buffer) >= 4096:
                     self.decoder = codecs.getincrementaldecoder(
                         self._detector_result()
@@ -203,8 +199,9 @@ class TextDecoder:
             raise DecodingError() from None
 
     def _detector_result(self) -> str:
-        self.detector.close()
-        result = self.detector.result["encoding"]
+        detection = CharsetDetector.from_bytes(self.buffer).best().first()
+        result = detection.encoding if detection is not None else None
+
         if not result:  # pragma: nocover
             raise DecodingError("Unable to determine encoding of content")
 
