@@ -624,7 +624,7 @@ class Request:
             self.is_streaming = False
             self.content = content
             if content_type:
-                self.headers["Content-Type"] = content_type
+                self.headers.setdefault("Content-Type", content_type)
         elif isinstance(data, (str, bytes)):
             data = data.encode("utf-8") if isinstance(data, str) else data
             self.is_streaming = False
