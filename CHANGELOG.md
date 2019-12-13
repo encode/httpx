@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.9.4 (December 12th, 2019)
+
+### Fixed
+
+- Added expiry to Keep-Alive connections, resolving issues with acquiring connections. (Pull #627)
+- Increased flow control windows on HTTP/2, resolving download speed issues. (Pull #629)
+
 ## 0.9.3 (December 7th, 2019)
 
 ### Fixed
