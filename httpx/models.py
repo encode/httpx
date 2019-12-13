@@ -13,6 +13,7 @@ import chardet
 import rfc3986
 
 from .config import USER_AGENT
+from .content import RequestData, RequestFiles
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -75,26 +76,6 @@ AuthTypes = typing.Union[
 
 ProxiesTypes = typing.Union[
     URLTypes, "Dispatcher", typing.Dict[URLTypes, typing.Union[URLTypes, "Dispatcher"]]
-]
-
-RequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
-
-RequestFiles = typing.Dict[
-    str,
-    typing.Union[
-        # file (or str)
-        typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-        # (filename, file (or str))
-        typing.Tuple[
-            typing.Optional[str], typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-        ],
-        # (filename, file (or str), content_type)
-        typing.Tuple[
-            typing.Optional[str],
-            typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-            typing.Optional[str],
-        ],
-    ],
 ]
 
 ResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
