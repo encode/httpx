@@ -11,13 +11,12 @@ from httpx import Client, Response, TimeoutException
 from .utils import MockHTTP2Backend
 
 
-def app(request):
+async def app(request):
+    method = request.method
+    path = request.url.path
+    body = await request.read()
     content = json.dumps(
-        {
-            "method": request.method,
-            "path": request.url.path,
-            "body": request.content.decode(),
-        }
+        {"method": method, "path": path, "body": body.decode()}
     ).encode()
     headers = {"Content-Length": str(len(content))}
     return Response(200, headers=headers, content=content)

@@ -77,7 +77,6 @@ class MockDispatch(Dispatcher):
             return Response(codes.OK, content=content, request=request)
 
         elif request.url.path == "/redirect_body":
-            await request.read()
             headers = {"location": "/redirect_body_target"}
             return Response(codes.PERMANENT_REDIRECT, headers=headers, request=request)
 

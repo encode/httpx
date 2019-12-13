@@ -26,14 +26,14 @@ RequestFiles = typing.Dict[
 
 
 class RequestContent:
-    def headers(self) -> typing.Dict[str, str]:
+    def get_headers(self) -> typing.Dict[str, str]:
         return {}
 
     def can_rewind(self) -> bool:
         return True
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        yield b""  # pragma: nocover
+        yield b""
 
     async def aread(self) -> bytes:
         return b"".join([part async for part in self])
@@ -47,7 +47,7 @@ class BytesRequestContent(RequestContent):
     def __init__(self, body: typing.Union[str, bytes]) -> None:
         self.body = body.encode("utf-8") if isinstance(body, str) else body
 
-    def headers(self) -> typing.Dict[str, str]:
+    def get_headers(self) -> typing.Dict[str, str]:
         content_length = str(len(self.body))
         return {"Content-Length": content_length}
 
@@ -66,7 +66,7 @@ class StreamingRequestContent(RequestContent):
     def can_rewind(self) -> bool:
         return False
 
-    def headers(self) -> typing.Dict[str, str]:
+    def get_headers(self) -> typing.Dict[str, str]:
         return {"Transfer-Encoding": "chunked"}
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
@@ -82,7 +82,7 @@ class JSONRequestContent(RequestContent):
     def __init__(self, json: typing.Any) -> None:
         self.body = json_dumps(json).encode("utf-8")
 
-    def headers(self) -> typing.Dict[str, str]:
+    def get_headers(self) -> typing.Dict[str, str]:
         content_length = str(len(self.body))
         content_type = "application/json"
         return {"Content-Length": content_length, "Content-Type": content_type}
@@ -99,7 +99,7 @@ class URLEncodedRequestContent(RequestContent):
     def __init__(self, data: dict) -> None:
         self.body = urlencode(data, doseq=True).encode("utf-8")
 
-    def headers(self) -> typing.Dict[str, str]:
+    def get_headers(self) -> typing.Dict[str, str]:
         content_length = str(len(self.body))
         content_type = "application/x-www-form-urlencoded"
         return {"Content-Length": content_length, "Content-Type": content_type}
@@ -116,7 +116,7 @@ class MultipartRequestContent(RequestContent):
     def __init__(self, data: dict, files: dict, boundary: bytes = None) -> None:
         self.body, self.content_type = multipart_encode(data, files, boundary)
 
-    def headers(self) -> typing.Dict[str, str]:
+    def get_headers(self) -> typing.Dict[str, str]:
         content_length = str(len(self.body))
         content_type = self.content_type
         return {"Content-Length": content_length, "Content-Type": content_type}

@@ -19,6 +19,7 @@ from .config import (
     UnsetType,
     VerifyTypes,
 )
+from .content import RequestContent
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import Dispatcher
 from .dispatch.connection_pool import ConnectionPool
@@ -500,9 +501,9 @@ class Client:
         headers = self.redirect_headers(request, url, method)
         content = self.redirect_content(request, method)
         cookies = Cookies(self.cookies)
-        return Request(
-            method=method, url=url, headers=headers, data=content, cookies=cookies
-        )
+        request = Request(method=method, url=url, headers=headers, cookies=cookies)
+        request.content = content
+        return request
 
     def redirect_method(self, request: Request, response: Response) -> str:
         """
@@ -570,13 +571,13 @@ class Client:
 
         return headers
 
-    def redirect_content(self, request: Request, method: str) -> bytes:
+    def redirect_content(self, request: Request, method: str) -> RequestContent:
         """
         Return the body that should be used for the redirect request.
         """
         if method != request.method and method == "GET":
-            return b""
-        if request.is_streaming:
+            return RequestContent()
+        if not request.content.can_rewind():
             raise RedirectBodyUnavailable()
         return request.content
 
