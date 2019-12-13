@@ -2,6 +2,7 @@ import typing
 
 import h2.connection
 import h2.events
+from h2.config import H2Configuration
 from h2.settings import SettingCodes, Settings
 
 from ..concurrency.base import (
@@ -21,6 +22,7 @@ logger = get_logger(__name__)
 
 class HTTP2Connection(OpenConnection):
     READ_NUM_BYTES = 4096
+    CONFIG = H2Configuration(validate_inbound_headers=False)
 
     def __init__(
         self,
@@ -31,7 +33,7 @@ class HTTP2Connection(OpenConnection):
         self.socket = socket
         self.backend = lookup_backend(backend)
         self.on_release = on_release
-        self.state = h2.connection.H2Connection()
+        self.state = h2.connection.H2Connection(config=self.CONFIG)
 
         self.streams = {}  # type: typing.Dict[int, HTTP2Stream]
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
