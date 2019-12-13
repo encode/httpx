@@ -26,6 +26,11 @@ RequestFiles = typing.Dict[
 
 
 class RequestContent:
+    """
+    Base class for request content.
+    Defaults to a "no request body" implementation.
+    """
+
     def get_headers(self) -> typing.Dict[str, str]:
         return {}
 
@@ -131,6 +136,14 @@ def encode(
     json: typing.Any = None,
     boundary: bytes = None,
 ) -> RequestContent:
+    """
+    Handles encoding the given `data`, `files`, and `json`, returning
+    a `RequestContent` implementation which provides a byte iterator onto
+    the content, as well as `.is_rewindable()` and `.get_headers()` interfaces.
+
+    The `boundary` argument is also included for reproducible test cases
+    when working with multipart data.
+    """
     if data is None:
         if json is not None:
             return JSONRequestContent(json)
