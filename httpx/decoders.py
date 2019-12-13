@@ -172,12 +172,13 @@ class TextDecoder:
                 text = ""
 
                 self.buffer += data
+                detection = CharsetDetector.from_bytes(self.buffer).best().first()
 
-                # Should be more than enough data to process
-                if len(self.buffer) >= 4096:
-                    self.decoder = codecs.getincrementaldecoder(
-                        self._detector_result()
-                    )()
+                # Stop using Charset Normalizer when confidence reached maturity
+                if detection is not None and (
+                    detection.percent_chaos < 10.0 or detection.percent_coherence > 70.0
+                ):
+                    self.decoder = codecs.getincrementaldecoder(detection.encoding)()
                     text = self.decoder.decode(bytes(self.buffer), False)
                     self.buffer = None
 
@@ -186,26 +187,22 @@ class TextDecoder:
             raise DecodingError() from None
 
     def flush(self) -> str:
-        try:
-            if self.decoder is None:
-                # Empty string case as chardet is guaranteed to not have a guess.
-                assert self.buffer is not None
-                if len(self.buffer) == 0:
-                    return ""
-                return bytes(self.buffer).decode(self._detector_result())
+        if self.buffer is None:
+            return ""
 
-            return self.decoder.decode(b"", True)
+        if len(self.buffer) == 0:
+            self.buffer = None
+            return ""
+
+        if self.decoder is None:
+            raise DecodingError()
+
+        try:
+            return self.decoder.decode(bytes(self.buffer))
         except UnicodeDecodeError:  # pragma: nocover
             raise DecodingError() from None
-
-    def _detector_result(self) -> str:
-        detection = CharsetDetector.from_bytes(self.buffer).best().first()
-        result = detection.encoding if detection is not None else None
-
-        if not result:  # pragma: nocover
-            raise DecodingError("Unable to determine encoding of content")
-
-        return result
+        finally:
+            self.buffer = None
 
 
 class LineDecoder:
