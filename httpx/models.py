@@ -9,7 +9,7 @@ from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
 
-import chardet
+from charset_normalizer import CharsetDetector
 import rfc3986
 
 from .config import USER_AGENT
@@ -827,7 +827,11 @@ class Response:
         """
         Return the encoding, as it appears to autodetection.
         """
-        return chardet.detect(self.content)["encoding"]
+        detection = CharsetDetector.from_bytes(
+            self.content
+        ).best().first()
+
+        return detection.encoding if detection else None
 
     @property
     def decoder(self) -> Decoder:

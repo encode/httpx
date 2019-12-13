@@ -22,6 +22,7 @@ trio
 trustme
 uvicorn
 seed-isort-config
+charset_normalizer>=1.3,<2
 rfc3986
 certifi
 h2

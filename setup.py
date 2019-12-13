@@ -53,7 +53,7 @@ setup(
     install_requires=[
         "certifi",
         "hstspreload",
-        "chardet==3.*",
+        "charset_normalizer>=1.3,<2",
         "h11==0.8.*",
         "h2==3.*",
         "idna==2.*",
