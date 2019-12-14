@@ -108,7 +108,7 @@ The [Developer Interface](api.md) provides a comprehensive API reference.
 
 The HTTPX project relies on these excellent libraries:
 
-* `h2` - HTTP/2 support.
+* `h2` - HTTP/2 support. *(Optional)*
 * `h11` - HTTP/1.1 support.
 * `certifi` - SSL certificates.
 * `chardet` - Fallback auto-detection for response encoding.

@@ -16,6 +16,14 @@ and server push.
 
 For a comprehensive guide to HTTP/2 you may want to check out "[HTTP2 Explained](https://http2-explained.haxx.se/content/en/)".
 
+## Installation
+
+HTTP/2 dependencies aren't included in the base package. To install them, provide the `http2` pip extra when installing HTTPX:
+
+```shell
+$ pip install httpx[http2]
+```
+
 ## Enabling HTTP/2
 
 The HTTPX client provides provisional HTTP/2 support.
