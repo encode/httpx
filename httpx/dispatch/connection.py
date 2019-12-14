@@ -6,10 +6,10 @@ import h11
 
 from ..concurrency.base import BaseSocketStream, ConcurrencyBackend, lookup_backend
 from ..config import CertTypes, SSLConfig, Timeout, VerifyTypes
+from ..extras import requires_http2
 from ..models import URL, Origin, Request, Response
 from ..utils import get_logger
 from .base import Dispatcher, OpenConnection
-from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
 # Callback signature: async def callback(conn: HTTPConnection) -> None
@@ -151,12 +151,20 @@ class HTTPConnection(Dispatcher):
         on_release: typing.Optional[typing.Callable],
     ) -> None:
         if http_version == "HTTP/2":
-            self.open_connection = HTTP2Connection(
-                socket, self.backend, on_release=on_release
+            self.open_connection = self.create_http2_connection(
+                socket, on_release=on_release,
             )
         else:
             assert http_version == "HTTP/1.1"
             self.open_connection = HTTP11Connection(socket, on_release=on_release)
+
+    @requires_http2
+    def create_http2_connection(
+        self, socket: BaseSocketStream, on_release: typing.Optional[typing.Callable]
+    ) -> OpenConnection:
+        from .http2 import HTTP2Connection
+
+        return HTTP2Connection(socket, self.backend, on_release=on_release)
 
     async def get_ssl_context(self, ssl: SSLConfig) -> typing.Optional[ssl.SSLContext]:
         if not self.origin.is_ssl:

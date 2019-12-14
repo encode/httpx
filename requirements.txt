@@ -1,4 +1,4 @@
--e .
+-e .[http2]
 
 # Optional
 brotlipy==0.7.*
