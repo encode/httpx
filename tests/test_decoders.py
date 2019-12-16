@@ -118,8 +118,8 @@ def test_decoding_errors(header_value):
     [
         ((b"Hello,", b" world!"), "ascii"),
         ((b"\xe3\x83", b"\x88\xe3\x83\xa9", b"\xe3", b"\x83\x99\xe3\x83\xab"), "utf-8"),
-        ((b"\x83g\x83\x89\x83x\x83\x8b",) * 64, "shift-jis"),
-        ((b"\x83g\x83\x89\x83x\x83\x8b",) * 600, "shift-jis"),
+        ((b"\x83g\x83\x89\x83x\x83\x8b\x20",) * 64, "cp932"),
+        ((b"\x83g\x83\x89\x83x\x83\x8b\x20",) * 600, "cp932"),
         (
             (b"\xcb\xee\xf0\xe5\xec \xe8\xef\xf1\xf3\xec \xe4\xee\xeb\xee\xf0",) * 64,
             "MacCyrillic",
