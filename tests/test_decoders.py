@@ -122,7 +122,7 @@ def test_decoding_errors(header_value):
         ((b"\x83g\x83\x89\x83x\x83\x8b\x20",) * 600, "cp932"),
         (
             (b"\xcb\xee\xf0\xe5\xec \xe8\xef\xf1\xf3\xec \xe4\xee\xeb\xee\xf0",) * 64,
-            "MacCyrillic",
+            "cp1251",
         ),
         (
             (b"\xa5\xa6\xa5\xa7\xa5\xd6\xa4\xce\xb9\xf1\xba\xdd\xb2\xbd",) * 512,
