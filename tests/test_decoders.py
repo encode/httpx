@@ -125,8 +125,8 @@ def test_decoding_errors(header_value):
             "cp1251",
         ),
         (
-            (b"\xa5\xa6\xa5\xa7\xa5\xd6\xa4\xce\xb9\xf1\xba\xdd\xb2\xbd",) * 512,
-            "euc-jp",
+            (b"\xa5\xa6\xa5\xa7\xa5\xd6\xa4\xce\xb9\xf1\xba\xdd\xb2\xbd\x20",) * 512,
+            "euc_jis_2004",
         ),
     ],
 )
