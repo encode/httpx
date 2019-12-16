@@ -4,7 +4,7 @@
 brotlipy==0.7.*
 
 autoflake
-black
+black --no-binary=regex
 cryptography
 flake8
 flake8-bugbear
