@@ -152,7 +152,7 @@ def encode(
         else:
             return RequestContent()
     elif isinstance(data, dict):
-        if files:
+        if files is not None:
             return MultipartRequestContent(data, files, boundary=boundary)
         else:
             return URLEncodedRequestContent(data)
