@@ -5,8 +5,6 @@ Utilities for managing optional dependencies.
 import functools
 import typing
 
-from .exceptions import MissingDependencies
-
 
 class RequiresHTTP2:
     def has_feature(self) -> bool:
@@ -21,7 +19,7 @@ class RequiresHTTP2:
         @functools.wraps(func)
         def wrapped(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
             if not self.has_feature():
-                raise MissingDependencies(
+                raise RuntimeError(
                     "HTTP/2 dependencies are missing.\n"
                     "HINT: install them with 'pip install httpx[http2]'."
                 )

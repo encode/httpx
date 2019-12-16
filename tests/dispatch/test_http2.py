@@ -7,7 +7,6 @@ import pytest
 from h2.settings import SettingCodes
 
 from httpx import Client, Response, TimeoutException
-from httpx.exceptions import MissingDependencies
 from httpx.extras import requires_http2
 
 from .utils import MockHTTP2Backend
@@ -158,5 +157,5 @@ async def test_http2_missing_dependencies(monkeypatch):
     backend = MockHTTP2Backend(app=app)
 
     async with Client(backend=backend, http2=True) as client:
-        with pytest.raises(MissingDependencies, match="HTTP/2"):
+        with pytest.raises(RuntimeError, match="HTTP/2 dependencies are missing"):
             await client.get("http://example.org")

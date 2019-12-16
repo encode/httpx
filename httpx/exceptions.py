@@ -157,9 +157,3 @@ class CookieConflict(HTTPError):
     """
     Attempted to lookup a cookie by name, but multiple cookies existed.
     """
-
-
-class MissingDependencies(HTTPError):
-    """
-    Some HTTPX dependencies are missing.
-    """
