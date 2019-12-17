@@ -10,13 +10,14 @@ from .exceptions import ProtocolError
 from .models import Request, Response
 from .utils import to_bytes, to_str, unquote
 
+AuthFlow = typing.Generator[Request, Response, None]
+
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
     typing.Callable[["Request"], "Request"],
+    typing.Callable[["Request"], AuthFlow],
     "Auth",
 ]
-
-AuthFlow = typing.Generator[Request, Response, None]
 
 
 class Auth:
@@ -52,14 +53,21 @@ class Auth:
 class FunctionAuth(Auth):
     """
     Allows the 'auth' argument to be passed as a simple callable function,
-    that takes the request, and returns a new, modified request.
+    that takes the request, and returns a new, modified request,
+    or an authentication flow.
     """
 
-    def __init__(self, func: typing.Callable[[Request], Request]) -> None:
+    def __init__(
+        self, func: typing.Callable[[Request], typing.Union[Request, AuthFlow]]
+    ) -> None:
         self.func = func
 
     def __call__(self, request: Request) -> AuthFlow:
-        yield self.func(request)
+        obj = self.func(request)
+        if isinstance(obj, Request):
+            yield obj
+        else:
+            yield from obj
 
 
 class BasicAuth(Auth):

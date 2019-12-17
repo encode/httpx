@@ -134,6 +134,21 @@ async def test_custom_auth():
 
 
 @pytest.mark.asyncio
+async def test_custom_generator_auth():
+    url = "https://example.org/"
+
+    def auth(request):
+        request.headers["Authorization"] = "Token 123"
+        yield request
+
+    client = Client(dispatch=MockDispatch())
+    response = await client.get(url, auth=auth)
+
+    assert response.status_code == 200
+    assert response.json() == {"auth": "Token 123"}
+
+
+@pytest.mark.asyncio
 async def test_netrc_auth():
     os.environ["NETRC"] = "tests/.netrc"
     url = "http://netrcexample.org"
