@@ -12,6 +12,16 @@ from .models import Request, Response
 from .utils import to_bytes, to_str, unquote
 
 
+class Auth:
+    def on_request(self, request: Request) -> typing.Optional[Request]:
+        pass
+
+    def on_response(
+        self, request: Request, response: Response
+    ) -> typing.Optional[Request]:
+        pass
+
+
 class BasicAuth:
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]

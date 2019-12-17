@@ -5,7 +5,7 @@ from types import TracebackType
 
 import hstspreload
 
-from .auth import BasicAuth
+from .auth import Auth, BasicAuth
 from .concurrency.base import ConcurrencyBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
@@ -466,7 +466,7 @@ class Client:
             if request.url in (response.url for response in history):
                 raise RedirectLoop()
 
-            response = await self.send_single_request(
+            response = await self.send_handling_auth(
                 request, verify=verify, cert=cert, timeout=timeout
             )
             response.history = list(history)
@@ -579,6 +579,29 @@ class Client:
         if request.is_streaming:
             raise RedirectBodyUnavailable()
         return request.content
+
+    async def send_handling_auth(
+        self,
+        request: Request,
+        timeout: Timeout,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+    ) -> Response:
+        auth = Auth()
+        request = auth.on_request(request) or request
+        while True:
+            response = await self.send_single_request(request, timeout, verify, cert)
+            try:
+                next_request = auth.on_response(request, response)
+            except BaseException as exc:
+                await response.close()
+                raise exc from None
+
+            if next_request is None:
+                return response
+
+            request = next_request
+            await response.close()
 
     async def send_single_request(
         self,
