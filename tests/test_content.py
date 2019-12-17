@@ -9,7 +9,7 @@ from httpx.content import encode
 async def test_empty_content():
     content = encode()
 
-    assert content.can_rewind()
+    assert content.can_replay()
     assert content.get_headers() == {}
     assert await content.aread() == b""
 
@@ -18,7 +18,7 @@ async def test_empty_content():
 async def test_bytes_content():
     content = encode(data=b"Hello, world!")
 
-    assert content.can_rewind()
+    assert content.can_replay()
     assert content.get_headers() == {"Content-Length": "13"}
     assert await content.aread() == b"Hello, world!"
 
@@ -31,7 +31,7 @@ async def test_aiterator_content():
 
     content = encode(data=hello_world())
 
-    assert not content.can_rewind()
+    assert not content.can_replay()
     assert content.get_headers() == {"Transfer-Encoding": "chunked"}
     assert await content.aread() == b"Hello, world!"
 
@@ -40,7 +40,7 @@ async def test_aiterator_content():
 async def test_json_content():
     content = encode(json={"Hello": "world!"})
 
-    assert content.can_rewind()
+    assert content.can_replay()
     assert content.get_headers() == {
         "Content-Length": "19",
         "Content-Type": "application/json",
@@ -52,7 +52,7 @@ async def test_json_content():
 async def test_urlencoded_content():
     content = encode(data={"Hello": "world!"})
 
-    assert content.can_rewind()
+    assert content.can_replay()
     assert content.get_headers() == {
         "Content-Length": "14",
         "Content-Type": "application/x-www-form-urlencoded",
@@ -65,7 +65,7 @@ async def test_multipart_files_content():
     files = {"file": io.BytesIO(b"<file content>")}
     content = encode(files=files, boundary=b"+++")
 
-    assert content.can_rewind()
+    assert content.can_replay()
     assert content.get_headers() == {
         "Content-Length": "138",
         "Content-Type": "multipart/form-data; boundary=+++",
@@ -88,7 +88,7 @@ async def test_multipart_data_and_files_content():
     files = {"file": io.BytesIO(b"<file content>")}
     content = encode(data=data, files=files, boundary=b"+++")
 
-    assert content.can_rewind()
+    assert content.can_replay()
     assert content.get_headers() == {
         "Content-Length": "210",
         "Content-Type": "multipart/form-data; boundary=+++",

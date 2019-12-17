@@ -32,9 +32,18 @@ class RequestContent:
     """
 
     def get_headers(self) -> typing.Dict[str, str]:
+        """
+        Return a dictionary of request headers that are implied by the encoding.
+        """
         return {}
 
-    def can_rewind(self) -> bool:
+    def can_replay(self) -> bool:
+        """
+        Return `True` if `__aiter__` can be called multiple times.
+
+        We need this in order to determine if we can re-issue a request body
+        when we receive a redirect response.
+        """
         return True
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
@@ -68,7 +77,7 @@ class StreamingRequestContent(RequestContent):
     def __init__(self, aiterator: typing.AsyncIterator[bytes]) -> None:
         self.aiterator = aiterator
 
-    def can_rewind(self) -> bool:
+    def can_replay(self) -> bool:
         return False
 
     def get_headers(self) -> typing.Dict[str, str]:

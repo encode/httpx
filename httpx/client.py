@@ -577,7 +577,7 @@ class Client:
         """
         if method != request.method and method == "GET":
             return RequestContent()
-        if not request.content.can_rewind():
+        if not request.content.can_replay():
             raise RedirectBodyUnavailable()
         return request.content
 
