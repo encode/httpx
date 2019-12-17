@@ -30,7 +30,6 @@ from .exceptions import (
     RedirectLoop,
     TooManyRedirects,
 )
-from .middleware import Middleware
 from .models import (
     URL,
     AuthTypes,
@@ -400,24 +399,25 @@ class Client:
         trust_env = self.trust_env if trust_env is None else trust_env
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        if not isinstance(auth, Middleware):
+        if not isinstance(auth, Auth):
             request = self.authenticate(request, trust_env, auth)
             response = await self.send_handling_redirects(
                 request,
+                auth=Auth(),
                 verify=verify,
                 cert=cert,
                 timeout=timeout,
                 allow_redirects=allow_redirects,
             )
         else:
-            get_response = functools.partial(
-                self.send_handling_redirects,
+            response = await self.send_handling_redirects(
+                request,
+                auth=auth,
                 verify=verify,
                 cert=cert,
                 timeout=timeout,
                 allow_redirects=allow_redirects,
             )
-            response = await auth(request, get_response)
 
         if not stream:
             try:
@@ -451,6 +451,7 @@ class Client:
     async def send_handling_redirects(
         self,
         request: Request,
+        auth: Auth,
         timeout: Timeout,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
@@ -467,7 +468,7 @@ class Client:
                 raise RedirectLoop()
 
             response = await self.send_handling_auth(
-                request, verify=verify, cert=cert, timeout=timeout
+                request, auth=auth, timeout=timeout, verify=verify, cert=cert
             )
             response.history = list(history)
 
@@ -482,6 +483,7 @@ class Client:
                 response.call_next = functools.partial(
                     self.send_handling_redirects,
                     request=request,
+                    auth=auth,
                     verify=verify,
                     cert=cert,
                     timeout=timeout,
@@ -583,11 +585,11 @@ class Client:
     async def send_handling_auth(
         self,
         request: Request,
+        auth: Auth,
         timeout: Timeout,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
     ) -> Response:
-        auth = Auth()
         request = auth.on_request(request) or request
         while True:
             response = await self.send_single_request(request, timeout, verify, cert)
