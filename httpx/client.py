@@ -424,10 +424,10 @@ class Client:
         if auth is not None:
             if isinstance(auth, tuple):
                 return BasicAuth(username=auth[0], password=auth[1])
-            elif callable(auth):
-                return FunctionAuth(func=auth)
             elif isinstance(auth, Auth):
                 return auth
+            elif callable(auth):
+                return FunctionAuth(func=auth)
             raise TypeError('Invalid "auth" argument.')
 
         username, password = request.url.username, request.url.password
@@ -583,20 +583,20 @@ class Client:
         verify: VerifyTypes = None,
         cert: CertTypes = None,
     ) -> Response:
-        request = auth.on_request(request) or request
+        auth_flow = auth(request)
+        request = next(auth_flow, request)
         while True:
             response = await self.send_single_request(request, timeout, verify, cert)
             try:
-                next_request = auth.on_response(request, response)
+                next_request = auth_flow.send(response)
+            except StopIteration:
+                return response
             except BaseException as exc:
                 await response.close()
                 raise exc from None
-
-            if next_request is None:
-                return response
-
-            request = next_request
-            await response.close()
+            else:
+                request = next_request
+                await response.close()
 
     async def send_single_request(
         self,
