@@ -2,11 +2,12 @@ import typing
 
 import h11
 
-from ..concurrency.base import BaseSocketStream, TimeoutFlag
+from ..concurrency.base import BaseSocketStream
 from ..config import Timeout
 from ..exceptions import ConnectionClosed, ProtocolError
 from ..models import Request, Response
 from ..utils import get_logger
+from .base import OpenConnection
 
 H11Event = typing.Union[
     h11.Request,
@@ -27,7 +28,7 @@ OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
 logger = get_logger(__name__)
 
 
-class HTTP11Connection:
+class HTTP11Connection(OpenConnection):
     READ_NUM_BYTES = 4096
 
     def __init__(
@@ -38,7 +39,10 @@ class HTTP11Connection:
         self.socket = socket
         self.on_release = on_release
         self.h11_state = h11.Connection(our_role=h11.CLIENT)
-        self.timeout_flag = TimeoutFlag()
+
+    @property
+    def is_http2(self) -> bool:
+        return False
 
     async def send(self, request: Request, timeout: Timeout = None) -> Response:
         timeout = Timeout() if timeout is None else timeout
@@ -102,9 +106,6 @@ class HTTP11Connection:
             # care about connection errors that occur when sending the body.
             # Ignore these, and defer to any exceptions on reading the response.
             self.h11_state.send_failed()
-        finally:
-            # Once we've sent the request, we enable read timeouts.
-            self.timeout_flag.set_read_timeouts()
 
     async def _send_event(self, event: H11Event, timeout: Timeout) -> None:
         """
@@ -122,9 +123,6 @@ class HTTP11Connection:
         """
         while True:
             event = await self._receive_event(timeout)
-            # As soon as we start seeing response events, we should enable
-            # read timeouts, if we haven't already.
-            self.timeout_flag.set_read_timeouts()
             if isinstance(event, h11.InformationalResponse):
                 continue
             else:
@@ -171,9 +169,7 @@ class HTTP11Connection:
 
             if event is h11.NEED_DATA:
                 try:
-                    data = await self.socket.read(
-                        self.READ_NUM_BYTES, timeout, flag=self.timeout_flag
-                    )
+                    data = await self.socket.read(self.READ_NUM_BYTES, timeout)
                 except OSError:  # pragma: nocover
                     data = b""
                 self.h11_state.receive_data(data)
@@ -194,7 +190,6 @@ class HTTP11Connection:
         ):
             # Get ready for another request/response cycle.
             self.h11_state.start_next_cycle()
-            self.timeout_flag.set_write_timeouts()
         else:
             await self.close()
 

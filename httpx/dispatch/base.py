@@ -50,3 +50,26 @@ class Dispatcher:
         traceback: TracebackType = None,
     ) -> None:
         await self.close()
+
+
+class OpenConnection:
+    """
+    Base class for connection classes that interact with a host via HTTP.
+    """
+
+    @property
+    def is_http2(self) -> bool:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def send(self, request: Request, timeout: Timeout = None,) -> Response:
+        raise NotImplementedError()  # pragma: no cover
+
+    @property
+    def is_closed(self) -> bool:
+        raise NotImplementedError()  # pragma: no cover
+
+    def is_connection_dropped(self) -> bool:
+        raise NotImplementedError()  # pragma: no cover
+
+    async def close(self) -> None:
+        raise NotImplementedError()  # pragma: no cover

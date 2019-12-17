@@ -1,7 +1,7 @@
 import ssl
 import typing
 
-from ..config import PoolLimits, Timeout
+from ..config import Timeout
 
 
 def lookup_backend(
@@ -26,38 +26,6 @@ def lookup_backend(
     raise RuntimeError(f"Unknown or unsupported concurrency backend {backend!r}")
 
 
-class TimeoutFlag:
-    """
-    A timeout flag holds a state of either read-timeout or write-timeout mode.
-
-    We use this so that we can attempt both reads and writes concurrently, while
-    only enforcing timeouts in one direction.
-
-    During a request/response cycle we start in write-timeout mode.
-
-    Once we've sent a request fully, or once we start seeing a response,
-    then we switch to read-timeout mode instead.
-    """
-
-    def __init__(self) -> None:
-        self.raise_on_read_timeout = False
-        self.raise_on_write_timeout = True
-
-    def set_read_timeouts(self) -> None:
-        """
-        Set the flag to read-timeout mode.
-        """
-        self.raise_on_read_timeout = True
-        self.raise_on_write_timeout = False
-
-    def set_write_timeouts(self) -> None:
-        """
-        Set the flag to write-timeout mode.
-        """
-        self.raise_on_read_timeout = False
-        self.raise_on_write_timeout = True
-
-
 class BaseSocketStream:
     """
     A socket stream with read/write operations. Abstracts away any asyncio-specific
@@ -73,7 +41,7 @@ class BaseSocketStream:
     ) -> "BaseSocketStream":
         raise NotImplementedError()  # pragma: no cover
 
-    async def read(self, n: int, timeout: Timeout, flag: typing.Any = None) -> bytes:
+    async def read(self, n: int, timeout: Timeout) -> bytes:
         raise NotImplementedError()  # pragma: no cover
 
     async def write(self, data: bytes, timeout: Timeout) -> None:
@@ -92,12 +60,6 @@ class BaseEvent:
     """
 
     def set(self) -> None:
-        raise NotImplementedError()  # pragma: no cover
-
-    def is_set(self) -> bool:
-        raise NotImplementedError()  # pragma: no cover
-
-    def clear(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 
     async def wait(self) -> None:
@@ -137,7 +99,10 @@ class ConcurrencyBackend:
     ) -> BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
-    def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
+    def time(self) -> float:
+        raise NotImplementedError()  # pragma: no cover
+
+    def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
         raise NotImplementedError()  # pragma: no cover
 
     async def run_in_threadpool(
@@ -151,22 +116,4 @@ class ConcurrencyBackend:
         raise NotImplementedError()  # pragma: no cover
 
     def create_event(self) -> BaseEvent:
-        raise NotImplementedError()  # pragma: no cover
-
-    async def fork(
-        self,
-        coroutine1: typing.Callable,
-        args1: typing.Sequence,
-        coroutine2: typing.Callable,
-        args2: typing.Sequence,
-    ) -> None:
-        """
-        Run two coroutines concurrently.
-
-        This should start 'coroutine1' with '*args1' and 'coroutine2' with '*args2',
-        and wait for them to finish.
-
-        In case one of the coroutines raises an exception, cancel the other one then
-        raise. If the other coroutine had also raised an exception, ignore it.
-        """
         raise NotImplementedError()  # pragma: no cover

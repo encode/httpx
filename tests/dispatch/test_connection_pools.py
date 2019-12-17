@@ -18,6 +18,37 @@ async def test_keepalive_connections(server, backend):
         assert len(http.keepalive_connections) == 1
 
 
+async def test_keepalive_timeout(server, backend):
+    """
+    Keep-alive connections should timeout.
+    """
+    async with ConnectionPool() as http:
+        response = await http.request("GET", server.url)
+        await response.read()
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1
+
+        http.next_keepalive_check = 0.0
+        await http.check_keepalive_expiry()
+
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1
+
+    async with ConnectionPool() as http:
+        http.KEEP_ALIVE_EXPIRY = 0.0
+
+        response = await http.request("GET", server.url)
+        await response.read()
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 1
+
+        http.next_keepalive_check = 0.0
+        await http.check_keepalive_expiry()
+
+        assert len(http.active_connections) == 0
+        assert len(http.keepalive_connections) == 0
+
+
 async def test_differing_connection_keys(server, backend):
     """
     Connections to differing connection keys should result in multiple connections.

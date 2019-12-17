@@ -1,18 +1,11 @@
 import asyncio
 import functools
 import ssl
-import sys
 import typing
 
-from ..config import PoolLimits, Timeout
+from ..config import Timeout
 from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
-from .base import (
-    BaseEvent,
-    BasePoolSemaphore,
-    BaseSocketStream,
-    ConcurrencyBackend,
-    TimeoutFlag,
-)
+from .base import BaseEvent, BasePoolSemaphore, BaseSocketStream, ConcurrencyBackend
 
 SSL_MONKEY_PATCH_APPLIED = False
 
@@ -38,6 +31,45 @@ def ssl_monkey_patch() -> None:
     MonkeyPatch.write = _fixed_write
 
 
+async def backport_start_tls(
+    transport: asyncio.BaseTransport,
+    protocol: asyncio.BaseProtocol,
+    sslcontext: ssl.SSLContext = None,
+    *,
+    server_side: bool = False,
+    server_hostname: str = None,
+    ssl_handshake_timeout: float = None,
+) -> asyncio.Transport:  # pragma: nocover (Since it's not used on all Python versions.)
+    """
+    Python 3.6 asyncio doesn't have a start_tls() method on the loop
+    so we use this function in place of the loop's start_tls() method.
+
+    Adapted from this comment:
+
+    https://github.com/urllib3/urllib3/issues/1323#issuecomment-362494839
+    """
+    import asyncio.sslproto
+
+    loop = asyncio.get_event_loop()
+    waiter = loop.create_future()
+    ssl_protocol = asyncio.sslproto.SSLProtocol(
+        loop,
+        protocol,
+        sslcontext,
+        waiter,
+        server_side=False,
+        server_hostname=server_hostname,
+        call_connection_made=False,
+    )
+
+    transport.set_protocol(ssl_protocol)
+    loop.call_soon(ssl_protocol.connection_made, transport)
+    loop.call_soon(transport.resume_reading)  # type: ignore
+
+    await waiter
+    return ssl_protocol._app_transport
+
+
 class SocketStream(BaseSocketStream):
     def __init__(
         self, stream_reader: asyncio.StreamReader, stream_writer: asyncio.StreamWriter,
@@ -57,43 +89,7 @@ class SocketStream(BaseSocketStream):
         protocol = asyncio.StreamReaderProtocol(stream_reader)
         transport = self.stream_writer.transport
 
-        if hasattr(loop, "start_tls"):
-            loop_start_tls = loop.start_tls  # type: ignore
-        else:
-
-            async def loop_start_tls(
-                transport: asyncio.BaseTransport,
-                protocol: asyncio.BaseProtocol,
-                sslcontext: ssl.SSLContext = None,
-                *,
-                server_side: bool = False,
-                server_hostname: str = None,
-                ssl_handshake_timeout: float = None,
-            ) -> asyncio.Transport:
-                """Python 3.6 asyncio doesn't have a start_tls() method on the loop
-                so we use this function in place of the loop's start_tls() method.
-                Adapted from this comment:
-                https://github.com/urllib3/urllib3/issues/1323#issuecomment-362494839
-                """
-                import asyncio.sslproto
-
-                waiter = loop.create_future()
-                ssl_protocol = asyncio.sslproto.SSLProtocol(
-                    loop,
-                    protocol,
-                    sslcontext,
-                    waiter,
-                    server_side=False,
-                    server_hostname=server_hostname,
-                    call_connection_made=False,
-                )
-
-                transport.set_protocol(ssl_protocol)
-                loop.call_soon(ssl_protocol.connection_made, transport)
-                loop.call_soon(transport.resume_reading)  # type: ignore
-
-                await waiter
-                return ssl_protocol._app_transport
+        loop_start_tls = getattr(loop, "start_tls", backport_start_tls)
 
         transport = await asyncio.wait_for(
             loop_start_tls(
@@ -126,51 +122,26 @@ class SocketStream(BaseSocketStream):
         ident = ssl_object.selected_alpn_protocol()
         return "HTTP/2" if ident == "h2" else "HTTP/1.1"
 
-    async def read(self, n: int, timeout: Timeout, flag: TimeoutFlag = None) -> bytes:
-        while True:
-            # Check our flag at the first possible moment, and use a fine
-            # grained retry loop if we're not yet in read-timeout mode.
-            should_raise = flag is None or flag.raise_on_read_timeout
-            read_timeout = timeout.read_timeout if should_raise else 0.01
-            try:
-                async with self.read_lock:
-                    data = await asyncio.wait_for(
-                        self.stream_reader.read(n), read_timeout
-                    )
-            except asyncio.TimeoutError:
-                if should_raise:
-                    raise ReadTimeout() from None
-                # FIX(py3.6): yield control back to the event loop to give it a chance
-                # to cancel `.read(n)` before we retry.
-                # This prevents concurrent `.read()` calls, which asyncio
-                # doesn't seem to allow on 3.6.
-                # See: https://github.com/encode/httpx/issues/382
-                await asyncio.sleep(0)
-            else:
-                break
+    async def read(self, n: int, timeout: Timeout) -> bytes:
+        try:
+            async with self.read_lock:
+                return await asyncio.wait_for(
+                    self.stream_reader.read(n), timeout.read_timeout
+                )
+        except asyncio.TimeoutError:
+            raise ReadTimeout() from None
 
-        return data
-
-    async def write(
-        self, data: bytes, timeout: Timeout, flag: TimeoutFlag = None
-    ) -> None:
+    async def write(self, data: bytes, timeout: Timeout) -> None:
         if not data:
             return
 
         self.stream_writer.write(data)
-        while True:
-            try:
-                await asyncio.wait_for(  # type: ignore
-                    self.stream_writer.drain(), timeout.write_timeout
-                )
-                break
-            except asyncio.TimeoutError:
-                # We check our flag at the first possible moment, in order to
-                # allow us to suppress write timeouts, if we've since
-                # switched over to read-timeout mode.
-                should_raise = flag is None or flag.raise_on_write_timeout
-                if should_raise:
-                    raise WriteTimeout() from None
+        try:
+            return await asyncio.wait_for(
+                self.stream_writer.drain(), timeout.write_timeout
+            )
+        except asyncio.TimeoutError:
+            raise WriteTimeout() from None
 
     def is_connection_dropped(self) -> bool:
         # Counter-intuitively, what we really want to know here is whether the socket is
@@ -190,38 +161,33 @@ class SocketStream(BaseSocketStream):
         return self.stream_reader.at_eof()
 
     async def close(self) -> None:
+        # NOTE: StreamWriter instances expose a '.wait_closed()' coroutine function,
+        # but using it has caused compatibility issues with certain sites in
+        # the past (see https://github.com/encode/httpx/issues/634), which is
+        # why we don't call it here.
+        # This is fine, though, because '.close()' schedules the actual closing of the
+        # stream, meaning that at best it will happen during the next event loop
+        # iteration, and at worst asyncio will take care of it on program exit.
         self.stream_writer.close()
-        if sys.version_info >= (3, 7):
-            await self.stream_writer.wait_closed()
 
 
 class PoolSemaphore(BasePoolSemaphore):
-    def __init__(self, pool_limits: PoolLimits):
-        self.pool_limits = pool_limits
+    def __init__(self, max_value: int) -> None:
+        self.max_value = max_value
 
     @property
-    def semaphore(self) -> typing.Optional[asyncio.BoundedSemaphore]:
+    def semaphore(self) -> asyncio.BoundedSemaphore:
         if not hasattr(self, "_semaphore"):
-            max_connections = self.pool_limits.hard_limit
-            if max_connections is None:
-                self._semaphore = None
-            else:
-                self._semaphore = asyncio.BoundedSemaphore(value=max_connections)
+            self._semaphore = asyncio.BoundedSemaphore(value=self.max_value)
         return self._semaphore
 
     async def acquire(self, timeout: float = None) -> None:
-        if self.semaphore is None:
-            return
-
         try:
             await asyncio.wait_for(self.semaphore.acquire(), timeout)
         except asyncio.TimeoutError:
             raise PoolTimeout()
 
     def release(self) -> None:
-        if self.semaphore is None:
-            return
-
         self.semaphore.release()
 
 
@@ -280,6 +246,10 @@ class AsyncioBackend(ConcurrencyBackend):
 
         return SocketStream(stream_reader=stream_reader, stream_writer=stream_writer)
 
+    def time(self) -> float:
+        loop = asyncio.get_event_loop()
+        return loop.time()
+
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
@@ -299,30 +269,19 @@ class AsyncioBackend(ConcurrencyBackend):
         finally:
             self._loop = loop
 
-    async def fork(
-        self,
-        coroutine1: typing.Callable,
-        args1: typing.Sequence,
-        coroutine2: typing.Callable,
-        args2: typing.Sequence,
-    ) -> None:
-        task1 = self.loop.create_task(coroutine1(*args1))
-        task2 = self.loop.create_task(coroutine2(*args2))
-
-        try:
-            await asyncio.gather(task1, task2)
-        finally:
-            pending: typing.Set[asyncio.Future[typing.Any]]  # Please mypy.
-            _, pending = await asyncio.wait({task1, task2}, timeout=0)
-            for task in pending:
-                task.cancel()
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
-
-    def get_semaphore(self, limits: PoolLimits) -> BasePoolSemaphore:
-        return PoolSemaphore(limits)
+    def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
+        return PoolSemaphore(max_value)
 
     def create_event(self) -> BaseEvent:
-        return typing.cast(BaseEvent, asyncio.Event())
+        return Event()
+
+
+class Event(BaseEvent):
+    def __init__(self) -> None:
+        self._event = asyncio.Event()
+
+    def set(self) -> None:
+        self._event.set()
+
+    async def wait(self) -> None:
+        await self._event.wait()

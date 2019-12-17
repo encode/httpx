@@ -4,6 +4,7 @@ import ssl
 import sys
 from pathlib import Path
 
+import certifi
 import pytest
 
 import httpx
@@ -24,7 +25,7 @@ def test_load_ssl_config_verify_non_existing_path():
 
 
 def test_load_ssl_config_verify_existing_file():
-    ssl_config = SSLConfig(verify=httpx.config.DEFAULT_CA_BUNDLE_PATH)
+    ssl_config = SSLConfig(verify=certifi.where())
     context = ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
@@ -55,7 +56,7 @@ def test_load_ssl_config_verify_env_file(https_server, ca_cert_pem_file, config)
 
 
 def test_load_ssl_config_verify_directory():
-    path = httpx.config.DEFAULT_CA_BUNDLE_PATH.parent
+    path = Path(certifi.where()).parent
     ssl_config = SSLConfig(verify=path)
     context = ssl_config.load_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED

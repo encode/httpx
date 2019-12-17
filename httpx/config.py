@@ -50,6 +50,8 @@ class SSLConfig:
     SSL Configuration.
     """
 
+    DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
+
     def __init__(
         self,
         *,
@@ -129,7 +131,7 @@ class SSLConfig:
                 self.verify = ca_bundle  # type: ignore
 
         if isinstance(self.verify, bool):
-            ca_bundle_path = DEFAULT_CA_BUNDLE_PATH
+            ca_bundle_path = self.DEFAULT_CA_BUNDLE_PATH
         elif Path(self.verify).exists():
             ca_bundle_path = Path(self.verify)
         else:
@@ -321,8 +323,6 @@ class PoolLimits:
 TimeoutConfig = Timeout  # Synonym for backwards compat
 
 
-DEFAULT_SSL_CONFIG = SSLConfig(cert=None, verify=True)
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
 DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
-DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
 DEFAULT_MAX_REDIRECTS = 20
