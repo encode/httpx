@@ -1,9 +1,9 @@
 import typing
 
+from .auth import AuthTypes
 from .client import Client, StreamContextManager
 from .config import DEFAULT_TIMEOUT_CONFIG, CertTypes, TimeoutTypes, VerifyTypes
 from .models import (
-    AuthTypes,
     CookieTypes,
     HeaderTypes,
     QueryParamTypes,

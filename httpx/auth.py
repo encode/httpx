@@ -10,24 +10,60 @@ from .exceptions import ProtocolError
 from .models import Request, Response
 from .utils import to_bytes, to_str, unquote
 
+AuthTypes = typing.Union[
+    typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
+    typing.Callable[["Request"], "Request"],
+    "Auth",
+]
+
 
 class Auth:
+    """
+    Base class for all authentication schemes.
+    """
+
     def on_request(self, request: Request) -> typing.Optional[Request]:
+        """
+        Called prior to making a request. May optionally modify and return the
+        request.
+        """
         pass
 
     def on_response(
         self, request: Request, response: Response
     ) -> typing.Optional[Request]:
+        """
+        Called when a response is returned. May optionally return a new request
+        that needs to be issued.
+        """
         pass
 
 
-class BasicAuth:
+class FunctionAuth(Auth):
+    """
+    Allows the 'auth' argument to be passed as a simple callable function,
+    that takes the request, and returns a new, modified request.
+    """
+
+    def __init__(self, func: typing.Callable[[Request], Request]) -> None:
+        self.func = func
+
+    def on_request(self, request: Request) -> typing.Optional[Request]:
+        return self.func(request)
+
+
+class BasicAuth(Auth):
+    """
+    Allows the 'auth' argument to be passed as a (username, password) pair,
+    and uses HTTP Basic authentication.
+    """
+
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ):
         self.auth_header = self.build_auth_header(username, password)
 
-    def __call__(self, request: Request) -> Request:
+    def on_request(self, request: Request) -> typing.Optional[Request]:
         request.headers["Authorization"] = self.auth_header
         return request
 

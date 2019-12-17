@@ -5,7 +5,7 @@ from types import TracebackType
 
 import hstspreload
 
-from .auth import Auth, BasicAuth
+from .auth import Auth, AuthTypes, BasicAuth, FunctionAuth
 from .concurrency.base import ConcurrencyBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
@@ -32,7 +32,6 @@ from .exceptions import (
 )
 from .models import (
     URL,
-    AuthTypes,
     Cookies,
     CookieTypes,
     Headers,
@@ -395,29 +394,18 @@ class Client:
         if request.url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
 
-        auth = self.auth if auth is None else auth
-        trust_env = self.trust_env if trust_env is None else trust_env
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        if not isinstance(auth, Auth):
-            request = self.authenticate(request, trust_env, auth)
-            response = await self.send_handling_redirects(
-                request,
-                auth=Auth(),
-                verify=verify,
-                cert=cert,
-                timeout=timeout,
-                allow_redirects=allow_redirects,
-            )
-        else:
-            response = await self.send_handling_redirects(
-                request,
-                auth=auth,
-                verify=verify,
-                cert=cert,
-                timeout=timeout,
-                allow_redirects=allow_redirects,
-            )
+        auth = self.setup_auth(request, trust_env, auth)
+
+        response = await self.send_handling_redirects(
+            request,
+            auth=auth,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
+        )
 
         if not stream:
             try:
@@ -427,26 +415,31 @@ class Client:
 
         return response
 
-    def authenticate(
-        self, request: Request, trust_env: bool, auth: AuthTypes = None
-    ) -> "Request":
+    def setup_auth(
+        self, request: Request, trust_env: bool = None, auth: AuthTypes = None
+    ) -> Auth:
+        auth = self.auth if auth is None else auth
+        trust_env = self.trust_env if trust_env is None else trust_env
+
         if auth is not None:
             if isinstance(auth, tuple):
-                auth = BasicAuth(username=auth[0], password=auth[1])
-            return auth(request)
+                return BasicAuth(username=auth[0], password=auth[1])
+            elif callable(auth):
+                return FunctionAuth(func=auth)
+            elif isinstance(auth, Auth):
+                return auth
+            raise TypeError('Invalid "auth" argument.')
 
         username, password = request.url.username, request.url.password
         if username or password:
-            auth = BasicAuth(username=username, password=password)
-            return auth(request)
+            return BasicAuth(username=username, password=password)
 
         if trust_env and "Authorization" not in request.headers:
             credentials = self.netrc.get_credentials(request.url.authority)
             if credentials is not None:
-                auth = BasicAuth(username=credentials[0], password=credentials[1])
-                return auth(request)
+                return BasicAuth(username=credentials[0], password=credentials[1])
 
-        return request
+        return Auth()
 
     async def send_handling_redirects(
         self,
