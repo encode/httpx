@@ -7,7 +7,7 @@ import pytest
 from h2.settings import SettingCodes
 
 from httpx import Client, Response, TimeoutException
-from httpx.extras import requires_http2
+from httpx.optionals import requires_http2
 
 from .utils import MockHTTP2Backend
 

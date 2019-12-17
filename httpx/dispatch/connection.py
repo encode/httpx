@@ -6,8 +6,8 @@ import h11
 
 from ..concurrency.base import BaseSocketStream, ConcurrencyBackend, lookup_backend
 from ..config import CertTypes, SSLConfig, Timeout, VerifyTypes
-from ..extras import requires_http2
 from ..models import URL, Origin, Request, Response
+from ..optionals import requires_http2
 from ..utils import get_logger
 from .base import Dispatcher, OpenConnection
 from .http11 import HTTP11Connection
