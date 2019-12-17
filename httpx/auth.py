@@ -27,7 +27,6 @@ class Auth:
         Called prior to making a request. May optionally modify and return the
         request.
         """
-        pass
 
     def on_response(
         self, request: Request, response: Response
@@ -36,7 +35,6 @@ class Auth:
         Called when a response is returned. May optionally return a new request
         that needs to be issued.
         """
-        pass
 
 
 class FunctionAuth(Auth):
