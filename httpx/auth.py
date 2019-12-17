@@ -47,7 +47,7 @@ class Auth:
 
         You can dispatch as many requests as is necessary.
         """
-        yield from ()
+        yield request
 
 
 class FunctionAuth(Auth):
@@ -58,7 +58,10 @@ class FunctionAuth(Auth):
     """
 
     def __init__(
-        self, func: typing.Callable[[Request], typing.Union[Request, AuthFlow]]
+        self,
+        func: typing.Union[
+            typing.Callable[[Request], Request], typing.Callable[[Request], AuthFlow]
+        ],
     ) -> None:
         self.func = func
 

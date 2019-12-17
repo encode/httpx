@@ -584,7 +584,7 @@ class Client:
         cert: CertTypes = None,
     ) -> Response:
         auth_flow = auth(request)
-        request = next(auth_flow, request)
+        request = next(auth_flow)
         while True:
             response = await self.send_single_request(request, timeout, verify, cert)
             try:
