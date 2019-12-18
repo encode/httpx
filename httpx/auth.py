@@ -15,7 +15,6 @@ AuthFlow = typing.Generator[Request, Response, None]
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
     typing.Callable[["Request"], "Request"],
-    typing.Callable[["Request"], AuthFlow],
     "Auth",
 ]
 
@@ -53,24 +52,14 @@ class Auth:
 class FunctionAuth(Auth):
     """
     Allows the 'auth' argument to be passed as a simple callable function,
-    that takes the request, and returns a new, modified request,
-    or an authentication flow.
+    that takes the request, and returns a new, modified request.
     """
 
-    def __init__(
-        self,
-        func: typing.Union[
-            typing.Callable[[Request], Request], typing.Callable[[Request], AuthFlow]
-        ],
-    ) -> None:
+    def __init__(self, func: typing.Callable[[Request], Request]) -> None:
         self.func = func
 
     def __call__(self, request: Request) -> AuthFlow:
-        obj = self.func(request)
-        if isinstance(obj, Request):
-            yield obj
-        else:
-            yield from obj
+        yield self.func(request)
 
 
 class BasicAuth(Auth):
