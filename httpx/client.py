@@ -422,9 +422,9 @@ class Client:
 
         if not stream:
             try:
-                await response.read()
+                await response.aread()
             finally:
-                await response.close()
+                await response.aclose()
 
         return response
 
@@ -475,7 +475,7 @@ class Client:
             if not response.is_redirect:
                 return response
 
-            await response.read()
+            await response.aread()
             request = self.build_redirect_request(request, response)
             history = history + [response]
 
@@ -959,6 +959,6 @@ class StreamContextManager:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self.response.close()
+        await self.response.aclose()
         if self.close_client:
             await self.client.close()

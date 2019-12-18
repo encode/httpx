@@ -855,7 +855,7 @@ class Response:
     def next(self, call_next: typing.Callable) -> None:
         self._call_next = call_next
 
-    async def read(self) -> bytes:
+    async def aread(self) -> bytes:
         """
         Read and return the response content.
         """
@@ -909,9 +909,9 @@ class Response:
             self.is_stream_consumed = True
             async for part in self._raw_stream:
                 yield part
-            await self.close()
+            await self.aclose()
 
-    async def close(self) -> None:
+    async def aclose(self) -> None:
         """
         Close the response and release the connection.
         Automatically called if the response body is read to completion.

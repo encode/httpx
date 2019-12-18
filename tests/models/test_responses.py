@@ -125,7 +125,7 @@ async def test_read_response():
     assert response.encoding == "ascii"
     assert response.is_closed
 
-    content = await response.read()
+    content = await response.aread()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
@@ -156,7 +156,7 @@ async def test_bytes_interface():
 async def test_text_interface():
     response = httpx.Response(200, content=b"Hello, world!")
 
-    await response.read()
+    await response.aread()
 
     content = ""
     async for part in response.aiter_text():
@@ -168,7 +168,7 @@ async def test_text_interface():
 async def test_lines_interface():
     response = httpx.Response(200, content=b"Hello,\nworld!")
 
-    await response.read()
+    await response.aread()
 
     content = []
     async for line in response.aiter_lines():
@@ -180,7 +180,7 @@ async def test_lines_interface():
 async def test_stream_interface_after_read():
     response = httpx.Response(200, content=b"Hello, world!")
 
-    await response.read()
+    await response.aread()
 
     content = b""
     async for part in response.aiter_bytes():
@@ -195,7 +195,7 @@ async def test_streaming_response():
     assert response.status_code == 200
     assert not response.is_closed
 
-    content = await response.read()
+    content = await response.aread()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
@@ -211,17 +211,17 @@ async def test_cannot_read_after_stream_consumed():
         content += part
 
     with pytest.raises(httpx.StreamConsumed):
-        await response.read()
+        await response.aread()
 
 
 @pytest.mark.asyncio
 async def test_cannot_read_after_response_closed():
     response = httpx.Response(200, content=async_streaming_body())
 
-    await response.close()
+    await response.aclose()
 
     with pytest.raises(httpx.ResponseClosed):
-        await response.read()
+        await response.aread()
 
 
 def test_unknown_status_code():
