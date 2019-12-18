@@ -10,6 +10,8 @@ from .exceptions import ProtocolError
 from .models import Request, Response
 from .utils import to_bytes, to_str, unquote
 
+AuthFlow = typing.Generator[Request, Response, None]
+
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
     typing.Callable[["Request"], "Request"],
@@ -22,19 +24,29 @@ class Auth:
     Base class for all authentication schemes.
     """
 
-    def on_request(self, request: Request) -> typing.Optional[Request]:
+    def __call__(self, request: Request) -> AuthFlow:
         """
-        Called prior to making a request. May optionally modify and return the
-        request.
-        """
+        Execute the authentication flow.
 
-    def on_response(
-        self, request: Request, response: Response
-    ) -> typing.Optional[Request]:
+        To dispatch a request, `yield` it:
+
+        ```
+        yield request
+        ```
+
+        The client will `.send()` the response back into the flow generator. You can
+        access it like so:
+
+        ```
+        response = yield request
+        ```
+
+        A `return` (or reaching the end of the generator) will result in the
+        client returning the last response obtained from the server.
+
+        You can dispatch as many requests as is necessary.
         """
-        Called when a response is returned. May optionally return a new request
-        that needs to be issued.
-        """
+        yield request
 
 
 class FunctionAuth(Auth):
@@ -46,8 +58,8 @@ class FunctionAuth(Auth):
     def __init__(self, func: typing.Callable[[Request], Request]) -> None:
         self.func = func
 
-    def on_request(self, request: Request) -> typing.Optional[Request]:
-        return self.func(request)
+    def __call__(self, request: Request) -> AuthFlow:
+        yield self.func(request)
 
 
 class BasicAuth(Auth):
@@ -61,9 +73,9 @@ class BasicAuth(Auth):
     ):
         self.auth_header = self.build_auth_header(username, password)
 
-    def on_request(self, request: Request) -> typing.Optional[Request]:
+    def __call__(self, request: Request) -> AuthFlow:
         request.headers["Authorization"] = self.auth_header
-        return request
+        yield request
 
     def build_auth_header(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
@@ -91,18 +103,13 @@ class DigestAuth(Auth):
         self.username = to_bytes(username)
         self.password = to_bytes(password)
 
-    def on_response(
-        self, request: Request, response: Response
-    ) -> typing.Optional[Request]:
-        if "Authorization" in request.headers:
-            # We've already attempted to send an authenticated request.
-            # Let's not try again.
-            return None
+    def __call__(self, request: Request) -> AuthFlow:
+        response = yield request
 
         if response.status_code != 401 or "www-authenticate" not in response.headers:
             # If the response is not a 401 WWW-Authenticate, then we don't
             # need to build an authenticated request.
-            return None
+            return
 
         header = response.headers["www-authenticate"]
         try:
@@ -111,7 +118,7 @@ class DigestAuth(Auth):
             raise ProtocolError("Malformed Digest authentication header")
 
         request.headers["Authorization"] = self._build_auth_header(request, challenge)
-        return request
+        yield request
 
     def _build_auth_header(
         self, request: Request, challenge: "DigestAuthChallenge"
