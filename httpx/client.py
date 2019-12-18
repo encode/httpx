@@ -480,7 +480,7 @@ class Client:
             history = history + [response]
 
             if not allow_redirects:
-                response.call_next = functools.partial(
+                response.next = functools.partial(
                     self.send_handling_redirects,
                     request=request,
                     verify=verify,

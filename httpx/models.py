@@ -4,7 +4,6 @@ import email.message
 import json as jsonlib
 import typing
 import urllib.request
-import warnings
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
@@ -665,7 +664,6 @@ class Response:
 
         self.request = request
         self.elapsed = datetime.timedelta(0) if elapsed is None else elapsed
-        self.call_next: typing.Optional[typing.Callable] = None
 
         self.history = [] if history is None else list(history)
 
@@ -843,6 +841,20 @@ class Response:
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
+    @property
+    def next(self) -> typing.Any:
+        """
+        Get the next response from a redirect response.
+        """
+        if not self.is_redirect:
+            raise NotRedirectResponse()
+        assert hasattr(self, "_call_next")
+        return self._call_next
+
+    @next.setter
+    def next(self, call_next: typing.Callable) -> None:
+        self._call_next = call_next
+
     async def read(self) -> bytes:
         """
         Read and return the response content.
@@ -850,22 +862,6 @@ class Response:
         if not hasattr(self, "_content"):
             self._content = b"".join([part async for part in self.aiter_bytes()])
         return self._content
-
-    @property
-    def stream(self):  # type: ignore
-        warnings.warn(
-            "Response.stream() is due to be deprecated. "
-            "Use Response.aiter_bytes() instead."
-        )
-        return self.aiter_bytes
-
-    @property
-    def raw(self):  # type: ignore
-        warnings.warn(
-            "Response.raw() is due to be deprecated. "
-            "Use Response.aiter_raw() instead."
-        )
-        return self.aiter_raw
 
     async def aiter_bytes(self) -> typing.AsyncIterator[bytes]:
         """
@@ -914,15 +910,6 @@ class Response:
             async for part in self._raw_stream:
                 yield part
             await self.close()
-
-    async def next(self) -> "Response":
-        """
-        Get the next response from a redirect response.
-        """
-        if not self.is_redirect:
-            raise NotRedirectResponse()
-        assert self.call_next is not None
-        return await self.call_next()
 
     async def close(self) -> None:
         """
