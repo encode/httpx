@@ -3,6 +3,7 @@ import typing
 import h2.connection
 import h2.events
 from h2.config import H2Configuration
+from h2.exceptions import NoAvailableStreamIDError
 from h2.settings import SettingCodes, Settings
 
 from ..concurrency.base import (
@@ -55,16 +56,23 @@ class HTTP2Connection(OpenConnection):
     async def send(self, request: Request, timeout: Timeout = None) -> Response:
         timeout = Timeout() if timeout is None else timeout
 
-        if not self.init_started:
-            # The very first stream is responsible for initiating the connection.
-            self.init_started = True
-            await self.send_connection_init(timeout)
-            stream_id = self.state.get_next_available_stream_id()
-            self.init_complete.set()
-        else:
-            # All other streams need to wait until the connection is established.
-            await self.init_complete.wait()
-            stream_id = self.state.get_next_available_stream_id()
+        try:
+            if not self.init_started:
+                # The very first stream is responsible
+                # for initiating the connection.
+                self.init_started = True
+                await self.send_connection_init(timeout)
+                stream_id = self.state.get_next_available_stream_id()
+                self.init_complete.set()
+            else:
+                # All other streams need to wait until the
+                # connection is established.
+                await self.init_complete.wait()
+                stream_id = self.state.get_next_available_stream_id()
+        except NoAvailableStreamIDError:
+            self.state = h2.connection.H2Connection(config=self.CONFIG)
+            self.init_stated = False
+            await self.send(request, timeout)
 
         stream = HTTP2Stream(stream_id=stream_id, connection=self)
         self.streams[stream_id] = stream
