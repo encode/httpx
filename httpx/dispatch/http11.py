@@ -93,7 +93,7 @@ class HTTP11Connection(OpenConnection):
         """
         try:
             # Send the request body.
-            async for chunk in request.stream():
+            async for chunk in request.stream:
                 logger.trace(f"send_data data=Data(<{len(chunk)} bytes>)")
                 event = h11.Data(data=chunk)
                 await self._send_event(event, timeout)

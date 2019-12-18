@@ -499,10 +499,10 @@ class Client:
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
         headers = self.redirect_headers(request, url, method)
-        content = self.redirect_content(request, method)
+        stream = self.redirect_content(request, method)
         cookies = Cookies(self.cookies)
         request = Request(method=method, url=url, headers=headers, cookies=cookies)
-        request.content = content
+        request.stream = stream
         return request
 
     def redirect_method(self, request: Request, response: Response) -> str:
@@ -577,9 +577,9 @@ class Client:
         """
         if method != request.method and method == "GET":
             return RequestStream()
-        if not request.content.can_replay():
+        if not request.stream.can_replay():
             raise RedirectBodyUnavailable()
-        return request.content
+        return request.stream
 
     async def send_single_request(
         self,

@@ -238,7 +238,7 @@ class HTTP2Stream:
 
     async def send_body(self, request: Request, timeout: Timeout) -> None:
         logger.trace(f"send_body stream_id={self.stream_id}")
-        async for data in request.stream():
+        async for data in request.stream:
             while data:
                 max_flow = await self.connection.wait_for_outgoing_flow(
                     self.stream_id, timeout

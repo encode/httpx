@@ -599,11 +599,11 @@ class Request:
         if cookies:
             self._cookies = Cookies(cookies)
             self._cookies.set_cookie_header(self)
-        self.content = encode(data, files, json)
+        self.stream = encode(data, files, json)
         self.prepare()
 
     def prepare(self) -> None:
-        for key, value in self.content.get_headers().items():
+        for key, value in self.stream.get_headers().items():
             self.headers.setdefault(key, value)
 
         auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
@@ -646,11 +646,7 @@ class Request:
         """
         Read and return the request content.
         """
-        return await self.content.aread()
-
-    async def stream(self) -> typing.AsyncIterator[bytes]:
-        async for part in self.content:
-            yield part
+        return await self.stream.aread()
 
 
 class Response:
