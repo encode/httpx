@@ -32,7 +32,7 @@ from .exceptions import (
     StreamConsumed,
 )
 from .status_codes import StatusCode
-from .streams import RequestData, RequestFiles, encode
+from .streams import RequestData, RequestFiles, Stream, encode
 from .utils import (
     flatten_queryparams,
     guess_json_utf,
@@ -76,8 +76,6 @@ AuthTypes = typing.Union[
 ProxiesTypes = typing.Union[
     URLTypes, "Dispatcher", typing.Dict[URLTypes, typing.Union[URLTypes, "Dispatcher"]]
 ]
-
-ResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 
 class URL:
@@ -656,8 +654,7 @@ class Response:
         *,
         http_version: str = None,
         headers: HeaderTypes = None,
-        content: ResponseContent = None,
-        on_close: typing.Callable = None,
+        content: typing.Union[bytes, Stream] = None,
         request: Request = None,
         history: typing.List["Response"] = None,
         elapsed: datetime.timedelta = None,
@@ -667,7 +664,6 @@ class Response:
         self.headers = Headers(headers)
 
         self.request = request
-        self.on_close = on_close
         self.elapsed = datetime.timedelta(0) if elapsed is None else elapsed
         self.call_next: typing.Optional[typing.Callable] = None
 
@@ -935,8 +931,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self.on_close is not None:
-                await self.on_close()
+            if hasattr(self, "_raw_stream"):
+                await self._raw_stream.aclose()
 
 
 class Cookies(MutableMapping):

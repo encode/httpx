@@ -30,7 +30,28 @@ RequestFiles = typing.Dict[
 ]
 
 
-class RequestStream:
+class Stream:
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        yield b""
+
+    async def aclose(self) -> None:
+        pass
+
+
+class AsyncIteratorStream(Stream):
+    def __init__(self, iterator: typing.AsyncIterator[bytes], close: typing.Callable):
+        self.iterator = iterator
+        self.close_func = close
+
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        async for chunk in self.iterator:
+            yield chunk
+
+    async def aclose(self) -> None:
+        await self.close_func()
+
+
+class RequestStream(Stream):
     """
     Base class for streaming request content.
     Defaults to a "no request body" implementation.

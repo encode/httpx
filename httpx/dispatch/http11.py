@@ -6,6 +6,7 @@ from ..concurrency.base import BaseSocketStream
 from ..config import Timeout
 from ..exceptions import ConnectionClosed, ProtocolError
 from ..models import Request, Response
+from ..streams import AsyncIteratorStream
 from ..utils import get_logger
 from .base import OpenConnection
 
@@ -50,14 +51,15 @@ class HTTP11Connection(OpenConnection):
         await self._send_request(request, timeout)
         await self._send_request_body(request, timeout)
         http_version, status_code, headers = await self._receive_response(timeout)
-        content = self._receive_response_data(timeout)
+        stream = AsyncIteratorStream(
+            iterator=self._receive_response_data(timeout), close=self.response_closed
+        )
 
         return Response(
             status_code=status_code,
             http_version=http_version,
             headers=headers,
-            content=content,
-            on_close=self.response_closed,
+            content=stream,
             request=request,
         )
 

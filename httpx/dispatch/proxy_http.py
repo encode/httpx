@@ -167,8 +167,9 @@ class HTTPProxy(ConnectionPool):
                 response=proxy_response,
             )
         else:
-            proxy_response.on_close = None
-            await proxy_response.read()
+            # Hack to ingest the response, without closing it.
+            async for chunk in proxy_response._raw_stream:
+                pass
 
         return connection
 
