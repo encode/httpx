@@ -849,6 +849,8 @@ class Response:
     def next(self, call_next: typing.Callable) -> None:
         self._call_next = call_next
 
+    # Streaming API (async)
+
     async def aread(self) -> bytes:
         """
         Read and return the response content.
