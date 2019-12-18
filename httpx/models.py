@@ -13,7 +13,6 @@ import chardet
 import rfc3986
 
 from .config import USER_AGENT
-from .content import RequestData, RequestFiles, encode
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -33,6 +32,7 @@ from .exceptions import (
     StreamConsumed,
 )
 from .status_codes import StatusCode
+from .streams import RequestData, RequestFiles, encode
 from .utils import (
     flatten_queryparams,
     guess_json_utf,

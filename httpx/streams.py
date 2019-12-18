@@ -25,9 +25,9 @@ RequestFiles = typing.Dict[
 ]
 
 
-class RequestContent:
+class RequestStream:
     """
-    Base class for request content.
+    Base class for streaming request content.
     Defaults to a "no request body" implementation.
     """
 
@@ -53,7 +53,7 @@ class RequestContent:
         return b"".join([part async for part in self])
 
 
-class BytesRequestContent(RequestContent):
+class BytesRequestStream(RequestStream):
     """
     Request content encoded as plain bytes.
     """
@@ -69,7 +69,7 @@ class BytesRequestContent(RequestContent):
         yield self.body
 
 
-class StreamingRequestContent(RequestContent):
+class IteratorRequestStream(RequestStream):
     """
     Request content encoded as plain bytes, using an async byte iterator.
     """
@@ -88,7 +88,7 @@ class StreamingRequestContent(RequestContent):
             yield part
 
 
-class JSONRequestContent(RequestContent):
+class JSONRequestStream(RequestStream):
     """
     Request content encoded as JSON.
     """
@@ -105,7 +105,7 @@ class JSONRequestContent(RequestContent):
         yield self.body
 
 
-class URLEncodedRequestContent(RequestContent):
+class URLEncodedRequestStream(RequestStream):
     """
     Request content as URL encoded form data.
     """
@@ -122,7 +122,7 @@ class URLEncodedRequestContent(RequestContent):
         yield self.body
 
 
-class MultipartRequestContent(RequestContent):
+class MultipartRequestStream(RequestStream):
     """
     Request content as multipart encoded form data.
     """
@@ -144,10 +144,10 @@ def encode(
     files: RequestFiles = None,
     json: typing.Any = None,
     boundary: bytes = None,
-) -> RequestContent:
+) -> RequestStream:
     """
     Handles encoding the given `data`, `files`, and `json`, returning
-    a `RequestContent` implementation which provides a byte iterator onto
+    a `RequestStream` implementation which provides a byte iterator onto
     the content, as well as `.is_rewindable()` and `.get_headers()` interfaces.
 
     The `boundary` argument is also included for reproducible test cases
@@ -155,17 +155,17 @@ def encode(
     """
     if data is None:
         if json is not None:
-            return JSONRequestContent(json)
+            return JSONRequestStream(json)
         elif files:
-            return MultipartRequestContent({}, files, boundary=boundary)
+            return MultipartRequestStream({}, files, boundary=boundary)
         else:
-            return RequestContent()
+            return RequestStream()
     elif isinstance(data, dict):
         if files is not None:
-            return MultipartRequestContent(data, files, boundary=boundary)
+            return MultipartRequestStream(data, files, boundary=boundary)
         else:
-            return URLEncodedRequestContent(data)
+            return URLEncodedRequestStream(data)
     elif isinstance(data, (str, bytes)):
-        return BytesRequestContent(data)
+        return BytesRequestStream(data)
     else:
-        return StreamingRequestContent(data)
+        return IteratorRequestStream(data)

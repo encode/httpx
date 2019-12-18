@@ -2,7 +2,7 @@ import io
 
 import pytest
 
-from httpx.content import encode
+from httpx.streams import encode
 
 
 @pytest.mark.asyncio
