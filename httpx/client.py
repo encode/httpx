@@ -593,11 +593,11 @@ class Client:
             except StopIteration:
                 return response
             except BaseException as exc:
-                await response.close()
+                await response.aclose()
                 raise exc from None
             else:
                 request = next_request
-                await response.close()
+                await response.aclose()
 
     async def send_single_request(
         self,
