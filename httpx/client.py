@@ -5,7 +5,7 @@ from types import TracebackType
 
 import hstspreload
 
-from .auth import BasicAuth
+from .auth import Auth, AuthTypes, BasicAuth, FunctionAuth
 from .concurrency.base import ConcurrencyBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
@@ -31,10 +31,8 @@ from .exceptions import (
     RedirectLoop,
     TooManyRedirects,
 )
-from .middleware import Middleware
 from .models import (
     URL,
-    AuthTypes,
     Cookies,
     CookieTypes,
     Headers,
@@ -397,28 +395,18 @@ class Client:
         if request.url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
 
-        auth = self.auth if auth is None else auth
-        trust_env = self.trust_env if trust_env is None else trust_env
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        if not isinstance(auth, Middleware):
-            request = self.authenticate(request, trust_env, auth)
-            response = await self.send_handling_redirects(
-                request,
-                verify=verify,
-                cert=cert,
-                timeout=timeout,
-                allow_redirects=allow_redirects,
-            )
-        else:
-            get_response = functools.partial(
-                self.send_handling_redirects,
-                verify=verify,
-                cert=cert,
-                timeout=timeout,
-                allow_redirects=allow_redirects,
-            )
-            response = await auth(request, get_response)
+        auth = self.setup_auth(request, trust_env, auth)
+
+        response = await self.send_handling_redirects(
+            request,
+            auth=auth,
+            verify=verify,
+            cert=cert,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
+        )
 
         if not stream:
             try:
@@ -428,30 +416,36 @@ class Client:
 
         return response
 
-    def authenticate(
-        self, request: Request, trust_env: bool, auth: AuthTypes = None
-    ) -> "Request":
+    def setup_auth(
+        self, request: Request, trust_env: bool = None, auth: AuthTypes = None
+    ) -> Auth:
+        auth = self.auth if auth is None else auth
+        trust_env = self.trust_env if trust_env is None else trust_env
+
         if auth is not None:
             if isinstance(auth, tuple):
-                auth = BasicAuth(username=auth[0], password=auth[1])
-            return auth(request)
+                return BasicAuth(username=auth[0], password=auth[1])
+            elif isinstance(auth, Auth):
+                return auth
+            elif callable(auth):
+                return FunctionAuth(func=auth)
+            raise TypeError('Invalid "auth" argument.')
 
         username, password = request.url.username, request.url.password
         if username or password:
-            auth = BasicAuth(username=username, password=password)
-            return auth(request)
+            return BasicAuth(username=username, password=password)
 
         if trust_env and "Authorization" not in request.headers:
             credentials = self.netrc.get_credentials(request.url.authority)
             if credentials is not None:
-                auth = BasicAuth(username=credentials[0], password=credentials[1])
-                return auth(request)
+                return BasicAuth(username=credentials[0], password=credentials[1])
 
-        return request
+        return Auth()
 
     async def send_handling_redirects(
         self,
         request: Request,
+        auth: Auth,
         timeout: Timeout,
         verify: VerifyTypes = None,
         cert: CertTypes = None,
@@ -467,8 +461,8 @@ class Client:
             if request.url in (response.url for response in history):
                 raise RedirectLoop()
 
-            response = await self.send_single_request(
-                request, verify=verify, cert=cert, timeout=timeout
+            response = await self.send_handling_auth(
+                request, auth=auth, timeout=timeout, verify=verify, cert=cert
             )
             response.history = list(history)
 
@@ -483,6 +477,7 @@ class Client:
                 response.call_next = functools.partial(
                     self.send_handling_redirects,
                     request=request,
+                    auth=auth,
                     verify=verify,
                     cert=cert,
                     timeout=timeout,
@@ -580,6 +575,29 @@ class Client:
         if not request.content.can_replay():
             raise RedirectBodyUnavailable()
         return request.content
+
+    async def send_handling_auth(
+        self,
+        request: Request,
+        auth: Auth,
+        timeout: Timeout,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
+    ) -> Response:
+        auth_flow = auth(request)
+        request = next(auth_flow)
+        while True:
+            response = await self.send_single_request(request, timeout, verify, cert)
+            try:
+                next_request = auth_flow.send(response)
+            except StopIteration:
+                return response
+            except BaseException as exc:
+                await response.close()
+                raise exc from None
+            else:
+                request = next_request
+                await response.close()
 
     async def send_single_request(
         self,
