@@ -37,8 +37,11 @@ class Stream:
     async def aclose(self) -> None:
         pass
 
+    async def aread(self) -> bytes:
+        return b"".join([part async for part in self])
 
-class AsyncIteratorStream(Stream):
+
+class ResponseStream(Stream):
     def __init__(self, iterator: typing.AsyncIterator[bytes], close: typing.Callable):
         self.iterator = iterator
         self.close_func = close
@@ -71,12 +74,6 @@ class RequestStream(Stream):
         when we receive a redirect response.
         """
         return True
-
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        yield b""
-
-    async def aread(self) -> bytes:
-        return b"".join([part async for part in self])
 
 
 class BytesRequestStream(RequestStream):
