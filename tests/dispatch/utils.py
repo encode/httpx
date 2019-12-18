@@ -53,7 +53,9 @@ class MockHTTP2Server(BaseSocketStream):
         send, self.buffer = self.buffer[:n], self.buffer[n:]
         return send
 
-    def write_no_block(self, data: bytes) -> None:
+    async def write(self, data: bytes, timeout) -> None:
+        if not data:
+            return
         events = self.conn.receive_data(data)
         self.buffer += self.conn.data_to_send()
         for event in events:
@@ -73,12 +75,9 @@ class MockHTTP2Server(BaseSocketStream):
                     )
                     self.buffer += self.conn.data_to_send()
             elif isinstance(event, h2.events.StreamEnded):
-                self.stream_complete(event.stream_id)
+                await self.stream_complete(event.stream_id)
             elif isinstance(event, h2.events.RemoteSettingsChanged):
                 self.settings_changed.append(event)
-
-    async def write(self, data: bytes, timeout) -> None:
-        self.write_no_block(data)
 
     async def close(self) -> None:
         pass
@@ -102,7 +101,7 @@ class MockHTTP2Server(BaseSocketStream):
         """
         self.requests[stream_id][-1]["data"] += data
 
-    def stream_complete(self, stream_id):
+    async def stream_complete(self, stream_id):
         """
         Handler for when the HTTP request is completed.
         """
@@ -123,7 +122,7 @@ class MockHTTP2Server(BaseSocketStream):
 
         # Call out to the app.
         request = Request(method, url, headers=headers, data=data)
-        response = self.app(request)
+        response = await self.app(request)
 
         # Write the response to the buffer.
         status_code_bytes = str(response.status_code).encode("ascii")
@@ -192,12 +191,10 @@ class MockRawSocketStream(BaseSocketStream):
     def get_http_version(self) -> str:
         return "HTTP/1.1"
 
-    def write_no_block(self, data: bytes) -> None:
+    async def write(self, data: bytes, timeout) -> None:
+        if not data:
+            return
         self.backend.received_data.append(data)
-
-    async def write(self, data: bytes, timeout: Timeout = None) -> None:
-        if data:
-            self.write_no_block(data)
 
     async def read(self, n, timeout, flag=None) -> bytes:
         await sleep(self.backend.backend, 0)

@@ -13,6 +13,7 @@ import chardet
 import rfc3986
 
 from .config import USER_AGENT
+from .content import RequestData, RequestFiles, encode
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -31,7 +32,6 @@ from .exceptions import (
     ResponseNotRead,
     StreamConsumed,
 )
-from .multipart import multipart_encode
 from .status_codes import StatusCode
 from .utils import (
     flatten_queryparams,
@@ -75,26 +75,6 @@ AuthTypes = typing.Union[
 
 ProxiesTypes = typing.Union[
     URLTypes, "Dispatcher", typing.Dict[URLTypes, typing.Union[URLTypes, "Dispatcher"]]
-]
-
-RequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
-
-RequestFiles = typing.Dict[
-    str,
-    typing.Union[
-        # file (or str)
-        typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-        # (filename, file (or str))
-        typing.Tuple[
-            typing.Optional[str], typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-        ],
-        # (filename, file (or str), content_type)
-        typing.Tuple[
-            typing.Optional[str],
-            typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-            typing.Optional[str],
-        ],
-    ],
 ]
 
 ResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
@@ -619,50 +599,18 @@ class Request:
         if cookies:
             self._cookies = Cookies(cookies)
             self._cookies.set_cookie_header(self)
-        if data is None or isinstance(data, dict):
-            content, content_type = self.encode_data(data, files, json)
-            self.is_streaming = False
-            self.content = content
-            if content_type:
-                self.headers.setdefault("Content-Type", content_type)
-        elif isinstance(data, (str, bytes)):
-            data = data.encode("utf-8") if isinstance(data, str) else data
-            self.is_streaming = False
-            self.content = data
-        else:
-            assert hasattr(data, "__aiter__")
-            self.is_streaming = True
-            self.content_aiter = data
+        self.content = encode(data, files, json)
         self.prepare()
 
-    def encode_data(
-        self, data: dict = None, files: RequestFiles = None, json: typing.Any = None
-    ) -> typing.Tuple[bytes, str]:
-        if json is not None:
-            content = jsonlib.dumps(json).encode("utf-8")
-            content_type = "application/json"
-        elif files is not None:
-            content, content_type = multipart_encode(data or {}, files)
-        elif data is not None:
-            content = urlencode(data, doseq=True).encode("utf-8")
-            content_type = "application/x-www-form-urlencoded"
-        else:
-            content = b""
-            content_type = ""
-        return content, content_type
-
     def prepare(self) -> None:
-        content: typing.Optional[bytes] = getattr(self, "content", None)
-        is_streaming = getattr(self, "is_streaming", False)
+        for key, value in self.content.get_headers().items():
+            self.headers.setdefault(key, value)
 
         auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
 
         has_host = "host" in self.headers
         has_user_agent = "user-agent" in self.headers
         has_accept = "accept" in self.headers
-        has_content_length = (
-            "content-length" in self.headers or "transfer-encoding" in self.headers
-        )
         has_accept_encoding = "accept-encoding" in self.headers
         has_connection = "connection" in self.headers
 
@@ -675,12 +623,6 @@ class Request:
             auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
         if not has_accept:
             auto_headers.append((b"accept", b"*/*"))
-        if not has_content_length:
-            if is_streaming:
-                auto_headers.append((b"transfer-encoding", b"chunked"))
-            elif content:
-                content_length = str(len(content)).encode()
-                auto_headers.append((b"content-length", content_length))
         if not has_accept_encoding:
             auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
         if not has_connection:
@@ -704,16 +646,11 @@ class Request:
         """
         Read and return the request content.
         """
-        if not hasattr(self, "content"):
-            self.content = b"".join([part async for part in self.stream()])
-        return self.content
+        return await self.content.aread()
 
     async def stream(self) -> typing.AsyncIterator[bytes]:
-        if self.is_streaming:
-            async for part in self.content_aiter:
-                yield part
-        elif self.content:
-            yield self.content
+        async for part in self.content:
+            yield part
 
 
 class Response:

@@ -95,9 +95,12 @@ def iter_fields(data: dict, files: dict) -> typing.Iterator[Field]:
         yield FileField(name=name, value=value)
 
 
-def multipart_encode(data: dict, files: dict) -> typing.Tuple[bytes, str]:
+def multipart_encode(
+    data: dict, files: dict, boundary: bytes = None
+) -> typing.Tuple[bytes, str]:
     body = BytesIO()
-    boundary = binascii.hexlify(os.urandom(16))
+    if boundary is None:
+        boundary = binascii.hexlify(os.urandom(16))
 
     for field in iter_fields(data, files):
         body.write(b"--%s\r\n" % boundary)

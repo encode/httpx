@@ -18,16 +18,18 @@ def test_content_length_header():
     assert request.headers["Content-Length"] == "8"
 
 
-def test_url_encoded_data():
+@pytest.mark.asyncio
+async def test_url_encoded_data():
     request = httpx.Request("POST", "http://example.org", data={"test": "123"})
     assert request.headers["Content-Type"] == "application/x-www-form-urlencoded"
-    assert request.content == b"test=123"
+    assert await request.content.aread() == b"test=123"
 
 
-def test_json_encoded_data():
+@pytest.mark.asyncio
+async def test_json_encoded_data():
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
     assert request.headers["Content-Type"] == "application/json"
-    assert request.content == b'{"test": 123}'
+    assert await request.content.aread() == b'{"test": 123}'
 
 
 def test_transfer_encoding_header():
