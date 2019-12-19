@@ -80,17 +80,11 @@ class ASGIDispatch(Dispatcher):
         response_started = False
         response_complete = False
 
-        async def bytes_generator(
-            request: Request,
-        ) -> typing.AsyncGenerator[bytes, None]:
-            async for chunk in request.stream:
-                yield chunk
-
-        gen = bytes_generator(request)
+        request_body_chunks = request.stream.__aiter__()
 
         async def receive() -> dict:
             try:
-                body = await gen.__anext__()
+                body = await request_body_chunks.__anext__()
             except StopAsyncIteration:
                 return {"type": "http.request", "body": b"", "more_body": False}
             return {"type": "http.request", "body": body, "more_body": True}

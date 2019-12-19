@@ -494,11 +494,11 @@ class Client:
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
         headers = self.redirect_headers(request, url, method)
-        stream = self.redirect_content(request, method)
+        stream = self.redirect_stream(request, method)
         cookies = Cookies(self.cookies)
-        request = Request(method=method, url=url, headers=headers, cookies=cookies)
-        request.stream = stream
-        return request
+        return Request(
+            method=method, url=url, headers=headers, cookies=cookies, stream=stream
+        )
 
     def redirect_method(self, request: Request, response: Response) -> str:
         """
@@ -566,7 +566,9 @@ class Client:
 
         return headers
 
-    def redirect_content(self, request: Request, method: str) -> RequestStream:
+    def redirect_stream(
+        self, request: Request, method: str
+    ) -> typing.Optional[RequestStream]:
         """
         Return the body that should be used for the redirect request.
         """

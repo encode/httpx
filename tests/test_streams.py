@@ -7,20 +7,22 @@ from httpx.streams import encode
 
 @pytest.mark.asyncio
 async def test_empty_content():
-    content = encode()
+    stream = encode()
+    content = b"".join([part async for part in stream])
 
-    assert content.can_replay()
-    assert content.get_headers() == {}
-    assert await content.aread() == b""
+    assert stream.can_replay()
+    assert stream.get_headers() == {}
+    assert content == b""
 
 
 @pytest.mark.asyncio
 async def test_bytes_content():
-    content = encode(data=b"Hello, world!")
+    stream = encode(data=b"Hello, world!")
+    content = b"".join([part async for part in stream])
 
-    assert content.can_replay()
-    assert content.get_headers() == {"Content-Length": "13"}
-    assert await content.aread() == b"Hello, world!"
+    assert stream.can_replay()
+    assert stream.get_headers() == {"Content-Length": "13"}
+    assert content == b"Hello, world!"
 
 
 @pytest.mark.asyncio
@@ -29,48 +31,52 @@ async def test_aiterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    content = encode(data=hello_world())
+    stream = encode(data=hello_world())
+    content = b"".join([part async for part in stream])
 
-    assert not content.can_replay()
-    assert content.get_headers() == {"Transfer-Encoding": "chunked"}
-    assert await content.aread() == b"Hello, world!"
+    assert not stream.can_replay()
+    assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
+    assert content == b"Hello, world!"
 
 
 @pytest.mark.asyncio
 async def test_json_content():
-    content = encode(json={"Hello": "world!"})
+    stream = encode(json={"Hello": "world!"})
+    content = b"".join([part async for part in stream])
 
-    assert content.can_replay()
-    assert content.get_headers() == {
+    assert stream.can_replay()
+    assert stream.get_headers() == {
         "Content-Length": "19",
         "Content-Type": "application/json",
     }
-    assert await content.aread() == b'{"Hello": "world!"}'
+    assert content == b'{"Hello": "world!"}'
 
 
 @pytest.mark.asyncio
 async def test_urlencoded_content():
-    content = encode(data={"Hello": "world!"})
+    stream = encode(data={"Hello": "world!"})
+    content = b"".join([part async for part in stream])
 
-    assert content.can_replay()
-    assert content.get_headers() == {
+    assert stream.can_replay()
+    assert stream.get_headers() == {
         "Content-Length": "14",
         "Content-Type": "application/x-www-form-urlencoded",
     }
-    assert await content.aread() == b"Hello=world%21"
+    assert content == b"Hello=world%21"
 
 
 @pytest.mark.asyncio
 async def test_multipart_files_content():
     files = {"file": io.BytesIO(b"<file content>")}
-    content = encode(files=files, boundary=b"+++")
+    stream = encode(files=files, boundary=b"+++")
+    content = b"".join([part async for part in stream])
 
-    assert content.can_replay()
-    assert content.get_headers() == {
+    assert stream.can_replay()
+    assert stream.get_headers() == {
         "Content-Length": "138",
         "Content-Type": "multipart/form-data; boundary=+++",
     }
-    assert await content.aread() == b"".join(
+    assert content == b"".join(
         [
             b"--+++\r\n",
             b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
@@ -86,14 +92,15 @@ async def test_multipart_files_content():
 async def test_multipart_data_and_files_content():
     data = {"message": "Hello, world!"}
     files = {"file": io.BytesIO(b"<file content>")}
-    content = encode(data=data, files=files, boundary=b"+++")
+    stream = encode(data=data, files=files, boundary=b"+++")
+    content = b"".join([part async for part in stream])
 
-    assert content.can_replay()
-    assert content.get_headers() == {
+    assert stream.can_replay()
+    assert stream.get_headers() == {
         "Content-Length": "210",
         "Content-Type": "multipart/form-data; boundary=+++",
     }
-    assert await content.aread() == b"".join(
+    assert content == b"".join(
         [
             b"--+++\r\n",
             b'Content-Disposition: form-data; name="message"\r\n',

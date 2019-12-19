@@ -216,7 +216,7 @@ class HTTP2Stream:
             status_code=status_code,
             http_version="HTTP/2",
             headers=headers,
-            content=stream,
+            stream=stream,
             request=request,
         )
 

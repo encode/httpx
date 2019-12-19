@@ -190,7 +190,7 @@ async def test_stream_interface_after_read():
 
 @pytest.mark.asyncio
 async def test_streaming_response():
-    response = httpx.Response(200, content=async_streaming_body())
+    response = httpx.Response(200, stream=async_streaming_body())
 
     assert response.status_code == 200
     assert not response.is_closed
@@ -204,7 +204,7 @@ async def test_streaming_response():
 
 @pytest.mark.asyncio
 async def test_cannot_read_after_stream_consumed():
-    response = httpx.Response(200, content=async_streaming_body())
+    response = httpx.Response(200, stream=async_streaming_body())
 
     content = b""
     async for part in response.aiter_bytes():
@@ -216,7 +216,7 @@ async def test_cannot_read_after_stream_consumed():
 
 @pytest.mark.asyncio
 async def test_cannot_read_after_response_closed():
-    response = httpx.Response(200, content=async_streaming_body())
+    response = httpx.Response(200, stream=async_streaming_body())
 
     await response.aclose()
 

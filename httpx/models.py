@@ -31,7 +31,7 @@ from .exceptions import (
     StreamConsumed,
 )
 from .status_codes import StatusCode
-from .streams import RequestData, RequestFiles, Stream, encode
+from .streams import RequestData, RequestFiles, RequestStream, Stream, encode
 from .utils import (
     flatten_queryparams,
     guess_json_utf,
@@ -583,6 +583,7 @@ class Request:
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
+        stream: RequestStream = None,
     ):
         self.method = method.upper()
         self.url = URL(url, params=params)
@@ -590,7 +591,12 @@ class Request:
         if cookies:
             self._cookies = Cookies(cookies)
             self._cookies.set_cookie_header(self)
-        self.stream = encode(data, files, json)
+
+        if stream is not None:
+            self.stream = stream
+        else:
+            self.stream = encode(data, files, json)
+
         self.prepare()
 
     def prepare(self) -> None:
@@ -633,12 +639,6 @@ class Request:
         url = str(self.url)
         return f"<{class_name}({self.method!r}, {url!r})>"
 
-    async def read(self) -> bytes:
-        """
-        Read and return the request content.
-        """
-        return await self.stream.aread()
-
 
 class Response:
     def __init__(
@@ -647,7 +647,8 @@ class Response:
         *,
         http_version: str = None,
         headers: HeaderTypes = None,
-        content: typing.Union[bytes, Stream] = None,
+        stream: Stream = None,
+        content: bytes = None,
         request: Request = None,
         history: typing.List["Response"] = None,
         elapsed: datetime.timedelta = None,
@@ -661,14 +662,14 @@ class Response:
 
         self.history = [] if history is None else list(history)
 
-        if content is None or isinstance(content, bytes):
+        if stream is None:
             self.is_closed = True
             self.is_stream_consumed = True
             self._raw_content = content or b""
         else:
             self.is_closed = False
             self.is_stream_consumed = False
-            self._raw_stream = content
+            self._raw_stream = stream
 
     @property
     def reason_phrase(self) -> str:

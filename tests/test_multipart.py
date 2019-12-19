@@ -21,7 +21,7 @@ class MockDispatch(Dispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> httpx.Response:
-        content = await request.read()
+        content = b"".join([part async for part in request.stream])
         return httpx.Response(200, content=content)
 
 
