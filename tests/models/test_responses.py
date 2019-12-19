@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 
 import httpx
-from httpx.streams import ByteStream
+from httpx.streams import AsyncIteratorStream, ByteStream
 
 
 def streaming_body():
@@ -189,7 +189,8 @@ async def test_stream_interface_after_read():
 
 @pytest.mark.asyncio
 async def test_streaming_response():
-    response = httpx.Response(200, stream=async_streaming_body())
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream)
 
     assert response.status_code == 200
     assert not response.is_closed
@@ -203,7 +204,8 @@ async def test_streaming_response():
 
 @pytest.mark.asyncio
 async def test_cannot_read_after_stream_consumed():
-    response = httpx.Response(200, stream=async_streaming_body())
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream)
 
     content = b""
     async for part in response.aiter_bytes():
@@ -215,7 +217,8 @@ async def test_cannot_read_after_stream_consumed():
 
 @pytest.mark.asyncio
 async def test_cannot_read_after_response_closed():
-    response = httpx.Response(200, stream=async_streaming_body())
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream)
 
     await response.aclose()
 
