@@ -650,7 +650,7 @@ class Request:
         """
         Read and return the request content.
         """
-        return await self.stream.aread()
+        return b"".join([part async for part in self.stream])
 
 
 class Response:

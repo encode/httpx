@@ -37,9 +37,6 @@ class Stream:
     async def aclose(self) -> None:
         pass
 
-    async def aread(self) -> bytes:
-        return b"".join([part async for part in self])
-
 
 class ResponseStream(Stream):
     def __init__(self, iterator: typing.AsyncIterator[bytes], close: typing.Callable):
