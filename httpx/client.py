@@ -338,7 +338,8 @@ class Client:
         """
         url = self.base_url.join(relative_url=url)
         if url.scheme == "http" and hstspreload.in_hsts_preload(url.host):
-            url = url.copy_with(scheme="https")
+            port = None if url.port == 80 else url.port
+            url = url.copy_with(scheme="https", port=port)
         return url
 
     def merge_cookies(
