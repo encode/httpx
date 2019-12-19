@@ -82,7 +82,7 @@ async def test_streaming():
         yield compressor.flush()
 
     headers = [(b"Content-Encoding", b"gzip")]
-    response = httpx.Response(200, headers=headers, content=compress(body))
+    response = httpx.Response(200, headers=headers, stream=compress(body))
     assert not hasattr(response, "body")
     assert await response.read() == body
 
@@ -137,7 +137,7 @@ async def test_text_decoder(data, encoding):
         for chunk in data:
             yield chunk
 
-    response = httpx.Response(200, content=iterator())
+    response = httpx.Response(200, stream=iterator())
     await response.read()
     assert response.text == (b"".join(data)).decode(encoding)
 
@@ -152,7 +152,7 @@ async def test_text_decoder_known_encoding():
     response = httpx.Response(
         200,
         headers=[(b"Content-Type", b"text/html; charset=shift-jis")],
-        content=iterator(),
+        stream=iterator(),
     )
 
     await response.read()

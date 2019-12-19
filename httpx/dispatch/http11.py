@@ -59,7 +59,7 @@ class HTTP11Connection(OpenConnection):
             status_code=status_code,
             http_version=http_version,
             headers=headers,
-            content=stream,
+            stream=stream,
             request=request,
         )
 
