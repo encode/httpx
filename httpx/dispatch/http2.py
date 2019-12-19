@@ -14,7 +14,7 @@ from ..concurrency.base import (
 from ..config import Timeout
 from ..exceptions import ProtocolError
 from ..models import Request, Response
-from ..streams import ResponseStream
+from ..streams import AsyncIteratorStream
 from ..utils import get_logger
 from .base import OpenConnection
 
@@ -210,7 +210,9 @@ class HTTP2Stream:
 
         # Receive the response.
         status_code, headers = await self.receive_response(timeout)
-        stream = ResponseStream(iterator=self.body_iter(timeout), close=self.close)
+        stream = AsyncIteratorStream(
+            aiterator=self.body_iter(timeout), close_func=self.close
+        )
 
         return Response(
             status_code=status_code,

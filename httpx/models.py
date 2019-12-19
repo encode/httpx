@@ -31,14 +31,7 @@ from .exceptions import (
     StreamConsumed,
 )
 from .status_codes import StatusCode
-from .streams import (
-    ByteStream,
-    RequestData,
-    RequestFiles,
-    RequestStream,
-    Stream,
-    encode,
-)
+from .streams import ByteStream, ContentStream, RequestData, RequestFiles, encode
 from .utils import (
     flatten_queryparams,
     guess_json_utf,
@@ -590,7 +583,7 @@ class Request:
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
-        stream: RequestStream = None,
+        stream: ContentStream = None,
     ):
         self.method = method.upper()
         self.url = URL(url, params=params)
@@ -654,7 +647,7 @@ class Response:
         *,
         http_version: str = None,
         headers: HeaderTypes = None,
-        stream: Stream = None,
+        stream: ContentStream = None,
         content: bytes = None,
         request: Request = None,
         history: typing.List["Response"] = None,
@@ -693,13 +686,7 @@ class Response:
     @property
     def content(self) -> bytes:
         if not hasattr(self, "_content"):
-            if hasattr(self, "_raw_content"):
-                raw_content = self._raw_content  # type: ignore
-                content = self.decoder.decode(raw_content)
-                content += self.decoder.flush()
-                self._content = content
-            else:
-                raise ResponseNotRead()
+            raise ResponseNotRead()
         return self._content
 
     @property
