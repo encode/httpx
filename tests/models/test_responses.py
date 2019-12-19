@@ -5,6 +5,7 @@ from unittest import mock
 import pytest
 
 import httpx
+from httpx.streams import ByteStream
 
 
 def streaming_body():
@@ -134,7 +135,8 @@ async def test_read_response():
 
 @pytest.mark.asyncio
 async def test_raw_interface():
-    response = httpx.Response(200, content=b"Hello, world!")
+    stream = ByteStream(b"Hello, world!")
+    response = httpx.Response(200, stream=stream)
 
     raw = b""
     async for part in response.aiter_raw():
@@ -144,7 +146,8 @@ async def test_raw_interface():
 
 @pytest.mark.asyncio
 async def test_bytes_interface():
-    response = httpx.Response(200, content=b"Hello, world!")
+    stream = ByteStream(b"Hello, world!")
+    response = httpx.Response(200, stream=stream)
 
     content = b""
     async for part in response.aiter_bytes():
@@ -154,9 +157,8 @@ async def test_bytes_interface():
 
 @pytest.mark.asyncio
 async def test_text_interface():
-    response = httpx.Response(200, content=b"Hello, world!")
-
-    await response.aread()
+    stream = ByteStream(b"Hello, world!")
+    response = httpx.Response(200, stream=stream)
 
     content = ""
     async for part in response.aiter_text():
@@ -166,9 +168,8 @@ async def test_text_interface():
 
 @pytest.mark.asyncio
 async def test_lines_interface():
-    response = httpx.Response(200, content=b"Hello,\nworld!")
-
-    await response.aread()
+    stream = ByteStream(b"Hello,\nworld!")
+    response = httpx.Response(200, stream=stream)
 
     content = []
     async for line in response.aiter_lines():
@@ -178,14 +179,12 @@ async def test_lines_interface():
 
 @pytest.mark.asyncio
 async def test_stream_interface_after_read():
-    response = httpx.Response(200, content=b"Hello, world!")
+    stream = ByteStream(b"Hello, world!")
+    response = httpx.Response(200, stream=stream)
 
     await response.aread()
-
-    content = b""
-    async for part in response.aiter_bytes():
-        content += part
-    assert content == b"Hello, world!"
+    with pytest.raises(httpx.StreamConsumed):
+        b"".join([part async for part in response.aiter_bytes()])
 
 
 @pytest.mark.asyncio

@@ -31,6 +31,12 @@ RequestFiles = typing.Dict[
 
 
 class Stream:
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield b""
+
+    def close(self) -> None:
+        pass
+
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield b""
 
@@ -85,8 +91,14 @@ class BytesRequestStream(RequestStream):
         content_length = str(len(self.body))
         return {"Content-Length": content_length}
 
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield self.body
+
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield self.body
+
+
+ByteStream = BytesRequestStream
 
 
 class IteratorRequestStream(RequestStream):

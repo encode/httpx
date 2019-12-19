@@ -31,7 +31,14 @@ from .exceptions import (
     StreamConsumed,
 )
 from .status_codes import StatusCode
-from .streams import RequestData, RequestFiles, RequestStream, Stream, encode
+from .streams import (
+    ByteStream,
+    RequestData,
+    RequestFiles,
+    RequestStream,
+    Stream,
+    encode,
+)
 from .utils import (
     flatten_queryparams,
     guess_json_utf,
@@ -662,14 +669,13 @@ class Response:
 
         self.history = [] if history is None else list(history)
 
-        if stream is None:
-            self.is_closed = True
-            self.is_stream_consumed = True
-            self._raw_content = content or b""
-        else:
-            self.is_closed = False
-            self.is_stream_consumed = False
+        self.is_closed = False
+        self.is_stream_consumed = False
+        if stream is not None:
             self._raw_stream = stream
+        else:
+            self._raw_stream = ByteStream(content or b"")
+            self.read()
 
     @property
     def reason_phrase(self) -> str:
@@ -850,6 +856,68 @@ class Response:
     def next(self, call_next: typing.Callable) -> None:
         self._call_next = call_next
 
+    # Streaming API (sync)
+
+    def read(self) -> bytes:
+        """
+        Read and return the response content.
+        """
+        if not hasattr(self, "_content"):
+            self._content = b"".join([part for part in self.iter_bytes()])
+        return self._content
+
+    def iter_bytes(self) -> typing.Iterator[bytes]:
+        """
+        A byte-iterator over the decoded response content.
+        This allows us to handle gzip, deflate, and brotli encoded responses.
+        """
+        for chunk in self.iter_raw():
+            yield self.decoder.decode(chunk)
+        yield self.decoder.flush()
+
+    def iter_text(self) -> typing.Iterator[str]:
+        """
+        A str-iterator over the decoded response content
+        that handles both gzip, deflate, etc but also detects the content's
+        string encoding.
+        """
+        decoder = TextDecoder(encoding=self.charset_encoding)
+        for chunk in self.iter_bytes():
+            yield decoder.decode(chunk)
+        yield decoder.flush()
+
+    def iter_lines(self) -> typing.Iterator[str]:
+        decoder = LineDecoder()
+        for text in self.iter_text():
+            for line in decoder.decode(text):
+                yield line
+        for line in decoder.flush():
+            yield line
+
+    def iter_raw(self) -> typing.Iterator[bytes]:
+        """
+        A byte-iterator over the raw response content.
+        """
+        if self.is_stream_consumed:
+            raise StreamConsumed()
+        if self.is_closed:
+            raise ResponseClosed()
+
+        self.is_stream_consumed = True
+        for part in self._raw_stream:
+            yield part
+        self.close()
+
+    def close(self) -> None:
+        """
+        Close the response and release the connection.
+        Automatically called if the response body is read to completion.
+        """
+        if not self.is_closed:
+            self.is_closed = True
+            if hasattr(self, "_raw_stream"):
+                self._raw_stream.close()
+
     # Streaming API (async)
 
     async def aread(self) -> bytes:
@@ -865,12 +933,9 @@ class Response:
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
         """
-        if hasattr(self, "_content"):
-            yield self._content
-        else:
-            async for chunk in self.aiter_raw():
-                yield self.decoder.decode(chunk)
-            yield self.decoder.flush()
+        async for chunk in self.aiter_raw():
+            yield self.decoder.decode(chunk)
+        yield self.decoder.flush()
 
     async def aiter_text(self) -> typing.AsyncIterator[str]:
         """
@@ -895,18 +960,15 @@ class Response:
         """
         A byte-iterator over the raw response content.
         """
-        if hasattr(self, "_raw_content"):
-            yield self._raw_content
-        else:
-            if self.is_stream_consumed:
-                raise StreamConsumed()
-            if self.is_closed:
-                raise ResponseClosed()
+        if self.is_stream_consumed:
+            raise StreamConsumed()
+        if self.is_closed:
+            raise ResponseClosed()
 
-            self.is_stream_consumed = True
-            async for part in self._raw_stream:
-                yield part
-            await self.aclose()
+        self.is_stream_consumed = True
+        async for part in self._raw_stream:
+            yield part
+        await self.aclose()
 
     async def aclose(self) -> None:
         """
