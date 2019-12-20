@@ -1,6 +1,7 @@
 import typing
 
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
+from ..content_streams import ByteStream
 from ..models import Request, Response
 from .base import Dispatcher
 
@@ -121,10 +122,12 @@ class ASGIDispatch(Dispatcher):
         assert status_code is not None
         assert headers is not None
 
+        stream = ByteStream(b"".join(body_parts))
+
         return Response(
             status_code=status_code,
             http_version="HTTP/1.1",
             headers=headers,
-            content=b"".join(body_parts),
+            stream=stream,
             request=request,
         )

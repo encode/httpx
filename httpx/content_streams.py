@@ -30,36 +30,10 @@ RequestFiles = typing.Dict[
 ]
 
 
-class Stream:
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        yield b""
-
-    async def aclose(self) -> None:
-        pass
-
-
-class ResponseStream(Stream):
-    def __init__(self, iterator: typing.AsyncIterator[bytes], close: typing.Callable):
-        self.iterator = iterator
-        self.close_func = close
-
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        async for chunk in self.iterator:
-            yield chunk
-
-    async def aclose(self) -> None:
-        await self.close_func()
-
-
-class RequestStream(Stream):
-    """
-    Base class for streaming request content.
-    Defaults to a "no request body" implementation.
-    """
-
+class ContentStream:
     def get_headers(self) -> typing.Dict[str, str]:
         """
-        Return a dictionary of request headers that are implied by the encoding.
+        Return a dictionary of headers that are implied by the encoding.
         """
         return {}
 
@@ -67,13 +41,19 @@ class RequestStream(Stream):
         """
         Return `True` if `__aiter__` can be called multiple times.
 
-        We need this in order to determine if we can re-issue a request body
-        when we receive a redirect response.
+        We need this in cases such determining if we can re-issue a request
+        body when we receive a redirect response.
         """
         return True
 
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        yield b""
 
-class BytesRequestStream(RequestStream):
+    async def aclose(self) -> None:
+        pass
+
+
+class ByteStream(ContentStream):
     """
     Request content encoded as plain bytes.
     """
@@ -82,6 +62,8 @@ class BytesRequestStream(RequestStream):
         self.body = body.encode("utf-8") if isinstance(body, str) else body
 
     def get_headers(self) -> typing.Dict[str, str]:
+        if not self.body:
+            return {}
         content_length = str(len(self.body))
         return {"Content-Length": content_length}
 
@@ -89,13 +71,16 @@ class BytesRequestStream(RequestStream):
         yield self.body
 
 
-class IteratorRequestStream(RequestStream):
+class AsyncIteratorStream(ContentStream):
     """
     Request content encoded as plain bytes, using an async byte iterator.
     """
 
-    def __init__(self, aiterator: typing.AsyncIterator[bytes]) -> None:
+    def __init__(
+        self, aiterator: typing.AsyncIterator[bytes], close_func: typing.Callable = None
+    ) -> None:
         self.aiterator = aiterator
+        self.close_func = close_func
 
     def can_replay(self) -> bool:
         return False
@@ -107,8 +92,12 @@ class IteratorRequestStream(RequestStream):
         async for part in self.aiterator:
             yield part
 
+    async def aclose(self) -> None:
+        if self.close_func is not None:
+            await self.close_func()
 
-class JSONRequestStream(RequestStream):
+
+class JSONStream(ContentStream):
     """
     Request content encoded as JSON.
     """
@@ -125,7 +114,7 @@ class JSONRequestStream(RequestStream):
         yield self.body
 
 
-class URLEncodedRequestStream(RequestStream):
+class URLEncodedStream(ContentStream):
     """
     Request content as URL encoded form data.
     """
@@ -142,7 +131,7 @@ class URLEncodedRequestStream(RequestStream):
         yield self.body
 
 
-class MultipartRequestStream(RequestStream):
+class MultipartStream(ContentStream):
     """
     Request content as multipart encoded form data.
     """
@@ -267,10 +256,10 @@ def encode(
     files: RequestFiles = None,
     json: typing.Any = None,
     boundary: bytes = None,
-) -> RequestStream:
+) -> ContentStream:
     """
     Handles encoding the given `data`, `files`, and `json`, returning
-    a `RequestStream` implementation which provides a byte iterator onto
+    a `ContentStream` implementation which provides a byte iterator onto
     the content, as well as `.is_rewindable()` and `.get_headers()` interfaces.
 
     The `boundary` argument is also included for reproducible test cases
@@ -278,17 +267,17 @@ def encode(
     """
     if data is None:
         if json is not None:
-            return JSONRequestStream(json)
+            return JSONStream(json=json)
         elif files:
-            return MultipartRequestStream({}, files, boundary=boundary)
+            return MultipartStream(data={}, files=files, boundary=boundary)
         else:
-            return RequestStream()
+            return ByteStream(body=b"")
     elif isinstance(data, dict):
         if files is not None:
-            return MultipartRequestStream(data, files, boundary=boundary)
+            return MultipartStream(data=data, files=files, boundary=boundary)
         else:
-            return URLEncodedRequestStream(data)
+            return URLEncodedStream(data=data)
     elif isinstance(data, (str, bytes)):
-        return BytesRequestStream(data)
+        return ByteStream(body=data)
     else:
-        return IteratorRequestStream(data)
+        return AsyncIteratorStream(aiterator=data)

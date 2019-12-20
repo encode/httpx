@@ -13,6 +13,7 @@ import chardet
 import rfc3986
 
 from .config import USER_AGENT
+from .content_streams import ContentStream, RequestData, RequestFiles, encode
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -32,7 +33,6 @@ from .exceptions import (
     StreamConsumed,
 )
 from .status_codes import StatusCode
-from .streams import RequestData, RequestFiles, RequestStream, Stream, encode
 from .utils import (
     flatten_queryparams,
     guess_json_utf,
@@ -590,7 +590,7 @@ class Request:
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
-        stream: RequestStream = None,
+        stream: ContentStream = None,
     ):
         self.method = method.upper()
         self.url = URL(url, params=params)
@@ -660,7 +660,7 @@ class Response:
         *,
         http_version: str = None,
         headers: HeaderTypes = None,
-        stream: Stream = None,
+        stream: ContentStream = None,
         content: bytes = None,
         request: Request = None,
         history: typing.List["Response"] = None,

@@ -8,8 +8,8 @@ import pytest
 
 import httpx
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx.content_streams import encode
 from httpx.dispatch.base import Dispatcher
-from httpx.streams import encode
 from httpx.utils import format_form_param
 
 

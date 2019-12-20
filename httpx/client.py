@@ -19,6 +19,7 @@ from .config import (
     UnsetType,
     VerifyTypes,
 )
+from .content_streams import ContentStream
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import Dispatcher
 from .dispatch.connection_pool import ConnectionPool
@@ -48,7 +49,6 @@ from .models import (
     URLTypes,
 )
 from .status_codes import codes
-from .streams import RequestStream
 from .utils import ElapsedTimer, NetRCInfo, get_environment_proxies, get_logger
 
 logger = get_logger(__name__)
@@ -573,12 +573,12 @@ class Client:
 
     def redirect_stream(
         self, request: Request, method: str
-    ) -> typing.Optional[RequestStream]:
+    ) -> typing.Optional[ContentStream]:
         """
         Return the body that should be used for the redirect request.
         """
         if method != request.method and method == "GET":
-            return RequestStream()
+            return None
         if not request.stream.can_replay():
             raise RedirectBodyUnavailable()
         return request.stream
