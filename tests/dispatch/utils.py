@@ -6,7 +6,7 @@ import h2.connection
 import h2.events
 
 from httpx import Request, Timeout
-from httpx.concurrency.base import BaseSocketStream, lookup_backend
+from httpx.backends.base import BaseSocketStream, lookup_backend
 from tests.concurrency import sleep
 
 

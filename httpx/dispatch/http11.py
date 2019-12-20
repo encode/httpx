@@ -2,7 +2,7 @@ import typing
 
 import h11
 
-from ..concurrency.base import BaseSocketStream
+from ..backends.base import BaseSocketStream
 from ..config import Timeout
 from ..content_streams import AsyncIteratorStream
 from ..exceptions import ConnectionClosed, ProtocolError
