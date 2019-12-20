@@ -3,7 +3,7 @@ import typing
 import warnings
 from base64 import b64encode
 
-from ..concurrency.base import ConcurrencyBackend
+from ..backends.base import ConcurrencyBackend
 from ..config import DEFAULT_POOL_LIMITS, CertTypes, PoolLimits, Timeout, VerifyTypes
 from ..exceptions import ProxyError
 from ..models import URL, Headers, HeaderTypes, Origin, Request, Response, URLTypes
@@ -163,8 +163,9 @@ class HTTPProxy(ConnectionPool):
                 response=proxy_response,
             )
         else:
-            proxy_response.on_close = None
-            await proxy_response.read()
+            # Hack to ingest the response, without closing it.
+            async for chunk in proxy_response._raw_stream:
+                pass
 
         return connection
 

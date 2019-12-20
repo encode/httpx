@@ -13,6 +13,7 @@ import chardet
 import rfc3986
 
 from .config import USER_AGENT
+from .content_streams import ContentStream, RequestData, RequestFiles, encode
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -31,7 +32,6 @@ from .exceptions import (
     ResponseNotRead,
     StreamConsumed,
 )
-from .multipart import multipart_encode
 from .status_codes import StatusCode
 from .utils import (
     flatten_queryparams,
@@ -67,37 +67,9 @@ HeaderTypes = typing.Union[
 
 CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 
-AuthTypes = typing.Union[
-    typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
-    typing.Callable[["Request"], "Request"],
-    "BaseMiddleware",
-]
-
 ProxiesTypes = typing.Union[
     URLTypes, "Dispatcher", typing.Dict[URLTypes, typing.Union[URLTypes, "Dispatcher"]]
 ]
-
-RequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
-
-RequestFiles = typing.Dict[
-    str,
-    typing.Union[
-        # file (or str)
-        typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-        # (filename, file (or str))
-        typing.Tuple[
-            typing.Optional[str], typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-        ],
-        # (filename, file (or str), content_type)
-        typing.Tuple[
-            typing.Optional[str],
-            typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-            typing.Optional[str],
-        ],
-    ],
-]
-
-ResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 
 class URL:
@@ -116,9 +88,14 @@ class URL:
         if self.is_absolute_url:
             self._uri_reference = self._uri_reference.normalize()
 
-        # Add any query parameters.
+        # Add any query parameters, merging with any in the URL if needed.
         if params:
-            query_string = str(QueryParams(params))
+            if self._uri_reference.query:
+                url_params = QueryParams(self._uri_reference.query)
+                url_params.update(params)
+                query_string = str(url_params)
+            else:
+                query_string = str(QueryParams(params))
             self._uri_reference = self._uri_reference.copy_with(query=query_string)
 
         # Enforce absolute URLs by default.
@@ -138,6 +115,10 @@ class URL:
 
     @property
     def authority(self) -> str:
+        port_str = self._uri_reference.port
+        default_port_str = {"https": "443", "http": "80"}.get(self.scheme, "")
+        if port_str is None or port_str == default_port_str:
+            return self._uri_reference.host or ""
         return self._uri_reference.authority or ""
 
     @property
@@ -229,9 +210,9 @@ class URL:
             authority = host
             if port is not None:
                 authority += f":{port}"
-            if username is not None:
+            if username:
                 userpass = username
-                if password is not None:
+                if password:
                     userpass += f":{password}"
                 authority = f"{userpass}@{authority}"
 
@@ -612,6 +593,7 @@ class Request:
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
+        stream: ContentStream = None,
     ):
         self.method = method.upper()
         self.url = URL(url, params=params)
@@ -619,50 +601,23 @@ class Request:
         if cookies:
             self._cookies = Cookies(cookies)
             self._cookies.set_cookie_header(self)
-        if data is None or isinstance(data, dict):
-            content, content_type = self.encode_data(data, files, json)
-            self.is_streaming = False
-            self.content = content
-            if content_type:
-                self.headers.setdefault("Content-Type", content_type)
-        elif isinstance(data, (str, bytes)):
-            data = data.encode("utf-8") if isinstance(data, str) else data
-            self.is_streaming = False
-            self.content = data
+
+        if stream is not None:
+            self.stream = stream
         else:
-            assert hasattr(data, "__aiter__")
-            self.is_streaming = True
-            self.content_aiter = data
+            self.stream = encode(data, files, json)
+
         self.prepare()
 
-    def encode_data(
-        self, data: dict = None, files: RequestFiles = None, json: typing.Any = None
-    ) -> typing.Tuple[bytes, str]:
-        if json is not None:
-            content = jsonlib.dumps(json).encode("utf-8")
-            content_type = "application/json"
-        elif files is not None:
-            content, content_type = multipart_encode(data or {}, files)
-        elif data is not None:
-            content = urlencode(data, doseq=True).encode("utf-8")
-            content_type = "application/x-www-form-urlencoded"
-        else:
-            content = b""
-            content_type = ""
-        return content, content_type
-
     def prepare(self) -> None:
-        content: typing.Optional[bytes] = getattr(self, "content", None)
-        is_streaming = getattr(self, "is_streaming", False)
+        for key, value in self.stream.get_headers().items():
+            self.headers.setdefault(key, value)
 
         auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
 
         has_host = "host" in self.headers
         has_user_agent = "user-agent" in self.headers
         has_accept = "accept" in self.headers
-        has_content_length = (
-            "content-length" in self.headers or "transfer-encoding" in self.headers
-        )
         has_accept_encoding = "accept-encoding" in self.headers
         has_connection = "connection" in self.headers
 
@@ -675,12 +630,6 @@ class Request:
             auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
         if not has_accept:
             auto_headers.append((b"accept", b"*/*"))
-        if not has_content_length:
-            if is_streaming:
-                auto_headers.append((b"transfer-encoding", b"chunked"))
-            elif content:
-                content_length = str(len(content)).encode()
-                auto_headers.append((b"content-length", content_length))
         if not has_accept_encoding:
             auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
         if not has_connection:
@@ -704,16 +653,7 @@ class Request:
         """
         Read and return the request content.
         """
-        if not hasattr(self, "content"):
-            self.content = b"".join([part async for part in self.stream()])
-        return self.content
-
-    async def stream(self) -> typing.AsyncIterator[bytes]:
-        if self.is_streaming:
-            async for part in self.content_aiter:
-                yield part
-        elif self.content:
-            yield self.content
+        return b"".join([part async for part in self.stream])
 
 
 class Response:
@@ -723,8 +663,8 @@ class Response:
         *,
         http_version: str = None,
         headers: HeaderTypes = None,
-        content: ResponseContent = None,
-        on_close: typing.Callable = None,
+        stream: ContentStream = None,
+        content: bytes = None,
         request: Request = None,
         history: typing.List["Response"] = None,
         elapsed: datetime.timedelta = None,
@@ -734,20 +674,19 @@ class Response:
         self.headers = Headers(headers)
 
         self.request = request
-        self.on_close = on_close
         self.elapsed = datetime.timedelta(0) if elapsed is None else elapsed
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.history = [] if history is None else list(history)
 
-        if content is None or isinstance(content, bytes):
+        if stream is None:
             self.is_closed = True
             self.is_stream_consumed = True
             self._raw_content = content or b""
         else:
             self.is_closed = False
             self.is_stream_consumed = False
-            self._raw_stream = content
+            self._raw_stream = stream
 
     @property
     def reason_phrase(self) -> str:
@@ -1002,8 +941,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self.on_close is not None:
-                await self.on_close()
+            if hasattr(self, "_raw_stream"):
+                await self._raw_stream.aclose()
 
 
 class Cookies(MutableMapping):
