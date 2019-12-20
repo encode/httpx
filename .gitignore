@@ -8,3 +8,6 @@ site/
 *.egg-info/
 venv*/
 .python-version
+
+# IDEs
+.vscode/
