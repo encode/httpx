@@ -5,8 +5,8 @@ import typing
 import trio
 
 from ..config import Timeout
-from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
-from .base import BaseEvent, BasePoolSemaphore, BaseSocketStream, ConcurrencyBackend
+from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
+from .base import BaseEvent, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
 
 
 def none_as_inf(value: typing.Optional[float]) -> float:
@@ -82,29 +82,6 @@ class SocketStream(BaseSocketStream):
         await self.stream.aclose()
 
 
-class PoolSemaphore(BasePoolSemaphore):
-    def __init__(self, max_value: int):
-        self.max_value = max_value
-
-    @property
-    def semaphore(self) -> trio.Semaphore:
-        if not hasattr(self, "_semaphore"):
-            self._semaphore = trio.Semaphore(self.max_value, max_value=self.max_value)
-        return self._semaphore
-
-    async def acquire(self, timeout: float = None) -> None:
-        timeout = none_as_inf(timeout)
-
-        with trio.move_on_after(timeout):
-            await self.semaphore.acquire()
-            return
-
-        raise PoolTimeout()
-
-    def release(self) -> None:
-        self.semaphore.release()
-
-
 class TrioBackend(ConcurrencyBackend):
     async def open_tcp_stream(
         self,
@@ -159,11 +136,35 @@ class TrioBackend(ConcurrencyBackend):
     def time(self) -> float:
         return trio.current_time()
 
-    def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
-        return PoolSemaphore(max_value)
+    def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
+        return Semaphore(max_value, exc_class)
 
     def create_event(self) -> BaseEvent:
         return Event()
+
+
+class Semaphore(BaseSemaphore):
+    def __init__(self, max_value: int, exc_class: type):
+        self.max_value = max_value
+        self.exc_class = exc_class
+
+    @property
+    def semaphore(self) -> trio.Semaphore:
+        if not hasattr(self, "_semaphore"):
+            self._semaphore = trio.Semaphore(self.max_value, max_value=self.max_value)
+        return self._semaphore
+
+    async def acquire(self, timeout: float = None) -> None:
+        timeout = none_as_inf(timeout)
+
+        with trio.move_on_after(timeout):
+            await self.semaphore.acquire()
+            return
+
+        raise self.exc_class()
+
+    def release(self) -> None:
+        self.semaphore.release()
 
 
 class Event(BaseEvent):

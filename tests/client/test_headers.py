@@ -130,7 +130,12 @@ def test_header_does_not_exist():
 
 
 @pytest.mark.asyncio
-async def test_host_without_auth_in_header():
+async def test_host_with_auth_and_port_in_url():
+    """
+    The Host header should only include the hostname, or hostname:port
+    (for non-default ports only). Any userinfo or default port should not
+    be present.
+    """
     url = "http://username:password@example.org:80/echo_headers"
 
     client = Client(dispatch=MockDispatch())
@@ -142,7 +147,31 @@ async def test_host_without_auth_in_header():
             "accept": "*/*",
             "accept-encoding": "gzip, deflate, br",
             "connection": "keep-alive",
-            "host": "example.org:80",
+            "host": "example.org",
+            "user-agent": f"python-httpx/{__version__}",
+            "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_host_with_non_default_port_in_url():
+    """
+    If the URL includes a non-default port, then it should be included in
+    the Host header.
+    """
+    url = "http://username:password@example.org:123/echo_headers"
+
+    client = Client(dispatch=MockDispatch())
+    response = await client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "connection": "keep-alive",
+            "host": "example.org:123",
             "user-agent": f"python-httpx/{__version__}",
             "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
         }

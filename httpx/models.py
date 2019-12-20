@@ -67,12 +67,6 @@ HeaderTypes = typing.Union[
 
 CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 
-AuthTypes = typing.Union[
-    typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
-    typing.Callable[["Request"], "Request"],
-    "BaseMiddleware",
-]
-
 ProxiesTypes = typing.Union[
     URLTypes, "Dispatcher", typing.Dict[URLTypes, typing.Union[URLTypes, "Dispatcher"]]
 ]
@@ -94,9 +88,14 @@ class URL:
         if self.is_absolute_url:
             self._uri_reference = self._uri_reference.normalize()
 
-        # Add any query parameters.
+        # Add any query parameters, merging with any in the URL if needed.
         if params:
-            query_string = str(QueryParams(params))
+            if self._uri_reference.query:
+                url_params = QueryParams(self._uri_reference.query)
+                url_params.update(params)
+                query_string = str(url_params)
+            else:
+                query_string = str(QueryParams(params))
             self._uri_reference = self._uri_reference.copy_with(query=query_string)
 
         # Enforce absolute URLs by default.
@@ -116,6 +115,10 @@ class URL:
 
     @property
     def authority(self) -> str:
+        port_str = self._uri_reference.port
+        default_port_str = {"https": "443", "http": "80"}.get(self.scheme, "")
+        if port_str is None or port_str == default_port_str:
+            return self._uri_reference.host or ""
         return self._uri_reference.authority or ""
 
     @property
@@ -207,9 +210,9 @@ class URL:
             authority = host
             if port is not None:
                 authority += f":{port}"
-            if username is not None:
+            if username:
                 userpass = username
-                if password is not None:
+                if password:
                     userpass += f":{password}"
                 authority = f"{userpass}@{authority}"
 

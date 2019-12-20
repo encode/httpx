@@ -73,8 +73,8 @@ def test_url():
         repr(url) == "URL('https://example.org:123/path/to/somewhere?abc=123#anchor')"
     )
 
-    new = url.copy_with(scheme="http")
-    assert new == URL("http://example.org:123/path/to/somewhere?abc=123#anchor")
+    new = url.copy_with(scheme="http", port=None)
+    assert new == URL("http://example.org/path/to/somewhere?abc=123#anchor")
     assert new.scheme == "http"
 
 
@@ -89,7 +89,7 @@ def test_url_params():
     assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
 
     url = URL("https://example.org:123/path/to/somewhere?b=456", params={"a": "123"})
-    assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
+    assert str(url) == "https://example.org:123/path/to/somewhere?b=456&a=123"
 
 
 def test_url_join():
