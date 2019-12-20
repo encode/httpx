@@ -29,8 +29,9 @@ async def read_response(stream, timeout: Timeout, should_contain: bytes) -> byte
     return response
 
 
-async def test_start_tls_on_tcp_socket_stream(https_server, backend):
-    backend = lookup_backend(backend)
+@pytest.mark.usefixtures("async_environment")
+async def test_start_tls_on_tcp_socket_stream(https_server):
+    backend = lookup_backend()
     ctx = SSLConfig().load_ssl_context_no_verify()
     timeout = Timeout(5)
 
@@ -55,8 +56,9 @@ async def test_start_tls_on_tcp_socket_stream(https_server, backend):
         await stream.close()
 
 
-async def test_start_tls_on_uds_socket_stream(https_uds_server, backend):
-    backend = lookup_backend(backend)
+@pytest.mark.usefixtures("async_environment")
+async def test_start_tls_on_uds_socket_stream(https_uds_server):
+    backend = lookup_backend()
     ctx = SSLConfig().load_ssl_context_no_verify()
     timeout = Timeout(5)
 
@@ -81,11 +83,12 @@ async def test_start_tls_on_uds_socket_stream(https_uds_server, backend):
         await stream.close()
 
 
-async def test_concurrent_read(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_concurrent_read(server):
     """
     Regression test for: https://github.com/encode/httpx/issues/527
     """
-    backend = lookup_backend(backend)
+    backend = lookup_backend()
     stream = await backend.open_tcp_stream(
         server.url.host, server.url.port, ssl_context=None, timeout=Timeout(5)
     )

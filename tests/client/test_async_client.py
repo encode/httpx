@@ -5,7 +5,8 @@ import pytest
 import httpx
 
 
-async def test_get(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_get(server):
     url = server.url
     async with httpx.Client() as client:
         response = await client.get(url)
@@ -17,7 +18,8 @@ async def test_get(server, backend):
     assert response.elapsed > timedelta(seconds=0)
 
 
-async def test_build_request(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_build_request(server):
     url = server.url.copy_with(path="/echo_headers")
     headers = {"Custom-header": "value"}
     async with httpx.Client() as client:
@@ -31,36 +33,24 @@ async def test_build_request(server, backend):
     assert response.json()["Custom-header"] == "value"
 
 
-@pytest.mark.asyncio
-async def test_get_no_backend(server):
-    """
-    Verify that the client is capable of making a simple request if not given a backend.
-    """
-    url = server.url
-    async with httpx.Client() as client:
-        response = await client.get(url)
-    assert response.status_code == 200
-    assert response.text == "Hello, world!"
-    assert response.http_version == "HTTP/1.1"
-    assert response.headers
-    assert repr(response) == "<Response [200 OK]>"
-
-
-async def test_post(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_post(server):
     url = server.url
     async with httpx.Client() as client:
         response = await client.post(url, data=b"Hello, world!")
     assert response.status_code == 200
 
 
-async def test_post_json(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_post_json(server):
     url = server.url
     async with httpx.Client() as client:
         response = await client.post(url, json={"text": "Hello, world!"})
     assert response.status_code == 200
 
 
-async def test_stream_response(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_stream_response(server):
     async with httpx.Client() as client:
         async with client.stream("GET", server.url) as response:
             body = await response.read()
@@ -70,7 +60,8 @@ async def test_stream_response(server, backend):
     assert response.content == b"Hello, world!"
 
 
-async def test_access_content_stream_response(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_access_content_stream_response(server):
     async with httpx.Client() as client:
         async with client.stream("GET", server.url) as response:
             pass
@@ -80,7 +71,8 @@ async def test_access_content_stream_response(server, backend):
         response.content
 
 
-async def test_stream_request(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_stream_request(server):
     async def hello_world():
         yield b"Hello, "
         yield b"world!"
@@ -90,7 +82,8 @@ async def test_stream_request(server, backend):
     assert response.status_code == 200
 
 
-async def test_raise_for_status(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_raise_for_status(server):
     async with httpx.Client() as client:
         for status_code in (200, 400, 404, 500, 505):
             response = await client.request(
@@ -105,40 +98,46 @@ async def test_raise_for_status(server, backend):
                 assert response.raise_for_status() is None
 
 
-async def test_options(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_options(server):
     async with httpx.Client() as client:
         response = await client.options(server.url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
 
 
-async def test_head(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_head(server):
     async with httpx.Client() as client:
         response = await client.head(server.url)
     assert response.status_code == 200
     assert response.text == ""
 
 
-async def test_put(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_put(server):
     async with httpx.Client() as client:
         response = await client.put(server.url, data=b"Hello, world!")
     assert response.status_code == 200
 
 
-async def test_patch(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_patch(server):
     async with httpx.Client() as client:
         response = await client.patch(server.url, data=b"Hello, world!")
     assert response.status_code == 200
 
 
-async def test_delete(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_delete(server):
     async with httpx.Client() as client:
         response = await client.delete(server.url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
 
 
-async def test_100_continue(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_100_continue(server):
     headers = {"Expect": "100-continue"}
     data = b"Echo request body"
 
@@ -151,7 +150,8 @@ async def test_100_continue(server, backend):
     assert response.content == data
 
 
-async def test_uds(uds_server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_uds(uds_server):
     url = uds_server.url
     uds = uds_server.config.uds
     assert uds is not None
@@ -162,15 +162,8 @@ async def test_uds(uds_server, backend):
     assert response.encoding == "iso-8859-1"
 
 
-@pytest.mark.parametrize(
-    "backend",
-    [
-        pytest.param("asyncio", marks=pytest.mark.asyncio),
-        pytest.param("trio", marks=pytest.mark.trio),
-    ],
-)
-async def test_explicit_backend(server, backend):
-    async with httpx.Client(backend=backend) as client:
+async def test_explicit_backend(server, async_environment):
+    async with httpx.Client(backend=async_environment) as client:
         response = await client.get(server.url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"

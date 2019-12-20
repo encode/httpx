@@ -103,7 +103,8 @@ class MockDispatch(Dispatcher):
         return Response(codes.OK, content=b"Hello, world!", request=request)
 
 
-async def test_no_redirect(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_no_redirect():
     client = Client(dispatch=MockDispatch())
     url = "https://example.com/no_redirect"
     response = await client.get(url)
@@ -112,7 +113,8 @@ async def test_no_redirect(backend):
         await response.next()
 
 
-async def test_redirect_301(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_redirect_301():
     client = Client(dispatch=MockDispatch())
     response = await client.post("https://example.org/redirect_301")
     assert response.status_code == codes.OK
@@ -120,7 +122,8 @@ async def test_redirect_301(backend):
     assert len(response.history) == 1
 
 
-async def test_redirect_302(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_redirect_302():
     client = Client(dispatch=MockDispatch())
     response = await client.post("https://example.org/redirect_302")
     assert response.status_code == codes.OK
@@ -128,7 +131,8 @@ async def test_redirect_302(backend):
     assert len(response.history) == 1
 
 
-async def test_redirect_303(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_redirect_303():
     client = Client(dispatch=MockDispatch())
     response = await client.get("https://example.org/redirect_303")
     assert response.status_code == codes.OK
@@ -136,7 +140,8 @@ async def test_redirect_303(backend):
     assert len(response.history) == 1
 
 
-async def test_disallow_redirects(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_disallow_redirects():
     client = Client(dispatch=MockDispatch())
     response = await client.post(
         "https://example.org/redirect_303", allow_redirects=False
@@ -153,7 +158,8 @@ async def test_disallow_redirects(backend):
     assert len(response.history) == 1
 
 
-async def test_relative_redirect(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_relative_redirect():
     client = Client(dispatch=MockDispatch())
     response = await client.get("https://example.org/relative_redirect")
     assert response.status_code == codes.OK
@@ -161,7 +167,8 @@ async def test_relative_redirect(backend):
     assert len(response.history) == 1
 
 
-async def test_no_scheme_redirect(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_no_scheme_redirect():
     client = Client(dispatch=MockDispatch())
     response = await client.get("https://example.org/no_scheme_redirect")
     assert response.status_code == codes.OK
@@ -169,7 +176,8 @@ async def test_no_scheme_redirect(backend):
     assert len(response.history) == 1
 
 
-async def test_fragment_redirect(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_fragment_redirect():
     client = Client(dispatch=MockDispatch())
     response = await client.get("https://example.org/relative_redirect#fragment")
     assert response.status_code == codes.OK
@@ -177,7 +185,8 @@ async def test_fragment_redirect(backend):
     assert len(response.history) == 1
 
 
-async def test_multiple_redirects(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_multiple_redirects():
     client = Client(dispatch=MockDispatch())
     response = await client.get("https://example.org/multiple_redirects?count=20")
     assert response.status_code == codes.OK
@@ -193,13 +202,15 @@ async def test_multiple_redirects(backend):
     assert len(response.history[1].history) == 1
 
 
-async def test_too_many_redirects(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_too_many_redirects():
     client = Client(dispatch=MockDispatch())
     with pytest.raises(TooManyRedirects):
         await client.get("https://example.org/multiple_redirects?count=21")
 
 
-async def test_too_many_redirects_calling_next(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_too_many_redirects_calling_next():
     client = Client(dispatch=MockDispatch())
     url = "https://example.org/multiple_redirects?count=21"
     response = await client.get(url, allow_redirects=False)
@@ -208,13 +219,15 @@ async def test_too_many_redirects_calling_next(backend):
             response = await response.next()
 
 
-async def test_redirect_loop(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_redirect_loop():
     client = Client(dispatch=MockDispatch())
     with pytest.raises(RedirectLoop):
         await client.get("https://example.org/redirect_loop")
 
 
-async def test_redirect_loop_calling_next(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_redirect_loop_calling_next():
     client = Client(dispatch=MockDispatch())
     url = "https://example.org/redirect_loop"
     response = await client.get(url, allow_redirects=False)
@@ -223,7 +236,8 @@ async def test_redirect_loop_calling_next(backend):
             response = await response.next()
 
 
-async def test_cross_domain_redirect(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_cross_domain_redirect():
     client = Client(dispatch=MockDispatch())
     url = "https://example.com/cross_domain"
     headers = {"Authorization": "abc"}
@@ -232,7 +246,8 @@ async def test_cross_domain_redirect(backend):
     assert "authorization" not in response.json()["headers"]
 
 
-async def test_same_domain_redirect(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_same_domain_redirect():
     client = Client(dispatch=MockDispatch())
     url = "https://example.org/cross_domain"
     headers = {"Authorization": "abc"}
@@ -241,7 +256,8 @@ async def test_same_domain_redirect(backend):
     assert response.json()["headers"]["authorization"] == "abc"
 
 
-async def test_body_redirect(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_body_redirect():
     """
     A 308 redirect should preserve the request body.
     """
@@ -254,7 +270,8 @@ async def test_body_redirect(backend):
     assert "content-length" in response.json()["headers"]
 
 
-async def test_no_body_redirect(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_no_body_redirect():
     """
     A 303 redirect should remove the request body.
     """
@@ -267,7 +284,8 @@ async def test_no_body_redirect(backend):
     assert "content-length" not in response.json()["headers"]
 
 
-async def test_cannot_redirect_streaming_body(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_cannot_redirect_streaming_body():
     client = Client(dispatch=MockDispatch())
     url = "https://example.org/redirect_body"
 
@@ -278,7 +296,8 @@ async def test_cannot_redirect_streaming_body(backend):
         await client.post(url, data=streaming_body())
 
 
-async def test_cross_subdomain_redirect(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_cross_subdomain_redirect():
     client = Client(dispatch=MockDispatch())
     url = "https://example.com/cross_subdomain"
     response = await client.get(url)
@@ -324,7 +343,8 @@ class MockCookieDispatch(Dispatcher):
             return Response(status_code, headers=headers, request=request)
 
 
-async def test_redirect_cookie_behavior(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_redirect_cookie_behavior():
     client = Client(dispatch=MockCookieDispatch())
 
     # The client is not logged in.

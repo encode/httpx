@@ -1,8 +1,11 @@
+import pytest
+
 import httpx
 from httpx.dispatch.connection_pool import ConnectionPool
 
 
-async def test_keepalive_connections(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_keepalive_connections(server):
     """
     Connections should default to staying in a keep-alive state.
     """
@@ -18,7 +21,8 @@ async def test_keepalive_connections(server, backend):
         assert len(http.keepalive_connections) == 1
 
 
-async def test_keepalive_timeout(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_keepalive_timeout(server):
     """
     Keep-alive connections should timeout.
     """
@@ -49,7 +53,8 @@ async def test_keepalive_timeout(server, backend):
         assert len(http.keepalive_connections) == 0
 
 
-async def test_differing_connection_keys(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_differing_connection_keys(server):
     """
     Connections to differing connection keys should result in multiple connections.
     """
@@ -65,7 +70,8 @@ async def test_differing_connection_keys(server, backend):
         assert len(http.keepalive_connections) == 2
 
 
-async def test_soft_limit(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_soft_limit(server):
     """
     The soft_limit config should limit the maximum number of keep-alive connections.
     """
@@ -83,7 +89,8 @@ async def test_soft_limit(server, backend):
         assert len(http.keepalive_connections) == 1
 
 
-async def test_streaming_response_holds_connection(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_streaming_response_holds_connection(server):
     """
     A streaming request should hold the connection open until the response is read.
     """
@@ -98,7 +105,8 @@ async def test_streaming_response_holds_connection(server, backend):
         assert len(http.keepalive_connections) == 1
 
 
-async def test_multiple_concurrent_connections(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_multiple_concurrent_connections(server):
     """
     Multiple conncurrent requests should open multiple conncurrent connections.
     """
@@ -120,7 +128,8 @@ async def test_multiple_concurrent_connections(server, backend):
         assert len(http.keepalive_connections) == 2
 
 
-async def test_close_connections(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_close_connections(server):
     """
     Using a `Connection: close` header should close the connection.
     """
@@ -132,7 +141,8 @@ async def test_close_connections(server, backend):
         assert len(http.keepalive_connections) == 0
 
 
-async def test_standard_response_close(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_standard_response_close(server):
     """
     A standard close should keep the connection open.
     """
@@ -144,7 +154,8 @@ async def test_standard_response_close(server, backend):
         assert len(http.keepalive_connections) == 1
 
 
-async def test_premature_response_close(server, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_premature_response_close(server):
     """
     A premature close should close the connection.
     """
@@ -155,9 +166,8 @@ async def test_premature_response_close(server, backend):
         assert len(http.keepalive_connections) == 0
 
 
-async def test_keepalive_connection_closed_by_server_is_reestablished(
-    server, restart, backend
-):
+@pytest.mark.usefixtures("async_environment")
+async def test_keepalive_connection_closed_by_server_is_reestablished(server, restart):
     """
     Upon keep-alive connection closed by remote a new connection
     should be reestablished.
@@ -175,8 +185,9 @@ async def test_keepalive_connection_closed_by_server_is_reestablished(
         assert len(http.keepalive_connections) == 1
 
 
+@pytest.mark.usefixtures("async_environment")
 async def test_keepalive_http2_connection_closed_by_server_is_reestablished(
-    server, restart, backend
+    server, restart
 ):
     """
     Upon keep-alive connection closed by remote a new connection
@@ -195,7 +206,8 @@ async def test_keepalive_http2_connection_closed_by_server_is_reestablished(
         assert len(http.keepalive_connections) == 1
 
 
-async def test_connection_closed_free_semaphore_on_acquire(server, restart, backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_connection_closed_free_semaphore_on_acquire(server, restart):
     """
     Verify that max_connections semaphore is released
     properly on a disconnected connection.
