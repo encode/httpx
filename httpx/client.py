@@ -19,7 +19,7 @@ from .config import (
     UnsetType,
     VerifyTypes,
 )
-from .content import RequestContent
+from .content_streams import ContentStream
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import Dispatcher
 from .dispatch.connection_pool import ConnectionPool
@@ -495,11 +495,11 @@ class Client:
         method = self.redirect_method(request, response)
         url = self.redirect_url(request, response)
         headers = self.redirect_headers(request, url, method)
-        content = self.redirect_content(request, method)
+        stream = self.redirect_stream(request, method)
         cookies = Cookies(self.cookies)
-        request = Request(method=method, url=url, headers=headers, cookies=cookies)
-        request.content = content
-        return request
+        return Request(
+            method=method, url=url, headers=headers, cookies=cookies, stream=stream
+        )
 
     def redirect_method(self, request: Request, response: Response) -> str:
         """
@@ -567,15 +567,17 @@ class Client:
 
         return headers
 
-    def redirect_content(self, request: Request, method: str) -> RequestContent:
+    def redirect_stream(
+        self, request: Request, method: str
+    ) -> typing.Optional[ContentStream]:
         """
         Return the body that should be used for the redirect request.
         """
         if method != request.method and method == "GET":
-            return RequestContent()
-        if not request.content.can_replay():
+            return None
+        if not request.stream.can_replay():
             raise RedirectBodyUnavailable()
-        return request.content
+        return request.stream
 
     async def send_handling_auth(
         self,

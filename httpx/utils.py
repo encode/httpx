@@ -17,6 +17,15 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from .models import URL
 
 
+_HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
+_HTML5_FORM_ENCODING_REPLACEMENTS.update(
+    {chr(c): "%{:02X}".format(c) for c in range(0x00, 0x1F + 1) if c != 0x1B}
+)
+_HTML5_FORM_ENCODING_RE = re.compile(
+    r"|".join([re.escape(c) for c in _HTML5_FORM_ENCODING_REPLACEMENTS.keys()])
+)
+
+
 def normalize_header_key(value: typing.AnyStr, encoding: str = None) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header key.
@@ -59,6 +68,20 @@ def is_known_encoding(encoding: str) -> bool:
     except LookupError:
         return False
     return True
+
+
+def format_form_param(name: str, value: typing.Union[str, bytes]) -> bytes:
+    """
+    Encode a name/value pair within a multipart form.
+    """
+    if isinstance(value, bytes):
+        value = value.decode()
+
+    def replacer(match: typing.Match[str]) -> str:
+        return _HTML5_FORM_ENCODING_REPLACEMENTS[match.group(0)]
+
+    value = _HTML5_FORM_ENCODING_RE.sub(replacer, value)
+    return f'{name}="{value}"'.encode()
 
 
 # Null bytes; no need to recreate these on each call to guess_json_utf

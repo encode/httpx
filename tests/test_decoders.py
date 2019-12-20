@@ -4,6 +4,7 @@ import brotli
 import pytest
 
 import httpx
+from httpx.content_streams import AsyncIteratorStream
 from httpx.decoders import (
     BrotliDecoder,
     DeflateDecoder,
@@ -82,7 +83,8 @@ async def test_streaming():
         yield compressor.flush()
 
     headers = [(b"Content-Encoding", b"gzip")]
-    response = httpx.Response(200, headers=headers, content=compress(body))
+    stream = AsyncIteratorStream(aiterator=compress(body))
+    response = httpx.Response(200, headers=headers, stream=stream)
     assert not hasattr(response, "body")
     assert await response.read() == body
 
@@ -137,7 +139,8 @@ async def test_text_decoder(data, encoding):
         for chunk in data:
             yield chunk
 
-    response = httpx.Response(200, content=iterator())
+    stream = AsyncIteratorStream(aiterator=iterator())
+    response = httpx.Response(200, stream=stream)
     await response.read()
     assert response.text == (b"".join(data)).decode(encoding)
 
@@ -149,10 +152,11 @@ async def test_text_decoder_known_encoding():
         yield b"\x83"
         yield b"\x89\x83x\x83\x8b"
 
+    stream = AsyncIteratorStream(aiterator=iterator())
     response = httpx.Response(
         200,
         headers=[(b"Content-Type", b"text/html; charset=shift-jis")],
-        content=iterator(),
+        stream=stream,
     )
 
     await response.read()

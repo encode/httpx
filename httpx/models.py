@@ -13,7 +13,7 @@ import chardet
 import rfc3986
 
 from .config import USER_AGENT
-from .content import RequestData, RequestFiles, encode
+from .content_streams import ContentStream, RequestData, RequestFiles, encode
 from .decoders import (
     ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
@@ -70,8 +70,6 @@ CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 ProxiesTypes = typing.Union[
     URLTypes, "Dispatcher", typing.Dict[URLTypes, typing.Union[URLTypes, "Dispatcher"]]
 ]
-
-ResponseContent = typing.Union[bytes, typing.AsyncIterator[bytes]]
 
 
 class URL:
@@ -595,6 +593,7 @@ class Request:
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
+        stream: ContentStream = None,
     ):
         self.method = method.upper()
         self.url = URL(url, params=params)
@@ -602,11 +601,16 @@ class Request:
         if cookies:
             self._cookies = Cookies(cookies)
             self._cookies.set_cookie_header(self)
-        self.content = encode(data, files, json)
+
+        if stream is not None:
+            self.stream = stream
+        else:
+            self.stream = encode(data, files, json)
+
         self.prepare()
 
     def prepare(self) -> None:
-        for key, value in self.content.get_headers().items():
+        for key, value in self.stream.get_headers().items():
             self.headers.setdefault(key, value)
 
         auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
@@ -649,11 +653,7 @@ class Request:
         """
         Read and return the request content.
         """
-        return await self.content.aread()
-
-    async def stream(self) -> typing.AsyncIterator[bytes]:
-        async for part in self.content:
-            yield part
+        return b"".join([part async for part in self.stream])
 
 
 class Response:
@@ -663,8 +663,8 @@ class Response:
         *,
         http_version: str = None,
         headers: HeaderTypes = None,
-        content: ResponseContent = None,
-        on_close: typing.Callable = None,
+        stream: ContentStream = None,
+        content: bytes = None,
         request: Request = None,
         history: typing.List["Response"] = None,
         elapsed: datetime.timedelta = None,
@@ -674,20 +674,19 @@ class Response:
         self.headers = Headers(headers)
 
         self.request = request
-        self.on_close = on_close
         self.elapsed = datetime.timedelta(0) if elapsed is None else elapsed
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.history = [] if history is None else list(history)
 
-        if content is None or isinstance(content, bytes):
+        if stream is None:
             self.is_closed = True
             self.is_stream_consumed = True
             self._raw_content = content or b""
         else:
             self.is_closed = False
             self.is_stream_consumed = False
-            self._raw_stream = content
+            self._raw_stream = stream
 
     @property
     def reason_phrase(self) -> str:
@@ -942,8 +941,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self.on_close is not None:
-                await self.on_close()
+            if hasattr(self, "_raw_stream"):
+                await self._raw_stream.aclose()
 
 
 class Cookies(MutableMapping):

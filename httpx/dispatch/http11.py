@@ -4,6 +4,7 @@ import h11
 
 from ..concurrency.base import BaseSocketStream
 from ..config import Timeout
+from ..content_streams import AsyncIteratorStream
 from ..exceptions import ConnectionClosed, ProtocolError
 from ..models import Request, Response
 from ..utils import get_logger
@@ -50,14 +51,16 @@ class HTTP11Connection(OpenConnection):
         await self._send_request(request, timeout)
         await self._send_request_body(request, timeout)
         http_version, status_code, headers = await self._receive_response(timeout)
-        content = self._receive_response_data(timeout)
+        stream = AsyncIteratorStream(
+            aiterator=self._receive_response_data(timeout),
+            close_func=self.response_closed,
+        )
 
         return Response(
             status_code=status_code,
             http_version=http_version,
             headers=headers,
-            content=content,
-            on_close=self.response_closed,
+            stream=stream,
             request=request,
         )
 
@@ -93,7 +96,7 @@ class HTTP11Connection(OpenConnection):
         """
         try:
             # Send the request body.
-            async for chunk in request.stream():
+            async for chunk in request.stream:
                 logger.trace(f"send_data data=Data(<{len(chunk)} bytes>)")
                 event = h11.Data(data=chunk)
                 await self._send_event(event, timeout)

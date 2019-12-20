@@ -14,7 +14,7 @@ from .utils import MockHTTP2Backend
 async def app(request):
     method = request.method
     path = request.url.path
-    body = await request.read()
+    body = b"".join([part async for part in request.stream])
     content = json.dumps(
         {"method": method, "path": path, "body": body.decode()}
     ).encode()

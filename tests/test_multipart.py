@@ -8,8 +8,9 @@ import pytest
 
 import httpx
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx.content_streams import encode
 from httpx.dispatch.base import Dispatcher
-from httpx.multipart import _format_param, multipart_encode
+from httpx.utils import format_form_param
 
 
 class MockDispatch(Dispatcher):
@@ -20,7 +21,7 @@ class MockDispatch(Dispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> httpx.Response:
-        content = await request.read()
+        content = b"".join([part async for part in request.stream])
         return httpx.Response(200, content=content)
 
 
@@ -105,9 +106,9 @@ def test_multipart_encode():
 
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
-        body, content_type = multipart_encode(data=data, files=files)
-        assert content_type == f"multipart/form-data; boundary={boundary}"
-        assert body == (
+        stream = encode(data=data, files=files)
+        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
+        assert stream.body == (
             '--{0}\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="b"\r\n\r\nC\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n11\r\n'
@@ -129,10 +130,10 @@ def test_multipart_encode_files_allows_filenames_as_none():
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        body, content_type = multipart_encode(data={}, files=files)
+        stream = encode(data={}, files=files)
 
-        assert content_type == f"multipart/form-data; boundary={boundary}"
-        assert body == (
+        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
+        assert stream.body == (
             '--{0}\r\nContent-Disposition: form-data; name="file"\r\n\r\n'
             "<file content>\r\n--{0}--\r\n"
             "".format(boundary).encode("ascii")
@@ -154,10 +155,10 @@ def test_multipart_encode_files_guesses_correct_content_type(
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        body, content_type = multipart_encode(data={}, files=files)
+        stream = encode(data={}, files=files)
 
-        assert content_type == f"multipart/form-data; boundary={boundary}"
-        assert body == (
+        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
+        assert stream.body == (
             f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
             f'filename="{file_name}"\r\nContent-Type: '
             f"{expected_content_type}\r\n\r\n<file content>\r\n--{boundary}--\r\n"
@@ -170,10 +171,10 @@ def test_multipart_encode_files_allows_str_content():
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        body, content_type = multipart_encode(data={}, files=files)
+        stream = encode(data={}, files=files)
 
-        assert content_type == f"multipart/form-data; boundary={boundary}"
-        assert body == (
+        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
+        assert stream.body == (
             '--{0}\r\nContent-Disposition: form-data; name="file"; '
             'filename="test.txt"\r\n'
             "Content-Type: text/plain\r\n\r\n<string content>\r\n"
@@ -184,17 +185,17 @@ def test_multipart_encode_files_allows_str_content():
 
 class TestHeaderParamHTML5Formatting:
     def test_unicode(self):
-        param = _format_param("filename", "n\u00e4me")
+        param = format_form_param("filename", "n\u00e4me")
         assert param == b'filename="n\xc3\xa4me"'
 
     def test_ascii(self):
-        param = _format_param("filename", b"name")
+        param = format_form_param("filename", b"name")
         assert param == b'filename="name"'
 
     def test_unicode_escape(self):
-        param = _format_param("filename", "hello\\world\u0022")
+        param = format_form_param("filename", "hello\\world\u0022")
         assert param == b'filename="hello\\\\world%22"'
 
     def test_unicode_with_control_character(self):
-        param = _format_param("filename", "hello\x1A\x1B\x1C")
+        param = format_form_param("filename", "hello\x1A\x1B\x1C")
         assert param == b'filename="hello%1A\x1B%1C"'
