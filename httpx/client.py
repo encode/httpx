@@ -217,8 +217,32 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        trust_env: bool = None,
     ) -> Response:
+        if cert is not None:
+            raise RuntimeError(
+                "Passing a 'cert' argument when making a request on a client "
+                "is not supported anymore. Instantiate a new client instead, "
+                "passing any 'cert' arguments to the client itself."
+            )
+
+        if verify is not None:
+            raise RuntimeError(
+                "Passing a 'verify' argument when making a request on a client "
+                "is not supported anymore. Instantiate a new client instead, "
+                "passing any 'verify' arguments to the client itself."
+            )
+
+        if trust_env is not None:
+            raise RuntimeError(
+                "Passing a 'trust_env' argument when making a request on a client "
+                "is not supported anymore. Instantiate a new client instead, "
+                "passing any 'trust_env' argument to the client itself."
+            )
+
         if stream:
             warnings.warn(
                 "The 'stream=True' argument is due to be deprecated. "
@@ -623,7 +647,10 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "GET",
@@ -634,7 +661,10 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def options(
@@ -647,7 +677,10 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "OPTIONS",
@@ -658,7 +691,10 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def head(
@@ -671,7 +707,10 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "HEAD",
@@ -682,7 +721,10 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def post(
@@ -698,7 +740,10 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "POST",
@@ -712,7 +757,10 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def put(
@@ -728,7 +776,10 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "PUT",
@@ -742,7 +793,10 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def patch(
@@ -758,7 +812,10 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "PATCH",
@@ -772,7 +829,10 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def delete(
@@ -785,7 +845,10 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "DELETE",
@@ -796,7 +859,10 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
+            verify=verify,
+            cert=cert,
             timeout=timeout,
+            trust_env=trust_env,
         )
 
     async def close(self) -> None:
