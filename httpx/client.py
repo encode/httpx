@@ -374,10 +374,7 @@ class Client:
         auth = self.setup_auth(request, auth)
 
         response = await self.send_handling_redirects(
-            request,
-            auth=auth,
-            timeout=timeout,
-            allow_redirects=allow_redirects,
+            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
         )
 
         if not stream:
@@ -388,9 +385,7 @@ class Client:
 
         return response
 
-    def setup_auth(
-        self, request: Request, auth: AuthTypes = None
-    ) -> Auth:
+    def setup_auth(self, request: Request, auth: AuthTypes = None) -> Auth:
         auth = self.auth if auth is None else auth
 
         if auth is not None:
@@ -546,10 +541,7 @@ class Client:
         return request.stream
 
     async def send_handling_auth(
-        self,
-        request: Request,
-        auth: Auth,
-        timeout: Timeout,
+        self, request: Request, auth: Auth, timeout: Timeout,
     ) -> Response:
         auth_flow = auth(request)
         request = next(auth_flow)
