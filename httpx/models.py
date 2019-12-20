@@ -90,9 +90,14 @@ class URL:
         if self.is_absolute_url:
             self._uri_reference = self._uri_reference.normalize()
 
-        # Add any query parameters.
+        # Add any query parameters, merging with any in the URL if needed.
         if params:
-            query_string = str(QueryParams(params))
+            if self._uri_reference.query:
+                url_params = QueryParams(self._uri_reference.query)
+                url_params.update(params)
+                query_string = str(url_params)
+            else:
+                query_string = str(QueryParams(params))
             self._uri_reference = self._uri_reference.copy_with(query=query_string)
 
         # Enforce absolute URLs by default.
