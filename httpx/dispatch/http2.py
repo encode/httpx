@@ -5,13 +5,14 @@ import h2.events
 from h2.config import H2Configuration
 from h2.settings import SettingCodes, Settings
 
-from ..concurrency.base import (
+from ..backends.base import (
     BaseEvent,
     BaseSocketStream,
     ConcurrencyBackend,
     lookup_backend,
 )
 from ..config import Timeout
+from ..content_streams import AsyncIteratorStream
 from ..exceptions import ProtocolError
 from ..models import Request, Response
 from ..utils import get_logger
@@ -209,13 +210,15 @@ class HTTP2Stream:
 
         # Receive the response.
         status_code, headers = await self.receive_response(timeout)
-        content = self.body_iter(timeout)
+        stream = AsyncIteratorStream(
+            aiterator=self.body_iter(timeout), close_func=self.close
+        )
+
         return Response(
             status_code=status_code,
             http_version="HTTP/2",
             headers=headers,
-            content=content,
-            on_close=self.close,
+            stream=stream,
             request=request,
         )
 
@@ -238,7 +241,7 @@ class HTTP2Stream:
 
     async def send_body(self, request: Request, timeout: Timeout) -> None:
         logger.trace(f"send_body stream_id={self.stream_id}")
-        async for data in request.stream():
+        async for data in request.stream:
             while data:
                 max_flow = await self.connection.wait_for_outgoing_flow(
                     self.stream_id, timeout

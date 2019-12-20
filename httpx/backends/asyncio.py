@@ -4,8 +4,8 @@ import ssl
 import typing
 
 from ..config import Timeout
-from ..exceptions import ConnectTimeout, PoolTimeout, ReadTimeout, WriteTimeout
-from .base import BaseEvent, BasePoolSemaphore, BaseSocketStream, ConcurrencyBackend
+from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
+from .base import BaseEvent, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
 
 SSL_MONKEY_PATCH_APPLIED = False
 
@@ -171,26 +171,6 @@ class SocketStream(BaseSocketStream):
         self.stream_writer.close()
 
 
-class PoolSemaphore(BasePoolSemaphore):
-    def __init__(self, max_value: int) -> None:
-        self.max_value = max_value
-
-    @property
-    def semaphore(self) -> asyncio.BoundedSemaphore:
-        if not hasattr(self, "_semaphore"):
-            self._semaphore = asyncio.BoundedSemaphore(value=self.max_value)
-        return self._semaphore
-
-    async def acquire(self, timeout: float = None) -> None:
-        try:
-            await asyncio.wait_for(self.semaphore.acquire(), timeout)
-        except asyncio.TimeoutError:
-            raise PoolTimeout()
-
-    def release(self) -> None:
-        self.semaphore.release()
-
-
 class AsyncioBackend(ConcurrencyBackend):
     def __init__(self) -> None:
         global SSL_MONKEY_PATCH_APPLIED
@@ -269,8 +249,8 @@ class AsyncioBackend(ConcurrencyBackend):
         finally:
             self._loop = loop
 
-    def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
-        return PoolSemaphore(max_value)
+    def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
+        return Semaphore(max_value, exc_class)
 
     def create_event(self) -> BaseEvent:
         return Event()
@@ -285,3 +265,24 @@ class Event(BaseEvent):
 
     async def wait(self) -> None:
         await self._event.wait()
+
+
+class Semaphore(BaseSemaphore):
+    def __init__(self, max_value: int, exc_class: type) -> None:
+        self.max_value = max_value
+        self.exc_class = exc_class
+
+    @property
+    def semaphore(self) -> asyncio.BoundedSemaphore:
+        if not hasattr(self, "_semaphore"):
+            self._semaphore = asyncio.BoundedSemaphore(value=self.max_value)
+        return self._semaphore
+
+    async def acquire(self, timeout: float = None) -> None:
+        try:
+            await asyncio.wait_for(self.semaphore.acquire(), timeout)
+        except asyncio.TimeoutError:
+            raise self.exc_class()
+
+    def release(self) -> None:
+        self.semaphore.release()

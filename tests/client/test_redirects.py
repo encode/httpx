@@ -77,17 +77,16 @@ class MockDispatch(Dispatcher):
             return Response(codes.OK, content=content, request=request)
 
         elif request.url.path == "/redirect_body":
-            await request.read()
             headers = {"location": "/redirect_body_target"}
             return Response(codes.PERMANENT_REDIRECT, headers=headers, request=request)
 
         elif request.url.path == "/redirect_no_body":
-            await request.read()
+            content = b"".join([part async for part in request.stream])
             headers = {"location": "/redirect_body_target"}
             return Response(codes.SEE_OTHER, headers=headers, request=request)
 
         elif request.url.path == "/redirect_body_target":
-            content = await request.read()
+            content = b"".join([part async for part in request.stream])
             headers = dict(request.headers.items())
             body = json.dumps({"body": content.decode(), "headers": headers}).encode()
             return Response(codes.OK, content=body, request=request)

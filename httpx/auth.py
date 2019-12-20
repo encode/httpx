@@ -7,20 +7,75 @@ from base64 import b64encode
 from urllib.request import parse_http_list
 
 from .exceptions import ProtocolError
-from .middleware import Middleware
 from .models import Request, Response
 from .utils import to_bytes, to_str, unquote
 
+AuthFlow = typing.Generator[Request, Response, None]
 
-class BasicAuth:
+AuthTypes = typing.Union[
+    typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
+    typing.Callable[["Request"], "Request"],
+    "Auth",
+]
+
+
+class Auth:
+    """
+    Base class for all authentication schemes.
+    """
+
+    def __call__(self, request: Request) -> AuthFlow:
+        """
+        Execute the authentication flow.
+
+        To dispatch a request, `yield` it:
+
+        ```
+        yield request
+        ```
+
+        The client will `.send()` the response back into the flow generator. You can
+        access it like so:
+
+        ```
+        response = yield request
+        ```
+
+        A `return` (or reaching the end of the generator) will result in the
+        client returning the last response obtained from the server.
+
+        You can dispatch as many requests as is necessary.
+        """
+        yield request
+
+
+class FunctionAuth(Auth):
+    """
+    Allows the 'auth' argument to be passed as a simple callable function,
+    that takes the request, and returns a new, modified request.
+    """
+
+    def __init__(self, func: typing.Callable[[Request], Request]) -> None:
+        self.func = func
+
+    def __call__(self, request: Request) -> AuthFlow:
+        yield self.func(request)
+
+
+class BasicAuth(Auth):
+    """
+    Allows the 'auth' argument to be passed as a (username, password) pair,
+    and uses HTTP Basic authentication.
+    """
+
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ):
         self.auth_header = self.build_auth_header(username, password)
 
-    def __call__(self, request: Request) -> Request:
+    def __call__(self, request: Request) -> AuthFlow:
         request.headers["Authorization"] = self.auth_header
-        return request
+        yield request
 
     def build_auth_header(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
@@ -30,7 +85,7 @@ class BasicAuth:
         return f"Basic {token}"
 
 
-class DigestAuth(Middleware):
+class DigestAuth(Auth):
     ALGORITHM_TO_HASH_FUNCTION: typing.Dict[str, typing.Callable] = {
         "MD5": hashlib.md5,
         "MD5-SESS": hashlib.md5,
@@ -48,14 +103,14 @@ class DigestAuth(Middleware):
         self.username = to_bytes(username)
         self.password = to_bytes(password)
 
-    async def __call__(
-        self, request: Request, get_response: typing.Callable
-    ) -> Response:
-        response = await get_response(request)
-        if response.status_code != 401 or "www-authenticate" not in response.headers:
-            return response
+    def __call__(self, request: Request) -> AuthFlow:
+        response = yield request
 
-        await response.close()
+        if response.status_code != 401 or "www-authenticate" not in response.headers:
+            # If the response is not a 401 WWW-Authenticate, then we don't
+            # need to build an authenticated request.
+            return
+
         header = response.headers["www-authenticate"]
         try:
             challenge = DigestAuthChallenge.from_header(header)
@@ -63,7 +118,7 @@ class DigestAuth(Middleware):
             raise ProtocolError("Malformed Digest authentication header")
 
         request.headers["Authorization"] = self._build_auth_header(request, challenge)
-        return await get_response(request)
+        yield request
 
     def _build_auth_header(
         self, request: Request, challenge: "DigestAuthChallenge"

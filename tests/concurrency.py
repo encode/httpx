@@ -9,9 +9,9 @@ import typing
 
 import trio
 
-from httpx.concurrency.asyncio import AsyncioBackend
-from httpx.concurrency.auto import AutoBackend
-from httpx.concurrency.trio import TrioBackend
+from httpx.backends.asyncio import AsyncioBackend
+from httpx.backends.auto import AutoBackend
+from httpx.backends.trio import TrioBackend
 
 
 @functools.singledispatch

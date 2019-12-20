@@ -1,6 +1,7 @@
 import typing
 
 from ..config import CertTypes, TimeoutTypes, VerifyTypes
+from ..content_streams import ByteStream
 from ..models import Request, Response
 from .base import Dispatcher
 
@@ -77,13 +78,14 @@ class ASGIDispatch(Dispatcher):
         status_code = None
         headers = None
         body_parts = []
-        request_stream = request.stream()
         response_started = False
         response_complete = False
 
+        request_body_chunks = request.stream.__aiter__()
+
         async def receive() -> dict:
             try:
-                body = await request_stream.__anext__()
+                body = await request_body_chunks.__anext__()
             except StopAsyncIteration:
                 return {"type": "http.request", "body": b"", "more_body": False}
             return {"type": "http.request", "body": body, "more_body": True}
@@ -120,10 +122,12 @@ class ASGIDispatch(Dispatcher):
         assert status_code is not None
         assert headers is not None
 
+        stream = ByteStream(b"".join(body_parts))
+
         return Response(
             status_code=status_code,
             http_version="HTTP/1.1",
             headers=headers,
-            content=b"".join(body_parts),
+            stream=stream,
             request=request,
         )

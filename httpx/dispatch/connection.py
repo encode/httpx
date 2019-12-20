@@ -4,7 +4,7 @@ import typing
 
 import h11
 
-from ..concurrency.base import BaseSocketStream, ConcurrencyBackend, lookup_backend
+from ..backends.base import BaseSocketStream, ConcurrencyBackend, lookup_backend
 from ..config import CertTypes, SSLConfig, Timeout, VerifyTypes
 from ..models import URL, Origin, Request, Response
 from ..optionals import requires_http2

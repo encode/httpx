@@ -56,7 +56,8 @@ class BaseSocketStream:
 
 class BaseEvent:
     """
-    An event object. Abstracts away any asyncio-specific interfaces.
+    An abstract interface for Event classes.
+    Abstracts away any asyncio-specific interfaces.
     """
 
     def set(self) -> None:
@@ -66,10 +67,9 @@ class BaseEvent:
         raise NotImplementedError()  # pragma: no cover
 
 
-class BasePoolSemaphore:
+class BaseSemaphore:
     """
-    A semaphore for use with connection pooling.
-
+    An abstract interface for Semaphore classes.
     Abstracts away any asyncio-specific interfaces.
     """
 
@@ -102,9 +102,6 @@ class ConcurrencyBackend:
     def time(self) -> float:
         raise NotImplementedError()  # pragma: no cover
 
-    def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
-        raise NotImplementedError()  # pragma: no cover
-
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
@@ -113,6 +110,9 @@ class ConcurrencyBackend:
     def run(
         self, coroutine: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
+        raise NotImplementedError()  # pragma: no cover
+
+    def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
         raise NotImplementedError()  # pragma: no cover
 
     def create_event(self) -> BaseEvent:
