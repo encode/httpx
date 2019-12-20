@@ -6,7 +6,7 @@ import sniffio
 from ..config import Timeout
 from .base import (
     BaseEvent,
-    BasePoolSemaphore,
+    BaseSemaphore,
     BaseSocketStream,
     ConcurrencyBackend,
     lookup_backend,
@@ -44,13 +44,13 @@ class AutoBackend(ConcurrencyBackend):
     def time(self) -> float:
         return self.backend.time()
 
-    def get_semaphore(self, max_value: int) -> BasePoolSemaphore:
-        return self.backend.get_semaphore(max_value)
-
     async def run_in_threadpool(
         self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
     ) -> typing.Any:
         return await self.backend.run_in_threadpool(func, *args, **kwargs)
+
+    def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
+        return self.backend.create_semaphore(max_value, exc_class)
 
     def create_event(self) -> BaseEvent:
         return self.backend.create_event()

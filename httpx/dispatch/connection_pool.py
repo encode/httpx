@@ -1,7 +1,8 @@
 import typing
 
-from ..concurrency.base import BasePoolSemaphore, ConcurrencyBackend, lookup_backend
+from ..concurrency.base import BaseSemaphore, ConcurrencyBackend, lookup_backend
 from ..config import DEFAULT_POOL_LIMITS, CertTypes, PoolLimits, Timeout, VerifyTypes
+from ..exceptions import PoolTimeout
 from ..models import Origin, Request, Response
 from ..utils import get_logger
 from .base import Dispatcher
@@ -13,7 +14,7 @@ CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
 logger = get_logger(__name__)
 
 
-class NullSemaphore(BasePoolSemaphore):
+class NullSemaphore(BaseSemaphore):
     async def acquire(self, timeout: float = None) -> None:
         return
 
@@ -106,15 +107,18 @@ class ConnectionPool(Dispatcher):
         self.next_keepalive_check = 0.0
 
     @property
-    def max_connections(self) -> BasePoolSemaphore:
+    def max_connections(self) -> BaseSemaphore:
         # We do this lazily, to make sure backend autodetection always
         # runs within an async context.
         if not hasattr(self, "_max_connections"):
             limit = self.pool_limits.hard_limit
-            if not limit:
-                self._max_connections = NullSemaphore()  # type: BasePoolSemaphore
+            if limit:
+                self._max_connections = self.backend.create_semaphore(
+                    limit, exc_class=PoolTimeout
+                )
             else:
-                self._max_connections = self.backend.get_semaphore(limit)
+                self._max_connections = NullSemaphore()
+
         return self._max_connections
 
     @property
