@@ -4,6 +4,7 @@ import brotli
 import pytest
 
 import httpx
+from httpx.content_streams import AsyncIteratorStream
 from httpx.decoders import (
     BrotliDecoder,
     DeflateDecoder,
@@ -12,7 +13,6 @@ from httpx.decoders import (
     LineDecoder,
     TextDecoder,
 )
-from httpx.content_streams import AsyncIteratorStream
 
 
 def test_deflate():
