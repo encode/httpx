@@ -259,11 +259,7 @@ def encode(
 ) -> ContentStream:
     """
     Handles encoding the given `data`, `files`, and `json`, returning
-    a `ContentStream` implementation which provides a byte iterator onto
-    the content, as well as `.is_rewindable()` and `.get_headers()` interfaces.
-
-    The `boundary` argument is also included for reproducible test cases
-    when working with multipart data.
+    a `ContentStream` implementation.
     """
     if data is None:
         if json is not None:
