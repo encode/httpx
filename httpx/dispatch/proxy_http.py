@@ -3,7 +3,7 @@ import typing
 import warnings
 from base64 import b64encode
 
-from ..concurrency.base import ConcurrencyBackend
+from ..backends.base import ConcurrencyBackend
 from ..config import DEFAULT_POOL_LIMITS, CertTypes, PoolLimits, Timeout, VerifyTypes
 from ..exceptions import ProxyError
 from ..models import URL, Headers, HeaderTypes, Origin, Request, Response, URLTypes

@@ -1,6 +1,6 @@
 import typing
 
-from ..concurrency.base import BaseSemaphore, ConcurrencyBackend, lookup_backend
+from ..backends.base import BaseSemaphore, ConcurrencyBackend, lookup_backend
 from ..config import DEFAULT_POOL_LIMITS, CertTypes, PoolLimits, Timeout, VerifyTypes
 from ..exceptions import PoolTimeout
 from ..models import Origin, Request, Response

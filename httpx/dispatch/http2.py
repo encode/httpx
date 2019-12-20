@@ -5,7 +5,7 @@ import h2.events
 from h2.config import H2Configuration
 from h2.settings import SettingCodes, Settings
 
-from ..concurrency.base import (
+from ..backends.base import (
     BaseEvent,
     BaseSocketStream,
     ConcurrencyBackend,

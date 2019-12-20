@@ -4,9 +4,9 @@ import pytest
 import trio
 
 from httpx import Timeout
-from httpx.concurrency.asyncio import AsyncioBackend
-from httpx.concurrency.base import lookup_backend
-from httpx.concurrency.trio import TrioBackend
+from httpx.backends.asyncio import AsyncioBackend
+from httpx.backends.base import lookup_backend
+from httpx.backends.trio import TrioBackend
 from httpx.config import SSLConfig
 from tests.concurrency import get_cipher, run_concurrently
 
