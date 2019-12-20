@@ -89,7 +89,7 @@ def test_url_params():
     assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
 
     url = URL("https://example.org:123/path/to/somewhere?b=456", params={"a": "123"})
-    assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
+    assert str(url) == "https://example.org:123/path/to/somewhere?b=456&a=123"
 
 
 def test_url_join():
