@@ -696,8 +696,6 @@ class Response:
     def url(self) -> typing.Optional[URL]:
         """
         Returns the URL for which the request was made.
-
-        Requires that `request` was provided when instantiating the response.
         """
         return self.request.url
 
