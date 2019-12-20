@@ -19,7 +19,7 @@ async def app(request):
         {"method": method, "path": path, "body": body.decode()}
     ).encode()
     headers = {"Content-Length": str(len(content))}
-    return Response(200, headers=headers, content=content)
+    return Response(200, headers=headers, content=content, request=request)
 
 
 @pytest.mark.asyncio
