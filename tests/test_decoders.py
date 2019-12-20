@@ -98,9 +98,7 @@ async def test_streaming():
 
     headers = [(b"Content-Encoding", b"gzip")]
     stream = AsyncIteratorStream(aiterator=compress(body))
-    response = httpx.Response(
-        200, headers=headers, stream=stream, request=REQUEST
-    )
+    response = httpx.Response(200, headers=headers, stream=stream, request=REQUEST)
     assert not hasattr(response, "body")
     assert await response.read() == body
 

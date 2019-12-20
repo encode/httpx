@@ -41,9 +41,7 @@ def test_response_content_type_encoding():
     """
     headers = {"Content-Type": "text-plain; charset=latin-1"}
     content = "Latin 1: ÿ".encode("latin-1")
-    response = httpx.Response(
-        200, content=content, headers=headers, request=REQUEST
-    )
+    response = httpx.Response(200, content=content, headers=headers, request=REQUEST)
     assert response.text == "Latin 1: ÿ"
     assert response.encoding == "latin-1"
 
@@ -64,9 +62,7 @@ def test_response_fallback_to_autodetect():
     """
     headers = {"Content-Type": "text-plain; charset=invalid-codec-name"}
     content = "おはようございます。".encode("EUC-JP")
-    response = httpx.Response(
-        200, content=content, headers=headers, request=REQUEST
-    )
+    response = httpx.Response(200, content=content, headers=headers, request=REQUEST)
     assert response.text == "おはようございます。"
     assert response.encoding == "EUC-JP"
 
@@ -78,9 +74,7 @@ def test_response_default_text_encoding():
     """
     content = b"Hello, world!"
     headers = {"Content-Type": "text/plain"}
-    response = httpx.Response(
-        200, content=content, headers=headers, request=REQUEST
-    )
+    response = httpx.Response(200, content=content, headers=headers, request=REQUEST)
     assert response.status_code == 200
     assert response.encoding == "iso-8859-1"
     assert response.text == "Hello, world!"
@@ -100,9 +94,7 @@ def test_response_non_text_encoding():
     Default to apparent encoding for non-text content-type headers.
     """
     headers = {"Content-Type": "image/png"}
-    response = httpx.Response(
-        200, content=b"xyz", headers=headers, request=REQUEST
-    )
+    response = httpx.Response(200, content=b"xyz", headers=headers, request=REQUEST)
     assert response.text == "xyz"
     assert response.encoding == "ascii"
 
@@ -112,10 +104,7 @@ def test_response_set_explicit_encoding():
         "Content-Type": "text-plain; charset=utf-8"
     }  # Deliberately incorrect charset
     response = httpx.Response(
-        200,
-        content="Latin 1: ÿ".encode("latin-1"),
-        headers=headers,
-        request=REQUEST,
+        200, content="Latin 1: ÿ".encode("latin-1"), headers=headers, request=REQUEST,
     )
     response.encoding = "latin-1"
     assert response.text == "Latin 1: ÿ"
@@ -255,9 +244,7 @@ def test_json_with_specified_encoding():
     data = {"greeting": "hello", "recipient": "world"}
     content = json.dumps(data).encode("utf-16")
     headers = {"Content-Type": "application/json, charset=utf-16"}
-    response = httpx.Response(
-        200, content=content, headers=headers, request=REQUEST
-    )
+    response = httpx.Response(200, content=content, headers=headers, request=REQUEST)
     assert response.json() == data
 
 
@@ -265,9 +252,7 @@ def test_json_with_options():
     data = {"greeting": "hello", "recipient": "world", "amount": 1}
     content = json.dumps(data).encode("utf-16")
     headers = {"Content-Type": "application/json, charset=utf-16"}
-    response = httpx.Response(
-        200, content=content, headers=headers, request=REQUEST
-    )
+    response = httpx.Response(200, content=content, headers=headers, request=REQUEST)
     assert response.json(parse_int=str)["amount"] == "1"
 
 
@@ -275,9 +260,7 @@ def test_json_without_specified_encoding():
     data = {"greeting": "hello", "recipient": "world"}
     content = json.dumps(data).encode("utf-32-be")
     headers = {"Content-Type": "application/json"}
-    response = httpx.Response(
-        200, content=content, headers=headers, request=REQUEST
-    )
+    response = httpx.Response(200, content=content, headers=headers, request=REQUEST)
     assert response.json() == data
 
 
