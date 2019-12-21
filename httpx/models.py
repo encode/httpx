@@ -661,11 +661,11 @@ class Response:
         self,
         status_code: int,
         *,
+        request: Request,
         http_version: str = None,
         headers: HeaderTypes = None,
         stream: ContentStream = None,
         content: bytes = None,
-        request: Request = None,
         history: typing.List["Response"] = None,
         elapsed: datetime.timedelta = None,
     ):
@@ -696,10 +696,8 @@ class Response:
     def url(self) -> typing.Optional[URL]:
         """
         Returns the URL for which the request was made.
-
-        Requires that `request` was provided when instantiating the response.
         """
-        return None if self.request is None else self.request.url
+        return self.request.url
 
     @property
     def content(self) -> bytes:
@@ -831,7 +829,6 @@ class Response:
     @property
     def cookies(self) -> "Cookies":
         if not hasattr(self, "_cookies"):
-            assert self.request is not None
             self._cookies = Cookies()
             self._cookies.extract_cookies(self)
         return self._cookies
@@ -967,7 +964,6 @@ class Cookies(MutableMapping):
         """
         Loads any cookies based on the response `Set-Cookie` headers.
         """
-        assert response.request is not None
         urlib_response = self._CookieCompatResponse(response)
         urllib_request = self._CookieCompatRequest(response.request)
 

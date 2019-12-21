@@ -22,7 +22,7 @@ class MockDispatch(Dispatcher):
         timeout: TimeoutTypes = None,
     ) -> httpx.Response:
         content = b"".join([part async for part in request.stream])
-        return httpx.Response(200, content=content)
+        return httpx.Response(200, content=content, request=request)
 
 
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
