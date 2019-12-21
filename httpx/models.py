@@ -850,7 +850,15 @@ class Response:
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
-    async def read(self) -> bytes:
+    @property
+    def read(self) -> typing.Callable:
+        warnings.warn(
+            "Response.read() is due to be deprecated. Use Response.aread() instead.",
+            category=DeprecationWarning,
+        )
+        return self.aread
+
+    async def aread(self) -> bytes:
         """
         Read and return the response content.
         """
@@ -862,7 +870,8 @@ class Response:
     def stream(self):  # type: ignore
         warnings.warn(
             "Response.stream() is due to be deprecated. "
-            "Use Response.aiter_bytes() instead."
+            "Use Response.aiter_bytes() instead.",
+            category=DeprecationWarning,
         )
         return self.aiter_bytes
 
@@ -870,7 +879,8 @@ class Response:
     def raw(self):  # type: ignore
         warnings.warn(
             "Response.raw() is due to be deprecated. "
-            "Use Response.aiter_raw() instead."
+            "Use Response.aiter_raw() instead.",
+            category=DeprecationWarning,
         )
         return self.aiter_raw
 
@@ -920,7 +930,7 @@ class Response:
             self.is_stream_consumed = True
             async for part in self._raw_stream:
                 yield part
-            await self.close()
+            await self.aclose()
 
     async def next(self) -> "Response":
         """
@@ -931,7 +941,16 @@ class Response:
         assert self.call_next is not None
         return await self.call_next()
 
-    async def close(self) -> None:
+    @property
+    def close(self) -> typing.Callable:
+        warnings.warn(
+            "Response.close() is due to be deprecated. "
+            "Use Response.aclose() instead.",
+            category=DeprecationWarning,
+        )
+        return self.aclose
+
+    async def aclose(self) -> None:
         """
         Close the response and release the connection.
         Automatically called if the response body is read to completion.

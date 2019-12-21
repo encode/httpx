@@ -131,7 +131,7 @@ async def test_read_response():
     assert response.encoding == "ascii"
     assert response.is_closed
 
-    content = await response.read()
+    content = await response.aread()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
@@ -162,7 +162,7 @@ async def test_bytes_interface():
 async def test_text_interface():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
 
-    await response.read()
+    await response.aread()
 
     content = ""
     async for part in response.aiter_text():
@@ -174,7 +174,7 @@ async def test_text_interface():
 async def test_lines_interface():
     response = httpx.Response(200, content=b"Hello,\nworld!", request=REQUEST)
 
-    await response.read()
+    await response.aread()
 
     content = []
     async for line in response.aiter_lines():
@@ -186,7 +186,7 @@ async def test_lines_interface():
 async def test_stream_interface_after_read():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
 
-    await response.read()
+    await response.aread()
 
     content = b""
     async for part in response.aiter_bytes():
@@ -202,7 +202,7 @@ async def test_streaming_response():
     assert response.status_code == 200
     assert not response.is_closed
 
-    content = await response.read()
+    content = await response.aread()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
@@ -219,7 +219,7 @@ async def test_cannot_read_after_stream_consumed():
         content += part
 
     with pytest.raises(httpx.StreamConsumed):
-        await response.read()
+        await response.aread()
 
 
 @pytest.mark.asyncio
@@ -227,10 +227,10 @@ async def test_cannot_read_after_response_closed():
     stream = AsyncIteratorStream(aiterator=async_streaming_body())
     response = httpx.Response(200, stream=stream, request=REQUEST)
 
-    await response.close()
+    await response.aclose()
 
     with pytest.raises(httpx.ResponseClosed):
-        await response.read()
+        await response.aread()
 
 
 def test_unknown_status_code():
@@ -296,3 +296,22 @@ def test_json_without_specified_encoding_decode_error():
 def test_link_headers(headers, expected):
     response = httpx.Response(200, content=None, headers=headers, request=REQUEST)
     assert response.links == expected
+
+
+@pytest.mark.asyncio
+async def test_response_deprecations() -> None:
+    response = httpx.Response(200, request=REQUEST)
+
+    with pytest.deprecated_call(match="aread"):
+        await response.read()
+
+    with pytest.deprecated_call(match="aiter_raw"):
+        async for _ in response.raw():
+            pass
+
+    with pytest.deprecated_call(match="aiter_bytes"):
+        async for _ in response.stream():
+            pass
+
+    with pytest.deprecated_call(match="aclose"):
+        await response.close()
