@@ -226,24 +226,28 @@ class Client:
             warnings.warn(
                 "Passing a 'cert' argument when making a request on a client "
                 "is due to be deprecated. Instantiate a new client instead, "
-                "passing any 'cert' arguments to the client itself."
+                "passing any 'cert' arguments to the client itself.",
+                category=DeprecationWarning,
             )
         if verify is not None:
             warnings.warn(
                 "Passing a 'verify' argument when making a request on a client "
                 "is due to be deprecated. Instantiate a new client instead, "
-                "passing any 'verify' arguments to the client itself."
+                "passing any 'verify' arguments to the client itself.",
+                category=DeprecationWarning,
             )
         if trust_env is not None:
             warnings.warn(
                 "Passing a 'trust_env' argument when making a request on a client "
                 "is due to be deprecated. Instantiate a new client instead, "
-                "passing any 'trust_env' argument to the client itself."
+                "passing any 'trust_env' argument to the client itself.",
+                category=DeprecationWarning,
             )
         if stream:
             warnings.warn(
                 "The 'stream=True' argument is due to be deprecated. "
-                "Use 'async with client.stream(method, url, ...) as response' instead."
+                "Use 'async with client.stream(method, url, ...) as response' instead.",
+                category=DeprecationWarning,
             )
 
         request = self.build_request(
@@ -891,7 +895,15 @@ class Client:
             trust_env=trust_env,
         )
 
-    async def close(self) -> None:
+    @property
+    def close(self) -> typing.Callable:
+        warnings.warn(
+            "Client.close() is due to be deprecated. Use Client.aclose() instead.",
+            category=DeprecationWarning,
+        )
+        return self.aclose
+
+    async def aclose(self) -> None:
         await self.dispatch.close()
 
     async def __aenter__(self) -> "Client":
@@ -903,7 +915,7 @@ class Client:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self.close()
+        await self.aclose()
 
 
 def _proxies_to_dispatchers(
@@ -982,4 +994,4 @@ class StreamContextManager:
     ) -> None:
         await self.response.close()
         if self.close_client:
-            await self.client.close()
+            await self.client.aclose()

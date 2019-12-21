@@ -1,3 +1,4 @@
+import typing
 from datetime import timedelta
 
 import pytest
@@ -167,3 +168,25 @@ async def test_explicit_backend(server, async_environment):
         response = await client.get(server.url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_client_deprecations(server: typing.Any) -> None:
+    url = server.url
+    client = httpx.Client()
+
+    with pytest.deprecated_call():
+        await client.get(url, cert="example.pem")
+
+    with pytest.deprecated_call():
+        await client.get(url, verify=False)
+
+    with pytest.deprecated_call():
+        await client.get(url, trust_env=False)
+
+    with pytest.deprecated_call(match="client.stream"):
+        response = await client.get(url, stream=True)
+        await response.close()
+
+    with pytest.deprecated_call(match="aclose"):
+        await client.close()
