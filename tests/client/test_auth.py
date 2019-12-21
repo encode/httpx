@@ -195,8 +195,7 @@ async def test_auth_hidden_header() -> None:
     client = Client(dispatch=MockDispatch())
     response = await client.get(url, auth=auth)
 
-    request = typing.cast(Request, response.request)
-    assert "'authorization': '[secure]'" in str(request.headers)
+    assert "'authorization': '[secure]'" in str(response.request.headers)
 
 
 @pytest.mark.asyncio
