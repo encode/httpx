@@ -68,7 +68,7 @@
 * `def .aiter_text()` - **async text iterator**
 * `def .aiter_lines()` - **async text iterator**
 * `def .close()` - **None**
-* `def .next()` - **Response**
+* `def .anext()` - **Response**
 
 ## `Request`
 

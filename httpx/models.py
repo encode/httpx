@@ -1,6 +1,7 @@
 import cgi
 import datetime
 import email.message
+import inspect
 import json as jsonlib
 import typing
 import urllib.request
@@ -922,13 +923,14 @@ class Response:
                 yield part
             await self.close()
 
-    async def next(self) -> "Response":
+    async def anext(self) -> "Response":
         """
         Get the next response from a redirect response.
         """
         if not self.is_redirect:
             raise NotRedirectResponse()
         assert self.call_next is not None
+        assert inspect.iscoroutinefunction(self.call_next)
         return await self.call_next()
 
     async def close(self) -> None:
