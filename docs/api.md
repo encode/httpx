@@ -62,12 +62,12 @@
   the total elapsed seconds.
 * `def .raise_for_status()` - **None**
 * `def .json()` - **Any**
-* `def .read()` - **bytes**
+* `def .aread()` - **bytes**
 * `def .stream_raw()` - **async bytes iterator**
 * `def .stream_bytes()` - **async bytes iterator**
 * `def .stream_text()` - **async text iterator**
 * `def .stream_lines()` - **async text iterator**
-* `def .close()` - **None**
+* `def .aclose()` - **None**
 * `def .next()` - **Response**
 
 ## `Request`
