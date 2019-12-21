@@ -21,14 +21,14 @@ The recommended way to use a `Client` is as a context manager. This will ensure 
 <Response [200 OK]>
 ```
 
-Alternatively, you can explicitly close the connection pool without block-usage using `.close()`:
+Alternatively, you can explicitly close the connection pool without block-usage using `.aclose()`:
 
 ```python
 >>> client = httpx.Client()
 >>> try:
 ...     r = await client.get('https://example.com')
 ... finally:
-...     await client.close()
+...     await client.aclose()
 ...
 >>> r
 <Response [200 OK]>

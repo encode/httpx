@@ -891,7 +891,7 @@ class Client:
             trust_env=trust_env,
         )
 
-    async def close(self) -> None:
+    async def aclose(self) -> None:
         await self.dispatch.close()
 
     async def __aenter__(self) -> "Client":
@@ -903,7 +903,7 @@ class Client:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self.close()
+        await self.aclose()
 
 
 def _proxies_to_dispatchers(
@@ -982,4 +982,4 @@ class StreamContextManager:
     ) -> None:
         await self.response.close()
         if self.close_client:
-            await self.client.close()
+            await self.client.aclose()
