@@ -63,10 +63,10 @@
 * `def .raise_for_status()` - **None**
 * `def .json()` - **Any**
 * `def .read()` - **bytes**
-* `def .stream_raw()` - **async bytes iterator**
-* `def .stream_bytes()` - **async bytes iterator**
-* `def .stream_text()` - **async text iterator**
-* `def .stream_lines()` - **async text iterator**
+* `def .aiter_raw()` - **async bytes iterator**
+* `def .aiter_bytes()` - **async bytes iterator**
+* `def .aiter_text()` - **async text iterator**
+* `def .aiter_lines()` - **async text iterator**
 * `def .close()` - **None**
 * `def .next()` - **Response**
 
