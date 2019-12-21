@@ -59,7 +59,7 @@ async def test_post_json(server):
 async def test_stream_response(server):
     async with httpx.Client() as client:
         async with client.stream("GET", server.url) as response:
-            content = await response.read()
+            content = await response.aread()
     assert response.status_code == 200
     assert content == b"Hello, world!"
 

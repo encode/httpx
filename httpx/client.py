@@ -411,9 +411,9 @@ class Client:
 
         if not stream:
             try:
-                await response.read()
+                await response.aread()
             finally:
-                await response.close()
+                await response.aclose()
 
         return response
 
@@ -470,7 +470,7 @@ class Client:
             if not response.is_redirect:
                 return response
 
-            await response.read()
+            await response.aread()
             request = self.build_redirect_request(request, response)
             history = history + [response]
 
@@ -596,11 +596,11 @@ class Client:
             except StopIteration:
                 return response
             except BaseException as exc:
-                await response.close()
+                await response.aclose()
                 raise exc from None
             else:
                 request = next_request
-                await response.close()
+                await response.aclose()
 
     async def send_single_request(
         self,
@@ -980,6 +980,6 @@ class StreamContextManager:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self.response.close()
+        await self.response.aclose()
         if self.close_client:
             await self.client.close()

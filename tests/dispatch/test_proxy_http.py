@@ -119,7 +119,7 @@ async def test_proxy_tunnel_start_tls():
         assert resp.request.url == "https://example.com"
         assert resp.request.headers["Host"] == "example.com"
 
-        await resp.read()
+        await resp.aread()
 
         # Make another request to see that the tunnel is re-used.
         resp = await proxy.request("GET", "https://example.com/target")
@@ -131,7 +131,7 @@ async def test_proxy_tunnel_start_tls():
         assert resp.request.url == "https://example.com/target"
         assert resp.request.headers["Host"] == "example.com"
 
-        await resp.read()
+        await resp.aread()
 
     recv = raw_io.received_data
     assert len(recv) == 5

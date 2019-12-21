@@ -8,7 +8,7 @@ from httpx.dispatch.connection import HTTPConnection
 async def test_get(server):
     async with HTTPConnection(origin=server.url) as conn:
         response = await conn.request("GET", server.url)
-        await response.read()
+        await response.aread()
         assert response.status_code == 200
         assert response.content == b"Hello, world!"
 
@@ -27,7 +27,7 @@ async def test_premature_close(server):
             response = await conn.request(
                 "GET", server.url.copy_with(path="/premature_close")
             )
-            await response.read()
+            await response.aread()
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -37,7 +37,7 @@ async def test_https_get_with_ssl_defaults(https_server, ca_cert_pem_file):
     """
     async with HTTPConnection(origin=https_server.url, verify=ca_cert_pem_file) as conn:
         response = await conn.request("GET", https_server.url)
-        await response.read()
+        await response.aread()
         assert response.status_code == 200
         assert response.content == b"Hello, world!"
 
@@ -49,6 +49,6 @@ async def test_https_get_with_sll_overrides(https_server, ca_cert_pem_file):
     """
     async with HTTPConnection(origin=https_server.url) as conn:
         response = await conn.request("GET", https_server.url, verify=ca_cert_pem_file)
-        await response.read()
+        await response.aread()
         assert response.status_code == 200
         assert response.content == b"Hello, world!"
