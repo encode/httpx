@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import typing
 
 import pytest
 
@@ -84,7 +85,7 @@ class MockDigestAuthDispatch(Dispatcher):
 
 
 @pytest.mark.asyncio
-async def test_basic_auth():
+async def test_basic_auth() -> None:
     url = "https://example.org/"
     auth = ("tomchristie", "password123")
 
@@ -96,7 +97,7 @@ async def test_basic_auth():
 
 
 @pytest.mark.asyncio
-async def test_basic_auth_in_url():
+async def test_basic_auth_in_url() -> None:
     url = "https://tomchristie:password123@example.org/"
 
     client = Client(dispatch=MockDispatch())
@@ -107,7 +108,7 @@ async def test_basic_auth_in_url():
 
 
 @pytest.mark.asyncio
-async def test_basic_auth_on_session():
+async def test_basic_auth_on_session() -> None:
     url = "https://example.org/"
     auth = ("tomchristie", "password123")
 
@@ -119,10 +120,10 @@ async def test_basic_auth_on_session():
 
 
 @pytest.mark.asyncio
-async def test_custom_auth():
+async def test_custom_auth() -> None:
     url = "https://example.org/"
 
-    def auth(request):
+    def auth(request: Request) -> Request:
         request.headers["Authorization"] = "Token 123"
         return request
 
@@ -134,7 +135,7 @@ async def test_custom_auth():
 
 
 @pytest.mark.asyncio
-async def test_netrc_auth():
+async def test_netrc_auth() -> None:
     os.environ["NETRC"] = "tests/.netrc"
     url = "http://netrcexample.org"
 
@@ -148,7 +149,7 @@ async def test_netrc_auth():
 
 
 @pytest.mark.asyncio
-async def test_auth_header_has_priority_over_netrc():
+async def test_auth_header_has_priority_over_netrc() -> None:
     os.environ["NETRC"] = "tests/.netrc"
     url = "http://netrcexample.org"
 
@@ -160,7 +161,7 @@ async def test_auth_header_has_priority_over_netrc():
 
 
 @pytest.mark.asyncio
-async def test_trust_env_auth():
+async def test_trust_env_auth() -> None:
     os.environ["NETRC"] = "tests/.netrc"
     url = "http://netrcexample.org"
 
@@ -179,7 +180,7 @@ async def test_trust_env_auth():
     }
 
 
-def test_auth_hidden_url():
+def test_auth_hidden_url() -> None:
     url = "http://example-username:example-password@example.org/"
     expected = "URL('http://example-username:[secure]@example.org/')"
     assert url == URL(url)
@@ -187,7 +188,7 @@ def test_auth_hidden_url():
 
 
 @pytest.mark.asyncio
-async def test_auth_hidden_header():
+async def test_auth_hidden_header() -> None:
     url = "https://example.org/"
     auth = ("example-username", "example-password")
 
@@ -198,15 +199,17 @@ async def test_auth_hidden_header():
 
 
 @pytest.mark.asyncio
-async def test_auth_invalid_type():
+async def test_auth_invalid_type() -> None:
     url = "https://example.org/"
-    client = Client(dispatch=MockDispatch(), auth="not a tuple, not a callable")
+    client = Client(
+        dispatch=MockDispatch(), auth="not a tuple, not a callable",  # type: ignore
+    )
     with pytest.raises(TypeError):
         await client.get(url)
 
 
 @pytest.mark.asyncio
-async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response():
+async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
 
@@ -218,7 +221,7 @@ async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response():
 
 
 @pytest.mark.asyncio
-async def test_digest_auth_200_response_including_digest_auth_header():
+async def test_digest_auth_200_response_including_digest_auth_header() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
     auth_header = 'Digest realm="realm@host.com",qop="auth",nonce="abc",opaque="xyz"'
@@ -231,7 +234,7 @@ async def test_digest_auth_200_response_including_digest_auth_header():
 
 
 @pytest.mark.asyncio
-async def test_digest_auth_401_response_without_digest_auth_header():
+async def test_digest_auth_401_response_without_digest_auth_header() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
 
@@ -256,7 +259,9 @@ async def test_digest_auth_401_response_without_digest_auth_header():
     ],
 )
 @pytest.mark.asyncio
-async def test_digest_auth(algorithm, expected_hash_length, expected_response_length):
+async def test_digest_auth(
+    algorithm: str, expected_hash_length: int, expected_response_length: int
+) -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
 
@@ -264,10 +269,11 @@ async def test_digest_auth(algorithm, expected_hash_length, expected_response_le
     response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
-    auth = response.json()["auth"]
-    assert auth.startswith("Digest ")
+    authorization = typing.cast(dict, response.json())["auth"]
+    scheme, _, fields = authorization.partition(" ")
+    assert scheme == "Digest"
 
-    response_fields = [field.strip() for field in auth[auth.find(" ") :].split(",")]
+    response_fields = [field.strip() for field in fields.split(",")]
     digest_data = dict(field.split("=") for field in response_fields)
 
     assert digest_data["username"] == '"tomchristie"'
@@ -283,18 +289,19 @@ async def test_digest_auth(algorithm, expected_hash_length, expected_response_le
 
 
 @pytest.mark.asyncio
-async def test_digest_auth_no_specified_qop():
+async def test_digest_auth_no_specified_qop() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
 
-    client = Client(dispatch=MockDigestAuthDispatch(qop=None))
+    client = Client(dispatch=MockDigestAuthDispatch(qop=""))
     response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
-    auth = response.json()["auth"]
-    assert auth.startswith("Digest ")
+    authorization = typing.cast(dict, response.json())["auth"]
+    scheme, _, fields = authorization.partition(" ")
+    assert scheme == "Digest"
 
-    response_fields = [field.strip() for field in auth[auth.find(" ") :].split(",")]
+    response_fields = [field.strip() for field in fields.split(",")]
     digest_data = dict(field.split("=") for field in response_fields)
 
     assert "qop" not in digest_data
@@ -311,7 +318,7 @@ async def test_digest_auth_no_specified_qop():
 
 @pytest.mark.parametrize("qop", ("auth, auth-int", "auth,auth-int", "unknown,auth"))
 @pytest.mark.asyncio
-async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str):
+async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
 
@@ -320,7 +327,7 @@ async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str):
 
 
 @pytest.mark.asyncio
-async def test_digest_auth_qop_auth_int_not_implemented():
+async def test_digest_auth_qop_auth_int_not_implemented() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
     client = Client(dispatch=MockDigestAuthDispatch(qop="auth-int"))
@@ -330,7 +337,7 @@ async def test_digest_auth_qop_auth_int_not_implemented():
 
 
 @pytest.mark.asyncio
-async def test_digest_auth_qop_must_be_auth_or_auth_int():
+async def test_digest_auth_qop_must_be_auth_or_auth_int() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
     client = Client(dispatch=MockDigestAuthDispatch(qop="not-auth"))
@@ -340,7 +347,7 @@ async def test_digest_auth_qop_must_be_auth_or_auth_int():
 
 
 @pytest.mark.asyncio
-async def test_digest_auth_incorrect_credentials():
+async def test_digest_auth_incorrect_credentials() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
 
@@ -361,7 +368,9 @@ async def test_digest_auth_incorrect_credentials():
     ],
 )
 @pytest.mark.asyncio
-async def test_digest_auth_raises_protocol_error_on_malformed_header(auth_header: str):
+async def test_digest_auth_raises_protocol_error_on_malformed_header(
+    auth_header: str,
+) -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
     client = Client(dispatch=MockDispatch(auth_header=auth_header, status_code=401))
