@@ -19,7 +19,7 @@ async def app(request):
         {"method": method, "path": path, "body": body.decode()}
     ).encode()
     headers = {"Content-Length": str(len(content))}
-    return Response(200, headers=headers, content=content)
+    return Response(200, headers=headers, content=content, request=request)
 
 
 @pytest.mark.asyncio
@@ -102,7 +102,8 @@ async def test_http2_reconnect():
     assert json.loads(response_2.content) == {"method": "GET", "path": "/2", "body": ""}
 
 
-async def test_http2_settings_in_handshake(backend):
+@pytest.mark.asyncio
+async def test_http2_settings_in_handshake():
     backend = MockHTTP2Backend(app=app)
 
     async with Client(backend=backend, http2=True) as client:
@@ -137,7 +138,8 @@ async def test_http2_settings_in_handshake(backend):
         assert changed_setting.new_value == expected_settings[setting_code]
 
 
-async def test_http2_live_request(backend):
+@pytest.mark.usefixtures("async_environment")
+async def test_http2_live_request():
     async with Client(http2=True) as client:
         try:
             resp = await client.get("https://nghttp2.org/httpbin/anything")
