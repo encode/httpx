@@ -5,7 +5,8 @@ import httpx
 from .utils import MockRawSocketBackend
 
 
-async def test_proxy_tunnel_success(backend):
+@pytest.mark.asyncio
+async def test_proxy_tunnel_success():
     raw_io = MockRawSocketBackend(
         data_to_send=(
             [
@@ -41,8 +42,9 @@ async def test_proxy_tunnel_success(backend):
     assert recv[2].startswith(b"GET / HTTP/1.1\r\nhost: example.com\r\n")
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("status_code", [300, 304, 308, 401, 500])
-async def test_proxy_tunnel_non_2xx_response(backend, status_code):
+async def test_proxy_tunnel_non_2xx_response(status_code):
     raw_io = MockRawSocketBackend(
         data_to_send=(
             [
@@ -78,7 +80,8 @@ async def test_proxy_tunnel_non_2xx_response(backend, status_code):
     )
 
 
-async def test_proxy_tunnel_start_tls(backend):
+@pytest.mark.asyncio
+async def test_proxy_tunnel_start_tls():
     raw_io = MockRawSocketBackend(
         data_to_send=(
             [
@@ -141,8 +144,9 @@ async def test_proxy_tunnel_start_tls(backend):
     assert recv[4].startswith(b"GET /target HTTP/1.1\r\nhost: example.com\r\n")
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("proxy_mode", ["FORWARD_ONLY", "DEFAULT"])
-async def test_proxy_forwarding(backend, proxy_mode):
+async def test_proxy_forwarding(proxy_mode):
     raw_io = MockRawSocketBackend(
         data_to_send=(
             [
