@@ -1,7 +1,6 @@
 import cgi
 import datetime
 import email.message
-import inspect
 import json as jsonlib
 import typing
 import urllib.request
@@ -930,7 +929,6 @@ class Response:
         if not self.is_redirect:
             raise NotRedirectResponse()
         assert self.call_next is not None
-        assert inspect.iscoroutinefunction(self.call_next)
         return await self.call_next()
 
     async def close(self) -> None:

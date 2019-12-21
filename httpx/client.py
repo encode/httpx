@@ -476,12 +476,7 @@ class Client:
 
             if not allow_redirects:
                 response.call_next = functools.partial(
-                    # NOTE: not using 'self.send_handling_redirects' here, because
-                    # 'call_next' must reference a function (instead
-                    # of a method). This ensures that 'inspect.iscoroutinefunction()'
-                    # checks behave properly.
-                    Client.send_handling_redirects,
-                    self,
+                    self.send_handling_redirects,
                     request=request,
                     auth=auth,
                     verify=verify,
