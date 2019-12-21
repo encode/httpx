@@ -189,8 +189,8 @@ class Client:
         return self._cookies
 
     @cookies.setter
-    def cookies(self, cookies: CookieTypes) -> None:
-        self._cookies = Cookies(cookies)
+    def cookies(self, cookies: Cookies) -> None:
+        self._cookies = cookies
 
     @property
     def params(self) -> QueryParams:

@@ -105,7 +105,7 @@ async def test_setting_client_cookies_to_cookiejar():
     cookies.set_cookie(cookie)
 
     client = Client(dispatch=MockDispatch())
-    client.cookies = cookies
+    client.cookies = Cookies(cookies)
     response = await client.get(url)
 
     assert response.status_code == 200

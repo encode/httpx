@@ -10,7 +10,7 @@ def test_client_headers():
 
 def test_client_cookies():
     client = Client()
-    client.cookies = {"a": "b"}
+    client.cookies = Cookies({"a": "b"})
     assert isinstance(client.cookies, Cookies)
     mycookies = list(client.cookies.jar)
     assert len(mycookies) == 1
