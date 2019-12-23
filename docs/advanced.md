@@ -10,7 +10,7 @@ all outgoing requests.
     A Client instance is equivalent to a Session instance in `requests`.
 
 !!! note
-    Starting from `httpx==0.10.0`, the default and recommended Client class is `AsyncClient`.
+    Starting from `httpx==0.10.0`, the default and recommended Client class is `AsyncClient`. This should help prevent breaking changes once sync support is reintroduced.
 
     A `Client` synonym remains for compatibility with `httpx==0.9.*` releases, but you are encouraged to migrate to `AsyncClient` as soon as possible.
 
