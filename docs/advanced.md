@@ -9,12 +9,17 @@ all outgoing requests.
 !!! hint
     A Client instance is equivalent to a Session instance in `requests`.
 
+!!! note
+    Starting from `httpx==0.10.0`, the default and recommended Client class is `AsyncClient`.
+
+    A `Client` synonym remains for compatibility with `httpx==0.9.*` releases, but you are encouraged to migrate to `AsyncClient` as soon as possible.
+
 ### Usage
 
 The recommended way to use a `Client` is as a context manager. This will ensure that connections are properly cleaned up when leaving the `with` block:
 
 ```python
->>> async with httpx.Client() as client:
+>>> async with httpx.AsyncClient() as client:
 ...     r = await client.get('https://example.com')
 ...
 >>> r
@@ -24,7 +29,7 @@ The recommended way to use a `Client` is as a context manager. This will ensure 
 Alternatively, you can explicitly close the connection pool without block-usage using `.close()`:
 
 ```python
->>> client = httpx.Client()
+>>> client = httpx.AsyncClient()
 >>> try:
 ...     r = await client.get('https://example.com')
 ... finally:
@@ -45,7 +50,7 @@ For example, to apply a set of custom headers on every request:
 ```python
 >>> url = 'http://httpbin.org/headers'
 >>> headers = {'user-agent': 'my-app/0.0.1'}
->>> async with httpx.Client(headers=headers) as client:
+>>> async with httpx.AsyncClient(headers=headers) as client:
 ...     r = await client.get(url)
 ...
 >>> r.json()['headers']['User-Agent']
@@ -58,19 +63,19 @@ For example, to apply a set of custom headers on every request:
     - For headers, query parameters and cookies, the values are merged into one.
     - For all other parameters, the request-level value is used.
 
-Additionally, `Client` constructor accepts some parameters that aren't available at the request level.
+Additionally, `Client` accepts some parameters that aren't available at the request level.
 
 One particularly useful parameter is `base_url`, which allows you to define a base URL to prepend to all outgoing requests:
 
 ```python
->>> async with httpx.Client(base_url='http://httpbin.org') as client:
+>>> async with httpx.AsyncClient(base_url='http://httpbin.org') as client:
 ...     r = await client.get('/headers')
 ...
 >>> r.request.url
 URL('http://httpbin.org/headers')
 ```
 
-For a list of all available client-level parameters, see the [`Client` API reference](/api/#client).
+For a list of all available client-level parameters, see the [`AsyncClient` API reference](/api/#async-client).
 
 ## Calling into Python Web Apps
 
@@ -101,7 +106,7 @@ We can make requests directly against the application, like so:
 
 ```python
 >>> import httpx
->>> async with httpx.Client(app=app) as client:
+>>> async with httpx.AsyncClient(app=app) as client:
 ...     r = client.get('http://example/')
 ...     assert r.status_code == 200
 ...     assert r.text == "Hello World!"
@@ -119,7 +124,7 @@ For example:
 # Instantiate a client that makes ASGI requests with a client IP of "1.2.3.4",
 # on port 123.
 dispatch = httpx.dispatch.ASGIDispatch(app=app, client=("1.2.3.4", 123))
-async with httpx.Client(dispatch=dispatch) as client:
+async with httpx.AsyncClient(dispatch=dispatch) as client:
     ...
 ```
 
@@ -132,7 +137,7 @@ You can use `Client.build_request()` to build a request and
 make modifications before sending the request.
 
 ```python
->>> async with httpx.Client() as client:
+>>> async with httpx.AsyncClient() as client:
 ...     req = client.build_request("OPTIONS", "https://example.com")
 ...     req.url.full_path = "*"  # Build an 'OPTIONS *' request for CORS
 ...     r = await client.send(req)
@@ -177,7 +182,7 @@ password example-password
 When using `Client` instances, `trust_env` should be set on the client itself, rather that on the request methods:
 
 ```python
-client = httpx.Client(trust_env=False)
+client = httpx.AsyncClient(trust_env=False)
 ```
 
 ## Unix Domain Sockets
@@ -190,7 +195,7 @@ Here's an example requesting the Docker Engine API:
 import httpx
 
 
-async with httpx.Client(uds="/var/run/docker.sock") as client:
+async with httpx.AsyncClient(uds="/var/run/docker.sock") as client:
     # This request will connect through the socket file.
     resp = await client.get("http://localhost/version")
 ```
@@ -206,7 +211,7 @@ to `http://127.0.0.1:3081` your `proxies` config would look like this:
 ...     "http": "http://127.0.0.1:3080",
 ...     "https": "http://127.0.0.1:3081"
 ... }
->>> async with httpx.Client(proxies=proxies) as client:
+>>> async with httpx.AsyncClient(proxies=proxies) as client:
 ...     ...
 ```
 
@@ -221,11 +226,11 @@ to use for a given request this same order is used.
 ...     "http": "...",  # Scheme
 ...     "all": "...",  # All
 ... }
->>> async with httpx.Client(proxies=proxies) as client:
+>>> async with httpx.AsyncClient(proxies=proxies) as client:
 ...     ...
 ...
 >>> proxy = "..."  # Shortcut for {'all': '...'}
->>> async with httpx.Client(proxies=proxy) as client:
+>>> async with httpx.AsyncClient(proxies=proxy) as client:
 ...     ...
 ```
 
@@ -245,7 +250,7 @@ proxy = httpx.HTTPProxy(
     proxy_url="https://127.0.0.1",
     proxy_mode="TUNNEL_ONLY"  # May be "TUNNEL_ONLY" or "FORWARD_ONLY". Defaults to "DEFAULT".
 )
-async with httpx.Client(proxies=proxy) as client:
+async with httpx.AsyncClient(proxies=proxy) as client:
     # This request will be tunneled instead of forwarded.
     r = await client.get("http://example.com")
 ```
@@ -272,7 +277,7 @@ You can set timeouts for an individual request:
 await httpx.get('http://example.com/api/v1/example', timeout=10.0)
 
 # Using a client instance:
-async with httpx.Client() as client:
+async with httpx.AsyncClient() as client:
     await client.get("http://example.com/api/v1/example", timeout=10.0)
 ```
 
@@ -283,7 +288,7 @@ Or disable timeouts for an individual request:
 await httpx.get('http://example.com/api/v1/example', timeout=None)
 
 # Using a client instance:
-async with httpx.Client() as client:
+async with httpx.AsyncClient() as client:
     await client.get("http://example.com/api/v1/example", timeout=None)
 ```
 
@@ -293,9 +298,9 @@ You can set a timeout on a client instance, which results in the given
 `timeout` being used as the default for requests made with this client:
 
 ```python
-client = httpx.Client()              # Use a default 5s timeout everywhere.
-client = httpx.Client(timeout=10.0)  # Use a default 10s timeout everywhere.
-client = httpx.Client(timeout=None)  # Disable all timeouts by default.
+client = httpx.AsyncClient()              # Use a default 5s timeout everywhere.
+client = httpx.AsyncClient(timeout=10.0)  # Use a default 10s timeout everywhere.
+client = httpx.AsyncClient(timeout=None)  # Disable all timeouts by default.
 ```
 
 ### Fine tuning the configuration
@@ -325,7 +330,7 @@ You can configure the timeout behavior for any of these values...
 ```python
 # A client with a 60s timeout for connecting, and a 10s timeout elsewhere.
 timeout = httpx.Timeout(10.0, connect_timeout=60.0)
-client = httpx.Client(timeout=timeout)
+client = httpx.AsyncClient(timeout=timeout)
 
 response = await client.get('http://example.com/')
 ```
@@ -404,7 +409,7 @@ r = await httpx.get("https://example.org", verify=False)
 If you're using a `Client()` instance, then you should pass any SSL settings when instantiating the client.
 
 ```python
-client = httpx.Client(verify=False)
+client = httpx.AsyncClient(verify=False)
 ```
 
 The `client.get(...)` method and other request methods *do not* support changing the SSL settings on a per-request basis. If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
@@ -437,9 +442,9 @@ You can also explicitly select a backend by instantiating a client with the
 `backend` argument...
 
 ```python
-client = httpx.Client(backend='auto')     # Autodetection. The default case.
-client = httpx.Client(backend='asyncio')  # Use asyncio as the backend.
-client = httpx.Client(backend='trio')     # Use trio as the backend.
+client = httpx.AsyncClient(backend='auto')     # Autodetection. The default case.
+client = httpx.AsyncClient(backend='asyncio')  # Use asyncio as the backend.
+client = httpx.AsyncClient(backend='trio')     # Use trio as the backend.
 ```
 
 ### [AsyncIO](https://docs.python.org/3/library/asyncio.html)
@@ -452,7 +457,7 @@ import asyncio
 import httpx
 
 async def main():
-    client = httpx.Client()
+    client = httpx.AsyncClient()
     response = await client.get('https://www.example.com/')
     print(response)
 
@@ -469,7 +474,7 @@ import httpx
 import trio
 
 async def main():
-    client = httpx.Client()
+    client = httpx.AsyncClient()
     response = await client.get('https://www.example.com/')
     print(response)
 

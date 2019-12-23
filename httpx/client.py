@@ -52,14 +52,15 @@ from .utils import ElapsedTimer, NetRCInfo, get_environment_proxies, get_logger
 logger = get_logger(__name__)
 
 
-class Client:
+class AsyncClient:
     """
-    An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.
+    An asynchronous HTTP client, with connection pooling, HTTP/2, redirects,
+    cookie persistence, etc.
 
     Usage:
 
-    ```
-    >>> client = httpx.Client()
+    ```python
+    >>> client = httpx.AsyncClient()
     >>> response = client.get('https://example.org')
     ```
 
@@ -894,7 +895,7 @@ class Client:
     async def close(self) -> None:
         await self.dispatch.close()
 
-    async def __aenter__(self) -> "Client":
+    async def __aenter__(self) -> "AsyncClient":
         return self
 
     async def __aexit__(
@@ -949,7 +950,7 @@ def _proxies_to_dispatchers(
 class StreamContextManager:
     def __init__(
         self,
-        client: Client,
+        client: AsyncClient,
         request: Request,
         *,
         auth: AuthTypes = None,
@@ -983,3 +984,7 @@ class StreamContextManager:
         await self.response.close()
         if self.close_client:
             await self.client.close()
+
+
+# For compatibility with 0.9.x.
+Client = AsyncClient
