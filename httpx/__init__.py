@@ -64,6 +64,7 @@ __all__ = [
     "ProtocolError",
     "ReadTimeout",
     "RedirectBodyUnavailable",
+    "RequestBodyUnavailable",
     "RedirectLoop",
     "ResponseClosed",
     "ResponseNotRead",
