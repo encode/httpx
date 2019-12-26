@@ -451,7 +451,7 @@ class AsyncClient:
                 raise RedirectLoop()
 
             response = await self.send_handling_auth(
-                request, auth=auth, timeout=timeout,
+                request, history, auth=auth, timeout=timeout, verify=verify, cert=cert
             )
             response.history = list(history)
 
@@ -566,12 +566,21 @@ class AsyncClient:
         return request.stream
 
     async def send_handling_auth(
-        self, request: Request, auth: Auth, timeout: Timeout,
+        self,
+        request: Request,
+        history: typing.List[Response],
+        auth: Auth,
+        timeout: Timeout,
+        verify: VerifyTypes = None,
+        cert: CertTypes = None,
     ) -> Response:
         auth_flow = auth(request)
         request = next(auth_flow)
+        requested_more_than_once = False
         while True:
             response = await self.send_single_request(request, timeout)
+            if requested_more_than_once:
+                history.append(response)
             try:
                 next_request = auth_flow.send(response)
             except StopIteration:
@@ -582,6 +591,7 @@ class AsyncClient:
             else:
                 request = next_request
                 await response.aclose()
+            requested_more_than_once = True
 
     async def send_single_request(
         self, request: Request, timeout: Timeout,
