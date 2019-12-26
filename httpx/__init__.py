@@ -18,6 +18,7 @@ from .exceptions import (
     ProxyError,
     ReadTimeout,
     RedirectBodyUnavailable,
+    RequestBodyUnavailable,
     RedirectLoop,
     ResponseClosed,
     ResponseNotRead,
