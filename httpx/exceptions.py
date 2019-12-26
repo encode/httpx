@@ -92,11 +92,6 @@ class RedirectBodyUnavailable(RedirectError):
     no longer available.
     """
 
-class RequestBodyUnavailable(RedirectBodyUnavailable):
-    """
-    Got a request body, but the request body is no longer available.
-    """
-
 
 class RedirectLoop(RedirectError):
     """
