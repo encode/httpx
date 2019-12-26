@@ -6,7 +6,7 @@ import typing
 from base64 import b64encode
 from urllib.request import parse_http_list
 
-from .exceptions import ProtocolError, RedirectBodyUnavailable
+from .exceptions import ProtocolError, RequestBodyUnavailable
 from .models import Request, Response
 from .utils import to_bytes, to_str, unquote
 
@@ -105,7 +105,7 @@ class DigestAuth(Auth):
 
     def __call__(self, request: Request) -> AuthFlow:
         if not request.stream.can_replay():
-            raise RedirectBodyUnavailable("Non-replayable request is passed")
+            raise RequestBodyUnavailable("Request body is no longer available.")
         response = yield request
 
         if response.status_code != 401 or "www-authenticate" not in response.headers:
