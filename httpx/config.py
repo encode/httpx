@@ -10,7 +10,9 @@ from .utils import get_ca_bundle_from_env, get_logger
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
-TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float, float], "Timeout"]
+TimeoutTypes = typing.Union[
+    None, float, typing.Tuple[float, float, float, float], "Timeout"
+]
 
 
 USER_AGENT = f"python-httpx/{__version__}"
