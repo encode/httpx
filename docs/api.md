@@ -56,8 +56,7 @@
 * `.cookies` - **Cookies**
 * `.history` - **List[Response]**
 * `.elapsed` - **[timedelta](https://docs.python.org/3/library/datetime.html)**
-  * The amount of time elapsed between sending the first byte and parsing the headers (not including time spent reading
-  the response).  Use
+  * The amount of time elapsed between sending the request and calling `close()` on the corresponding response received for that request.
   [total_seconds()](https://docs.python.org/3/library/datetime.html#datetime.timedelta.total_seconds) to correctly get
   the total elapsed seconds.
 * `def .raise_for_status()` - **None**
