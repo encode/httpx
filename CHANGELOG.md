@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## 0.10.0 (December 29th, 2019)
 
-The 0.10.0 makes some changes that will allow us to support both sync and async interfaces.
+The 0.10.0 release makes some changes that will allow us to support both sync and async interfaces.
 
 In particular with streaming responses the `response.read()` method becomes `response.aread()`, and the `response.close()` method becomes `response.aclose()`.
 
