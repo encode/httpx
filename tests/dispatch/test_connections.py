@@ -31,9 +31,9 @@ async def test_premature_close(server):
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_https_get_with_ssl_defaults(https_server, ca_cert_pem_file):
+async def test_https_get_with_ssl(https_server, ca_cert_pem_file):
     """
-    An HTTPS request, with default SSL configuration set on the client.
+    An HTTPS request, with SSL configuration set on the client.
     """
     async with HTTPConnection(origin=https_server.url, verify=ca_cert_pem_file) as conn:
         response = await conn.request("GET", https_server.url)
@@ -41,14 +41,3 @@ async def test_https_get_with_ssl_defaults(https_server, ca_cert_pem_file):
         assert response.status_code == 200
         assert response.content == b"Hello, world!"
 
-
-@pytest.mark.usefixtures("async_environment")
-async def test_https_get_with_sll_overrides(https_server, ca_cert_pem_file):
-    """
-    An HTTPS request, with SSL configuration set on the request.
-    """
-    async with HTTPConnection(origin=https_server.url) as conn:
-        response = await conn.request("GET", https_server.url, verify=ca_cert_pem_file)
-        await response.aread()
-        assert response.status_code == 200
-        assert response.content == b"Hello, world!"

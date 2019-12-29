@@ -140,21 +140,13 @@ class ConnectionPool(Dispatcher):
                 self.max_connections.release()
                 await connection.close()
 
-    async def send(
-        self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: Timeout = None,
-    ) -> Response:
+    async def send(self, request: Request, timeout: Timeout = None) -> Response:
         await self.check_keepalive_expiry()
         connection = await self.acquire_connection(
             origin=request.url.origin, timeout=timeout
         )
         try:
-            response = await connection.send(
-                request, verify=verify, cert=cert, timeout=timeout
-            )
+            response = await connection.send(request, timeout=timeout)
         except BaseException as exc:
             self.active_connections.remove(connection)
             self.max_connections.release()

@@ -22,10 +22,12 @@ class MockDispatch(Dispatcher):
         elif request.url.path.startswith("/set_cookie"):
             headers = {"set-cookie": "example-name=example-value"}
             return Response(200, headers=headers, request=request)
+        else:
+            raise NotImplementedError  # pragma: no cover
 
 
 @pytest.mark.asyncio
-async def test_set_cookie():
+async def test_set_cookie() -> None:
     """
     Send a request including a cookie.
     """
@@ -40,7 +42,7 @@ async def test_set_cookie():
 
 
 @pytest.mark.asyncio
-async def test_set_cookie_with_cookiejar():
+async def test_set_cookie_with_cookiejar() -> None:
     """
     Send a request including a cookie, using a `CookieJar` instance.
     """
@@ -63,7 +65,7 @@ async def test_set_cookie_with_cookiejar():
         discard=True,
         comment=None,
         comment_url=None,
-        rest={"HttpOnly": None},
+        rest={"HttpOnly": ""},
         rfc2109=False,
     )
     cookies.set_cookie(cookie)
@@ -76,7 +78,7 @@ async def test_set_cookie_with_cookiejar():
 
 
 @pytest.mark.asyncio
-async def test_setting_client_cookies_to_cookiejar():
+async def test_setting_client_cookies_to_cookiejar() -> None:
     """
     Send a request including a cookie, using a `CookieJar` instance.
     """
@@ -99,13 +101,13 @@ async def test_setting_client_cookies_to_cookiejar():
         discard=True,
         comment=None,
         comment_url=None,
-        rest={"HttpOnly": None},
+        rest={"HttpOnly": ""},
         rfc2109=False,
     )
     cookies.set_cookie(cookie)
 
     client = Client(dispatch=MockDispatch())
-    client.cookies = cookies
+    client.cookies = cookies  # type: ignore
     response = await client.get(url)
 
     assert response.status_code == 200
@@ -113,7 +115,7 @@ async def test_setting_client_cookies_to_cookiejar():
 
 
 @pytest.mark.asyncio
-async def test_set_cookie_with_cookies_model():
+async def test_set_cookie_with_cookies_model() -> None:
     """
     Send a request including a cookie, using a `Cookies` instance.
     """
@@ -130,7 +132,7 @@ async def test_set_cookie_with_cookies_model():
 
 
 @pytest.mark.asyncio
-async def test_get_cookie():
+async def test_get_cookie() -> None:
     url = "http://example.org/set_cookie"
 
     client = Client(dispatch=MockDispatch())
@@ -142,7 +144,7 @@ async def test_get_cookie():
 
 
 @pytest.mark.asyncio
-async def test_cookie_persistence():
+async def test_cookie_persistence() -> None:
     """
     Ensure that Client instances persist cookies between requests.
     """

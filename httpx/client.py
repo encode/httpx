@@ -223,23 +223,26 @@ class Client:
         trust_env: bool = None,
     ) -> Response:
         if cert is not None:
-            warnings.warn(
+            raise RuntimeError(
                 "Passing a 'cert' argument when making a request on a client "
-                "is due to be deprecated. Instantiate a new client instead, "
+                "is not supported anymore. Instantiate a new client instead, "
                 "passing any 'cert' arguments to the client itself."
             )
+
         if verify is not None:
-            warnings.warn(
+            raise RuntimeError(
                 "Passing a 'verify' argument when making a request on a client "
-                "is due to be deprecated. Instantiate a new client instead, "
+                "is not supported anymore. Instantiate a new client instead, "
                 "passing any 'verify' arguments to the client itself."
             )
+
         if trust_env is not None:
-            warnings.warn(
+            raise RuntimeError(
                 "Passing a 'trust_env' argument when making a request on a client "
-                "is due to be deprecated. Instantiate a new client instead, "
+                "is not supported anymore. Instantiate a new client instead, "
                 "passing any 'trust_env' argument to the client itself."
             )
+
         if stream:
             warnings.warn(
                 "The 'stream=True' argument is due to be deprecated. "
@@ -261,10 +264,7 @@ class Client:
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
         return response
 
@@ -388,25 +388,17 @@ class Client:
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         if request.url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        auth = self.setup_auth(request, trust_env, auth)
+        auth = self.setup_auth(request, auth)
 
         response = await self.send_handling_redirects(
-            request,
-            auth=auth,
-            verify=verify,
-            cert=cert,
-            timeout=timeout,
-            allow_redirects=allow_redirects,
+            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
         )
 
         if not stream:
@@ -417,11 +409,8 @@ class Client:
 
         return response
 
-    def setup_auth(
-        self, request: Request, trust_env: bool = None, auth: AuthTypes = None
-    ) -> Auth:
+    def setup_auth(self, request: Request, auth: AuthTypes = None) -> Auth:
         auth = self.auth if auth is None else auth
-        trust_env = self.trust_env if trust_env is None else trust_env
 
         if auth is not None:
             if isinstance(auth, tuple):
@@ -436,7 +425,7 @@ class Client:
         if username or password:
             return BasicAuth(username=username, password=password)
 
-        if trust_env and "Authorization" not in request.headers:
+        if self.trust_env and "Authorization" not in request.headers:
             credentials = self.netrc.get_credentials(request.url.authority)
             if credentials is not None:
                 return BasicAuth(username=credentials[0], password=credentials[1])
@@ -448,8 +437,6 @@ class Client:
         request: Request,
         auth: Auth,
         timeout: Timeout,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
         allow_redirects: bool = True,
         history: typing.List[Response] = None,
     ) -> Response:
@@ -463,7 +450,7 @@ class Client:
                 raise RedirectLoop()
 
             response = await self.send_handling_auth(
-                request, auth=auth, timeout=timeout, verify=verify, cert=cert
+                request, auth=auth, timeout=timeout,
             )
             response.history = list(history)
 
@@ -479,8 +466,6 @@ class Client:
                     self.send_handling_redirects,
                     request=request,
                     auth=auth,
-                    verify=verify,
-                    cert=cert,
                     timeout=timeout,
                     allow_redirects=False,
                     history=history,
@@ -580,17 +565,12 @@ class Client:
         return request.stream
 
     async def send_handling_auth(
-        self,
-        request: Request,
-        auth: Auth,
-        timeout: Timeout,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
+        self, request: Request, auth: Auth, timeout: Timeout,
     ) -> Response:
         auth_flow = auth(request)
         request = next(auth_flow)
         while True:
-            response = await self.send_single_request(request, timeout, verify, cert)
+            response = await self.send_single_request(request, timeout)
             try:
                 next_request = auth_flow.send(response)
             except StopIteration:
@@ -603,11 +583,7 @@ class Client:
                 await response.aclose()
 
     async def send_single_request(
-        self,
-        request: Request,
-        timeout: Timeout,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
+        self, request: Request, timeout: Timeout,
     ) -> Response:
         """
         Sends a single request, without handling any redirections.
@@ -617,9 +593,7 @@ class Client:
 
         try:
             with ElapsedTimer() as timer:
-                response = await dispatcher.send(
-                    request, verify=verify, cert=cert, timeout=timeout
-                )
+                response = await dispatcher.send(request, timeout=timeout)
             response.elapsed = timer.elapsed
             response.request = request
         except HTTPError as exc:

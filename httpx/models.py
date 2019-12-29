@@ -649,12 +649,6 @@ class Request:
         url = str(self.url)
         return f"<{class_name}({self.method!r}, {url!r})>"
 
-    async def read(self) -> bytes:
-        """
-        Read and return the request content.
-        """
-        return b"".join([part async for part in self.stream])
-
 
 class Response:
     def __init__(
