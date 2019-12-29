@@ -34,6 +34,7 @@ from .exceptions import (
 )
 from .status_codes import StatusCode
 from .utils import (
+    ElapsedTimer,
     flatten_queryparams,
     guess_json_utf,
     is_known_encoding,
@@ -607,6 +608,7 @@ class Request:
         else:
             self.stream = encode(data, files, json)
 
+        self.timer = ElapsedTimer()
         self.prepare()
 
     def prepare(self) -> None:
@@ -661,14 +663,12 @@ class Response:
         stream: ContentStream = None,
         content: bytes = None,
         history: typing.List["Response"] = None,
-        elapsed: datetime.timedelta = None,
     ):
         self.status_code = status_code
         self.http_version = http_version
         self.headers = Headers(headers)
 
         self.request = request
-        self.elapsed = datetime.timedelta(0) if elapsed is None else elapsed
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.history = [] if history is None else list(history)
@@ -677,10 +677,24 @@ class Response:
             self.is_closed = True
             self.is_stream_consumed = True
             self._raw_content = content or b""
+            self._elapsed = request.timer.elapsed
         else:
             self.is_closed = False
             self.is_stream_consumed = False
             self._raw_stream = stream
+
+    @property
+    def elapsed(self) -> datetime.timedelta:
+        """
+        Returns the time taken for the complete request/response
+        cycle to complete.
+        """
+        if not hasattr(self, "_elapsed"):
+            raise RuntimeError(
+                "'.elapsed' may only be accessed after the response "
+                "has been read or closed."
+            )
+        return self._elapsed
 
     @property
     def reason_phrase(self) -> str:
@@ -932,6 +946,7 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
+            self._elapsed = self.request.timer.elapsed
             if hasattr(self, "_raw_stream"):
                 await self._raw_stream.aclose()
 

@@ -47,7 +47,7 @@ from .models import (
     URLTypes,
 )
 from .status_codes import codes
-from .utils import ElapsedTimer, NetRCInfo, get_environment_proxies, get_logger
+from .utils import NetRCInfo, get_environment_proxies, get_logger
 
 logger = get_logger(__name__)
 
@@ -593,10 +593,7 @@ class AsyncClient:
         dispatcher = self.dispatcher_for_url(request.url)
 
         try:
-            with ElapsedTimer() as timer:
-                response = await dispatcher.send(request, timeout=timeout)
-            response.elapsed = timer.elapsed
-            response.request = request
+            response = await dispatcher.send(request, timeout=timeout)
         except HTTPError as exc:
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
