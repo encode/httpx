@@ -5,7 +5,7 @@ import typing
 
 from ..config import Timeout
 from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
-from .base import BaseEvent, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
+from .base import BaseLock, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
 
 SSL_MONKEY_PATCH_APPLIED = False
 
@@ -252,19 +252,19 @@ class AsyncioBackend(ConcurrencyBackend):
     def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
         return Semaphore(max_value, exc_class)
 
-    def create_event(self) -> BaseEvent:
-        return Event()
+    def create_lock(self) -> BaseLock:
+        return Lock()
 
 
-class Event(BaseEvent):
+class Lock(BaseLock):
     def __init__(self) -> None:
-        self._event = asyncio.Event()
+        self._lock = asyncio.Lock()
 
-    def set(self) -> None:
-        self._event.set()
+    def release(self) -> None:
+        self._lock.release()
 
-    async def wait(self) -> None:
-        await self._event.wait()
+    async def acquire(self) -> None:
+        await self._lock.acquire()
 
 
 class Semaphore(BaseSemaphore):

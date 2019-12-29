@@ -6,7 +6,7 @@ import trio
 
 from ..config import Timeout
 from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
-from .base import BaseEvent, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
+from .base import BaseLock, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
 
 
 def none_as_inf(value: typing.Optional[float]) -> float:
@@ -139,8 +139,8 @@ class TrioBackend(ConcurrencyBackend):
     def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
         return Semaphore(max_value, exc_class)
 
-    def create_event(self) -> BaseEvent:
-        return Event()
+    def create_lock(self) -> BaseLock:
+        return Lock()
 
 
 class Semaphore(BaseSemaphore):
@@ -167,12 +167,12 @@ class Semaphore(BaseSemaphore):
         self.semaphore.release()
 
 
-class Event(BaseEvent):
+class Lock(BaseLock):
     def __init__(self) -> None:
-        self._event = trio.Event()
+        self._lock = trio.Lock()
 
-    def set(self) -> None:
-        self._event.set()
+    def release(self) -> None:
+        self._lock.release()
 
-    async def wait(self) -> None:
-        await self._event.wait()
+    async def acquire(self) -> None:
+        await self._lock.acquire()
