@@ -32,7 +32,7 @@ Within a `stream()` block request data is made available with:
 * `.aiter_text()` - Instead of `response.iter_content(decode_unicode=True)`
 * `.aiter_lines()` - Instead of `response.iter_lines()`
 * `.aiter_raw()` - Use this instead of `response.raw`
-* `.read()` - Read the entire response body, making `request.text` and `response.content` available.
+* `.aread()` - Read the entire response body, making `request.text` and `response.content` available.
 
 ## SSL configuration
 

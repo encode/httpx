@@ -155,7 +155,7 @@ class HTTPProxy(ConnectionPool):
             f"response={proxy_response!r}"
         )
         if not (200 <= proxy_response.status_code <= 299):
-            await proxy_response.read()
+            await proxy_response.aread()
             raise ProxyError(
                 f"Non-2XX response received from HTTP proxy "
                 f"({proxy_response.status_code})",

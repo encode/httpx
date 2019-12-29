@@ -339,7 +339,7 @@ If you're using streaming responses in any of these ways then the `response.cont
 ```
 >>> async with httpx.stream("GET", "https://www.example.com") as r:
 ...     if r.headers['Content-Length'] < TOO_LONG:
-...         await r.read()
+...         await r.aread()
 ...         print(r.text)
 ```
 
