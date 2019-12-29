@@ -69,7 +69,7 @@ async def test_delete(server):
 @pytest.mark.asyncio
 async def test_stream(server):
     async with httpx.stream("GET", server.url) as response:
-        await response.read()
+        await response.aread()
 
     assert response.status_code == 200
     assert response.reason_phrase == "OK"

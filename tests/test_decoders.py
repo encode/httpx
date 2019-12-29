@@ -100,7 +100,7 @@ async def test_streaming():
     stream = AsyncIteratorStream(aiterator=compress(body))
     response = httpx.Response(200, headers=headers, stream=stream, request=REQUEST)
     assert not hasattr(response, "body")
-    assert await response.read() == body
+    assert await response.aread() == body
 
 
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br", b"identity"))
@@ -157,7 +157,7 @@ async def test_text_decoder(data, encoding):
 
     stream = AsyncIteratorStream(aiterator=iterator())
     response = httpx.Response(200, stream=stream, request=REQUEST)
-    await response.read()
+    await response.aread()
     assert response.text == (b"".join(data)).decode(encoding)
 
 
@@ -176,7 +176,7 @@ async def test_text_decoder_known_encoding():
         request=REQUEST,
     )
 
-    await response.read()
+    await response.aread()
     assert "".join(response.text) == "トラベル"
 
 
