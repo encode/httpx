@@ -53,6 +53,18 @@ class HTTP2Connection(OpenConnection):
             self._initialization_lock = self.backend.create_lock()
         return self._initialization_lock
 
+    @property
+    def read_lock(self) -> BaseLock:
+        if not hasattr(self, "_read_lock"):
+            self._read_lock = self.backend.create_lock()
+        return self._read_lock
+
+    @property
+    def write_lock(self) -> BaseLock:
+        if not hasattr(self, "_write_lock"):
+            self._write_lock = self.backend.create_lock()
+        return self._write_lock
+
     async def send(self, request: Request, timeout: Timeout = None) -> Response:
         timeout = Timeout() if timeout is None else timeout
 
@@ -107,7 +119,9 @@ class HTTP2Connection(OpenConnection):
         return self.socket.is_connection_dropped()
 
     async def close(self) -> None:
-        await self.socket.close()
+        async with self.write_lock:
+            async with self.read_lock:
+                await self.socket.close()
 
     async def wait_for_outgoing_flow(self, stream_id: int, timeout: Timeout) -> int:
         """
@@ -143,20 +157,25 @@ class HTTP2Connection(OpenConnection):
         """
         Read some data from the network, and update the H2 state.
         """
-        data = await self.socket.read(self.READ_NUM_BYTES, timeout)
-        events = self.state.receive_data(data)
-        for event in events:
-            event_stream_id = getattr(event, "stream_id", 0)
-            logger.trace(f"receive_event stream_id={event_stream_id} event={event!r}")
+        async with self.read_lock:
+            data = await self.socket.read(self.READ_NUM_BYTES, timeout)
+            events = self.state.receive_data(data)
 
-            if hasattr(event, "error_code"):
-                raise ProtocolError(event)
+            for event in events:
+                event_stream_id = getattr(event, "stream_id", 0)
+                logger.trace(
+                    f"receive_event stream_id={event_stream_id} event={event!r}"
+                )
 
-            if event_stream_id in self.events:
-                self.events[event_stream_id].append(event)
+                if hasattr(event, "error_code"):
+                    raise ProtocolError(event)
 
-        data_to_send = self.state.data_to_send()
-        await self.socket.write(data_to_send, timeout)
+                if event_stream_id in self.events:
+                    self.events[event_stream_id].append(event)
+
+        async with self.write_lock:
+            data_to_send = self.state.data_to_send()
+            await self.socket.write(data_to_send, timeout)
 
     async def send_headers(
         self,
@@ -165,27 +184,31 @@ class HTTP2Connection(OpenConnection):
         end_stream: bool,
         timeout: Timeout,
     ) -> None:
-        self.state.send_headers(stream_id, headers, end_stream=end_stream)
-        self.state.increment_flow_control_window(2 ** 24, stream_id=stream_id)
-        data_to_send = self.state.data_to_send()
-        await self.socket.write(data_to_send, timeout)
+        async with self.write_lock:
+            self.state.send_headers(stream_id, headers, end_stream=end_stream)
+            self.state.increment_flow_control_window(2 ** 24, stream_id=stream_id)
+            data_to_send = self.state.data_to_send()
+            await self.socket.write(data_to_send, timeout)
 
     async def send_data(self, stream_id: int, chunk: bytes, timeout: Timeout) -> None:
-        self.state.send_data(stream_id, chunk)
-        data_to_send = self.state.data_to_send()
-        await self.socket.write(data_to_send, timeout)
+        async with self.write_lock:
+            self.state.send_data(stream_id, chunk)
+            data_to_send = self.state.data_to_send()
+            await self.socket.write(data_to_send, timeout)
 
     async def end_stream(self, stream_id: int, timeout: Timeout) -> None:
-        self.state.end_stream(stream_id)
-        data_to_send = self.state.data_to_send()
-        await self.socket.write(data_to_send, timeout)
+        async with self.write_lock:
+            self.state.end_stream(stream_id)
+            data_to_send = self.state.data_to_send()
+            await self.socket.write(data_to_send, timeout)
 
     async def acknowledge_received_data(
         self, stream_id: int, amount: int, timeout: Timeout
     ) -> None:
-        self.state.acknowledge_received_data(amount, stream_id)
-        data_to_send = self.state.data_to_send()
-        await self.socket.write(data_to_send, timeout)
+        async with self.write_lock:
+            self.state.acknowledge_received_data(amount, stream_id)
+            data_to_send = self.state.data_to_send()
+            await self.socket.write(data_to_send, timeout)
 
     async def close_stream(self, stream_id: int) -> None:
         del self.streams[stream_id]

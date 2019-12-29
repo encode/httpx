@@ -18,8 +18,6 @@ class SocketStream(BaseSocketStream):
         self, stream: typing.Union[trio.SocketStream, trio.SSLStream],
     ) -> None:
         self.stream = stream
-        self.read_lock = trio.Lock()
-        self.write_lock = trio.Lock()
 
     async def start_tls(
         self, hostname: str, ssl_context: ssl.SSLContext, timeout: Timeout
@@ -46,8 +44,7 @@ class SocketStream(BaseSocketStream):
         read_timeout = none_as_inf(timeout.read_timeout)
 
         with trio.move_on_after(read_timeout):
-            async with self.read_lock:
-                return await self.stream.receive_some(max_bytes=n)
+            return await self.stream.receive_some(max_bytes=n)
 
         raise ReadTimeout()
 
@@ -58,8 +55,7 @@ class SocketStream(BaseSocketStream):
         write_timeout = none_as_inf(timeout.write_timeout)
 
         with trio.move_on_after(write_timeout):
-            async with self.write_lock:
-                return await self.stream.send_all(data)
+            return await self.stream.send_all(data)
 
         raise WriteTimeout()
 

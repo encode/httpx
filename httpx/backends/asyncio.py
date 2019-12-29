@@ -76,7 +76,6 @@ class SocketStream(BaseSocketStream):
     ):
         self.stream_reader = stream_reader
         self.stream_writer = stream_writer
-        self.read_lock = asyncio.Lock()
 
         self._inner: typing.Optional[SocketStream] = None
 
@@ -124,10 +123,9 @@ class SocketStream(BaseSocketStream):
 
     async def read(self, n: int, timeout: Timeout) -> bytes:
         try:
-            async with self.read_lock:
-                return await asyncio.wait_for(
-                    self.stream_reader.read(n), timeout.read_timeout
-                )
+            return await asyncio.wait_for(
+                self.stream_reader.read(n), timeout.read_timeout
+            )
         except asyncio.TimeoutError:
             raise ReadTimeout() from None
 
