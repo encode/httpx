@@ -52,7 +52,7 @@ We don't support `response.is_ok` since the naming is ambiguous there, and might
 
 ## Client instances
 
-The HTTPX equivalent of `requests.Session` is `httpx.Client`.
+The HTTPX equivalent of `requests.Session` is `httpx.AsyncClient`.
 
 ```python
 session = requests.Session(**kwargs)
@@ -61,7 +61,7 @@ session = requests.Session(**kwargs)
 is generally equivalent to
 
 ```python
-client = httpx.Client(**kwargs)
+client = httpx.AsyncClient(**kwargs)
 ```
 
 ## Mocking

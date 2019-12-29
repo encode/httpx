@@ -18,7 +18,7 @@ class Dispatcher:
 
     Stubs out the interface, as well as providing a `.request()` convenience
     implementation, to make it easy to use or test stand-alone dispatchers,
-    without requiring a complete `Client` instance.
+    without requiring a complete `AsyncClient` instance.
     """
 
     async def request(
