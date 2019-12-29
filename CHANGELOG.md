@@ -16,7 +16,7 @@ If following redirects explicitly the `response.next()` method becomes `response
 
 - End HTTP/2 streams immediately on no-body requests, rather than sending an empty body message. (Pull #682)
 - Improve typing for `Response.request`: switch from `Optional[Request]` to `Request`. (Pull #666)
-- `Response.elapsed` now reflects the entire download time. (Pull #692)
+- `Response.elapsed` now reflects the entire download time. (Pull #687, #692)
 
 ### Changed
 
