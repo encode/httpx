@@ -23,13 +23,12 @@ async def async_streaming_body():
 @pytest.mark.asyncio
 async def test_response():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
-    await response.close()
 
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert response.request is REQUEST
-    assert response.elapsed > datetime.timedelta(0)
+    assert response.elapsed == datetime.timedelta(0)
     assert not response.is_error
 
 
