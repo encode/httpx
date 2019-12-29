@@ -40,4 +40,3 @@ async def test_https_get_with_ssl(https_server, ca_cert_pem_file):
         await response.aread()
         assert response.status_code == 200
         assert response.content == b"Hello, world!"
-
