@@ -28,7 +28,7 @@ async def test_response():
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert response.request is REQUEST
-    assert response.elapsed == datetime.timedelta(0)
+    assert response.elapsed >= datetime.timedelta(0)
     assert not response.is_error
 
 

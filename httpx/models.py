@@ -683,7 +683,7 @@ class Response:
             self.is_closed = True
             self.is_stream_consumed = True
             self._raw_content = content or b""
-            self._elapsed = datetime.timedelta(0)
+            self._elapsed = request.timer.elapsed
         else:
             self.is_closed = False
             self.is_stream_consumed = False
