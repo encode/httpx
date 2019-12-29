@@ -5,7 +5,7 @@ import sniffio
 
 from ..config import Timeout
 from .base import (
-    BaseEvent,
+    BaseLock,
     BaseSemaphore,
     BaseSocketStream,
     ConcurrencyBackend,
@@ -52,5 +52,5 @@ class AutoBackend(ConcurrencyBackend):
     def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
         return self.backend.create_semaphore(max_value, exc_class)
 
-    def create_event(self) -> BaseEvent:
-        return self.backend.create_event()
+    def create_lock(self) -> BaseLock:
+        return self.backend.create_lock()
