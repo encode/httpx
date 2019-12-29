@@ -117,11 +117,7 @@ class HTTPProxy(ConnectionPool):
             self.active_connections.add(connection)
 
             await connection.tunnel_start_tls(
-                origin=origin,
-                proxy_url=self.proxy_url,
-                timeout=timeout,
-                cert=self.cert,
-                verify=self.verify,
+                origin=origin, proxy_url=self.proxy_url, timeout=timeout,
             )
         else:
             self.active_connections.add(connection)
@@ -159,7 +155,7 @@ class HTTPProxy(ConnectionPool):
             f"response={proxy_response!r}"
         )
         if not (200 <= proxy_response.status_code <= 299):
-            await proxy_response.read()
+            await proxy_response.aread()
             raise ProxyError(
                 f"Non-2XX response received from HTTP proxy "
                 f"({proxy_response.status_code})",
@@ -183,14 +179,7 @@ class HTTPProxy(ConnectionPool):
             self.proxy_mode == DEFAULT_MODE and not origin.is_ssl
         ) or self.proxy_mode == FORWARD_ONLY
 
-    async def send(
-        self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: Timeout = None,
-    ) -> Response:
-
+    async def send(self, request: Request, timeout: Timeout = None) -> Response:
         if self.should_forward_origin(request.url.origin):
             # Change the request to have the target URL
             # as its full_path and switch the proxy URL
@@ -201,9 +190,7 @@ class HTTPProxy(ConnectionPool):
             for name, value in self.proxy_headers.items():
                 request.headers.setdefault(name, value)
 
-        return await super().send(
-            request=request, verify=verify, cert=cert, timeout=timeout
-        )
+        return await super().send(request=request, timeout=timeout)
 
     def __repr__(self) -> str:
         return (
