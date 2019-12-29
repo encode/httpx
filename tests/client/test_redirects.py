@@ -110,7 +110,7 @@ async def test_no_redirect():
     response = await client.get(url)
     assert response.status_code == 200
     with pytest.raises(NotRedirectResponse):
-        await response.next()
+        await response.anext()
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -151,7 +151,7 @@ async def test_disallow_redirects():
     assert response.is_redirect is True
     assert len(response.history) == 0
 
-    response = await response.next()
+    response = await response.anext()
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert response.is_redirect is False
@@ -216,7 +216,7 @@ async def test_too_many_redirects_calling_next():
     response = await client.get(url, allow_redirects=False)
     with pytest.raises(TooManyRedirects):
         while response.is_redirect:
-            response = await response.next()
+            response = await response.anext()
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -233,7 +233,7 @@ async def test_redirect_loop_calling_next():
     response = await client.get(url, allow_redirects=False)
     with pytest.raises(RedirectLoop):
         while response.is_redirect:
-            response = await response.next()
+            response = await response.anext()
 
 
 @pytest.mark.usefixtures("async_environment")

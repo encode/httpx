@@ -916,7 +916,7 @@ class Response:
                 yield part
             await self.aclose()
 
-    async def next(self) -> "Response":
+    async def anext(self) -> "Response":
         """
         Get the next response from a redirect response.
         """
