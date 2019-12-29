@@ -1,15 +1,15 @@
-from httpx import Client, Cookies, Headers
+from httpx import AsyncClient, Cookies, Headers
 
 
 def test_client_headers():
-    client = Client()
+    client = AsyncClient()
     client.headers = {"a": "b"}
     assert isinstance(client.headers, Headers)
     assert client.headers["A"] == "b"
 
 
 def test_client_cookies():
-    client = Client()
+    client = AsyncClient()
     client.cookies = {"a": "b"}
     assert isinstance(client.cookies, Cookies)
     mycookies = list(client.cookies.jar)

@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from httpx import Client, Headers, Request, Response, __version__
+from httpx import AsyncClient, Headers, Request, Response, __version__
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
 from httpx.dispatch.base import Dispatcher
 
@@ -31,7 +31,7 @@ async def test_client_header():
     url = "http://example.org/echo_headers"
     headers = {"Example-Header": "example-value"}
 
-    client = Client(dispatch=MockDispatch(), headers=headers)
+    client = AsyncClient(dispatch=MockDispatch(), headers=headers)
     response = await client.get(url)
 
     assert response.status_code == 200
@@ -52,7 +52,7 @@ async def test_header_merge():
     url = "http://example.org/echo_headers"
     client_headers = {"User-Agent": "python-myclient/0.2.1"}
     request_headers = {"X-Auth-Token": "FooBarBazToken"}
-    client = Client(dispatch=MockDispatch(), headers=client_headers)
+    client = AsyncClient(dispatch=MockDispatch(), headers=client_headers)
     response = await client.get(url, headers=request_headers)
 
     assert response.status_code == 200
@@ -73,7 +73,7 @@ async def test_header_merge_conflicting_headers():
     url = "http://example.org/echo_headers"
     client_headers = {"X-Auth-Token": "FooBar"}
     request_headers = {"X-Auth-Token": "BazToken"}
-    client = Client(dispatch=MockDispatch(), headers=client_headers)
+    client = AsyncClient(dispatch=MockDispatch(), headers=client_headers)
     response = await client.get(url, headers=request_headers)
 
     assert response.status_code == 200
@@ -92,7 +92,7 @@ async def test_header_merge_conflicting_headers():
 @pytest.mark.asyncio
 async def test_header_update():
     url = "http://example.org/echo_headers"
-    client = Client(dispatch=MockDispatch())
+    client = AsyncClient(dispatch=MockDispatch())
     first_response = await client.get(url)
     client.headers.update(
         {"User-Agent": "python-myclient/0.2.1", "Another-Header": "AThing"}
@@ -138,7 +138,7 @@ async def test_host_with_auth_and_port_in_url():
     """
     url = "http://username:password@example.org:80/echo_headers"
 
-    client = Client(dispatch=MockDispatch())
+    client = AsyncClient(dispatch=MockDispatch())
     response = await client.get(url)
 
     assert response.status_code == 200
@@ -162,7 +162,7 @@ async def test_host_with_non_default_port_in_url():
     """
     url = "http://username:password@example.org:123/echo_headers"
 
-    client = Client(dispatch=MockDispatch())
+    client = AsyncClient(dispatch=MockDispatch())
     response = await client.get(url)
 
     assert response.status_code == 200

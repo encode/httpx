@@ -1,6 +1,6 @@
 import typing
 
-from ..config import CertTypes, TimeoutTypes, VerifyTypes
+from ..config import TimeoutTypes
 from ..content_streams import ByteStream
 from ..models import Request, Response
 from .base import Dispatcher
@@ -15,7 +15,7 @@ class ASGIDispatch(Dispatcher):
     and will setup an appropriate dispatch class:
 
     ```
-    client = httpx.Client(app=app)
+    client = httpx.AsyncClient(app=app)
     ```
 
     Alternatively, you can setup the dispatch instance explicitly.
@@ -28,7 +28,7 @@ class ASGIDispatch(Dispatcher):
         root_path="/submount",
         client=("1.2.3.4", 123)
     )
-    client = httpx.Client(dispatch=dispatch)
+    client = httpx.AsyncClient(dispatch=dispatch)
     ```
 
     Arguments:
@@ -54,14 +54,7 @@ class ASGIDispatch(Dispatcher):
         self.root_path = root_path
         self.client = client
 
-    async def send(
-        self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-    ) -> Response:
-
+    async def send(self, request: Request, timeout: TimeoutTypes = None) -> Response:
         scope = {
             "type": "http",
             "asgi": {"version": "3.0"},

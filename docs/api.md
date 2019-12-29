@@ -32,11 +32,11 @@
 ::: httpx.delete
     :docstring:
 
-## `Client`
+## `AsyncClient`
 
-::: httpx.Client
+::: httpx.AsyncClient
     :docstring:
-    :members: headers cookies params request get head options post put patch delete build_request send close
+    :members: headers cookies params request get head options post put patch delete build_request send aclose
 
 ## `Response`
 
@@ -61,13 +61,13 @@
   the total elapsed seconds.
 * `def .raise_for_status()` - **None**
 * `def .json()` - **Any**
-* `def .read()` - **bytes**
+* `def .aread()` - **bytes**
 * `def .aiter_raw()` - **async bytes iterator**
 * `def .aiter_bytes()` - **async bytes iterator**
 * `def .aiter_text()` - **async text iterator**
 * `def .aiter_lines()` - **async text iterator**
-* `def .close()` - **None**
-* `def .next()` - **Response**
+* `def .aclose()` - **None**
+* `def .anext()` - **Response**
 
 ## `Request`
 

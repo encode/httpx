@@ -8,7 +8,7 @@ import httpx
 @pytest.mark.usefixtures("async_environment")
 async def test_get(server):
     url = server.url
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.get(url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
@@ -22,7 +22,7 @@ async def test_get(server):
 async def test_build_request(server):
     url = server.url.copy_with(path="/echo_headers")
     headers = {"Custom-header": "value"}
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         request = client.build_request("GET", url)
         request.headers.update(headers)
         response = await client.send(request)
@@ -36,7 +36,7 @@ async def test_build_request(server):
 @pytest.mark.usefixtures("async_environment")
 async def test_post(server):
     url = server.url
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.post(url, data=b"Hello, world!")
     assert response.status_code == 200
 
@@ -44,16 +44,16 @@ async def test_post(server):
 @pytest.mark.usefixtures("async_environment")
 async def test_post_json(server):
     url = server.url
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.post(url, json={"text": "Hello, world!"})
     assert response.status_code == 200
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_stream_response(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         async with client.stream("GET", server.url) as response:
-            body = await response.read()
+            body = await response.aread()
 
     assert response.status_code == 200
     assert body == b"Hello, world!"
@@ -62,7 +62,7 @@ async def test_stream_response(server):
 
 @pytest.mark.usefixtures("async_environment")
 async def test_access_content_stream_response(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         async with client.stream("GET", server.url) as response:
             pass
 
@@ -77,14 +77,14 @@ async def test_stream_request(server):
         yield b"Hello, "
         yield b"world!"
 
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.request("POST", server.url, data=hello_world())
     assert response.status_code == 200
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_raise_for_status(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         for status_code in (200, 400, 404, 500, 505):
             response = await client.request(
                 "GET", server.url.copy_with(path=f"/status/{status_code}")
@@ -100,7 +100,7 @@ async def test_raise_for_status(server):
 
 @pytest.mark.usefixtures("async_environment")
 async def test_options(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.options(server.url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
@@ -108,7 +108,7 @@ async def test_options(server):
 
 @pytest.mark.usefixtures("async_environment")
 async def test_head(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.head(server.url)
     assert response.status_code == 200
     assert response.text == ""
@@ -116,21 +116,21 @@ async def test_head(server):
 
 @pytest.mark.usefixtures("async_environment")
 async def test_put(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.put(server.url, data=b"Hello, world!")
     assert response.status_code == 200
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_patch(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.patch(server.url, data=b"Hello, world!")
     assert response.status_code == 200
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_delete(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.delete(server.url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
@@ -141,7 +141,7 @@ async def test_100_continue(server):
     headers = {"Expect": "100-continue"}
     data = b"Echo request body"
 
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.post(
             server.url.copy_with(path="/echo_body"), headers=headers, data=data
         )
@@ -155,7 +155,7 @@ async def test_uds(uds_server):
     url = uds_server.url
     uds = uds_server.config.uds
     assert uds is not None
-    async with httpx.Client(uds=uds) as client:
+    async with httpx.AsyncClient(uds=uds) as client:
         response = await client.get(url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
@@ -163,7 +163,7 @@ async def test_uds(uds_server):
 
 
 async def test_explicit_backend(server, async_environment):
-    async with httpx.Client(backend=async_environment) as client:
+    async with httpx.AsyncClient(backend=async_environment) as client:
         response = await client.get(server.url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
