@@ -40,31 +40,21 @@ class HTTPConnection(Dispatcher):
         self.open_connection: typing.Optional[OpenConnection] = None
         self.expires_at: typing.Optional[float] = None
 
-    async def send(
-        self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: Timeout = None,
-    ) -> Response:
+    async def send(self, request: Request, timeout: Timeout = None) -> Response:
         timeout = Timeout() if timeout is None else timeout
 
         if self.open_connection is None:
-            await self.connect(verify=verify, cert=cert, timeout=timeout)
+            await self.connect(timeout=timeout)
 
         assert self.open_connection is not None
         response = await self.open_connection.send(request, timeout=timeout)
 
         return response
 
-    async def connect(
-        self, timeout: Timeout, verify: VerifyTypes = None, cert: CertTypes = None,
-    ) -> None:
-        ssl = self.ssl.with_overrides(verify=verify, cert=cert)
-
+    async def connect(self, timeout: Timeout) -> None:
         host = self.origin.host
         port = self.origin.port
-        ssl_context = await self.get_ssl_context(ssl)
+        ssl_context = await self.get_ssl_context(self.ssl)
 
         if self.release_func is None:
             on_release = None
@@ -92,12 +82,7 @@ class HTTPConnection(Dispatcher):
         self.set_open_connection(http_version, socket=stream, on_release=on_release)
 
     async def tunnel_start_tls(
-        self,
-        origin: Origin,
-        proxy_url: URL,
-        timeout: Timeout = None,
-        cert: CertTypes = None,
-        verify: VerifyTypes = True,
+        self, origin: Origin, proxy_url: URL, timeout: Timeout = None,
     ) -> None:
         """
         Upgrade this connection to use TLS, assuming it represents a TCP tunnel.
@@ -122,8 +107,7 @@ class HTTPConnection(Dispatcher):
         if origin.is_ssl:
             # Pull the socket stream off the internal HTTP connection object,
             # and run start_tls().
-            ssl_config = SSLConfig(cert=cert, verify=verify)
-            ssl_context = await self.get_ssl_context(ssl_config)
+            ssl_context = await self.get_ssl_context(self.ssl)
             assert ssl_context is not None
 
             logger.trace(f"tunnel_start_tls proxy_url={proxy_url!r} origin={origin!r}")
