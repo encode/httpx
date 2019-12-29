@@ -683,6 +683,7 @@ class Response:
             self.is_closed = True
             self.is_stream_consumed = True
             self._raw_content = content or b""
+            self._elapsed = datetime.timedelta(0)
         else:
             self.is_closed = False
             self.is_stream_consumed = False
@@ -951,9 +952,9 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
+            self._elapsed = self.request.timer.elapsed
             if hasattr(self, "_raw_stream"):
                 await self._raw_stream.aclose()
-        self._elapsed = self.request.timer.elapsed
 
 
 class Cookies(MutableMapping):
