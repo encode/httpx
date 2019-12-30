@@ -3,6 +3,7 @@ import io
 import pytest
 
 from httpx.content_streams import encode
+from httpx.exceptions import StreamConsumed
 
 
 @pytest.mark.asyncio
@@ -37,6 +38,21 @@ async def test_aiterator_content():
     assert not stream.can_replay()
     assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_aiterator_is_stream_consumed():
+    async def hello_world():
+        yield b"Hello, "
+        yield b"world!"
+
+    stream = encode(data=hello_world())
+    b"".join([part async for part in stream])
+
+    assert stream.is_stream_consumed
+
+    with pytest.raises(StreamConsumed) as _:
+        b"".join([part async for part in stream])
 
 
 @pytest.mark.asyncio
