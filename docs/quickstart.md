@@ -433,7 +433,7 @@ You can also disable the timeout behavior completely...
 >>> await httpx.get('https://github.com/', timeout=None)
 ```
 
-For advanced timeout management, see [Timeout fine-tuning](https://www.encode.io/httpx/advanced/#timeout-fine-tuning).
+For advanced timeout management, see [Timeout fine-tuning](https://www.encode.io/httpx/advanced/#fine-tuning-the-configuration).
 
 ## Authentication
 
