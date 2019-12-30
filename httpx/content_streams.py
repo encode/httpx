@@ -46,6 +46,12 @@ class ContentStream:
         """
         return True
 
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield b""
+
+    def close(self) -> None:
+        pass
+
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield b""
 
@@ -67,6 +73,9 @@ class ByteStream(ContentStream):
         content_length = str(len(self.body))
         return {"Content-Length": content_length}
 
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield self.body
+
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield self.body
 
@@ -87,6 +96,9 @@ class AsyncIteratorStream(ContentStream):
 
     def get_headers(self) -> typing.Dict[str, str]:
         return {"Transfer-Encoding": "chunked"}
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         async for part in self.aiterator:
@@ -110,6 +122,9 @@ class JSONStream(ContentStream):
         content_type = "application/json"
         return {"Content-Length": content_length, "Content-Type": content_type}
 
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield self.body
+
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield self.body
 
@@ -126,6 +141,9 @@ class URLEncodedStream(ContentStream):
         content_length = str(len(self.body))
         content_type = "application/x-www-form-urlencoded"
         return {"Content-Length": content_length, "Content-Type": content_type}
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield self.body
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield self.body
@@ -246,6 +264,9 @@ class MultipartStream(ContentStream):
         content_length = str(len(self.body))
         content_type = self.content_type
         return {"Content-Length": content_length, "Content-Type": content_type}
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield self.body
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield self.body

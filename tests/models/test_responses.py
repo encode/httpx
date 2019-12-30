@@ -124,8 +124,23 @@ def test_response_force_encoding():
     assert response.encoding == "iso-8859-1"
 
 
+def test_read_response():
+    response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
+
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+    assert response.encoding == "ascii"
+    assert response.is_closed
+
+    content = await response.read()
+
+    assert content == b"Hello, world!"
+    assert response.content == b"Hello, world!"
+    assert response.is_closed
+
+
 @pytest.mark.asyncio
-async def test_read_response():
+async def test_aread_response():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
 
     assert response.status_code == 200
@@ -142,7 +157,8 @@ async def test_read_response():
 
 @pytest.mark.asyncio
 async def test_raw_interface():
-    response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream, request=REQUEST)
 
     raw = b""
     async for part in response.aiter_raw():
