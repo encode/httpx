@@ -132,7 +132,7 @@ def test_read_response():
     assert response.encoding == "ascii"
     assert response.is_closed
 
-    content = await response.read()
+    content = response.read()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
