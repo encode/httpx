@@ -9,7 +9,9 @@ from urllib.parse import urlencode
 
 from .utils import format_form_param
 
-RequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
+RequestData = typing.Union[
+    dict, str, bytes, typing.Iterator[bytes], typing.AsyncIterator[bytes]
+]
 
 RequestFiles = typing.Dict[
     str,
@@ -78,6 +80,37 @@ class ByteStream(ContentStream):
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield self.body
+
+
+class IteratorStream(ContentStream):
+    """
+    Request content encoded as plain bytes, using an byte iterator.
+    """
+
+    def __init__(
+        self, iterator: typing.Iterator[bytes], close_func: typing.Callable = None
+    ) -> None:
+        self.iterator = iterator
+        self.close_func = close_func
+
+    def can_replay(self) -> bool:
+        return False
+
+    def get_headers(self) -> typing.Dict[str, str]:
+        return {"Transfer-Encoding": "chunked"}
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        for part in self.iterator:
+            yield part
+
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        raise RuntimeError("Attempted to call a async iterator on an sync stream.")
+        async for part in ():  # pragma: nocover
+            yield b""
+
+    def close(self) -> None:
+        if self.close_func is not None:
+            self.close_func()
 
 
 class AsyncIteratorStream(ContentStream):
@@ -296,5 +329,11 @@ def encode(
             return URLEncodedStream(data=data)
     elif isinstance(data, (str, bytes)):
         return ByteStream(body=data)
-    else:
+    elif hasattr(data, "__aiter__"):
+        data = typing.cast(typing.AsyncIterator[bytes], data)
         return AsyncIteratorStream(aiterator=data)
+    elif hasattr(data, "__iter__"):
+        data = typing.cast(typing.Iterator[bytes], data)
+        return IteratorStream(iterator=data)
+
+    raise TypeError(f"Unexpected type for 'data', {type(data)!r}")
