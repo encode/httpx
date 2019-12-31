@@ -174,6 +174,7 @@ class ConnectionPool(Dispatcher):
                 trust_env=self.trust_env,
                 uds=self.uds,
             )
+            await connection.connect(timeout=timeout)
             logger.trace(f"new_connection connection={connection!r}")
         else:
             logger.trace(f"reuse_connection connection={connection!r}")

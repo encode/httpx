@@ -51,7 +51,9 @@ class HTTPConnection(Dispatcher):
 
         return response
 
-    async def connect(self, timeout: Timeout) -> None:
+    async def connect(self, timeout: Timeout = None) -> None:
+        timeout = Timeout() if timeout is None else timeout
+
         host = self.origin.host
         port = self.origin.port
         ssl_context = await self.get_ssl_context(self.ssl)

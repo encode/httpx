@@ -1,3 +1,4 @@
+import asyncio
 from datetime import timedelta
 
 import pytest
@@ -180,3 +181,18 @@ async def test_elapsed_delay(server):
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
     assert response.elapsed.total_seconds() > 0.0
+
+
+@pytest.mark.asyncio
+async def test_open_connection_invariance(server):
+    """
+    Check that `assert self.open_connection is not None` statement is not violated.
+    See https://github.com/encode/httpx/issues/689 .
+    """
+
+    async def run_many(client, n):
+        for _ in range(n):
+            await client.get(server.url)
+
+    async with httpx.AsyncClient() as client:
+        await asyncio.gather(*[run_many(client, 10) for _ in range(11)])
