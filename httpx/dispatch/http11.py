@@ -8,7 +8,6 @@ from ..content_streams import AsyncIteratorStream
 from ..exceptions import ConnectionClosed, ProtocolError
 from ..models import Request, Response
 from ..utils import get_logger
-from .base import OpenConnection
 
 H11Event = typing.Union[
     h11.Request,
@@ -29,7 +28,7 @@ OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
 logger = get_logger(__name__)
 
 
-class HTTP11Connection(OpenConnection):
+class HTTP11Connection:
     READ_NUM_BYTES = 4096
 
     def __init__(
