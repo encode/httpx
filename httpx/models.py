@@ -46,7 +46,6 @@ from .utils import (
 )
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from .middleware.base import BaseMiddleware  # noqa: F401
     from .dispatch.base import Dispatcher  # noqa: F401
 
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
