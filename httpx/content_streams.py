@@ -7,6 +7,7 @@ from json import dumps as json_dumps
 from pathlib import Path
 from urllib.parse import urlencode
 
+from .exceptions import StreamConsumed
 from .utils import format_form_param
 
 RequestData = typing.Union[
@@ -92,6 +93,7 @@ class IteratorStream(ContentStream):
     ) -> None:
         self.iterator = iterator
         self.close_func = close_func
+        self.is_stream_consumed = False
 
     def can_replay(self) -> bool:
         return False
@@ -100,6 +102,9 @@ class IteratorStream(ContentStream):
         return {"Transfer-Encoding": "chunked"}
 
     def __iter__(self) -> typing.Iterator[bytes]:
+        if self.is_stream_consumed:
+            raise StreamConsumed()
+        self.is_stream_consumed = True
         for part in self.iterator:
             yield part
 
@@ -123,6 +128,7 @@ class AsyncIteratorStream(ContentStream):
     ) -> None:
         self.aiterator = aiterator
         self.close_func = close_func
+        self.is_stream_consumed = False
 
     def can_replay(self) -> bool:
         return False
@@ -134,6 +140,9 @@ class AsyncIteratorStream(ContentStream):
         raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        if self.is_stream_consumed:
+            raise StreamConsumed()
+        self.is_stream_consumed = True
         async for part in self.aiterator:
             yield part
 

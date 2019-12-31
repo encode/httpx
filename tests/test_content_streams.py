@@ -3,6 +3,7 @@ import io
 import pytest
 
 from httpx.content_streams import ContentStream, encode
+from httpx.exceptions import StreamConsumed
 
 
 @pytest.mark.asyncio
@@ -57,6 +58,9 @@ async def test_iterator_content():
     with pytest.raises(RuntimeError):
         [part async for part in stream]
 
+    with pytest.raises(StreamConsumed):
+        [part for part in stream]
+
 
 @pytest.mark.asyncio
 async def test_aiterator_content():
@@ -73,6 +77,9 @@ async def test_aiterator_content():
 
     with pytest.raises(RuntimeError):
         [part for part in stream]
+
+    with pytest.raises(StreamConsumed):
+        [part async for part in stream]
 
 
 @pytest.mark.asyncio

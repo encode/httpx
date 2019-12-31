@@ -16,12 +16,11 @@ from ..content_streams import AsyncIteratorStream
 from ..exceptions import ProtocolError
 from ..models import Request, Response
 from ..utils import get_logger
-from .base import OpenConnection
 
 logger = get_logger(__name__)
 
 
-class HTTP2Connection(OpenConnection):
+class HTTP2Connection:
     READ_NUM_BYTES = 4096
     CONFIG = H2Configuration(validate_inbound_headers=False)
 
