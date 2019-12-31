@@ -79,7 +79,8 @@ class SocketStream(BaseSocketStream):
         return stream.socket.is_readable()
 
     async def close(self) -> None:
-        await self.stream.aclose()
+        async with self.write_lock:
+            await self.stream.aclose()
 
 
 class TrioBackend(ConcurrencyBackend):
