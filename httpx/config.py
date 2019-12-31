@@ -84,15 +84,6 @@ class SSLConfig:
         class_name = self.__class__.__name__
         return f"{class_name}(cert={self.cert}, verify={self.verify})"
 
-    def with_overrides(
-        self, cert: CertTypes = None, verify: VerifyTypes = None
-    ) -> "SSLConfig":
-        cert = self.cert if cert is None else cert
-        verify = self.verify if verify is None else verify
-        if (cert == self.cert) and (verify == self.verify):
-            return self
-        return SSLConfig(cert=cert, verify=verify)
-
     def load_ssl_context(self, http2: bool = False) -> ssl.SSLContext:
         logger.trace(
             f"load_ssl_context "
