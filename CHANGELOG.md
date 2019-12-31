@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.10.1 (December 31st, 2019)
+
+### Fixed
+
+- Fix issue with concurrent connection acquiry. (Pull #700)
+- Fix write error on closing HTTP/2 connections. (Pull #699)
+
 ## 0.10.0 (December 29th, 2019)
 
 The 0.10.0 release makes some changes that will allow us to support both sync and async interfaces.
