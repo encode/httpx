@@ -1,6 +1,7 @@
 import pytest
 
 import httpx
+from httpx.config import SSLConfig
 from httpx.dispatch.connection import HTTPConnection
 
 
@@ -35,7 +36,8 @@ async def test_https_get_with_ssl(https_server, ca_cert_pem_file):
     """
     An HTTPS request, with SSL configuration set on the client.
     """
-    async with HTTPConnection(origin=https_server.url, verify=ca_cert_pem_file) as conn:
+    ssl = SSLConfig(verify=ca_cert_pem_file)
+    async with HTTPConnection(origin=https_server.url, ssl=ssl) as conn:
         response = await conn.request("GET", https_server.url)
         await response.aread()
         assert response.status_code == 200

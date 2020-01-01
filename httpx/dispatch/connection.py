@@ -5,7 +5,7 @@ import typing
 import h11
 
 from ..backends.base import ConcurrencyBackend, lookup_backend
-from ..config import CertTypes, SSLConfig, Timeout, VerifyTypes
+from ..config import SSLConfig, Timeout
 from ..models import URL, Origin, Request, Response
 from ..utils import get_logger
 from .base import Dispatcher
@@ -23,16 +23,13 @@ class HTTPConnection(Dispatcher):
     def __init__(
         self,
         origin: typing.Union[str, Origin],
-        verify: VerifyTypes = True,
-        cert: CertTypes = None,
-        trust_env: bool = None,
-        http2: bool = False,
+        ssl: SSLConfig = None,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         release_func: typing.Optional[ReleaseCallback] = None,
         uds: typing.Optional[str] = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
-        self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env, http2=http2)
+        self.ssl = SSLConfig() if ssl is None else ssl
         self.backend = lookup_backend(backend)
         self.release_func = release_func
         self.uds = uds
