@@ -49,7 +49,7 @@ class HTTPConnection(Dispatcher):
     ) -> typing.Union[HTTP11Connection, HTTP2Connection]:
         host = self.origin.host
         port = self.origin.port
-        ssl_context = await self.get_ssl_context(self.ssl)
+        ssl_context = self.get_ssl_context()
 
         if self.release_func is None:
             on_release = None
@@ -104,7 +104,7 @@ class HTTPConnection(Dispatcher):
         if origin.is_ssl:
             # Pull the socket stream off the internal HTTP connection object,
             # and run start_tls().
-            ssl_context = await self.get_ssl_context(self.ssl)
+            ssl_context = self.get_ssl_context()
             assert ssl_context is not None
 
             logger.trace(f"tunnel_start_tls proxy_url={proxy_url!r} origin={origin!r}")
@@ -130,12 +130,10 @@ class HTTPConnection(Dispatcher):
         else:
             self.connection = HTTP11Connection(socket, on_release=on_release)
 
-    async def get_ssl_context(self, ssl: SSLConfig) -> typing.Optional[ssl.SSLContext]:
+    def get_ssl_context(self) -> typing.Optional[ssl.SSLContext]:
         if not self.origin.is_ssl:
             return None
-
-        # Run the SSL loading in a threadpool, since it may make disk accesses.
-        return await self.backend.run_in_threadpool(ssl.load_ssl_context)
+        return self.ssl.load_ssl_context()
 
     async def close(self) -> None:
         logger.trace("close_connection")
