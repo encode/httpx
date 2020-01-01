@@ -32,8 +32,7 @@ class HTTPConnection(Dispatcher):
         uds: typing.Optional[str] = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
-        self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env)
-        self.http2 = http2
+        self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env, http2=http2)
         self.backend = lookup_backend(backend)
         self.release_func = release_func
         self.uds = uds
@@ -139,7 +138,7 @@ class HTTPConnection(Dispatcher):
             return None
 
         # Run the SSL loading in a threadpool, since it may make disk accesses.
-        return await self.backend.run_in_threadpool(ssl.load_ssl_context, self.http2)
+        return await self.backend.run_in_threadpool(ssl.load_ssl_context)
 
     async def close(self) -> None:
         logger.trace("close_connection")
