@@ -600,8 +600,7 @@ class Request:
         self.url = URL(url, params=params)
         self.headers = Headers(headers)
         if cookies:
-            self._cookies = Cookies(cookies)
-            self._cookies.set_cookie_header(self)
+            Cookies(cookies).set_cookie_header(self)
 
         if stream is not None:
             self.stream = stream
@@ -639,12 +638,6 @@ class Request:
 
         for item in reversed(auto_headers):
             self.headers.raw.insert(0, item)
-
-    @property
-    def cookies(self) -> "Cookies":
-        if not hasattr(self, "_cookies"):
-            self._cookies = Cookies()
-        return self._cookies
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
