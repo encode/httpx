@@ -177,7 +177,7 @@ class SSLConfig:
             alpn_idents = ["http/1.1", "h2"] if http2 else ["http/1.1"]
             context.set_alpn_protocols(alpn_idents)
 
-        if hasattr(context, "keylog_filename"):
+        if hasattr(context, "keylog_filename"):  # pragma: nocover (Available in 3.8+)
             keylogfile = os.environ.get("SSLKEYLOGFILE")
             if keylogfile and self.trust_env:
                 context.keylog_filename = keylogfile  # type: ignore

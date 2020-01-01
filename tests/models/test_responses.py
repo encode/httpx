@@ -235,6 +235,15 @@ async def test_cannot_read_after_response_closed():
         await response.aread()
 
 
+@pytest.mark.asyncio
+async def test_elapsed_not_available_until_closed():
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream, request=REQUEST)
+
+    with pytest.raises(RuntimeError):
+        response.elapsed
+
+
 def test_unknown_status_code():
     response = httpx.Response(600, request=REQUEST)
     assert response.status_code == 600

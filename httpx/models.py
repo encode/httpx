@@ -861,19 +861,19 @@ class Response:
 
     @property
     def stream(self):  # type: ignore
-        warnings.warn(
+        warnings.warn(  # pragma: nocover
             "Response.stream() is due to be deprecated. "
             "Use Response.aiter_bytes() instead."
         )
-        return self.aiter_bytes
+        return self.aiter_bytes  # pragma: nocover
 
     @property
     def raw(self):  # type: ignore
-        warnings.warn(
+        warnings.warn(  # pragma: nocover
             "Response.raw() is due to be deprecated. "
             "Use Response.aiter_raw() instead."
         )
-        return self.aiter_raw
+        return self.aiter_raw  # pragma: nocover
 
     async def aiter_bytes(self) -> typing.AsyncIterator[bytes]:
         """
