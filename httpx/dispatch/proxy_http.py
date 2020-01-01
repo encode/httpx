@@ -46,7 +46,7 @@ class HTTPProxy(ConnectionPool):
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
     ):
 
-        if isinstance(proxy_mode, HTTPProxyMode):
+        if isinstance(proxy_mode, HTTPProxyMode):  # pragma: nocover
             warnings.warn(
                 "The 'HTTPProxyMode' enum is pending deprecation. "
                 "Use a plain string instead. proxy_mode='FORWARD_ONLY', or "
