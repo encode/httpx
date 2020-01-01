@@ -6,6 +6,7 @@ import trio
 
 from ..config import Timeout
 from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
+from ..utils import as_network_error
 from .base import BaseLock, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
 
 
@@ -30,7 +31,8 @@ class SocketStream(BaseSocketStream):
         )
 
         with trio.move_on_after(connect_timeout):
-            await ssl_stream.do_handshake()
+            with as_network_error(trio.BrokenResourceError):
+                await ssl_stream.do_handshake()
             return SocketStream(ssl_stream)
 
         raise ConnectTimeout()
@@ -47,7 +49,8 @@ class SocketStream(BaseSocketStream):
 
         with trio.move_on_after(read_timeout):
             async with self.read_lock:
-                return await self.stream.receive_some(max_bytes=n)
+                with as_network_error(trio.BrokenResourceError):
+                    return await self.stream.receive_some(max_bytes=n)
 
         raise ReadTimeout()
 
@@ -59,7 +62,8 @@ class SocketStream(BaseSocketStream):
 
         with trio.move_on_after(write_timeout):
             async with self.write_lock:
-                return await self.stream.send_all(data)
+                with as_network_error(trio.BrokenResourceError):
+                    return await self.stream.send_all(data)
 
         raise WriteTimeout()
 
@@ -94,10 +98,14 @@ class TrioBackend(ConcurrencyBackend):
         connect_timeout = none_as_inf(timeout.connect_timeout)
 
         with trio.move_on_after(connect_timeout):
-            stream: trio.SocketStream = await trio.open_tcp_stream(hostname, port)
+            with as_network_error(OSError):
+                stream: trio.SocketStream = await trio.open_tcp_stream(hostname, port)
+
             if ssl_context is not None:
                 stream = trio.SSLStream(stream, ssl_context, server_hostname=hostname)
-                await stream.do_handshake()
+                with as_network_error(trio.BrokenResourceError):
+                    await stream.do_handshake()
+
             return SocketStream(stream=stream)
 
         raise ConnectTimeout()
@@ -112,10 +120,14 @@ class TrioBackend(ConcurrencyBackend):
         connect_timeout = none_as_inf(timeout.connect_timeout)
 
         with trio.move_on_after(connect_timeout):
-            stream: trio.SocketStream = await trio.open_unix_socket(path)
+            with as_network_error(OSError):
+                stream: trio.SocketStream = await trio.open_unix_socket(path)
+
             if ssl_context is not None:
                 stream = trio.SSLStream(stream, ssl_context, server_hostname=hostname)
-                await stream.do_handshake()
+                with as_network_error(trio.BrokenResourceError):
+                    await stream.do_handshake()
+
             return SocketStream(stream=stream)
 
         raise ConnectTimeout()

@@ -5,6 +5,7 @@ import typing
 
 from ..config import Timeout
 from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
+from ..utils import as_network_error
 from .base import BaseLock, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
 
 SSL_MONKEY_PATCH_APPLIED = False
@@ -126,9 +127,10 @@ class SocketStream(BaseSocketStream):
     async def read(self, n: int, timeout: Timeout) -> bytes:
         try:
             async with self.read_lock:
-                return await asyncio.wait_for(
-                    self.stream_reader.read(n), timeout.read_timeout
-                )
+                with as_network_error(OSError):
+                    return await asyncio.wait_for(
+                        self.stream_reader.read(n), timeout.read_timeout
+                    )
         except asyncio.TimeoutError:
             raise ReadTimeout() from None
 
@@ -138,10 +140,11 @@ class SocketStream(BaseSocketStream):
 
         try:
             async with self.write_lock:
-                self.stream_writer.write(data)
-                return await asyncio.wait_for(
-                    self.stream_writer.drain(), timeout.write_timeout
-                )
+                with as_network_error(OSError):
+                    self.stream_writer.write(data)
+                    return await asyncio.wait_for(
+                        self.stream_writer.drain(), timeout.write_timeout
+                    )
         except asyncio.TimeoutError:
             raise WriteTimeout() from None
 
@@ -171,7 +174,8 @@ class SocketStream(BaseSocketStream):
         # stream, meaning that at best it will happen during the next event loop
         # iteration, and at worst asyncio will take care of it on program exit.
         async with self.write_lock:
-            self.stream_writer.close()
+            with as_network_error(OSError):
+                self.stream_writer.close()
 
 
 class AsyncioBackend(ConcurrencyBackend):
@@ -199,10 +203,11 @@ class AsyncioBackend(ConcurrencyBackend):
         timeout: Timeout,
     ) -> SocketStream:
         try:
-            stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
-                asyncio.open_connection(hostname, port, ssl=ssl_context),
-                timeout.connect_timeout,
-            )
+            with as_network_error(OSError):
+                stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
+                    asyncio.open_connection(hostname, port, ssl=ssl_context),
+                    timeout.connect_timeout,
+                )
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
@@ -218,12 +223,13 @@ class AsyncioBackend(ConcurrencyBackend):
         server_hostname = hostname if ssl_context else None
 
         try:
-            stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
-                asyncio.open_unix_connection(
-                    path, ssl=ssl_context, server_hostname=server_hostname
-                ),
-                timeout.connect_timeout,
-            )
+            with as_network_error(OSError):
+                stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
+                    asyncio.open_unix_connection(
+                        path, ssl=ssl_context, server_hostname=server_hostname
+                    ),
+                    timeout.connect_timeout,
+                )
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
