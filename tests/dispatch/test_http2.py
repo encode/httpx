@@ -143,9 +143,9 @@ async def test_http2_live_request():
     async with AsyncClient(http2=True) as client:
         try:
             resp = await client.get("https://nghttp2.org/httpbin/anything")
-        except TimeoutException:
+        except TimeoutException:  # pragma: nocover
             pytest.xfail(reason="nghttp2.org appears to be unresponsive")
-        except socket.gaierror:
+        except socket.gaierror:  # pragma: nocover
             pytest.xfail(reason="You appear to be offline")
         assert resp.status_code == 200
         assert resp.http_version == "HTTP/2"
