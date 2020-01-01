@@ -191,10 +191,6 @@ class URL:
     def is_relative_url(self) -> bool:
         return not self.is_absolute_url
 
-    @property
-    def origin(self) -> "Origin":
-        return Origin(self)
-
     def copy_with(self, **kwargs: typing.Any) -> "URL":
         if (
             "username" in kwargs

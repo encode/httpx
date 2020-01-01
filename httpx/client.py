@@ -37,6 +37,7 @@ from .models import (
     CookieTypes,
     Headers,
     HeaderTypes,
+    Origin,
     ProxiesTypes,
     QueryParams,
     QueryParamTypes,
@@ -535,7 +536,7 @@ class AsyncClient:
         """
         headers = Headers(request.headers)
 
-        if url.origin != request.url.origin:
+        if Origin(url) != Origin(request.url):
             # Strip Authorization headers when responses are redirected away from
             # the origin.
             headers.pop("Authorization", None)

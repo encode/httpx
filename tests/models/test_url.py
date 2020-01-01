@@ -1,6 +1,7 @@
 import pytest
 
-from httpx import URL, InvalidURL, Origin
+from httpx import URL, InvalidURL
+from httpx.models import Origin
 
 
 @pytest.mark.parametrize(

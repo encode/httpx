@@ -26,7 +26,7 @@ from .exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
-from .models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
+from .models import URL, Cookies, Headers, QueryParams, Request, Response
 from .status_codes import StatusCode, codes
 
 __all__ = [
@@ -75,7 +75,6 @@ __all__ = [
     "StatusCode",
     "Cookies",
     "Headers",
-    "Origin",
     "QueryParams",
     "Request",
     "TimeoutException",
