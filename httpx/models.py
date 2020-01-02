@@ -52,7 +52,6 @@ from .utils import (
 )
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from .middleware.base import BaseMiddleware  # noqa: F401
     from .dispatch.base import Dispatcher  # noqa: F401
 
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
@@ -606,8 +605,7 @@ class Request:
         self.url = URL(url, params=params)
         self.headers = Headers(headers)
         if cookies:
-            self._cookies = Cookies(cookies)
-            self._cookies.set_cookie_header(self)
+            Cookies(cookies).set_cookie_header(self)
 
         if stream is not None:
             self.stream = stream
@@ -645,12 +643,6 @@ class Request:
 
         for item in reversed(auto_headers):
             self.headers.raw.insert(0, item)
-
-    @property
-    def cookies(self) -> "Cookies":
-        if not hasattr(self, "_cookies"):
-            self._cookies = Cookies()
-        return self._cookies
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
@@ -858,19 +850,19 @@ class Response:
 
     @property
     def stream(self):  # type: ignore
-        warnings.warn(
+        warnings.warn(  # pragma: nocover
             "Response.stream() is due to be deprecated. "
             "Use Response.aiter_bytes() instead."
         )
-        return self.aiter_bytes
+        return self.aiter_bytes  # pragma: nocover
 
     @property
     def raw(self):  # type: ignore
-        warnings.warn(
+        warnings.warn(  # pragma: nocover
             "Response.raw() is due to be deprecated. "
             "Use Response.aiter_raw() instead."
         )
-        return self.aiter_raw
+        return self.aiter_raw  # pragma: nocover
 
     def read(self) -> bytes:
         """

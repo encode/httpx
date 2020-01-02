@@ -1,7 +1,14 @@
 import typing
 
 from ..backends.base import BaseSemaphore, ConcurrencyBackend, lookup_backend
-from ..config import DEFAULT_POOL_LIMITS, CertTypes, PoolLimits, Timeout, VerifyTypes
+from ..config import (
+    DEFAULT_POOL_LIMITS,
+    CertTypes,
+    PoolLimits,
+    SSLConfig,
+    Timeout,
+    VerifyTypes,
+)
 from ..exceptions import PoolTimeout
 from ..models import Origin, Request, Response
 from ..utils import get_logger
@@ -92,12 +99,9 @@ class ConnectionPool(Dispatcher):
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         uds: typing.Optional[str] = None,
     ):
-        self.verify = verify
-        self.cert = cert
+        self.ssl = SSLConfig(verify=verify, cert=cert, trust_env=trust_env, http2=http2)
         self.pool_limits = pool_limits
-        self.http2 = http2
         self.is_closed = False
-        self.trust_env = trust_env
         self.uds = uds
 
         self.keepalive_connections = ConnectionStore()
@@ -166,12 +170,9 @@ class ConnectionPool(Dispatcher):
             await self.max_connections.acquire(timeout=pool_timeout)
             connection = HTTPConnection(
                 origin,
-                verify=self.verify,
-                cert=self.cert,
-                http2=self.http2,
+                ssl=self.ssl,
                 backend=self.backend,
                 release_func=self.release_connection,
-                trust_env=self.trust_env,
                 uds=self.uds,
             )
             logger.trace(f"new_connection connection={connection!r}")

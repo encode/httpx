@@ -141,9 +141,7 @@ class MockHTTP2Server(BaseSocketStream):
                 flow_control,
                 self.conn.max_outbound_frame_size,
             )
-            if chunk_size == 0:
-                return
-            else:
+            if chunk_size > 0:
                 chunk, self.return_data[stream_id] = (
                     self.return_data[stream_id][:chunk_size],
                     self.return_data[stream_id][chunk_size:],

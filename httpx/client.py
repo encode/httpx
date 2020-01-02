@@ -223,28 +223,28 @@ class AsyncClient:
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         trust_env: bool = None,
     ) -> Response:
-        if cert is not None:
+        if cert is not None:  # pragma: nocover
             raise RuntimeError(
                 "Passing a 'cert' argument when making a request on a client "
                 "is not supported anymore. Instantiate a new client instead, "
                 "passing any 'cert' arguments to the client itself."
             )
 
-        if verify is not None:
+        if verify is not None:  # pragma: nocover
             raise RuntimeError(
                 "Passing a 'verify' argument when making a request on a client "
                 "is not supported anymore. Instantiate a new client instead, "
                 "passing any 'verify' arguments to the client itself."
             )
 
-        if trust_env is not None:
+        if trust_env is not None:  # pragma: nocover
             raise RuntimeError(
                 "Passing a 'trust_env' argument when making a request on a client "
                 "is not supported anymore. Instantiate a new client instead, "
                 "passing any 'trust_env' argument to the client itself."
             )
 
-        if stream:
+        if stream:  # pragma: nocover
             warnings.warn(
                 "The 'stream=True' argument is due to be deprecated. "
                 "Use 'async with client.stream(method, url, ...) as response' instead."

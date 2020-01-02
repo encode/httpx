@@ -71,8 +71,6 @@ __all__ = [
     "ProxyError",
     "TooManyRedirects",
     "WriteTimeout",
-    "BaseSocketStream",
-    "ConcurrencyBackend",
     "URL",
     "StatusCode",
     "Cookies",

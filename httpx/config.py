@@ -10,7 +10,9 @@ from .utils import get_ca_bundle_from_env, get_logger
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
-TimeoutTypes = typing.Union[float, typing.Tuple[float, float, float, float], "Timeout"]
+TimeoutTypes = typing.Union[
+    None, float, typing.Tuple[float, float, float, float], "Timeout"
+]
 
 
 USER_AGENT = f"python-httpx/{__version__}"
@@ -58,6 +60,7 @@ class SSLConfig:
         cert: CertTypes = None,
         verify: VerifyTypes = True,
         trust_env: bool = None,
+        http2: bool = False,
     ):
         self.cert = cert
 
@@ -72,6 +75,7 @@ class SSLConfig:
         self.ssl_context: typing.Optional[ssl.SSLContext] = ssl_context
         self.verify: typing.Union[str, bool] = verify
         self.trust_env = trust_env
+        self.http2 = http2
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -84,44 +88,35 @@ class SSLConfig:
         class_name = self.__class__.__name__
         return f"{class_name}(cert={self.cert}, verify={self.verify})"
 
-    def with_overrides(
-        self, cert: CertTypes = None, verify: VerifyTypes = None
-    ) -> "SSLConfig":
-        cert = self.cert if cert is None else cert
-        verify = self.verify if verify is None else verify
-        if (cert == self.cert) and (verify == self.verify):
-            return self
-        return SSLConfig(cert=cert, verify=verify)
-
-    def load_ssl_context(self, http2: bool = False) -> ssl.SSLContext:
+    def load_ssl_context(self) -> ssl.SSLContext:
         logger.trace(
             f"load_ssl_context "
             f"verify={self.verify!r} "
             f"cert={self.cert!r} "
             f"trust_env={self.trust_env!r} "
-            f"http2={http2!r}"
+            f"http2={self.http2!r}"
         )
 
         if self.ssl_context is None:
             self.ssl_context = (
-                self.load_ssl_context_verify(http2=http2)
+                self.load_ssl_context_verify()
                 if self.verify
-                else self.load_ssl_context_no_verify(http2=http2)
+                else self.load_ssl_context_no_verify()
             )
 
         assert self.ssl_context is not None
         return self.ssl_context
 
-    def load_ssl_context_no_verify(self, http2: bool = False) -> ssl.SSLContext:
+    def load_ssl_context_no_verify(self) -> ssl.SSLContext:
         """
         Return an SSL context for unverified connections.
         """
-        context = self._create_default_ssl_context(http2=http2)
+        context = self._create_default_ssl_context()
         context.verify_mode = ssl.CERT_NONE
         context.check_hostname = False
         return context
 
-    def load_ssl_context_verify(self, http2: bool = False) -> ssl.SSLContext:
+    def load_ssl_context_verify(self) -> ssl.SSLContext:
         """
         Return an SSL context for verified connections.
         """
@@ -140,7 +135,7 @@ class SSLConfig:
                 "invalid path: {}".format(self.verify)
             )
 
-        context = self._create_default_ssl_context(http2=http2)
+        context = self._create_default_ssl_context()
         context.verify_mode = ssl.CERT_REQUIRED
         context.check_hostname = True
 
@@ -169,7 +164,7 @@ class SSLConfig:
 
         return context
 
-    def _create_default_ssl_context(self, http2: bool) -> ssl.SSLContext:
+    def _create_default_ssl_context(self) -> ssl.SSLContext:
         """
         Creates the default SSLContext object that's used for both verified
         and unverified connections.
@@ -183,10 +178,10 @@ class SSLConfig:
         context.set_ciphers(DEFAULT_CIPHERS)
 
         if ssl.HAS_ALPN:
-            alpn_idents = ["http/1.1", "h2"] if http2 else ["http/1.1"]
+            alpn_idents = ["http/1.1", "h2"] if self.http2 else ["http/1.1"]
             context.set_alpn_protocols(alpn_idents)
 
-        if hasattr(context, "keylog_filename"):
+        if hasattr(context, "keylog_filename"):  # pragma: nocover (Available in 3.8+)
             keylogfile = os.environ.get("SSLKEYLOGFILE")
             if keylogfile and self.trust_env:
                 context.keylog_filename = keylogfile  # type: ignore

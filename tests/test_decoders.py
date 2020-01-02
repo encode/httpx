@@ -155,10 +155,17 @@ async def test_text_decoder(data, encoding):
         for chunk in data:
             yield chunk
 
+    # Accessing `.text` on a read response.
     stream = AsyncIteratorStream(aiterator=iterator())
     response = httpx.Response(200, stream=stream, request=REQUEST)
     await response.aread()
     assert response.text == (b"".join(data)).decode(encoding)
+
+    # Streaming `.aiter_text` iteratively.
+    stream = AsyncIteratorStream(aiterator=iterator())
+    response = httpx.Response(200, stream=stream, request=REQUEST)
+    text = "".join([part async for part in response.aiter_text()])
+    assert text == (b"".join(data)).decode(encoding)
 
 
 @pytest.mark.asyncio
