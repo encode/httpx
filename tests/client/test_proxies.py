@@ -29,27 +29,6 @@ def test_proxies_parameter(proxies, expected_proxies):
     assert len(expected_proxies) == len(client.proxies)
 
 
-def test_proxies_has_same_properties_as_dispatch():
-    client = httpx.AsyncClient(
-        proxies="http://127.0.0.1",
-        verify="/path/to/verify",
-        cert="/path/to/cert",
-        trust_env=False,
-        timeout=30,
-    )
-    pool = client.dispatch
-    proxy = client.proxies["all"]
-
-    assert isinstance(proxy, httpx.HTTPProxy)
-
-    for prop in [
-        "verify",
-        "cert",
-        "pool_limits",
-    ]:
-        assert getattr(pool, prop) == getattr(proxy, prop)
-
-
 PROXY_URL = "http://[::1]"
 
 
