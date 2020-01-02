@@ -1,5 +1,4 @@
 import asyncio
-import functools
 import ssl
 import typing
 
@@ -232,25 +231,6 @@ class AsyncioBackend(ConcurrencyBackend):
     def time(self) -> float:
         loop = asyncio.get_event_loop()
         return loop.time()
-
-    async def run_in_threadpool(
-        self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
-    ) -> typing.Any:
-        if kwargs:
-            # loop.run_in_executor doesn't accept 'kwargs', so bind them in here
-            func = functools.partial(func, **kwargs)
-        return await self.loop.run_in_executor(None, func, *args)
-
-    def run(
-        self, coroutine: typing.Callable, *args: typing.Any, **kwargs: typing.Any
-    ) -> typing.Any:
-        loop = self.loop
-        if loop.is_running():
-            self._loop = asyncio.new_event_loop()
-        try:
-            return self.loop.run_until_complete(coroutine(*args, **kwargs))
-        finally:
-            self._loop = loop
 
     def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
         return Semaphore(max_value, exc_class)
