@@ -125,10 +125,7 @@ def test_decoding_errors(header_value):
     body = b"test 123"
     compressed_body = brotli.compress(body)[3:]
     with pytest.raises(httpx.DecodingError):
-        response = httpx.Response(
-            200, headers=headers, content=compressed_body, request=REQUEST
-        )
-        response.content
+        httpx.Response(200, headers=headers, content=compressed_body, request=REQUEST)
 
 
 @pytest.mark.parametrize(
