@@ -382,35 +382,7 @@ class AsyncClient:
             return merged_queryparams
         return params
 
-    async def send(
-        self,
-        request: Request,
-        *,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-    ) -> Response:
-        if request.url.scheme not in ("http", "https"):
-            raise InvalidURL('URL scheme must be "http" or "https".')
-
-        timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
-
-        auth = self.setup_auth(request, auth)
-
-        response = await self.send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
-        )
-
-        if not stream:
-            try:
-                await response.aread()
-            finally:
-                await response.aclose()
-
-        return response
-
-    def setup_auth(self, request: Request, auth: AuthTypes = None) -> Auth:
+    def build_auth(self, request: Request, auth: AuthTypes = None) -> Auth:
         auth = self.auth if auth is None else auth
 
         if auth is not None:
@@ -432,46 +404,6 @@ class AsyncClient:
                 return BasicAuth(username=credentials[0], password=credentials[1])
 
         return Auth()
-
-    async def send_handling_redirects(
-        self,
-        request: Request,
-        auth: Auth,
-        timeout: Timeout,
-        allow_redirects: bool = True,
-        history: typing.List[Response] = None,
-    ) -> Response:
-        if history is None:
-            history = []
-
-        while True:
-            if len(history) > self.max_redirects:
-                raise TooManyRedirects()
-            if request.url in (response.url for response in history):
-                raise RedirectLoop()
-
-            response = await self.send_handling_auth(
-                request, auth=auth, timeout=timeout,
-            )
-            response.history = list(history)
-
-            if not response.is_redirect:
-                return response
-
-            await response.aread()
-            request = self.build_redirect_request(request, response)
-            history = history + [response]
-
-            if not allow_redirects:
-                response.call_next = functools.partial(
-                    self.send_handling_redirects,
-                    request=request,
-                    auth=auth,
-                    timeout=timeout,
-                    allow_redirects=False,
-                    history=history,
-                )
-                return response
 
     def build_redirect_request(self, request: Request, response: Response) -> Request:
         """
@@ -565,6 +497,99 @@ class AsyncClient:
             raise RedirectBodyUnavailable()
         return request.stream
 
+    def dispatcher_for_url(self, url: URL) -> Dispatcher:
+        """
+        Returns the Dispatcher instance that should be used for a given URL.
+        This will either be the standard connection pool, or a proxy.
+        """
+        if self.proxies:
+            is_default_port = (url.scheme == "http" and url.port == 80) or (
+                url.scheme == "https" and url.port == 443
+            )
+            hostname = f"{url.host}:{url.port}"
+            proxy_keys = (
+                f"{url.scheme}://{hostname}",
+                f"{url.scheme}://{url.host}" if is_default_port else None,
+                f"all://{hostname}",
+                f"all://{url.host}" if is_default_port else None,
+                url.scheme,
+                "all",
+            )
+            for proxy_key in proxy_keys:
+                if proxy_key and proxy_key in self.proxies:
+                    dispatcher = self.proxies[proxy_key]
+                    return dispatcher
+
+        return self.dispatch
+
+    async def send(
+        self,
+        request: Request,
+        *,
+        stream: bool = False,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> Response:
+        if request.url.scheme not in ("http", "https"):
+            raise InvalidURL('URL scheme must be "http" or "https".')
+
+        timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
+
+        auth = self.build_auth(request, auth)
+
+        response = await self.send_handling_redirects(
+            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        )
+
+        if not stream:
+            try:
+                await response.aread()
+            finally:
+                await response.aclose()
+
+        return response
+
+    async def send_handling_redirects(
+        self,
+        request: Request,
+        auth: Auth,
+        timeout: Timeout,
+        allow_redirects: bool = True,
+        history: typing.List[Response] = None,
+    ) -> Response:
+        if history is None:
+            history = []
+
+        while True:
+            if len(history) > self.max_redirects:
+                raise TooManyRedirects()
+            if request.url in (response.url for response in history):
+                raise RedirectLoop()
+
+            response = await self.send_handling_auth(
+                request, auth=auth, timeout=timeout,
+            )
+            response.history = list(history)
+
+            if not response.is_redirect:
+                return response
+
+            await response.aread()
+            request = self.build_redirect_request(request, response)
+            history = history + [response]
+
+            if not allow_redirects:
+                response.call_next = functools.partial(
+                    self.send_handling_redirects,
+                    request=request,
+                    auth=auth,
+                    timeout=timeout,
+                    allow_redirects=False,
+                    history=history,
+                )
+                return response
+
     async def send_handling_auth(
         self, request: Request, auth: Auth, timeout: Timeout,
     ) -> Response:
@@ -609,31 +634,6 @@ class AsyncClient:
         logger.debug(f'HTTP Request: {request.method} {request.url} "{response_line}"')
 
         return response
-
-    def dispatcher_for_url(self, url: URL) -> Dispatcher:
-        """
-        Returns the Dispatcher instance that should be used for a given URL.
-        This will either be the standard connection pool, or a proxy.
-        """
-        if self.proxies:
-            is_default_port = (url.scheme == "http" and url.port == 80) or (
-                url.scheme == "https" and url.port == 443
-            )
-            hostname = f"{url.host}:{url.port}"
-            proxy_keys = (
-                f"{url.scheme}://{hostname}",
-                f"{url.scheme}://{url.host}" if is_default_port else None,
-                f"all://{hostname}",
-                f"all://{url.host}" if is_default_port else None,
-                url.scheme,
-                "all",
-            )
-            for proxy_key in proxy_keys:
-                if proxy_key and proxy_key in self.proxies:
-                    dispatcher = self.proxies[proxy_key]
-                    return dispatcher
-
-        return self.dispatch
 
     async def get(
         self,
