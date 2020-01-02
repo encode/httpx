@@ -3,7 +3,7 @@ from .api import delete, get, head, options, patch, post, put, request, stream
 from .auth import BasicAuth, DigestAuth
 from .client import AsyncClient, Client
 from .config import TimeoutConfig  # For 0.8 backwards compat.
-from .config import PoolLimits, Timeout
+from .config import PoolLimits, Proxy, Timeout
 from .dispatch.proxy_http import HTTPProxy, HTTPProxyMode
 from .exceptions import (
     ConnectionClosed,
@@ -49,6 +49,7 @@ __all__ = [
     "Client",
     "DigestAuth",
     "PoolLimits",
+    "Proxy",
     "Timeout",
     "TimeoutConfig",  # For 0.8 backwards compat.
     "HTTPProxy",

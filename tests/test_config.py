@@ -217,3 +217,18 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
         ssl_config.load_ssl_context()
 
         assert ssl_config.ssl_context.keylog_filename is None
+
+
+def test_proxy_from_url():
+    proxy = httpx.Proxy("https://example.com")
+    assert repr(proxy) == "Proxy(url='https://example.com', headers={}, mode='DEFAULT')"
+
+
+def test_invalid_proxy_scheme():
+    with pytest.raises(ValueError):
+        httpx.Proxy("invalid://example.com")
+
+
+def test_invalid_proxy_mode():
+    with pytest.raises(ValueError):
+        httpx.Proxy("https://example.com", mode="INVALID")

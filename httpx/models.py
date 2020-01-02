@@ -12,7 +12,7 @@ from urllib.parse import parse_qsl, urlencode
 import chardet
 import rfc3986
 
-from .config import USER_AGENT
+from .__version__ import __version__
 from .content_streams import (
     ByteStream,
     ContentStream,
@@ -21,7 +21,6 @@ from .content_streams import (
     encode,
 )
 from .decoders import (
-    ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
     Decoder,
     IdentityDecoder,
@@ -72,10 +71,6 @@ HeaderTypes = typing.Union[
 ]
 
 CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
-
-ProxiesTypes = typing.Union[
-    URLTypes, "Dispatcher", typing.Dict[URLTypes, typing.Union[URLTypes, "Dispatcher"]]
-]
 
 
 class URL:
@@ -585,6 +580,12 @@ class Headers(typing.MutableMapping[str, str]):
         if no_duplicate_keys:
             return f"{class_name}({as_dict!r}{encoding_str})"
         return f"{class_name}({as_list!r}{encoding_str})"
+
+
+USER_AGENT = f"python-httpx/{__version__}"
+ACCEPT_ENCODING = ", ".join(
+    [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
+)
 
 
 class Request:

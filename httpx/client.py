@@ -14,6 +14,8 @@ from .config import (
     UNSET,
     CertTypes,
     PoolLimits,
+    ProxiesTypes,
+    Proxy,
     Timeout,
     TimeoutTypes,
     UnsetType,
@@ -37,7 +39,6 @@ from .models import (
     CookieTypes,
     Headers,
     HeaderTypes,
-    ProxiesTypes,
     QueryParams,
     QueryParamTypes,
     Request,
@@ -126,20 +127,6 @@ class AsyncClient:
         trust_env: bool = True,
         uds: str = None,
     ):
-        if app is not None:
-            dispatch = ASGIDispatch(app=app)
-
-        if dispatch is None:
-            dispatch = ConnectionPool(
-                verify=verify,
-                cert=cert,
-                http2=http2,
-                pool_limits=pool_limits,
-                backend=backend,
-                trust_env=trust_env,
-                uds=uds,
-            )
-
         if base_url is None:
             self.base_url = URL("", allow_relative=True)
         else:
@@ -148,6 +135,9 @@ class AsyncClient:
         if params is None:
             params = {}
 
+        if proxies is None and trust_env:
+            proxies = typing.cast(ProxiesTypes, get_environment_proxies())
+
         self.auth = auth
         self._params = QueryParams(params)
         self._headers = Headers(headers)
@@ -155,13 +145,20 @@ class AsyncClient:
         self.timeout = Timeout(timeout)
         self.max_redirects = max_redirects
         self.trust_env = trust_env
-        self.dispatch = dispatch
         self.netrc = NetRCInfo()
 
-        if proxies is None and trust_env:
-            proxies = typing.cast(ProxiesTypes, get_environment_proxies())
-
-        self.proxies: typing.Dict[str, Dispatcher] = _proxies_to_dispatchers(
+        self.dispatch = self.init_dispatch(
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            pool_limits=pool_limits,
+            dispatch=dispatch,
+            app=app,
+            backend=backend,
+            trust_env=trust_env,
+            uds=uds,
+        )
+        self.proxies: typing.Dict[str, Dispatcher] = self.proxies_to_dispatchers(
             proxies,
             verify=verify,
             cert=cert,
@@ -170,6 +167,114 @@ class AsyncClient:
             backend=backend,
             trust_env=trust_env,
         )
+
+    def init_dispatch(
+        self,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        http2: bool = False,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        dispatch: Dispatcher = None,
+        app: typing.Callable = None,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        trust_env: bool = True,
+        uds: str = None,
+    ) -> Dispatcher:
+        if dispatch is not None:
+            return dispatch
+
+        if app is not None:
+            return ASGIDispatch(app=app)
+
+        return ConnectionPool(
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            pool_limits=pool_limits,
+            backend=backend,
+            trust_env=trust_env,
+            uds=uds,
+        )
+
+    def init_proxy_dispatch(
+        self,
+        proxy: Proxy,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        http2: bool = False,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        trust_env: bool = True,
+    ) -> Dispatcher:
+        return HTTPProxy(
+            proxy_url=proxy.url,
+            proxy_headers=proxy.headers,
+            proxy_mode=proxy.mode,
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            pool_limits=pool_limits,
+            backend=backend,
+            trust_env=trust_env,
+        )
+
+    def proxies_to_dispatchers(
+        self,
+        proxies: typing.Optional[ProxiesTypes],
+        verify: VerifyTypes,
+        cert: typing.Optional[CertTypes],
+        http2: bool,
+        pool_limits: PoolLimits,
+        backend: typing.Union[str, ConcurrencyBackend],
+        trust_env: bool,
+    ) -> typing.Dict[str, Dispatcher]:
+        if proxies is None:
+            return {}
+        elif isinstance(proxies, (str, URL, Proxy)):
+            proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
+            return {
+                "all": self.init_proxy_dispatch(
+                    proxy=proxy,
+                    verify=verify,
+                    cert=cert,
+                    pool_limits=pool_limits,
+                    backend=backend,
+                    trust_env=trust_env,
+                    http2=http2,
+                )
+            }
+        elif isinstance(proxies, Dispatcher):  # pragma: nocover
+            return {"all": proxies}
+            # We're supporting this style for now, but we'll want to deprecate it.
+            #
+            # raise RuntimeError(
+            #     "Passing a Dispatcher instance to 'proxies=' is no longer supported. "
+            #     "Use `httpx.Proxy() instead.`"
+            # )
+        else:
+            new_proxies = {}
+            for key, value in proxies.items():
+                if isinstance(value, (str, URL, Proxy)):
+                    proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
+                    new_proxies[str(key)] = self.init_proxy_dispatch(
+                        proxy=proxy,
+                        verify=verify,
+                        cert=cert,
+                        pool_limits=pool_limits,
+                        backend=backend,
+                        trust_env=trust_env,
+                        http2=http2,
+                    )
+                elif isinstance(value, Dispatcher):  # pragma: nocover
+                    new_proxies[str(key)] = value
+                    # We're supporting this style for now, but we'll want to
+                    # deprecate it.
+                    #
+                    # raise RuntimeError(
+                    #     "Passing a Dispatcher instance to 'proxies=' is no longer "
+                    #     "supported. Use `httpx.Proxy() instead.`"
+                    # )
+            return new_proxies
 
     @property
     def headers(self) -> Headers:
@@ -876,46 +981,6 @@ class AsyncClient:
         traceback: TracebackType = None,
     ) -> None:
         await self.aclose()
-
-
-def _proxies_to_dispatchers(
-    proxies: typing.Optional[ProxiesTypes],
-    verify: VerifyTypes,
-    cert: typing.Optional[CertTypes],
-    http2: bool,
-    pool_limits: PoolLimits,
-    backend: typing.Union[str, ConcurrencyBackend],
-    trust_env: bool,
-) -> typing.Dict[str, Dispatcher]:
-    def _proxy_from_url(url: URLTypes) -> Dispatcher:
-        nonlocal verify, cert, http2, pool_limits, backend, trust_env
-        url = URL(url)
-        if url.scheme in ("http", "https"):
-            return HTTPProxy(
-                url,
-                verify=verify,
-                cert=cert,
-                pool_limits=pool_limits,
-                backend=backend,
-                trust_env=trust_env,
-                http2=http2,
-            )
-        raise ValueError(f"Unknown proxy for {url!r}")
-
-    if proxies is None:
-        return {}
-    elif isinstance(proxies, (str, URL)):
-        return {"all": _proxy_from_url(proxies)}
-    elif isinstance(proxies, Dispatcher):
-        return {"all": proxies}
-    else:
-        new_proxies = {}
-        for key, dispatcher_or_url in proxies.items():
-            if isinstance(dispatcher_or_url, (str, URL)):
-                new_proxies[str(key)] = _proxy_from_url(dispatcher_or_url)
-            else:
-                new_proxies[str(key)] = dispatcher_or_url
-        return new_proxies
 
 
 class StreamContextManager:
