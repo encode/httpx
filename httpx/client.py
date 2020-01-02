@@ -204,71 +204,6 @@ class AsyncClient:
     def params(self, params: QueryParamTypes) -> None:
         self._params = QueryParams(params)
 
-    async def request(
-        self,
-        method: str,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        stream: bool = False,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
-    ) -> Response:
-        if cert is not None:  # pragma: nocover
-            raise RuntimeError(
-                "Passing a 'cert' argument when making a request on a client "
-                "is not supported anymore. Instantiate a new client instead, "
-                "passing any 'cert' arguments to the client itself."
-            )
-
-        if verify is not None:  # pragma: nocover
-            raise RuntimeError(
-                "Passing a 'verify' argument when making a request on a client "
-                "is not supported anymore. Instantiate a new client instead, "
-                "passing any 'verify' arguments to the client itself."
-            )
-
-        if trust_env is not None:  # pragma: nocover
-            raise RuntimeError(
-                "Passing a 'trust_env' argument when making a request on a client "
-                "is not supported anymore. Instantiate a new client instead, "
-                "passing any 'trust_env' argument to the client itself."
-            )
-
-        if stream:  # pragma: nocover
-            warnings.warn(
-                "The 'stream=True' argument is due to be deprecated. "
-                "Use 'async with client.stream(method, url, ...) as response' instead."
-            )
-
-        request = self.build_request(
-            method=method,
-            url=url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-        )
-        response = await self.send(
-            request,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
-        )
-        return response
-
     def stream(
         self,
         method: str,
@@ -521,6 +456,71 @@ class AsyncClient:
                     return dispatcher
 
         return self.dispatch
+
+    async def request(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        stream: bool = False,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        cert: CertTypes = None,
+        verify: VerifyTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        trust_env: bool = None,
+    ) -> Response:
+        if cert is not None:  # pragma: nocover
+            raise RuntimeError(
+                "Passing a 'cert' argument when making a request on a client "
+                "is not supported anymore. Instantiate a new client instead, "
+                "passing any 'cert' arguments to the client itself."
+            )
+
+        if verify is not None:  # pragma: nocover
+            raise RuntimeError(
+                "Passing a 'verify' argument when making a request on a client "
+                "is not supported anymore. Instantiate a new client instead, "
+                "passing any 'verify' arguments to the client itself."
+            )
+
+        if trust_env is not None:  # pragma: nocover
+            raise RuntimeError(
+                "Passing a 'trust_env' argument when making a request on a client "
+                "is not supported anymore. Instantiate a new client instead, "
+                "passing any 'trust_env' argument to the client itself."
+            )
+
+        if stream:  # pragma: nocover
+            warnings.warn(
+                "The 'stream=True' argument is due to be deprecated. "
+                "Use 'async with client.stream(method, url, ...) as response' instead."
+            )
+
+        request = self.build_request(
+            method=method,
+            url=url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        response = await self.send(
+            request,
+            stream=stream,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
+        return response
 
     async def send(
         self,
