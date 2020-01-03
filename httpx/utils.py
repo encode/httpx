@@ -253,15 +253,6 @@ def get_logger(name: str) -> Logger:
     return typing.cast(Logger, logger)
 
 
-def kv_format(**kwargs: typing.Any) -> str:
-    """Format arguments into a key=value line.
-
-    >>> formatkv(x=1, name="Bob")
-    "x=1 name='Bob'"
-    """
-    return " ".join(f"{key}={value!r}" for key, value in kwargs.items())
-
-
 def should_not_be_proxied(url: "URL") -> bool:
     """ Return True if url should not be proxied,
     return False otherwise.

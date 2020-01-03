@@ -86,13 +86,6 @@ class TooManyRedirects(RedirectError):
     """
 
 
-class RedirectBodyUnavailable(RedirectError):
-    """
-    Got a redirect response, but the request body was streaming, and is
-    no longer available.
-    """
-
-
 class RedirectLoop(RedirectError):
     """
     Infinite redirect loop.
@@ -114,6 +107,13 @@ class StreamError(HTTPError):
 
     The developer made an error in accessing the request stream in
     an invalid way.
+    """
+
+
+class RequestBodyUnavailable(StreamError):
+    """
+    Had to send the request again, but the request body was streaming, and is
+    no longer available.
     """
 
 

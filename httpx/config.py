@@ -63,19 +63,10 @@ class SSLConfig:
         http2: bool = False,
     ):
         self.cert = cert
-
-        # Allow passing in our own SSLContext object that's pre-configured.
-        # If you do this we assume that you want verify=True as well.
-        ssl_context = None
-        if isinstance(verify, ssl.SSLContext):
-            ssl_context = verify
-            verify = True
-            self._load_client_certs(ssl_context)
-
-        self.ssl_context: typing.Optional[ssl.SSLContext] = ssl_context
-        self.verify: typing.Union[str, bool] = verify
+        self.verify = verify
         self.trust_env = trust_env
         self.http2 = http2
+        self.ssl_context = self.load_ssl_context()
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -97,15 +88,9 @@ class SSLConfig:
             f"http2={self.http2!r}"
         )
 
-        if self.ssl_context is None:
-            self.ssl_context = (
-                self.load_ssl_context_verify()
-                if self.verify
-                else self.load_ssl_context_no_verify()
-            )
-
-        assert self.ssl_context is not None
-        return self.ssl_context
+        if self.verify:
+            return self.load_ssl_context_verify()
+        return self.load_ssl_context_no_verify()
 
     def load_ssl_context_no_verify(self) -> ssl.SSLContext:
         """
@@ -125,7 +110,12 @@ class SSLConfig:
             if ca_bundle is not None:
                 self.verify = ca_bundle  # type: ignore
 
-        if isinstance(self.verify, bool):
+        if isinstance(self.verify, ssl.SSLContext):
+            # Allow passing in our own SSLContext object that's pre-configured.
+            context = self.verify
+            self._load_client_certs(context)
+            return context
+        elif isinstance(self.verify, bool):
             ca_bundle_path = self.DEFAULT_CA_BUNDLE_PATH
         elif Path(self.verify).exists():
             ca_bundle_path = Path(self.verify)
