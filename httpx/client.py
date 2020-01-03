@@ -25,6 +25,7 @@ from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import AsyncDispatcher, SyncDispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
+from .dispatch.urllib3 import URLLib3Dispatcher
 from .exceptions import (
     HTTPError,
     InvalidURL,
@@ -901,7 +902,6 @@ class SyncClient(BaseClient):
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
-        http2: bool = False,
         proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
@@ -909,9 +909,7 @@ class SyncClient(BaseClient):
         base_url: URLTypes = None,
         dispatch: SyncDispatcher = None,
         app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
-        uds: str = None,
     ):
         super().__init__(
             auth=auth,
@@ -929,22 +927,17 @@ class SyncClient(BaseClient):
         self.dispatch = self.init_dispatch(
             verify=verify,
             cert=cert,
-            http2=http2,
             pool_limits=pool_limits,
             dispatch=dispatch,
             app=app,
-            backend=backend,
             trust_env=trust_env,
-            uds=uds,
         )
         self.proxies = {
             url_prefix: self.init_proxy_dispatch(
                 proxy=proxy,
                 verify=verify,
                 cert=cert,
-                http2=http2,
                 pool_limits=pool_limits,
-                backend=backend,
                 trust_env=trust_env,
             )
             for url_prefix, proxy in proxy_map.items()
@@ -954,29 +947,20 @@ class SyncClient(BaseClient):
         self,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
-        http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         dispatch: SyncDispatcher = None,
         app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
-        uds: str = None,
     ) -> SyncDispatcher:
-        assert dispatch is not None
-        return dispatch
+        if dispatch is not None:
+            return dispatch
 
         # if app is not None:
         #    return WSGIDispatch(app=app)
 
-        # return ConnectionPool(
-        #    verify=verify,
-        #    cert=cert,
-        #    http2=http2,
-        #    pool_limits=pool_limits,
-        #    backend=backend,
-        #    trust_env=trust_env,
-        #    uds=uds,
-        # )
+        return URLLib3Dispatcher(
+            verify=verify, cert=cert, pool_limits=pool_limits, trust_env=trust_env,
+        )
 
     def init_proxy_dispatch(
         self,
@@ -1414,5 +1398,4 @@ class StreamContextManager:
             await self.client.aclose()
 
 
-# For compatibility with 0.9.x.
-Client = AsyncClient
+Client = SyncClient
