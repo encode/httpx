@@ -7,7 +7,6 @@ import h2.events
 
 from httpx import Request, Timeout
 from httpx.backends.base import BaseSocketStream, lookup_backend
-from tests.concurrency import sleep
 
 
 class MockHTTP2Backend:
@@ -49,7 +48,6 @@ class MockHTTP2Server(BaseSocketStream):
         return "HTTP/2"
 
     async def read(self, n, timeout, flag=None) -> bytes:
-        await sleep(self.backend, 0)
         send, self.buffer = self.buffer[:n], self.buffer[n:]
         return send
 
@@ -195,7 +193,6 @@ class MockRawSocketStream(BaseSocketStream):
         self.backend.received_data.append(data)
 
     async def read(self, n, timeout, flag=None) -> bytes:
-        await sleep(self.backend.backend, 0)
         if not self.backend.data_to_send:
             return b""
         return self.backend.data_to_send.pop(0)

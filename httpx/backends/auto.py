@@ -18,7 +18,7 @@ class AutoBackend(ConcurrencyBackend):
     def backend(self) -> ConcurrencyBackend:
         if not hasattr(self, "_backend_implementation"):
             backend = sniffio.current_async_library()
-            if backend not in ("asyncio", "trio"):
+            if backend not in ("asyncio", "trio"):  # pragma: nocover
                 raise RuntimeError(f"Unsupported concurrency backend {backend!r}")
             self._backend_implementation = lookup_backend(backend)
         return self._backend_implementation

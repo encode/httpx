@@ -1,5 +1,4 @@
 import functools
-import ssl
 import typing
 
 import h11
@@ -49,7 +48,7 @@ class HTTPConnection(Dispatcher):
     ) -> typing.Union[HTTP11Connection, HTTP2Connection]:
         host = self.origin.host
         port = self.origin.port
-        ssl_context = self.get_ssl_context()
+        ssl_context = None if not self.origin.is_ssl else self.ssl.ssl_context
 
         if self.release_func is None:
             on_release = None
@@ -104,8 +103,7 @@ class HTTPConnection(Dispatcher):
         if origin.is_ssl:
             # Pull the socket stream off the internal HTTP connection object,
             # and run start_tls().
-            ssl_context = self.get_ssl_context()
-            assert ssl_context is not None
+            ssl_context = self.ssl.ssl_context
 
             logger.trace(f"tunnel_start_tls proxy_url={proxy_url!r} origin={origin!r}")
             socket = await socket.start_tls(
@@ -129,11 +127,6 @@ class HTTPConnection(Dispatcher):
             )
         else:
             self.connection = HTTP11Connection(socket, on_release=on_release)
-
-    def get_ssl_context(self) -> typing.Optional[ssl.SSLContext]:
-        if not self.origin.is_ssl:
-            return None
-        return self.ssl.load_ssl_context()
 
     async def close(self) -> None:
         logger.trace("close_connection")
