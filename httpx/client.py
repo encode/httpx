@@ -451,7 +451,7 @@ class AsyncClient:
                 raise RedirectLoop()
 
             response = await self.send_handling_auth(
-                request, auth=auth, timeout=timeout,
+                request, history, auth=auth, timeout=timeout,
             )
             response.history = list(history)
 
@@ -566,7 +566,11 @@ class AsyncClient:
         return request.stream
 
     async def send_handling_auth(
-        self, request: Request, auth: Auth, timeout: Timeout,
+        self,
+        request: Request,
+        history: typing.List[Response],
+        auth: Auth,
+        timeout: Timeout,
     ) -> Response:
         auth_flow = auth(request)
         request = next(auth_flow)
@@ -580,8 +584,10 @@ class AsyncClient:
                 await response.aclose()
                 raise exc from None
             else:
+                response.history = list(history)
+                await response.aread()
                 request = next_request
-                await response.aclose()
+                history.append(response)
 
     async def send_single_request(
         self, request: Request, timeout: Timeout,

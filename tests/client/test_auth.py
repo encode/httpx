@@ -6,6 +6,7 @@ import typing
 import pytest
 
 from httpx import URL, AsyncClient, DigestAuth, ProtocolError, Request, Response
+from httpx.auth import Auth, AuthFlow
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
 from httpx.dispatch.base import Dispatcher
 
@@ -381,3 +382,52 @@ async def test_digest_auth_raises_protocol_error_on_malformed_header(
 
     with pytest.raises(ProtocolError):
         await client.get(url, auth=auth)
+
+
+@pytest.mark.asyncio
+async def test_auth_history() -> None:
+    """
+    Test that intermediate requests sent as part of an authentication flow
+    are recorded in the response history.
+    """
+
+    class RepeatAuth(Auth):
+        """
+        A mock authentication scheme that requires clients to send
+        the request a fixed number of times, and then send a last request containing
+        an aggregation of nonces that the server sent in 'WWW-Authenticate' headers
+        of intermediate responses.
+        """
+
+        def __init__(self, repeat: int):
+            self.repeat = repeat
+
+        def __call__(self, request: Request) -> AuthFlow:
+            nonces = []
+
+            for index in range(self.repeat):
+                request.headers["Authorization"] = f"Repeat {index}"
+                response = yield request
+                nonces.append(response.headers["www-authenticate"])
+
+            key = ".".join(nonces)
+            request.headers["Authorization"] = f"Repeat {key}"
+            yield request
+
+    url = "https://example.org/"
+    auth = RepeatAuth(repeat=2)
+    client = AsyncClient(dispatch=MockDispatch(auth_header="abc"))
+
+    response = await client.get(url, auth=auth)
+    assert response.status_code == 200
+    assert response.json() == {"auth": "Repeat abc.abc"}
+
+    assert len(response.history) == 2
+    resp1, resp2 = response.history
+    assert resp1.json() == {"auth": "Repeat 0"}
+    assert resp2.json() == {"auth": "Repeat 1"}
+
+    assert len(resp2.history) == 1
+    assert resp2.history == [resp1]
+
+    assert len(resp1.history) == 0
