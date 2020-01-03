@@ -451,7 +451,7 @@ class AsyncClient:
                 raise RedirectLoop()
 
             response = await self.send_handling_auth(
-                request, history, auth=auth, timeout=timeout, verify=verify, cert=cert
+                request, history, auth=auth, timeout=timeout,
             )
             response.history = list(history)
 
@@ -571,8 +571,6 @@ class AsyncClient:
         history: typing.List[Response],
         auth: Auth,
         timeout: Timeout,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
     ) -> Response:
         auth_flow = auth(request)
         request = next(auth_flow)

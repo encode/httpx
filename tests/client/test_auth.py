@@ -381,3 +381,18 @@ async def test_digest_auth_raises_protocol_error_on_malformed_header(
 
     with pytest.raises(ProtocolError):
         await client.get(url, auth=auth)
+
+
+@pytest.mark.asyncio
+async def test_auth_responses_get_saved_in_history():
+    """
+    Test if auth makes more than one request, the responses get saved
+    in history
+    """
+    auth = DigestAuth(username="tomchristie", password="password123")
+
+    client = AsyncClient(dispatch=MockDigestAuthDispatch(send_response_after_attempt=2))
+    response = await client.get("https://example.org", auth=auth)
+
+    assert response.status_code == 401
+    assert len(response.history) == 1  # the response from send_handling_auth
