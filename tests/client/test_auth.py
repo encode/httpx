@@ -219,6 +219,7 @@ async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> 
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
+    assert len(response.history) == 0
 
 
 @pytest.mark.asyncio
@@ -234,6 +235,7 @@ async def test_digest_auth_200_response_including_digest_auth_header() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
+    assert len(response.history) == 0
 
 
 @pytest.mark.asyncio
@@ -246,6 +248,7 @@ async def test_digest_auth_401_response_without_digest_auth_header() -> None:
 
     assert response.status_code == 401
     assert response.json() == {"auth": None}
+    assert len(response.history) == 0
 
 
 @pytest.mark.parametrize(
@@ -272,6 +275,8 @@ async def test_digest_auth(
     response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
+    assert len(response.history) == 1
+
     authorization = typing.cast(dict, response.json())["auth"]
     scheme, _, fields = authorization.partition(" ")
     assert scheme == "Digest"
@@ -300,6 +305,8 @@ async def test_digest_auth_no_specified_qop() -> None:
     response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
+    assert len(response.history) == 1
+
     authorization = typing.cast(dict, response.json())["auth"]
     scheme, _, fields = authorization.partition(" ")
     assert scheme == "Digest"
@@ -326,7 +333,10 @@ async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) 
     auth = DigestAuth(username="tomchristie", password="password123")
 
     client = AsyncClient(dispatch=MockDigestAuthDispatch(qop=qop))
-    await client.get(url, auth=auth)
+    response = await client.get(url, auth=auth)
+
+    assert response.status_code == 200
+    assert len(response.history) == 1
 
 
 @pytest.mark.asyncio
@@ -358,6 +368,7 @@ async def test_digest_auth_incorrect_credentials() -> None:
     response = await client.get(url, auth=auth)
 
     assert response.status_code == 401
+    assert len(response.history) == 1
 
 
 @pytest.mark.parametrize(
