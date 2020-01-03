@@ -15,6 +15,26 @@ from httpx.backends.trio import TrioBackend
 
 
 @functools.singledispatch
+async def sleep(backend, seconds: int):
+    raise NotImplementedError  # pragma: no cover
+
+
+@sleep.register(AutoBackend)
+async def _sleep_auto(backend, seconds: int):
+    return await sleep(backend.backend, seconds=seconds)
+
+
+@sleep.register(AsyncioBackend)
+async def _sleep_asyncio(backend, seconds: int):
+    await asyncio.sleep(seconds)
+
+
+@sleep.register(TrioBackend)
+async def _sleep_trio(backend, seconds: int):
+    await trio.sleep(seconds)
+
+
+@functools.singledispatch
 async def run_concurrently(backend, *coroutines: typing.Callable[[], typing.Awaitable]):
     raise NotImplementedError  # pragma: no cover
 
