@@ -177,7 +177,7 @@ async def test_keepalive_connection_closed_by_server_is_reestablished(server):
         await response.aread()
 
         # Shutdown the server to close the keep-alive connection
-        server.restart()
+        await server.restart()
 
         response = await http.request("GET", server.url)
         await response.aread()
@@ -196,7 +196,7 @@ async def test_keepalive_http2_connection_closed_by_server_is_reestablished(serv
         await response.aread()
 
         # Shutdown the server to close the keep-alive connection
-        server.restart()
+        await server.restart()
 
         response = await http.request("GET", server.url)
         await response.aread()
@@ -215,7 +215,7 @@ async def test_connection_closed_free_semaphore_on_acquire(server):
         await response.aread()
 
         # Close the connection so we're forced to recycle it
-        server.restart()
+        await server.restart()
 
         response = await http.request("GET", server.url)
         assert response.status_code == 200

@@ -18,6 +18,8 @@ from uvicorn.config import Config
 from uvicorn.main import Server
 
 from httpx import URL
+from httpx.backends.base import lookup_backend
+from tests.concurrency import sleep
 
 ENVIRONMENT_VARIABLES = {
     "SSL_CERT_FILE",
@@ -249,14 +251,17 @@ class TestServer(Server):
         }
         await asyncio.wait(tasks)
 
-    def restart(self) -> None:
-        # This may be called from a different thread than the one the server is
-        # running on. For this reason, we use an event to coordinate with the server
-        # instead of calling shutdown()/startup() directly.
+    async def restart(self) -> None:
+        # This coroutine may be called from a different thread than the one the
+        # server is running on, and from an async environment that's not asyncio.
+        # For this reason, we use an event to coordinate with the server
+        # instead of calling shutdown()/startup() directly, and should not make
+        # any asyncio-specific operations.
+        backend = lookup_backend()
         self.started = False
         self.restart_requested.set()
         while not self.started:
-            time.sleep(0.2)
+            await sleep(backend, 0.2)
 
     async def watch_restarts(self):
         while True:
