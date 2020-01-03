@@ -1,6 +1,5 @@
 import functools
 import typing
-import warnings
 from types import TracebackType
 
 import hstspreload
@@ -53,7 +52,7 @@ from .utils import NetRCInfo, get_environment_proxies, get_logger
 logger = get_logger(__name__)
 
 
-class AsyncClient:
+class BaseClient:
     """
     An asynchronous HTTP client, with connection pooling, HTTP/2, redirects,
     cookie persistence, etc.
@@ -113,19 +112,10 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        verify: VerifyTypes = True,
-        cert: CertTypes = None,
-        http2: bool = False,
-        proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
-        dispatch: Dispatcher = None,
-        app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
-        uds: str = None,
     ):
         if base_url is None:
             self.base_url = URL("", allow_relative=True)
@@ -143,82 +133,6 @@ class AsyncClient:
         self.max_redirects = max_redirects
         self.trust_env = trust_env
         self.netrc = NetRCInfo()
-
-        proxy_map = self.get_proxy_mapping(trust_env, proxies)
-
-        self.dispatch = self.init_dispatch(
-            verify=verify,
-            cert=cert,
-            http2=http2,
-            pool_limits=pool_limits,
-            dispatch=dispatch,
-            app=app,
-            backend=backend,
-            trust_env=trust_env,
-            uds=uds,
-        )
-        self.proxies = {
-            url_prefix: self.init_proxy_dispatch(
-                proxy=proxy,
-                verify=verify,
-                cert=cert,
-                http2=http2,
-                pool_limits=pool_limits,
-                backend=backend,
-                trust_env=trust_env,
-            )
-            for url_prefix, proxy in proxy_map.items()
-        }
-
-    def init_dispatch(
-        self,
-        verify: VerifyTypes = True,
-        cert: CertTypes = None,
-        http2: bool = False,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        dispatch: Dispatcher = None,
-        app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
-        trust_env: bool = True,
-        uds: str = None,
-    ) -> Dispatcher:
-        if dispatch is not None:
-            return dispatch
-
-        if app is not None:
-            return ASGIDispatch(app=app)
-
-        return ConnectionPool(
-            verify=verify,
-            cert=cert,
-            http2=http2,
-            pool_limits=pool_limits,
-            backend=backend,
-            trust_env=trust_env,
-            uds=uds,
-        )
-
-    def init_proxy_dispatch(
-        self,
-        proxy: Proxy,
-        verify: VerifyTypes = True,
-        cert: CertTypes = None,
-        http2: bool = False,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
-        trust_env: bool = True,
-    ) -> Dispatcher:
-        return HTTPProxy(
-            proxy_url=proxy.url,
-            proxy_headers=proxy.headers,
-            proxy_mode=proxy.mode,
-            verify=verify,
-            cert=cert,
-            http2=http2,
-            pool_limits=pool_limits,
-            backend=backend,
-            trust_env=trust_env,
-        )
 
     def get_proxy_mapping(
         self, trust_env: bool, proxies: typing.Optional[ProxiesTypes],
@@ -283,39 +197,6 @@ class AsyncClient:
     @params.setter
     def params(self, params: QueryParamTypes) -> None:
         self._params = QueryParams(params)
-
-    def stream(
-        self,
-        method: str,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-    ) -> "StreamContextManager":
-        request = self.build_request(
-            method=method,
-            url=url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-        )
-        return StreamContextManager(
-            client=self,
-            request=request,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
-        )
 
     def build_request(
         self,
@@ -512,6 +393,116 @@ class AsyncClient:
             raise RedirectBodyUnavailable()
         return request.stream
 
+
+class AsyncClient(BaseClient):
+    def __init__(
+        self,
+        *,
+        auth: AuthTypes = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        http2: bool = False,
+        proxies: ProxiesTypes = None,
+        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        base_url: URLTypes = None,
+        dispatch: Dispatcher = None,
+        app: typing.Callable = None,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        trust_env: bool = True,
+        uds: str = None,
+    ):
+        super().__init__(
+            auth=auth,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            timeout=timeout,
+            max_redirects=max_redirects,
+            base_url=base_url,
+            trust_env=trust_env,
+        )
+
+        proxy_map = self.get_proxy_mapping(trust_env, proxies)
+
+        self.dispatch = self.init_dispatch(
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            pool_limits=pool_limits,
+            dispatch=dispatch,
+            app=app,
+            backend=backend,
+            trust_env=trust_env,
+            uds=uds,
+        )
+        self.proxies = {
+            url_prefix: self.init_proxy_dispatch(
+                proxy=proxy,
+                verify=verify,
+                cert=cert,
+                http2=http2,
+                pool_limits=pool_limits,
+                backend=backend,
+                trust_env=trust_env,
+            )
+            for url_prefix, proxy in proxy_map.items()
+        }
+
+    def init_dispatch(
+        self,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        http2: bool = False,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        dispatch: Dispatcher = None,
+        app: typing.Callable = None,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        trust_env: bool = True,
+        uds: str = None,
+    ) -> Dispatcher:
+        if dispatch is not None:
+            return dispatch
+
+        if app is not None:
+            return ASGIDispatch(app=app)
+
+        return ConnectionPool(
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            pool_limits=pool_limits,
+            backend=backend,
+            trust_env=trust_env,
+            uds=uds,
+        )
+
+    def init_proxy_dispatch(
+        self,
+        proxy: Proxy,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        http2: bool = False,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        trust_env: bool = True,
+    ) -> Dispatcher:
+        return HTTPProxy(
+            proxy_url=proxy.url,
+            proxy_headers=proxy.headers,
+            proxy_mode=proxy.mode,
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            pool_limits=pool_limits,
+            backend=backend,
+            trust_env=trust_env,
+        )
+
     def dispatcher_for_url(self, url: URL) -> Dispatcher:
         """
         Returns the Dispatcher instance that should be used for a given URL.
@@ -537,6 +528,39 @@ class AsyncClient:
 
         return self.dispatch
 
+    def stream(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> "StreamContextManager":
+        request = self.build_request(
+            method=method,
+            url=url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        return StreamContextManager(
+            client=self,
+            request=request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
+
     async def request(
         self,
         method: str,
@@ -548,41 +572,10 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
-        if cert is not None:  # pragma: nocover
-            raise RuntimeError(
-                "Passing a 'cert' argument when making a request on a client "
-                "is not supported anymore. Instantiate a new client instead, "
-                "passing any 'cert' arguments to the client itself."
-            )
-
-        if verify is not None:  # pragma: nocover
-            raise RuntimeError(
-                "Passing a 'verify' argument when making a request on a client "
-                "is not supported anymore. Instantiate a new client instead, "
-                "passing any 'verify' arguments to the client itself."
-            )
-
-        if trust_env is not None:  # pragma: nocover
-            raise RuntimeError(
-                "Passing a 'trust_env' argument when making a request on a client "
-                "is not supported anymore. Instantiate a new client instead, "
-                "passing any 'trust_env' argument to the client itself."
-            )
-
-        if stream:  # pragma: nocover
-            warnings.warn(
-                "The 'stream=True' argument is due to be deprecated. "
-                "Use 'async with client.stream(method, url, ...) as response' instead."
-            )
-
         request = self.build_request(
             method=method,
             url=url,
@@ -594,11 +587,7 @@ class AsyncClient:
             cookies=cookies,
         )
         response = await self.send(
-            request,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
+            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout,
         )
         return response
 
@@ -722,13 +711,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "GET",
@@ -736,13 +721,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def options(
@@ -752,13 +733,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "OPTIONS",
@@ -766,13 +743,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def head(
@@ -782,13 +755,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "HEAD",
@@ -796,13 +765,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def post(
@@ -815,13 +780,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "POST",
@@ -832,13 +793,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def put(
@@ -851,13 +808,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "PUT",
@@ -868,13 +821,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def patch(
@@ -887,13 +836,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "PATCH",
@@ -904,13 +849,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def delete(
@@ -920,13 +861,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "DELETE",
@@ -934,13 +871,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def aclose(self) -> None:
