@@ -158,15 +158,18 @@ class AsyncClient:
             trust_env=trust_env,
             uds=uds,
         )
-        self.proxies: typing.Dict[str, Dispatcher] = self.proxies_to_dispatchers(
-            proxies,
-            verify=verify,
-            cert=cert,
-            http2=http2,
-            pool_limits=pool_limits,
-            backend=backend,
-            trust_env=trust_env,
-        )
+        self.proxies = {
+            url_prefix: self.init_proxy_dispatch(
+                proxy=proxy,
+                verify=verify,
+                cert=cert,
+                http2=http2,
+                pool_limits=pool_limits,
+                backend=backend,
+                trust_env=trust_env,
+            )
+            for url_prefix, proxy in self.get_proxy_mapping(proxies).items()
+        }
 
     def init_dispatch(
         self,
@@ -218,63 +221,31 @@ class AsyncClient:
             trust_env=trust_env,
         )
 
-    def proxies_to_dispatchers(
-        self,
-        proxies: typing.Optional[ProxiesTypes],
-        verify: VerifyTypes,
-        cert: typing.Optional[CertTypes],
-        http2: bool,
-        pool_limits: PoolLimits,
-        backend: typing.Union[str, ConcurrencyBackend],
-        trust_env: bool,
-    ) -> typing.Dict[str, Dispatcher]:
+    def get_proxy_mapping(
+        self, proxies: typing.Optional[ProxiesTypes],
+    ) -> typing.Dict[str, Proxy]:
         if proxies is None:
             return {}
         elif isinstance(proxies, (str, URL, Proxy)):
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
-            return {
-                "all": self.init_proxy_dispatch(
-                    proxy=proxy,
-                    verify=verify,
-                    cert=cert,
-                    pool_limits=pool_limits,
-                    backend=backend,
-                    trust_env=trust_env,
-                    http2=http2,
-                )
-            }
+            return {"all": proxy}
         elif isinstance(proxies, Dispatcher):  # pragma: nocover
-            return {"all": proxies}
-            # We're supporting this style for now, but we'll want to deprecate it.
-            #
-            # raise RuntimeError(
-            #     "Passing a Dispatcher instance to 'proxies=' is no longer supported. "
-            #     "Use `httpx.Proxy() instead.`"
-            # )
+            raise RuntimeError(
+                "Passing a Dispatcher instance to 'proxies=' is no longer supported. "
+                "Use `httpx.Proxy() instead.`"
+            )
         else:
-            new_proxies = {}
+            mapping = {}
             for key, value in proxies.items():
                 if isinstance(value, (str, URL, Proxy)):
                     proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
-                    new_proxies[str(key)] = self.init_proxy_dispatch(
-                        proxy=proxy,
-                        verify=verify,
-                        cert=cert,
-                        pool_limits=pool_limits,
-                        backend=backend,
-                        trust_env=trust_env,
-                        http2=http2,
-                    )
+                    mapping[key] = proxy
                 elif isinstance(value, Dispatcher):  # pragma: nocover
-                    new_proxies[str(key)] = value
-                    # We're supporting this style for now, but we'll want to
-                    # deprecate it.
-                    #
-                    # raise RuntimeError(
-                    #     "Passing a Dispatcher instance to 'proxies=' is no longer "
-                    #     "supported. Use `httpx.Proxy() instead.`"
-                    # )
-            return new_proxies
+                    raise RuntimeError(
+                        "Passing a Dispatcher instance to 'proxies=' is no longer "
+                        "supported. Use `httpx.Proxy() instead.`"
+                    )
+            return mapping
 
     @property
     def headers(self) -> Headers:
