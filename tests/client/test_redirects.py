@@ -7,9 +7,9 @@ from httpx import (
     URL,
     AsyncClient,
     NotRedirectResponse,
-    RedirectBodyUnavailable,
     RedirectLoop,
     Request,
+    RequestBodyUnavailable,
     Response,
     TooManyRedirects,
     codes,
@@ -293,7 +293,7 @@ async def test_cannot_redirect_streaming_body():
     async def streaming_body():
         yield b"Example request body"
 
-    with pytest.raises(RedirectBodyUnavailable):
+    with pytest.raises(RequestBodyUnavailable):
         await client.post(url, data=streaming_body())
 
 

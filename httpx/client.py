@@ -27,8 +27,8 @@ from .dispatch.proxy_http import HTTPProxy
 from .exceptions import (
     HTTPError,
     InvalidURL,
-    RedirectBodyUnavailable,
     RedirectLoop,
+    RequestBodyUnavailable,
     TooManyRedirects,
 )
 from .models import (
@@ -561,8 +561,13 @@ class AsyncClient:
         """
         if method != request.method and method == "GET":
             return None
+
         if not request.stream.can_replay():
-            raise RedirectBodyUnavailable()
+            raise RequestBodyUnavailable(
+                "Got a redirect response, but the request body was streaming "
+                "and is no longer available."
+            )
+
         return request.stream
 
     async def send_handling_auth(
