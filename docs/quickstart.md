@@ -379,7 +379,7 @@ with additional API for accessing cookies by their domain or path.
 By default, HTTPX will follow redirects for anything except `HEAD` requests.
 
 The `history` property of the response can be used to inspect any followed redirects.
-It contains a list of all any redirect responses that were followed, in the order
+It contains a list of any redirect responses that were followed, in the order
 in which they were made.
 
 For example, GitHub redirects all HTTP requests to HTTPS.
