@@ -135,9 +135,6 @@ class AsyncClient:
         if params is None:
             params = {}
 
-        if proxies is None and trust_env:
-            proxies = typing.cast(ProxiesTypes, get_environment_proxies())
-
         self.auth = auth
         self._params = QueryParams(params)
         self._headers = Headers(headers)
@@ -146,6 +143,8 @@ class AsyncClient:
         self.max_redirects = max_redirects
         self.trust_env = trust_env
         self.netrc = NetRCInfo()
+
+        proxy_map = self.get_proxy_mapping(trust_env, proxies)
 
         self.dispatch = self.init_dispatch(
             verify=verify,
@@ -168,7 +167,7 @@ class AsyncClient:
                 backend=backend,
                 trust_env=trust_env,
             )
-            for url_prefix, proxy in self.get_proxy_mapping(proxies).items()
+            for url_prefix, proxy in proxy_map.items()
         }
 
     def init_dispatch(
@@ -222,9 +221,14 @@ class AsyncClient:
         )
 
     def get_proxy_mapping(
-        self, proxies: typing.Optional[ProxiesTypes],
+        self, trust_env: bool, proxies: typing.Optional[ProxiesTypes],
     ) -> typing.Dict[str, Proxy]:
         if proxies is None:
+            if trust_env:
+                return {
+                    key: Proxy(url=val)
+                    for key, val in get_environment_proxies().items()
+                }
             return {}
         elif isinstance(proxies, (str, URL, Proxy)):
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
