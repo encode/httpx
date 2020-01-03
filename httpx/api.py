@@ -1,7 +1,7 @@
 import typing
 
 from .auth import AuthTypes
-from .client import AsyncClient, StreamContextManager
+from .client import Client, StreamContextManager
 from .config import DEFAULT_TIMEOUT_CONFIG, CertTypes, TimeoutTypes, VerifyTypes
 from .models import (
     CookieTypes,
@@ -15,7 +15,7 @@ from .models import (
 )
 
 
-async def request(
+def request(
     method: str,
     url: URLTypes,
     *,
@@ -75,15 +75,15 @@ async def request(
 
     ```
     >>> import httpx
-    >>> response = await httpx.request('GET', 'https://httpbin.org/get')
+    >>> response = httpx.request('GET', 'https://httpbin.org/get')
     >>> response
     <Response [200 OK]>
     ```
     """
-    async with AsyncClient(
+    with Client(
         cert=cert, verify=verify, timeout=timeout, trust_env=trust_env,
     ) as client:
-        return await client.request(
+        return client.request(
             method=method,
             url=url,
             data=data,
@@ -114,7 +114,7 @@ def stream(
     cert: CertTypes = None,
     trust_env: bool = True,
 ) -> StreamContextManager:
-    client = AsyncClient(cert=cert, verify=verify, trust_env=trust_env)
+    client = Client(cert=cert, verify=verify, trust_env=trust_env)
     request = Request(
         method=method,
         url=url,
@@ -135,7 +135,7 @@ def stream(
     )
 
 
-async def get(
+def get(
     url: URLTypes,
     *,
     params: QueryParamTypes = None,
@@ -156,7 +156,7 @@ async def get(
     Note that the `data`, `files`, and `json` parameters are not available on
     this function, as `GET` requests should not include a request body.
     """
-    return await request(
+    return request(
         "GET",
         url,
         params=params,
@@ -171,7 +171,7 @@ async def get(
     )
 
 
-async def options(
+def options(
     url: URLTypes,
     *,
     params: QueryParamTypes = None,
@@ -192,7 +192,7 @@ async def options(
     Note that the `data`, `files`, and `json` parameters are not available on
     this function, as `OPTIONS` requests should not include a request body.
     """
-    return await request(
+    return request(
         "OPTIONS",
         url,
         params=params,
@@ -207,7 +207,7 @@ async def options(
     )
 
 
-async def head(
+def head(
     url: URLTypes,
     *,
     params: QueryParamTypes = None,
@@ -230,7 +230,7 @@ async def head(
     `HEAD` method also differs from the other cases in that `allow_redirects`
     defaults to `False`.
     """
-    return await request(
+    return request(
         "HEAD",
         url,
         params=params,
@@ -245,7 +245,7 @@ async def head(
     )
 
 
-async def post(
+def post(
     url: URLTypes,
     *,
     data: RequestData = None,
@@ -266,7 +266,7 @@ async def post(
 
     **Parameters**: See `httpx.request`.
     """
-    return await request(
+    return request(
         "POST",
         url,
         data=data,
@@ -284,7 +284,7 @@ async def post(
     )
 
 
-async def put(
+def put(
     url: URLTypes,
     *,
     data: RequestData = None,
@@ -305,7 +305,7 @@ async def put(
 
     **Parameters**: See `httpx.request`.
     """
-    return await request(
+    return request(
         "PUT",
         url,
         data=data,
@@ -323,7 +323,7 @@ async def put(
     )
 
 
-async def patch(
+def patch(
     url: URLTypes,
     *,
     data: RequestData = None,
@@ -344,7 +344,7 @@ async def patch(
 
     **Parameters**: See `httpx.request`.
     """
-    return await request(
+    return request(
         "PATCH",
         url,
         data=data,
@@ -362,7 +362,7 @@ async def patch(
     )
 
 
-async def delete(
+def delete(
     url: URLTypes,
     *,
     params: QueryParamTypes = None,
@@ -383,7 +383,7 @@ async def delete(
     Note that the `data`, `files`, and `json` parameters are not available on
     this function, as `DELETE` requests should not include a request body.
     """
-    return await request(
+    return request(
         "DELETE",
         url,
         params=params,
