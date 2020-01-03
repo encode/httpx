@@ -12,7 +12,7 @@ from ..models import (
 )
 
 
-class Dispatcher:
+class AsyncDispatcher:
     """
     Base class for dispatcher classes, that handle sending the request.
 
@@ -40,7 +40,7 @@ class Dispatcher:
     async def close(self) -> None:
         pass  # pragma: nocover
 
-    async def __aenter__(self) -> "Dispatcher":
+    async def __aenter__(self) -> "AsyncDispatcher":
         return self
 
     async def __aexit__(
@@ -50,3 +50,15 @@ class Dispatcher:
         traceback: TracebackType = None,
     ) -> None:
         await self.close()
+
+
+class SyncDispatcher:
+    """
+    Base class for sync dispatcher classes, that handle sending the request.
+    """
+
+    def send(self, request: Request, timeout: Timeout = None) -> Response:
+        raise NotImplementedError()  # pragma: nocover
+
+    def close(self) -> None:
+        pass  # pragma: nocover

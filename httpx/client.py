@@ -22,7 +22,7 @@ from .config import (
 )
 from .content_streams import ContentStream
 from .dispatch.asgi import ASGIDispatch
-from .dispatch.base import Dispatcher
+from .dispatch.base import AsyncDispatcher, SyncDispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
 from .exceptions import (
@@ -147,7 +147,7 @@ class BaseClient:
         elif isinstance(proxies, (str, URL, Proxy)):
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
             return {"all": proxy}
-        elif isinstance(proxies, Dispatcher):  # pragma: nocover
+        elif isinstance(proxies, AsyncDispatcher):  # pragma: nocover
             raise RuntimeError(
                 "Passing a Dispatcher instance to 'proxies=' is no longer supported. "
                 "Use `httpx.Proxy() instead.`"
@@ -158,7 +158,7 @@ class BaseClient:
                 if isinstance(value, (str, URL, Proxy)):
                     proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
                     mapping[key] = proxy
-                elif isinstance(value, Dispatcher):  # pragma: nocover
+                elif isinstance(value, AsyncDispatcher):  # pragma: nocover
                     raise RuntimeError(
                         "Passing a Dispatcher instance to 'proxies=' is no longer "
                         "supported. Use `httpx.Proxy() instead.`"
@@ -393,6 +393,39 @@ class BaseClient:
             raise RedirectBodyUnavailable()
         return request.stream
 
+    def stream(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> "StreamContextManager":
+        request = self.build_request(
+            method=method,
+            url=url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        return StreamContextManager(
+            client=self,
+            request=request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
+
 
 class AsyncClient(BaseClient):
     def __init__(
@@ -410,7 +443,7 @@ class AsyncClient(BaseClient):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
-        dispatch: Dispatcher = None,
+        dispatch: AsyncDispatcher = None,
         app: typing.Callable = None,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
@@ -459,12 +492,12 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        dispatch: Dispatcher = None,
+        dispatch: AsyncDispatcher = None,
         app: typing.Callable = None,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
         uds: str = None,
-    ) -> Dispatcher:
+    ) -> AsyncDispatcher:
         if dispatch is not None:
             return dispatch
 
@@ -490,7 +523,7 @@ class AsyncClient(BaseClient):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
-    ) -> Dispatcher:
+    ) -> AsyncDispatcher:
         return HTTPProxy(
             proxy_url=proxy.url,
             proxy_headers=proxy.headers,
@@ -503,7 +536,7 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
-    def dispatcher_for_url(self, url: URL) -> Dispatcher:
+    def dispatcher_for_url(self, url: URL) -> AsyncDispatcher:
         """
         Returns the Dispatcher instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
@@ -527,39 +560,6 @@ class AsyncClient(BaseClient):
                     return dispatcher
 
         return self.dispatch
-
-    def stream(
-        self,
-        method: str,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-    ) -> "StreamContextManager":
-        request = self.build_request(
-            method=method,
-            url=url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-        )
-        return StreamContextManager(
-            client=self,
-            request=request,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
-        )
 
     async def request(
         self,
@@ -891,10 +891,470 @@ class AsyncClient(BaseClient):
         await self.aclose()
 
 
+class SyncClient(BaseClient):
+    def __init__(
+        self,
+        *,
+        auth: AuthTypes = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        http2: bool = False,
+        proxies: ProxiesTypes = None,
+        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        base_url: URLTypes = None,
+        dispatch: SyncDispatcher = None,
+        app: typing.Callable = None,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        trust_env: bool = True,
+        uds: str = None,
+    ):
+        super().__init__(
+            auth=auth,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            timeout=timeout,
+            max_redirects=max_redirects,
+            base_url=base_url,
+            trust_env=trust_env,
+        )
+
+        proxy_map = self.get_proxy_mapping(trust_env, proxies)
+
+        self.dispatch = self.init_dispatch(
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            pool_limits=pool_limits,
+            dispatch=dispatch,
+            app=app,
+            backend=backend,
+            trust_env=trust_env,
+            uds=uds,
+        )
+        self.proxies = {
+            url_prefix: self.init_proxy_dispatch(
+                proxy=proxy,
+                verify=verify,
+                cert=cert,
+                http2=http2,
+                pool_limits=pool_limits,
+                backend=backend,
+                trust_env=trust_env,
+            )
+            for url_prefix, proxy in proxy_map.items()
+        }
+
+    def init_dispatch(
+        self,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        http2: bool = False,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        dispatch: SyncDispatcher = None,
+        app: typing.Callable = None,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        trust_env: bool = True,
+        uds: str = None,
+    ) -> SyncDispatcher:
+        assert dispatch is not None
+        return dispatch
+
+        # if app is not None:
+        #    return WSGIDispatch(app=app)
+
+        # return ConnectionPool(
+        #    verify=verify,
+        #    cert=cert,
+        #    http2=http2,
+        #    pool_limits=pool_limits,
+        #    backend=backend,
+        #    trust_env=trust_env,
+        #    uds=uds,
+        # )
+
+    def init_proxy_dispatch(
+        self,
+        proxy: Proxy,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        http2: bool = False,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        trust_env: bool = True,
+    ) -> SyncDispatcher:
+        raise NotImplementedError()
+        # return HTTPProxy(
+        #     proxy_url=proxy.url,
+        #     proxy_headers=proxy.headers,
+        #     proxy_mode=proxy.mode,
+        #     verify=verify,
+        #     cert=cert,
+        #     http2=http2,
+        #     pool_limits=pool_limits,
+        #     backend=backend,
+        #     trust_env=trust_env,
+        # )
+
+    def dispatcher_for_url(self, url: URL) -> SyncDispatcher:
+        """
+        Returns the Dispatcher instance that should be used for a given URL.
+        This will either be the standard connection pool, or a proxy.
+        """
+        if self.proxies:
+            is_default_port = (url.scheme == "http" and url.port == 80) or (
+                url.scheme == "https" and url.port == 443
+            )
+            hostname = f"{url.host}:{url.port}"
+            proxy_keys = (
+                f"{url.scheme}://{hostname}",
+                f"{url.scheme}://{url.host}" if is_default_port else None,
+                f"all://{hostname}",
+                f"all://{url.host}" if is_default_port else None,
+                url.scheme,
+                "all",
+            )
+            for proxy_key in proxy_keys:
+                if proxy_key and proxy_key in self.proxies:
+                    dispatcher = self.proxies[proxy_key]
+                    return dispatcher
+
+        return self.dispatch
+
+    def request(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> Response:
+        request = self.build_request(
+            method=method,
+            url=url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        return self.send(
+            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout,
+        )
+
+    def send(
+        self,
+        request: Request,
+        *,
+        stream: bool = False,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> Response:
+        if request.url.scheme not in ("http", "https"):
+            raise InvalidURL('URL scheme must be "http" or "https".')
+
+        timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
+
+        auth = self.build_auth(request, auth)
+
+        response = self.send_handling_redirects(
+            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        )
+
+        if not stream:
+            try:
+                response.read()
+            finally:
+                response.close()
+
+        return response
+
+    def send_handling_redirects(
+        self,
+        request: Request,
+        auth: Auth,
+        timeout: Timeout,
+        allow_redirects: bool = True,
+        history: typing.List[Response] = None,
+    ) -> Response:
+        if history is None:
+            history = []
+
+        while True:
+            if len(history) > self.max_redirects:
+                raise TooManyRedirects()
+            if request.url in (response.url for response in history):
+                raise RedirectLoop()
+
+            response = self.send_handling_auth(request, auth=auth, timeout=timeout,)
+            response.history = list(history)
+
+            if not response.is_redirect:
+                return response
+
+            response.read()
+            request = self.build_redirect_request(request, response)
+            history = history + [response]
+
+            if not allow_redirects:
+                response.call_next = functools.partial(
+                    self.send_handling_redirects,
+                    request=request,
+                    auth=auth,
+                    timeout=timeout,
+                    allow_redirects=False,
+                    history=history,
+                )
+                return response
+
+    def send_handling_auth(
+        self, request: Request, auth: Auth, timeout: Timeout,
+    ) -> Response:
+        auth_flow = auth(request)
+        request = next(auth_flow)
+        while True:
+            response = self.send_single_request(request, timeout)
+            try:
+                next_request = auth_flow.send(response)
+            except StopIteration:
+                return response
+            except BaseException as exc:
+                response.close()
+                raise exc from None
+            else:
+                request = next_request
+                response.close()
+
+    def send_single_request(self, request: Request, timeout: Timeout,) -> Response:
+        """
+        Sends a single request, without handling any redirections.
+        """
+
+        dispatcher = self.dispatcher_for_url(request.url)
+
+        try:
+            response = dispatcher.send(request, timeout=timeout)
+        except HTTPError as exc:
+            # Add the original request to any HTTPError unless
+            # there'a already a request attached in the case of
+            # a ProxyError.
+            if exc.request is None:
+                exc.request = request
+            raise
+
+        self.cookies.extract_cookies(response)
+
+        status = f"{response.status_code} {response.reason_phrase}"
+        response_line = f"{response.http_version} {status}"
+        logger.debug(f'HTTP Request: {request.method} {request.url} "{response_line}"')
+
+        return response
+
+    def get(
+        self,
+        url: URLTypes,
+        *,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> Response:
+        return self.request(
+            "GET",
+            url,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
+
+    def options(
+        self,
+        url: URLTypes,
+        *,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> Response:
+        return self.request(
+            "OPTIONS",
+            url,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
+
+    def head(
+        self,
+        url: URLTypes,
+        *,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = False,  # NOTE: Differs to usual default.
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> Response:
+        return self.request(
+            "HEAD",
+            url,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
+
+    def post(
+        self,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> Response:
+        return self.request(
+            "POST",
+            url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
+
+    def put(
+        self,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> Response:
+        return self.request(
+            "PUT",
+            url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
+
+    def patch(
+        self,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> Response:
+        return self.request(
+            "PATCH",
+            url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
+
+    def delete(
+        self,
+        url: URLTypes,
+        *,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> Response:
+        return self.request(
+            "DELETE",
+            url,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
+
+    def close(self) -> None:
+        self.dispatch.close()
+
+    def __enter__(self) -> "SyncClient":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        self.close()
+
+
 class StreamContextManager:
     def __init__(
         self,
-        client: AsyncClient,
+        client: BaseClient,
         request: Request,
         *,
         auth: AuthTypes = None,
@@ -909,7 +1369,30 @@ class StreamContextManager:
         self.timeout = timeout
         self.close_client = close_client
 
+    def __enter__(self) -> "Response":
+        assert isinstance(self.client, SyncClient)
+        self.response = self.client.send(
+            request=self.request,
+            auth=self.auth,
+            allow_redirects=self.allow_redirects,
+            timeout=self.timeout,
+            stream=True,
+        )
+        return self.response
+
+    def __exit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        assert isinstance(self.client, SyncClient)
+        self.response.close()
+        if self.close_client:
+            self.client.close()
+
     async def __aenter__(self) -> "Response":
+        assert isinstance(self.client, AsyncClient)
         self.response = await self.client.send(
             request=self.request,
             auth=self.auth,
@@ -925,6 +1408,7 @@ class StreamContextManager:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
+        assert isinstance(self.client, AsyncClient)
         await self.response.aclose()
         if self.close_client:
             await self.client.aclose()

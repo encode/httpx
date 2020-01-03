@@ -50,9 +50,6 @@ from .utils import (
     str_query_param,
 )
 
-if typing.TYPE_CHECKING:  # pragma: no cover
-    from .dispatch.base import Dispatcher  # noqa: F401
-
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
 URLTypes = typing.Union["URL", str]

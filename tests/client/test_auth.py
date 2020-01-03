@@ -7,10 +7,10 @@ import pytest
 
 from httpx import URL, AsyncClient, DigestAuth, ProtocolError, Request, Response
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx.dispatch.base import Dispatcher
+from httpx.dispatch.base import AsyncDispatcher
 
 
-class MockDispatch(Dispatcher):
+class MockDispatch(AsyncDispatcher):
     def __init__(self, auth_header: str = "", status_code: int = 200) -> None:
         self.auth_header = auth_header
         self.status_code = status_code
@@ -29,7 +29,7 @@ class MockDispatch(Dispatcher):
         )
 
 
-class MockDigestAuthDispatch(Dispatcher):
+class MockDigestAuthDispatch(AsyncDispatcher):
     def __init__(
         self,
         algorithm: str = "SHA-256",
