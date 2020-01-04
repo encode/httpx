@@ -1,7 +1,7 @@
 import typing
 
 from .auth import AuthTypes
-from .client import Client, StreamContextManager
+from .client import AsyncClient, StreamContextManager
 from .config import DEFAULT_TIMEOUT_CONFIG, CertTypes, TimeoutTypes, VerifyTypes
 from .models import (
     CookieTypes,
@@ -81,7 +81,7 @@ async def request(
     <Response [200 OK]>
     ```
     """
-    async with Client(
+    async with AsyncClient(
         cert=cert, verify=verify, timeout=timeout, trust_env=trust_env,
     ) as client:
         return await client.request(
@@ -116,7 +116,7 @@ def stream(
     cert: CertTypes = None,
     trust_env: bool = True,
 ) -> StreamContextManager:
-    client = Client(cert=cert, verify=verify, trust_env=trust_env)
+    client = AsyncClient(cert=cert, verify=verify, trust_env=trust_env)
     request = Request(
         method=method,
         url=url,

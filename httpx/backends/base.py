@@ -1,5 +1,6 @@
 import ssl
 import typing
+from types import TracebackType
 
 from ..config import Timeout
 
@@ -54,16 +55,27 @@ class BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
 
-class BaseEvent:
+class BaseLock:
     """
-    An abstract interface for Event classes.
+    An abstract interface for Lock classes.
     Abstracts away any asyncio-specific interfaces.
     """
 
-    def set(self) -> None:
+    async def __aenter__(self) -> None:
+        await self.acquire()
+
+    async def __aexit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        self.release()
+
+    def release(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 
-    async def wait(self) -> None:
+    async def acquire(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 
 
@@ -115,5 +127,5 @@ class ConcurrencyBackend:
     def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
         raise NotImplementedError()  # pragma: no cover
 
-    def create_event(self) -> BaseEvent:
+    def create_lock(self) -> BaseLock:
         raise NotImplementedError()  # pragma: no cover

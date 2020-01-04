@@ -32,7 +32,7 @@ Within a `stream()` block request data is made available with:
 * `.aiter_text()` - Instead of `response.iter_content(decode_unicode=True)`
 * `.aiter_lines()` - Instead of `response.iter_lines()`
 * `.aiter_raw()` - Use this instead of `response.raw`
-* `.read()` - Read the entire response body, making `request.text` and `response.content` available.
+* `.aread()` - Read the entire response body, making `request.text` and `response.content` available.
 
 ## SSL configuration
 
@@ -52,7 +52,7 @@ We don't support `response.is_ok` since the naming is ambiguous there, and might
 
 ## Client instances
 
-The HTTPX equivalent of `requests.Session` is `httpx.Client`.
+The HTTPX equivalent of `requests.Session` is `httpx.AsyncClient`.
 
 ```python
 session = requests.Session(**kwargs)
@@ -61,7 +61,7 @@ session = requests.Session(**kwargs)
 is generally equivalent to
 
 ```python
-client = httpx.Client(**kwargs)
+client = httpx.AsyncClient(**kwargs)
 ```
 
 ## Mocking

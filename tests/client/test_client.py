@@ -8,7 +8,7 @@ import httpx
 @pytest.mark.asyncio
 async def test_get(server):
     url = server.url
-    async with httpx.Client() as http:
+    async with httpx.AsyncClient() as http:
         response = await http.get(url)
     assert response.status_code == 200
     assert response.url == url
@@ -28,7 +28,7 @@ async def test_build_request(server):
     url = server.url.copy_with(path="/echo_headers")
     headers = {"Custom-header": "value"}
 
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         request = client.build_request("GET", url)
         request.headers.update(headers)
         response = await client.send(request)
@@ -41,7 +41,7 @@ async def test_build_request(server):
 
 @pytest.mark.asyncio
 async def test_post(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.post(server.url, data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
@@ -49,7 +49,7 @@ async def test_post(server):
 
 @pytest.mark.asyncio
 async def test_post_json(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.post(server.url, json={"text": "Hello, world!"})
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
@@ -57,9 +57,9 @@ async def test_post_json(server):
 
 @pytest.mark.asyncio
 async def test_stream_response(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         async with client.stream("GET", server.url) as response:
-            content = await response.read()
+            content = await response.aread()
     assert response.status_code == 200
     assert content == b"Hello, world!"
 
@@ -68,7 +68,7 @@ async def test_stream_response(server):
 async def test_stream_iterator(server):
     body = b""
 
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         async with client.stream("GET", server.url) as response:
             async for chunk in response.aiter_bytes():
                 body += chunk
@@ -81,7 +81,7 @@ async def test_stream_iterator(server):
 async def test_raw_iterator(server):
     body = b""
 
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         async with client.stream("GET", server.url) as response:
             async for chunk in response.aiter_raw():
                 body += chunk
@@ -92,7 +92,7 @@ async def test_raw_iterator(server):
 
 @pytest.mark.asyncio
 async def test_raise_for_status(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         for status_code in (200, 400, 404, 500, 505):
             response = await client.request(
                 "GET", server.url.copy_with(path="/status/{}".format(status_code))
@@ -107,7 +107,7 @@ async def test_raise_for_status(server):
 
 @pytest.mark.asyncio
 async def test_options(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.options(server.url)
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
@@ -115,7 +115,7 @@ async def test_options(server):
 
 @pytest.mark.asyncio
 async def test_head(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.head(server.url)
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
@@ -123,7 +123,7 @@ async def test_head(server):
 
 @pytest.mark.asyncio
 async def test_put(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.put(server.url, data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
@@ -131,7 +131,7 @@ async def test_put(server):
 
 @pytest.mark.asyncio
 async def test_patch(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.patch(server.url, data=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
@@ -139,7 +139,7 @@ async def test_patch(server):
 
 @pytest.mark.asyncio
 async def test_delete(server):
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.delete(server.url)
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
@@ -148,7 +148,7 @@ async def test_delete(server):
 @pytest.mark.asyncio
 async def test_base_url(server):
     base_url = server.url
-    async with httpx.Client(base_url=base_url) as client:
+    async with httpx.AsyncClient(base_url=base_url) as client:
         response = await client.get("/")
     assert response.status_code == 200
     assert response.url == base_url
@@ -159,7 +159,7 @@ async def test_uds(uds_server):
     url = uds_server.url
     uds = uds_server.config.uds
     assert uds is not None
-    async with httpx.Client(uds=uds) as client:
+    async with httpx.AsyncClient(uds=uds) as client:
         response = await client.get(url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
@@ -167,7 +167,7 @@ async def test_uds(uds_server):
 
 
 def test_merge_url():
-    client = httpx.Client(base_url="https://www.paypal.com/")
+    client = httpx.AsyncClient(base_url="https://www.paypal.com/")
     url = client.merge_url("http://www.paypal.com")
 
     assert url.scheme == "https"
@@ -177,6 +177,6 @@ def test_merge_url():
 @pytest.mark.asyncio
 async def test_elapsed_delay(server):
     url = server.url.copy_with(path="/slow_response/100")
-    async with httpx.Client() as client:
+    async with httpx.AsyncClient() as client:
         response = await client.get(url)
     assert response.elapsed.total_seconds() > 0.0

@@ -100,7 +100,7 @@ async def test_streaming():
     stream = AsyncIteratorStream(aiterator=compress(body))
     response = httpx.Response(200, headers=headers, stream=stream, request=REQUEST)
     assert not hasattr(response, "body")
-    assert await response.read() == body
+    assert await response.aread() == body
 
 
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br", b"identity"))
@@ -125,10 +125,7 @@ def test_decoding_errors(header_value):
     body = b"test 123"
     compressed_body = brotli.compress(body)[3:]
     with pytest.raises(httpx.DecodingError):
-        response = httpx.Response(
-            200, headers=headers, content=compressed_body, request=REQUEST
-        )
-        response.content
+        httpx.Response(200, headers=headers, content=compressed_body, request=REQUEST)
 
 
 @pytest.mark.parametrize(
@@ -155,10 +152,17 @@ async def test_text_decoder(data, encoding):
         for chunk in data:
             yield chunk
 
+    # Accessing `.text` on a read response.
     stream = AsyncIteratorStream(aiterator=iterator())
     response = httpx.Response(200, stream=stream, request=REQUEST)
-    await response.read()
+    await response.aread()
     assert response.text == (b"".join(data)).decode(encoding)
+
+    # Streaming `.aiter_text` iteratively.
+    stream = AsyncIteratorStream(aiterator=iterator())
+    response = httpx.Response(200, stream=stream, request=REQUEST)
+    text = "".join([part async for part in response.aiter_text()])
+    assert text == (b"".join(data)).decode(encoding)
 
 
 @pytest.mark.asyncio
@@ -176,7 +180,7 @@ async def test_text_decoder_known_encoding():
         request=REQUEST,
     )
 
-    await response.read()
+    await response.aread()
     assert "".join(response.text) == "トラベル"
 
 

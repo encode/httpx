@@ -7,9 +7,12 @@ from json import dumps as json_dumps
 from pathlib import Path
 from urllib.parse import urlencode
 
+from .exceptions import StreamConsumed
 from .utils import format_form_param
 
-RequestData = typing.Union[dict, str, bytes, typing.AsyncIterator[bytes]]
+RequestData = typing.Union[
+    dict, str, bytes, typing.Iterator[bytes], typing.AsyncIterator[bytes]
+]
 
 RequestFiles = typing.Dict[
     str,
@@ -46,6 +49,12 @@ class ContentStream:
         """
         return True
 
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield b""
+
+    def close(self) -> None:
+        pass
+
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield b""
 
@@ -67,8 +76,44 @@ class ByteStream(ContentStream):
         content_length = str(len(self.body))
         return {"Content-Length": content_length}
 
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield self.body
+
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield self.body
+
+
+class IteratorStream(ContentStream):
+    """
+    Request content encoded as plain bytes, using an byte iterator.
+    """
+
+    def __init__(
+        self, iterator: typing.Iterator[bytes], close_func: typing.Callable = None
+    ) -> None:
+        self.iterator = iterator
+        self.close_func = close_func
+        self.is_stream_consumed = False
+
+    def can_replay(self) -> bool:
+        return False
+
+    def get_headers(self) -> typing.Dict[str, str]:
+        return {"Transfer-Encoding": "chunked"}
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        if self.is_stream_consumed:
+            raise StreamConsumed()
+        self.is_stream_consumed = True
+        for part in self.iterator:
+            yield part
+
+    def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        raise RuntimeError("Attempted to call a async iterator on an sync stream.")
+
+    def close(self) -> None:
+        if self.close_func is not None:
+            self.close_func()
 
 
 class AsyncIteratorStream(ContentStream):
@@ -81,6 +126,7 @@ class AsyncIteratorStream(ContentStream):
     ) -> None:
         self.aiterator = aiterator
         self.close_func = close_func
+        self.is_stream_consumed = False
 
     def can_replay(self) -> bool:
         return False
@@ -88,7 +134,13 @@ class AsyncIteratorStream(ContentStream):
     def get_headers(self) -> typing.Dict[str, str]:
         return {"Transfer-Encoding": "chunked"}
 
+    def __iter__(self) -> typing.Iterator[bytes]:
+        raise RuntimeError("Attempted to call a sync iterator on an async stream.")
+
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        if self.is_stream_consumed:
+            raise StreamConsumed()
+        self.is_stream_consumed = True
         async for part in self.aiterator:
             yield part
 
@@ -110,6 +162,9 @@ class JSONStream(ContentStream):
         content_type = "application/json"
         return {"Content-Length": content_length, "Content-Type": content_type}
 
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield self.body
+
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield self.body
 
@@ -126,6 +181,9 @@ class URLEncodedStream(ContentStream):
         content_length = str(len(self.body))
         content_type = "application/x-www-form-urlencoded"
         return {"Content-Length": content_length, "Content-Type": content_type}
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield self.body
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield self.body
@@ -247,6 +305,9 @@ class MultipartStream(ContentStream):
         content_type = self.content_type
         return {"Content-Length": content_length, "Content-Type": content_type}
 
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield self.body
+
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield self.body
 
@@ -275,5 +336,11 @@ def encode(
             return URLEncodedStream(data=data)
     elif isinstance(data, (str, bytes)):
         return ByteStream(body=data)
-    else:
+    elif hasattr(data, "__aiter__"):
+        data = typing.cast(typing.AsyncIterator[bytes], data)
         return AsyncIteratorStream(aiterator=data)
+    elif hasattr(data, "__iter__"):
+        data = typing.cast(typing.Iterator[bytes], data)
+        return IteratorStream(iterator=data)
+
+    raise TypeError(f"Unexpected type for 'data', {type(data)!r}")

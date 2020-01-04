@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 
 import httpx
-from httpx.content_streams import AsyncIteratorStream
+from httpx.content_streams import AsyncIteratorStream, IteratorStream
 
 REQUEST = httpx.Request("GET", "https://example.org")
 
@@ -20,13 +20,15 @@ async def async_streaming_body():
     yield b"world!"
 
 
-def test_response():
+@pytest.mark.asyncio
+async def test_response():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
+
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert response.request is REQUEST
-    assert response.elapsed == datetime.timedelta(0)
+    assert response.elapsed >= datetime.timedelta(0)
     assert not response.is_error
 
 
@@ -122,8 +124,7 @@ def test_response_force_encoding():
     assert response.encoding == "iso-8859-1"
 
 
-@pytest.mark.asyncio
-async def test_read_response():
+def test_read():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
 
     assert response.status_code == 200
@@ -131,7 +132,7 @@ async def test_read_response():
     assert response.encoding == "ascii"
     assert response.is_closed
 
-    content = await response.read()
+    content = response.read()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
@@ -139,8 +140,35 @@ async def test_read_response():
 
 
 @pytest.mark.asyncio
-async def test_raw_interface():
+async def test_aread():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
+
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+    assert response.encoding == "ascii"
+    assert response.is_closed
+
+    content = await response.aread()
+
+    assert content == b"Hello, world!"
+    assert response.content == b"Hello, world!"
+    assert response.is_closed
+
+
+def test_iter_raw():
+    stream = IteratorStream(iterator=streaming_body())
+    response = httpx.Response(200, stream=stream, request=REQUEST)
+
+    raw = b""
+    for part in response.iter_raw():
+        raw += part
+    assert raw == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_aiter_raw():
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream, request=REQUEST)
 
     raw = b""
     async for part in response.aiter_raw():
@@ -148,8 +176,17 @@ async def test_raw_interface():
     assert raw == b"Hello, world!"
 
 
+def test_iter_bytes():
+    response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
+
+    content = b""
+    for part in response.iter_bytes():
+        content += part
+    assert content == b"Hello, world!"
+
+
 @pytest.mark.asyncio
-async def test_bytes_interface():
+async def test_aiter_bytes():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
 
     content = b""
@@ -158,11 +195,18 @@ async def test_bytes_interface():
     assert content == b"Hello, world!"
 
 
-@pytest.mark.asyncio
-async def test_text_interface():
+def test_iter_text():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
 
-    await response.read()
+    content = ""
+    for part in response.iter_text():
+        content += part
+    assert content == "Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_aiter_text():
+    response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
 
     content = ""
     async for part in response.aiter_text():
@@ -170,11 +214,18 @@ async def test_text_interface():
     assert content == "Hello, world!"
 
 
-@pytest.mark.asyncio
-async def test_lines_interface():
+def test_iter_lines():
     response = httpx.Response(200, content=b"Hello,\nworld!", request=REQUEST)
 
-    await response.read()
+    content = []
+    for line in response.iter_lines():
+        content.append(line)
+    assert content == ["Hello,\n", "world!"]
+
+
+@pytest.mark.asyncio
+async def test_aiter_lines():
+    response = httpx.Response(200, content=b"Hello,\nworld!", request=REQUEST)
 
     content = []
     async for line in response.aiter_lines():
@@ -182,27 +233,14 @@ async def test_lines_interface():
     assert content == ["Hello,\n", "world!"]
 
 
-@pytest.mark.asyncio
-async def test_stream_interface_after_read():
-    response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
-
-    await response.read()
-
-    content = b""
-    async for part in response.aiter_bytes():
-        content += part
-    assert content == b"Hello, world!"
-
-
-@pytest.mark.asyncio
-async def test_streaming_response():
-    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+def test_sync_streaming_response():
+    stream = IteratorStream(iterator=streaming_body())
     response = httpx.Response(200, stream=stream, request=REQUEST)
 
     assert response.status_code == 200
     assert not response.is_closed
 
-    content = await response.read()
+    content = response.read()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
@@ -210,7 +248,34 @@ async def test_streaming_response():
 
 
 @pytest.mark.asyncio
-async def test_cannot_read_after_stream_consumed():
+async def test_async_streaming_response():
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream, request=REQUEST)
+
+    assert response.status_code == 200
+    assert not response.is_closed
+
+    content = await response.aread()
+
+    assert content == b"Hello, world!"
+    assert response.content == b"Hello, world!"
+    assert response.is_closed
+
+
+def test_cannot_read_after_stream_consumed():
+    stream = IteratorStream(iterator=streaming_body())
+    response = httpx.Response(200, stream=stream, request=REQUEST)
+
+    content = b""
+    for part in response.iter_bytes():
+        content += part
+
+    with pytest.raises(httpx.StreamConsumed):
+        response.read()
+
+
+@pytest.mark.asyncio
+async def test_cannot_aread_after_stream_consumed():
     stream = AsyncIteratorStream(aiterator=async_streaming_body())
     response = httpx.Response(200, stream=stream, request=REQUEST)
 
@@ -219,18 +284,53 @@ async def test_cannot_read_after_stream_consumed():
         content += part
 
     with pytest.raises(httpx.StreamConsumed):
-        await response.read()
+        await response.aread()
+
+
+def test_cannot_read_after_response_closed():
+    is_closed = False
+
+    def close_func():
+        nonlocal is_closed
+        is_closed = True
+
+    stream = IteratorStream(iterator=streaming_body(), close_func=close_func)
+    response = httpx.Response(200, stream=stream, request=REQUEST)
+
+    response.close()
+    assert is_closed
+
+    with pytest.raises(httpx.ResponseClosed):
+        response.read()
 
 
 @pytest.mark.asyncio
-async def test_cannot_read_after_response_closed():
+async def test_cannot_aread_after_response_closed():
+    is_closed = False
+
+    async def close_func():
+        nonlocal is_closed
+        is_closed = True
+
+    stream = AsyncIteratorStream(
+        aiterator=async_streaming_body(), close_func=close_func
+    )
+    response = httpx.Response(200, stream=stream, request=REQUEST)
+
+    await response.aclose()
+    assert is_closed
+
+    with pytest.raises(httpx.ResponseClosed):
+        await response.aread()
+
+
+@pytest.mark.asyncio
+async def test_elapsed_not_available_until_closed():
     stream = AsyncIteratorStream(aiterator=async_streaming_body())
     response = httpx.Response(200, stream=stream, request=REQUEST)
 
-    await response.close()
-
-    with pytest.raises(httpx.ResponseClosed):
-        await response.read()
+    with pytest.raises(RuntimeError):
+        response.elapsed
 
 
 def test_unknown_status_code():

@@ -6,7 +6,7 @@ import h2.events
 import pytest
 from h2.settings import SettingCodes
 
-from httpx import Client, Response, TimeoutException
+from httpx import AsyncClient, Response, TimeoutException
 
 from .utils import MockHTTP2Backend
 
@@ -26,7 +26,7 @@ async def app(request):
 async def test_http2_get_request():
     backend = MockHTTP2Backend(app=app)
 
-    async with Client(backend=backend, http2=True) as client:
+    async with AsyncClient(backend=backend, http2=True) as client:
         response = await client.get("http://example.org")
 
     assert response.status_code == 200
@@ -37,7 +37,7 @@ async def test_http2_get_request():
 async def test_http2_post_request():
     backend = MockHTTP2Backend(app=app)
 
-    async with Client(backend=backend, http2=True) as client:
+    async with AsyncClient(backend=backend, http2=True) as client:
         response = await client.post("http://example.org", data=b"<data>")
 
     assert response.status_code == 200
@@ -53,7 +53,7 @@ async def test_http2_large_post_request():
     backend = MockHTTP2Backend(app=app)
 
     data = b"a" * 100000
-    async with Client(backend=backend, http2=True) as client:
+    async with AsyncClient(backend=backend, http2=True) as client:
         response = await client.post("http://example.org", data=data)
     assert response.status_code == 200
     assert json.loads(response.content) == {
@@ -67,7 +67,7 @@ async def test_http2_large_post_request():
 async def test_http2_multiple_requests():
     backend = MockHTTP2Backend(app=app)
 
-    async with Client(backend=backend, http2=True) as client:
+    async with AsyncClient(backend=backend, http2=True) as client:
         response_1 = await client.get("http://example.org/1")
         response_2 = await client.get("http://example.org/2")
         response_3 = await client.get("http://example.org/3")
@@ -90,7 +90,7 @@ async def test_http2_reconnect():
     """
     backend = MockHTTP2Backend(app=app)
 
-    async with Client(backend=backend, http2=True) as client:
+    async with AsyncClient(backend=backend, http2=True) as client:
         response_1 = await client.get("http://example.org/1")
         backend.server.close_connection = True
         response_2 = await client.get("http://example.org/2")
@@ -106,7 +106,7 @@ async def test_http2_reconnect():
 async def test_http2_settings_in_handshake():
     backend = MockHTTP2Backend(app=app)
 
-    async with Client(backend=backend, http2=True) as client:
+    async with AsyncClient(backend=backend, http2=True) as client:
         await client.get("http://example.org")
 
     h2_conn = backend.server.conn
@@ -140,12 +140,12 @@ async def test_http2_settings_in_handshake():
 
 @pytest.mark.usefixtures("async_environment")
 async def test_http2_live_request():
-    async with Client(http2=True) as client:
+    async with AsyncClient(http2=True) as client:
         try:
             resp = await client.get("https://nghttp2.org/httpbin/anything")
-        except TimeoutException:
+        except TimeoutException:  # pragma: nocover
             pytest.xfail(reason="nghttp2.org appears to be unresponsive")
-        except socket.gaierror:
+        except socket.gaierror:  # pragma: nocover
             pytest.xfail(reason="You appear to be offline")
         assert resp.status_code == 200
         assert resp.http_version == "HTTP/2"

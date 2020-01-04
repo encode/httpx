@@ -339,7 +339,7 @@ If you're using streaming responses in any of these ways then the `response.cont
 ```
 >>> async with httpx.stream("GET", "https://www.example.com") as r:
 ...     if r.headers['Content-Length'] < TOO_LONG:
-...         await r.read()
+...         await r.aread()
 ...         print(r.text)
 ```
 
@@ -379,7 +379,7 @@ with additional API for accessing cookies by their domain or path.
 By default, HTTPX will follow redirects for anything except `HEAD` requests.
 
 The `history` property of the response can be used to inspect any followed redirects.
-It contains a list of all any redirect responses that were followed, in the order
+It contains a list of any redirect responses that were followed, in the order
 in which they were made.
 
 For example, GitHub redirects all HTTP requests to HTTPS.
@@ -433,7 +433,7 @@ You can also disable the timeout behavior completely...
 >>> await httpx.get('https://github.com/', timeout=None)
 ```
 
-For advanced timeout management, see [Timeout fine-tuning](https://www.encode.io/httpx/advanced/#timeout-fine-tuning).
+For advanced timeout management, see [Timeout fine-tuning](https://www.encode.io/httpx/advanced/#fine-tuning-the-configuration).
 
 ## Authentication
 

@@ -6,7 +6,7 @@ from h2.config import H2Configuration
 from h2.settings import SettingCodes, Settings
 
 from ..backends.base import (
-    BaseEvent,
+    BaseLock,
     BaseSocketStream,
     ConcurrencyBackend,
     lookup_backend,
@@ -16,12 +16,11 @@ from ..content_streams import AsyncIteratorStream
 from ..exceptions import ProtocolError
 from ..models import Request, Response
 from ..utils import get_logger
-from .base import OpenConnection
 
 logger = get_logger(__name__)
 
 
-class HTTP2Connection(OpenConnection):
+class HTTP2Connection:
     READ_NUM_BYTES = 4096
     CONFIG = H2Configuration(validate_inbound_headers=False)
 
@@ -39,32 +38,28 @@ class HTTP2Connection(OpenConnection):
         self.streams = {}  # type: typing.Dict[int, HTTP2Stream]
         self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
 
-        self.init_started = False
+        self.sent_connection_init = False
 
     @property
     def is_http2(self) -> bool:
         return True
 
     @property
-    def init_complete(self) -> BaseEvent:
+    def init_lock(self) -> BaseLock:
         # We do this lazily, to make sure backend autodetection always
         # runs within an async context.
-        if not hasattr(self, "_initialization_complete"):
-            self._initialization_complete = self.backend.create_event()
-        return self._initialization_complete
+        if not hasattr(self, "_initialization_lock"):
+            self._initialization_lock = self.backend.create_lock()
+        return self._initialization_lock
 
     async def send(self, request: Request, timeout: Timeout = None) -> Response:
         timeout = Timeout() if timeout is None else timeout
 
-        if not self.init_started:
-            # The very first stream is responsible for initiating the connection.
-            self.init_started = True
-            await self.send_connection_init(timeout)
-            stream_id = self.state.get_next_available_stream_id()
-            self.init_complete.set()
-        else:
-            # All other streams need to wait until the connection is established.
-            await self.init_complete.wait()
+        async with self.init_lock:
+            if not self.sent_connection_init:
+                # The very first stream is responsible for initiating the connection.
+                await self.send_connection_init(timeout)
+                self.sent_connection_init = True
             stream_id = self.state.get_next_available_stream_id()
 
         stream = HTTP2Stream(stream_id=stream_id, connection=self)

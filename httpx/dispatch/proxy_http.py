@@ -4,7 +4,14 @@ import warnings
 from base64 import b64encode
 
 from ..backends.base import ConcurrencyBackend
-from ..config import DEFAULT_POOL_LIMITS, CertTypes, PoolLimits, Timeout, VerifyTypes
+from ..config import (
+    DEFAULT_POOL_LIMITS,
+    CertTypes,
+    PoolLimits,
+    SSLConfig,
+    Timeout,
+    VerifyTypes,
+)
 from ..exceptions import ProxyError
 from ..models import URL, Headers, HeaderTypes, Origin, Request, Response, URLTypes
 from ..utils import get_logger
@@ -46,7 +53,7 @@ class HTTPProxy(ConnectionPool):
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
     ):
 
-        if isinstance(proxy_mode, HTTPProxyMode):
+        if isinstance(proxy_mode, HTTPProxyMode):  # pragma: nocover
             warnings.warn(
                 "The 'HTTPProxyMode' enum is pending deprecation. "
                 "Use a plain string instead. proxy_mode='FORWARD_ONLY', or "
@@ -54,6 +61,10 @@ class HTTPProxy(ConnectionPool):
             )
             proxy_mode = proxy_mode.value
         assert proxy_mode in ("DEFAULT", "FORWARD_ONLY", "TUNNEL_ONLY")
+
+        self.tunnel_ssl = SSLConfig(
+            verify=verify, cert=cert, trust_env=trust_env, http2=False
+        )
 
         super(HTTPProxy, self).__init__(
             verify=verify,
@@ -117,11 +128,7 @@ class HTTPProxy(ConnectionPool):
             self.active_connections.add(connection)
 
             await connection.tunnel_start_tls(
-                origin=origin,
-                proxy_url=self.proxy_url,
-                timeout=timeout,
-                cert=self.cert,
-                verify=self.verify,
+                origin=origin, proxy_url=self.proxy_url, timeout=timeout,
             )
         else:
             self.active_connections.add(connection)
@@ -141,11 +148,8 @@ class HTTPProxy(ConnectionPool):
 
         connection = HTTPConnection(
             self.proxy_url.origin,
-            verify=self.verify,
-            cert=self.cert,
+            ssl=self.tunnel_ssl,
             backend=self.backend,
-            http2=False,  # Short-lived 'connection'
-            trust_env=self.trust_env,
             release_func=self.release_connection,
         )
         self.active_connections.add(connection)
@@ -159,7 +163,7 @@ class HTTPProxy(ConnectionPool):
             f"response={proxy_response!r}"
         )
         if not (200 <= proxy_response.status_code <= 299):
-            await proxy_response.read()
+            await proxy_response.aread()
             raise ProxyError(
                 f"Non-2XX response received from HTTP proxy "
                 f"({proxy_response.status_code})",
@@ -183,14 +187,7 @@ class HTTPProxy(ConnectionPool):
             self.proxy_mode == DEFAULT_MODE and not origin.is_ssl
         ) or self.proxy_mode == FORWARD_ONLY
 
-    async def send(
-        self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: Timeout = None,
-    ) -> Response:
-
+    async def send(self, request: Request, timeout: Timeout = None) -> Response:
         if self.should_forward_origin(request.url.origin):
             # Change the request to have the target URL
             # as its full_path and switch the proxy URL
@@ -201,9 +198,7 @@ class HTTPProxy(ConnectionPool):
             for name, value in self.proxy_headers.items():
                 request.headers.setdefault(name, value)
 
-        return await super().send(
-            request=request, verify=verify, cert=cert, timeout=timeout
-        )
+        return await super().send(request=request, timeout=timeout)
 
     def __repr__(self) -> str:
         return (
