@@ -206,6 +206,7 @@ class ConnectionPool(Dispatcher):
         connections = list(self.keepalive_connections)
         self.keepalive_connections.clear()
         for connection in connections:
+            self.max_connections.release()
             await connection.close()
 
     def pop_connection(self, origin: Origin) -> typing.Optional[HTTPConnection]:
