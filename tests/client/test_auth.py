@@ -5,7 +5,15 @@ import typing
 
 import pytest
 
-from httpx import URL, AsyncClient, DigestAuth, ProtocolError, Request, Response
+from httpx import (
+    URL,
+    AsyncClient,
+    DigestAuth,
+    ProtocolError,
+    Request,
+    RequestBodyUnavailable,
+    Response,
+)
 from httpx.auth import Auth, AuthFlow
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
 from httpx.dispatch.base import Dispatcher
@@ -442,3 +450,16 @@ async def test_auth_history() -> None:
     assert resp2.history == [resp1]
 
     assert len(resp1.history) == 0
+
+
+@pytest.mark.asyncio
+async def test_digest_auth_unavailable_streaming_body():
+    url = "https://example.org/"
+    auth = DigestAuth(username="tomchristie", password="password123")
+    client = AsyncClient(dispatch=MockDispatch())
+
+    async def streaming_body():
+        yield b"Example request body"
+
+    with pytest.raises(RequestBodyUnavailable):
+        await client.post(url, data=streaming_body(), auth=auth)
