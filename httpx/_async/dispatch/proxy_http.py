@@ -3,6 +3,7 @@ import typing
 import warnings
 from base64 import b64encode
 
+from ...backends.fixes import AsyncFixes
 from ...config import (
     DEFAULT_POOL_LIMITS,
     CertTypes,
@@ -165,7 +166,7 @@ class AsyncHTTPProxy(AsyncConnectionPool):
             f"response={proxy_response!r}"
         )
         if not (200 <= proxy_response.status_code <= 299):
-            await proxy_response.aread()
+            await AsyncFixes.read_response(proxy_response)
             raise ProxyError(
                 f"Non-2XX response received from HTTP proxy "
                 f"({proxy_response.status_code})",
@@ -174,7 +175,7 @@ class AsyncHTTPProxy(AsyncConnectionPool):
             )
         else:
             # Hack to ingest the response, without closing it.
-            async for chunk in proxy_response._raw_stream:
+            async for _ in proxy_response._raw_stream:
                 pass
 
         return connection

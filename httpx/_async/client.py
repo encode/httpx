@@ -261,14 +261,14 @@ class AsyncClient:
             headers=headers,
             cookies=cookies,
         )
-        response = await self.send(
+
+        return await self.send(
             request,
             stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
             timeout=timeout,
         )
-        return response
 
     def stream(
         self,
@@ -459,7 +459,7 @@ class AsyncClient:
             if not response.is_redirect:
                 return response
 
-            await response.aread()
+            await AsyncFixes.read_response(response)
             request = self.build_redirect_request(request, response)
             history = history + [response]
 
@@ -587,11 +587,11 @@ class AsyncClient:
             except StopIteration:
                 return response
             except BaseException as exc:
-                await response.aclose()
+                await AsyncFixes.close_response(response)
                 raise exc from None
             else:
                 response.history = list(history)
-                await response.aread()
+                await AsyncFixes.read_response(response)
                 request = next_request
                 history.append(response)
 
@@ -964,6 +964,6 @@ class AsyncStreamContextManager:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self.response.aclose()
+        await AsyncFixes.close_response(self.response)
         if self.close_client:
             await self.client.aclose()
