@@ -23,6 +23,7 @@ pytest
 pytest-asyncio
 pytest-trio
 pytest-cov
+git+https://github.com/florimondmanca/pytest-unasync.git
 trio
 trustme
 uvicorn

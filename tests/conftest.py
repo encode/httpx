@@ -56,6 +56,17 @@ def async_environment(request: typing.Any) -> str:
     return request.param
 
 
+@pytest.fixture(
+    params=[
+        pytest.param("asyncio", marks=pytest.mark.asyncio),
+        pytest.param("trio", marks=pytest.mark.trio),
+        pytest.param("sync", marks=pytest.mark.unasync),
+    ]
+)
+def concurrency_environment(request: typing.Any) -> str:
+    return request.param
+
+
 @pytest.fixture(scope="function", autouse=True)
 def clean_environ() -> typing.Dict[str, typing.Any]:
     """Keeps os.environ clean for every test without having to mock os.environ"""
