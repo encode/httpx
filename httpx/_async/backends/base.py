@@ -15,7 +15,7 @@ def lookup_backend(
     if not is_async_mode():
         from ...backends.sync import SyncBackend
 
-        return SyncBackend  # type: ignore
+        return SyncBackend()  # type: ignore
 
     if backend == "auto":
         from ...backends.auto import AutoBackend

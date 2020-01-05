@@ -6,6 +6,7 @@ from types import TracebackType
 import hstspreload
 
 from ..auth import Auth, AuthTypes, BasicAuth, FunctionAuth
+from ..backends.fixes import AsyncFixes
 from ..config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
@@ -404,9 +405,9 @@ class AsyncClient:
 
         if not stream:
             try:
-                await response.aread()
+                await AsyncFixes.read_response(response)
             finally:
-                await response.aclose()
+                await AsyncFixes.close_response(response)
 
         return response
 
