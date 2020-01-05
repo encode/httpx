@@ -194,7 +194,18 @@ class SyncBackend(SyncConcurrencyBackend):
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: Timeout,
     ) -> SocketStream:
-        raise NotImplementedError
+        try:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.settimeout(timeout.connect_timeout)
+            sock.connect(path)
+            if ssl_context is not None:
+                sock = ssl_context.wrap_socket(sock, server_hostname=hostname)
+        except socket.timeout:
+            raise ConnectTimeout()
+        except socket.error:
+            raise  # TODO: raise an HTTPX-specific exception
+        else:
+            return SocketStream(sock=sock, timeout=timeout)
 
     def time(self) -> float:
         return time.time()
