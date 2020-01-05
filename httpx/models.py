@@ -51,10 +51,6 @@ from .utils import (
     str_query_param,
 )
 
-if typing.TYPE_CHECKING:
-    from ._async.dispatch.connection import AsyncHTTPConnection  # noqa: F401
-    from ._sync.dispatch.connection import SyncHTTPConnection  # noqa: F401
-
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
 URLTypes = typing.Union["URL", str]

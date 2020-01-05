@@ -48,7 +48,12 @@ from .dispatch.app import AsyncAppDispatch
 from .dispatch.base import AsyncDispatcher
 from .dispatch.connection_pool import AsyncConnectionPool
 from .dispatch.proxy_http import AsyncHTTPProxy
-from .models import AsyncProxiesTypes
+
+AsyncProxiesTypes = typing.Union[
+    "URLTypes",
+    "AsyncDispatcher",
+    typing.Dict["URLTypes", typing.Union["URLTypes", "AsyncDispatcher"]],
+]
 
 logger = get_logger(__name__)
 

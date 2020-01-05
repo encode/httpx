@@ -163,8 +163,8 @@ class Semaphore(SyncBaseSemaphore):
 
 class SyncBackend(SyncConcurrencyBackend):
     """
-    Concurrency backend that performs synchronous I/O operations
-    while exposing async-annotated methods.
+    Concurrency backend that performs synchronous I/O operations using
+    plain sockets.
     """
 
     def open_tcp_stream(
