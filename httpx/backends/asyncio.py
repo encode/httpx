@@ -3,9 +3,14 @@ import functools
 import ssl
 import typing
 
+from .._async.backends.base import (
+    AsyncBaseLock,
+    AsyncBaseSemaphore,
+    AsyncBaseSocketStream,
+    AsyncConcurrencyBackend,
+)
 from ..config import Timeout
 from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
-from .base import BaseLock, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
 
 SSL_MONKEY_PATCH_APPLIED = False
 
@@ -70,7 +75,7 @@ async def backport_start_tls(
     return ssl_protocol._app_transport
 
 
-class SocketStream(BaseSocketStream):
+class SocketStream(AsyncBaseSocketStream):
     def __init__(
         self, stream_reader: asyncio.StreamReader, stream_writer: asyncio.StreamWriter,
     ):
@@ -174,7 +179,7 @@ class SocketStream(BaseSocketStream):
             self.stream_writer.close()
 
 
-class AsyncioBackend(ConcurrencyBackend):
+class AsyncioBackend(AsyncConcurrencyBackend):
     def __init__(self) -> None:
         global SSL_MONKEY_PATCH_APPLIED
 
@@ -252,14 +257,14 @@ class AsyncioBackend(ConcurrencyBackend):
         finally:
             self._loop = loop
 
-    def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
+    def create_semaphore(self, max_value: int, exc_class: type) -> AsyncBaseSemaphore:
         return Semaphore(max_value, exc_class)
 
-    def create_lock(self) -> BaseLock:
+    def create_lock(self) -> AsyncBaseLock:
         return Lock()
 
 
-class Lock(BaseLock):
+class Lock(AsyncBaseLock):
     def __init__(self) -> None:
         self._lock = asyncio.Lock()
 
@@ -270,7 +275,7 @@ class Lock(BaseLock):
         await self._lock.acquire()
 
 
-class Semaphore(BaseSemaphore):
+class Semaphore(AsyncBaseSemaphore):
     def __init__(self, max_value: int, exc_class: type) -> None:
         self.max_value = max_value
         self.exc_class = exc_class

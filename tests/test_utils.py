@@ -98,7 +98,7 @@ async def test_logs_debug(server, capsys):
             assert response.status_code == 200
     stderr = capsys.readouterr().err
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
-    assert "httpx.dispatch.connection_pool" not in stderr
+    assert "dispatch.connection_pool" not in stderr
 
 
 @pytest.mark.asyncio
@@ -109,7 +109,7 @@ async def test_logs_trace(server, capsys):
             assert response.status_code == 200
     stderr = capsys.readouterr().err
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
-    assert "httpx.dispatch.connection_pool" in stderr
+    assert "dispatch.connection_pool" in stderr
 
 
 @pytest.mark.asyncio

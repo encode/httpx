@@ -4,16 +4,21 @@ import typing
 
 import trio
 
+from .._async.backends.base import (
+    AsyncBaseLock,
+    AsyncBaseSemaphore,
+    AsyncBaseSocketStream,
+    AsyncConcurrencyBackend,
+)
 from ..config import Timeout
 from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
-from .base import BaseLock, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
 
 
 def none_as_inf(value: typing.Optional[float]) -> float:
     return value if value is not None else float("inf")
 
 
-class SocketStream(BaseSocketStream):
+class SocketStream(AsyncBaseSocketStream):
     def __init__(
         self, stream: typing.Union[trio.SocketStream, trio.SSLStream],
     ) -> None:
@@ -83,7 +88,7 @@ class SocketStream(BaseSocketStream):
             await self.stream.aclose()
 
 
-class TrioBackend(ConcurrencyBackend):
+class TrioBackend(AsyncConcurrencyBackend):
     async def open_tcp_stream(
         self,
         hostname: str,
@@ -137,14 +142,14 @@ class TrioBackend(ConcurrencyBackend):
     def time(self) -> float:
         return trio.current_time()
 
-    def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
+    def create_semaphore(self, max_value: int, exc_class: type) -> AsyncBaseSemaphore:
         return Semaphore(max_value, exc_class)
 
-    def create_lock(self) -> BaseLock:
+    def create_lock(self) -> AsyncBaseLock:
         return Lock()
 
 
-class Semaphore(BaseSemaphore):
+class Semaphore(AsyncBaseSemaphore):
     def __init__(self, max_value: int, exc_class: type):
         self.max_value = max_value
         self.exc_class = exc_class
@@ -168,7 +173,7 @@ class Semaphore(BaseSemaphore):
         self.semaphore.release()
 
 
-class Lock(BaseLock):
+class Lock(AsyncBaseLock):
     def __init__(self) -> None:
         self._lock = trio.Lock()
 

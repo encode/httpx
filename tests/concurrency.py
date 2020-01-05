@@ -1,6 +1,6 @@
 """
 This module contains concurrency utilities that are only used in tests, thus not
-required as part of the ConcurrencyBackend API.
+required as part of the AsyncConcurrencyBackend API.
 """
 
 import asyncio

@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+export PREFIX=""
+if [ -d 'venv' ] ; then
+    export PREFIX="venv/bin/"
+fi
+
+set -x
+
+scripts/clean
+
+${PREFIX}python setup.py sdist bdist_wheel

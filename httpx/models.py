@@ -51,8 +51,9 @@ from .utils import (
     str_query_param,
 )
 
-if typing.TYPE_CHECKING:  # pragma: no cover
-    from .dispatch.base import Dispatcher  # noqa: F401
+if typing.TYPE_CHECKING:
+    from ._async.dispatch.connection import AsyncHTTPConnection  # noqa: F401
+    from ._sync.dispatch.connection import SyncHTTPConnection  # noqa: F401
 
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
@@ -73,9 +74,8 @@ HeaderTypes = typing.Union[
 
 CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 
-ProxiesTypes = typing.Union[
-    URLTypes, "Dispatcher", typing.Dict[URLTypes, typing.Union[URLTypes, "Dispatcher"]]
-]
+AsyncCallback = typing.Callable[..., typing.Awaitable[None]]
+SyncCallback = typing.Callable[..., None]
 
 
 class URL:

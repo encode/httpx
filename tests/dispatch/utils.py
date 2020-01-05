@@ -6,7 +6,7 @@ import h2.connection
 import h2.events
 
 from httpx import Request, Timeout
-from httpx.backends.base import BaseSocketStream, lookup_backend
+from httpx._async.backends.base import AsyncBaseSocketStream, lookup_backend
 
 
 class MockHTTP2Backend:
@@ -21,7 +21,7 @@ class MockHTTP2Backend:
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: Timeout,
-    ) -> BaseSocketStream:
+    ) -> AsyncBaseSocketStream:
         self.server = MockHTTP2Server(self.app, backend=self.backend)
         return self.server
 
@@ -30,7 +30,7 @@ class MockHTTP2Backend:
         return getattr(self.backend, name)
 
 
-class MockHTTP2Server(BaseSocketStream):
+class MockHTTP2Server(AsyncBaseSocketStream):
     def __init__(self, app, backend):
         config = h2.config.H2Configuration(client_side=False)
         self.conn = h2.connection.H2Connection(config=config)
@@ -163,7 +163,7 @@ class MockRawSocketBackend:
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: Timeout,
-    ) -> BaseSocketStream:
+    ) -> AsyncBaseSocketStream:
         self.received_data.append(
             b"--- CONNECT(%s, %d) ---" % (hostname.encode(), port)
         )
@@ -174,13 +174,13 @@ class MockRawSocketBackend:
         return getattr(self.backend, name)
 
 
-class MockRawSocketStream(BaseSocketStream):
+class MockRawSocketStream(AsyncBaseSocketStream):
     def __init__(self, backend: MockRawSocketBackend):
         self.backend = backend
 
     async def start_tls(
         self, hostname: str, ssl_context: ssl.SSLContext, timeout: Timeout
-    ) -> BaseSocketStream:
+    ) -> AsyncBaseSocketStream:
         self.backend.received_data.append(b"--- START_TLS(%s) ---" % hostname.encode())
         return MockRawSocketStream(self.backend)
 

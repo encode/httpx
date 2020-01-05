@@ -83,7 +83,7 @@ class ByteStream(ContentStream):
         yield self.body
 
 
-class IteratorStream(ContentStream):
+class SyncIteratorStream(ContentStream):
     """
     Request content encoded as plain bytes, using an byte iterator.
     """
@@ -122,9 +122,9 @@ class AsyncIteratorStream(ContentStream):
     """
 
     def __init__(
-        self, aiterator: typing.AsyncIterator[bytes], close_func: typing.Callable = None
+        self, iterator: typing.AsyncIterator[bytes], close_func: typing.Callable = None
     ) -> None:
-        self.aiterator = aiterator
+        self.iterator = iterator
         self.close_func = close_func
         self.is_stream_consumed = False
 
@@ -141,7 +141,7 @@ class AsyncIteratorStream(ContentStream):
         if self.is_stream_consumed:
             raise StreamConsumed()
         self.is_stream_consumed = True
-        async for part in self.aiterator:
+        async for part in self.iterator:
             yield part
 
     async def aclose(self) -> None:
@@ -338,9 +338,9 @@ def encode(
         return ByteStream(body=data)
     elif hasattr(data, "__aiter__"):
         data = typing.cast(typing.AsyncIterator[bytes], data)
-        return AsyncIteratorStream(aiterator=data)
+        return AsyncIteratorStream(iterator=data)
     elif hasattr(data, "__iter__"):
         data = typing.cast(typing.Iterator[bytes], data)
-        return IteratorStream(iterator=data)
+        return SyncIteratorStream(iterator=data)
 
     raise TypeError(f"Unexpected type for 'data', {type(data)!r}")

@@ -18,8 +18,8 @@ from uvicorn.config import Config
 from uvicorn.main import Server
 
 from httpx import URL
+from httpx._async.backends.base import lookup_backend
 from httpx.backends.asyncio import AsyncioBackend
-from httpx.backends.base import lookup_backend
 
 ENVIRONMENT_VARIABLES = {
     "SSL_CERT_FILE",

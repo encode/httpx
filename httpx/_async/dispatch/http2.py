@@ -5,17 +5,17 @@ import h2.events
 from h2.config import H2Configuration
 from h2.settings import SettingCodes, Settings
 
+from ...config import Timeout
+from ...content_streams import AsyncIteratorStream
+from ...exceptions import ProtocolError
+from ...models import AsyncCallback, Request, Response
+from ...utils import get_logger
 from ..backends.base import (
-    BaseLock,
-    BaseSocketStream,
-    ConcurrencyBackend,
+    AsyncBaseLock,
+    AsyncBaseSocketStream,
+    AsyncConcurrencyBackend,
     lookup_backend,
 )
-from ..config import Timeout
-from ..content_streams import AsyncIteratorStream
-from ..exceptions import ProtocolError
-from ..models import Request, Response
-from ..utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -26,9 +26,9 @@ class HTTP2Connection:
 
     def __init__(
         self,
-        socket: BaseSocketStream,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
-        on_release: typing.Callable = None,
+        socket: AsyncBaseSocketStream,
+        backend: typing.Union[str, AsyncConcurrencyBackend] = "auto",
+        on_release: AsyncCallback = None,
     ):
         self.socket = socket
         self.backend = lookup_backend(backend)
@@ -45,7 +45,7 @@ class HTTP2Connection:
         return True
 
     @property
-    def init_lock(self) -> BaseLock:
+    def init_lock(self) -> AsyncBaseLock:
         # We do this lazily, to make sure backend autodetection always
         # runs within an async context.
         if not hasattr(self, "_initialization_lock"):
@@ -213,7 +213,7 @@ class HTTP2Stream:
         # Receive the response.
         status_code, headers = await self.receive_response(timeout)
         stream = AsyncIteratorStream(
-            aiterator=self.body_iter(timeout), close_func=self.close
+            iterator=self.body_iter(timeout), close_func=self.close
         )
 
         return Response(

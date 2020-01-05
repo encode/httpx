@@ -8,3 +8,4 @@ site/
 *.egg-info/
 venv*/
 .python-version
+httpx/_sync

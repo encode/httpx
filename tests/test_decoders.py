@@ -97,7 +97,7 @@ async def test_streaming():
         yield compressor.flush()
 
     headers = [(b"Content-Encoding", b"gzip")]
-    stream = AsyncIteratorStream(aiterator=compress(body))
+    stream = AsyncIteratorStream(iterator=compress(body))
     response = httpx.Response(200, headers=headers, stream=stream, request=REQUEST)
     assert not hasattr(response, "body")
     assert await response.aread() == body
@@ -153,13 +153,13 @@ async def test_text_decoder(data, encoding):
             yield chunk
 
     # Accessing `.text` on a read response.
-    stream = AsyncIteratorStream(aiterator=iterator())
+    stream = AsyncIteratorStream(iterator=iterator())
     response = httpx.Response(200, stream=stream, request=REQUEST)
     await response.aread()
     assert response.text == (b"".join(data)).decode(encoding)
 
     # Streaming `.aiter_text` iteratively.
-    stream = AsyncIteratorStream(aiterator=iterator())
+    stream = AsyncIteratorStream(iterator=iterator())
     response = httpx.Response(200, stream=stream, request=REQUEST)
     text = "".join([part async for part in response.aiter_text()])
     assert text == (b"".join(data)).decode(encoding)
@@ -172,7 +172,7 @@ async def test_text_decoder_known_encoding():
         yield b"\x83"
         yield b"\x89\x83x\x83\x8b"
 
-    stream = AsyncIteratorStream(aiterator=iterator())
+    stream = AsyncIteratorStream(iterator=iterator())
     response = httpx.Response(
         200,
         headers=[(b"Content-Type", b"text/html; charset=shift-jis")],

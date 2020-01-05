@@ -1,5 +1,9 @@
 -e .
 
+# Build dependencies.
+git+https://github.com/florimondmanca/unasync.git@6980c6f5301fcbaaef76ce341022069199afa426
+wheel
+
 # Optional
 brotlipy==0.7.*
 

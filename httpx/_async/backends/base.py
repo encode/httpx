@@ -2,32 +2,38 @@ import ssl
 import typing
 from types import TracebackType
 
-from ..config import Timeout
+from ...config import Timeout
+from ..unasync_utils import is_async_mode
 
 
 def lookup_backend(
-    backend: typing.Union[str, "ConcurrencyBackend"] = "auto"
-) -> "ConcurrencyBackend":
+    backend: typing.Union[str, "AsyncConcurrencyBackend"] = "auto"
+) -> "AsyncConcurrencyBackend":
     if not isinstance(backend, str):
         return backend
 
+    if not is_async_mode():
+        from ...backends.sync import SyncBackend
+
+        return SyncBackend  # type: ignore
+
     if backend == "auto":
-        from .auto import AutoBackend
+        from ...backends.auto import AutoBackend
 
-        return AutoBackend()
+        return AutoBackend()  # type: ignore
     elif backend == "asyncio":
-        from .asyncio import AsyncioBackend
+        from ...backends.asyncio import AsyncioBackend
 
-        return AsyncioBackend()
+        return AsyncioBackend()  # type: ignore
     elif backend == "trio":
-        from .trio import TrioBackend
+        from ...backends.trio import TrioBackend
 
-        return TrioBackend()
+        return TrioBackend()  # type: ignore
 
     raise RuntimeError(f"Unknown or unsupported concurrency backend {backend!r}")
 
 
-class BaseSocketStream:
+class AsyncBaseSocketStream:
     """
     A socket stream with read/write operations. Abstracts away any asyncio-specific
     interfaces into a more generic base class, that we can use with alternate
@@ -39,7 +45,7 @@ class BaseSocketStream:
 
     async def start_tls(
         self, hostname: str, ssl_context: ssl.SSLContext, timeout: Timeout
-    ) -> "BaseSocketStream":
+    ) -> "AsyncBaseSocketStream":
         raise NotImplementedError()  # pragma: no cover
 
     async def read(self, n: int, timeout: Timeout) -> bytes:
@@ -55,7 +61,7 @@ class BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
 
-class BaseLock:
+class AsyncBaseLock:
     """
     An abstract interface for Lock classes.
     Abstracts away any asyncio-specific interfaces.
@@ -79,7 +85,7 @@ class BaseLock:
         raise NotImplementedError()  # pragma: no cover
 
 
-class BaseSemaphore:
+class AsyncBaseSemaphore:
     """
     An abstract interface for Semaphore classes.
     Abstracts away any asyncio-specific interfaces.
@@ -92,14 +98,14 @@ class BaseSemaphore:
         raise NotImplementedError()  # pragma: no cover
 
 
-class ConcurrencyBackend:
+class AsyncConcurrencyBackend:
     async def open_tcp_stream(
         self,
         hostname: str,
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: Timeout,
-    ) -> BaseSocketStream:
+    ) -> AsyncBaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
     async def open_uds_stream(
@@ -108,7 +114,7 @@ class ConcurrencyBackend:
         hostname: typing.Optional[str],
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: Timeout,
-    ) -> BaseSocketStream:
+    ) -> AsyncBaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
     def time(self) -> float:
@@ -124,8 +130,8 @@ class ConcurrencyBackend:
     ) -> typing.Any:
         raise NotImplementedError()  # pragma: no cover
 
-    def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
+    def create_semaphore(self, max_value: int, exc_class: type) -> AsyncBaseSemaphore:
         raise NotImplementedError()  # pragma: no cover
 
-    def create_lock(self) -> BaseLock:
+    def create_lock(self) -> AsyncBaseLock:
         raise NotImplementedError()  # pragma: no cover

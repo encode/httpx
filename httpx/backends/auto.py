@@ -3,19 +3,19 @@ import typing
 
 import sniffio
 
-from ..config import Timeout
-from .base import (
-    BaseLock,
-    BaseSemaphore,
-    BaseSocketStream,
-    ConcurrencyBackend,
+from .._async.backends.base import (
+    AsyncBaseLock,
+    AsyncBaseSemaphore,
+    AsyncBaseSocketStream,
+    AsyncConcurrencyBackend,
     lookup_backend,
 )
+from ..config import Timeout
 
 
-class AutoBackend(ConcurrencyBackend):
+class AutoBackend(AsyncConcurrencyBackend):
     @property
-    def backend(self) -> ConcurrencyBackend:
+    def backend(self) -> AsyncConcurrencyBackend:
         if not hasattr(self, "_backend_implementation"):
             backend = sniffio.current_async_library()
             if backend not in ("asyncio", "trio"):  # pragma: nocover
@@ -29,7 +29,7 @@ class AutoBackend(ConcurrencyBackend):
         port: int,
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: Timeout,
-    ) -> BaseSocketStream:
+    ) -> AsyncBaseSocketStream:
         return await self.backend.open_tcp_stream(hostname, port, ssl_context, timeout)
 
     async def open_uds_stream(
@@ -38,7 +38,7 @@ class AutoBackend(ConcurrencyBackend):
         hostname: typing.Optional[str],
         ssl_context: typing.Optional[ssl.SSLContext],
         timeout: Timeout,
-    ) -> BaseSocketStream:
+    ) -> AsyncBaseSocketStream:
         return await self.backend.open_uds_stream(path, hostname, ssl_context, timeout)
 
     def time(self) -> float:
@@ -49,8 +49,8 @@ class AutoBackend(ConcurrencyBackend):
     ) -> typing.Any:
         return await self.backend.run_in_threadpool(func, *args, **kwargs)
 
-    def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
+    def create_semaphore(self, max_value: int, exc_class: type) -> AsyncBaseSemaphore:
         return self.backend.create_semaphore(max_value, exc_class)
 
-    def create_lock(self) -> BaseLock:
+    def create_lock(self) -> AsyncBaseLock:
         return self.backend.create_lock()

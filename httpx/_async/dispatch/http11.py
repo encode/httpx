@@ -2,12 +2,12 @@ import typing
 
 import h11
 
-from ..backends.base import BaseSocketStream
-from ..config import Timeout
-from ..content_streams import AsyncIteratorStream
-from ..exceptions import ConnectionClosed, ProtocolError
-from ..models import Request, Response
-from ..utils import get_logger
+from ...config import Timeout
+from ...content_streams import AsyncIteratorStream
+from ...exceptions import ConnectionClosed, ProtocolError
+from ...models import AsyncCallback, Request, Response
+from ...utils import get_logger
+from ..backends.base import AsyncBaseSocketStream
 
 H11Event = typing.Union[
     h11.Request,
@@ -18,13 +18,6 @@ H11Event = typing.Union[
     h11.ConnectionClosed,
 ]
 
-
-# Callback signature: async def callback() -> None
-# In practice the callback will be a functools partial, which binds
-# the `ConnectionPool.release_connection(conn: HTTPConnection)` method.
-OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
-
-
 logger = get_logger(__name__)
 
 
@@ -33,8 +26,8 @@ class HTTP11Connection:
 
     def __init__(
         self,
-        socket: BaseSocketStream,
-        on_release: typing.Optional[OnReleaseCallback] = None,
+        socket: AsyncBaseSocketStream,
+        on_release: typing.Optional[AsyncCallback] = None,
     ):
         self.socket = socket
         self.on_release = on_release
@@ -51,7 +44,7 @@ class HTTP11Connection:
         await self._send_request_body(request, timeout)
         http_version, status_code, headers = await self._receive_response(timeout)
         stream = AsyncIteratorStream(
-            aiterator=self._receive_response_data(timeout),
+            iterator=self._receive_response_data(timeout),
             close_func=self.response_closed,
         )
 

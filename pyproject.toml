@@ -1,0 +1,7 @@
+[build-system]
+requires = [
+  "setuptools>=40.6.2",
+  "wheel",
+  "git+https://github.com/florimondmanca/unasync.git@6980c6f5301fcbaaef76ce341022069199afa426",
+]
+build-backend = "setuptools.build_meta"
