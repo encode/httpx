@@ -2,6 +2,6 @@
 requires = [
   "setuptools>=40.6.2",
   "wheel",
-  "git+https://github.com/florimondmanca/unasync.git@6980c6f5301fcbaaef76ce341022069199afa426",
+  "git+https://github.com/python-trio/unasync.git@2c2c9b7fdfd3aeb7cb44d4c1ac6f203500e5efae",
 ]
 build-backend = "setuptools.build_meta"
