@@ -34,6 +34,8 @@ class HTTPConnection(Dispatcher):
         self.connection: typing.Union[None, HTTP11Connection, HTTP2Connection] = None
         self.expires_at: typing.Optional[float] = None
 
+        self.logger = logger
+
     async def send(self, request: Request, timeout: Timeout = None) -> Response:
         timeout = Timeout() if timeout is None else timeout
 
