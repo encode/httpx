@@ -21,7 +21,7 @@ from .config import (
 )
 from .content_streams import ContentStream
 from .dispatch.asgi import ASGIDispatch
-from .dispatch.base import Dispatcher
+from .dispatch.base import AsyncDispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
 from .exceptions import (
@@ -120,7 +120,7 @@ class AsyncClient:
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
-        dispatch: Dispatcher = None,
+        dispatch: AsyncDispatcher = None,
         app: typing.Callable = None,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
@@ -161,7 +161,7 @@ class AsyncClient:
         if proxies is None and trust_env:
             proxies = typing.cast(ProxiesTypes, get_environment_proxies())
 
-        self.proxies: typing.Dict[str, Dispatcher] = _proxies_to_dispatchers(
+        self.proxies: typing.Dict[str, AsyncDispatcher] = _proxies_to_dispatchers(
             proxies,
             verify=verify,
             cert=cert,
@@ -621,9 +621,9 @@ class AsyncClient:
 
         return response
 
-    def dispatcher_for_url(self, url: URL) -> Dispatcher:
+    def dispatcher_for_url(self, url: URL) -> AsyncDispatcher:
         """
-        Returns the Dispatcher instance that should be used for a given URL.
+        Returns the AsyncDispatcher instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
         if self.proxies:
@@ -641,8 +641,7 @@ class AsyncClient:
             )
             for proxy_key in proxy_keys:
                 if proxy_key and proxy_key in self.proxies:
-                    dispatcher = self.proxies[proxy_key]
-                    return dispatcher
+                    return self.proxies[proxy_key]
 
         return self.dispatch
 
@@ -897,8 +896,8 @@ def _proxies_to_dispatchers(
     pool_limits: PoolLimits,
     backend: typing.Union[str, ConcurrencyBackend],
     trust_env: bool,
-) -> typing.Dict[str, Dispatcher]:
-    def _proxy_from_url(url: URLTypes) -> Dispatcher:
+) -> typing.Dict[str, AsyncDispatcher]:
+    def _proxy_from_url(url: URLTypes) -> AsyncDispatcher:
         nonlocal verify, cert, http2, pool_limits, backend, trust_env
         url = URL(url)
         if url.scheme in ("http", "https"):
@@ -917,7 +916,7 @@ def _proxies_to_dispatchers(
         return {}
     elif isinstance(proxies, (str, URL)):
         return {"all": _proxy_from_url(proxies)}
-    elif isinstance(proxies, Dispatcher):
+    elif isinstance(proxies, AsyncDispatcher):
         return {"all": proxies}
     else:
         new_proxies = {}

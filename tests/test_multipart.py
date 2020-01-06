@@ -9,11 +9,11 @@ import pytest
 import httpx
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
 from httpx.content_streams import encode
-from httpx.dispatch.base import Dispatcher
+from httpx.dispatch.base import AsyncDispatcher
 from httpx.utils import format_form_param
 
 
-class MockDispatch(Dispatcher):
+class MockDispatch(AsyncDispatcher):
     async def send(
         self,
         request: httpx.Request,

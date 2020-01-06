@@ -12,7 +12,7 @@ from ..config import (
 from ..exceptions import PoolTimeout
 from ..models import Origin, Request, Response
 from ..utils import get_logger
-from .base import Dispatcher
+from .base import AsyncDispatcher
 from .connection import HTTPConnection
 
 CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
@@ -85,7 +85,7 @@ class ConnectionStore:
         return len(self.all)
 
 
-class ConnectionPool(Dispatcher):
+class ConnectionPool(AsyncDispatcher):
     KEEP_ALIVE_EXPIRY = 5.0
 
     def __init__(
