@@ -1,9 +1,10 @@
 import functools
+import ssl
 import typing
 
 import h11
 
-from ..backends.base import ConcurrencyBackend, lookup_backend
+from ..backends.base import ConcurrencyBackend, lookup_backend, BaseSocketStream
 from ..config import SSLConfig, Timeout
 from ..models import URL, Origin, Request, Response
 from ..utils import get_logger
@@ -41,11 +42,23 @@ class HTTPConnection(Dispatcher):
 
         return await self.connection.send(request, timeout=timeout)
 
+    async def open_socket_stream(
+        self, origin: Origin, timeout: Timeout, ssl_context: ssl.SSLContext = None
+    ) -> BaseSocketStream:
+        # NOTE: this method makes it easier for subclasses to switch from
+        # TCP/IP to another transport layer (e.g. TCP over UDS, UDP, etc.).
+        host = origin.host
+        port = origin.port
+        logger.trace(
+            f"start_connect tcp host={host!r} port={port!r} timeout={timeout!r}"
+        )
+        return await self.backend.open_tcp_stream(
+            hostname=host, port=port, ssl_context=ssl_context, timeout=timeout
+        )
+
     async def connect(
         self, timeout: Timeout
     ) -> typing.Union[HTTP11Connection, HTTP2Connection]:
-        host = self.origin.host
-        port = self.origin.port
         ssl_context = None if not self.origin.is_ssl else self.ssl.ssl_context
 
         if self.release_func is None:
@@ -53,10 +66,9 @@ class HTTPConnection(Dispatcher):
         else:
             on_release = functools.partial(self.release_func, self)
 
-        logger.trace(
-            f"start_connect tcp host={host!r} port={port!r} timeout={timeout!r}"
+        socket = await self.open_socket_stream(
+            origin=self.origin, timeout=timeout, ssl_context=ssl_context
         )
-        socket = await self.backend.open_tcp_stream(host, port, ssl_context, timeout)
 
         http_version = socket.get_http_version()
         logger.trace(f"connected http_version={http_version!r}")

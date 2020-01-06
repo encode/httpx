@@ -156,6 +156,11 @@ class ConnectionPool(Dispatcher):
 
         return response
 
+    def get_connection_factory(self) -> typing.Callable[..., HTTPConnection]:
+        # NOTE: this method makes it easier for subclasses to use a subclass of
+        # HTTPConnection, adding any extra arguments via functools.partial().
+        return HTTPConnection
+
     async def acquire_connection(
         self, origin: Origin, timeout: Timeout = None
     ) -> HTTPConnection:
@@ -166,8 +171,11 @@ class ConnectionPool(Dispatcher):
             pool_timeout = None if timeout is None else timeout.pool_timeout
 
             await self.max_connections.acquire(timeout=pool_timeout)
-            connection = HTTPConnection(
-                origin,
+            connection_factory = typing.cast(
+                typing.Type[HTTPConnection], self.get_connection_factory()
+            )
+            connection = connection_factory(
+                origin=origin,
                 ssl=self.ssl,
                 backend=self.backend,
                 release_func=self.release_connection,
