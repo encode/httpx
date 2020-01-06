@@ -97,12 +97,10 @@ class ConnectionPool(Dispatcher):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http2: bool = False,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
-        uds: typing.Optional[str] = None,
     ):
         self.ssl = SSLConfig(verify=verify, cert=cert, trust_env=trust_env, http2=http2)
         self.pool_limits = pool_limits
         self.is_closed = False
-        self.uds = uds
 
         self.keepalive_connections = ConnectionStore()
         self.active_connections = ConnectionStore()
@@ -173,7 +171,6 @@ class ConnectionPool(Dispatcher):
                 ssl=self.ssl,
                 backend=self.backend,
                 release_func=self.release_connection,
-                uds=self.uds,
             )
             logger.trace(f"new_connection connection={connection!r}")
         else:

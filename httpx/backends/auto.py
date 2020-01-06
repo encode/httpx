@@ -32,15 +32,6 @@ class AutoBackend(ConcurrencyBackend):
     ) -> BaseSocketStream:
         return await self.backend.open_tcp_stream(hostname, port, ssl_context, timeout)
 
-    async def open_uds_stream(
-        self,
-        path: str,
-        hostname: typing.Optional[str],
-        ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: Timeout,
-    ) -> BaseSocketStream:
-        return await self.backend.open_uds_stream(path, hostname, ssl_context, timeout)
-
     def time(self) -> float:
         return self.backend.time()
 

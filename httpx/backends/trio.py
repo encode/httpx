@@ -101,24 +101,6 @@ class TrioBackend(ConcurrencyBackend):
 
         raise ConnectTimeout()
 
-    async def open_uds_stream(
-        self,
-        path: str,
-        hostname: typing.Optional[str],
-        ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: Timeout,
-    ) -> SocketStream:
-        connect_timeout = none_as_inf(timeout.connect_timeout)
-
-        with trio.move_on_after(connect_timeout):
-            stream: trio.SocketStream = await trio.open_unix_socket(path)
-            if ssl_context is not None:
-                stream = trio.SSLStream(stream, ssl_context, server_hostname=hostname)
-                await stream.do_handshake()
-            return SocketStream(stream=stream)
-
-        raise ConnectTimeout()
-
     def time(self) -> float:
         return trio.current_time()
 

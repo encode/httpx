@@ -198,27 +198,6 @@ class AsyncioBackend(ConcurrencyBackend):
 
         return SocketStream(stream_reader=stream_reader, stream_writer=stream_writer)
 
-    async def open_uds_stream(
-        self,
-        path: str,
-        hostname: typing.Optional[str],
-        ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: Timeout,
-    ) -> SocketStream:
-        server_hostname = hostname if ssl_context else None
-
-        try:
-            stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
-                asyncio.open_unix_connection(
-                    path, ssl=ssl_context, server_hostname=server_hostname
-                ),
-                timeout.connect_timeout,
-            )
-        except asyncio.TimeoutError:
-            raise ConnectTimeout()
-
-        return SocketStream(stream_reader=stream_reader, stream_writer=stream_writer)
-
     def time(self) -> float:
         loop = asyncio.get_event_loop()
         return loop.time()

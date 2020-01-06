@@ -25,13 +25,11 @@ class HTTPConnection(Dispatcher):
         ssl: SSLConfig = None,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         release_func: typing.Optional[ReleaseCallback] = None,
-        uds: typing.Optional[str] = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig() if ssl is None else ssl
         self.backend = lookup_backend(backend)
         self.release_func = release_func
-        self.uds = uds
         self.connection: typing.Union[None, HTTP11Connection, HTTP2Connection] = None
         self.expires_at: typing.Optional[float] = None
 
@@ -55,20 +53,10 @@ class HTTPConnection(Dispatcher):
         else:
             on_release = functools.partial(self.release_func, self)
 
-        if self.uds is None:
-            logger.trace(
-                f"start_connect tcp host={host!r} port={port!r} timeout={timeout!r}"
-            )
-            socket = await self.backend.open_tcp_stream(
-                host, port, ssl_context, timeout
-            )
-        else:
-            logger.trace(
-                f"start_connect uds path={self.uds!r} host={host!r} timeout={timeout!r}"
-            )
-            socket = await self.backend.open_uds_stream(
-                self.uds, host, ssl_context, timeout
-            )
+        logger.trace(
+            f"start_connect tcp host={host!r} port={port!r} timeout={timeout!r}"
+        )
+        socket = await self.backend.open_tcp_stream(host, port, ssl_context, timeout)
 
         http_version = socket.get_http_version()
         logger.trace(f"connected http_version={http_version!r}")

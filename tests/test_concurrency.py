@@ -57,33 +57,6 @@ async def test_start_tls_on_tcp_socket_stream(https_server):
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_start_tls_on_uds_socket_stream(https_uds_server):
-    backend = lookup_backend()
-    ctx = SSLConfig().load_ssl_context_no_verify()
-    timeout = Timeout(5)
-
-    stream = await backend.open_uds_stream(
-        https_uds_server.config.uds, https_uds_server.url.host, None, timeout
-    )
-
-    try:
-        assert stream.is_connection_dropped() is False
-        assert get_cipher(stream) is None
-
-        stream = await stream.start_tls(https_uds_server.url.host, ctx, timeout)
-        assert stream.is_connection_dropped() is False
-        assert get_cipher(stream) is not None
-
-        await stream.write(b"GET / HTTP/1.1\r\n\r\n", timeout)
-
-        response = await read_response(stream, timeout, should_contain=b"Hello, world")
-        assert response.startswith(b"HTTP/1.1 200 OK\r\n")
-
-    finally:
-        await stream.close()
-
-
-@pytest.mark.usefixtures("async_environment")
 async def test_concurrent_read(server):
     """
     Regression test for: https://github.com/encode/httpx/issues/527

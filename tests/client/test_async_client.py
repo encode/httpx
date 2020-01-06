@@ -150,18 +150,6 @@ async def test_100_continue(server):
     assert response.content == data
 
 
-@pytest.mark.usefixtures("async_environment")
-async def test_uds(uds_server):
-    url = uds_server.url
-    uds = uds_server.config.uds
-    assert uds is not None
-    async with httpx.AsyncClient(uds=uds) as client:
-        response = await client.get(url)
-    assert response.status_code == 200
-    assert response.text == "Hello, world!"
-    assert response.encoding == "iso-8859-1"
-
-
 async def test_explicit_backend(server, async_environment):
     async with httpx.AsyncClient(backend=async_environment) as client:
         response = await client.get(server.url)

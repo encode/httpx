@@ -102,7 +102,6 @@ class AsyncClient:
     instance. Defaults to 'auto', for autodetection.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
-    * **uds** - *(optional)* A path to a Unix domain socket to connect through.
     """
 
     def __init__(
@@ -124,7 +123,6 @@ class AsyncClient:
         app: typing.Callable = None,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
-        uds: str = None,
     ):
         if app is not None:
             dispatch = ASGIDispatch(app=app)
@@ -137,7 +135,6 @@ class AsyncClient:
                 pool_limits=pool_limits,
                 backend=backend,
                 trust_env=trust_env,
-                uds=uds,
             )
 
         if base_url is None:

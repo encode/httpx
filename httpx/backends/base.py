@@ -102,15 +102,6 @@ class ConcurrencyBackend:
     ) -> BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
-    async def open_uds_stream(
-        self,
-        path: str,
-        hostname: typing.Optional[str],
-        ssl_context: typing.Optional[ssl.SSLContext],
-        timeout: Timeout,
-    ) -> BaseSocketStream:
-        raise NotImplementedError()  # pragma: no cover
-
     def time(self) -> float:
         raise NotImplementedError()  # pragma: no cover
 
