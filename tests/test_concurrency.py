@@ -41,11 +41,11 @@ async def test_start_tls_on_tcp_socket_stream(https_server):
 
     try:
         assert stream.is_connection_dropped() is False
-        assert get_cipher(backend, stream) is None
+        assert get_cipher(stream) is None
 
         stream = await stream.start_tls(https_server.url.host, ctx, timeout)
         assert stream.is_connection_dropped() is False
-        assert get_cipher(backend, stream) is not None
+        assert get_cipher(stream) is not None
 
         await stream.write(b"GET / HTTP/1.1\r\n\r\n", timeout)
 
@@ -68,11 +68,11 @@ async def test_start_tls_on_uds_socket_stream(https_uds_server):
 
     try:
         assert stream.is_connection_dropped() is False
-        assert get_cipher(backend, stream) is None
+        assert get_cipher(stream) is None
 
         stream = await stream.start_tls(https_uds_server.url.host, ctx, timeout)
         assert stream.is_connection_dropped() is False
-        assert get_cipher(backend, stream) is not None
+        assert get_cipher(stream) is not None
 
         await stream.write(b"GET / HTTP/1.1\r\n\r\n", timeout)
 
@@ -96,7 +96,7 @@ async def test_concurrent_read(server):
     try:
         await stream.write(b"GET / HTTP/1.1\r\n\r\n", timeout)
         await run_concurrently(
-            backend, lambda: stream.read(10, timeout), lambda: stream.read(10, timeout)
+            lambda: stream.read(10, timeout), lambda: stream.read(10, timeout)
         )
     finally:
         await stream.close()

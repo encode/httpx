@@ -1,4 +1,3 @@
-import functools
 import ssl
 import typing
 
@@ -119,20 +118,6 @@ class TrioBackend(ConcurrencyBackend):
             return SocketStream(stream=stream)
 
         raise ConnectTimeout()
-
-    async def run_in_threadpool(
-        self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
-    ) -> typing.Any:
-        return await trio.to_thread.run_sync(
-            functools.partial(func, **kwargs) if kwargs else func, *args
-        )
-
-    def run(
-        self, coroutine: typing.Callable, *args: typing.Any, **kwargs: typing.Any
-    ) -> typing.Any:
-        return trio.run(
-            functools.partial(coroutine, **kwargs) if kwargs else coroutine, *args
-        )
 
     def time(self) -> float:
         return trio.current_time()

@@ -114,16 +114,6 @@ class ConcurrencyBackend:
     def time(self) -> float:
         raise NotImplementedError()  # pragma: no cover
 
-    async def run_in_threadpool(
-        self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
-    ) -> typing.Any:
-        raise NotImplementedError()  # pragma: no cover
-
-    def run(
-        self, coroutine: typing.Callable, *args: typing.Any, **kwargs: typing.Any
-    ) -> typing.Any:
-        raise NotImplementedError()  # pragma: no cover
-
     def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
         raise NotImplementedError()  # pragma: no cover
 
