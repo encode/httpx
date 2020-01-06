@@ -83,7 +83,7 @@ Plus all the standard features of `requests`...
 For a run-through of all the basics, head over to the [QuickStart](quickstart.md).
 
 For more advanced topics, see the [Advanced Usage](advanced.md) section,
-or the [HTTP/2](http2.md) section.
+the [async support](async.md) section, or the [HTTP/2](http2.md) section.
 
 The [Developer Interface](api.md) provides a comprehensive API reference.
 
@@ -91,8 +91,9 @@ The [Developer Interface](api.md) provides a comprehensive API reference.
 
 The HTTPX project relies on these excellent libraries:
 
-* `h2` - HTTP/2 support.
+* `urllib3` - Sync client support.
 * `h11` - HTTP/1.1 support.
+* `h2` - HTTP/2 support.
 * `certifi` - SSL certificates.
 * `chardet` - Fallback auto-detection for response encoding.
 * `hstspreload` - determines whether IDNA-encoded host should be only accessed via HTTPS.

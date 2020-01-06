@@ -12,6 +12,7 @@ nav:
     - Introduction: 'index.md'
     - QuickStart: 'quickstart.md'
     - Advanced Usage: 'advanced.md'
+    - Async Support: 'async.md'
     - HTTP/2 Support: 'http2.md'
     - Environment Variables: 'environment_variables.md'
     - Requests Compatibility: 'compatibility.md'
