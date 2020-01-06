@@ -221,3 +221,28 @@ async def test_connection_closed_free_semaphore_on_acquire(server, restart):
 
         response = await http.request("GET", server.url)
         assert response.status_code == 200
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_connection_pool_closed_close_keepalive_and_free_semaphore(server):
+    """
+    Closing the connection pool should close remaining keepalive connections and
+    release the max_connections semaphore.
+    """
+    http = ConnectionPool(pool_limits=httpx.PoolLimits(hard_limit=1))
+
+    async with http:
+        response = await http.request("GET", server.url)
+        await response.aread()
+        assert response.status_code == 200
+        assert len(http.keepalive_connections) == 1
+
+    assert len(http.keepalive_connections) == 0
+
+    # Perform a second round of requests to make sure the max_connections semaphore
+    # was released properly.
+
+    async with http:
+        response = await http.request("GET", server.url)
+        await response.aread()
+        assert response.status_code == 200
