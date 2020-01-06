@@ -641,8 +641,7 @@ class AsyncClient:
             )
             for proxy_key in proxy_keys:
                 if proxy_key and proxy_key in self.proxies:
-                    AsyncDispatcher = self.proxies[proxy_key]
-                    return AsyncDispatcher
+                    return self.proxies[proxy_key]
 
         return self.dispatch
 
