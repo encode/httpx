@@ -16,40 +16,24 @@
 </a>
 </p>
 
-HTTPX is an asynchronous HTTP client, that supports HTTP/2 and HTTP/1.1.
+HTTPX is a fully featured HTTP client for Python 3, which provides sync and async APIs, and support for both HTTP/1.1 and HTTP/2.
 
-It can be used in high-performance async web frameworks, using either asyncio
-or trio, and is able to support making large numbers of requests concurrently.
-
-**Note**: *HTTPX should still be considered in alpha. We'd love early users and feedback,
-but would strongly recommend pinning your dependencies to the latest median
-release, so that you're able to properly review API changes between package
-updates. Currently you should be using `httpx==0.10.*`.*
-
-*In particular, the 0.8 release switched HTTPX into focusing exclusively on
-providing an async client, in order to move the project forward, and help
-us [change our approach to providing sync+async support][sync-support]. If
-you have been using the sync client, you may want to pin to `httpx==0.7.*`,
-and wait until our sync client is reintroduced.*
+**Note**: *HTTPX should be considered in beta. We believe we've got the public API to
+a stable point now, but would strongly recommend pinning your dependencies to the `0.11.*`
+release, so that you're able to properly review API changes between package updates.
+A 1.0 release is expected to be issued sometime on or before April 2020.
 
 ---
 
 Let's get started...
 
-*The standard Python REPL does not allow top-level async statements.*
-
-*To run async examples directly you'll probably want to either use `ipython`,
-or use Python 3.8 with `python -m asyncio`.*
-
 ```python
 >>> import httpx
->>> r = await httpx.get('https://www.example.org/')
+>>> r = httpx.get('https://www.example.org/')
 >>> r
 <Response [200 OK]>
 >>> r.status_code
 200
->>> r.http_version
-'HTTP/1.1'
 >>> r.headers['content-type']
 'text/html; charset=UTF-8'
 >>> r.text
@@ -61,8 +45,9 @@ or use Python 3.8 with `python -m asyncio`.*
 HTTPX builds on the well-established usability of `requests`, and gives you:
 
 * A requests-compatible API wherever possible.
-* HTTP/2 and HTTP/1.1 support.
-* Ability to [make requests directly to ASGI applications](https://www.encode.io/httpx/advanced/#calling-into-python-web-apps).
+* Standard synchronous interface, but with [async/await support if you need it](https://www.encode.io/httpx/async), supporting both `asyncio` and `trio`.
+* HTTP/1.1 [and HTTP/2 support](https://www.encode.io/httpx/http2). (Our HTTP/2 support is currently async-only.)
+* Ability to make requests directly to [WSGI applications](https://www.encode.io/httpx/advanced/#calling-into-python-web-apps) or [ASGI applications](https://www.encode.io/httpx/async/#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 100% test coverage.
