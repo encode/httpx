@@ -18,7 +18,6 @@ from uvicorn.config import Config
 from uvicorn.main import Server
 
 from httpx import URL
-from httpx.backends.base import lookup_backend
 from tests.concurrency import sleep
 
 ENVIRONMENT_VARIABLES = {
@@ -108,7 +107,7 @@ async def slow_response(scope, receive, send):
         delay_ms = float(delay_ms_str)
     except ValueError:
         delay_ms = 100
-    await asyncio.sleep(delay_ms / 1000.0)
+    await sleep(delay_ms / 1000.0)
     await send(
         {
             "type": "http.response.start",
@@ -257,11 +256,10 @@ class TestServer(Server):
         # For this reason, we use an event to coordinate with the server
         # instead of calling shutdown()/startup() directly, and should not make
         # any asyncio-specific operations.
-        backend = lookup_backend()
         self.started = False
         self.restart_requested.set()
         while not self.started:
-            await sleep(backend, 0.2)
+            await sleep(0.2)
 
     async def watch_restarts(self):
         while True:

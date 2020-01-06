@@ -181,15 +181,6 @@ class AsyncioBackend(ConcurrencyBackend):
             ssl_monkey_patch()
         SSL_MONKEY_PATCH_APPLIED = True
 
-    @property
-    def loop(self) -> asyncio.AbstractEventLoop:
-        if not hasattr(self, "_loop"):
-            try:
-                self._loop = asyncio.get_event_loop()
-            except RuntimeError:
-                self._loop = asyncio.new_event_loop()
-        return self._loop
-
     async def open_tcp_stream(
         self,
         hostname: str,
