@@ -15,10 +15,10 @@ from httpx import (
     codes,
 )
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx.dispatch.base import Dispatcher
+from httpx.dispatch.base import AsyncDispatcher
 
 
-class MockDispatch(Dispatcher):
+class MockDispatch(AsyncDispatcher):
     async def send(
         self,
         request: Request,
@@ -305,7 +305,7 @@ async def test_cross_subdomain_redirect():
     assert response.url == URL("https://www.example.org/cross_subdomain")
 
 
-class MockCookieDispatch(Dispatcher):
+class MockCookieDispatch(AsyncDispatcher):
     async def send(
         self,
         request: Request,

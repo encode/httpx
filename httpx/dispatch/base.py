@@ -12,12 +12,12 @@ from ..models import (
 )
 
 
-class Dispatcher:
+class AsyncDispatcher:
     """
-    Base class for dispatcher classes, that handle sending the request.
+    Base class for AsyncDispatcher classes, that handle sending the request.
 
     Stubs out the interface, as well as providing a `.request()` convenience
-    implementation, to make it easy to use or test stand-alone dispatchers,
+    implementation, to make it easy to use or test stand-alone AsyncDispatchers,
     without requiring a complete `AsyncClient` instance.
     """
 
@@ -40,7 +40,7 @@ class Dispatcher:
     async def close(self) -> None:
         pass  # pragma: nocover
 
-    async def __aenter__(self) -> "Dispatcher":
+    async def __aenter__(self) -> "AsyncDispatcher":
         return self
 
     async def __aexit__(

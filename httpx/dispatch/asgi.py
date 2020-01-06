@@ -3,12 +3,12 @@ import typing
 from ..config import TimeoutTypes
 from ..content_streams import ByteStream
 from ..models import Request, Response
-from .base import Dispatcher
+from .base import AsyncDispatcher
 
 
-class ASGIDispatch(Dispatcher):
+class ASGIDispatch(AsyncDispatcher):
     """
-    A custom dispatcher that handles sending requests directly to an ASGI app.
+    A custom AsyncDispatcher that handles sending requests directly to an ASGI app.
 
     The simplest way to use this functionality is to use the `app` argument.
     This will automatically infer if 'app' is a WSGI or an ASGI application,

@@ -52,7 +52,7 @@ from .utils import (
 )
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from .dispatch.base import Dispatcher  # noqa: F401
+    from .dispatch.base import AsyncDispatcher  # noqa: F401
 
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
@@ -74,7 +74,9 @@ HeaderTypes = typing.Union[
 CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 
 ProxiesTypes = typing.Union[
-    URLTypes, "Dispatcher", typing.Dict[URLTypes, typing.Union[URLTypes, "Dispatcher"]]
+    URLTypes,
+    "AsyncDispatcher",
+    typing.Dict[URLTypes, typing.Union[URLTypes, "AsyncDispatcher"]],
 ]
 
 
