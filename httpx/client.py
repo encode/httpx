@@ -161,7 +161,7 @@ class AsyncClient:
         if proxies is None and trust_env:
             proxies = typing.cast(ProxiesTypes, get_environment_proxies())
 
-        self.proxies: typing.Dict[str, AsyncDispatcher] = _proxies_to_AsyncDispatchers(
+        self.proxies: typing.Dict[str, AsyncDispatcher] = _proxies_to_dispatchers(
             proxies,
             verify=verify,
             cert=cert,
@@ -601,10 +601,10 @@ class AsyncClient:
         Sends a single request, without handling any redirections.
         """
 
-        AsyncDispatcher = self.AsyncDispatcher_for_url(request.url)
+        dispatcher = self.dispatcher_for_url(request.url)
 
         try:
-            response = await AsyncDispatcher.send(request, timeout=timeout)
+            response = await dispatcher.send(request, timeout=timeout)
         except HTTPError as exc:
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
@@ -621,7 +621,7 @@ class AsyncClient:
 
         return response
 
-    def AsyncDispatcher_for_url(self, url: URL) -> AsyncDispatcher:
+    def dispatcher_for_url(self, url: URL) -> AsyncDispatcher:
         """
         Returns the AsyncDispatcher instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
@@ -889,7 +889,7 @@ class AsyncClient:
         await self.aclose()
 
 
-def _proxies_to_AsyncDispatchers(
+def _proxies_to_dispatchers(
     proxies: typing.Optional[ProxiesTypes],
     verify: VerifyTypes,
     cert: typing.Optional[CertTypes],
@@ -921,11 +921,11 @@ def _proxies_to_AsyncDispatchers(
         return {"all": proxies}
     else:
         new_proxies = {}
-        for key, AsyncDispatcher_or_url in proxies.items():
-            if isinstance(AsyncDispatcher_or_url, (str, URL)):
-                new_proxies[str(key)] = _proxy_from_url(AsyncDispatcher_or_url)
+        for key, dispatcher_or_url in proxies.items():
+            if isinstance(dispatcher_or_url, (str, URL)):
+                new_proxies[str(key)] = _proxy_from_url(dispatcher_or_url)
             else:
-                new_proxies[str(key)] = AsyncDispatcher_or_url
+                new_proxies[str(key)] = dispatcher_or_url
         return new_proxies
 
 

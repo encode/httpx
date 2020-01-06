@@ -74,15 +74,15 @@ PROXY_URL = "http://[::1]"
         ),
     ],
 )
-def test_AsyncDispatcher_for_request(url, proxies, expected):
+def test_dispatcher_for_request(url, proxies, expected):
     client = httpx.AsyncClient(proxies=proxies)
-    AsyncDispatcher = client.AsyncDispatcher_for_url(httpx.URL(url))
+    dispatcher = client.dispatcher_for_url(httpx.URL(url))
 
     if expected is None:
-        assert AsyncDispatcher is client.dispatch
+        assert dispatcher is client.dispatch
     else:
-        assert isinstance(AsyncDispatcher, httpx.HTTPProxy)
-        assert AsyncDispatcher.proxy_url == expected
+        assert isinstance(dispatcher, httpx.HTTPProxy)
+        assert dispatcher.proxy_url == expected
 
 
 def test_unsupported_proxy_scheme():
