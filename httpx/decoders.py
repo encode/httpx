@@ -282,8 +282,3 @@ SUPPORTED_DECODERS = {
 
 if brotli is None:
     SUPPORTED_DECODERS.pop("br")  # pragma: nocover
-
-
-ACCEPT_ENCODING = ", ".join(
-    [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
-)
