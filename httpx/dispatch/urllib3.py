@@ -1,4 +1,5 @@
 import math
+import ssl
 import typing
 
 import urllib3
@@ -7,6 +8,7 @@ from ..config import (
     DEFAULT_POOL_LIMITS,
     CertTypes,
     PoolLimits,
+    Proxy,
     SSLConfig,
     Timeout,
     VerifyTypes,
@@ -20,12 +22,15 @@ class URLLib3Dispatcher(SyncDispatcher):
     def __init__(
         self,
         *,
+        proxy: Proxy = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
     ):
-        ssl = SSLConfig(verify=verify, cert=cert, trust_env=trust_env, http2=False)
+        ssl_config = SSLConfig(
+            verify=verify, cert=cert, trust_env=trust_env, http2=False
+        )
         hard_limit = pool_limits.hard_limit
         soft_limit = pool_limits.soft_limit
 
@@ -44,12 +49,38 @@ class URLLib3Dispatcher(SyncDispatcher):
             num_pools = int(math.sqrt(hard_limit))
             maxsize = int(math.sqrt(hard_limit))
 
-        self.pool = urllib3.PoolManager(
-            ssl_context=ssl.ssl_context,
+        self.pool = self.init_pool_manager(
+            proxy=proxy,
+            ssl_context=ssl_config.ssl_context,
             num_pools=num_pools,
             maxsize=maxsize,
             block=block,
         )
+
+    def init_pool_manager(
+        self,
+        proxy: typing.Optional[Proxy],
+        ssl_context: ssl.SSLContext,
+        num_pools: int,
+        maxsize: int,
+        block: bool,
+    ) -> typing.Union[urllib3.PoolManager, urllib3.ProxyManager]:
+        if proxy is None:
+            return urllib3.PoolManager(
+                ssl_context=ssl_context,
+                num_pools=num_pools,
+                maxsize=maxsize,
+                block=block,
+            )
+        else:
+            return urllib3.ProxyManager(
+                proxy_url=proxy.url,
+                proxy_headers=dict(proxy.headers),
+                ssl_context=ssl_context,
+                num_pools=num_pools,
+                maxsize=maxsize,
+                block=block,
+            )
 
     def send(self, request: Request, timeout: Timeout = None) -> Response:
         timeout = Timeout() if timeout is None else timeout

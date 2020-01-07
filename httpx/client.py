@@ -506,7 +506,13 @@ class Client(BaseClient):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         trust_env: bool = True,
     ) -> SyncDispatcher:
-        raise NotImplementedError()
+        return URLLib3Dispatcher(
+            proxy=proxy,
+            verify=verify,
+            cert=cert,
+            pool_limits=pool_limits,
+            trust_env=trust_env,
+        )
 
     def dispatcher_for_url(self, url: URL) -> SyncDispatcher:
         """
