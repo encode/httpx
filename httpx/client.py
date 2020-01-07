@@ -1,6 +1,5 @@
 import functools
 import typing
-import warnings
 from types import TracebackType
 
 import hstspreload
@@ -583,41 +582,10 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
-        if cert is not None:  # pragma: nocover
-            raise RuntimeError(
-                "Passing a 'cert' argument when making a request on a client "
-                "is not supported anymore. Instantiate a new client instead, "
-                "passing any 'cert' arguments to the client itself."
-            )
-
-        if verify is not None:  # pragma: nocover
-            raise RuntimeError(
-                "Passing a 'verify' argument when making a request on a client "
-                "is not supported anymore. Instantiate a new client instead, "
-                "passing any 'verify' arguments to the client itself."
-            )
-
-        if trust_env is not None:  # pragma: nocover
-            raise RuntimeError(
-                "Passing a 'trust_env' argument when making a request on a client "
-                "is not supported anymore. Instantiate a new client instead, "
-                "passing any 'trust_env' argument to the client itself."
-            )
-
-        if stream:  # pragma: nocover
-            warnings.warn(
-                "The 'stream=True' argument is due to be deprecated. "
-                "Use 'async with client.stream(method, url, ...) as response' instead."
-            )
-
         request = self.build_request(
             method=method,
             url=url,
@@ -629,11 +597,7 @@ class AsyncClient:
             cookies=cookies,
         )
         response = await self.send(
-            request,
-            stream=stream,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
+            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout,
         )
         return response
 
@@ -763,13 +727,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "GET",
@@ -777,13 +737,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def options(
@@ -793,13 +749,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "OPTIONS",
@@ -807,13 +759,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def head(
@@ -823,13 +771,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "HEAD",
@@ -837,13 +781,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def post(
@@ -856,13 +796,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "POST",
@@ -873,13 +809,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def put(
@@ -892,13 +824,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "PUT",
@@ -909,13 +837,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def patch(
@@ -928,13 +852,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "PATCH",
@@ -945,13 +865,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def delete(
@@ -961,13 +877,9 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
-        cert: CertTypes = None,
-        verify: VerifyTypes = None,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        trust_env: bool = None,
     ) -> Response:
         return await self.request(
             "DELETE",
@@ -975,13 +887,9 @@ class AsyncClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            stream=stream,
             auth=auth,
             allow_redirects=allow_redirects,
-            verify=verify,
-            cert=cert,
             timeout=timeout,
-            trust_env=trust_env,
         )
 
     async def aclose(self) -> None:
