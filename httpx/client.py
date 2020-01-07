@@ -610,7 +610,8 @@ class Client(BaseClient):
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
-            if request.url in (response.url for response in history):
+            urls = ((resp.request.method, resp.url) for resp in history)
+            if (request.method, request.url) in urls:
                 raise RedirectLoop()
 
             response = self.send_handling_auth(
