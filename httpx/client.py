@@ -22,9 +22,10 @@ from .config import (
 )
 from .content_streams import ContentStream
 from .dispatch.asgi import ASGIDispatch
-from .dispatch.base import AsyncDispatcher, Dispatcher
+from .dispatch.base import AsyncDispatcher, SyncDispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
+from .dispatch.urllib3 import URLLib3Dispatcher
 from .exceptions import (
     HTTPError,
     InvalidURL,
@@ -423,9 +424,6 @@ class Client(BaseClient):
     over the network.
     * **app** - *(optional)* An ASGI application to send requests to,
     rather than sending actual network requests.
-    * **backend** - *(optional)* A concurrency backend to use when issuing
-    async requests. Either 'auto', 'asyncio', 'trio', or a `ConcurrencyBackend`
-    instance. Defaults to 'auto', for autodetection.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
     """
@@ -444,9 +442,8 @@ class Client(BaseClient):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
-        dispatch: AsyncDispatcher = None,
+        dispatch: SyncDispatcher = None,
         app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
     ):
         super().__init__(
@@ -468,16 +465,14 @@ class Client(BaseClient):
             pool_limits=pool_limits,
             dispatch=dispatch,
             app=app,
-            backend=backend,
             trust_env=trust_env,
         )
-        self.proxies: typing.Dict[str, Dispatcher] = {
+        self.proxies: typing.Dict[str, SyncDispatcher] = {
             key: self.init_proxy_dispatch(
                 proxy,
                 verify=verify,
                 cert=cert,
                 pool_limits=pool_limits,
-                backend=backend,
                 trust_env=trust_env,
             )
             for key, proxy in proxy_map.items()
@@ -488,12 +483,19 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        dispatch: AsyncDispatcher = None,
+        dispatch: SyncDispatcher = None,
         app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
-    ) -> Dispatcher:
-        raise NotImplementedError()
+    ) -> SyncDispatcher:
+        if dispatch is not None:
+            return dispatch
+
+        # if app is not None:
+        #    return WSGIDispatch(app=app)
+
+        return URLLib3Dispatcher(
+            verify=verify, cert=cert, pool_limits=pool_limits, trust_env=trust_env,
+        )
 
     def init_proxy_dispatch(
         self,
@@ -501,14 +503,13 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
-    ) -> Dispatcher:
+    ) -> SyncDispatcher:
         raise NotImplementedError()
 
-    def dispatcher_for_url(self, url: URL) -> Dispatcher:
+    def dispatcher_for_url(self, url: URL) -> SyncDispatcher:
         """
-        Returns the Dispatcher instance that should be used for a given URL.
+        Returns the SyncDispatcher instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
         if self.proxies:

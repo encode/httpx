@@ -12,7 +12,7 @@ from ..models import (
 )
 
 
-class Dispatcher:
+class SyncDispatcher:
     """
     Base class for Dispatcher classes, that handle sending the request.
     """
