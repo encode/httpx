@@ -52,7 +52,7 @@ async with httpx.AsyncClient() as client:
     ...
 ```
 
-Alternatively, use `await clien.aclose()` if you want to close a client explicitly.
+Alternatively, use `await client.aclose()` if you want to close a client explicitly:
 
 ```python
 client = httpx.AsyncClient()
