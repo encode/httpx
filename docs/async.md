@@ -22,7 +22,7 @@ To make asynchronous requests, you'll need an `AsyncClient`.
 ```
 
 !!! tip
-    Use [IPython](https://ipython.readthedocs.io/en/stable/) to try this code interactively, as it supports executing `async`/`await` expressions in the console.
+    Use [IPython](https://ipython.readthedocs.io/en/stable/) or Python 3.8+ with `python -m asyncio` to try this code interactively, as they support executing `async`/`await` expressions in the console.
 
 ## API Differences
 
