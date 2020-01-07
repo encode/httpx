@@ -117,9 +117,9 @@ import asyncio
 import httpx
 
 async def main():
-    client = httpx.AsyncClient()
-    response = await client.get('https://www.example.com/')
-    print(response)
+    async with httpx.AsyncClient() as client:
+        response = await client.get('https://www.example.com/')
+        print(response)
 
 asyncio.run(main())
 ```
@@ -134,9 +134,9 @@ import httpx
 import trio
 
 async def main():
-    client = httpx.AsyncClient()
-    response = await client.get('https://www.example.com/')
-    print(response)
+    async with httpx.AsyncClient() as client:
+        response = await client.get('https://www.example.com/')
+        print(response)
 
 trio.run(main)
 ```
@@ -185,7 +185,7 @@ For example:
 ```python
 # Instantiate a client that makes ASGI requests with a client IP of "1.2.3.4",
 # on port 123.
-dispatch = httpx.dispatch.ASGIDispatch(app=app, client=("1.2.3.4", 123))
+dispatch = httpx.ASGIDispatch(app=app, client=("1.2.3.4", 123))
 async with httpx.AsyncClient(dispatch=dispatch) as client:
     ...
 ```
