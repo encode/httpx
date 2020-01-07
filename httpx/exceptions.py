@@ -71,6 +71,21 @@ class DecodingError(HTTPError):
     """
 
 
+# Network exceptions...
+
+
+class NetworkError(HTTPError):
+    """
+    A failure occurred while trying to access the network.
+    """
+
+
+class ConnectionClosed(NetworkError):
+    """
+    Expected more data from peer, but connection was closed.
+    """
+
+
 # Redirect exceptions...
 
 
@@ -131,6 +146,12 @@ class ResponseNotRead(StreamError):
     """
 
 
+class RequestNotRead(StreamError):
+    """
+    Attempted to access request content, without having called `read()`.
+    """
+
+
 class ResponseClosed(StreamError):
     """
     Attempted to read or stream response content, but the request has been
@@ -144,12 +165,6 @@ class ResponseClosed(StreamError):
 class InvalidURL(HTTPError):
     """
     URL was missing a hostname, or was not one of HTTP/HTTPS.
-    """
-
-
-class ConnectionClosed(HTTPError):
-    """
-    Expected more data from peer, but connection was closed.
     """
 
 

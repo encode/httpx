@@ -1,9 +1,9 @@
 from .__version__ import __description__, __title__, __version__
 from .api import delete, get, head, options, patch, post, put, request, stream
-from .auth import BasicAuth, DigestAuth
+from .auth import Auth, BasicAuth, DigestAuth
 from .client import AsyncClient, Client
 from .config import TimeoutConfig  # For 0.8 backwards compat.
-from .config import PoolLimits, Timeout
+from .config import PoolLimits, Proxy, Timeout
 from .dispatch.proxy_http import HTTPProxy, HTTPProxyMode
 from .exceptions import (
     ConnectionClosed,
@@ -19,6 +19,7 @@ from .exceptions import (
     ReadTimeout,
     RedirectLoop,
     RequestBodyUnavailable,
+    RequestNotRead,
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
@@ -26,7 +27,7 @@ from .exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
-from .models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
+from .models import URL, Cookies, Headers, QueryParams, Request, Response
 from .status_codes import StatusCode, codes
 
 __all__ = [
@@ -45,10 +46,12 @@ __all__ = [
     "stream",
     "codes",
     "AsyncClient",
+    "Auth",
     "BasicAuth",
     "Client",
     "DigestAuth",
     "PoolLimits",
+    "Proxy",
     "Timeout",
     "TimeoutConfig",  # For 0.8 backwards compat.
     "HTTPProxy",
@@ -67,6 +70,7 @@ __all__ = [
     "RequestBodyUnavailable",
     "ResponseClosed",
     "ResponseNotRead",
+    "RequestNotRead",
     "StreamConsumed",
     "ProxyError",
     "TooManyRedirects",
@@ -75,7 +79,6 @@ __all__ = [
     "StatusCode",
     "Cookies",
     "Headers",
-    "Origin",
     "QueryParams",
     "Request",
     "TimeoutException",

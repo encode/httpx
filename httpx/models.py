@@ -12,7 +12,7 @@ from urllib.parse import parse_qsl, urlencode
 import chardet
 import rfc3986
 
-from .config import USER_AGENT
+from .__version__ import __version__
 from .content_streams import (
     ByteStream,
     ContentStream,
@@ -21,7 +21,6 @@ from .content_streams import (
     encode,
 )
 from .decoders import (
-    ACCEPT_ENCODING,
     SUPPORTED_DECODERS,
     Decoder,
     IdentityDecoder,
@@ -34,6 +33,7 @@ from .exceptions import (
     HTTPError,
     InvalidURL,
     NotRedirectResponse,
+    RequestNotRead,
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
@@ -72,12 +72,6 @@ HeaderTypes = typing.Union[
 ]
 
 CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
-
-ProxiesTypes = typing.Union[
-    URLTypes,
-    "AsyncDispatcher",
-    typing.Dict[URLTypes, typing.Union[URLTypes, "AsyncDispatcher"]],
-]
 
 
 class URL:
@@ -198,10 +192,6 @@ class URL:
     @property
     def is_relative_url(self) -> bool:
         return not self.is_absolute_url
-
-    @property
-    def origin(self) -> "Origin":
-        return Origin(self)
 
     def copy_with(self, **kwargs: typing.Any) -> "URL":
         if (
@@ -589,6 +579,12 @@ class Headers(typing.MutableMapping[str, str]):
         return f"{class_name}({as_list!r}{encoding_str})"
 
 
+USER_AGENT = f"python-httpx/{__version__}"
+ACCEPT_ENCODING = ", ".join(
+    [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
+)
+
+
 class Request:
     def __init__(
         self,
@@ -645,6 +641,24 @@ class Request:
 
         for item in reversed(auto_headers):
             self.headers.raw.insert(0, item)
+
+    @property
+    def content(self) -> bytes:
+        if not hasattr(self, "_content"):
+            raise RequestNotRead()
+        return self._content
+
+    async def aread(self) -> bytes:
+        """
+        Read and return the request content.
+        """
+        if not hasattr(self, "_content"):
+            self._content = b"".join([part async for part in self.stream])
+            # If a streaming request has been read entirely into memory, then
+            # we can replace the stream with a raw bytes implementation,
+            # to ensure that any non-replayable streams can still be used.
+            self.stream = ByteStream(self._content)
+        return self._content
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__

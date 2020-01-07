@@ -5,7 +5,7 @@ from pathlib import Path
 
 import certifi
 
-from .__version__ import __version__
+from .models import URL, Headers, HeaderTypes, URLTypes
 from .utils import get_ca_bundle_from_env, get_logger
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
@@ -13,9 +13,10 @@ VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
 TimeoutTypes = typing.Union[
     None, float, typing.Tuple[float, float, float, float], "Timeout"
 ]
+ProxiesTypes = typing.Union[
+    URLTypes, "Proxy", typing.Dict[URLTypes, typing.Union[URLTypes, "Proxy"]]
+]
 
-
-USER_AGENT = f"python-httpx/{__version__}"
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -302,6 +303,30 @@ class PoolLimits:
         class_name = self.__class__.__name__
         return (
             f"{class_name}(soft_limit={self.soft_limit}, hard_limit={self.hard_limit})"
+        )
+
+
+class Proxy:
+    def __init__(
+        self, url: URLTypes, *, headers: HeaderTypes = None, mode: str = "DEFAULT",
+    ):
+        url = URL(url)
+        headers = Headers(headers)
+
+        if url.scheme not in ("http", "https"):
+            raise ValueError(f"Unknown scheme for proxy URL {url!r}")
+        if mode not in ("DEFAULT", "CONNECT_ONLY", "TUNNEL_ONLY"):
+            raise ValueError(f"Unknown proxy mode {mode!r}")
+
+        self.url = url
+        self.headers = headers
+        self.mode = mode
+
+    def __repr__(self) -> str:
+        return (
+            f"Proxy(url={str(self.url)!r}, "
+            f"headers={dict(self.headers)!r}, "
+            f"mode={self.mode!r})"
         )
 
 

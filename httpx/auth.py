@@ -10,8 +10,6 @@ from .exceptions import ProtocolError, RequestBodyUnavailable
 from .models import Request, Response
 from .utils import to_bytes, to_str, unquote
 
-AuthFlow = typing.Generator[Request, Response, None]
-
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
     typing.Callable[["Request"], "Request"],
@@ -24,7 +22,9 @@ class Auth:
     Base class for all authentication schemes.
     """
 
-    def __call__(self, request: Request) -> AuthFlow:
+    requires_request_body = False
+
+    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         """
         Execute the authentication flow.
 
@@ -58,7 +58,7 @@ class FunctionAuth(Auth):
     def __init__(self, func: typing.Callable[[Request], Request]) -> None:
         self.func = func
 
-    def __call__(self, request: Request) -> AuthFlow:
+    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         yield self.func(request)
 
 
@@ -73,7 +73,7 @@ class BasicAuth(Auth):
     ):
         self.auth_header = self.build_auth_header(username, password)
 
-    def __call__(self, request: Request) -> AuthFlow:
+    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         request.headers["Authorization"] = self.auth_header
         yield request
 
@@ -103,7 +103,7 @@ class DigestAuth(Auth):
         self.username = to_bytes(username)
         self.password = to_bytes(password)
 
-    def __call__(self, request: Request) -> AuthFlow:
+    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         if not request.stream.can_replay():
             raise RequestBodyUnavailable("Request body is no longer available.")
         response = yield request

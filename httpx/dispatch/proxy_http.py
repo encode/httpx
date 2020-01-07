@@ -102,7 +102,7 @@ class HTTPProxy(ConnectionPool):
             logger.trace(
                 f"forward_connection proxy_url={self.proxy_url!r} origin={origin!r}"
             )
-            return await super().acquire_connection(self.proxy_url.origin, timeout)
+            return await super().acquire_connection(Origin(self.proxy_url), timeout)
         else:
             logger.trace(
                 f"tunnel_connection proxy_url={self.proxy_url!r} origin={origin!r}"
@@ -147,7 +147,7 @@ class HTTPProxy(ConnectionPool):
         await self.max_connections.acquire()
 
         connection = HTTPConnection(
-            self.proxy_url.origin,
+            Origin(self.proxy_url),
             ssl=self.tunnel_ssl,
             backend=self.backend,
             release_func=self.release_connection,
@@ -188,7 +188,7 @@ class HTTPProxy(ConnectionPool):
         ) or self.proxy_mode == FORWARD_ONLY
 
     async def send(self, request: Request, timeout: Timeout = None) -> Response:
-        if self.should_forward_origin(request.url.origin):
+        if self.should_forward_origin(Origin(request.url)):
             # Change the request to have the target URL
             # as its full_path and switch the proxy URL
             # for where the request will be sent.

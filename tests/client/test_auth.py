@@ -8,13 +8,13 @@ import pytest
 from httpx import (
     URL,
     AsyncClient,
+    Auth,
     DigestAuth,
     ProtocolError,
     Request,
     RequestBodyUnavailable,
     Response,
 )
-from httpx.auth import Auth, AuthFlow
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
 from httpx.dispatch.base import AsyncDispatcher
 
@@ -418,10 +418,14 @@ async def test_auth_history() -> None:
         of intermediate responses.
         """
 
+        requires_request_body = True
+
         def __init__(self, repeat: int):
             self.repeat = repeat
 
-        def __call__(self, request: Request) -> AuthFlow:
+        def auth_flow(
+            self, request: Request
+        ) -> typing.Generator[Request, Response, None]:
             nonces = []
 
             for index in range(self.repeat):

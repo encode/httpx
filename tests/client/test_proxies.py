@@ -12,9 +12,9 @@ import httpx
             {"http": "http://127.0.0.1", "https": "https://127.0.0.1"},
             [("http", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
         ),
-        (httpx.HTTPProxy("http://127.0.0.1"), [("all", "http://127.0.0.1")]),
+        (httpx.Proxy("http://127.0.0.1"), [("all", "http://127.0.0.1")]),
         (
-            {"https": httpx.HTTPProxy("https://127.0.0.1"), "all": "http://127.0.0.1"},
+            {"https": httpx.Proxy("https://127.0.0.1"), "all": "http://127.0.0.1"},
             [("all", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
         ),
     ],
