@@ -28,14 +28,18 @@ class URLLib3Dispatcher(SyncDispatcher):
         self.pool = urllib3.PoolManager(ssl_context=ssl.ssl_context)
 
     def send(self, request: Request, timeout: Timeout = None) -> Response:
+        chunked = request.headers.get("Transfer-Encoding") == "chunked"
+
         conn = self.pool.urlopen(
             method=request.method,
             url=str(request.url),
             headers=dict(request.headers),
+            body=request.stream,
             redirect=False,
             assert_same_host=False,
             retries=0,
             preload_content=False,
+            chunked=chunked,
         )
 
         def response_bytes() -> typing.Iterator[bytes]:

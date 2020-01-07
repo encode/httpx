@@ -18,26 +18,33 @@ def test_content_length_header():
     assert request.headers["Content-Length"] == "8"
 
 
-@pytest.mark.asyncio
-async def test_url_encoded_data():
+def test_url_encoded_data():
     request = httpx.Request("POST", "http://example.org", data={"test": "123"})
-    await request.aread()
+    request.read()
 
     assert request.headers["Content-Type"] == "application/x-www-form-urlencoded"
     assert request.content == b"test=123"
 
 
-@pytest.mark.asyncio
-async def test_json_encoded_data():
+def test_json_encoded_data():
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
-    await request.aread()
+    request.read()
 
     assert request.headers["Content-Type"] == "application/json"
     assert request.content == b'{"test": 123}'
 
 
+def test_read_and_stream_data():
+    # Ensure a request may still be streamed if it has been read.
+    # Needed for cases such as authentication classes that read the request body.
+    request = httpx.Request("POST", "http://example.org", json={"test": 123})
+    request.read()
+    content = b"".join([part for part in request.stream])
+    assert content == request.content
+
+
 @pytest.mark.asyncio
-async def test_read_and_stream_data():
+async def test_aread_and_stream_data():
     # Ensure a request may still be streamed if it has been read.
     # Needed for cases such as authentication classes that read the request body.
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
