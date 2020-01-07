@@ -1,4 +1,4 @@
-# Async Client
+# Async Support
 
 HTTPX offers a standard synchronous API by default, but also gives you
 the option of an async client if you need it.
