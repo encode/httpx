@@ -53,59 +53,7 @@ from .utils import NetRCInfo, get_environment_proxies, get_logger
 logger = get_logger(__name__)
 
 
-class AsyncClient:
-    """
-    An asynchronous HTTP client, with connection pooling, HTTP/2, redirects,
-    cookie persistence, etc.
-
-    Usage:
-
-    ```python
-    >>> client = httpx.AsyncClient()
-    >>> response = client.get('https://example.org')
-    ```
-
-    **Parameters:**
-
-    * **auth** - *(optional)* An authentication class to use when sending
-    requests.
-    * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
-    * **headers** - *(optional)* Dictionary of HTTP headers to include when
-    sending requests.
-    * **cookies** - *(optional)* Dictionary of Cookie items to include when
-    sending requests.
-    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
-    verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, or `False` (disable verification).
-    * **cert** - *(optional)* An SSL certificate used by the requested host
-    to authenticate the client. Either a path to an SSL certificate file, or
-    two-tuple of (certificate file, key file), or a three-tuple of (certificate
-    file, key file, password).
-    * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
-    enabled. Defaults to `False`.
-    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
-    URLs.
-    * **timeout** - *(optional)* The timeout configuration to use when sending
-    requests.
-    * **pool_limits** - *(optional)* The connection pool configuration to use
-    when determining the maximum number of concurrently open HTTP connections.
-    * **max_redirects** - *(optional)* The maximum number of redirect responses
-    that should be followed.
-    * **base_url** - *(optional)* A URL to use as the base when building
-    request URLs.
-    * **dispatch** - *(optional)* A dispatch class to use for sending requests
-    over the network.
-    * **app** - *(optional)* An ASGI application to send requests to,
-    rather than sending actual network requests.
-    * **backend** - *(optional)* A concurrency backend to use when issuing
-    async requests. Either 'auto', 'asyncio', 'trio', or a `ConcurrencyBackend`
-    instance. Defaults to 'auto', for autodetection.
-    * **trust_env** - *(optional)* Enables or disables usage of environment
-    variables for configuration.
-    * **uds** - *(optional)* A path to a Unix domain socket to connect through.
-    """
-
+class BaseClient:
     def __init__(
         self,
         *,
@@ -113,19 +61,10 @@ class AsyncClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        verify: VerifyTypes = True,
-        cert: CertTypes = None,
-        http2: bool = False,
-        proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
-        dispatch: AsyncDispatcher = None,
-        app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
-        uds: str = None,
     ):
         if base_url is None:
             self.base_url = URL("", allow_relative=True)
@@ -135,9 +74,6 @@ class AsyncClient:
         if params is None:
             params = {}
 
-        if proxies is None and trust_env:
-            proxies = typing.cast(ProxiesTypes, get_environment_proxies())
-
         self.auth = auth
         self._params = QueryParams(params)
         self._headers = Headers(headers)
@@ -146,82 +82,6 @@ class AsyncClient:
         self.max_redirects = max_redirects
         self.trust_env = trust_env
         self.netrc = NetRCInfo()
-
-        proxy_map = self.get_proxy_map(proxies, trust_env)
-
-        self.dispatch = self.init_dispatch(
-            verify=verify,
-            cert=cert,
-            http2=http2,
-            pool_limits=pool_limits,
-            dispatch=dispatch,
-            app=app,
-            backend=backend,
-            trust_env=trust_env,
-            uds=uds,
-        )
-        self.proxies: typing.Dict[str, AsyncDispatcher] = {
-            key: self.init_proxy_dispatch(
-                proxy,
-                verify=verify,
-                cert=cert,
-                http2=http2,
-                pool_limits=pool_limits,
-                backend=backend,
-                trust_env=trust_env,
-            )
-            for key, proxy in proxy_map.items()
-        }
-
-    def init_dispatch(
-        self,
-        verify: VerifyTypes = True,
-        cert: CertTypes = None,
-        http2: bool = False,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        dispatch: AsyncDispatcher = None,
-        app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
-        trust_env: bool = True,
-        uds: str = None,
-    ) -> AsyncDispatcher:
-        if dispatch is not None:
-            return dispatch
-
-        if app is not None:
-            return ASGIDispatch(app=app)
-
-        return ConnectionPool(
-            verify=verify,
-            cert=cert,
-            http2=http2,
-            pool_limits=pool_limits,
-            backend=backend,
-            trust_env=trust_env,
-            uds=uds,
-        )
-
-    def init_proxy_dispatch(
-        self,
-        proxy: Proxy,
-        verify: VerifyTypes = True,
-        cert: CertTypes = None,
-        http2: bool = False,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
-        trust_env: bool = True,
-    ) -> AsyncDispatcher:
-        return HTTPProxy(
-            proxy_url=proxy.url,
-            proxy_headers=proxy.headers,
-            proxy_mode=proxy.mode,
-            verify=verify,
-            cert=cert,
-            http2=http2,
-            pool_limits=pool_limits,
-            backend=backend,
-            trust_env=trust_env,
-        )
 
     def get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
@@ -519,6 +379,168 @@ class AsyncClient:
             )
 
         return request.stream
+
+
+class AsyncClient(BaseClient):
+    """
+    An asynchronous HTTP client, with connection pooling, HTTP/2, redirects,
+    cookie persistence, etc.
+
+    Usage:
+
+    ```python
+    >>> client = httpx.AsyncClient()
+    >>> response = client.get('https://example.org')
+    ```
+
+    **Parameters:**
+
+    * **auth** - *(optional)* An authentication class to use when sending
+    requests.
+    * **params** - *(optional)* Query parameters to include in request URLs, as
+    a string, dictionary, or list of two-tuples.
+    * **headers** - *(optional)* Dictionary of HTTP headers to include when
+    sending requests.
+    * **cookies** - *(optional)* Dictionary of Cookie items to include when
+    sending requests.
+    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
+    verify the identity of requested hosts. Either `True` (default CA bundle),
+    a path to an SSL certificate file, or `False` (disable verification).
+    * **cert** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client. Either a path to an SSL certificate file, or
+    two-tuple of (certificate file, key file), or a three-tuple of (certificate
+    file, key file, password).
+    * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
+    enabled. Defaults to `False`.
+    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
+    URLs.
+    * **timeout** - *(optional)* The timeout configuration to use when sending
+    requests.
+    * **pool_limits** - *(optional)* The connection pool configuration to use
+    when determining the maximum number of concurrently open HTTP connections.
+    * **max_redirects** - *(optional)* The maximum number of redirect responses
+    that should be followed.
+    * **base_url** - *(optional)* A URL to use as the base when building
+    request URLs.
+    * **dispatch** - *(optional)* A dispatch class to use for sending requests
+    over the network.
+    * **app** - *(optional)* An ASGI application to send requests to,
+    rather than sending actual network requests.
+    * **backend** - *(optional)* A concurrency backend to use when issuing
+    async requests. Either 'auto', 'asyncio', 'trio', or a `ConcurrencyBackend`
+    instance. Defaults to 'auto', for autodetection.
+    * **trust_env** - *(optional)* Enables or disables usage of environment
+    variables for configuration.
+    * **uds** - *(optional)* A path to a Unix domain socket to connect through.
+    """
+
+    def __init__(
+        self,
+        *,
+        auth: AuthTypes = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        http2: bool = False,
+        proxies: ProxiesTypes = None,
+        timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        base_url: URLTypes = None,
+        dispatch: AsyncDispatcher = None,
+        app: typing.Callable = None,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        trust_env: bool = True,
+        uds: str = None,
+    ):
+        super().__init__(
+            auth=auth,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            timeout=timeout,
+            max_redirects=max_redirects,
+            base_url=base_url,
+            trust_env=trust_env,
+        )
+
+        proxy_map = self.get_proxy_map(proxies, trust_env)
+
+        self.dispatch = self.init_dispatch(
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            pool_limits=pool_limits,
+            dispatch=dispatch,
+            app=app,
+            backend=backend,
+            trust_env=trust_env,
+            uds=uds,
+        )
+        self.proxies: typing.Dict[str, AsyncDispatcher] = {
+            key: self.init_proxy_dispatch(
+                proxy,
+                verify=verify,
+                cert=cert,
+                http2=http2,
+                pool_limits=pool_limits,
+                backend=backend,
+                trust_env=trust_env,
+            )
+            for key, proxy in proxy_map.items()
+        }
+
+    def init_dispatch(
+        self,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        http2: bool = False,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        dispatch: AsyncDispatcher = None,
+        app: typing.Callable = None,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        trust_env: bool = True,
+        uds: str = None,
+    ) -> AsyncDispatcher:
+        if dispatch is not None:
+            return dispatch
+
+        if app is not None:
+            return ASGIDispatch(app=app)
+
+        return ConnectionPool(
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            pool_limits=pool_limits,
+            backend=backend,
+            trust_env=trust_env,
+            uds=uds,
+        )
+
+    def init_proxy_dispatch(
+        self,
+        proxy: Proxy,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        http2: bool = False,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        trust_env: bool = True,
+    ) -> AsyncDispatcher:
+        return HTTPProxy(
+            proxy_url=proxy.url,
+            proxy_headers=proxy.headers,
+            proxy_mode=proxy.mode,
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            pool_limits=pool_limits,
+            backend=backend,
+            trust_env=trust_env,
+        )
 
     def dispatcher_for_url(self, url: URL) -> AsyncDispatcher:
         """
@@ -887,7 +909,7 @@ class AsyncClient:
 class StreamContextManager:
     def __init__(
         self,
-        client: AsyncClient,
+        client: BaseClient,
         request: Request,
         *,
         auth: AuthTypes = None,
@@ -903,6 +925,7 @@ class StreamContextManager:
         self.close_client = close_client
 
     async def __aenter__(self) -> "Response":
+        assert isinstance(self.client, AsyncClient)
         self.response = await self.client.send(
             request=self.request,
             auth=self.auth,
@@ -918,6 +941,7 @@ class StreamContextManager:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
+        assert isinstance(self.client, AsyncClient)
         await self.response.aclose()
         if self.close_client:
             await self.client.aclose()
