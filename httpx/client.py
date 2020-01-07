@@ -679,7 +679,9 @@ class AsyncClient:
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
-            if request.url in (response.url for response in history):
+            if (request.method, request.url) in (
+                    (response.request.method, response.url)
+                    for response in history):
                 raise RedirectLoop()
 
             response = await self.send_handling_auth(
