@@ -12,6 +12,18 @@ from ..models import (
 )
 
 
+class Dispatcher:
+    """
+    Base class for Dispatcher classes, that handle sending the request.
+    """
+
+    def send(self, request: Request, timeout: Timeout = None) -> Response:
+        raise NotImplementedError()  # pragma: nocover
+
+    def close(self) -> None:
+        pass  # pragma: nocover
+
+
 class AsyncDispatcher:
     """
     Base class for AsyncDispatcher classes, that handle sending the request.
