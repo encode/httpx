@@ -147,6 +147,8 @@ class AsyncClient:
         self.trust_env = trust_env
         self.netrc = NetRCInfo()
 
+        proxy_map = self.get_proxy_map(proxies, trust_env)
+
         self.dispatch = self.init_dispatch(
             verify=verify,
             cert=cert,
@@ -158,19 +160,18 @@ class AsyncClient:
             trust_env=trust_env,
             uds=uds,
         )
-
-        if proxies is None and trust_env:
-            proxies = typing.cast(ProxiesTypes, get_environment_proxies())
-
-        self.proxies: typing.Dict[str, AsyncDispatcher] = self.proxies_to_dispatchers(
-            proxies,
-            verify=verify,
-            cert=cert,
-            http2=http2,
-            pool_limits=pool_limits,
-            backend=backend,
-            trust_env=trust_env,
-        )
+        self.proxies: typing.Dict[str, AsyncDispatcher] = {
+            key: self.init_proxy_dispatch(
+                proxy,
+                verify=verify,
+                cert=cert,
+                http2=http2,
+                pool_limits=pool_limits,
+                backend=backend,
+                trust_env=trust_env,
+            )
+            for key, proxy in proxy_map.items()
+        }
 
     def init_dispatch(
         self,
@@ -222,62 +223,35 @@ class AsyncClient:
             trust_env=trust_env,
         )
 
-    def proxies_to_dispatchers(
-        self,
-        proxies: typing.Optional[ProxiesTypes],
-        verify: VerifyTypes,
-        cert: typing.Optional[CertTypes],
-        http2: bool,
-        pool_limits: PoolLimits,
-        backend: typing.Union[str, ConcurrencyBackend],
-        trust_env: bool,
-    ) -> typing.Dict[str, AsyncDispatcher]:
+    def get_proxy_map(
+        self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
+    ) -> typing.Dict[str, Proxy]:
         if proxies is None:
+            if trust_env:
+                return {
+                    key: Proxy(url=url)
+                    for key, url in get_environment_proxies().items()
+                }
             return {}
         elif isinstance(proxies, (str, URL, Proxy)):
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
-            return {
-                "all": self.init_proxy_dispatch(
-                    proxy=proxy,
-                    verify=verify,
-                    cert=cert,
-                    pool_limits=pool_limits,
-                    backend=backend,
-                    trust_env=trust_env,
-                    http2=http2,
-                )
-            }
+            return {"all": proxy}
         elif isinstance(proxies, AsyncDispatcher):  # pragma: nocover
-            return {"all": proxies}
-            # We're supporting this style for now, but we'll want to deprecate it.
-            #
-            # raise RuntimeError(
-            #     "Passing a AsyncDispatcher instance to 'proxies=' is no longer
-            #     supported. Use `httpx.Proxy() instead.`"
-            # )
+            raise RuntimeError(
+                "Passing a dispatcher instance to 'proxies=' is no longer "
+                "supported. Use `httpx.Proxy() instead.`"
+            )
         else:
             new_proxies = {}
             for key, value in proxies.items():
                 if isinstance(value, (str, URL, Proxy)):
                     proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
-                    new_proxies[str(key)] = self.init_proxy_dispatch(
-                        proxy=proxy,
-                        verify=verify,
-                        cert=cert,
-                        pool_limits=pool_limits,
-                        backend=backend,
-                        trust_env=trust_env,
-                        http2=http2,
-                    )
+                    new_proxies[str(key)] = proxy
                 elif isinstance(value, AsyncDispatcher):  # pragma: nocover
-                    new_proxies[str(key)] = value
-                    # We're supporting this style for now, but we'll want to
-                    # deprecate it.
-                    #
-                    # raise RuntimeError(
-                    #     "Passing a AsyncDispatcher instance to 'proxies=' is "
-                    #     "no longer supported. Use `httpx.Proxy() instead.`"
-                    # )
+                    raise RuntimeError(
+                        "Passing a dispatcher instance to 'proxies=' is "
+                        "no longer supported. Use `httpx.Proxy() instead.`"
+                    )
             return new_proxies
 
     @property
