@@ -380,6 +380,67 @@ MIME header field.
 }
 ```
 
+## Customizing authentication
+
+When issuing requests or instantiating a client, the `auth` argument can be used to pass an authentication scheme to use. The `auth` argument may be one of the following...
+
+* A two-tuple of `username`/`password`, to be used with basic authentication.
+* An instance of `httpx.BasicAuth()` or `httpx.DigestAuth()`.
+* A callable, accepting a request and returning an authenticated request instance.
+* A subclass of `httpx.Auth`.
+
+The most involved of these is the last, which allows you to create authentication flows involving one or more requests. A subclass of `httpx.Auth` should implement `def auth_flow(request)`, and yield any requests that need to be made...
+
+```python
+class MyCustomAuth(httpx.Auth):
+    def __init__(self, token):
+        self.token = token
+
+    def auth_flow(self, request):
+        # Send the request, with a custom `X-Authentication` header.
+        request.headers['X-Authentication'] = self.token
+        yield request
+```
+
+If the auth flow requires more that one request, you can issue multiple yields, and obtain the response in each case...
+
+```python
+class MyCustomAuth(httpx.Auth):
+    def __init__(self, token):
+        self.token = token
+
+    def auth_flow(self, request):
+      response = yield request
+      if response.status_code == 401:
+          # If the server issues a 401 response then resend the request,
+          # with a custom `X-Authentication` header.
+          request.headers['X-Authentication'] = self.token
+          yield request
+```
+
+Custom authentication classes are designed to not perform any I/O, so that they may be used with both sync and async client instances. If you are implementing an authentication scheme that requires the request body, then you need to indicate this on the class using a `requires_request_body` property.
+
+```python
+class MyCustomAuth(httpx.Auth):
+    requires_request_body = True
+
+    def __init__(self, token):
+        self.token = token
+
+    def auth_flow(self, request):
+      response = yield request
+      if response.status_code == 401:
+          # If the server issues a 401 response then resend the request,
+          # with a custom `X-Authentication` header.
+          request.headers['X-Authentication'] = self.sign_request(...)
+          yield request
+
+    def sign_request(self, request):
+        # Create a request signature, based on `request.method`, `request.url`,
+        # `request.headers`, and `request.content`.
+        ...
+```
+
 ## SSL certificates
 
 When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
