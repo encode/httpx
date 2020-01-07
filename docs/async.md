@@ -194,7 +194,7 @@ See [the ASGI documentation](https://asgi.readthedocs.io/en/latest/specs/www.htm
 
 ## Unix Domain Sockets
 
-The async client provides support for connect through a unix domain socket via the `uds` parameter. This is useful when making requests to a server that is bound to a socket file rather than an IP address.
+The async client provides support for connecting through a unix domain socket via the `uds` parameter. This is useful when making requests to a server that is bound to a socket file rather than an IP address.
 
 Here's an example requesting the Docker Engine API:
 
