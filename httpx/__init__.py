@@ -1,6 +1,6 @@
 from .__version__ import __description__, __title__, __version__
 from .api import delete, get, head, options, patch, post, put, request, stream
-from .auth import BasicAuth, DigestAuth
+from .auth import Auth, BasicAuth, DigestAuth
 from .client import AsyncClient, Client
 from .config import TimeoutConfig  # For 0.8 backwards compat.
 from .config import PoolLimits, Proxy, Timeout
@@ -46,6 +46,7 @@ __all__ = [
     "stream",
     "codes",
     "AsyncClient",
+    "Auth",
     "BasicAuth",
     "Client",
     "DigestAuth",
