@@ -23,7 +23,7 @@ from .config import (
 )
 from .content_streams import ContentStream
 from .dispatch.asgi import ASGIDispatch
-from .dispatch.base import Dispatcher
+from .dispatch.base import AsyncDispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
 from .exceptions import (
@@ -121,7 +121,7 @@ class AsyncClient:
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
-        dispatch: Dispatcher = None,
+        dispatch: AsyncDispatcher = None,
         app: typing.Callable = None,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
@@ -158,7 +158,11 @@ class AsyncClient:
             trust_env=trust_env,
             uds=uds,
         )
-        self.proxies: typing.Dict[str, Dispatcher] = self.proxies_to_dispatchers(
+
+        if proxies is None and trust_env:
+            proxies = typing.cast(ProxiesTypes, get_environment_proxies())
+
+        self.proxies: typing.Dict[str, AsyncDispatcher] = self.proxies_to_dispatchers(
             proxies,
             verify=verify,
             cert=cert,
@@ -174,12 +178,12 @@ class AsyncClient:
         cert: CertTypes = None,
         http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        dispatch: Dispatcher = None,
+        dispatch: AsyncDispatcher = None,
         app: typing.Callable = None,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
         uds: str = None,
-    ) -> Dispatcher:
+    ) -> AsyncDispatcher:
         if dispatch is not None:
             return dispatch
 
@@ -205,7 +209,7 @@ class AsyncClient:
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
-    ) -> Dispatcher:
+    ) -> AsyncDispatcher:
         return HTTPProxy(
             proxy_url=proxy.url,
             proxy_headers=proxy.headers,
@@ -227,7 +231,7 @@ class AsyncClient:
         pool_limits: PoolLimits,
         backend: typing.Union[str, ConcurrencyBackend],
         trust_env: bool,
-    ) -> typing.Dict[str, Dispatcher]:
+    ) -> typing.Dict[str, AsyncDispatcher]:
         if proxies is None:
             return {}
         elif isinstance(proxies, (str, URL, Proxy)):
@@ -243,13 +247,13 @@ class AsyncClient:
                     http2=http2,
                 )
             }
-        elif isinstance(proxies, Dispatcher):  # pragma: nocover
+        elif isinstance(proxies, AsyncDispatcher):  # pragma: nocover
             return {"all": proxies}
             # We're supporting this style for now, but we'll want to deprecate it.
             #
             # raise RuntimeError(
-            #     "Passing a Dispatcher instance to 'proxies=' is no longer supported. "
-            #     "Use `httpx.Proxy() instead.`"
+            #     "Passing a AsyncDispatcher instance to 'proxies=' is no longer
+            #     supported. Use `httpx.Proxy() instead.`"
             # )
         else:
             new_proxies = {}
@@ -265,14 +269,14 @@ class AsyncClient:
                         trust_env=trust_env,
                         http2=http2,
                     )
-                elif isinstance(value, Dispatcher):  # pragma: nocover
+                elif isinstance(value, AsyncDispatcher):  # pragma: nocover
                     new_proxies[str(key)] = value
                     # We're supporting this style for now, but we'll want to
                     # deprecate it.
                     #
                     # raise RuntimeError(
-                    #     "Passing a Dispatcher instance to 'proxies=' is no longer "
-                    #     "supported. Use `httpx.Proxy() instead.`"
+                    #     "Passing a AsyncDispatcher instance to 'proxies=' is "
+                    #     "no longer supported. Use `httpx.Proxy() instead.`"
                     # )
             return new_proxies
 
@@ -542,9 +546,9 @@ class AsyncClient:
 
         return request.stream
 
-    def dispatcher_for_url(self, url: URL) -> Dispatcher:
+    def dispatcher_for_url(self, url: URL) -> AsyncDispatcher:
         """
-        Returns the Dispatcher instance that should be used for a given URL.
+        Returns the AsyncDispatcher instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
         if self.proxies:

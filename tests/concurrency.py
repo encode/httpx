@@ -4,54 +4,34 @@ required as part of the ConcurrencyBackend API.
 """
 
 import asyncio
-import functools
-import typing
 
+import sniffio
 import trio
 
-from httpx.backends.asyncio import AsyncioBackend
-from httpx.backends.auto import AutoBackend
-from httpx.backends.trio import TrioBackend
+
+async def sleep(seconds: float):
+    if sniffio.current_async_library() == "trio":
+        await trio.sleep(seconds)
+    else:
+        await asyncio.sleep(seconds)
 
 
-@functools.singledispatch
-async def run_concurrently(backend, *coroutines: typing.Callable[[], typing.Awaitable]):
-    raise NotImplementedError  # pragma: no cover
+async def run_concurrently(*coroutines):
+    if sniffio.current_async_library() == "trio":
+        async with trio.open_nursery() as nursery:
+            for coroutine in coroutines:
+                nursery.start_soon(coroutine)
+    else:
+        coros = (coroutine() for coroutine in coroutines)
+        await asyncio.gather(*coros)
 
 
-@run_concurrently.register(AutoBackend)
-async def _run_concurrently_auto(backend, *coroutines):
-    await run_concurrently(backend.backend, *coroutines)
-
-
-@run_concurrently.register(AsyncioBackend)
-async def _run_concurrently_asyncio(backend, *coroutines):
-    coros = (coroutine() for coroutine in coroutines)
-    await asyncio.gather(*coros)
-
-
-@run_concurrently.register(TrioBackend)
-async def _run_concurrently_trio(backend, *coroutines):
-    async with trio.open_nursery() as nursery:
-        for coroutine in coroutines:
-            nursery.start_soon(coroutine)
-
-
-@functools.singledispatch
-def get_cipher(backend, stream):
-    raise NotImplementedError  # pragma: no cover
-
-
-@get_cipher.register(AutoBackend)
-def _get_cipher_auto(backend, stream):
-    return get_cipher(backend.backend, stream)
-
-
-@get_cipher.register(AsyncioBackend)
-def _get_cipher_asyncio(backend, stream):
-    return stream.stream_writer.get_extra_info("cipher", default=None)
-
-
-@get_cipher.register(TrioBackend)
-def get_trio_cipher(backend, stream):
-    return stream.stream.cipher() if isinstance(stream.stream, trio.SSLStream) else None
+def get_cipher(stream):
+    if sniffio.current_async_library() == "trio":
+        return (
+            stream.stream.cipher()
+            if isinstance(stream.stream, trio.SSLStream)
+            else None
+        )
+    else:
+        return stream.stream_writer.get_extra_info("cipher", default=None)

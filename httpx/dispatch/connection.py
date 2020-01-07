@@ -7,7 +7,7 @@ from ..backends.base import ConcurrencyBackend, lookup_backend
 from ..config import SSLConfig, Timeout
 from ..models import URL, Origin, Request, Response
 from ..utils import get_logger
-from .base import Dispatcher
+from .base import AsyncDispatcher
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
@@ -18,7 +18,7 @@ ReleaseCallback = typing.Callable[["HTTPConnection"], typing.Awaitable[None]]
 logger = get_logger(__name__)
 
 
-class HTTPConnection(Dispatcher):
+class HTTPConnection(AsyncDispatcher):
     def __init__(
         self,
         origin: typing.Union[str, Origin],
