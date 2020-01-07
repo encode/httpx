@@ -258,7 +258,7 @@ Or disable timeouts for an individual request:
 
 ```python
 # Using the top-level API:
- httpx.get('http://example.com/api/v1/example', timeout=None)
+httpx.get('http://example.com/api/v1/example', timeout=None)
 
 # Using a client instance:
 with httpx.Client() as client:
