@@ -330,7 +330,7 @@ In some cases you might want to access the raw bytes on the response without app
 
 If you're using streaming responses in any of these ways then the `response.content` and `response.text` attributes will not be available, and will raise errors if accessed. However you can also use the response streaming functionality to conditionally load the response body:
 
-```
+```python
 >>> with httpx.stream("GET", "https://www.example.com") as r:
 ...     if r.headers['Content-Length'] < TOO_LONG:
 ...         r.read()
