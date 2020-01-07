@@ -21,19 +21,38 @@ def test_content_length_header():
 @pytest.mark.asyncio
 async def test_url_encoded_data():
     request = httpx.Request("POST", "http://example.org", data={"test": "123"})
-    content = b"".join([part async for part in request.stream])
+    await request.aread()
 
     assert request.headers["Content-Type"] == "application/x-www-form-urlencoded"
-    assert content == b"test=123"
+    assert request.content == b"test=123"
 
 
 @pytest.mark.asyncio
 async def test_json_encoded_data():
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
-    content = b"".join([part async for part in request.stream])
+    await request.aread()
 
     assert request.headers["Content-Type"] == "application/json"
-    assert content == b'{"test": 123}'
+    assert request.content == b'{"test": 123}'
+
+
+@pytest.mark.asyncio
+async def test_read_and_stream_data():
+    # Ensure a request may still be streamed if it has been read.
+    # Needed for cases such as authentication classes that read the request body.
+    request = httpx.Request("POST", "http://example.org", json={"test": 123})
+    await request.aread()
+    content = b"".join([part async for part in request.stream])
+    assert content == request.content
+
+
+@pytest.mark.asyncio
+async def test_cannot_access_content_without_read():
+    # Ensure a request may still be streamed if it has been read.
+    #  Needed for cases such as authentication classes that read the request body.
+    request = httpx.Request("POST", "http://example.org", json={"test": 123})
+    with pytest.raises(httpx.RequestNotRead):
+        request.content
 
 
 def test_transfer_encoding_header():

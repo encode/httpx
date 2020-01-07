@@ -676,7 +676,10 @@ class AsyncClient:
         auth: Auth,
         timeout: Timeout,
     ) -> Response:
-        auth_flow = auth(request)
+        if auth.requires_request_body:
+            await request.aread()
+
+        auth_flow = auth.auth_flow(request)
         request = next(auth_flow)
         while True:
             response = await self.send_single_request(request, timeout)
