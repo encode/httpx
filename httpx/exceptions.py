@@ -146,6 +146,12 @@ class ResponseNotRead(StreamError):
     """
 
 
+class RequestNotRead(StreamError):
+    """
+    Attempted to access request content, without having called `read()`.
+    """
+
+
 class ResponseClosed(StreamError):
     """
     Attempted to read or stream response content, but the request has been
