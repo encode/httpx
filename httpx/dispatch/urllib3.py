@@ -25,9 +25,13 @@ class URLLib3Dispatcher(SyncDispatcher):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
     ):
         ssl = SSLConfig(verify=verify, cert=cert, trust_env=trust_env, http2=False)
-        self.pool = urllib3.PoolManager(ssl_context=ssl.ssl_context)
+        self.pool = urllib3.PoolManager(ssl_context=ssl.ssl_context, block=True)
 
     def send(self, request: Request, timeout: Timeout = None) -> Response:
+        timeout = Timeout() if timeout is None else timeout
+        urllib3_timeout = urllib3.util.Timeout(
+            connect=timeout.connect_timeout, read=timeout.read_timeout
+        )
         chunked = request.headers.get("Transfer-Encoding") == "chunked"
 
         conn = self.pool.urlopen(
@@ -40,6 +44,8 @@ class URLLib3Dispatcher(SyncDispatcher):
             retries=0,
             preload_content=False,
             chunked=chunked,
+            timeout=urllib3_timeout,
+            pool_timeout=timeout.pool_timeout,
         )
 
         def response_bytes() -> typing.Iterator[bytes]:
