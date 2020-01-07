@@ -420,6 +420,8 @@ class MyCustomAuth(httpx.Auth):
 
 Custom authentication classes are designed to not perform any I/O, so that they may be used with both sync and async client instances. If you are implementing an authentication scheme that requires the request body, then you need to indicate this on the class using a `requires_request_body` property.
 
+You will then be able to access `request.content` inside the `.auth_flow()` method.
+
 ```python
 class MyCustomAuth(httpx.Auth):
     requires_request_body = True
