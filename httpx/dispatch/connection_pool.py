@@ -147,7 +147,7 @@ class ConnectionPool(AsyncDispatcher):
     async def send(self, request: Request, timeout: Timeout = None) -> Response:
         await self.check_keepalive_expiry()
         connection = await self.acquire_connection(
-            origin=request.url.origin, timeout=timeout
+            origin=Origin(request.url), timeout=timeout
         )
         try:
             response = await connection.send(request, timeout=timeout)
