@@ -1,3 +1,4 @@
+import math
 import typing
 
 import urllib3
@@ -25,7 +26,30 @@ class URLLib3Dispatcher(SyncDispatcher):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
     ):
         ssl = SSLConfig(verify=verify, cert=cert, trust_env=trust_env, http2=False)
-        self.pool = urllib3.PoolManager(ssl_context=ssl.ssl_context, block=True)
+        hard_limit = pool_limits.hard_limit
+        soft_limit = pool_limits.soft_limit
+
+        # Our connection pool configuration doesn't quite match up with urllib3's
+        # controls, but we can put sensible mappings in place:
+        if hard_limit is None:
+            block = False
+            if soft_limit is None:
+                num_pools = 1000
+                maxsize = 1000
+            else:
+                num_pools = int(math.sqrt(soft_limit))
+                maxsize = int(math.sqrt(soft_limit))
+        else:
+            block = True
+            num_pools = int(math.sqrt(hard_limit))
+            maxsize = int(math.sqrt(hard_limit))
+
+        self.pool = urllib3.PoolManager(
+            ssl_context=ssl.ssl_context,
+            num_pools=num_pools,
+            maxsize=maxsize,
+            block=block,
+        )
 
     def send(self, request: Request, timeout: Timeout = None) -> Response:
         timeout = Timeout() if timeout is None else timeout
