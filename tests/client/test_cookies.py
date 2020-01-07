@@ -5,10 +5,10 @@ import pytest
 
 from httpx import AsyncClient, Cookies, Request, Response
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx.dispatch.base import Dispatcher
+from httpx.dispatch.base import AsyncDispatcher
 
 
-class MockDispatch(Dispatcher):
+class MockDispatch(AsyncDispatcher):
     async def send(
         self,
         request: Request,

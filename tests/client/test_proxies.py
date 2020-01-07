@@ -12,9 +12,9 @@ import httpx
             {"http": "http://127.0.0.1", "https": "https://127.0.0.1"},
             [("http", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
         ),
-        (httpx.HTTPProxy("http://127.0.0.1"), [("all", "http://127.0.0.1")]),
+        (httpx.Proxy("http://127.0.0.1"), [("all", "http://127.0.0.1")]),
         (
-            {"https": httpx.HTTPProxy("https://127.0.0.1"), "all": "http://127.0.0.1"},
+            {"https": httpx.Proxy("https://127.0.0.1"), "all": "http://127.0.0.1"},
             [("all", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
         ),
     ],
@@ -27,27 +27,6 @@ def test_proxies_parameter(proxies, expected_proxies):
         assert client.proxies[proxy_key].proxy_url == url
 
     assert len(expected_proxies) == len(client.proxies)
-
-
-def test_proxies_has_same_properties_as_dispatch():
-    client = httpx.AsyncClient(
-        proxies="http://127.0.0.1",
-        verify="/path/to/verify",
-        cert="/path/to/cert",
-        trust_env=False,
-        timeout=30,
-    )
-    pool = client.dispatch
-    proxy = client.proxies["all"]
-
-    assert isinstance(proxy, httpx.HTTPProxy)
-
-    for prop in [
-        "verify",
-        "cert",
-        "pool_limits",
-    ]:
-        assert getattr(pool, prop) == getattr(proxy, prop)
 
 
 PROXY_URL = "http://[::1]"

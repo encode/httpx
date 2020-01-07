@@ -71,6 +71,21 @@ class DecodingError(HTTPError):
     """
 
 
+# Network exceptions...
+
+
+class NetworkError(HTTPError):
+    """
+    A failure occurred while trying to access the network.
+    """
+
+
+class ConnectionClosed(NetworkError):
+    """
+    Expected more data from peer, but connection was closed.
+    """
+
+
 # Redirect exceptions...
 
 
@@ -83,13 +98,6 @@ class RedirectError(HTTPError):
 class TooManyRedirects(RedirectError):
     """
     Too many redirects.
-    """
-
-
-class RedirectBodyUnavailable(RedirectError):
-    """
-    Got a redirect response, but the request body was streaming, and is
-    no longer available.
     """
 
 
@@ -114,6 +122,13 @@ class StreamError(HTTPError):
 
     The developer made an error in accessing the request stream in
     an invalid way.
+    """
+
+
+class RequestBodyUnavailable(StreamError):
+    """
+    Had to send the request again, but the request body was streaming, and is
+    no longer available.
     """
 
 
@@ -144,12 +159,6 @@ class ResponseClosed(StreamError):
 class InvalidURL(HTTPError):
     """
     URL was missing a hostname, or was not one of HTTP/HTTPS.
-    """
-
-
-class ConnectionClosed(HTTPError):
-    """
-    Expected more data from peer, but connection was closed.
     """
 
 

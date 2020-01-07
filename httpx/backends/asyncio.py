@@ -1,10 +1,10 @@
 import asyncio
-import functools
 import ssl
 import typing
 
 from ..config import Timeout
 from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
+from ..utils import as_network_error
 from .base import BaseLock, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
 
 SSL_MONKEY_PATCH_APPLIED = False
@@ -126,9 +126,10 @@ class SocketStream(BaseSocketStream):
     async def read(self, n: int, timeout: Timeout) -> bytes:
         try:
             async with self.read_lock:
-                return await asyncio.wait_for(
-                    self.stream_reader.read(n), timeout.read_timeout
-                )
+                with as_network_error(OSError):
+                    return await asyncio.wait_for(
+                        self.stream_reader.read(n), timeout.read_timeout
+                    )
         except asyncio.TimeoutError:
             raise ReadTimeout() from None
 
@@ -138,10 +139,11 @@ class SocketStream(BaseSocketStream):
 
         try:
             async with self.write_lock:
-                self.stream_writer.write(data)
-                return await asyncio.wait_for(
-                    self.stream_writer.drain(), timeout.write_timeout
-                )
+                with as_network_error(OSError):
+                    self.stream_writer.write(data)
+                    return await asyncio.wait_for(
+                        self.stream_writer.drain(), timeout.write_timeout
+                    )
         except asyncio.TimeoutError:
             raise WriteTimeout() from None
 
@@ -171,7 +173,8 @@ class SocketStream(BaseSocketStream):
         # stream, meaning that at best it will happen during the next event loop
         # iteration, and at worst asyncio will take care of it on program exit.
         async with self.write_lock:
-            self.stream_writer.close()
+            with as_network_error(OSError):
+                self.stream_writer.close()
 
 
 class AsyncioBackend(ConcurrencyBackend):
@@ -182,15 +185,6 @@ class AsyncioBackend(ConcurrencyBackend):
             ssl_monkey_patch()
         SSL_MONKEY_PATCH_APPLIED = True
 
-    @property
-    def loop(self) -> asyncio.AbstractEventLoop:
-        if not hasattr(self, "_loop"):
-            try:
-                self._loop = asyncio.get_event_loop()
-            except RuntimeError:
-                self._loop = asyncio.new_event_loop()
-        return self._loop
-
     async def open_tcp_stream(
         self,
         hostname: str,
@@ -199,10 +193,11 @@ class AsyncioBackend(ConcurrencyBackend):
         timeout: Timeout,
     ) -> SocketStream:
         try:
-            stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
-                asyncio.open_connection(hostname, port, ssl=ssl_context),
-                timeout.connect_timeout,
-            )
+            with as_network_error(OSError):
+                stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
+                    asyncio.open_connection(hostname, port, ssl=ssl_context),
+                    timeout.connect_timeout,
+                )
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
@@ -218,12 +213,13 @@ class AsyncioBackend(ConcurrencyBackend):
         server_hostname = hostname if ssl_context else None
 
         try:
-            stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
-                asyncio.open_unix_connection(
-                    path, ssl=ssl_context, server_hostname=server_hostname
-                ),
-                timeout.connect_timeout,
-            )
+            with as_network_error(OSError):
+                stream_reader, stream_writer = await asyncio.wait_for(  # type: ignore
+                    asyncio.open_unix_connection(
+                        path, ssl=ssl_context, server_hostname=server_hostname
+                    ),
+                    timeout.connect_timeout,
+                )
         except asyncio.TimeoutError:
             raise ConnectTimeout()
 
@@ -232,25 +228,6 @@ class AsyncioBackend(ConcurrencyBackend):
     def time(self) -> float:
         loop = asyncio.get_event_loop()
         return loop.time()
-
-    async def run_in_threadpool(
-        self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
-    ) -> typing.Any:
-        if kwargs:
-            # loop.run_in_executor doesn't accept 'kwargs', so bind them in here
-            func = functools.partial(func, **kwargs)
-        return await self.loop.run_in_executor(None, func, *args)
-
-    def run(
-        self, coroutine: typing.Callable, *args: typing.Any, **kwargs: typing.Any
-    ) -> typing.Any:
-        loop = self.loop
-        if loop.is_running():
-            self._loop = asyncio.new_event_loop()
-        try:
-            return self.loop.run_until_complete(coroutine(*args, **kwargs))
-        finally:
-            self._loop = loop
 
     def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
         return Semaphore(max_value, exc_class)

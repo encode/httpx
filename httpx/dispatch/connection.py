@@ -1,14 +1,13 @@
 import functools
-import ssl
 import typing
 
 import h11
 
 from ..backends.base import ConcurrencyBackend, lookup_backend
-from ..config import CertTypes, SSLConfig, Timeout, VerifyTypes
+from ..config import SSLConfig, Timeout
 from ..models import URL, Origin, Request, Response
 from ..utils import get_logger
-from .base import Dispatcher
+from .base import AsyncDispatcher
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
@@ -19,21 +18,17 @@ ReleaseCallback = typing.Callable[["HTTPConnection"], typing.Awaitable[None]]
 logger = get_logger(__name__)
 
 
-class HTTPConnection(Dispatcher):
+class HTTPConnection(AsyncDispatcher):
     def __init__(
         self,
         origin: typing.Union[str, Origin],
-        verify: VerifyTypes = True,
-        cert: CertTypes = None,
-        trust_env: bool = None,
-        http2: bool = False,
+        ssl: SSLConfig = None,
         backend: typing.Union[str, ConcurrencyBackend] = "auto",
         release_func: typing.Optional[ReleaseCallback] = None,
         uds: typing.Optional[str] = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
-        self.ssl = SSLConfig(cert=cert, verify=verify, trust_env=trust_env)
-        self.http2 = http2
+        self.ssl = SSLConfig() if ssl is None else ssl
         self.backend = lookup_backend(backend)
         self.release_func = release_func
         self.uds = uds
@@ -53,7 +48,7 @@ class HTTPConnection(Dispatcher):
     ) -> typing.Union[HTTP11Connection, HTTP2Connection]:
         host = self.origin.host
         port = self.origin.port
-        ssl_context = await self.get_ssl_context(self.ssl)
+        ssl_context = None if not self.origin.is_ssl else self.ssl.ssl_context
 
         if self.release_func is None:
             on_release = None
@@ -108,8 +103,7 @@ class HTTPConnection(Dispatcher):
         if origin.is_ssl:
             # Pull the socket stream off the internal HTTP connection object,
             # and run start_tls().
-            ssl_context = await self.get_ssl_context(self.ssl)
-            assert ssl_context is not None
+            ssl_context = self.ssl.ssl_context
 
             logger.trace(f"tunnel_start_tls proxy_url={proxy_url!r} origin={origin!r}")
             socket = await socket.start_tls(
@@ -133,13 +127,6 @@ class HTTPConnection(Dispatcher):
             )
         else:
             self.connection = HTTP11Connection(socket, on_release=on_release)
-
-    async def get_ssl_context(self, ssl: SSLConfig) -> typing.Optional[ssl.SSLContext]:
-        if not self.origin.is_ssl:
-            return None
-
-        # Run the SSL loading in a threadpool, since it may make disk accesses.
-        return await self.backend.run_in_threadpool(ssl.load_ssl_context, self.http2)
 
     async def close(self) -> None:
         logger.trace("close_connection")

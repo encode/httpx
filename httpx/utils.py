@@ -1,5 +1,6 @@
 import codecs
 import collections
+import contextlib
 import logging
 import netrc
 import os
@@ -11,6 +12,8 @@ from pathlib import Path
 from time import perf_counter
 from types import TracebackType
 from urllib.request import getproxies
+
+from .exceptions import NetworkError
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from .models import PrimitiveData
@@ -253,15 +256,6 @@ def get_logger(name: str) -> Logger:
     return typing.cast(Logger, logger)
 
 
-def kv_format(**kwargs: typing.Any) -> str:
-    """Format arguments into a key=value line.
-
-    >>> formatkv(x=1, name="Bob")
-    "x=1 name='Bob'"
-    """
-    return " ".join(f"{key}={value!r}" for key, value in kwargs.items())
-
-
 def should_not_be_proxied(url: "URL") -> bool:
     """ Return True if url should not be proxied,
     return False otherwise.
@@ -362,3 +356,14 @@ class ElapsedTimer:
         if self.end is None:
             return timedelta(seconds=perf_counter() - self.start)
         return timedelta(seconds=self.end - self.start)
+
+
+@contextlib.contextmanager
+def as_network_error(*exception_classes: type) -> typing.Iterator[None]:
+    try:
+        yield
+    except BaseException as exc:
+        for cls in exception_classes:
+            if isinstance(exc, cls):
+                raise NetworkError(exc) from exc
+        raise

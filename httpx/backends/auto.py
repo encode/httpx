@@ -18,7 +18,7 @@ class AutoBackend(ConcurrencyBackend):
     def backend(self) -> ConcurrencyBackend:
         if not hasattr(self, "_backend_implementation"):
             backend = sniffio.current_async_library()
-            if backend not in ("asyncio", "trio"):
+            if backend not in ("asyncio", "trio"):  # pragma: nocover
                 raise RuntimeError(f"Unsupported concurrency backend {backend!r}")
             self._backend_implementation = lookup_backend(backend)
         return self._backend_implementation
@@ -43,11 +43,6 @@ class AutoBackend(ConcurrencyBackend):
 
     def time(self) -> float:
         return self.backend.time()
-
-    async def run_in_threadpool(
-        self, func: typing.Callable, *args: typing.Any, **kwargs: typing.Any
-    ) -> typing.Any:
-        return await self.backend.run_in_threadpool(func, *args, **kwargs)
 
     def create_semaphore(self, max_value: int, exc_class: type) -> BaseSemaphore:
         return self.backend.create_semaphore(max_value, exc_class)
