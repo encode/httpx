@@ -9,10 +9,7 @@ from .base import AsyncDispatcher
 class ASGIDispatch(AsyncDispatcher):
     """
     A custom AsyncDispatcher that handles sending requests directly to an ASGI app.
-
     The simplest way to use this functionality is to use the `app` argument.
-    This will automatically infer if 'app' is a WSGI or an ASGI application,
-    and will setup an appropriate dispatch class:
 
     ```
     client = httpx.AsyncClient(app=app)

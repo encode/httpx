@@ -26,6 +26,7 @@ from .dispatch.base import AsyncDispatcher, SyncDispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
 from .dispatch.urllib3 import URLLib3Dispatcher
+from .dispatch.wsgi import WSGIDispatch
 from .exceptions import (
     HTTPError,
     InvalidURL,
@@ -490,8 +491,8 @@ class Client(BaseClient):
         if dispatch is not None:
             return dispatch
 
-        # if app is not None:
-        #    return WSGIDispatch(app=app)
+        if app is not None:
+            return WSGIDispatch(app=app)
 
         return URLLib3Dispatcher(
             verify=verify, cert=cert, pool_limits=pool_limits, trust_env=trust_env,

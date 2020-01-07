@@ -1,6 +1,7 @@
 import pytest
 
 import httpx
+from httpx.dispatch.proxy_http import HTTPProxy
 
 from .utils import MockRawSocketBackend
 
@@ -21,7 +22,7 @@ async def test_proxy_tunnel_success():
             ]
         ),
     )
-    async with httpx.HTTPProxy(
+    async with HTTPProxy(
         proxy_url="http://127.0.0.1:8000", backend=raw_io, proxy_mode="TUNNEL_ONLY",
     ) as proxy:
         response = await proxy.request("GET", "http://example.com")
@@ -57,7 +58,7 @@ async def test_proxy_tunnel_non_2xx_response(status_code):
     )
 
     with pytest.raises(httpx.ProxyError) as e:
-        async with httpx.HTTPProxy(
+        async with HTTPProxy(
             proxy_url="http://127.0.0.1:8000", backend=raw_io, proxy_mode="TUNNEL_ONLY",
         ) as proxy:
             await proxy.request("GET", "http://example.com")
@@ -107,7 +108,7 @@ async def test_proxy_tunnel_start_tls():
             ]
         ),
     )
-    async with httpx.HTTPProxy(
+    async with HTTPProxy(
         proxy_url="http://127.0.0.1:8000", backend=raw_io, proxy_mode="TUNNEL_ONLY",
     ) as proxy:
         resp = await proxy.request("GET", "https://example.com")
@@ -157,7 +158,7 @@ async def test_proxy_forwarding(proxy_mode):
             ]
         ),
     )
-    async with httpx.HTTPProxy(
+    async with HTTPProxy(
         proxy_url="http://127.0.0.1:8000",
         backend=raw_io,
         proxy_mode=proxy_mode,
@@ -186,14 +187,14 @@ async def test_proxy_forwarding(proxy_mode):
 
 
 def test_proxy_url_with_username_and_password():
-    proxy = httpx.HTTPProxy("http://user:password@example.com:1080")
+    proxy = HTTPProxy("http://user:password@example.com:1080")
 
     assert proxy.proxy_url == "http://example.com:1080"
     assert proxy.proxy_headers["Proxy-Authorization"] == "Basic dXNlcjpwYXNzd29yZA=="
 
 
 def test_proxy_repr():
-    proxy = httpx.HTTPProxy(
+    proxy = HTTPProxy(
         "http://127.0.0.1:1080",
         proxy_headers={"Custom": "Header"},
         proxy_mode="DEFAULT",
