@@ -26,10 +26,13 @@ HTTPX
 
 HTTPX is a fully featured HTTP client for Python 3, which provides sync and async APIs, and support for both HTTP/1.1 and HTTP/2.
 
-**Note**: *HTTPX should be considered in beta. We believe we've got the public API to
-a stable point now, but would strongly recommend pinning your dependencies to the `0.11.*`
-release, so that you're able to properly review API changes between package updates.
-A 1.0 release is expected to be issued sometime on or before April 2020.
+
+!!! note
+    HTTPX should currently be considered in beta.
+
+    We believe we've got the public API to a stable point now, but would strongly recommend pinning your dependencies to the `0.11.*` release, so that you're able to properly review API changes between package updates.
+
+    A 1.0 release is expected to be issued sometime on or before April 2020.
 
 ---
 
@@ -53,9 +56,10 @@ Let's get started...
 HTTPX is a high performance asynchronous HTTP client, that builds on the
 well-established usability of `requests`, and gives you:
 
-* A broadly requests-compatible API.
-* HTTP/1.1 and [HTTP/2 support](http2.md).
-* Ability to [make requests directly to ASGI applications](advanced.md#calling-into-python-web-apps).
+* A requests-compatible API wherever possible.
+* Standard synchronous interface, but with [async support if you need it](async.md).
+* HTTP/1.1 [and HTTP/2 support](http2.md).
+* Ability to make requests directly to [WSGI applications](https://www.encode.io/httpx/advanced/#calling-into-python-web-apps) or [ASGI applications](https://www.encode.io/httpx/async/#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 100% test coverage.
