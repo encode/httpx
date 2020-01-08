@@ -10,7 +10,7 @@ The 0.11 release reintroduces our sync support, so that `httpx` now supports bot
 
 Existing async `httpx` users that are upgrading to 0.11 should ensure that:
 
-* Async codebases should always use a client instance to make requests.
+* Async codebases should always use a client instance to make requests, instead of the top-level API.
 * The async client is named as `httpx.AsyncClient()`, instead of `httpx.Client()`.
 * When instantiating proxy configurations use the `httpx.Proxy()` class, instead of the previous `httpx.HTTPProxy()`. This new configuration class works for configuring both sync and async clients.
 
