@@ -884,8 +884,8 @@ class AsyncClient(BaseClient):
     Usage:
 
     ```python
-    >>> client = httpx.AsyncClient()
-    >>> response = client.get('https://example.org')
+    >>> async with httpx.AsyncClient() as client:
+    >>>     response = await client.get('https://example.org')
     ```
 
     **Parameters:**
