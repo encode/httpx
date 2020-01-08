@@ -330,9 +330,6 @@ class Proxy:
         )
 
 
-TimeoutConfig = Timeout  # Synonym for backwards compat
-
-
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
 DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
 DEFAULT_MAX_REDIRECTS = 20
