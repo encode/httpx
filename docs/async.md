@@ -88,7 +88,7 @@ When sending a request body with an `AsyncClient` instance, it is invalid to use
 async def upload_bytes():
     ...  # yield byte content
 
-client.post(url, data=upload_bytes())
+await client.post(url, data=upload_bytes())
 ```
 
 ## Supported async environments
