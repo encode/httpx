@@ -296,8 +296,10 @@ class PoolLimits:
 
     **Parameters:**
 
-    * **soft_limit** - Allow the connection pool to maintain keep-alive connections below this point.
-    * **hard_limit** - The maximum number of concurrenct connections that may be established.
+    * **soft_limit** - Allow the connection pool to maintain keep-alive connections
+                       below this point.
+    * **hard_limit** - The maximum number of concurrenct connections that may be
+                       established.
     """
 
     def __init__(
