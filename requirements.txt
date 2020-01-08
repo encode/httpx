@@ -21,6 +21,7 @@ pytest-trio
 pytest-cov
 trio
 trustme
+unasync==0.4.*
 uvicorn
 seed-isort-config
 wheel
