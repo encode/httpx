@@ -81,7 +81,6 @@ def test_dispatcher_for_request(url, proxies, expected):
     if expected is None:
         assert dispatcher is client.dispatch
     else:
-        assert isinstance(dispatcher, httpx.HTTPProxy)
         assert dispatcher.proxy_url == expected
 
 
