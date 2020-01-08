@@ -19,21 +19,21 @@ all outgoing requests.
 The recommended way to use a `Client` is as a context manager. This will ensure that connections are properly cleaned up when leaving the `with` block:
 
 ```python
->>> async with httpx.AsyncClient() as client:
-...     r = await client.get('https://example.com')
+>>> with httpx.Client() as client:
+...     r = client.get('https://example.com')
 ...
 >>> r
 <Response [200 OK]>
 ```
 
-Alternatively, you can explicitly close the connection pool without block-usage using `.aclose()`:
+Alternatively, you can explicitly close the connection pool without block-usage using `.close()`:
 
 ```python
->>> client = httpx.AsyncClient()
+>>> client = httpx.Client()
 >>> try:
-...     r = await client.get('https://example.com')
+...     r = client.get('https://example.com')
 ... finally:
-...     await client.aclose()
+...     client.close()
 ...
 >>> r
 <Response [200 OK]>
@@ -50,8 +50,8 @@ For example, to apply a set of custom headers on every request:
 ```python
 >>> url = 'http://httpbin.org/headers'
 >>> headers = {'user-agent': 'my-app/0.0.1'}
->>> async with httpx.AsyncClient(headers=headers) as client:
-...     r = await client.get(url)
+>>> with httpx.Client(headers=headers) as client:
+...     r = client.get(url)
 ...
 >>> r.json()['headers']['User-Agent']
 'my-app/0.0.1'
@@ -68,68 +68,57 @@ Additionally, `Client` accepts some parameters that aren't available at the requ
 One particularly useful parameter is `base_url`, which allows you to define a base URL to prepend to all outgoing requests:
 
 ```python
->>> async with httpx.AsyncClient(base_url='http://httpbin.org') as client:
-...     r = await client.get('/headers')
+>>> with httpx.Client(base_url='http://httpbin.org') as client:
+...     r = client.get('/headers')
 ...
 >>> r.request.url
 URL('http://httpbin.org/headers')
 ```
 
-For a list of all available client-level parameters, see the [`AsyncClient` API reference](/api/#async-client).
+For a list of all available client-level parameters, see the [`Client` API reference](/api/#client).
 
 ## Calling into Python Web Apps
 
-You can configure an `httpx` client to call directly into a Python web
-application using the ASGI protocol.
+You can configure an `httpx` client to call directly into a Python web application using the WSGI protocol.
 
 This is particularly useful for two main use-cases:
 
 * Using `httpx` as a client inside test cases.
 * Mocking out external services during tests or in dev/staging environments.
 
-Let's take this Starlette application as an example:
+Here's an example of integrating against a Flask application:
 
 ```python
-from starlette.applications import Starlette
-from starlette.responses import HTMLResponse
-from starlette.routing import Route
+from flask import Flask
+import httpx
 
 
-async def hello():
-    return HTMLResponse("Hello World!")
+app = Flask(__name__)
 
+@app.route("/")
+def hello():
+    return "Hello World!"
 
-app = Starlette(routes=[Route("/", hello)])
+with httpx.Client(app=app) as client:
+    r = client.get('http://example/')
+    assert r.status_code == 200
+    assert r.text == "Hello World!"
 ```
 
-We can make requests directly against the application, like so:
-
-```python
->>> import httpx
->>> async with httpx.AsyncClient(app=app) as client:
-...     r = client.get('http://example/')
-...     assert r.status_code == 200
-...     assert r.text == "Hello World!"
-```
-
-For some more complex cases you might need to customise the ASGI dispatch. This allows you to:
+For some more complex cases you might need to customize the WSGI dispatch. This allows you to:
 
 * Inspect 500 error responses rather than raise exceptions by setting `raise_app_exceptions=False`.
-* Mount the ASGI application at a subpath by setting `root_path`.
-* Use a given client address for requests by setting `client`.
+* Mount the WSGI application at a subpath by setting `script_name` (WSGI).
+* Use a given client address for requests by setting `remote_addr` (WSGI).
 
 For example:
 
 ```python
-# Instantiate a client that makes ASGI requests with a client IP of "1.2.3.4",
-# on port 123.
-dispatch = httpx.dispatch.ASGIDispatch(app=app, client=("1.2.3.4", 123))
-async with httpx.AsyncClient(dispatch=dispatch) as client:
+# Instantiate a client that makes WSGI requests with a client IP of "1.2.3.4".
+dispatch = httpx.WSGIDispatch(app=app, remote_addr="1.2.3.4")
+with httpx.Client(dispatch=dispatch) as client:
     ...
 ```
-
-See [the ASGI documentation](https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope) for more details on the `client` and `root_path`
-keys.
 
 ## Build Request
 
@@ -137,10 +126,10 @@ You can use `Client.build_request()` to build a request and
 make modifications before sending the request.
 
 ```python
->>> async with httpx.AsyncClient() as client:
+>>> with httpx.Client() as client:
 ...     req = client.build_request("OPTIONS", "https://example.com")
 ...     req.url.full_path = "*"  # Build an 'OPTIONS *' request for CORS
-...     r = await client.send(req)
+...     r = client.send(req)
 ...
 >>> r
 <Response [200 OK]>
@@ -158,7 +147,7 @@ not defined, HTTPX tries to add auth into request's header from .netrc file.
 
 As default `trust_env` is true. To set false:
 ```python
->>> await httpx.get('https://example.org/', trust_env=False)
+>>> httpx.get('https://example.org/', trust_env=False)
 ```
 
 If `NETRC` environment is empty, HTTPX tries to use default files.
@@ -182,22 +171,7 @@ password example-password
 When using `Client` instances, `trust_env` should be set on the client itself, rather that on the request methods:
 
 ```python
-client = httpx.AsyncClient(trust_env=False)
-```
-
-## Unix Domain Sockets
-
-You can configure an `httpx` client to connect through a unix domain socket via the `uds` parameter. This is useful when making requests to a server that is bound to a socket file rather than an IP address.
-
-Here's an example requesting the Docker Engine API:
-
-```python
-import httpx
-
-
-async with httpx.AsyncClient(uds="/var/run/docker.sock") as client:
-    # This request will connect through the socket file.
-    resp = await client.get("http://localhost/version")
+client = httpx.Client(trust_env=False)
 ```
 
 ## HTTP Proxying
@@ -211,7 +185,7 @@ to `http://127.0.0.1:3081` your `proxies` config would look like this:
 ...     "http": "http://127.0.0.1:3080",
 ...     "https": "http://127.0.0.1:3081"
 ... }
->>> async with httpx.AsyncClient(proxies=proxies) as client:
+>>> with httpx.Client(proxies=proxies) as client:
 ...     ...
 ```
 
@@ -226,11 +200,11 @@ to use for a given request this same order is used.
 ...     "http": "...",  # Scheme
 ...     "all": "...",  # All
 ... }
->>> async with httpx.AsyncClient(proxies=proxies) as client:
+>>> with httpx.Client(proxies=proxies) as client:
 ...     ...
 ...
 >>> proxy = "..."  # Shortcut for {'all': '...'}
->>> async with httpx.AsyncClient(proxies=proxy) as client:
+>>> with httpx.Client(proxies=proxy) as client:
 ...     ...
 ```
 
@@ -239,27 +213,26 @@ to use for a given request this same order is used.
     and even if the proxy_url uses HTTPS, it is recommended to
     use HTTPS and tunnel requests if possible.
 
-By default `HTTPProxy` will operate as a forwarding proxy for `http://...` requests
+By default `httpx.Proxy` will operate as a forwarding proxy for `http://...` requests
 and will establish a `CONNECT` TCP tunnel for `https://` requests. This doesn't change
-regardless of the `proxy_url` being `http` or `https`.
+regardless of the proxy `url` being `http` or `https`.
 
 Proxies can be configured to have different behavior such as forwarding or tunneling all requests:
 
 ```python
-proxy = httpx.HTTPProxy(
-    proxy_url="https://127.0.0.1",
-    proxy_mode="TUNNEL_ONLY"  # May be "TUNNEL_ONLY" or "FORWARD_ONLY". Defaults to "DEFAULT".
+proxy = httpx.Proxy(
+    url="https://127.0.0.1",
+    mode="TUNNEL_ONLY"  # May be "TUNNEL_ONLY" or "FORWARD_ONLY". Defaults to "DEFAULT".
 )
-async with httpx.AsyncClient(proxies=proxy) as client:
+with httpx.Client(proxies=proxy) as client:
     # This request will be tunneled instead of forwarded.
-    r = await client.get("http://example.com")
+    r = client.get("http://example.com")
 ```
 
 !!! note
 
-    Per request proxy configuration, i.e. `client.get(url, proxies=...)`,
-    has not been implemented yet. To use proxies you must pass the proxy
-    information at `Client` initialization.
+    To use proxies you must pass the proxy information at `Client` initialization,
+    rather than on the `.get(...)` call or other request methods.
 
 ## Timeout Configuration
 
@@ -274,22 +247,22 @@ You can set timeouts for an individual request:
 
 ```python
 # Using the top-level API:
-await httpx.get('http://example.com/api/v1/example', timeout=10.0)
+httpx.get('http://example.com/api/v1/example', timeout=10.0)
 
 # Using a client instance:
-async with httpx.AsyncClient() as client:
-    await client.get("http://example.com/api/v1/example", timeout=10.0)
+with httpx.Client() as client:
+    client.get("http://example.com/api/v1/example", timeout=10.0)
 ```
 
 Or disable timeouts for an individual request:
 
 ```python
 # Using the top-level API:
-await httpx.get('http://example.com/api/v1/example', timeout=None)
+httpx.get('http://example.com/api/v1/example', timeout=None)
 
 # Using a client instance:
-async with httpx.AsyncClient() as client:
-    await client.get("http://example.com/api/v1/example", timeout=None)
+with httpx.Client() as client:
+    client.get("http://example.com/api/v1/example", timeout=None)
 ```
 
 ### Setting a default timeout on a client
@@ -298,9 +271,9 @@ You can set a timeout on a client instance, which results in the given
 `timeout` being used as the default for requests made with this client:
 
 ```python
-client = httpx.AsyncClient()              # Use a default 5s timeout everywhere.
-client = httpx.AsyncClient(timeout=10.0)  # Use a default 10s timeout everywhere.
-client = httpx.AsyncClient(timeout=None)  # Disable all timeouts by default.
+client = httpx.Client()              # Use a default 5s timeout everywhere.
+client = httpx.Client(timeout=10.0)  # Use a default 10s timeout everywhere.
+client = httpx.Client(timeout=None)  # Disable all timeouts by default.
 ```
 
 ### Fine tuning the configuration
@@ -330,9 +303,9 @@ You can configure the timeout behavior for any of these values...
 ```python
 # A client with a 60s timeout for connecting, and a 10s timeout elsewhere.
 timeout = httpx.Timeout(10.0, connect_timeout=60.0)
-client = httpx.AsyncClient(timeout=timeout)
+client = httpx.Client(timeout=timeout)
 
-response = await client.get('http://example.com/')
+response = client.get('http://example.com/')
 ```
 
 ## Multipart file encoding
@@ -343,7 +316,7 @@ name of the payloads as keys and either tuple of elements or a file-like object 
 
 ```python
 >>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
->>> r = await httpx.post("https://httpbin.org/post", files=files)
+>>> r = httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
 {
   ...
@@ -368,7 +341,7 @@ MIME header field.
 
 ```python
 >>> files = {'upload-file': (None, 'text content', 'text/plain')}
->>> r = await httpx.post("https://httpbin.org/post", files=files)
+>>> r = httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
 {
   ...
@@ -456,7 +429,7 @@ If you'd like to use a custom CA bundle, you can use the `verify` parameter.
 ```python
 import httpx
 
-r = await httpx.get("https://example.org", verify="path/to/client.pem")
+r = httpx.get("https://example.org", verify="path/to/client.pem")
 ```
 
 You can also disable the SSL verification...
@@ -464,7 +437,7 @@ You can also disable the SSL verification...
 ```python
 import httpx
 
-r = await httpx.get("https://example.org", verify=False)
+r = httpx.get("https://example.org", verify=False)
 ```
 
 ### SSL configuration on client instances
@@ -472,7 +445,7 @@ r = await httpx.get("https://example.org", verify=False)
 If you're using a `Client()` instance, then you should pass any SSL settings when instantiating the client.
 
 ```python
-client = httpx.AsyncClient(verify=False)
+client = httpx.Client(verify=False)
 ```
 
 The `client.get(...)` method and other request methods *do not* support changing the SSL settings on a per-request basis. If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
@@ -489,60 +462,7 @@ If you do need to make HTTPS connections to a local server, for example to test 
 
 ```python
 >>> import httpx
->>> r = await httpx.get("https://localhost:8000", verify="/tmp/client.pem")
+>>> r = httpx.get("https://localhost:8000", verify="/tmp/client.pem")
 >>> r
 Response <200 OK>
 ```
-
-## Supported async environments
-
-HTTPX supports either `asyncio` or `trio` as an async environment.
-
-By default it will auto-detect which of those two to use as the backend
-for socket operations and concurrency primitives.
-
-You can also explicitly select a backend by instantiating a client with the
-`backend` argument...
-
-```python
-client = httpx.AsyncClient(backend='auto')     # Autodetection. The default case.
-client = httpx.AsyncClient(backend='asyncio')  # Use asyncio as the backend.
-client = httpx.AsyncClient(backend='trio')     # Use trio as the backend.
-```
-
-### [AsyncIO](https://docs.python.org/3/library/asyncio.html)
-
-AsyncIO is Python's [built-in library](https://docs.python.org/3/library/asyncio.html)
-for writing concurrent code with the async/await syntax.
-
-```python
-import asyncio
-import httpx
-
-async def main():
-    client = httpx.AsyncClient()
-    response = await client.get('https://www.example.com/')
-    print(response)
-
-asyncio.run(main())
-```
-
-### [Trio](https://github.com/python-trio/trio)
-
-Trio is [an alternative async library](https://trio.readthedocs.io/en/stable/),
-designed around the [the principles of structured concurrency](https://en.wikipedia.org/wiki/Structured_concurrency).
-
-```python
-import httpx
-import trio
-
-async def main():
-    client = httpx.AsyncClient()
-    response = await client.get('https://www.example.com/')
-    print(response)
-
-trio.run(main)
-```
-
-!!! important
-    The `trio` package must be installed to use the Trio backend.

@@ -4,7 +4,7 @@ Environment Variables
 The HTTPX library can be configured via environment variables.
 Environment variables are used by default. To ignore environment variables, `trust_env` has to be set `False`. There are two ways to set `trust_env` to disable environment variables:
 
-* On the client via `httpx.AsyncClient(trust_env=False)`.
+* On the client via `httpx.Client(trust_env=False)`.
 * Using the top-level API, such as `httpx.get("<url>", trust_env=False)`.
 
 Here is a list of environment variables that HTTPX recognizes and what function they serve:
@@ -24,7 +24,7 @@ Example:
 # test_script.py
 import httpx
 
-with httpx.AsyncClient() as client:
+with httpx.Client() as client:
     r = client.get("https://google.com")
 ```
 

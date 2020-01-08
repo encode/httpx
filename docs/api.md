@@ -32,11 +32,11 @@
 ::: httpx.delete
     :docstring:
 
-## `AsyncClient`
+## `Client`
 
-::: httpx.AsyncClient
+::: httpx.Client
     :docstring:
-    :members: headers cookies params request get head options post put patch delete build_request send aclose
+    :members: headers cookies params request get head options post put patch delete build_request send close
 
 ## `Response`
 
@@ -61,6 +61,13 @@
   the total elapsed seconds.
 * `def .raise_for_status()` - **None**
 * `def .json()` - **Any**
+* `def .read()` - **bytes**
+* `def .iter_raw()` - **async bytes iterator**
+* `def .iter_bytes()` - **async bytes iterator**
+* `def .iter_text()` - **async text iterator**
+* `def .iter_lines()` - **async text iterator**
+* `def .close()` - **None**
+* `def .next()` - **Response**
 * `def .aread()` - **bytes**
 * `def .aiter_raw()` - **async bytes iterator**
 * `def .aiter_bytes()` - **async bytes iterator**
@@ -76,13 +83,13 @@ what gets sent over the wire.*
 
 ```python
 >>> request = httpx.Request("GET", "https://example.org", headers={'host': 'example.org'})
->>> response = await client.send(request)
+>>> response = client.send(request)
 ```
 
 * `def __init__(method, url, [params], [data], [json], [headers], [cookies])`
 * `.method` - **str**
 * `.url` - **URL**
-* `.content` - **byte** or **byte async iterator**
+* `.content` - **byte**, **byte iterator**, or **byte async iterator**
 * `.headers` - **Headers**
 * `.cookies` - **Cookies**
 
