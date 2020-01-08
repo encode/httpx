@@ -1,8 +1,10 @@
 import math
+import socket
 import ssl
 import typing
 
 import urllib3
+from urllib3.exceptions import MaxRetryError, SSLError
 
 from ..config import (
     DEFAULT_POOL_LIMITS,
@@ -15,6 +17,7 @@ from ..config import (
 )
 from ..content_streams import IteratorStream
 from ..models import Request, Response
+from ..utils import as_network_error
 from .base import SyncDispatcher
 
 
@@ -91,23 +94,25 @@ class URLLib3Dispatcher(SyncDispatcher):
         content_length = int(request.headers.get("Content-Length", "0"))
         body = request.stream if chunked or content_length else None
 
-        conn = self.pool.urlopen(
-            method=request.method,
-            url=str(request.url),
-            headers=dict(request.headers),
-            body=body,
-            redirect=False,
-            assert_same_host=False,
-            retries=0,
-            preload_content=False,
-            chunked=chunked,
-            timeout=urllib3_timeout,
-            pool_timeout=timeout.pool_timeout,
-        )
+        with as_network_error(MaxRetryError, SSLError, socket.error):
+            conn = self.pool.urlopen(
+                method=request.method,
+                url=str(request.url),
+                headers=dict(request.headers),
+                body=body,
+                redirect=False,
+                assert_same_host=False,
+                retries=0,
+                preload_content=False,
+                chunked=chunked,
+                timeout=urllib3_timeout,
+                pool_timeout=timeout.pool_timeout,
+            )
 
         def response_bytes() -> typing.Iterator[bytes]:
-            for chunk in conn.stream(4096, decode_content=False):
-                yield chunk
+            with as_network_error(socket.error):
+                for chunk in conn.stream(4096, decode_content=False):
+                    yield chunk
 
         return Response(
             status_code=conn.status,
