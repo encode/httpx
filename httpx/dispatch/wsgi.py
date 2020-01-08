@@ -56,7 +56,7 @@ class WSGIDispatch(SyncDispatcher):
         environ = {
             "wsgi.version": (1, 0),
             "wsgi.url_scheme": request.url.scheme,
-            "wsgi.input": BodyStream(request.stream.__iter__()),
+            "wsgi.input": io.BytesIO(request.read()),
             "wsgi.errors": io.BytesIO(),
             "wsgi.multithread": True,
             "wsgi.multiprocess": False,
@@ -101,56 +101,3 @@ class WSGIDispatch(SyncDispatcher):
             stream=IteratorStream(chunk for chunk in result),
             request=request,
         )
-
-
-class BodyStream(io.RawIOBase):
-    def __init__(self, iterator: typing.Iterator[bytes]) -> None:
-        self._iterator = iterator
-        self._buffer = b""
-        self._closed = False
-
-    def read(self, size: int = -1) -> bytes:
-        if self._closed:
-            return b""
-
-        if size == -1:
-            return self.readall()
-
-        try:
-            while len(self._buffer) < size:
-                self._buffer += next(self._iterator)
-        except StopIteration:
-            self._closed = True
-            return self._buffer
-
-        output = self._buffer[:size]
-        self._buffer = self._buffer[size:]
-        return output
-
-    def readall(self) -> bytes:
-        if self._closed:
-            raise OSError("Stream closed")  # pragma: nocover
-
-        for chunk in self._iterator:
-            self._buffer += chunk
-
-        self._closed = True
-        return self._buffer
-
-    def readinto(self, b: bytearray) -> typing.Optional[int]:  # pragma: nocover
-        output = self.read(len(b))
-        count = len(output)
-        b[:count] = output
-        return count
-
-    def write(self, b: bytes) -> int:
-        raise OSError("Operation not supported")  # pragma: nocover
-
-    def fileno(self) -> int:
-        raise OSError("Operation not supported")  # pragma: nocover
-
-    def seek(self, offset: int, whence: int = 0) -> int:
-        raise OSError("Operation not supported")  # pragma: nocover
-
-    def truncate(self, size: int = None) -> int:
-        raise OSError("Operation not supported")  # pragma: nocover
