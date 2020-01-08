@@ -25,7 +25,7 @@ We believe the API is now pretty much stable, and are aiming for a 1.0 release s
 
 ### Removed
 
-- The `request.origin` property and `httpx.Origin` class are no longer available.
+- The `request.url.origin` property and `httpx.Origin` class are no longer available.
 - The per-request `cert`, `verify`, and `trust_env` arguments are escalated from raising errors if used, to no longer being available. These arguments should be used on a per-client instance instead, or in the top-level API.
 - The `stream` argument has escalated from raising an error when used, to no longer being available. Use the `client.stream(...)` or `httpx.stream()` streaming API instead.
 
