@@ -88,12 +88,14 @@ class URLLib3Dispatcher(SyncDispatcher):
             connect=timeout.connect_timeout, read=timeout.read_timeout
         )
         chunked = request.headers.get("Transfer-Encoding") == "chunked"
+        content_length = int(request.headers.get("Content-Length", "0"))
+        body = request.stream if chunked or content_length else None
 
         conn = self.pool.urlopen(
             method=request.method,
             url=str(request.url),
             headers=dict(request.headers),
-            body=request.stream,
+            body=body,
             redirect=False,
             assert_same_host=False,
             retries=0,
