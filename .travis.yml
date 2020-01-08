@@ -22,9 +22,11 @@ matrix:
     -
       stage: check
       python: 3.7
+      before_script: scripts/compile
       script: scripts/check
     - stage: docs
       python: 3.7
+      before_script: scripts/compile
       script: scripts/docs-build
     - stage: test
       os: windows
@@ -36,6 +38,7 @@ matrix:
         - choco install python --version 3.7
         - python -m pip install --upgrade pip
       install: pip install -r requirements.txt
+      before_script: scripts/compile
       script: scripts/test
 
   fast_finish: true
@@ -43,6 +46,8 @@ matrix:
     # FIX
     # Some tests not yet resolved for Windows. (In progress)
     - os: windows
+
+before_script: scripts/compile
 
 script: scripts/test
 

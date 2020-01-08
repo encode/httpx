@@ -4,6 +4,7 @@
 import re
 from pathlib import Path
 
+import unasync
 from setuptools import setup
 
 
@@ -61,6 +62,7 @@ setup(
         "sniffio==1.*",
         "urllib3==1.*",
     ],
+    cmdclass={"build_py": unasync.build_py},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",
