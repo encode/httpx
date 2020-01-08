@@ -45,8 +45,8 @@ Let's get started...
 HTTPX builds on the well-established usability of `requests`, and gives you:
 
 * A requests-compatible API wherever possible.
-* Standard synchronous interface, but with [async support if you need it](async.md).
-* HTTP/1.1 [and HTTP/2 support](http2.md).
+* Standard synchronous interface, but with [async support if you need it](https://www.encode.io/httpx/async/).
+* HTTP/1.1 [and HTTP/2 support](https://www.encode.io/httpx/http2/).
 * Ability to make requests directly to [WSGI applications](https://www.encode.io/httpx/advanced/#calling-into-python-web-apps) or [ASGI applications](https://www.encode.io/httpx/async/#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
@@ -86,7 +86,7 @@ Project documentation is available at [www.encode.io/httpx/](https://www.encode.
 
 For a run-through of all the basics, head over to the [QuickStart](https://www.encode.io/httpx/quickstart/).
 
-For more advanced topics, see the [Advanced Usage](advanced.md) section, the [async support](async.md) section, or the [HTTP/2](http2.md) section.
+For more advanced topics, see the [Advanced Usage](https://www.encode.io/httpx/advanced/) section, the [async support](https://www.encode.io/httpx/async/) section, or the [HTTP/2](https://www.encode.io/httpx/http2/) section.
 
 The [Developer Interface](https://www.encode.io/httpx/api/) provides a comprehensive API reference.
 
@@ -115,5 +115,3 @@ inspiration around the lower-level networking details.
 
 <p align="center">&mdash; ⭐️ &mdash;</p>
 <p align="center"><i>HTTPX is <a href="https://github.com/encode/httpx/blob/master/LICENSE.md">BSD licensed</a> code. Designed & built in Brighton, England.</i></p>
-
-[sync-support]: https://github.com/encode/httpx/issues/572
