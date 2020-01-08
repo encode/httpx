@@ -62,7 +62,7 @@ well-established usability of `requests`, and gives you:
 * Ability to make requests directly to [WSGI applications](https://www.encode.io/httpx/advanced/#calling-into-python-web-apps) or [ASGI applications](https://www.encode.io/httpx/async/#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
-* 100% test coverage.
+* 99% test coverage.
 
 Plus all the standard features of `requests`...
 
