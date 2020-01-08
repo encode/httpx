@@ -84,7 +84,7 @@ The async response streaming methods are:
 
 When sending a request body with an `AsyncClient` instance, it is invalid to use a bytes generator, but it is valid to use an async bytes generator...
 
-```
+```python
 async def upload_bytes():
     ...  # yield byte content
 
