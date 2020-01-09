@@ -1,5 +1,6 @@
 site_name: HTTPX
 site_description: A next-generation HTTP client for Python.
+site_url: https://www.python-httpx.org/
 
 theme:
     name: 'material'

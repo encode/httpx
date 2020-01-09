@@ -44,10 +44,10 @@ Let's get started...
 
 HTTPX builds on the well-established usability of `requests`, and gives you:
 
-* A requests-compatible API wherever possible.
-* Standard synchronous interface, but with [async support if you need it](https://www.encode.io/httpx/async/).
-* HTTP/1.1 [and HTTP/2 support](https://www.encode.io/httpx/http2/).
-* Ability to make requests directly to [WSGI applications](https://www.encode.io/httpx/advanced/#calling-into-python-web-apps) or [ASGI applications](https://www.encode.io/httpx/async/#calling-into-python-web-apps).
+* A broadly [requests-compatible API](https://www.python-httpx.org/compatibility/).
+* Standard synchronous interface, but with [async support if you need it](https://www.python-httpx.org/async/).
+* HTTP/1.1 [and HTTP/2 support](https://www.python-httpx.org/http2/).
+* Ability to make requests directly to [WSGI applications](https://www.python-httpx.org/advanced/#calling-into-python-web-apps) or [ASGI applications](https://www.python-httpx.org/async/#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 99% test coverage.
@@ -82,17 +82,17 @@ httpx requires Python 3.6+
 
 ## Documentation
 
-Project documentation is available at [www.encode.io/httpx/](https://www.encode.io/httpx/).
+Project documentation is available at [https://www.python-httpx.org/](https://www.python-httpx.org/).
 
-For a run-through of all the basics, head over to the [QuickStart](https://www.encode.io/httpx/quickstart/).
+For a run-through of all the basics, head over to the [QuickStart](https://www.python-httpx.org/quickstart/).
 
-For more advanced topics, see the [Advanced Usage](https://www.encode.io/httpx/advanced/) section, the [async support](https://www.encode.io/httpx/async/) section, or the [HTTP/2](https://www.encode.io/httpx/http2/) section.
+For more advanced topics, see the [Advanced Usage](https://www.python-httpx.org/advanced/) section, the [async support](https://www.python-httpx.org/async/) section, or the [HTTP/2](https://www.python-httpx.org/http2/) section.
 
-The [Developer Interface](https://www.encode.io/httpx/api/) provides a comprehensive API reference.
+The [Developer Interface](https://www.python-httpx.org/api/) provides a comprehensive API reference.
 
 ## Contribute
 
-If you want to contribute with HTTPX check out the [Contributing Guide](https://www.encode.io/httpx/contributing/) to learn how to start.
+If you want to contribute with HTTPX check out the [Contributing Guide](https://www.python-httpx.org/contributing/) to learn how to start.
 
 ## Dependencies
 

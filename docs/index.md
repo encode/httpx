@@ -56,10 +56,10 @@ Let's get started...
 HTTPX is a high performance asynchronous HTTP client, that builds on the
 well-established usability of `requests`, and gives you:
 
-* A requests-compatible API wherever possible.
+* A broadly [requests-compatible API](compatibility.md).
 * Standard synchronous interface, but with [async support if you need it](async.md).
 * HTTP/1.1 [and HTTP/2 support](http2.md).
-* Ability to make requests directly to [WSGI applications](https://www.encode.io/httpx/advanced/#calling-into-python-web-apps) or [ASGI applications](https://www.encode.io/httpx/async/#calling-into-python-web-apps).
+* Ability to make requests directly to [WSGI applications](advanced.md#calling-into-python-web-apps) or [ASGI applications](async.md#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 99% test coverage.
