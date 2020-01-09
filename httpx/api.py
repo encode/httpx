@@ -75,7 +75,7 @@ def request(
 
     ```
     >>> import httpx
-    >>> response = await httpx.request('GET', 'https://httpbin.org/get')
+    >>> response = httpx.request('GET', 'https://httpbin.org/get')
     >>> response
     <Response [200 OK]>
     ```
