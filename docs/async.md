@@ -67,14 +67,14 @@ The `AsyncClient.stream(method, url, ...)` method is an async context block.
 ```python
 >>> client = httpx.AsyncClient()
 >>> async with client.stream('GET', 'https://www.example.com/') as response:
->>>     async for chunk in r.aiter_content():
+>>>     async for chunk in response.aiter_bytes():
 >>>         ...
 ```
 
 The async response streaming methods are:
 
 * `Response.aread()` - For conditionally reading a response inside a stream block.
-* `Response.aiter_content()` - For streaming the response content as bytes.
+* `Response.aiter_bytes()` - For streaming the response content as bytes.
 * `Response.aiter_text()` - For streaming the response content as text.
 * `Response.aiter_lines()` - For streaming the response content as lines of text.
 * `Response.aiter_raw()` - For streaming the raw response bytes, without applying content decoding.
