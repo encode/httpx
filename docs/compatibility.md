@@ -22,17 +22,17 @@ HTTPX provides a `.stream()` interface rather than using `stream=True`. This ens
 For example:
 
 ```python
-async with request.stream("GET", "https://www.example.com") as response:
+with request.stream("GET", "https://www.example.com") as response:
     ...
 ```
 
 Within a `stream()` block request data is made available with:
 
-* `.aiter_bytes()` - Instead of `response.iter_content()`
-* `.aiter_text()` - Instead of `response.iter_content(decode_unicode=True)`
-* `.aiter_lines()` - Instead of `response.iter_lines()`
-* `.aiter_raw()` - Use this instead of `response.raw`
-* `.aread()` - Read the entire response body, making `request.text` and `response.content` available.
+* `.iter_bytes()` - Instead of `response.iter_content()`
+* `.iter_text()` - Instead of `response.iter_content(decode_unicode=True)`
+* `.iter_lines()` - Corresponding to `response.iter_lines()`
+* `.iter_raw()` - Use this instead of `response.raw`
+* `.read()` - Read the entire response body, making `request.text` and `response.content` available.
 
 ## SSL configuration
 
@@ -52,7 +52,7 @@ We don't support `response.is_ok` since the naming is ambiguous there, and might
 
 ## Client instances
 
-The HTTPX equivalent of `requests.Session` is `httpx.AsyncClient`.
+The HTTPX equivalent of `requests.Session` is `httpx.Client`.
 
 ```python
 session = requests.Session(**kwargs)
@@ -61,7 +61,7 @@ session = requests.Session(**kwargs)
 is generally equivalent to
 
 ```python
-client = httpx.AsyncClient(**kwargs)
+client = httpx.Client(**kwargs)
 ```
 
 ## Mocking

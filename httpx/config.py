@@ -284,6 +284,13 @@ class Timeout:
 class PoolLimits:
     """
     Limits on the number of connections in a connection pool.
+
+    **Parameters:**
+
+    * **soft_limit** - Allow the connection pool to maintain keep-alive connections
+                       below this point.
+    * **hard_limit** - The maximum number of concurrenct connections that may be
+                       established.
     """
 
     def __init__(
@@ -328,9 +335,6 @@ class Proxy:
             f"headers={dict(self.headers)!r}, "
             f"mode={self.mode!r})"
         )
-
-
-TimeoutConfig = Timeout  # Synonym for backwards compat
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)

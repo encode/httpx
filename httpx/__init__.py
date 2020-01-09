@@ -2,9 +2,9 @@ from .__version__ import __description__, __title__, __version__
 from .api import delete, get, head, options, patch, post, put, request, stream
 from .auth import Auth, BasicAuth, DigestAuth
 from .client import AsyncClient, Client
-from .config import TimeoutConfig  # For 0.8 backwards compat.
 from .config import PoolLimits, Proxy, Timeout
-from .dispatch.proxy_http import HTTPProxy, HTTPProxyMode
+from .dispatch.asgi import ASGIDispatch
+from .dispatch.wsgi import WSGIDispatch
 from .exceptions import (
     ConnectionClosed,
     ConnectTimeout,
@@ -45,6 +45,7 @@ __all__ = [
     "request",
     "stream",
     "codes",
+    "ASGIDispatch",
     "AsyncClient",
     "Auth",
     "BasicAuth",
@@ -53,9 +54,6 @@ __all__ = [
     "PoolLimits",
     "Proxy",
     "Timeout",
-    "TimeoutConfig",  # For 0.8 backwards compat.
-    "HTTPProxy",
-    "HTTPProxyMode",  # For 0.8 backwards compat.
     "ConnectTimeout",
     "CookieConflict",
     "ConnectionClosed",
@@ -84,4 +82,5 @@ __all__ = [
     "TimeoutException",
     "Response",
     "DigestAuth",
+    "WSGIDispatch",
 ]
