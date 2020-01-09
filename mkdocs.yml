@@ -5,7 +5,7 @@ theme:
     name: 'material'
 
 repo_name: encode/httpx
-repo_url: https://github.com/encode/httpx
+repo_url: https://www.python-httpx.org/
 edit_uri: ""
 
 nav:
