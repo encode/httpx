@@ -13,7 +13,7 @@ Use `str(response.url)` if you need a string instance.
 
 In our documentation we prefer the uppercased versions, such as `codes.NOT_FOUND`, but also provide lower-cased versions for API compatibility with `requests`.
 
-Requests includes various synoynms for status codes that HTTPX does not support.
+Requests includes various synonyms for status codes that HTTPX does not support.
 
 ## Streaming responses
 
