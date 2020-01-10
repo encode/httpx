@@ -41,7 +41,7 @@ Let's get started...
 
 ## Features
 
-HTTPX builds on the well-established usability of `requests`, and gives you:
+HTTPX builds on the well-established usability of [`requests`](https://requests.readthedocs.io), and gives you:
 
 * A broadly [requests-compatible API](https://www.python-httpx.org/compatibility/).
 * Standard synchronous interface, but with [async support if you need it](https://www.python-httpx.org/async/).
@@ -51,7 +51,7 @@ HTTPX builds on the well-established usability of `requests`, and gives you:
 * Fully type annotated.
 * 99% test coverage.
 
-Plus all the standard features of `requests`...
+Plus all the standard features of [`requests`](https://requests.readthedocs.io/)...
 
 * International Domains and URLs
 * Keep-Alive & Connection Pooling
@@ -108,7 +108,7 @@ The httpx project relies on these excellent libraries:
 * `sniffio` - Async library autodetection.
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
 
-A huge amount of credit is due to `requests` for the API layout that
+A huge amount of credit is due to [`requests`](https://requests.readthedocs.io) for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
 inspiration around the lower-level networking details.
 
