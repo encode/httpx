@@ -82,7 +82,7 @@ The async response streaming methods are:
 
 ### Streaming requests
 
-When sending a streaming request body with an `AsyncClient` instance, you should use an async butes generator instead of a bytes generator:
+When sending a streaming request body with an `AsyncClient` instance, you should use an async bytes generator instead of a bytes generator:
 
 ```python
 async def upload_bytes():
