@@ -39,6 +39,18 @@ Let's get started...
 '<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 ```
 
+Or, using the async API...
+
+_Use [IPython](https://ipython.readthedocs.io/en/stable/) or Python 3.8+ with `python -m asyncio` to try this code interactively._
+
+```python
+>>> import httpx
+>>> async with httpx.AsyncClient() as client:
+>>>     r = await client.get('https://www.example.org/')
+>>> r
+<Response [200 OK]>
+```
+
 ## Features
 
 HTTPX builds on the well-established usability of `requests`, and gives you:
