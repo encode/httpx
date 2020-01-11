@@ -40,6 +40,10 @@ setup(
     python_requires=">=3.6",
     version=get_version("httpx"),
     url="https://github.com/encode/httpx",
+    project_urls={
+        "Documentation": "https://www.python-httpx.org",
+        "Source": "https://github.com/encode/httpx",
+    },
     license="BSD",
     description="The next generation HTTP client.",
     long_description=get_long_description(),
