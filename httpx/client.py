@@ -162,6 +162,7 @@ class BaseClient:
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        raise_for_status: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> "StreamContextManager":
         request = self.build_request(
@@ -179,6 +180,7 @@ class BaseClient:
             request=request,
             auth=auth,
             allow_redirects=allow_redirects,
+            raise_for_status=raise_for_status,
             timeout=timeout,
         )
 
@@ -552,6 +554,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        raise_for_status: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         request = self.build_request(
@@ -565,7 +568,11 @@ class Client(BaseClient):
             cookies=cookies,
         )
         return self.send(
-            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout,
+            request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            raise_for_status=raise_for_status,
+            timeout=timeout,
         )
 
     def send(
@@ -575,6 +582,7 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        raise_for_status: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         if request.url.scheme not in ("http", "https"):
@@ -587,6 +595,9 @@ class Client(BaseClient):
         response = self.send_handling_redirects(
             request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
         )
+
+        if raise_for_status:
+            response.raise_for_status()
 
         if not stream:
             try:
@@ -1075,6 +1086,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        raise_for_status: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         request = self.build_request(
@@ -1088,7 +1100,11 @@ class AsyncClient(BaseClient):
             cookies=cookies,
         )
         response = await self.send(
-            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout,
+            request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            raise_for_status=raise_for_status,
+            timeout=timeout,
         )
         return response
 
@@ -1099,6 +1115,7 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        raise_for_status: bool = False,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         if request.url.scheme not in ("http", "https"):
@@ -1111,6 +1128,9 @@ class AsyncClient(BaseClient):
         response = await self.send_handling_redirects(
             request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
         )
+
+        if raise_for_status:
+            response.raise_for_status()
 
         if not stream:
             try:
@@ -1410,6 +1430,7 @@ class StreamContextManager:
         *,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        raise_for_status: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         close_client: bool = False,
     ) -> None:
@@ -1417,6 +1438,7 @@ class StreamContextManager:
         self.request = request
         self.auth = auth
         self.allow_redirects = allow_redirects
+        self.raise_for_status = raise_for_status
         self.timeout = timeout
         self.close_client = close_client
 
@@ -1426,6 +1448,7 @@ class StreamContextManager:
             request=self.request,
             auth=self.auth,
             allow_redirects=self.allow_redirects,
+            raise_for_status=self.raise_for_status,
             timeout=self.timeout,
             stream=True,
         )
@@ -1448,6 +1471,7 @@ class StreamContextManager:
             request=self.request,
             auth=self.auth,
             allow_redirects=self.allow_redirects,
+            raise_for_status=self.raise_for_status,
             timeout=self.timeout,
             stream=True,
         )

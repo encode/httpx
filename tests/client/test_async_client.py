@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 
 import httpx
+from tests.compat import nullcontext
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -83,19 +84,43 @@ async def test_stream_request(server):
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_raise_for_status(server):
+@pytest.mark.parametrize(
+    "status_code, is_error_response",
+    [(200, False), (400, True), (404, True), (500, True), (505, True)],
+)
+async def test_raise_for_status_manual(server, status_code, is_error_response):
     async with httpx.AsyncClient() as client:
-        for status_code in (200, 400, 404, 500, 505):
-            response = await client.request(
-                "GET", server.url.copy_with(path=f"/status/{status_code}")
+        response = await client.request(
+            "GET",
+            server.url.copy_with(path=f"/status/{status_code}"),
+            raise_for_status=False,
+        )
+
+        if is_error_response:
+            with pytest.raises(httpx.HTTPError) as exc_info:
+                response.raise_for_status()
+            assert exc_info.value.response == response
+        else:
+            assert response.raise_for_status() is None
+
+
+@pytest.mark.usefixtures("async_environment")
+@pytest.mark.parametrize(
+    "status_code, is_error_response",
+    [(200, False), (400, True), (404, True), (500, True), (505, True)],
+)
+async def test_raise_for_status_auto(server, status_code, is_error_response):
+    async with httpx.AsyncClient() as client:
+        with (
+            pytest.raises(httpx.HTTPError) if is_error_response else nullcontext()
+        ) as exc_info:
+            await client.request(
+                "GET", server.url.copy_with(path=f"/status/{status_code}"),
             )
 
-            if 400 <= status_code < 600:
-                with pytest.raises(httpx.HTTPError) as exc_info:
-                    response.raise_for_status()
-                assert exc_info.value.response == response
-            else:
-                assert response.raise_for_status() is None
+        if is_error_response:
+            assert exc_info.value.response is not None
+            assert exc_info.value.response.status_code == status_code
 
 
 @pytest.mark.usefixtures("async_environment")

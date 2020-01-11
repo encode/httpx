@@ -28,6 +28,7 @@ def request(
     auth: AuthTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     allow_redirects: bool = True,
+    raise_for_status: bool = True,
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     trust_env: bool = True,
@@ -57,6 +58,8 @@ def request(
     * **timeout** - *(optional)* The timeout configuration to use when sending
     the request.
     * **allow_redirects** - *(optional)* Enables or disables HTTP redirects.
+    * **raise_for_status** - *(optional)* Whether receiving an error response should
+    result in raising an `HTTPError`.
     * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
     verify the identity of requested hosts. Either `True` (default CA bundle),
     a path to an SSL certificate file, or `False` (disable verification).
@@ -94,6 +97,7 @@ def request(
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            raise_for_status=raise_for_status,
         )
 
 
@@ -110,6 +114,7 @@ def stream(
     auth: AuthTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     allow_redirects: bool = True,
+    raise_for_status: bool = True,
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     trust_env: bool = True,
@@ -131,6 +136,7 @@ def stream(
         auth=auth,
         timeout=timeout,
         allow_redirects=allow_redirects,
+        raise_for_status=raise_for_status,
         close_client=True,
     )
 
@@ -143,6 +149,7 @@ def get(
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
+    raise_for_status: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -164,6 +171,7 @@ def get(
         cookies=cookies,
         auth=auth,
         allow_redirects=allow_redirects,
+        raise_for_status=raise_for_status,
         cert=cert,
         verify=verify,
         timeout=timeout,
@@ -179,6 +187,7 @@ def options(
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
+    raise_for_status: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -200,6 +209,7 @@ def options(
         cookies=cookies,
         auth=auth,
         allow_redirects=allow_redirects,
+        raise_for_status=raise_for_status,
         cert=cert,
         verify=verify,
         timeout=timeout,
@@ -215,6 +225,7 @@ def head(
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
     allow_redirects: bool = False,  # Note: Differs to usual default.
+    raise_for_status: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -238,6 +249,7 @@ def head(
         cookies=cookies,
         auth=auth,
         allow_redirects=allow_redirects,
+        raise_for_status=raise_for_status,
         cert=cert,
         verify=verify,
         timeout=timeout,
@@ -256,6 +268,7 @@ def post(
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
+    raise_for_status: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -277,6 +290,7 @@ def post(
         cookies=cookies,
         auth=auth,
         allow_redirects=allow_redirects,
+        raise_for_status=raise_for_status,
         cert=cert,
         verify=verify,
         timeout=timeout,
@@ -295,6 +309,7 @@ def put(
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
+    raise_for_status: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -316,6 +331,7 @@ def put(
         cookies=cookies,
         auth=auth,
         allow_redirects=allow_redirects,
+        raise_for_status=raise_for_status,
         cert=cert,
         verify=verify,
         timeout=timeout,
@@ -334,6 +350,7 @@ def patch(
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
+    raise_for_status: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -355,6 +372,7 @@ def patch(
         cookies=cookies,
         auth=auth,
         allow_redirects=allow_redirects,
+        raise_for_status=raise_for_status,
         cert=cert,
         verify=verify,
         timeout=timeout,
@@ -370,6 +388,7 @@ def delete(
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
     allow_redirects: bool = True,
+    raise_for_status: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -391,6 +410,7 @@ def delete(
         cookies=cookies,
         auth=auth,
         allow_redirects=allow_redirects,
+        raise_for_status=raise_for_status,
         cert=cert,
         verify=verify,
         timeout=timeout,

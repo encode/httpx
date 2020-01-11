@@ -46,7 +46,32 @@ The HTTP `GET`, `DELETE`, `HEAD`, and `OPTIONS` methods are specified as not sup
 
 If you really do need to send request data using these http methods you should use the generic `.request` function instead.
 
-## Checking for 4xx/5xx responses
+## Checking for 4xx/5xx error responses
+
+Unlike Requests, HTTPX raises an `HTTPError` when a client error response (4xx) or a server error response (5xx) is received. This is done by automatically calling `response.raise_for_status()`.
+
+```python
+>>> import httpx
+>>> httpx.get('https://httpbin.org/status/400')
+Traceback (most recent call last):
+[...]
+httpx.exceptions.HTTPError: 400 Client Error: Bad Request [...]
+```
+
+You can disable this behavior by passing `raise_for_status=False` when issuing the request. You can then perform custom error handling, or raise an `HTTPError` by calling `.raise_for_status()` manually.
+
+```python
+>>> import httpx
+>>> response = httpx.get('https://httpbin.org/status/400', raise_for_status=False)
+>>> response
+<Response [400 Bad Request]>
+>>> response.is_error
+True
+>>> response.raise_for_status()
+Traceback (most recent call last):
+[...]
+httpx.exceptions.HTTPError: 400 Client Error: Bad Request
+```
 
 We don't support `response.is_ok` since the naming is ambiguous there, and might incorrectly imply an equivalence to `response.status_code == codes.OK`. Instead we provide the `response.is_error` property. Use `if not response.is_error:` instead of `if response.is_ok:`.
 

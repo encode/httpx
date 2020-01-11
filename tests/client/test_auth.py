@@ -10,6 +10,7 @@ from httpx import (
     AsyncClient,
     Auth,
     DigestAuth,
+    HTTPError,
     ProtocolError,
     Request,
     RequestBodyUnavailable,
@@ -252,8 +253,10 @@ async def test_digest_auth_401_response_without_digest_auth_header() -> None:
     auth = DigestAuth(username="tomchristie", password="password123")
 
     client = AsyncClient(dispatch=MockDispatch(auth_header="", status_code=401))
-    response = await client.get(url, auth=auth)
+    with pytest.raises(HTTPError) as exc_info:
+        await client.get(url, auth=auth)
 
+    response = exc_info.value.response
     assert response.status_code == 401
     assert response.json() == {"auth": None}
     assert len(response.history) == 0
@@ -373,8 +376,10 @@ async def test_digest_auth_incorrect_credentials() -> None:
     auth = DigestAuth(username="tomchristie", password="password123")
 
     client = AsyncClient(dispatch=MockDigestAuthDispatch(send_response_after_attempt=2))
-    response = await client.get(url, auth=auth)
+    with pytest.raises(HTTPError) as exc_info:
+        await client.get(url, auth=auth)
 
+    response = exc_info.value.response
     assert response.status_code == 401
     assert len(response.history) == 1
 

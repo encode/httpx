@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 
 import httpx
+from tests.compat import nullcontext
 
 
 def test_get(server):
@@ -83,18 +84,39 @@ def test_raw_iterator(server):
     assert body == b"Hello, world!"
 
 
-def test_raise_for_status(server):
+@pytest.mark.parametrize(
+    "status_code, is_error_response",
+    [(200, False), (400, True), (404, True), (500, True), (505, True)],
+)
+def test_raise_for_status_manual(server, status_code, is_error_response):
     with httpx.Client() as client:
-        for status_code in (200, 400, 404, 500, 505):
-            response = client.request(
-                "GET", server.url.copy_with(path="/status/{}".format(status_code))
-            )
-            if 400 <= status_code < 600:
-                with pytest.raises(httpx.HTTPError) as exc_info:
-                    response.raise_for_status()
-                assert exc_info.value.response == response
-            else:
-                assert response.raise_for_status() is None
+        response = client.request(
+            "GET",
+            server.url.copy_with(path="/status/{}".format(status_code)),
+            raise_for_status=False,
+        )
+        if 400 <= status_code < 600:
+            with pytest.raises(httpx.HTTPError) as exc_info:
+                response.raise_for_status()
+            assert exc_info.value.response == response
+        else:
+            assert response.raise_for_status() is None
+
+
+@pytest.mark.parametrize(
+    "status_code, is_error_response",
+    [(200, False), (400, True), (404, True), (500, True), (505, True)],
+)
+def test_raise_for_status_auto(server, status_code, is_error_response):
+    with httpx.Client() as client:
+        with (
+            pytest.raises(httpx.HTTPError) if is_error_response else nullcontext()
+        ) as exc_info:
+            client.request("GET", server.url.copy_with(path=f"/status/{status_code}"))
+
+        if is_error_response:
+            assert exc_info.value.response is not None
+            assert exc_info.value.response.status_code == status_code
 
 
 def test_options(server):
