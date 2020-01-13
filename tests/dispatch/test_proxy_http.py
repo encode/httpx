@@ -202,6 +202,6 @@ def test_proxy_repr():
 
     assert repr(proxy) == (
         "HTTPProxy(proxy_url=URL('http://127.0.0.1:1080') "
-        "proxy_headers=Headers({'custom': 'Header'}) "
+        "proxy_headers=Headers({'Custom': 'Header'}) "
         "proxy_mode='DEFAULT')"
     )

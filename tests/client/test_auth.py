@@ -31,7 +31,7 @@ class MockDispatch(AsyncDispatcher):
         cert: CertTypes = None,
         timeout: TimeoutTypes = None,
     ) -> Response:
-        headers = [("www-authenticate", self.auth_header)] if self.auth_header else []
+        headers = [("WWW-Authenticate", self.auth_header)] if self.auth_header else []
         body = json.dumps({"auth": request.headers.get("Authorization")}).encode()
         return Response(
             self.status_code, headers=headers, content=body, request=request
@@ -204,7 +204,7 @@ async def test_auth_hidden_header() -> None:
     client = AsyncClient(dispatch=MockDispatch())
     response = await client.get(url, auth=auth)
 
-    assert "'authorization': '[secure]'" in str(response.request.headers)
+    assert "'Authorization': '[secure]'" in str(response.request.headers)
 
 
 @pytest.mark.asyncio
@@ -431,7 +431,7 @@ async def test_auth_history() -> None:
             for index in range(self.repeat):
                 request.headers["Authorization"] = f"Repeat {index}"
                 response = yield request
-                nonces.append(response.headers["www-authenticate"])
+                nonces.append(response.headers["WWW-Authenticate"])
 
             key = ".".join(nonces)
             request.headers["Authorization"] = f"Repeat {key}"

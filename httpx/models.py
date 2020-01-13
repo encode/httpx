@@ -469,7 +469,7 @@ class Headers(typing.MutableMapping[str, str]):
         values = [
             item_value.decode(self.encoding)
             for item_key, item_value in self._list
-            if item_key == get_header_key
+            if item_key.lower() == get_header_key
         ]
 
         if not split_commas:
@@ -499,7 +499,7 @@ class Headers(typing.MutableMapping[str, str]):
 
         items = []
         for header_key, header_value in self._list:
-            if header_key == normalized_key:
+            if header_key.lower() == normalized_key:
                 items.append(header_value.decode(self.encoding))
 
         if items:
@@ -512,12 +512,13 @@ class Headers(typing.MutableMapping[str, str]):
         Set the header `key` to `value`, removing any duplicate entries.
         Retains insertion order.
         """
-        set_key = key.lower().encode(self.encoding)
+        set_key = key.encode(self.encoding)
         set_value = value.encode(self.encoding)
+        lower_key = set_key.lower()
 
         found_indexes = []
         for idx, (item_key, _) in enumerate(self._list):
-            if item_key == set_key:
+            if item_key.lower() == lower_key:
                 found_indexes.append(idx)
 
         for idx in reversed(found_indexes[1:]):
@@ -537,7 +538,7 @@ class Headers(typing.MutableMapping[str, str]):
 
         pop_indexes = []
         for idx, (item_key, _) in enumerate(self._list):
-            if item_key == del_key:
+            if item_key.lower() == del_key:
                 pop_indexes.append(idx)
         if not pop_indexes:
             raise KeyError(key)
@@ -548,7 +549,7 @@ class Headers(typing.MutableMapping[str, str]):
     def __contains__(self, key: typing.Any) -> bool:
         get_header_key = key.lower().encode(self.encoding)
         for header_key, _ in self._list:
-            if header_key == get_header_key:
+            if header_key.lower() == get_header_key:
                 return True
         return False
 
@@ -619,25 +620,25 @@ class Request:
 
         auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
 
-        has_host = "host" in self.headers
-        has_user_agent = "user-agent" in self.headers
-        has_accept = "accept" in self.headers
-        has_accept_encoding = "accept-encoding" in self.headers
-        has_connection = "connection" in self.headers
+        has_host = "Host" in self.headers
+        has_user_agent = "User-Agent" in self.headers
+        has_accept = "Accept" in self.headers
+        has_accept_encoding = "Accept-Encoding" in self.headers
+        has_connection = "Connection" in self.headers
 
         if not has_host:
             url = self.url
             if url.userinfo:
                 url = url.copy_with(username=None, password=None)
-            auto_headers.append((b"host", url.authority.encode("ascii")))
+            auto_headers.append((b"Host", url.authority.encode("ascii")))
         if not has_user_agent:
-            auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
+            auto_headers.append((b"User-Agent", USER_AGENT.encode("ascii")))
         if not has_accept:
-            auto_headers.append((b"accept", b"*/*"))
+            auto_headers.append((b"Accept", b"*/*"))
         if not has_accept_encoding:
-            auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
+            auto_headers.append((b"Accept-Encoding", ACCEPT_ENCODING.encode()))
         if not has_connection:
-            auto_headers.append((b"connection", b"keep-alive"))
+            auto_headers.append((b"Connection", b"keep-alive"))
 
         for item in reversed(auto_headers):
             self.headers.raw.insert(0, item)

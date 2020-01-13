@@ -108,12 +108,12 @@ class DigestAuth(Auth):
             raise RequestBodyUnavailable("Request body is no longer available.")
         response = yield request
 
-        if response.status_code != 401 or "www-authenticate" not in response.headers:
+        if response.status_code != 401 or "WWW-Authenticate" not in response.headers:
             # If the response is not a 401 WWW-Authenticate, then we don't
             # need to build an authenticated request.
             return
 
-        header = response.headers["www-authenticate"]
+        header = response.headers["WWW-Authenticate"]
         try:
             challenge = DigestAuthChallenge.from_header(header)
         except ValueError:

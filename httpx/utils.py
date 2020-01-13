@@ -34,8 +34,8 @@ def normalize_header_key(value: typing.AnyStr, encoding: str = None) -> bytes:
     Coerce str/bytes into a strictly byte-wise HTTP header key.
     """
     if isinstance(value, bytes):
-        return value.lower()
-    return value.encode(encoding or "ascii").lower()
+        return value
+    return value.encode(encoding or "ascii")
 
 
 def normalize_header_value(value: typing.AnyStr, encoding: str = None) -> bytes:

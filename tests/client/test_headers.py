@@ -37,12 +37,12 @@ async def test_client_header():
     assert response.status_code == 200
     assert response.json() == {
         "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
-            "connection": "keep-alive",
-            "example-header": "example-value",
-            "host": "example.org",
-            "user-agent": f"python-httpx/{__version__}",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Example-Header": "example-value",
+            "Host": "example.org",
+            "User-Agent": f"python-httpx/{__version__}",
         }
     }
 
@@ -58,12 +58,12 @@ async def test_header_merge():
     assert response.status_code == 200
     assert response.json() == {
         "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
-            "connection": "keep-alive",
-            "host": "example.org",
-            "user-agent": "python-myclient/0.2.1",
-            "x-auth-token": "FooBarBazToken",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Host": "example.org",
+            "User-Agent": "python-myclient/0.2.1",
+            "X-Auth-Token": "FooBarBazToken",
         }
     }
 
@@ -79,12 +79,12 @@ async def test_header_merge_conflicting_headers():
     assert response.status_code == 200
     assert response.json() == {
         "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
-            "connection": "keep-alive",
-            "host": "example.org",
-            "user-agent": f"python-httpx/{__version__}",
-            "x-auth-token": "BazToken",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Host": "example.org",
+            "User-Agent": f"python-httpx/{__version__}",
+            "X-Auth-Token": "BazToken",
         }
     }
 
@@ -102,23 +102,23 @@ async def test_header_update():
     assert first_response.status_code == 200
     assert first_response.json() == {
         "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
-            "connection": "keep-alive",
-            "host": "example.org",
-            "user-agent": f"python-httpx/{__version__}",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Host": "example.org",
+            "User-Agent": f"python-httpx/{__version__}",
         }
     }
 
     assert second_response.status_code == 200
     assert second_response.json() == {
         "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
-            "another-header": "AThing",
-            "connection": "keep-alive",
-            "host": "example.org",
-            "user-agent": "python-myclient/0.2.1",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Another-Header": "AThing",
+            "Connection": "keep-alive",
+            "Host": "example.org",
+            "User-Agent": "python-myclient/0.2.1",
         }
     }
 
@@ -144,12 +144,12 @@ async def test_host_with_auth_and_port_in_url():
     assert response.status_code == 200
     assert response.json() == {
         "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
-            "connection": "keep-alive",
-            "host": "example.org",
-            "user-agent": f"python-httpx/{__version__}",
-            "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Host": "example.org",
+            "User-Agent": f"python-httpx/{__version__}",
+            "Authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
         }
     }
 
@@ -168,11 +168,11 @@ async def test_host_with_non_default_port_in_url():
     assert response.status_code == 200
     assert response.json() == {
         "headers": {
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
-            "connection": "keep-alive",
-            "host": "example.org:123",
-            "user-agent": f"python-httpx/{__version__}",
-            "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Host": "example.org:123",
+            "User-Agent": f"python-httpx/{__version__}",
+            "Authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
         }
     }

@@ -244,7 +244,7 @@ async def test_cross_domain_redirect():
     headers = {"Authorization": "abc"}
     response = await client.get(url, headers=headers)
     assert response.url == URL("https://example.org/cross_domain_target")
-    assert "authorization" not in response.json()["headers"]
+    assert "Authorization" not in response.json()["headers"]
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -254,7 +254,7 @@ async def test_same_domain_redirect():
     headers = {"Authorization": "abc"}
     response = await client.get(url, headers=headers)
     assert response.url == URL("https://example.org/cross_domain_target")
-    assert response.json()["headers"]["authorization"] == "abc"
+    assert response.json()["headers"]["Authorization"] == "abc"
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -268,7 +268,7 @@ async def test_body_redirect():
     response = await client.post(url, data=data)
     assert response.url == URL("https://example.org/redirect_body_target")
     assert response.json()["body"] == "Example request body"
-    assert "content-length" in response.json()["headers"]
+    assert "Content-Length" in response.json()["headers"]
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -282,7 +282,7 @@ async def test_no_body_redirect():
     response = await client.post(url, data=data)
     assert response.url == URL("https://example.org/redirect_body_target")
     assert response.json()["body"] == ""
-    assert "content-length" not in response.json()["headers"]
+    assert "Content-Length" not in response.json()["headers"]
 
 
 @pytest.mark.usefixtures("async_environment")

@@ -233,9 +233,9 @@ class HTTP2Stream:
             (b":scheme", request.url.scheme.encode("ascii")),
             (b":path", request.url.full_path.encode("ascii")),
         ] + [
-            (k, v)
+            (k.lower(), v)
             for k, v in request.headers.raw
-            if k not in (b"host", b"transfer-encoding")
+            if k.lower() not in (b"host", b"transfer-encoding")
         ]
         end_stream = not has_body
 
