@@ -255,7 +255,7 @@ httpx.exceptions.HttpError: 404 Not Found
 
 Any successful response codes will simply return `None` rather than raising an exception.
 
-``` python
+```python
 >>> r.raise_for_status()
 ```
 
@@ -296,7 +296,7 @@ For large downloads you may want to use streaming responses that do not load the
 
 You can stream the binary content of the response...
 
-```
+```python
 >>> with httpx.stream("GET", "https://www.example.com") as r:
 ...     for data in r.iter_bytes():
 ...         print(data)
@@ -304,7 +304,7 @@ You can stream the binary content of the response...
 
 Or the text of the response...
 
-```
+```python
 >>> with httpx.stream("GET", "https://www.example.com") as r:
 ...     for text in r.iter_text():
 ...         print(text)
@@ -312,7 +312,7 @@ Or the text of the response...
 
 Or stream the text, on a line-by-line basis...
 
-```
+```python
 >>> with httpx.stream("GET", "https://www.example.com") as r:
 ...     for line in r.iter_lines():
 ...         print(line)
@@ -322,7 +322,7 @@ HTTPX will use universal line endings, normalising all cases to `\n`.
 
 In some cases you might want to access the raw bytes on the response without applying any HTTP content decoding. In this case any content encoding that the web server has applied such as `gzip`, `deflate`, or `brotli` will not be automatically decoded.
 
-```
+```python
 >>> with httpx.stream("GET", "https://www.example.com") as r:
 ...     for chunk in r.iter_raw():
 ...         print(chunk)
