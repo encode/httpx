@@ -18,8 +18,14 @@ REQUEST = httpx.Request("GET", "https://example.org")
 
 
 def test_deflate():
+    """
+    Deflate encoding may use either 'zlib' or 'deflate' in the wild.
+
+    https://stackoverflow.com/questions/1838699/how-can-i-decompress-a-gzip-stream-with-zlib#answer-22311297
+    """
     body = b"test 123"
-    compressed_body = zlib.compress(body)
+    compressor = zlib.compressobj(9, zlib.DEFLATED, -zlib.MAX_WBITS)
+    compressed_body = compressor.compress(body) + compressor.flush()
 
     headers = [(b"Content-Encoding", b"deflate")]
     response = httpx.Response(
@@ -28,10 +34,14 @@ def test_deflate():
     assert response.content == body
 
 
-def test_deflate_max_wbits():
+def test_zlib():
+    """
+    Deflate encoding may use either 'zlib' or 'deflate' in the wild.
+
+    https://stackoverflow.com/questions/1838699/how-can-i-decompress-a-gzip-stream-with-zlib#answer-22311297
+    """
     body = b"test 123"
-    compressor = zlib.compressobj(9, zlib.DEFLATED, -zlib.MAX_WBITS)
-    compressed_body = compressor.compress(body) + compressor.flush()
+    compressed_body = zlib.compress(body)
 
     headers = [(b"Content-Encoding", b"deflate")]
     response = httpx.Response(
