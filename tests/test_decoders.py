@@ -19,6 +19,17 @@ REQUEST = httpx.Request("GET", "https://example.org")
 
 def test_deflate():
     body = b"test 123"
+    compressed_body = zlib.compress(body)
+
+    headers = [(b"Content-Encoding", b"deflate")]
+    response = httpx.Response(
+        200, headers=headers, content=compressed_body, request=REQUEST
+    )
+    assert response.content == body
+
+
+def test_deflate_max_wbits():
+    body = b"test 123"
     compressor = zlib.compressobj(9, zlib.DEFLATED, -zlib.MAX_WBITS)
     compressed_body = compressor.compress(body) + compressor.flush()
 
