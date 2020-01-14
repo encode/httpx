@@ -5,16 +5,19 @@ from types import TracebackType
 import hstspreload
 
 from .auth import Auth, AuthTypes, BasicAuth, FunctionAuth
-from .backends.base import ConcurrencyBackend
+from .backends.base import ConcurrencyBackend, lookup_backend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
+    DEFAULT_RETRIES_CONFIG,
     DEFAULT_TIMEOUT_CONFIG,
     UNSET,
     CertTypes,
     PoolLimits,
     ProxiesTypes,
     Proxy,
+    Retries,
+    RetriesTypes,
     Timeout,
     TimeoutTypes,
     UnsetType,
@@ -32,9 +35,11 @@ from .exceptions import (
     InvalidURL,
     RedirectLoop,
     RequestBodyUnavailable,
+    RetryableError,
     TooManyRedirects,
 )
 from .models import (
+    IDEMPOTENT_HTTP_METHODS,
     URL,
     Cookies,
     CookieTypes,
@@ -64,6 +69,7 @@ class BaseClient:
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        retries: RetriesTypes = DEFAULT_RETRIES_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         trust_env: bool = True,
@@ -81,6 +87,7 @@ class BaseClient:
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
         self.timeout = Timeout(timeout)
+        self.retries = Retries(retries)
         self.max_redirects = max_redirects
         self.trust_env = trust_env
         self.netrc = NetRCInfo()
@@ -440,6 +447,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        retries: RetriesTypes = DEFAULT_RETRIES_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
@@ -453,6 +461,7 @@ class Client(BaseClient):
             headers=headers,
             cookies=cookies,
             timeout=timeout,
+            retries=retries,
             max_redirects=max_redirects,
             base_url=base_url,
             trust_env=trust_env,
@@ -941,6 +950,7 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        retries: RetriesTypes = DEFAULT_RETRIES_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
@@ -956,6 +966,7 @@ class AsyncClient(BaseClient):
             headers=headers,
             cookies=cookies,
             timeout=timeout,
+            retries=retries,
             max_redirects=max_redirects,
             base_url=base_url,
             trust_env=trust_env,
@@ -1100,6 +1111,7 @@ class AsyncClient(BaseClient):
         auth: AuthTypes = None,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
     ) -> Response:
         if request.url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
@@ -1108,8 +1120,14 @@ class AsyncClient(BaseClient):
 
         auth = self.build_auth(request, auth)
 
-        response = await self.send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        retries = self.retries if isinstance(retries, UnsetType) else Retries(retries)
+
+        response = await self.send_handling_retries(
+            request,
+            auth=auth,
+            retries=retries,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
         )
 
         if not stream:
@@ -1119,6 +1137,41 @@ class AsyncClient(BaseClient):
                 await response.aclose()
 
         return response
+
+    async def send_handling_retries(
+        self,
+        request: Request,
+        auth: Auth,
+        retries: Retries,
+        timeout: Timeout,
+        allow_redirects: bool = True,
+    ) -> Response:
+        backend = lookup_backend()
+        retry_flow = retries.retry_flow(request)
+
+        next(retry_flow)
+
+        while True:
+            try:
+                return await self.send_handling_redirects(
+                    request,
+                    auth=auth,
+                    timeout=timeout,
+                    allow_redirects=allow_redirects,
+                )
+            except RetryableError as exc:
+                logger.debug(f"HTTP Request failed - {exc!r}")
+
+                if request.method.upper() not in IDEMPOTENT_HTTP_METHODS:
+                    raise
+
+                try:
+                    request, delay = retry_flow.send(exc)
+                except StopIteration:
+                    raise exc from None
+                else:
+                    logger.debug(f"Retrying in {delay} seconds")
+                    await backend.sleep(delay)
 
     async def send_handling_redirects(
         self,

@@ -111,6 +111,9 @@ class ConcurrencyBackend:
     ) -> BaseSocketStream:
         raise NotImplementedError()  # pragma: no cover
 
+    async def sleep(self, delay: float) -> None:
+        raise NotImplementedError()  # pragma: no cover
+
     def time(self) -> float:
         raise NotImplementedError()  # pragma: no cover
 

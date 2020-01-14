@@ -225,6 +225,9 @@ class AsyncioBackend(ConcurrencyBackend):
 
         return SocketStream(stream_reader=stream_reader, stream_writer=stream_writer)
 
+    async def sleep(self, delay: float) -> None:
+        await asyncio.sleep(delay)
+
     def time(self) -> float:
         loop = asyncio.get_event_loop()
         return loop.time()

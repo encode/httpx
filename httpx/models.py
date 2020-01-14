@@ -73,6 +73,10 @@ HeaderTypes = typing.Union[
 
 CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 
+IDEMPOTENT_HTTP_METHODS = frozenset(
+    ("HEAD", "GET", "PUT", "DELETE", "OPTIONS", "PATCH")
+)
+
 
 class URL:
     def __init__(

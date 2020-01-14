@@ -17,6 +17,12 @@ class HTTPError(Exception):
         super().__init__(*args)
 
 
+class RetryableError(HTTPError):
+    """
+    Exceptions that represent errors we can retry on by issuing another request.
+    """
+
+
 # Timeout exceptions...
 
 
@@ -26,13 +32,13 @@ class TimeoutException(HTTPError):
     """
 
 
-class ConnectTimeout(TimeoutException):
+class ConnectTimeout(RetryableError, TimeoutException):
     """
     Timeout while establishing a connection.
     """
 
 
-class ReadTimeout(TimeoutException):
+class ReadTimeout(RetryableError, TimeoutException):
     """
     Timeout while reading response data.
     """
@@ -44,13 +50,13 @@ class WriteTimeout(TimeoutException):
     """
 
 
-class PoolTimeout(TimeoutException):
+class PoolTimeout(RetryableError, TimeoutException):
     """
     Timeout while waiting to acquire a connection from the pool.
     """
 
 
-class ProxyError(HTTPError):
+class ProxyError(RetryableError, HTTPError):
     """
     Error from within a proxy
     """
@@ -74,7 +80,7 @@ class DecodingError(HTTPError):
 # Network exceptions...
 
 
-class NetworkError(HTTPError):
+class NetworkError(RetryableError, HTTPError):
     """
     A failure occurred while trying to access the network.
     """

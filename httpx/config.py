@@ -1,3 +1,4 @@
+import itertools
 import os
 import ssl
 import typing
@@ -5,7 +6,8 @@ from pathlib import Path
 
 import certifi
 
-from .models import URL, Headers, HeaderTypes, URLTypes
+from .exceptions import RetryableError
+from .models import URL, Headers, HeaderTypes, Request, URLTypes
 from .utils import get_ca_bundle_from_env, get_logger
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
@@ -16,6 +18,7 @@ TimeoutTypes = typing.Union[
 ProxiesTypes = typing.Union[
     URLTypes, "Proxy", typing.Dict[URLTypes, typing.Union[URLTypes, "Proxy"]]
 ]
+RetriesTypes = typing.Union[None, int, "Retries"]
 
 
 DEFAULT_CIPHERS = ":".join(
@@ -337,6 +340,54 @@ class Proxy:
         )
 
 
+class Retries:
+    def __init__(
+        self,
+        retries: RetriesTypes = None,
+        *,
+        limit: typing.Union[typing.Optional[int], UnsetType] = UNSET,
+        backoff_factor: typing.Union[float, UnsetType] = UNSET,
+    ) -> None:
+        if isinstance(retries, Retries):
+            assert isinstance(limit, UnsetType)
+            assert isinstance(backoff_factor, UnsetType)
+            self.limit: typing.Optional[int] = retries.limit
+            self.backoff_factor: float = retries.backoff_factor
+
+        else:
+            if isinstance(retries, int):
+                self.limit = retries
+            else:
+                assert retries is None
+                self.limit = 3 if isinstance(limit, UnsetType) else limit
+
+            self.backoff_factor = (
+                0.2 if isinstance(backoff_factor, UnsetType) else backoff_factor
+            )
+
+    def retry_flow(
+        self, request: Request
+    ) -> typing.Generator[typing.Tuple[Request, float], RetryableError, None]:
+        retries_left = self.limit
+        delays = self._delays()
+        delay = 0.0
+
+        while True:
+            _ = yield request, delay
+
+            if not retries_left:
+                return
+
+            retries_left -= 1
+            delay = next(delays)
+
+    def _delays(self) -> typing.Iterator[float]:
+        yield 0  # Retry immediately.
+        for n in itertools.count(2):
+            yield self.backoff_factor * (2 ** (n - 2))
+
+
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
 DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
 DEFAULT_MAX_REDIRECTS = 20
+DEFAULT_RETRIES_CONFIG = Retries(limit=3, backoff_factor=0.2)

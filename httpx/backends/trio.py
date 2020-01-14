@@ -131,6 +131,9 @@ class TrioBackend(ConcurrencyBackend):
 
         raise ConnectTimeout()
 
+    async def sleep(self, delay: float) -> None:
+        await trio.sleep(delay)
+
     def time(self) -> float:
         return trio.current_time()
 
