@@ -77,7 +77,7 @@ class URLLib3Dispatcher(SyncDispatcher):
             )
         else:
             return urllib3.ProxyManager(
-                proxy_url=proxy.url,
+                proxy_url=str(proxy.url),
                 proxy_headers=dict(proxy.headers),
                 ssl_context=ssl_context,
                 num_pools=num_pools,
