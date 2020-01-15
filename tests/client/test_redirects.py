@@ -15,6 +15,7 @@ from httpx import (
     codes,
 )
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx.content_streams import AsyncIteratorStream
 from httpx.dispatch.base import AsyncDispatcher
 
 
@@ -30,9 +31,16 @@ class MockDispatch(AsyncDispatcher):
             return Response(codes.OK, request=request)
 
         elif request.url.path == "/redirect_301":
+
+            async def body():
+                yield b"<a href='https://example.org/'>here</a>"
+
             status_code = codes.MOVED_PERMANENTLY
             headers = {"location": "https://example.org/"}
-            return Response(status_code, headers=headers, request=request)
+            stream = AsyncIteratorStream(aiterator=body())
+            return Response(
+                status_code, stream=stream, headers=headers, request=request
+            )
 
         elif request.url.path == "/redirect_302":
             status_code = codes.FOUND
@@ -283,6 +291,16 @@ async def test_no_body_redirect():
     assert response.url == URL("https://example.org/redirect_body_target")
     assert response.json()["body"] == ""
     assert "content-length" not in response.json()["headers"]
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_can_stream_if_no_redirect():
+    client = AsyncClient(dispatch=MockDispatch())
+    url = "https://example.org/redirect_301"
+    async with client.stream("GET", url, allow_redirects=False) as response:
+        assert not response.is_closed
+    assert response.status_code == codes.MOVED_PERMANENTLY
+    assert response.headers["location"] == "https://example.org/"
 
 
 @pytest.mark.usefixtures("async_environment")
