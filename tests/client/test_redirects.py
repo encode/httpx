@@ -56,6 +56,10 @@ class MockDispatch(AsyncDispatcher):
             headers = {"location": "/"}
             return Response(codes.SEE_OTHER, headers=headers, request=request)
 
+        elif request.url.path == "/malformed_redirect":
+            headers = {"location": "https://:443/"}
+            return Response(codes.SEE_OTHER, headers=headers, request=request)
+
         elif request.url.path == "/no_scheme_redirect":
             headers = {"location": "//example.org/"}
             return Response(codes.SEE_OTHER, headers=headers, request=request)
@@ -171,6 +175,16 @@ async def test_disallow_redirects():
 async def test_relative_redirect():
     client = AsyncClient(dispatch=MockDispatch())
     response = await client.get("https://example.org/relative_redirect")
+    assert response.status_code == codes.OK
+    assert response.url == URL("https://example.org/")
+    assert len(response.history) == 1
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_malformed_redirect():
+    # https://github.com/encode/httpx/issues/771
+    client = AsyncClient(dispatch=MockDispatch())
+    response = await client.get("http://example.org/malformed_redirect")
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org/")
     assert len(response.history) == 1
