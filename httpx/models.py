@@ -201,7 +201,7 @@ class URL:
             or "port" in kwargs
         ):
             host = kwargs.pop("host", self.host)
-            port = kwargs.pop("port", self.port)
+            port = kwargs.pop("port", None if self.is_relative_url else self.port)
             username = kwargs.pop("username", self.username)
             password = kwargs.pop("password", self.password)
 
@@ -216,7 +216,10 @@ class URL:
 
             kwargs["authority"] = authority
 
-        return URL(self._uri_reference.copy_with(**kwargs).unsplit())
+        return URL(
+            self._uri_reference.copy_with(**kwargs).unsplit(),
+            allow_relative=self.is_relative_url,
+        )
 
     def join(self, relative_url: URLTypes) -> "URL":
         """
