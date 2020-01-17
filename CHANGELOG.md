@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.11.1 (January 17th, 2020)
+
+### Fixed
+
+* Fixed usage of `proxies=...` on `Client()`. (Pull #763)
+* Support both `zlib` and `deflate` style encodings on `Content-Encoding: deflate`. (Pull #763)
+* Fix for streaming a redirect response body with `allow_redirects=False`. (Pull #766)
+
 ## 0.11.0 (January 9th, 2020)
 
 The 0.11 release reintroduces our sync support, so that `httpx` now supports both a standard thread-concurrency API, and an async API.
