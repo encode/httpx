@@ -29,7 +29,7 @@ from .exceptions import (
     WriteTimeout,
 )
 from .models import URL, Cookies, Headers, QueryParams, Request, Response
-from .retries import RetryLimits, RetryOnConnectionFailures
+from .retries import RetryLimits
 from .status_codes import StatusCode, codes
 
 __all__ = [
@@ -58,7 +58,6 @@ __all__ = [
     "Timeout",
     "Retries",
     "RetryLimits",
-    "RetryOnConnectionFailures",
     "TooManyRetries",
     "ConnectTimeout",
     "CookieConflict",

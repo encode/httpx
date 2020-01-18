@@ -346,44 +346,56 @@ class Retries:
 
     Holds a retry limiting policy, and implements a configurable exponential
     backoff algorithm.
-
-    **Usage**:
-
-    ```python
-    httpx.Retries()   # Default: at most 3 retries on connection failures.
-    httpx.Retries(0)  # Disable retries.
-    httpx.Retries(5)  # At most 5 retries on connection failures.
-    httpx.Retries(    # at most 3 retries on connection failures, with slower backoff.
-        5, backoff_factor=1.0
-    )
-    # Custom retry limiting policy.
-    httpx.Retries(RetryOnSomeCondition(...))
-    # At most 5 retries on connection failures, custom policy for other errors.
-    httpx.Retries(httpx.RetryOnConnectionFailures(5) | RetryOnSomeOtherCondition(...))
-    ```
     """
 
     def __init__(
         self,
-        limits: RetriesTypes = 3,
-        *,
-        backoff_factor: typing.Union[float, UnsetType] = UNSET,
+        *retries: RetriesTypes,
+        backoff_factor: float = None,
     ) -> None:
-        if isinstance(limits, int):
-            limits = RetryOnConnectionFailures(limits) if limits > 0 else DontRetry()
-        elif isinstance(limits, Retries):
-            if isinstance(backoff_factor, UnsetType):
-                backoff_factor = limits.backoff_factor
-            limits = limits.limits
-        else:
-            assert isinstance(limits, RetryLimits)
+        limits: RetriesTypes
 
-        if isinstance(backoff_factor, UnsetType):
+        if len(retries) == 0:
+            limits = RetryOnConnectionFailures(3)
+        elif len(retries) == 1:
+            limits = retries[0]
+            if isinstance(limits, int):
+                limits = (
+                    RetryOnConnectionFailures(limits) if limits > 0 else DontRetry()
+                )
+            elif isinstance(limits, Retries):
+                assert backoff_factor is None
+                backoff_factor = limits.backoff_factor
+                limits = limits.limits
+            else:
+                raise NotImplementedError(
+                    "Passing a `RetryLimits` subclass as a single argument "
+                    "is not supported. You must explicitly pass the number of times "
+                    "to retry on connection failures. "
+                    "For example: `Retries(3, MyRetryLimits(...))`."
+                )
+        elif len(retries) == 2:
+            default, custom = retries
+            assert isinstance(custom, RetryLimits)
+            limits = Retries(default).limits | custom
+        else:
+            raise NotImplementedError(
+                "Composing more than 2 retry limits is not supported yet."
+            )
+
+        if backoff_factor is None:
             backoff_factor = 0.2
 
         assert backoff_factor > 0
         self.limits: RetryLimits = limits
         self.backoff_factor: float = backoff_factor
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return (
+            isinstance(other, Retries)
+            and self.limits == other.limits
+            and self.backoff_factor == other.backoff_factor
+        )
 
     def get_delays(self) -> typing.Iterator[float]:
         """

@@ -22,51 +22,20 @@ class RetryLimits:
         """
         Execute the retry flow.
 
-        To dispatch a request, you should `yield` it, and prepare for the following
-        situations:
+        To dispatch a request, you should `yield` it, and prepare for either
+        getting a response, or an `HTTPError` being raised.
 
-        * The request resulted in an `httpx.HTTPError`. If it should be retried on,
-        you should make any necessary modifications to the request, and continue
-        yielding. If you've exceeded the maximum number of retries, wrap the error
-        in `httpx.TooManyRetries()` and raise the result. If it shouldn't be retried
-        on, re-`raise` the error as-is.
-        * The request went through and resulted in the client sending back a `response`.
-        If it should be retried on (e.g. because it is an error response), you
-        should make any necessary modifications to the request, and continue yielding.
-        Otherwise, `return` to terminate the retry flow.
+        In each case, decide whether to retry:
 
-        Note that modifying the request may cause downstream mechanisms that rely
-        on request signing to fail. For example, this could be the case of
-        certain authentication schemes.
-
-        A typical pseudo-code implementation based on a while-loop and try/except
-        blocks may look like this...
-
-        ```python
-        while True:
-            try:
-                response = yield request
-            except httpx.HTTPError as exc:
-                if not has_retries_left():
-                    raise TooManyRetries(exc)
-                if should_retry_on_exception(exc):
-                    increment_retries_left()
-                    # (Optionally modify the request here.)
-                    continue
-                else:
-                    raise
-            else:
-                if should_retry_on_response(response):
-                    # (Optionally modify the request here.)
-                    continue
-                return
-        ```
+        * If so, continue yielding, unless a maximum number of retries was exceeded.
+        In that case, raise a `TooManyRetries` exception.
+        * Otherwise, `return`, or `raise` the exception.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def __or__(self, other: typing.Any) -> "RetryLimits":
         if not isinstance(other, RetryLimits):
-            raise NotImplementedError
+            raise NotImplementedError  # pragma: no cover
         return _OrRetries(self, other)
 
 
@@ -78,6 +47,13 @@ class _OrRetries(RetryLimits):
     def __init__(self, left: RetryLimits, right: RetryLimits) -> None:
         self.left = left
         self.right = right
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return (
+            isinstance(other, _OrRetries)
+            and self.left == other.left
+            and self.right == other.right
+        )
 
     def retry_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         left_flow = self.left.retry_flow(request)
@@ -124,6 +100,9 @@ class _OrRetries(RetryLimits):
 
 
 class DontRetry(RetryLimits):
+    def __eq__(self, other: typing.Any) -> bool:
+        return type(other) == DontRetry
+
     def retry_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         # Send the initial request, and never retry.
         # Don't raise a `TooManyRetries` exception because this should really be
@@ -149,6 +128,11 @@ class RetryOnConnectionFailures(RetryLimits):
     def __init__(self, limit: int = 3) -> None:
         assert limit >= 0
         self.limit = limit
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return (
+            isinstance(other, RetryOnConnectionFailures) and self.limit == other.limit
+        )
 
     def _should_retry_on_exception(self, exc: HTTPError) -> bool:
         for exc_cls in self._RETRYABLE_EXCEPTIONS:
