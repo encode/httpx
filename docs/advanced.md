@@ -466,3 +466,59 @@ If you do need to make HTTPS connections to a local server, for example to test 
 >>> r
 Response <200 OK>
 ```
+
+## Retries
+
+Communicating with a peer over a network is by essence subject to errors. HTTPX provides built-in retry functionality to increase the resilience to unexpected issues such as network faults or connection issues.
+
+The default behavior is to retry at most 3 times on connection and network errors before marking the request as failed and bubbling up any exceptions. The delay between retries is increased each time to prevent overloading the requested server.
+
+### Setting and disabling retries
+
+You can set retries for an individual request:
+
+```python
+# Using the top-level API:
+httpx.get('https://www.example.org', retries=5)
+
+# Using a client instance:
+with httpx.Client() as client:
+    client.get("https://www.example.org", retries=5)
+```
+
+Or disable retries for an individual request:
+
+```python
+# Using the top-level API:
+httpx.get('https://www.example.org', retries=None)
+
+# Using a client instance:
+with httpx.Client() as client:
+    client.get("https://www.example.org", retries=None)
+```
+
+### Setting default retries on the client
+
+You can set the retry behavior on a client instance, which results in the given behavior being used as the default for requests made with this client:
+
+```python
+client = httpx.Client()              # Default behavior: retry at most 3 times.
+client = httpx.Client(retries=5)     # Retry at most 5 times.
+client = httpx.Client(retries=None)  # Disable retries by default.
+```
+
+### Fine-tuning the retries configuration
+
+The `retries` argument also accepts an instance of `httpx.Retries()`, in case you need more fine-grained control over the retries behavior. It accepts the following parameters:
+
+- `limit`: the maximum number of retryable errors to retry on.
+- `backoff_factor`: a number representing how fast to increase the retry delay. For example, a value of `0.2` (the default) corresponds to this sequence of delays: `(0s, 0.2s, 0.4s, 0.8s, 1.6s, ...)`.
+
+```python
+import httpx
+
+# Retry at most 5 times, and space out retries further away
+# in time than the default (0s, 1s, 2s, 4s, ...).
+retries = httpx.Retries(limit=5, backoff_factor=1.0)
+response = httpx.get('https://www.example.com', retries=retries)
+```
