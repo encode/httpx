@@ -348,11 +348,7 @@ class Retries:
     backoff algorithm.
     """
 
-    def __init__(
-        self,
-        *retries: RetriesTypes,
-        backoff_factor: float = None,
-    ) -> None:
+    def __init__(self, *retries: RetriesTypes, backoff_factor: float = None) -> None:
         limits: RetriesTypes
 
         if len(retries) == 0:
