@@ -5,16 +5,19 @@ from types import TracebackType
 import hstspreload
 
 from .auth import Auth, AuthTypes, BasicAuth, FunctionAuth
-from .backends.base import ConcurrencyBackend
+from .backends.base import ConcurrencyBackend, lookup_backend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
+    DEFAULT_RETRIES_CONFIG,
     DEFAULT_TIMEOUT_CONFIG,
     UNSET,
     CertTypes,
     PoolLimits,
     ProxiesTypes,
     Proxy,
+    Retries,
+    RetriesTypes,
     Timeout,
     TimeoutTypes,
     UnsetType,
@@ -33,6 +36,7 @@ from .exceptions import (
     RedirectLoop,
     RequestBodyUnavailable,
     TooManyRedirects,
+    TooManyRetries,
 )
 from .models import (
     URL,
@@ -64,6 +68,7 @@ class BaseClient:
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        retries: RetriesTypes = DEFAULT_RETRIES_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         trust_env: bool = True,
@@ -81,6 +86,7 @@ class BaseClient:
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
         self.timeout = Timeout(timeout)
+        self.retries = Retries(retries)
         self.max_redirects = max_redirects
         self.trust_env = trust_env
         self.netrc = NetRCInfo()
@@ -941,6 +947,7 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        retries: RetriesTypes = DEFAULT_RETRIES_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
@@ -956,6 +963,7 @@ class AsyncClient(BaseClient):
             headers=headers,
             cookies=cookies,
             timeout=timeout,
+            retries=retries,
             max_redirects=max_redirects,
             base_url=base_url,
             trust_env=trust_env,
@@ -1106,10 +1114,16 @@ class AsyncClient(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
+        retries = self.retries
+
         auth = self.build_auth(request, auth)
 
-        response = await self.send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        response = await self.send_handling_retries(
+            request,
+            auth=auth,
+            timeout=timeout,
+            retries=retries,
+            allow_redirects=allow_redirects,
         )
 
         if not stream:
@@ -1119,6 +1133,54 @@ class AsyncClient(BaseClient):
                 await response.aclose()
 
         return response
+
+    async def send_handling_retries(
+        self,
+        request: Request,
+        auth: Auth,
+        retries: Retries,
+        timeout: Timeout,
+        allow_redirects: bool = True,
+    ) -> Response:
+        backend = lookup_backend()
+
+        delays = retries.get_delays()
+        retry_flow = retries.retry_flow(request)
+
+        # Initialize the generators.
+        next(delays)
+        request = next(retry_flow)
+
+        while True:
+            try:
+                response = await self.send_handling_redirects(
+                    request,
+                    auth=auth,
+                    timeout=timeout,
+                    allow_redirects=allow_redirects,
+                )
+            except HTTPError as exc:
+                logger.debug(f"HTTP Request failed: {exc!r}")
+                try:
+                    request = retry_flow.throw(type(exc), exc, exc.__traceback__)
+                except (TooManyRetries, HTTPError):
+                    raise
+                else:
+                    delay = next(delays)
+                    logger.debug(f"Retrying in {delay} seconds")
+                    await backend.sleep(delay)
+            else:
+                try:
+                    request = retry_flow.send(response)
+                except TooManyRetries:
+                    raise
+                except StopIteration:
+                    return response
+                else:
+                    delay = next(delays)
+                    logger.debug(f"Retrying in {delay} seconds")
+                    await backend.sleep(delay)
+                    continue
 
     async def send_handling_redirects(
         self,

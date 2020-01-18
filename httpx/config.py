@@ -1,3 +1,4 @@
+import itertools
 import os
 import ssl
 import typing
@@ -5,7 +6,8 @@ from pathlib import Path
 
 import certifi
 
-from .models import URL, Headers, HeaderTypes, URLTypes
+from .models import URL, Headers, HeaderTypes, Request, Response, URLTypes
+from .retries import DontRetry, RetryLimits, RetryOnConnectionFailures
 from .utils import get_ca_bundle_from_env, get_logger
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
@@ -16,6 +18,7 @@ TimeoutTypes = typing.Union[
 ProxiesTypes = typing.Union[
     URLTypes, "Proxy", typing.Dict[URLTypes, typing.Union[URLTypes, "Proxy"]]
 ]
+RetriesTypes = typing.Union[int, "RetryLimits", "Retries"]
 
 
 DEFAULT_CIPHERS = ":".join(
@@ -337,6 +340,71 @@ class Proxy:
         )
 
 
+class Retries:
+    """
+    Retries configuration.
+
+    Holds a retry limiting policy, and implements a configurable exponential
+    backoff algorithm.
+
+    **Usage**:
+
+    ```python
+    httpx.Retries()   # Default: at most 3 retries on connection failures.
+    httpx.Retries(0)  # Disable retries.
+    httpx.Retries(5)  # At most 5 retries on connection failures.
+    httpx.Retries(    # at most 3 retries on connection failures, with slower backoff.
+        5, backoff_factor=1.0
+    )
+    # Custom retry limiting policy.
+    httpx.Retries(RetryOnSomeCondition(...))
+    # At most 5 retries on connection failures, custom policy for other errors.
+    httpx.Retries(httpx.RetryOnConnectionFailures(5) | RetryOnSomeOtherCondition(...))
+    ```
+    """
+
+    def __init__(
+        self,
+        limits: RetriesTypes = 3,
+        *,
+        backoff_factor: typing.Union[float, UnsetType] = UNSET,
+    ) -> None:
+        if isinstance(limits, int):
+            limits = RetryOnConnectionFailures(limits) if limits > 0 else DontRetry()
+        elif isinstance(limits, Retries):
+            if isinstance(backoff_factor, UnsetType):
+                backoff_factor = limits.backoff_factor
+            limits = limits.limits
+        else:
+            assert isinstance(limits, RetryLimits)
+
+        if isinstance(backoff_factor, UnsetType):
+            backoff_factor = 0.2
+
+        assert backoff_factor > 0
+        self.limits: RetryLimits = limits
+        self.backoff_factor: float = backoff_factor
+
+    def get_delays(self) -> typing.Iterator[float]:
+        """
+        Used by clients to determine how long to wait before issuing a new request.
+        """
+        yield 0  # Send the initial request.
+        yield 0  # Retry immediately.
+        for n in itertools.count(2):
+            yield self.backoff_factor * (2 ** (n - 2))
+
+    def retry_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+        """
+        Used by clients to determine what to do when failing to receive a response,
+        or when a response was received.
+
+        Delegates to the retry limiting policy.
+        """
+        yield from self.limits.retry_flow(request)
+
+
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
+DEFAULT_RETRIES_CONFIG = Retries(3, backoff_factor=0.2)
 DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
 DEFAULT_MAX_REDIRECTS = 20

@@ -2,7 +2,7 @@ from .__version__ import __description__, __title__, __version__
 from .api import delete, get, head, options, patch, post, put, request, stream
 from .auth import Auth, BasicAuth, DigestAuth
 from .client import AsyncClient, Client
-from .config import PoolLimits, Proxy, Timeout
+from .config import PoolLimits, Proxy, Retries, Timeout
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import (
@@ -25,9 +25,11 @@ from .exceptions import (
     StreamConsumed,
     TimeoutException,
     TooManyRedirects,
+    TooManyRetries,
     WriteTimeout,
 )
 from .models import URL, Cookies, Headers, QueryParams, Request, Response
+from .retries import RetryLimits, RetryOnConnectionFailures
 from .status_codes import StatusCode, codes
 
 __all__ = [
@@ -54,6 +56,10 @@ __all__ = [
     "PoolLimits",
     "Proxy",
     "Timeout",
+    "Retries",
+    "RetryLimits",
+    "RetryOnConnectionFailures",
+    "TooManyRetries",
     "ConnectTimeout",
     "CookieConflict",
     "ConnectionClosed",
