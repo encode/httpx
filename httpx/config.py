@@ -18,7 +18,7 @@ TimeoutTypes = typing.Union[
 ProxiesTypes = typing.Union[
     URLTypes, "Proxy", typing.Dict[URLTypes, typing.Union[URLTypes, "Proxy"]]
 ]
-RetriesTypes = typing.Union[int, "RetryLimits", "Retries"]
+RetriesTypes = typing.Union[int, "Retries"]
 
 
 DEFAULT_CIPHERS = ":".join(
@@ -344,45 +344,25 @@ class Retries:
     """
     Retries configuration.
 
-    Holds a retry limiting policy, and implements a configurable exponential
-    backoff algorithm.
+    Defines the retry limiting policy, and implements a configurable
+    exponential backoff algorithm.
     """
 
-    def __init__(self, *retries: RetriesTypes, backoff_factor: float = None) -> None:
-        limits: RetriesTypes
-
-        if len(retries) == 0:
-            limits = RetryOnConnectionFailures(3)
-        elif len(retries) == 1:
-            limits = retries[0]
-            if isinstance(limits, int):
-                limits = (
-                    RetryOnConnectionFailures(limits) if limits > 0 else DontRetry()
-                )
-            elif isinstance(limits, Retries):
-                assert backoff_factor is None
-                backoff_factor = limits.backoff_factor
-                limits = limits.limits
-            else:
-                raise NotImplementedError(
-                    "Passing a `RetryLimits` subclass as a single argument "
-                    "is not supported. You must explicitly pass the number of times "
-                    "to retry on connection failures. "
-                    "For example: `Retries(3, MyRetryLimits(...))`."
-                )
-        elif len(retries) == 2:
-            default, custom = retries
-            assert isinstance(custom, RetryLimits)
-            limits = Retries(default).limits | custom
-        else:
-            raise NotImplementedError(
-                "Composing more than 2 retry limits is not supported yet."
-            )
+    def __init__(
+        self, retries: RetriesTypes = 3, *, backoff_factor: float = None
+    ) -> None:
+        if isinstance(retries, int):
+            limits = RetryOnConnectionFailures(retries) if retries > 0 else DontRetry()
+        elif isinstance(retries, Retries):
+            assert backoff_factor is None
+            backoff_factor = retries.backoff_factor
+            limits = retries.limits
 
         if backoff_factor is None:
             backoff_factor = 0.2
 
         assert backoff_factor > 0
+
         self.limits: RetryLimits = limits
         self.backoff_factor: float = backoff_factor
 
@@ -406,8 +386,6 @@ class Retries:
         """
         Used by clients to determine what to do when failing to receive a response,
         or when a response was received.
-
-        Delegates to the retry limiting policy.
         """
         yield from self.limits.retry_flow(request)
 

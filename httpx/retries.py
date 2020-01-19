@@ -22,8 +22,10 @@ class RetryLimits:
         """
         Execute the retry flow.
 
-        To dispatch a request, you should `yield` it, and prepare for either
-        getting a response, or an `HTTPError` being raised.
+        To dispatch a request, you should `yield` it, and prepare for either:
+
+        * The client sending back a response.
+        * An `HTTPError` being raised.
 
         In each case, decide whether to retry:
 
@@ -33,71 +35,6 @@ class RetryLimits:
         """
         raise NotImplementedError  # pragma: no cover
 
-    def __or__(self, other: typing.Any) -> "RetryLimits":
-        if not isinstance(other, RetryLimits):
-            raise NotImplementedError  # pragma: no cover
-        return _OrRetries(self, other)
-
-
-class _OrRetries(RetryLimits):
-    """
-    Helper for composing retry limits.
-    """
-
-    def __init__(self, left: RetryLimits, right: RetryLimits) -> None:
-        self.left = left
-        self.right = right
-
-    def __eq__(self, other: typing.Any) -> bool:
-        return (
-            isinstance(other, _OrRetries)
-            and self.left == other.left
-            and self.right == other.right
-        )
-
-    def retry_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
-        left_flow = self.left.retry_flow(request)
-        right_flow = self.right.retry_flow(request)
-
-        request = next(left_flow)
-        request = next(right_flow)
-
-        while True:
-            try:
-                response = yield request
-            except HTTPError as exc:
-                try:
-                    request = left_flow.throw(type(exc), exc, exc.__traceback__)
-                except TooManyRetries:
-                    raise
-                except HTTPError:
-                    try:
-                        request = right_flow.throw(type(exc), exc, exc.__traceback__)
-                    except TooManyRetries:
-                        raise
-                    except HTTPError:
-                        raise
-                    else:
-                        continue
-                else:
-                    continue
-            else:
-                try:
-                    request = left_flow.send(response)
-                except TooManyRetries:
-                    raise
-                except StopIteration:
-                    try:
-                        request = right_flow.send(response)
-                    except TooManyRetries:
-                        raise
-                    except StopIteration:
-                        return
-                    else:
-                        continue
-                else:
-                    continue
-
 
 class DontRetry(RetryLimits):
     def __eq__(self, other: typing.Any) -> bool:
@@ -105,8 +42,8 @@ class DontRetry(RetryLimits):
 
     def retry_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         # Send the initial request, and never retry.
-        # Don't raise a `TooManyRetries` exception because this should really be
-        # a no-op implementation.
+        # NOTE: don't raise a `TooManyRetries` exception because this should
+        # really be a no-op implementation.
         yield request
 
 
@@ -134,7 +71,7 @@ class RetryOnConnectionFailures(RetryLimits):
             isinstance(other, RetryOnConnectionFailures) and self.limit == other.limit
         )
 
-    def _should_retry_on_exception(self, exc: HTTPError) -> bool:
+    def _should_retry_for_exception(self, exc: HTTPError) -> bool:
         for exc_cls in self._RETRYABLE_EXCEPTIONS:
             if isinstance(exc, exc_cls):
                 break
@@ -157,12 +94,12 @@ class RetryOnConnectionFailures(RetryLimits):
             try:
                 _ = yield request
             except HTTPError as exc:
-                # Failed to get a response...
+                # Failed to get a response.
 
                 if not retries_left:
                     raise TooManyRetries(exc, request=request)
 
-                if self._should_retry_on_exception(exc):
+                if self._should_retry_for_exception(exc):
                     retries_left -= 1
                     continue
 

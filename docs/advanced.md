@@ -493,63 +493,11 @@ When instantiating a client, the `retries` argument may be one of the following.
 client = httpx.Client(retries=5)
 ```
 
-* An `httpx.Retries()` instance. It accepts the number of connection failures to retry on as a positional argument. The `backoff_factor` keyword argument that specifies how fast the time to wait before issuing a retry request should be increased. By default this is `0.2`, which corresponds to issuing a new request after `(0s, 0.2s, 0.4s, 0.8s, ...)`. (Note that a lot of errors are immediately resolved after retrying, so HTTPX will always issue the initial retry right away.)
+* An `httpx.Retries()` instance. It accepts the number of connection failures to retry on as a positional argument. The `backoff_factor` keyword argument that specifies how fast the time to wait before issuing a retry request should be increased. By default this is `0.2`, which corresponds to issuing a new request after `(0s, 0.2s, 0.4s, 0.8s, ...)`. (Note that a lot of errors are immediately resolved by retrying, so HTTPX will always issue the initial retry right away.)
 
 ```python
 # Retry at most 5 times on connection failures,
 # and issue new requests after `(0s, 0.5s, 1s, 2s, 4s, ...)`
 retries = httpx.Retries(5, backoff_factor=0.5)
 client = httpx.Client(retries=retries)
-```
-
-### Advanced retries customization
-
-The first argument to `httpx.Retries()` can also be a subclass of `httpx.RetryLimits`. This is useful if you want to replace or extend the default behavior of retrying on connection failures.
-
-The `httpx.RetryLimits` subclass should implement the `.retry_flow()` method, `yield` any request to be made, and prepare for the following situations...
-
-* (A) The request resulted in an `httpx.HTTPError`. If it shouldn't be retried on, `raise` the error as-is. If it should be retried on, you should make any necessary modifications to the request, and continue yielding. If you've exceeded a maximum number of retries, wrap the error in `httpx.TooManyRetries()`, and raise the result.
-* (B) The request went through and resulted in the client sending back a `response`. If it shouldn't be retried on, `return` to terminate the retry flow. If it should be retried on (e.g. because it is an error response), you should make any necessary modifications to the request, and continue yielding. If you've exceeded a maximum number of retries, wrap the response in `httpx.TooManyRetries()`, and raise the result.
-
-As an example, here's how you could implement a custom retry limiting policy that retries on certain status codes:
-
-```python
-import httpx
-
-class RetryOnStatusCodes(httpx.RetryLimits):
-    def __init__(self, limit, status_codes):
-        self.limit = limit
-        self.status_codes = status_codes
-
-    def retry_flow(self, request):
-        retries_left = self.limit
-
-        while True:
-            response = yield request
-
-            if response.status_code not in self.status_codes:
-                return
-
-            if retries_left == 0:
-                try:
-                    response.raise_for_status()
-                except httpx.HTTPError as exc:
-                    raise httpx.TooManyRetries(exc, response=response)
-                else:
-                    raise httpx.TooManyRetries(response=response)
-
-            retries_left -= 1
-```
-
-To use a custom policy:
-
-* Explicitly pass the number of times to retry on connection failures as a first positional argument to `httpx.Retries()`. (Use `0` to not retry on these failures.)
-* Pass the custom policy as a second positional argument.
-
-For example...
-
-```python
-# Retry at most 3 times on connection failures, and at most three times
-# on '429 Too Many Requests', '502 Bad Gateway', or '503 Service Unavailable'.
-retries = httpx.Retries(3, RetryOnStatusCodes(3, status_codes={429, 502, 503}))
 ```
