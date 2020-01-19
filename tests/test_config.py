@@ -208,9 +208,27 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
         assert ssl_config.ssl_context.keylog_filename is None
 
 
-def test_proxy_from_url():
-    proxy = httpx.Proxy("https://example.com")
-    assert repr(proxy) == "Proxy(url='https://example.com', headers={}, mode='DEFAULT')"
+@pytest.mark.parametrize(
+    "url,expected_url,expected_headers,expected_mode",
+    [
+        ("https://example.com", "https://example.com", {}, "DEFAULT"),
+        (
+            "https://user:pass@example.com",
+            "https://example.com",
+            {"proxy-authorization": "Basic dXNlcjpwYXNz"},
+            "DEFAULT",
+        ),
+    ],
+)
+def test_proxy_from_url(url, expected_url, expected_headers, expected_mode):
+    proxy = httpx.Proxy(url)
+
+    assert proxy.url == expected_url
+    assert dict(proxy.headers) == expected_headers
+    assert proxy.mode == expected_mode
+    assert repr(proxy) == "Proxy(url='{}', headers={}, mode='{}')".format(
+        expected_url, str(expected_headers), expected_mode
+    )
 
 
 def test_invalid_proxy_scheme():
