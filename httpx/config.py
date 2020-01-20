@@ -1,6 +1,7 @@
 import os
 import ssl
 import typing
+from base64 import b64encode
 from pathlib import Path
 
 import certifi
@@ -325,9 +326,23 @@ class Proxy:
         if mode not in ("DEFAULT", "CONNECT_ONLY", "TUNNEL_ONLY"):
             raise ValueError(f"Unknown proxy mode {mode!r}")
 
+        if url.username or url.password:
+            headers.setdefault(
+                "Proxy-Authorization",
+                self.build_auth_header(url.username, url.password),
+            )
+            # Remove userinfo from the URL authority, e.g.:
+            # 'username:password@proxy_host:proxy_port' -> 'proxy_host:proxy_port'
+            url = url.copy_with(username=None, password=None)
+
         self.url = url
         self.headers = headers
         self.mode = mode
+
+    def build_auth_header(self, username: str, password: str) -> str:
+        userpass = (username.encode("utf-8"), password.encode("utf-8"))
+        token = b64encode(b":".join(userpass)).decode().strip()
+        return f"Basic {token}"
 
     def __repr__(self) -> str:
         return (
