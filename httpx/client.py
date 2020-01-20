@@ -1,4 +1,3 @@
-import functools
 import typing
 from types import TracebackType
 
@@ -20,27 +19,20 @@ from .config import (
     UnsetType,
     VerifyTypes,
 )
-from .content_streams import ContentStream
 from .dispatch.asgi import ASGIDispatch
 from .dispatch.base import AsyncDispatcher, SyncDispatcher
 from .dispatch.connection_pool import ConnectionPool
 from .dispatch.proxy_http import HTTPProxy
 from .dispatch.urllib3 import URLLib3Dispatcher
 from .dispatch.wsgi import WSGIDispatch
-from .exceptions import (
-    HTTPError,
-    InvalidURL,
-    RedirectLoop,
-    RequestBodyUnavailable,
-    TooManyRedirects,
-)
+from .exceptions import InvalidURL
+from .middleware import AuthMiddleware, MiddlewareStack, RedirectMiddleware
 from .models import (
     URL,
     Cookies,
     CookieTypes,
     Headers,
     HeaderTypes,
-    Origin,
     QueryParams,
     QueryParamTypes,
     Request,
@@ -49,8 +41,13 @@ from .models import (
     Response,
     URLTypes,
 )
-from .status_codes import codes
-from .utils import NetRCInfo, get_environment_proxies, get_logger
+from .utils import (
+    NetRCInfo,
+    consume_generator,
+    consume_generator_of_awaitables,
+    get_environment_proxies,
+    get_logger,
+)
 
 logger = get_logger(__name__)
 
@@ -84,6 +81,7 @@ class BaseClient:
         self.max_redirects = max_redirects
         self.trust_env = trust_env
         self.netrc = NetRCInfo()
+        self._middleware_stack = self._build_middleware_stack()
 
     def get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
@@ -285,107 +283,27 @@ class BaseClient:
 
         return Auth()
 
-    def build_redirect_request(self, request: Request, response: Response) -> Request:
-        """
-        Given a request and a redirect response, return a new request that
-        should be used to effect the redirect.
-        """
-        method = self.redirect_method(request, response)
-        url = self.redirect_url(request, response)
-        headers = self.redirect_headers(request, url, method)
-        stream = self.redirect_stream(request, method)
-        cookies = Cookies(self.cookies)
-        return Request(
-            method=method, url=url, headers=headers, cookies=cookies, stream=stream
+    def _build_middleware_stack(self) -> MiddlewareStack:
+        stack = MiddlewareStack()
+        stack.add(AuthMiddleware)
+        stack.add(RedirectMiddleware, max_redirects=self.max_redirects)
+        return stack
+
+    def _build_context(
+        self,
+        *,
+        request: Request,
+        dispatcher: typing.Union[SyncDispatcher, AsyncDispatcher],
+        allow_redirects: bool = True,
+        auth: AuthTypes = None,
+    ) -> dict:
+        return self._middleware_stack.create_context(
+            request,
+            cookies=self.cookies,
+            dispatcher=dispatcher,
+            allow_redirects=allow_redirects,
+            auth=self.build_auth(request, auth),
         )
-
-    def redirect_method(self, request: Request, response: Response) -> str:
-        """
-        When being redirected we may want to change the method of the request
-        based on certain specs or browser behavior.
-        """
-        method = request.method
-
-        # https://tools.ietf.org/html/rfc7231#section-6.4.4
-        if response.status_code == codes.SEE_OTHER and method != "HEAD":
-            method = "GET"
-
-        # Do what the browsers do, despite standards...
-        # Turn 302s into GETs.
-        if response.status_code == codes.FOUND and method != "HEAD":
-            method = "GET"
-
-        # If a POST is responded to with a 301, turn it into a GET.
-        # This bizarre behaviour is explained in 'requests' issue 1704.
-        if response.status_code == codes.MOVED_PERMANENTLY and method == "POST":
-            method = "GET"
-
-        return method
-
-    def redirect_url(self, request: Request, response: Response) -> URL:
-        """
-        Return the URL for the redirect to follow.
-        """
-        location = response.headers["Location"]
-
-        url = URL(location, allow_relative=True)
-
-        # Handle malformed 'Location' headers that are "absolute" form, have no host.
-        # See: https://github.com/encode/httpx/issues/771
-        if url.scheme and not url.host:
-            url = url.copy_with(host=request.url.host)
-
-        # Facilitate relative 'Location' headers, as allowed by RFC 7231.
-        # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
-        if url.is_relative_url:
-            url = request.url.join(url)
-
-        # Attach previous fragment if needed (RFC 7231 7.1.2)
-        if request.url.fragment and not url.fragment:
-            url = url.copy_with(fragment=request.url.fragment)
-
-        return url
-
-    def redirect_headers(self, request: Request, url: URL, method: str) -> Headers:
-        """
-        Return the headers that should be used for the redirect request.
-        """
-        headers = Headers(request.headers)
-
-        if Origin(url) != Origin(request.url):
-            # Strip Authorization headers when responses are redirected away from
-            # the origin.
-            headers.pop("Authorization", None)
-            headers["Host"] = url.authority
-
-        if method != request.method and method == "GET":
-            # If we've switch to a 'GET' request, then strip any headers which
-            # are only relevant to the request body.
-            headers.pop("Content-Length", None)
-            headers.pop("Transfer-Encoding", None)
-
-        # We should use the client cookie store to determine any cookie header,
-        # rather than whatever was on the original outgoing request.
-        headers.pop("Cookie", None)
-
-        return headers
-
-    def redirect_stream(
-        self, request: Request, method: str
-    ) -> typing.Optional[ContentStream]:
-        """
-        Return the body that should be used for the redirect request.
-        """
-        if method != request.method and method == "GET":
-            return None
-
-        if not request.stream.can_replay():
-            raise RequestBodyUnavailable(
-                "Got a redirect response, but the request body was streaming "
-                "and is no longer available."
-            )
-
-        return request.stream
 
 
 class Client(BaseClient):
@@ -587,111 +505,20 @@ class Client(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        auth = self.build_auth(request, auth)
-
-        response = self.send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        context = self._build_context(
+            request=request,
+            dispatcher=self.dispatcher_for_url(request.url),
+            allow_redirects=allow_redirects,
+            auth=auth,
         )
+
+        response = consume_generator(self._middleware_stack(request, context, timeout))
 
         if not stream:
             try:
                 response.read()
             finally:
                 response.close()
-
-        return response
-
-    def send_handling_redirects(
-        self,
-        request: Request,
-        auth: Auth,
-        timeout: Timeout,
-        allow_redirects: bool = True,
-        history: typing.List[Response] = None,
-    ) -> Response:
-        if history is None:
-            history = []
-
-        while True:
-            if len(history) > self.max_redirects:
-                raise TooManyRedirects()
-            urls = ((resp.request.method, resp.url) for resp in history)
-            if (request.method, request.url) in urls:
-                raise RedirectLoop()
-
-            response = self.send_handling_auth(
-                request, auth=auth, timeout=timeout, history=history
-            )
-            response.history = list(history)
-
-            if not response.is_redirect:
-                return response
-
-            if allow_redirects:
-                response.read()
-            request = self.build_redirect_request(request, response)
-            history = history + [response]
-
-            if not allow_redirects:
-                response.call_next = functools.partial(
-                    self.send_handling_redirects,
-                    request=request,
-                    auth=auth,
-                    timeout=timeout,
-                    allow_redirects=False,
-                    history=history,
-                )
-                return response
-
-    def send_handling_auth(
-        self,
-        request: Request,
-        history: typing.List[Response],
-        auth: Auth,
-        timeout: Timeout,
-    ) -> Response:
-        if auth.requires_request_body:
-            request.read()
-
-        auth_flow = auth.auth_flow(request)
-        request = next(auth_flow)
-        while True:
-            response = self.send_single_request(request, timeout)
-            try:
-                next_request = auth_flow.send(response)
-            except StopIteration:
-                return response
-            except BaseException as exc:
-                response.close()
-                raise exc from None
-            else:
-                response.history = list(history)
-                response.read()
-                request = next_request
-                history.append(response)
-
-    def send_single_request(self, request: Request, timeout: Timeout,) -> Response:
-        """
-        Sends a single request, without handling any redirections.
-        """
-
-        dispatcher = self.dispatcher_for_url(request.url)
-
-        try:
-            response = dispatcher.send(request, timeout=timeout)
-        except HTTPError as exc:
-            # Add the original request to any HTTPError unless
-            # there'a already a request attached in the case of
-            # a ProxyError.
-            if exc.request is None:
-                exc.request = request
-            raise
-
-        self.cookies.extract_cookies(response)
-
-        status = f"{response.status_code} {response.reason_phrase}"
-        response_line = f"{response.http_version} {status}"
-        logger.debug(f'HTTP Request: {request.method} {request.url} "{response_line}"')
 
         return response
 
@@ -1112,10 +939,15 @@ class AsyncClient(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        auth = self.build_auth(request, auth)
+        context = self._build_context(
+            request=request,
+            dispatcher=self.dispatcher_for_url(request.url),
+            allow_redirects=allow_redirects,
+            auth=auth,
+        )
 
-        response = await self.send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        response = await consume_generator_of_awaitables(
+            self._middleware_stack(request, context, timeout)
         )
 
         if not stream:
@@ -1123,102 +955,6 @@ class AsyncClient(BaseClient):
                 await response.aread()
             finally:
                 await response.aclose()
-
-        return response
-
-    async def send_handling_redirects(
-        self,
-        request: Request,
-        auth: Auth,
-        timeout: Timeout,
-        allow_redirects: bool = True,
-        history: typing.List[Response] = None,
-    ) -> Response:
-        if history is None:
-            history = []
-
-        while True:
-            if len(history) > self.max_redirects:
-                raise TooManyRedirects()
-            urls = ((resp.request.method, resp.url) for resp in history)
-            if (request.method, request.url) in urls:
-                raise RedirectLoop()
-
-            response = await self.send_handling_auth(
-                request, auth=auth, timeout=timeout, history=history
-            )
-            response.history = list(history)
-
-            if not response.is_redirect:
-                return response
-
-            if allow_redirects:
-                await response.aread()
-            request = self.build_redirect_request(request, response)
-            history = history + [response]
-
-            if not allow_redirects:
-                response.call_next = functools.partial(
-                    self.send_handling_redirects,
-                    request=request,
-                    auth=auth,
-                    timeout=timeout,
-                    allow_redirects=False,
-                    history=history,
-                )
-                return response
-
-    async def send_handling_auth(
-        self,
-        request: Request,
-        history: typing.List[Response],
-        auth: Auth,
-        timeout: Timeout,
-    ) -> Response:
-        if auth.requires_request_body:
-            await request.aread()
-
-        auth_flow = auth.auth_flow(request)
-        request = next(auth_flow)
-        while True:
-            response = await self.send_single_request(request, timeout)
-            try:
-                next_request = auth_flow.send(response)
-            except StopIteration:
-                return response
-            except BaseException as exc:
-                await response.aclose()
-                raise exc from None
-            else:
-                response.history = list(history)
-                await response.aread()
-                request = next_request
-                history.append(response)
-
-    async def send_single_request(
-        self, request: Request, timeout: Timeout,
-    ) -> Response:
-        """
-        Sends a single request, without handling any redirections.
-        """
-
-        dispatcher = self.dispatcher_for_url(request.url)
-
-        try:
-            response = await dispatcher.send(request, timeout=timeout)
-        except HTTPError as exc:
-            # Add the original request to any HTTPError unless
-            # there'a already a request attached in the case of
-            # a ProxyError.
-            if exc.request is None:
-                exc.request = request
-            raise
-
-        self.cookies.extract_cookies(response)
-
-        status = f"{response.status_code} {response.reason_phrase}"
-        response_line = f"{response.http_version} {status}"
-        logger.debug(f'HTTP Request: {request.method} {request.url} "{response_line}"')
 
         return response
 

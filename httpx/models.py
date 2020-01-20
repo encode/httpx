@@ -41,6 +41,7 @@ from .exceptions import (
 from .status_codes import StatusCode
 from .utils import (
     ElapsedTimer,
+    consume_generator_of_awaitables,
     flatten_queryparams,
     guess_json_utf,
     is_known_encoding,
@@ -1019,7 +1020,7 @@ class Response:
         if not self.is_redirect:
             raise NotRedirectResponse()
         assert self.call_next is not None
-        return await self.call_next()
+        return await consume_generator_of_awaitables(self.call_next())
 
     async def aclose(self) -> None:
         """

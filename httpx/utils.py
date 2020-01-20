@@ -1,6 +1,7 @@
 import codecs
 import collections
 import contextlib
+import inspect
 import logging
 import netrc
 import os
@@ -18,6 +19,10 @@ from .exceptions import NetworkError
 if typing.TYPE_CHECKING:  # pragma: no cover
     from .models import PrimitiveData
     from .models import URL
+
+T = typing.TypeVar("T")
+Y = typing.TypeVar("Y")
+S = typing.TypeVar("S")
 
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
@@ -367,3 +372,116 @@ def as_network_error(*exception_classes: type) -> typing.Iterator[None]:
             if isinstance(exc, cls):
                 raise NetworkError(exc) from exc
         raise
+
+
+class SyncOrAsync:
+    """
+    Wrapper for values that aren't necessarily syntactically equivalent in
+    the sync and async cases.
+
+    For example:
+
+    ```python
+    func = SyncOrAsync(
+        for_sync=lambda: obj.func(...),
+        for_async=lambda: obj.afunc(...),
+    )
+    ```
+    """
+
+    def __init__(
+        self,
+        for_sync: typing.Callable[[], typing.Any],
+        for_async: typing.Callable[[], typing.Awaitable],
+    ):
+        self.for_sync = for_sync
+        self.for_async = for_async
+
+
+def consume_generator(gen: typing.Generator[typing.Any, typing.Any, T]) -> T:
+    """
+    Run a generator of regular ("sync") values to completion.
+
+    Supports yielding `SyncOrAsync` instances.
+    """
+
+    value: typing.Any = next(gen)
+    assert not inspect.isawaitable(value)
+
+    while True:
+        try:
+            value = gen.send(value)
+        except StopIteration as exc:
+            result = exc.value
+            assert not inspect.isawaitable(result)
+            return result
+        except BaseException as exc:
+            value = gen.throw(type(exc), exc, exc.__traceback__)
+        else:
+            if isinstance(value, SyncOrAsync):
+                value = value.for_sync()
+            assert not inspect.isawaitable(value)
+
+
+async def consume_generator_of_awaitables(
+    gen: typing.Generator[typing.Any, typing.Any, T]
+) -> T:
+    """
+    Run a generator to completion, awaiting all yielded values.
+
+    Any coroutine function can be converted to a generator to be passed as
+    an argument to this helper function by replacing `await` with `yield`.
+
+    Provided any dependencies used to compute the yielded values are switched to a sync
+    equivalent in the sync case, this means we can use this generator in a
+    sync context too (running it with `consume_generator()` instead).
+
+    So, instead of writing:
+
+    ```python
+    async def fetch():
+        await sleep(1)
+        return {"message": "Hello, world!"}
+
+    data = await fetch()
+    ```
+
+    we can write:
+
+    ```python
+    def fetch():
+        yield sleep(1)
+        return {"message": "Hello, world!"}
+
+    data = await consume_generator_of_awaitables(fetch())
+    ```
+    """
+
+    def unwrap(value: typing.Any) -> typing.Awaitable:
+        if isinstance(value, SyncOrAsync):
+            return value.for_async()
+        return value
+
+    coro = unwrap(next(gen))
+    assert inspect.isawaitable(coro), coro
+    value: typing.Any = await coro
+
+    while True:
+        assert not inspect.isawaitable(value)
+
+        try:
+            coro = gen.send(value)
+        except StopIteration as exc:
+            result = exc.value
+            assert not inspect.isawaitable(result), result
+            return result
+        else:
+            coro = unwrap(coro)
+            assert inspect.isawaitable(coro), coro
+
+            try:
+                value = await coro
+            except BaseException as exc:
+                coro = gen.throw(type(exc), exc, exc.__traceback__)
+                assert inspect.isawaitable(coro), coro
+                value = await coro
