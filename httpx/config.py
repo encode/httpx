@@ -333,8 +333,7 @@ class Proxy:
             )
             # Remove userinfo from the URL authority, e.g.:
             # 'username:password@proxy_host:proxy_port' -> 'proxy_host:proxy_port'
-            credentials, _, authority = url.authority.rpartition("@")
-            url = url.copy_with(authority=authority)
+            url = url.copy_with(username=None, password=None)
 
         self.url = url
         self.headers = headers

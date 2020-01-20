@@ -214,7 +214,7 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
         ("https://example.com", "https://example.com", {}, "DEFAULT"),
         (
             "https://user:pass@example.com",
-            "https://example.com",
+            "https://example.com:443",
             {"proxy-authorization": "Basic dXNlcjpwYXNz"},
             "DEFAULT",
         ),
@@ -223,7 +223,7 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
 def test_proxy_from_url(url, expected_url, expected_headers, expected_mode):
     proxy = httpx.Proxy(url)
 
-    assert proxy.url == expected_url
+    assert str(proxy.url) == expected_url
     assert dict(proxy.headers) == expected_headers
     assert proxy.mode == expected_mode
     assert repr(proxy) == "Proxy(url='{}', headers={}, mode='{}')".format(
