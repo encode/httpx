@@ -4,7 +4,7 @@ import ssl
 import typing
 
 import urllib3
-from urllib3.exceptions import SSLError, NewConnectionError
+from urllib3.exceptions import NewConnectionError, SSLError
 
 from ..config import (
     DEFAULT_POOL_LIMITS,
