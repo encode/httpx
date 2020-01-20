@@ -373,7 +373,7 @@ class Retries:
     )
 
     def __init__(
-        self, retries: RetriesTypes = 3, *, backoff_factor: float = None
+        self, retries: RetriesTypes = 0, *, backoff_factor: float = None
     ) -> None:
         if isinstance(retries, int):
             limit = retries
@@ -424,6 +424,6 @@ class Retries:
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
-DEFAULT_RETRIES_CONFIG = Retries(3, backoff_factor=0.2)
+DEFAULT_RETRIES_CONFIG = Retries(0, backoff_factor=0.2)
 DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
 DEFAULT_MAX_REDIRECTS = 20
