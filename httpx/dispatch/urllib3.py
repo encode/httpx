@@ -4,7 +4,7 @@ import ssl
 import typing
 
 import urllib3
-from urllib3.exceptions import MaxRetryError, SSLError
+from urllib3.exceptions import SSLError, NewConnectionError
 
 from ..config import (
     DEFAULT_POOL_LIMITS,
@@ -94,7 +94,7 @@ class URLLib3Dispatcher(SyncDispatcher):
         content_length = int(request.headers.get("Content-Length", "0"))
         body = request.stream if chunked or content_length else None
 
-        with as_network_error(MaxRetryError, SSLError, socket.error):
+        with as_network_error(NewConnectionError, SSLError, socket.error):
             conn = self.pool.urlopen(
                 method=request.method,
                 url=str(request.url),
@@ -102,7 +102,7 @@ class URLLib3Dispatcher(SyncDispatcher):
                 body=body,
                 redirect=False,
                 assert_same_host=False,
-                retries=0,
+                retries=False,
                 preload_content=False,
                 chunked=chunked,
                 timeout=urllib3_timeout,
