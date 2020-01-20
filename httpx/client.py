@@ -427,6 +427,8 @@ class Client(BaseClient):
     URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
+    * **retries** - *(optional)* The maximum number of connection failures to
+    retry on.
     * **pool_limits** - *(optional)* The connection pool configuration to use
     when determining the maximum number of concurrently open HTTP connections.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
@@ -452,6 +454,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+        retries: RetriesTypes = DEFAULT_RETRIES_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
@@ -465,6 +468,7 @@ class Client(BaseClient):
             headers=headers,
             cookies=cookies,
             timeout=timeout,
+            retries=retries,
             max_redirects=max_redirects,
             base_url=base_url,
             trust_env=trust_env,
