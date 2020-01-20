@@ -7,8 +7,8 @@ from json import dumps as json_dumps
 from pathlib import Path
 from urllib.parse import urlencode
 
-from .exceptions import StreamConsumed
-from .utils import format_form_param
+from ._exceptions import StreamConsumed
+from ._utils import format_form_param
 
 RequestData = typing.Union[
     dict, str, bytes, typing.Iterator[bytes], typing.AsyncIterator[bytes]

@@ -1,7 +1,7 @@
 import typing
 
 if typing.TYPE_CHECKING:
-    from .models import Request, Response  # pragma: nocover
+    from ._models import Request, Response  # pragma: nocover
 
 
 class HTTPError(Exception):

@@ -1,8 +1,8 @@
 import typing
 from types import TracebackType
 
-from ..config import Timeout
-from ..models import (
+from .._config import Timeout
+from .._models import (
     HeaderTypes,
     QueryParamTypes,
     Request,

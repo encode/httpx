@@ -2,12 +2,12 @@ import typing
 
 import h11
 
-from ..backends.base import BaseSocketStream
-from ..config import Timeout
-from ..content_streams import AsyncIteratorStream
-from ..exceptions import ConnectionClosed, ProtocolError
-from ..models import Request, Response
-from ..utils import get_logger
+from .._backends.base import BaseSocketStream
+from .._config import Timeout
+from .._content_streams import AsyncIteratorStream
+from .._exceptions import ConnectionClosed, ProtocolError
+from .._models import Request, Response
+from .._utils import get_logger
 
 H11Event = typing.Union[
     h11.Request,

@@ -3,7 +3,7 @@ import typing
 
 import sniffio
 
-from ..config import Timeout
+from .._config import Timeout
 from .base import (
     BaseLock,
     BaseSemaphore,

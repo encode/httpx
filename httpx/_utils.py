@@ -13,11 +13,11 @@ from time import perf_counter
 from types import TracebackType
 from urllib.request import getproxies
 
-from .exceptions import NetworkError
+from ._exceptions import NetworkError
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from .models import PrimitiveData
-    from .models import URL
+    from ._models import PrimitiveData
+    from ._models import URL
 
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}

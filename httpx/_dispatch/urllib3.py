@@ -6,7 +6,7 @@ import typing
 import urllib3
 from urllib3.exceptions import MaxRetryError, SSLError
 
-from ..config import (
+from .._config import (
     DEFAULT_POOL_LIMITS,
     CertTypes,
     PoolLimits,
@@ -15,9 +15,9 @@ from ..config import (
     Timeout,
     VerifyTypes,
 )
-from ..content_streams import IteratorStream
-from ..models import Request, Response
-from ..utils import as_network_error
+from .._content_streams import IteratorStream
+from .._models import Request, Response
+from .._utils import as_network_error
 from .base import SyncDispatcher
 
 

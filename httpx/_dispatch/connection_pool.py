@@ -1,7 +1,7 @@
 import typing
 
-from ..backends.base import BaseSemaphore, ConcurrencyBackend, lookup_backend
-from ..config import (
+from .._backends.base import BaseSemaphore, ConcurrencyBackend, lookup_backend
+from .._config import (
     DEFAULT_POOL_LIMITS,
     CertTypes,
     PoolLimits,
@@ -9,9 +9,9 @@ from ..config import (
     Timeout,
     VerifyTypes,
 )
-from ..exceptions import PoolTimeout
-from ..models import Origin, Request, Response
-from ..utils import get_logger
+from .._exceptions import PoolTimeout
+from .._models import Origin, Request, Response
+from .._utils import get_logger
 from .base import AsyncDispatcher
 from .connection import HTTPConnection
 

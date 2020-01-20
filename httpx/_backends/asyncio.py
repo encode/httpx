@@ -2,9 +2,9 @@ import asyncio
 import ssl
 import typing
 
-from ..config import Timeout
-from ..exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
-from ..utils import as_network_error
+from .._config import Timeout
+from .._exceptions import ConnectTimeout, ReadTimeout, WriteTimeout
+from .._utils import as_network_error
 from .base import BaseLock, BaseSemaphore, BaseSocketStream, ConcurrencyBackend
 
 SSL_MONKEY_PATCH_APPLIED = False
