@@ -11,7 +11,7 @@ from httpx.dispatch.base import AsyncDispatcher
 
 def test_retries_config() -> None:
     client = httpx.AsyncClient()
-    assert client.retries == httpx.Retries() == httpx.Retries(0)
+    assert client.retries == httpx.Retries(0)
     assert client.retries.limit == 0
 
     client = httpx.AsyncClient(retries=3)
@@ -27,8 +27,8 @@ def test_retries_config() -> None:
 @pytest.mark.parametrize(
     "retries, delays",
     [
-        (httpx.Retries(), [0, 0.2, 0.4, 0.8, 1.6]),
-        (httpx.Retries(backoff_factor=0.1), [0, 0.1, 0.2, 0.4, 0.8]),
+        (httpx.Retries(3), [0, 0.2, 0.4, 0.8, 1.6]),
+        (httpx.Retries(3, backoff_factor=0.1), [0, 0.1, 0.2, 0.4, 0.8]),
     ],
 )
 def test_retries_delays_sequence(

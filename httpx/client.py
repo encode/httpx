@@ -425,10 +425,10 @@ class Client(BaseClient):
     file, key file, password).
     * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
     URLs.
-    * **timeout** - *(optional)* The timeout configuration to use when sending
-    requests.
     * **retries** - *(optional)* The maximum number of connection failures to
     retry on.
+    * **timeout** - *(optional)* The timeout configuration to use when sending
+    requests.
     * **pool_limits** - *(optional)* The connection pool configuration to use
     when determining the maximum number of concurrently open HTTP connections.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
@@ -569,6 +569,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         request = self.build_request(
@@ -582,7 +583,11 @@ class Client(BaseClient):
             cookies=cookies,
         )
         return self.send(
-            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout,
+            request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            retries=retries,
+            timeout=timeout,
         )
 
     def send(
@@ -592,6 +597,7 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         if request.url.scheme not in ("http", "https"):
@@ -599,7 +605,7 @@ class Client(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        retries = self.retries
+        retries = self.retries if isinstance(retries, UnsetType) else Retries(retries)
 
         auth = self.build_auth(request, auth)
 
@@ -758,6 +764,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -768,6 +775,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -780,6 +788,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -790,6 +799,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -802,6 +812,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -812,6 +823,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -827,6 +839,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -840,6 +853,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -855,6 +869,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -868,6 +883,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -883,6 +899,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -896,6 +913,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -908,6 +926,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -918,6 +937,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -969,6 +989,8 @@ class AsyncClient(BaseClient):
     enabled. Defaults to `False`.
     * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
     URLs.
+    * **retries** - *(optional)* The maximum number of connection failures to
+    retry on.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
     * **pool_limits** - *(optional)* The connection pool configuration to use
@@ -1137,6 +1159,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         request = self.build_request(
@@ -1150,7 +1173,11 @@ class AsyncClient(BaseClient):
             cookies=cookies,
         )
         response = await self.send(
-            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout,
+            request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            retries=retries,
+            timeout=timeout,
         )
         return response
 
@@ -1161,6 +1188,7 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         if request.url.scheme not in ("http", "https"):
@@ -1168,7 +1196,7 @@ class AsyncClient(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        retries = self.retries
+        retries = self.retries if isinstance(retries, UnsetType) else Retries(retries)
 
         auth = self.build_auth(request, auth)
 
@@ -1330,6 +1358,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1340,6 +1369,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1352,6 +1382,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1362,6 +1393,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1374,6 +1406,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1384,6 +1417,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1399,6 +1433,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1412,6 +1447,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1427,6 +1463,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1440,6 +1477,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1455,6 +1493,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1468,6 +1507,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1480,6 +1520,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1490,6 +1531,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1516,6 +1558,7 @@ class StreamContextManager:
         *,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         close_client: bool = False,
     ) -> None:
@@ -1523,6 +1566,7 @@ class StreamContextManager:
         self.request = request
         self.auth = auth
         self.allow_redirects = allow_redirects
+        self.retries = retries
         self.timeout = timeout
         self.close_client = close_client
 
@@ -1532,6 +1576,7 @@ class StreamContextManager:
             request=self.request,
             auth=self.auth,
             allow_redirects=self.allow_redirects,
+            retries=self.retries,
             timeout=self.timeout,
             stream=True,
         )
@@ -1554,6 +1599,7 @@ class StreamContextManager:
             request=self.request,
             auth=self.auth,
             allow_redirects=self.allow_redirects,
+            retries=self.retries,
             timeout=self.timeout,
             stream=True,
         )

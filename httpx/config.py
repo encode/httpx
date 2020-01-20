@@ -372,9 +372,7 @@ class Retries:
         ("HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE")
     )
 
-    def __init__(
-        self, retries: RetriesTypes = 0, *, backoff_factor: float = None
-    ) -> None:
+    def __init__(self, retries: RetriesTypes, *, backoff_factor: float = None) -> None:
         if isinstance(retries, int):
             limit = retries
         else:

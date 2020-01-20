@@ -476,16 +476,7 @@ Response <200 OK>
 
 Communicating with a peer over a network is by essence subject to errors. HTTPX provides built-in retry functionality to increase the resilience to connection issues.
 
-### Enabling retries
-
-Retries are disabled by default. You can enable them on a client instance using the `retries` parameter:
-
-```python
-# Retry at most 3 times on connection failures.
-client = httpx.Client(retries=3)
-```
-
-When retries are enabled, HTTPX will retry sending the request up to the specified number of times. This behavior is restricted to **connection failures only**, i.e.:
+Retries are disabled by default. When retries are enabled, HTTPX will retry sending the request up to the specified number of times. This behavior is restricted to **connection failures only**, i.e.:
 
 * Failures to establish or acquire a connection (`ConnectTimeout`, `PoolTimeout`).
 * Failures to keep the connection open (`NetworkError`).
@@ -500,17 +491,32 @@ If HTTPX could not get a response after the specified number of retries, a `TooM
 
 The delay between each retry is increased exponentially to prevent overloading the requested host.
 
-### Fine-tuning the retries configuration
+### Enabling retries
 
-When instantiating a client, the `retries` argument may be one of the following...
-
-* An integer, representing the maximum number of connection failures to retry on. The default is `0`.
+You can enable retries for a given request:
 
 ```python
-client = httpx.Client(retries=5)
+# Using the top-level API:
+response = httpx.get("https://example.org", retries=3)
+
+# Using a client instance:
+with httpx.Client() as client:
+    response = client.get("https://example.org", retries=3)
 ```
 
-* An `httpx.Retries()` instance. This can be used to customize the `backoff_factor`, which defines the increase rate of the time to wait between retries. By default it is `0.2`, which corresponds to issuing a new request after `(0s, 0.2s, 0.4s, 0.8s, ...)`. (Note that most connection failures are immediately resolved by retrying, so HTTPX will always issue the initial retry right away.)
+Or enable them on a client instance, which results in the given `retries` being used as a default for requests made with this client:
+
+```python
+# Retry at most 3 times on connection failures everywhere.
+httpx.Client(retries=3)
+```
+
+### Fine-tuning the retries configuration
+
+When enabling retries, the `retries` argument can also be an `httpx.Retries()` instance. It accepts the following arguments:
+
+* An integer, given as a required positional argument, representing the maximum number of connection failures to retry on.
+* `backoff_factor` (optional), which defines the increase rate of the time to wait between retries. By default this is `0.2`, which corresponds to issuing a new request after `(0s, 0.2s, 0.4s, 0.8s, ...)`. (Note that most connection failures are immediately resolved by retrying, so HTTPX will always issue the initial retry right away.)
 
 ```python
 # Retry at most 5 times on connection failures,
