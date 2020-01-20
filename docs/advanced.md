@@ -176,7 +176,7 @@ client = httpx.Client(trust_env=False)
 
 ## HTTP Proxying
 
-HTTPX supports setting up proxies the same way that Requests does via the `proxies` parameter.
+HTTPX supports setting up HTTP proxies the same way that Requests does via the `proxies` parameter.
 For example to forward all HTTP traffic to `http://127.0.0.1:3080` and all HTTPS traffic
 to `http://127.0.0.1:3081` your `proxies` config would look like this:
 
@@ -188,6 +188,9 @@ to `http://127.0.0.1:3081` your `proxies` config would look like this:
 >>> with httpx.Client(proxies=proxies) as client:
 ...     ...
 ```
+
+Credentials may be passed in as part of the URL in the standard way, i.e.
+`http://username:password@127.0.0.1:3080`.
 
 Proxies can be configured for a specific scheme and host, all schemes of a host,
 all hosts for a scheme, or for all requests. When determining which proxy configuration
@@ -233,6 +236,8 @@ with httpx.Client(proxies=proxy) as client:
 
     To use proxies you must pass the proxy information at `Client` initialization,
     rather than on the `.get(...)` call or other request methods.
+
+SOCKS proxies are *not* supported yet.
 
 ## Timeout Configuration
 
