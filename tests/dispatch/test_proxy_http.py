@@ -1,7 +1,7 @@
 import pytest
 
 import httpx
-from httpx.dispatch.proxy_http import HTTPProxy
+from httpx._dispatch.proxy_http import HTTPProxy
 
 from .utils import MockRawSocketBackend
 
