@@ -469,9 +469,24 @@ Response <200 OK>
 
 ## Retries
 
-Communicating with a peer over a network is by essence subject to errors. HTTPX provides built-in retry functionality to increase the resilience to unexpected issues such as network faults or connection issues.
+Communicating with a peer over a network is by essence subject to errors. HTTPX provides built-in retry functionality to increase the resilience to unexpected issues.
 
-The default behavior is to retry at most 3 times on connection and network errors before marking the request as failed and bubbling up any exceptions. The delay between retries is increased each time to prevent overloading the requested server.
+By default, HTTPX will retry **at most 3 times** on connection failures. This means:
+
+* Failures to establish or acquire a connection (`ConnectTimeout`, `PoolTimeout`).
+* Failures to keep the connection open (`NetworkError`).
+
+If a response is not obtained after these attempts, any exception is bubbled up.
+
+The delay between each retry is increased exponentially to prevent overloading the requested host.
+
+!!! important
+    HTTPX will **NOT** retry on failures that aren't related to establishing or maintaining connections.
+
+    In particular, this includes:
+
+    * Errors related to data transfer, such as `ReadTimeout` or `ProtocolError`.
+    * HTTP error responses (4xx, 5xx), such as `429 Too Many Requests` or `503 Service Unavailable`.
 
 ### Setting and disabling retries
 
