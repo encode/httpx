@@ -1171,16 +1171,11 @@ class AsyncClient(BaseClient):
                     await backend.sleep(delay)
             else:
                 try:
-                    request = retry_flow.send(response)
-                except TooManyRetries:
-                    raise
+                    retry_flow.send(None)
                 except StopIteration:
                     return response
                 else:
-                    delay = next(delays)
-                    logger.debug(f"Retrying in {delay} seconds")
-                    await backend.sleep(delay)
-                    continue
+                    raise RuntimeError("Response received, but retry flow didn't stop")
 
     async def send_handling_redirects(
         self,

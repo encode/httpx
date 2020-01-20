@@ -6,7 +6,7 @@ from pathlib import Path
 
 import certifi
 
-from .models import URL, Headers, HeaderTypes, Request, Response, URLTypes
+from .models import URL, Headers, HeaderTypes, Request, URLTypes
 from .retries import DontRetry, RetryLimits, RetryOnConnectionFailures
 from .utils import get_ca_bundle_from_env, get_logger
 
@@ -382,7 +382,7 @@ class Retries:
         for n in itertools.count(2):
             yield self.backoff_factor * (2 ** (n - 2))
 
-    def retry_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+    def retry_flow(self, request: Request) -> typing.Generator[Request, None, None]:
         """
         Used by clients to determine what to do when failing to receive a response,
         or when a response was received.

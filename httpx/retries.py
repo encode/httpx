@@ -7,7 +7,7 @@ from .exceptions import (
     PoolTimeout,
     TooManyRetries,
 )
-from .models import Request, Response
+from .models import Request
 from .utils import get_logger
 
 logger = get_logger(__name__)
@@ -18,13 +18,13 @@ class RetryLimits:
     Base class for retry limiting policies.
     """
 
-    def retry_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+    def retry_flow(self, request: Request) -> typing.Generator[Request, None, None]:
         """
         Execute the retry flow.
 
         To dispatch a request, you should `yield` it, and prepare for either:
 
-        * The client sending back a response.
+        * The client managed to send the response.
         * An `HTTPError` being raised.
 
         In each case, decide whether to retry:
@@ -40,7 +40,7 @@ class DontRetry(RetryLimits):
     def __eq__(self, other: typing.Any) -> bool:
         return type(other) == DontRetry
 
-    def retry_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+    def retry_flow(self, request: Request) -> typing.Generator[Request, None, None]:
         # Send the initial request, and never retry.
         # NOTE: don't raise a `TooManyRetries` exception because this should
         # really be a no-op implementation.
@@ -87,12 +87,12 @@ class RetryOnConnectionFailures(RetryLimits):
 
         return True
 
-    def retry_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+    def retry_flow(self, request: Request) -> typing.Generator[Request, None, None]:
         retries_left = self.limit
 
         while True:
             try:
-                _ = yield request
+                yield request
             except HTTPError as exc:
                 # Failed to get a response.
 
