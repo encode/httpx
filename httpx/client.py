@@ -6,6 +6,7 @@ import hstspreload
 
 from .auth import Auth, AuthTypes, BasicAuth, FunctionAuth
 from .backends.base import ConcurrencyBackend, lookup_backend
+from .backends.sync import SyncBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
@@ -484,6 +485,7 @@ class Client(BaseClient):
             )
             for key, proxy in proxy_map.items()
         }
+        self.backend = SyncBackend()
 
     def init_dispatch(
         self,
@@ -588,10 +590,16 @@ class Client(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
+        retries = self.retries
+
         auth = self.build_auth(request, auth)
 
-        response = self.send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        response = self.send_handling_retries(
+            request,
+            auth=auth,
+            retries=retries,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
         )
 
         if not stream:
@@ -601,6 +609,47 @@ class Client(BaseClient):
                 response.close()
 
         return response
+
+    def send_handling_retries(
+        self,
+        request: Request,
+        auth: Auth,
+        retries: Retries,
+        timeout: Timeout,
+        allow_redirects: bool = True,
+    ) -> Response:
+        backend = self.backend
+        delays = retries.get_delays()
+        retry_flow = retries.retry_flow(request)
+
+        # Initialize the generators.
+        request = next(retry_flow)
+
+        while True:
+            try:
+                response = self.send_handling_redirects(
+                    request,
+                    auth=auth,
+                    timeout=timeout,
+                    allow_redirects=allow_redirects,
+                )
+            except HTTPError as exc:
+                logger.debug(f"HTTP Request failed: {exc!r}")
+                try:
+                    request = retry_flow.throw(type(exc), exc, exc.__traceback__)
+                except (TooManyRetries, HTTPError):
+                    raise
+                else:
+                    delay = next(delays)
+                    logger.debug(f"Retrying in {delay} seconds")
+                    backend.sleep(delay)
+            else:
+                try:
+                    retry_flow.send(None)
+                except StopIteration:
+                    return response
+                else:
+                    raise RuntimeError("Response received, but retry flow didn't stop")
 
     def send_handling_redirects(
         self,
@@ -1121,8 +1170,8 @@ class AsyncClient(BaseClient):
         response = await self.send_handling_retries(
             request,
             auth=auth,
-            timeout=timeout,
             retries=retries,
+            timeout=timeout,
             allow_redirects=allow_redirects,
         )
 
