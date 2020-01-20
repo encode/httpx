@@ -619,37 +619,32 @@ class Client(BaseClient):
         allow_redirects: bool = True,
     ) -> Response:
         backend = self.backend
+        retries_left = retries.limit
         delays = retries.get_delays()
-        retry_flow = retries.retry_flow(request)
-
-        # Initialize the generators.
-        request = next(retry_flow)
 
         while True:
             try:
-                response = self.send_handling_redirects(
+                return self.send_handling_redirects(
                     request,
                     auth=auth,
                     timeout=timeout,
                     allow_redirects=allow_redirects,
                 )
             except HTTPError as exc:
-                logger.debug(f"HTTP Request failed: {exc!r}")
-                try:
-                    request = retry_flow.throw(type(exc), exc, exc.__traceback__)
-                except (TooManyRetries, HTTPError):
+                if not retries.limit or not retries.should_retry_on_exception(exc):
+                    # We shouldn't retry at all in these cases, so let's re-raise
+                    # immediately to avoid polluting logs or the exception stack.
                     raise
-                else:
-                    delay = next(delays)
-                    logger.debug(f"Retrying in {delay} seconds")
-                    backend.sleep(delay)
-            else:
-                try:
-                    retry_flow.send(None)
-                except StopIteration:
-                    return response
-                else:
-                    raise RuntimeError("Response received, but retry flow didn't stop")
+
+                logger.debug(f"HTTP Request failed: {exc!r}")
+
+                if not retries_left:
+                    raise TooManyRetries(exc, request=request)
+
+                retries_left -= 1
+                delay = next(delays)
+                logger.debug(f"Retrying in {delay} seconds")
+                backend.sleep(delay)
 
     def send_handling_redirects(
         self,
@@ -1193,37 +1188,32 @@ class AsyncClient(BaseClient):
     ) -> Response:
         backend = lookup_backend()
 
+        retries_left = retries.limit
         delays = retries.get_delays()
-        retry_flow = retries.retry_flow(request)
-
-        # Initialize the generators.
-        request = next(retry_flow)
 
         while True:
             try:
-                response = await self.send_handling_redirects(
+                return await self.send_handling_redirects(
                     request,
                     auth=auth,
                     timeout=timeout,
                     allow_redirects=allow_redirects,
                 )
             except HTTPError as exc:
-                logger.debug(f"HTTP Request failed: {exc!r}")
-                try:
-                    request = retry_flow.throw(type(exc), exc, exc.__traceback__)
-                except (TooManyRetries, HTTPError):
+                if not retries.limit or not retries.should_retry_on_exception(exc):
+                    # We shouldn't retry at all in these cases, so let's re-raise
+                    # immediately to avoid polluting logs or the exception stack.
                     raise
-                else:
-                    delay = next(delays)
-                    logger.debug(f"Retrying in {delay} seconds")
-                    await backend.sleep(delay)
-            else:
-                try:
-                    retry_flow.send(None)
-                except StopIteration:
-                    return response
-                else:
-                    raise RuntimeError("Response received, but retry flow didn't stop")
+
+                logger.debug(f"HTTP Request failed: {exc!r}")
+
+                if not retries_left:
+                    raise TooManyRetries(exc, request=request)
+
+                retries_left -= 1
+                delay = next(delays)
+                logger.debug(f"Retrying in {delay} seconds")
+                await backend.sleep(delay)
 
     async def send_handling_redirects(
         self,

@@ -30,7 +30,6 @@ from .exceptions import (
     WriteTimeout,
 )
 from .models import URL, Cookies, Headers, QueryParams, Request, Response
-from .retries import RetryLimits
 from .status_codes import StatusCode, codes
 
 __all__ = [
@@ -58,7 +57,6 @@ __all__ = [
     "Proxy",
     "Timeout",
     "Retries",
-    "RetryLimits",
     "TooManyRetries",
     "ConnectTimeout",
     "CookieConflict",

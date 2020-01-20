@@ -7,23 +7,50 @@ import pytest
 import httpx
 from httpx.config import TimeoutTypes
 from httpx.dispatch.base import AsyncDispatcher
-from httpx.retries import DontRetry, RetryOnConnectionFailures
 
 
 def test_retries_config() -> None:
     client = httpx.AsyncClient()
     assert client.retries == httpx.Retries() == httpx.Retries(3)
-    assert client.retries.limits == RetryOnConnectionFailures(3)
+    assert client.retries.limit == 3
     assert client.retries.backoff_factor == 0.2
 
     client = httpx.AsyncClient(retries=0)
-    assert client.retries == httpx.Retries(0)
-    assert client.retries.limits == DontRetry()
+    assert client.retries.limit == 0
 
     client = httpx.AsyncClient(retries=httpx.Retries(2, backoff_factor=0.1))
     assert client.retries == httpx.Retries(2, backoff_factor=0.1)
-    assert client.retries.limits == RetryOnConnectionFailures(2)
+    assert client.retries.limit == 2
     assert client.retries.backoff_factor == 0.1
+
+
+@pytest.mark.parametrize(
+    "retries, delays",
+    [
+        (httpx.Retries(), [0, 0.2, 0.4, 0.8, 1.6]),
+        (httpx.Retries(backoff_factor=0.1), [0, 0.1, 0.2, 0.4, 0.8]),
+    ],
+)
+def test_retries_delays_sequence(
+    retries: httpx.Retries, delays: typing.List[int]
+) -> None:
+    sample_delays = list(itertools.islice(retries.get_delays(), 5))
+    assert sample_delays == delays
+
+
+@pytest.mark.usefixtures("async_environment")
+@pytest.mark.parametrize(
+    "retries, elapsed",
+    [
+        (httpx.Retries(), pytest.approx(0 + 0.2 + 0.4, rel=0.1)),
+        (httpx.Retries(backoff_factor=0.1), pytest.approx(0 + 0.1 + 0.2, rel=0.2)),
+    ],
+)
+async def test_retries_backoff(retries: httpx.Retries, elapsed: float) -> None:
+    client = httpx.AsyncClient(dispatch=MockDispatch(succeed_after=3), retries=retries)
+    response = await client.get("https://example.com/connect_timeout")
+    assert response.status_code == 200
+    assert response.elapsed.total_seconds() == elapsed
 
 
 class MockDispatch(AsyncDispatcher):
@@ -58,7 +85,7 @@ class MockDispatch(AsyncDispatcher):
 
 @pytest.mark.usefixtures("async_environment")
 async def test_no_retries() -> None:
-    client = httpx.AsyncClient(dispatch=MockDispatch(succeed_after=3), retries=0)
+    client = httpx.AsyncClient(dispatch=MockDispatch(succeed_after=1), retries=0)
 
     response = await client.get("https://example.com")
     assert response.status_code == 200
@@ -109,13 +136,15 @@ async def test_too_many_retries() -> None:
 
 @pytest.mark.usefixtures("async_environment")
 async def test_exception_not_retryable() -> None:
+    # If ReadTimeout was retryable, the call would succeed after one retry, but
+    # it shouldn't.
     client = httpx.AsyncClient(dispatch=MockDispatch(succeed_after=1), retries=1)
-
     with pytest.raises(httpx.ReadTimeout):
         await client.get("https://example.com/read_timeout")
 
+    # If ReadTimeout was retryable, this call would fail with 'TooManyRetries',
+    # but it shouldn't.
     client = httpx.AsyncClient(dispatch=MockDispatch(succeed_after=2), retries=1)
-
     with pytest.raises(httpx.ReadTimeout):
         await client.get("https://example.com/read_timeout")
 
@@ -129,40 +158,11 @@ async def test_retries_idempotent_methods(method: str) -> None:
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_no_retries_non_idempotent_methods() -> None:
+async def test_non_idempotent_methods_not_retryable() -> None:
     client = httpx.AsyncClient(dispatch=MockDispatch(succeed_after=1))
 
+    # These would succeed if POST or PATCH triggered retries, but they shouldn't.
     with pytest.raises(httpx.ConnectTimeout):
         await client.post("https://example.com/connect_timeout")
-
     with pytest.raises(httpx.PoolTimeout):
         await client.patch("https://example.com/pool_timeout")
-
-
-@pytest.mark.parametrize(
-    "retries, delays",
-    [
-        (httpx.Retries(), [0, 0.2, 0.4, 0.8, 1.6]),
-        (httpx.Retries(backoff_factor=0.1), [0, 0.1, 0.2, 0.4, 0.8]),
-    ],
-)
-def test_retries_delays_sequence(
-    retries: httpx.Retries, delays: typing.List[int]
-) -> None:
-    sample_delays = list(itertools.islice(retries.get_delays(), 5))
-    assert sample_delays == delays
-
-
-@pytest.mark.usefixtures("async_environment")
-@pytest.mark.parametrize(
-    "retries, elapsed",
-    [
-        (httpx.Retries(), pytest.approx(0 + 0.2 + 0.4, rel=0.1)),
-        (httpx.Retries(backoff_factor=0.1), pytest.approx(0 + 0.1 + 0.2, rel=0.2)),
-    ],
-)
-async def test_retries_backoff(retries: httpx.Retries, elapsed: float) -> None:
-    client = httpx.AsyncClient(dispatch=MockDispatch(succeed_after=3), retries=retries)
-    response = await client.get("https://example.com/connect_timeout")
-    assert response.status_code == 200
-    assert response.elapsed.total_seconds() == elapsed

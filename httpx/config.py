@@ -6,8 +6,8 @@ from pathlib import Path
 
 import certifi
 
-from .models import URL, Headers, HeaderTypes, Request, URLTypes
-from .retries import DontRetry, RetryLimits, RetryOnConnectionFailures
+from .exceptions import ConnectTimeout, HTTPError, NetworkError, PoolTimeout
+from .models import URL, Headers, HeaderTypes, URLTypes
 from .utils import get_ca_bundle_from_env, get_logger
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
@@ -344,34 +344,60 @@ class Retries:
     """
     Retries configuration.
 
-    Defines the retry limiting policy, and implements a configurable
-    exponential backoff algorithm.
+    Defines the maximum amount of connection failures to retry on, and
+    implements a configurable exponential backoff algorithm.
     """
+
+    _RETRYABLE_EXCEPTIONS: typing.Sequence[typing.Type[HTTPError]] = (
+        ConnectTimeout,
+        PoolTimeout,
+        NetworkError,
+    )
+    _RETRYABLE_METHODS: typing.Container[str] = frozenset(
+        ("HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE")
+    )
 
     def __init__(
         self, retries: RetriesTypes = 3, *, backoff_factor: float = None
     ) -> None:
         if isinstance(retries, int):
-            limits = RetryOnConnectionFailures(retries) if retries > 0 else DontRetry()
-        elif isinstance(retries, Retries):
+            limit = retries
+        else:
+            assert isinstance(retries, Retries)
             assert backoff_factor is None
             backoff_factor = retries.backoff_factor
-            limits = retries.limits
+            limit = retries.limit
 
         if backoff_factor is None:
             backoff_factor = 0.2
 
+        assert limit >= 0
         assert backoff_factor > 0
 
-        self.limits: RetryLimits = limits
+        self.limit: int = limit
         self.backoff_factor: float = backoff_factor
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, Retries)
-            and self.limits == other.limits
+            and self.limit == other.limit
             and self.backoff_factor == other.backoff_factor
         )
+
+    @classmethod
+    def should_retry_on_exception(cls, exc: HTTPError) -> bool:
+        for exc_cls in cls._RETRYABLE_EXCEPTIONS:
+            if isinstance(exc, exc_cls):
+                break
+        else:
+            return False
+
+        assert exc.request is not None
+        method = exc.request.method.upper()
+        if method not in cls._RETRYABLE_METHODS:
+            return False
+
+        return True
 
     def get_delays(self) -> typing.Iterator[float]:
         """
@@ -380,13 +406,6 @@ class Retries:
         yield 0  # Retry immediately.
         for n in itertools.count(2):
             yield self.backoff_factor * (2 ** (n - 2))
-
-    def retry_flow(self, request: Request) -> typing.Generator[Request, None, None]:
-        """
-        Used by clients to determine what to do when failing to receive a response,
-        or when a response was received.
-        """
-        yield from self.limits.retry_flow(request)
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
