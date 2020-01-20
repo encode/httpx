@@ -142,14 +142,14 @@ async def test_no_retries_non_idempotent_methods() -> None:
 @pytest.mark.parametrize(
     "retries, delays",
     [
-        (httpx.Retries(), [0, 0, 0.2, 0.4, 0.8, 1.6]),
-        (httpx.Retries(backoff_factor=0.1), [0, 0, 0.1, 0.2, 0.4, 0.8]),
+        (httpx.Retries(), [0, 0.2, 0.4, 0.8, 1.6]),
+        (httpx.Retries(backoff_factor=0.1), [0, 0.1, 0.2, 0.4, 0.8]),
     ],
 )
 def test_retries_delays_sequence(
     retries: httpx.Retries, delays: typing.List[int]
 ) -> None:
-    sample_delays = list(itertools.islice(retries.get_delays(), 6))
+    sample_delays = list(itertools.islice(retries.get_delays(), 5))
     assert sample_delays == delays
 
 
@@ -157,8 +157,8 @@ def test_retries_delays_sequence(
 @pytest.mark.parametrize(
     "retries, elapsed",
     [
-        (httpx.Retries(), pytest.approx(0 + 0 + 0.2 + 0.4, rel=0.1)),
-        (httpx.Retries(backoff_factor=0.1), pytest.approx(0 + 0 + 0.1 + 0.2, rel=0.2)),
+        (httpx.Retries(), pytest.approx(0 + 0.2 + 0.4, rel=0.1)),
+        (httpx.Retries(backoff_factor=0.1), pytest.approx(0 + 0.1 + 0.2, rel=0.2)),
     ],
 )
 async def test_retries_backoff(retries: httpx.Retries, elapsed: float) -> None:

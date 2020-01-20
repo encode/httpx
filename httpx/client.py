@@ -1148,7 +1148,6 @@ class AsyncClient(BaseClient):
         retry_flow = retries.retry_flow(request)
 
         # Initialize the generators.
-        next(delays)
         request = next(retry_flow)
 
         while True:

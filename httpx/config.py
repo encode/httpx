@@ -377,7 +377,6 @@ class Retries:
         """
         Used by clients to determine how long to wait before issuing a new request.
         """
-        yield 0  # Send the initial request.
         yield 0  # Retry immediately.
         for n in itertools.count(2):
             yield self.backoff_factor * (2 ** (n - 2))
