@@ -337,6 +337,11 @@ class BaseClient:
 
         url = URL(location, allow_relative=True)
 
+        # Handle malformed 'Location' headers that are "absolute" form, have no host.
+        # See: https://github.com/encode/httpx/issues/771
+        if url.scheme and not url.host:
+            url = url.copy_with(host=request.url.host)
+
         # Facilitate relative 'Location' headers, as allowed by RFC 7231.
         # (e.g. '/path/to/resource' instead of 'http://domain.tld/path/to/resource')
         if url.is_relative_url:
@@ -672,7 +677,8 @@ class Client(BaseClient):
             if not response.is_redirect:
                 return response
 
-            response.read()
+            if allow_redirects:
+                response.read()
             request = self.build_redirect_request(request, response)
             history = history + [response]
 
@@ -1241,7 +1247,8 @@ class AsyncClient(BaseClient):
             if not response.is_redirect:
                 return response
 
-            await response.aread()
+            if allow_redirects:
+                await response.aread()
             request = self.build_redirect_request(request, response)
             history = history + [response]
 

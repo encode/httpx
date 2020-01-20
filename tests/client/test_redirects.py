@@ -15,6 +15,7 @@ from httpx import (
     codes,
 )
 from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx.content_streams import AsyncIteratorStream
 from httpx.dispatch.base import AsyncDispatcher
 
 
@@ -30,9 +31,16 @@ class MockDispatch(AsyncDispatcher):
             return Response(codes.OK, request=request)
 
         elif request.url.path == "/redirect_301":
+
+            async def body():
+                yield b"<a href='https://example.org/'>here</a>"
+
             status_code = codes.MOVED_PERMANENTLY
             headers = {"location": "https://example.org/"}
-            return Response(status_code, headers=headers, request=request)
+            stream = AsyncIteratorStream(aiterator=body())
+            return Response(
+                status_code, stream=stream, headers=headers, request=request
+            )
 
         elif request.url.path == "/redirect_302":
             status_code = codes.FOUND
@@ -46,6 +54,10 @@ class MockDispatch(AsyncDispatcher):
 
         elif request.url.path == "/relative_redirect":
             headers = {"location": "/"}
+            return Response(codes.SEE_OTHER, headers=headers, request=request)
+
+        elif request.url.path == "/malformed_redirect":
+            headers = {"location": "https://:443/"}
             return Response(codes.SEE_OTHER, headers=headers, request=request)
 
         elif request.url.path == "/no_scheme_redirect":
@@ -169,6 +181,16 @@ async def test_relative_redirect():
 
 
 @pytest.mark.usefixtures("async_environment")
+async def test_malformed_redirect():
+    # https://github.com/encode/httpx/issues/771
+    client = AsyncClient(dispatch=MockDispatch())
+    response = await client.get("http://example.org/malformed_redirect")
+    assert response.status_code == codes.OK
+    assert response.url == URL("https://example.org/")
+    assert len(response.history) == 1
+
+
+@pytest.mark.usefixtures("async_environment")
 async def test_no_scheme_redirect():
     client = AsyncClient(dispatch=MockDispatch())
     response = await client.get("https://example.org/no_scheme_redirect")
@@ -283,6 +305,16 @@ async def test_no_body_redirect():
     assert response.url == URL("https://example.org/redirect_body_target")
     assert response.json()["body"] == ""
     assert "content-length" not in response.json()["headers"]
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_can_stream_if_no_redirect():
+    client = AsyncClient(dispatch=MockDispatch())
+    url = "https://example.org/redirect_301"
+    async with client.stream("GET", url, allow_redirects=False) as response:
+        assert not response.is_closed
+    assert response.status_code == codes.MOVED_PERMANENTLY
+    assert response.headers["location"] == "https://example.org/"
 
 
 @pytest.mark.usefixtures("async_environment")
