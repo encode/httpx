@@ -1,7 +1,7 @@
 import functools
 import typing
 
-from .auth import Auth
+from .auth import Auth, AuthTypes, BasicAuth, FunctionAuth
 from .config import Timeout
 from .content_streams import ContentStream
 from .dispatch.base import AsyncDispatcher, SyncDispatcher
@@ -13,7 +13,7 @@ from .exceptions import (
 )
 from .models import URL, Cookies, Headers, Origin, Request, Response
 from .status_codes import codes
-from .utils import SyncOrAsync, get_logger
+from .utils import NetRCInfo, SyncOrAsync, get_logger
 
 logger = get_logger(__name__)
 
@@ -234,11 +234,37 @@ class AuthMiddleware:
 
     def __init__(self, parent: Middleware):
         self.parent = parent
+        self.netrc = NetRCInfo()
+
+    def _build_auth(
+        self, request: Request, trust_env: bool, auth: AuthTypes = None
+    ) -> Auth:
+        if auth is not None:
+            if isinstance(auth, tuple):
+                return BasicAuth(username=auth[0], password=auth[1])
+            elif isinstance(auth, Auth):
+                return auth
+            elif callable(auth):
+                return FunctionAuth(func=auth)
+            raise TypeError('Invalid "auth" argument.')
+
+        username, password = request.url.username, request.url.password
+        if username or password:
+            return BasicAuth(username=username, password=password)
+
+        if trust_env and "Authorization" not in request.headers:
+            credentials = self.netrc.get_credentials(request.url.authority)
+            if credentials is not None:
+                return BasicAuth(username=credentials[0], password=credentials[1])
+
+        return Auth()
 
     def __call__(
         self, request: Request, context: Context, timeout: Timeout,
     ) -> typing.Generator[typing.Any, typing.Any, Response]:
-        auth: Auth = context["auth"]
+        auth = self._build_auth(
+            request, trust_env=context["trust_env"], auth=context["auth"]
+        )
         history: typing.List[Response] = context.get("history", [])
 
         if auth.requires_request_body:

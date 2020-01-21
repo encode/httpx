@@ -3,7 +3,7 @@ from types import TracebackType
 
 import hstspreload
 
-from .auth import Auth, AuthTypes, BasicAuth, FunctionAuth
+from .auth import AuthTypes
 from .backends.base import ConcurrencyBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
@@ -42,7 +42,6 @@ from .models import (
     URLTypes,
 )
 from .utils import (
-    NetRCInfo,
     consume_generator,
     consume_generator_of_awaitables,
     get_environment_proxies,
@@ -80,7 +79,6 @@ class BaseClient:
         self.timeout = Timeout(timeout)
         self.max_redirects = max_redirects
         self.trust_env = trust_env
-        self.netrc = NetRCInfo()
         self._middleware_stack = self._build_middleware_stack()
 
     def get_proxy_map(
@@ -260,29 +258,6 @@ class BaseClient:
             return merged_queryparams
         return params
 
-    def build_auth(self, request: Request, auth: AuthTypes = None) -> Auth:
-        auth = self.auth if auth is None else auth
-
-        if auth is not None:
-            if isinstance(auth, tuple):
-                return BasicAuth(username=auth[0], password=auth[1])
-            elif isinstance(auth, Auth):
-                return auth
-            elif callable(auth):
-                return FunctionAuth(func=auth)
-            raise TypeError('Invalid "auth" argument.')
-
-        username, password = request.url.username, request.url.password
-        if username or password:
-            return BasicAuth(username=username, password=password)
-
-        if self.trust_env and "Authorization" not in request.headers:
-            credentials = self.netrc.get_credentials(request.url.authority)
-            if credentials is not None:
-                return BasicAuth(username=credentials[0], password=credentials[1])
-
-        return Auth()
-
     def _build_middleware_stack(self) -> MiddlewareStack:
         stack = MiddlewareStack()
         stack.add(AuthMiddleware)
@@ -298,10 +273,11 @@ class BaseClient:
         auth: AuthTypes = None,
     ) -> Context:
         return {
+            "trust_env": self.trust_env,
             "cookies": self.cookies,
             "dispatcher": dispatcher,
             "allow_redirects": allow_redirects,
-            "auth": self.build_auth(request, auth),
+            "auth": self.auth if auth is None else auth,
         }
 
 
