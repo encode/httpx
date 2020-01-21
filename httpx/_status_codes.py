@@ -1,5 +1,7 @@
 from enum import IntEnum
 
+__all__ = ["StatusCode", "codes"]
+
 
 class StatusCode(IntEnum):
     """HTTP status codes and reason phrases

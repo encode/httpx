@@ -54,6 +54,8 @@ from ._utils import (
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._dispatch.base import AsyncDispatcher  # noqa: F401
 
+__all__ = ["URL", "Cookies", "Headers", "QueryParams", "Request", "Response"]
+
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
 URLTypes = typing.Union["URL", str]

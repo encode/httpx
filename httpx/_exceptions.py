@@ -3,6 +3,29 @@ import typing
 if typing.TYPE_CHECKING:
     from ._models import Request, Response  # pragma: nocover
 
+__all__ = [
+    "ConnectTimeout",
+    "ConnectionClosed",
+    "CookieConflict",
+    "DecodingError",
+    "HTTPError",
+    "InvalidURL",
+    "NotRedirectResponse",
+    "PoolTimeout",
+    "ProtocolError",
+    "ProxyError",
+    "ReadTimeout",
+    "RedirectLoop",
+    "RequestBodyUnavailable",
+    "RequestNotRead",
+    "ResponseClosed",
+    "ResponseNotRead",
+    "StreamConsumed",
+    "TimeoutException",
+    "TooManyRedirects",
+    "WriteTimeout",
+]
+
 
 class HTTPError(Exception):
     """

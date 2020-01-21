@@ -14,6 +14,18 @@ from ._models import (
     URLTypes,
 )
 
+__all__ = [
+    "delete",
+    "get",
+    "head",
+    "options",
+    "patch",
+    "post",
+    "put",
+    "request",
+    "stream",
+]
+
 
 def request(
     method: str,

@@ -10,6 +10,12 @@ from ._exceptions import ProtocolError, RequestBodyUnavailable
 from ._models import Request, Response
 from ._utils import to_bytes, to_str, unquote
 
+__all__ = [
+    "Auth",
+    "BasicAuth",
+    "DigestAuth",
+]
+
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
     typing.Callable[["Request"], "Request"],

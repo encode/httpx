@@ -9,6 +9,8 @@ import certifi
 from ._models import URL, Headers, HeaderTypes, URLTypes
 from ._utils import get_ca_bundle_from_env, get_logger
 
+__all__ = ["PoolLimits", "Proxy", "Timeout"]
+
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
 TimeoutTypes = typing.Union[

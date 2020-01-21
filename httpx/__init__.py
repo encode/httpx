@@ -1,86 +1,15 @@
-from .__version__ import __description__, __title__, __version__
-from ._api import delete, get, head, options, patch, post, put, request, stream
-from ._auth import Auth, BasicAuth, DigestAuth
-from ._client import AsyncClient, Client
-from ._config import PoolLimits, Proxy, Timeout
-from ._dispatch.asgi import ASGIDispatch
-from ._dispatch.wsgi import WSGIDispatch
-from ._exceptions import (
-    ConnectionClosed,
-    ConnectTimeout,
-    CookieConflict,
-    DecodingError,
-    HTTPError,
-    InvalidURL,
-    NotRedirectResponse,
-    PoolTimeout,
-    ProtocolError,
-    ProxyError,
-    ReadTimeout,
-    RedirectLoop,
-    RequestBodyUnavailable,
-    RequestNotRead,
-    ResponseClosed,
-    ResponseNotRead,
-    StreamConsumed,
-    TimeoutException,
-    TooManyRedirects,
-    WriteTimeout,
-)
-from ._models import URL, Cookies, Headers, QueryParams, Request, Response
-from ._status_codes import StatusCode, codes
+# NOTE: The modules imported here and the elements declared there via '__all__'
+# define the public API of HTTPX.
+# Users are expected to 'import httpx', and then access elements from that top-level
+# namespace.
+# Anything else than what is exposed here is private API.
 
-__all__ = [
-    "__description__",
-    "__title__",
-    "__version__",
-    "delete",
-    "get",
-    "head",
-    "options",
-    "patch",
-    "post",
-    "patch",
-    "put",
-    "request",
-    "stream",
-    "codes",
-    "ASGIDispatch",
-    "AsyncClient",
-    "Auth",
-    "BasicAuth",
-    "Client",
-    "DigestAuth",
-    "PoolLimits",
-    "Proxy",
-    "Timeout",
-    "ConnectTimeout",
-    "CookieConflict",
-    "ConnectionClosed",
-    "DecodingError",
-    "HTTPError",
-    "InvalidURL",
-    "NotRedirectResponse",
-    "PoolTimeout",
-    "ProtocolError",
-    "ReadTimeout",
-    "RedirectLoop",
-    "RequestBodyUnavailable",
-    "ResponseClosed",
-    "ResponseNotRead",
-    "RequestNotRead",
-    "StreamConsumed",
-    "ProxyError",
-    "TooManyRedirects",
-    "WriteTimeout",
-    "URL",
-    "StatusCode",
-    "Cookies",
-    "Headers",
-    "QueryParams",
-    "Request",
-    "TimeoutException",
-    "Response",
-    "DigestAuth",
-    "WSGIDispatch",
-]
+from .__version__ import *  # noqa: F401, F403
+from ._api import *  # noqa: F401, F403
+from ._auth import *  # noqa: F401, F403
+from ._client import *  # noqa: F401, F403
+from ._config import *  # noqa: F401, F403
+from ._dispatch import *  # noqa: F401, F403
+from ._exceptions import *  # noqa: F401, F403
+from ._models import *  # noqa: F401, F403
+from ._status_codes import *  # noqa: F401, F403
