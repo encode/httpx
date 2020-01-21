@@ -112,9 +112,8 @@ class RedirectMiddleware:
                 return response
 
             if allow_redirects:
-                yield SyncOrAsync(
-                    for_sync=lambda: response.read(), for_async=lambda: response.aread()
-                )
+                yield SyncOrAsync(response.read, response.aread)
+
             request = self.build_redirect_request(request, response, context)
             context["history"] = history + [response]
 
@@ -268,9 +267,7 @@ class AuthMiddleware:
         history: typing.List[Response] = context.get("history", [])
 
         if auth.requires_request_body:
-            yield SyncOrAsync(
-                for_sync=lambda: request.read(), for_async=lambda: request.aread(),
-            )
+            yield SyncOrAsync(request.read, request.aread)
 
         auth_flow = auth.auth_flow(request)
         request = next(auth_flow)
@@ -281,10 +278,7 @@ class AuthMiddleware:
             except StopIteration:
                 return response
             except BaseException as exc:
-                yield SyncOrAsync(
-                    for_sync=lambda: response.close(),
-                    for_async=lambda: response.aclose(),
-                )
+                yield SyncOrAsync(response.close, response.aclose)
                 raise exc from None
             else:
                 response.history = list(history)
