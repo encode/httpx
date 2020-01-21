@@ -267,17 +267,16 @@ class BaseClient:
     def _build_context(
         self,
         *,
-        request: Request,
-        dispatcher: typing.Union[SyncDispatcher, AsyncDispatcher],
-        allow_redirects: bool = True,
+        allow_redirects: bool,
         auth: AuthTypes = None,
+        dispatcher: typing.Union[SyncDispatcher, AsyncDispatcher],
     ) -> Context:
         return {
-            "trust_env": self.trust_env,
-            "cookies": self.cookies,
-            "dispatcher": dispatcher,
             "allow_redirects": allow_redirects,
             "auth": self.auth if auth is None else auth,
+            "cookies": self.cookies,
+            "dispatcher": dispatcher,
+            "trust_env": self.trust_env,
         }
 
 
@@ -481,10 +480,9 @@ class Client(BaseClient):
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         context = self._build_context(
-            request=request,
-            dispatcher=self.dispatcher_for_url(request.url),
             allow_redirects=allow_redirects,
             auth=auth,
+            dispatcher=self.dispatcher_for_url(request.url),
         )
 
         response = consume_generator(self._middleware_stack(request, context, timeout))
@@ -915,10 +913,9 @@ class AsyncClient(BaseClient):
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         context = self._build_context(
-            request=request,
-            dispatcher=self.dispatcher_for_url(request.url),
             allow_redirects=allow_redirects,
             auth=auth,
+            dispatcher=self.dispatcher_for_url(request.url),
         )
 
         response = await consume_generator_of_awaitables(
