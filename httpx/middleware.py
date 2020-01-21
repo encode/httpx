@@ -17,8 +17,9 @@ from .utils import SyncOrAsync, get_logger
 
 logger = get_logger(__name__)
 
+Context = typing.Dict[str, typing.Any]
 Middleware = typing.Callable[
-    [Request, dict, Timeout], typing.Generator[typing.Any, typing.Any, Response]
+    [Request, Context, Timeout], typing.Generator[typing.Any, typing.Any, Response]
 ]
 
 
@@ -34,16 +35,6 @@ class MiddlewareStack:
     def add(self, cls: typing.Callable[..., Middleware], **kwargs: typing.Any) -> None:
         self.stack.append((cls, kwargs))
 
-    def create_context(self, request: Request, **kwargs: typing.Any) -> dict:
-        context = dict(kwargs)
-
-        for cls, _ in self.stack:
-            contribute_to_context = getattr(cls, "contribute_to_context", None)
-            if contribute_to_context is not None:
-                contribute_to_context(context, request)
-
-        return context
-
     def _build(self) -> Middleware:
         middleware: Middleware = SendSingleRequest()
         for cls, kwargs in self.stack:
@@ -51,7 +42,7 @@ class MiddlewareStack:
         return middleware
 
     def __call__(
-        self, request: Request, context: dict, timeout: Timeout
+        self, request: Request, context: Context, timeout: Timeout
     ) -> typing.Generator[typing.Any, typing.Any, Response]:
         if not hasattr(self, "_middleware"):
             self._middleware = self._build()
@@ -63,13 +54,8 @@ class SendSingleRequest:
     Sends a single request, without handling any redirections.
     """
 
-    @classmethod
-    def contribute_to_context(cls, context: dict, request: Request) -> None:
-        assert "dispatcher" in context
-        assert "cookies" in context
-
     def __call__(
-        self, request: Request, context: dict, timeout: Timeout
+        self, request: Request, context: Context, timeout: Timeout
     ) -> typing.Generator[typing.Any, typing.Any, Response]:
         dispatcher: typing.Union[SyncDispatcher, AsyncDispatcher] = (
             context["dispatcher"]
@@ -104,15 +90,11 @@ class RedirectMiddleware:
         self.parent = parent
         self.max_redirects = max_redirects
 
-    @classmethod
-    def contribute_to_context(cls, context: dict, request: Request) -> None:
-        assert "allow_redirects" in context
-        context.setdefault("history", [])
-
     def __call__(
-        self, request: Request, context: dict, timeout: Timeout,
+        self, request: Request, context: Context, timeout: Timeout,
     ) -> typing.Generator[typing.Any, typing.Any, Response]:
         allow_redirects: bool = context["allow_redirects"]
+        context.setdefault("history", [])
 
         while True:
             history: typing.List[Response] = context["history"]
@@ -141,7 +123,7 @@ class RedirectMiddleware:
                 return response
 
     def build_redirect_request(
-        self, request: Request, response: Response, context: dict
+        self, request: Request, response: Response, context: Context
     ) -> Request:
         """
         Given a request and a redirect response, return a new request that
@@ -253,16 +235,11 @@ class AuthMiddleware:
     def __init__(self, parent: Middleware):
         self.parent = parent
 
-    @classmethod
-    def contribute_to_context(cls, context: dict, request: Request) -> None:
-        assert "auth" in context
-        context.setdefault("history", [])
-
     def __call__(
-        self, request: Request, context: dict, timeout: Timeout,
+        self, request: Request, context: Context, timeout: Timeout,
     ) -> typing.Generator[typing.Any, typing.Any, Response]:
-        history: typing.List[Response] = context["history"]
         auth: Auth = context["auth"]
+        history: typing.List[Response] = context.get("history", [])
 
         if auth.requires_request_body:
             yield SyncOrAsync(

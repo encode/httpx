@@ -26,7 +26,7 @@ from .dispatch.proxy_http import HTTPProxy
 from .dispatch.urllib3 import URLLib3Dispatcher
 from .dispatch.wsgi import WSGIDispatch
 from .exceptions import InvalidURL
-from .middleware import AuthMiddleware, MiddlewareStack, RedirectMiddleware
+from .middleware import AuthMiddleware, Context, MiddlewareStack, RedirectMiddleware
 from .models import (
     URL,
     Cookies,
@@ -296,14 +296,13 @@ class BaseClient:
         dispatcher: typing.Union[SyncDispatcher, AsyncDispatcher],
         allow_redirects: bool = True,
         auth: AuthTypes = None,
-    ) -> dict:
-        return self._middleware_stack.create_context(
-            request,
-            cookies=self.cookies,
-            dispatcher=dispatcher,
-            allow_redirects=allow_redirects,
-            auth=self.build_auth(request, auth),
-        )
+    ) -> Context:
+        return {
+            "cookies": self.cookies,
+            "dispatcher": dispatcher,
+            "allow_redirects": allow_redirects,
+            "auth": self.build_auth(request, auth),
+        }
 
 
 class Client(BaseClient):
