@@ -399,10 +399,11 @@ class Retries:
 
     @classmethod
     def should_retry_on_exception(cls, exc: HTTPError) -> bool:
-        for exc_cls in cls._RETRYABLE_EXCEPTIONS:
-            if isinstance(exc, exc_cls):
-                break
-        else:
+        is_retryable_exception_class = any(
+            isinstance(exc, exc_cls) for exc_cls in cls._RETRYABLE_EXCEPTIONS
+        )
+
+        if not is_retryable_exception_class:
             return False
 
         assert exc.request is not None
