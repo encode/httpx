@@ -326,7 +326,7 @@ class Proxy:
 
         if url.scheme not in ("http", "https"):
             raise ValueError(f"Unknown scheme for proxy URL {url!r}")
-        if mode not in ("DEFAULT", "CONNECT_ONLY", "TUNNEL_ONLY"):
+        if mode not in ("DEFAULT", "FORWARD_ONLY", "TUNNEL_ONLY"):
             raise ValueError(f"Unknown proxy mode {mode!r}")
 
         if url.username or url.password:
