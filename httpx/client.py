@@ -10,7 +10,6 @@ from .backends.sync import SyncBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
-    DEFAULT_RETRIES_CONFIG,
     DEFAULT_TIMEOUT_CONFIG,
     UNSET,
     CertTypes,
@@ -68,8 +67,8 @@ class BaseClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
+        retries: RetriesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-        retries: RetriesTypes = DEFAULT_RETRIES_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         trust_env: bool = True,
@@ -86,8 +85,8 @@ class BaseClient:
         self._params = QueryParams(params)
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
-        self.timeout = Timeout(timeout)
         self.retries = Retries(retries)
+        self.timeout = Timeout(timeout)
         self.max_redirects = max_redirects
         self.trust_env = trust_env
         self.netrc = NetRCInfo()
@@ -453,8 +452,8 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         proxies: ProxiesTypes = None,
+        retries: RetriesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-        retries: RetriesTypes = DEFAULT_RETRIES_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
@@ -467,8 +466,8 @@ class Client(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
-            timeout=timeout,
             retries=retries,
+            timeout=timeout,
             max_redirects=max_redirects,
             base_url=base_url,
             trust_env=trust_env,
@@ -633,6 +632,11 @@ class Client(BaseClient):
         timeout: Timeout,
         allow_redirects: bool = True,
     ) -> Response:
+        if not retries.limit:
+            return self.send_handling_redirects(
+                request, auth=auth, timeout=timeout, allow_redirects=allow_redirects
+            )
+
         backend = self.backend
         retries_left = retries.limit
         delays = retries.get_delays()
@@ -646,9 +650,10 @@ class Client(BaseClient):
                     allow_redirects=allow_redirects,
                 )
             except HTTPError as exc:
-                if not retries.limit or not retries.should_retry_on_exception(exc):
-                    # We shouldn't retry at all in these cases, so let's re-raise
-                    # immediately to avoid polluting logs or the exception stack.
+                if not retries.should_retry_on_exception(exc):
+                    # Even if we have retries left, we're told to not even consider
+                    # retrying in this case. So let's re-raise immediately to avoid
+                    # polluting logs or the exception stack.
                     raise
 
                 logger.debug(f"HTTP Request failed: {exc!r}")
@@ -1022,8 +1027,8 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         proxies: ProxiesTypes = None,
+        retries: RetriesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-        retries: RetriesTypes = DEFAULT_RETRIES_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
@@ -1038,8 +1043,8 @@ class AsyncClient(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
-            timeout=timeout,
             retries=retries,
+            timeout=timeout,
             max_redirects=max_redirects,
             base_url=base_url,
             trust_env=trust_env,
@@ -1224,6 +1229,11 @@ class AsyncClient(BaseClient):
         timeout: Timeout,
         allow_redirects: bool = True,
     ) -> Response:
+        if not retries.limit:
+            return await self.send_handling_redirects(
+                request, auth=auth, timeout=timeout, allow_redirects=allow_redirects
+            )
+
         backend = lookup_backend()
 
         retries_left = retries.limit
@@ -1238,9 +1248,10 @@ class AsyncClient(BaseClient):
                     allow_redirects=allow_redirects,
                 )
             except HTTPError as exc:
-                if not retries.limit or not retries.should_retry_on_exception(exc):
-                    # We shouldn't retry at all in these cases, so let's re-raise
-                    # immediately to avoid polluting logs or the exception stack.
+                if not retries.should_retry_on_exception(exc):
+                    # Even if we have retries left, we're told to not even consider
+                    # retrying in this case. So let's re-raise immediately to avoid
+                    # polluting logs or the exception stack.
                     raise
 
                 logger.debug(f"HTTP Request failed: {exc!r}")

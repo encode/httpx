@@ -19,7 +19,7 @@ TimeoutTypes = typing.Union[
 ProxiesTypes = typing.Union[
     URLTypes, "Proxy", typing.Dict[URLTypes, typing.Union[URLTypes, "Proxy"]]
 ]
-RetriesTypes = typing.Union[int, "Retries"]
+RetriesTypes = typing.Union[None, int, "Retries"]
 
 
 DEFAULT_CIPHERS = ":".join(
@@ -372,8 +372,12 @@ class Retries:
         ("HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE")
     )
 
-    def __init__(self, retries: RetriesTypes, *, backoff_factor: float = None) -> None:
-        if isinstance(retries, int):
+    def __init__(
+        self, retries: RetriesTypes = None, *, backoff_factor: float = None
+    ) -> None:
+        if retries is None:
+            limit = 0
+        elif isinstance(retries, int):
             limit = retries
         else:
             assert isinstance(retries, Retries)
@@ -423,6 +427,5 @@ class Retries:
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
-DEFAULT_RETRIES_CONFIG = Retries(0, backoff_factor=0.2)
 DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
 DEFAULT_MAX_REDIRECTS = 20

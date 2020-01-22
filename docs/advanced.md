@@ -511,6 +511,12 @@ Or enable them on a client instance, which results in the given `retries` being 
 httpx.Client(retries=3)
 ```
 
+When using a client with retries enabled, you can still explicitly disable retries for a given request:
+
+```python
+response = client.get("https://example.org", retries=None)
+```
+
 ### Fine-tuning the retries configuration
 
 When enabling retries, the `retries` argument can also be an `httpx.Retries()` instance. It accepts the following arguments:

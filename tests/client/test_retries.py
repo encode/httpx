@@ -86,7 +86,7 @@ async def test_no_retries() -> None:
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_retries() -> None:
+async def test_client_retries() -> None:
     client = httpx.AsyncClient(dispatch=MockDispatch(succeed_after=3), retries=3)
 
     response = await client.get("https://example.com")
@@ -100,6 +100,17 @@ async def test_retries() -> None:
 
     response = await client.get("https://example.com/network_error")
     assert response.status_code == 200
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_request_retries() -> None:
+    client = httpx.AsyncClient(dispatch=MockDispatch(succeed_after=3))
+    response = await client.get("https://example.com", retries=3)
+    assert response.status_code == 200
+
+    client = httpx.AsyncClient(dispatch=MockDispatch(succeed_after=3), retries=3)
+    with pytest.raises(httpx.ConnectTimeout):
+        await client.get("https://example.com/connect_timeout", retries=None)
 
 
 @pytest.mark.usefixtures("async_environment")
