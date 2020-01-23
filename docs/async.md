@@ -95,17 +95,8 @@ await client.post(url, data=upload_bytes())
 
 HTTPX supports either `asyncio` or `trio` as an async environment.
 
-By default it will auto-detect which of those two to use as the backend
+It will auto-detect which of those two to use as the backend
 for socket operations and concurrency primitives.
-
-You can also explicitly select a backend by instantiating a client with the
-`backend` argument...
-
-```python
-client = httpx.AsyncClient(backend='auto')     # Autodetection. The default case.
-client = httpx.AsyncClient(backend='asyncio')  # Use asyncio as the backend.
-client = httpx.AsyncClient(backend='trio')     # Use trio as the backend.
-```
 
 ### [AsyncIO](https://docs.python.org/3/library/asyncio.html)
 

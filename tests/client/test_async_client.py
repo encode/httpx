@@ -160,10 +160,3 @@ async def test_uds(uds_server):
     assert response.status_code == 200
     assert response.text == "Hello, world!"
     assert response.encoding == "iso-8859-1"
-
-
-async def test_explicit_backend(server, async_environment):
-    async with httpx.AsyncClient(backend=async_environment) as client:
-        response = await client.get(server.url)
-    assert response.status_code == 200
-    assert response.text == "Hello, world!"
