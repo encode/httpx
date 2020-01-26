@@ -108,7 +108,7 @@ async def test_streaming_response_holds_connection(server):
 @pytest.mark.usefixtures("async_environment")
 async def test_multiple_concurrent_connections(server):
     """
-    Multiple conncurrent requests should open multiple conncurrent connections.
+    Multiple concurrent requests should open multiple concurrent connections.
     """
     async with ConnectionPool() as http:
         response_a = await http.request("GET", server.url)
