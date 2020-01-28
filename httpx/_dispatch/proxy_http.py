@@ -3,8 +3,8 @@ import typing
 import warnings
 from base64 import b64encode
 
-from ..backends.base import ConcurrencyBackend
-from ..config import (
+from .._backends.base import ConcurrencyBackend
+from .._config import (
     DEFAULT_POOL_LIMITS,
     CertTypes,
     PoolLimits,
@@ -12,9 +12,9 @@ from ..config import (
     Timeout,
     VerifyTypes,
 )
-from ..exceptions import ProxyError
-from ..models import URL, Headers, HeaderTypes, Origin, Request, Response, URLTypes
-from ..utils import get_logger
+from .._exceptions import ProxyError
+from .._models import URL, Headers, HeaderTypes, Origin, Request, Response, URLTypes
+from .._utils import get_logger
 from .connection import HTTPConnection
 from .connection_pool import ConnectionPool
 

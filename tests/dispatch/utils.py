@@ -6,7 +6,7 @@ import h2.connection
 import h2.events
 
 from httpx import Request, Timeout
-from httpx.backends.base import BaseSocketStream, lookup_backend
+from httpx._backends.base import BaseSocketStream, lookup_backend
 
 
 class MockHTTP2Backend:

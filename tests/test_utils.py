@@ -4,7 +4,7 @@ import os
 import pytest
 
 import httpx
-from httpx.utils import (
+from httpx._utils import (
     ElapsedTimer,
     NetRCInfo,
     get_ca_bundle_from_env,
@@ -98,7 +98,7 @@ async def test_logs_debug(server, capsys):
             assert response.status_code == 200
     stderr = capsys.readouterr().err
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
-    assert "httpx.dispatch.connection_pool" not in stderr
+    assert "httpx._dispatch.connection_pool" not in stderr
 
 
 @pytest.mark.asyncio
@@ -109,7 +109,7 @@ async def test_logs_trace(server, capsys):
             assert response.status_code == 200
     stderr = capsys.readouterr().err
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
-    assert "httpx.dispatch.connection_pool" in stderr
+    assert "httpx._dispatch.connection_pool" in stderr
 
 
 @pytest.mark.asyncio
@@ -283,5 +283,5 @@ def test_obfuscate_sensitive_headers(headers, output):
 )
 def test_should_not_be_proxied(url, no_proxy, expected):
     os.environ.update(no_proxy)
-    parsed_url = httpx.models.URL(url)
+    parsed_url = httpx.URL(url)
     assert should_not_be_proxied(parsed_url) == expected

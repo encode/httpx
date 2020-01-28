@@ -8,7 +8,7 @@ import certifi
 import pytest
 
 import httpx
-from httpx.config import SSLConfig
+from httpx._config import SSLConfig
 
 
 def test_load_ssl_config():

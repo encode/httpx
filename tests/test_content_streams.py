@@ -2,8 +2,8 @@ import io
 
 import pytest
 
-from httpx.content_streams import ContentStream, encode
-from httpx.exceptions import StreamConsumed
+from httpx import StreamConsumed
+from httpx._content_streams import ContentStream, encode
 
 
 @pytest.mark.asyncio

@@ -3,10 +3,10 @@ import typing
 
 import h11
 
-from ..backends.base import ConcurrencyBackend, lookup_backend
-from ..config import SSLConfig, Timeout
-from ..models import URL, Origin, Request, Response
-from ..utils import get_logger
+from .._backends.base import ConcurrencyBackend, lookup_backend
+from .._config import SSLConfig, Timeout
+from .._models import URL, Origin, Request, Response
+from .._utils import get_logger
 from .base import AsyncDispatcher
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection

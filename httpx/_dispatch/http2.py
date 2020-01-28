@@ -5,17 +5,17 @@ import h2.events
 from h2.config import H2Configuration
 from h2.settings import SettingCodes, Settings
 
-from ..backends.base import (
+from .._backends.base import (
     BaseLock,
     BaseSocketStream,
     ConcurrencyBackend,
     lookup_backend,
 )
-from ..config import Timeout
-from ..content_streams import AsyncIteratorStream
-from ..exceptions import ProtocolError
-from ..models import Request, Response
-from ..utils import get_logger
+from .._config import Timeout
+from .._content_streams import AsyncIteratorStream
+from .._exceptions import ProtocolError
+from .._models import Request, Response
+from .._utils import get_logger
 
 logger = get_logger(__name__)
 

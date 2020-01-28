@@ -1,11 +1,11 @@
 from .__version__ import __description__, __title__, __version__
-from .api import delete, get, head, options, patch, post, put, request, stream
-from .auth import Auth, BasicAuth, DigestAuth
-from .client import AsyncClient, Client
-from .config import PoolLimits, Proxy, Timeout
-from .dispatch.asgi import ASGIDispatch
-from .dispatch.wsgi import WSGIDispatch
-from .exceptions import (
+from ._api import delete, get, head, options, patch, post, put, request, stream
+from ._auth import Auth, BasicAuth, DigestAuth
+from ._client import AsyncClient, Client
+from ._config import PoolLimits, Proxy, Timeout
+from ._dispatch.asgi import ASGIDispatch
+from ._dispatch.wsgi import WSGIDispatch
+from ._exceptions import (
     ConnectionClosed,
     ConnectTimeout,
     CookieConflict,
@@ -27,8 +27,8 @@ from .exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
-from .models import URL, Cookies, Headers, QueryParams, Request, Response
-from .status_codes import StatusCode, codes
+from ._models import URL, Cookies, Headers, QueryParams, Request, Response
+from ._status_codes import StatusCode, codes
 
 __all__ = [
     "__description__",

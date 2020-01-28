@@ -2,7 +2,7 @@ import contextlib
 import logging
 import os
 
-from httpx import utils
+from httpx import _utils
 
 
 @contextlib.contextmanager
@@ -10,8 +10,8 @@ def override_log_level(log_level: str):
     os.environ["HTTPX_LOG_LEVEL"] = log_level
 
     # Force a reload on the logging handlers
-    utils._LOGGER_INITIALIZED = False
-    utils.get_logger("httpx")
+    _utils._LOGGER_INITIALIZED = False
+    _utils.get_logger("httpx")
 
     try:
         yield

@@ -9,7 +9,7 @@ import zlib
 
 import chardet
 
-from .exceptions import DecodingError
+from ._exceptions import DecodingError
 
 try:
     import brotli

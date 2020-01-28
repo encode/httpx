@@ -1,8 +1,8 @@
 import pytest
 
 import httpx
-from httpx.config import SSLConfig
-from httpx.dispatch.connection import HTTPConnection
+from httpx._config import SSLConfig
+from httpx._dispatch.connection import HTTPConnection
 
 
 @pytest.mark.usefixtures("async_environment")

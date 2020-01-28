@@ -4,9 +4,9 @@ from types import TracebackType
 
 import hstspreload
 
-from .auth import Auth, AuthTypes, BasicAuth, FunctionAuth
-from .backends.base import ConcurrencyBackend
-from .config import (
+from ._auth import Auth, AuthTypes, BasicAuth, FunctionAuth
+from ._backends.base import ConcurrencyBackend
+from ._config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
@@ -20,21 +20,21 @@ from .config import (
     UnsetType,
     VerifyTypes,
 )
-from .content_streams import ContentStream
-from .dispatch.asgi import ASGIDispatch
-from .dispatch.base import AsyncDispatcher, SyncDispatcher
-from .dispatch.connection_pool import ConnectionPool
-from .dispatch.proxy_http import HTTPProxy
-from .dispatch.urllib3 import URLLib3Dispatcher
-from .dispatch.wsgi import WSGIDispatch
-from .exceptions import (
+from ._content_streams import ContentStream
+from ._dispatch.asgi import ASGIDispatch
+from ._dispatch.base import AsyncDispatcher, SyncDispatcher
+from ._dispatch.connection_pool import ConnectionPool
+from ._dispatch.proxy_http import HTTPProxy
+from ._dispatch.urllib3 import URLLib3Dispatcher
+from ._dispatch.wsgi import WSGIDispatch
+from ._exceptions import (
     HTTPError,
     InvalidURL,
     RedirectLoop,
     RequestBodyUnavailable,
     TooManyRedirects,
 )
-from .models import (
+from ._models import (
     URL,
     Cookies,
     CookieTypes,
@@ -49,8 +49,8 @@ from .models import (
     Response,
     URLTypes,
 )
-from .status_codes import codes
-from .utils import NetRCInfo, get_environment_proxies, get_logger
+from ._status_codes import codes
+from ._utils import NetRCInfo, get_environment_proxies, get_logger
 
 logger = get_logger(__name__)
 

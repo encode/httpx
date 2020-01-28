@@ -14,9 +14,9 @@ from httpx import (
     TooManyRedirects,
     codes,
 )
-from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx.content_streams import AsyncIteratorStream
-from httpx.dispatch.base import AsyncDispatcher
+from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx._content_streams import AsyncIteratorStream
+from httpx._dispatch.base import AsyncDispatcher
 
 
 class MockDispatch(AsyncDispatcher):

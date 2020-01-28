@@ -2,7 +2,7 @@ import ssl
 import typing
 from types import TracebackType
 
-from ..config import Timeout
+from .._config import Timeout
 
 
 def lookup_backend(

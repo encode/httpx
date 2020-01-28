@@ -1,7 +1,7 @@
 import pytest
 
 import httpx
-from httpx.dispatch.connection_pool import ConnectionPool
+from httpx._dispatch.connection_pool import ConnectionPool
 
 
 @pytest.mark.usefixtures("async_environment")

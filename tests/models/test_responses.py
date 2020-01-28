@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 
 import httpx
-from httpx.content_streams import AsyncIteratorStream, IteratorStream
+from httpx._content_streams import AsyncIteratorStream, IteratorStream
 
 REQUEST = httpx.Request("GET", "https://example.org")
 
@@ -369,7 +369,7 @@ def test_json_without_specified_encoding_decode_error():
     content = json.dumps(data).encode("utf-32-be")
     headers = {"Content-Type": "application/json"}
     # force incorrect guess from `guess_json_utf` to trigger error
-    with mock.patch("httpx.models.guess_json_utf", return_value="utf-32"):
+    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32"):
         response = httpx.Response(
             200, content=content, headers=headers, request=REQUEST
         )
