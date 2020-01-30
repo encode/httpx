@@ -99,8 +99,8 @@ app = Flask(__name__)
 def hello():
     return "Hello World!"
 
-with httpx.Client(app=app) as client:
-    r = client.get('http://example/')
+with httpx.Client(app=app, base_url="http://testserver") as client:
+    r = client.get("/")
     assert r.status_code == 200
     assert r.text == "Hello World!"
 ```
@@ -116,7 +116,7 @@ For example:
 ```python
 # Instantiate a client that makes WSGI requests with a client IP of "1.2.3.4".
 dispatch = httpx.WSGIDispatch(app=app, remote_addr="1.2.3.4")
-with httpx.Client(dispatch=dispatch) as client:
+with httpx.Client(dispatch=dispatch, base_url="http://testserver") as client:
     ...
 ```
 
