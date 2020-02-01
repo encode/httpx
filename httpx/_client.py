@@ -34,6 +34,7 @@ from ._exceptions import (
     RequestBodyUnavailable,
     TooManyRedirects,
 )
+from ._middleware import Middleware, MiddlewareStack
 from ._models import (
     URL,
     Cookies,
@@ -50,7 +51,7 @@ from ._models import (
     URLTypes,
 )
 from ._status_codes import codes
-from ._utils import NetRCInfo, get_environment_proxies, get_logger
+from ._utils import NetRCInfo, consume_generator, get_environment_proxies, get_logger
 
 logger = get_logger(__name__)
 
@@ -451,6 +452,7 @@ class Client(BaseClient):
         dispatch: SyncDispatcher = None,
         app: typing.Callable = None,
         trust_env: bool = True,
+        middleware: typing.Sequence[Middleware] = None,
     ):
         super().__init__(
             auth=auth,
@@ -483,6 +485,13 @@ class Client(BaseClient):
             )
             for key, proxy in proxy_map.items()
         }
+
+        def get_response(
+            request: Request, timeout: Timeout, **kwargs: typing.Any
+        ) -> typing.Generator:
+            yield self.send_handling_redirects(request, timeout=timeout, **kwargs)
+
+        self.middleware_stack = MiddlewareStack(get_response, middleware)
 
     def init_dispatch(
         self,
@@ -558,6 +567,7 @@ class Client(BaseClient):
         auth: AuthTypes = None,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        **kwargs: typing.Any,
     ) -> Response:
         request = self.build_request(
             method=method,
@@ -570,7 +580,11 @@ class Client(BaseClient):
             cookies=cookies,
         )
         return self.send(
-            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout,
+            request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+            **kwargs,
         )
 
     def send(
@@ -581,6 +595,7 @@ class Client(BaseClient):
         auth: AuthTypes = None,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        **kwargs: typing.Any,
     ) -> Response:
         if request.url.scheme not in ("http", "https"):
             raise InvalidURL('URL scheme must be "http" or "https".')
@@ -589,8 +604,10 @@ class Client(BaseClient):
 
         auth = self.build_auth(request, auth)
 
-        response = self.send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        response = consume_generator(
+            self.middleware_stack(
+                request, timeout, auth=auth, allow_redirects=allow_redirects, **kwargs
+            )
         )
 
         if not stream:
@@ -705,6 +722,7 @@ class Client(BaseClient):
         auth: AuthTypes = None,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        **kwargs: typing.Any,
     ) -> Response:
         return self.request(
             "GET",
@@ -715,6 +733,7 @@ class Client(BaseClient):
             auth=auth,
             allow_redirects=allow_redirects,
             timeout=timeout,
+            **kwargs,
         )
 
     def options(

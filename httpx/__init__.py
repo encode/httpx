@@ -27,6 +27,7 @@ from ._exceptions import (
     TooManyRedirects,
     WriteTimeout,
 )
+from ._middleware import Middleware
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import StatusCode, codes
 
@@ -83,4 +84,5 @@ __all__ = [
     "Response",
     "DigestAuth",
     "WSGIDispatch",
+    "Middleware",
 ]

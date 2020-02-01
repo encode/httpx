@@ -20,6 +20,8 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from ._models import URL
 
 
+T = typing.TypeVar("T")
+
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
 _HTML5_FORM_ENCODING_REPLACEMENTS.update(
     {chr(c): "%{:02X}".format(c) for c in range(0x00, 0x1F + 1) if c != 0x1B}
@@ -367,3 +369,19 @@ def as_network_error(*exception_classes: type) -> typing.Iterator[None]:
             if isinstance(exc, cls):
                 raise NetworkError(exc) from exc
         raise
+
+
+def consume_generator(gen: typing.Generator[typing.Any, typing.Any, T]) -> T:
+    """
+    Run a generator to completion and return the result, assuming that yielded
+    values are synchronous (i.e. they're not coroutines).
+    """
+    value: typing.Any = None
+
+    while True:
+        try:
+            value = gen.send(value)
+        except StopIteration as exc:
+            return exc.value
+        except BaseException as exc:
+            value = gen.throw(type(exc), exc, exc.__traceback__)
