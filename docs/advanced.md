@@ -471,3 +471,160 @@ If you do need to make HTTPS connections to a local server, for example to test 
 >>> r
 Response <200 OK>
 ```
+
+## Middleware
+
+Middleware is a general-purpose mechanism for extending the built-in functionality of a `Client`.
+
+### Using middleware
+
+Middleware generally comes in the form of classes. Middleware classes and their configuration parameters are meant to be passed as a list of `httpx.Middleware` instances to a client:
+
+```python
+from example.middleware import ExampleMiddleware
+import httpx
+
+middleware = [
+    httpx.Middleware(ExampleMiddleware, client_param="value", ...),
+]
+
+with httpx.Client(middleware=middleware) as client:
+    # This request will pass through ExampleMiddleware before
+    # reaching the core processing layers of the Client.
+    r = client.get("https://example.org")
+```
+
+### Writing middleware
+
+Middleware classes should accept a `get_response` parameter, that represents the inner middleware, as well as any keyword arguments for middleware-specific configuration options. They should implement the `.__call__()` method, that accepts a `request`, `timeout` configuration, and any per-request keyword arguments coming directly from keyword arguments passed to `client.get()`, `client.post()`, etc. The `__call__()` method should return a generator that returns a `Response` instance. To get a response from the inner middleware, use `response = yield from get_response(...)`.
+
+#### Basic example
+
+Here is a "do-nothing" middleware that sends the request unmodified, and returns the response unmodified:
+
+```python
+import httpx
+
+class PassThroughMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request, timeout, **kwargs):
+        return (yield from self.get_response(request, timeout, **kwargs))
+```
+
+#### Inspecting requests and responses
+
+Here is a middleware that prints out information about the request and the response, as well as any client or request options:
+
+```python
+import httpx
+
+class ExampleMiddleware:
+    def __init__(self, get_response, **options):
+        self.get_response = get_response
+        self.options = options
+        print(f"Client options: {self.options}")
+
+    def __call__(self, request, timeout, **kwargs):
+        print(f"Response options: {kwargs}")
+        print(f"Request: {request}")
+        response = yield from self.get_response(request, timeout, **kwargs)
+        print(f"Response: {response}")
+        return response
+
+middleware = [httpx.Middleware(ExampleMiddleware, client_option="example")]
+
+with httpx.Client(middleware=middleware) as client:
+    print("Sending request...")
+    r = client.get("https://example.org", request_option="example")
+    print("Got response")
+```
+
+Output:
+
+```console
+Client options: {'client_option': 'example'}
+Sending request...
+Request: <Request('GET', 'https://example.org')>
+Request options: {'request_option': 'example'}
+Options: {'param': 'value'}
+Response: <Response [200 OK]>
+Got response
+```
+
+#### Sending multiple requests
+
+Middleware can use the `yield from get_response()` construct multiple times to send multiple requests.
+
+This can be useful to implement behaviors such as retries, mechanisms involving web hooks, and other advanced features.
+
+#### Example: retry middleware
+
+The example below shows how to implement a general-purpose retry middleware based on the excellent [Tenacity](https://github.com/jd/tenacity) library, including type annotations usage.
+
+```python
+# retries.py
+from typing import Any, Callable, Generator
+
+import httpx
+import tenacity
+
+
+class RetryingMiddleware:
+    def __init__(self, get_response: Callable, *, retrying: tenacity.Retrying) -> None:
+        self.get_response = get_response
+        self.retrying = retrying
+
+    def __call__(
+        self, request: httpx.Request, timeout: httpx.Timeout, **kwargs: Any
+    ) -> Generator[Any, Any, httpx.Response]:
+        # Allow overriding the retries algorithm per-request.
+        retrying = self.retrying if "retrying" not in kwargs else kwargs["retrying"]
+
+        try:
+            for attempt in retrying:
+                with attempt:
+                    response = yield from self.get_response(request, timeout, **kwargs)
+                    break
+                print("Failed!")
+        except tenacity.RetryError as exc:
+            # Wrap as an HTTPX-specific exception.
+            raise httpx.HTTPError(exc, request=request)
+        else:
+            return response
+```
+
+Usage:
+
+```python
+import httpx
+import tenacity
+
+from .retries import RetryingMiddleware
+
+middleware = [
+    httpx.Middleware(
+        RetryingMiddleware,
+        retrying=tenacity.Retrying(
+            retry=tenacity.retry_if_exception_type(httpx._exceptions.NetworkError),
+            stop=tenacity.stop_after_attempt(3),
+            wait=tenacity.wait_exponential(multiplier=1, min=0.5, max=10),
+        ),
+    )
+]
+
+with httpx.Client(middleware=middleware) as client:
+    # Network failures on this request (such as failures to establish
+    # a connection, or failures to keep the connection open) will be
+    # retried on at most 3 times.
+    r = client.get("https://doesnotexist.org")
+
+    # Read timeouts on this request will be retried on at most 5 times,
+    # with a constant 200ms delay between retries.
+    retry_on_read_timeouts = tenacity.Retrying(
+        retry=tenacity.retry_if_exception_type(httpx.ReadTimeout),
+        wait=tenacity.wait_fixed(0.2),
+    )
+    r = client.get("https://flakyserver.io", retrying=retry_on_read_timeouts)
+```
