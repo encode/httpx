@@ -657,6 +657,8 @@ class Client(BaseClient):
         request = next(auth_flow)
         while True:
             response = self.send_single_request(request, timeout)
+            if auth.requires_response_body:
+                response.read()
             try:
                 next_request = auth_flow.send(response)
             except StopIteration:
@@ -1182,6 +1184,8 @@ class AsyncClient(BaseClient):
         request = next(auth_flow)
         while True:
             response = await self.send_single_request(request, timeout)
+            if auth.requires_response_body:
+                await response.aread()
             try:
                 next_request = auth_flow.send(response)
             except StopIteration:
