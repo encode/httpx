@@ -12,8 +12,9 @@ from .._config import (
     Timeout,
     VerifyTypes,
 )
+from .._content_streams import ContentStream
 from .._exceptions import ProxyError
-from .._models import URL, Headers, HeaderTypes, Origin, Request, Response, URLTypes
+from .._models import URL, Headers, HeaderTypes, Origin, Request, URLTypes
 from .._utils import get_logger
 from .connection import HTTPConnection
 from .connection_pool import ConnectionPool
@@ -155,24 +156,27 @@ class HTTPProxy(ConnectionPool):
         self.active_connections.add(connection)
 
         # See if our tunnel has been opened successfully
-        proxy_response = await connection.send(proxy_request)
+        status_code, http_version, headers, stream = await connection.send(
+            proxy_request.method.encode("ascii"),
+            proxy_request.url,
+            proxy_request.headers,
+            proxy_request.stream,
+        )
         logger.trace(
             f"tunnel_response "
             f"proxy_url={self.proxy_url!r} "
             f"origin={origin!r} "
-            f"response={proxy_response!r}"
+            f"response={status_code!r}"
         )
-        if not (200 <= proxy_response.status_code <= 299):
-            await proxy_response.aread()
+        if not (200 <= status_code <= 299):
+            await stream.aclose()
             raise ProxyError(
-                f"Non-2XX response received from HTTP proxy "
-                f"({proxy_response.status_code})",
+                f"Non-2XX response received from HTTP proxy " f"({status_code})",
                 request=proxy_request,
-                response=proxy_response,
             )
         else:
             # Hack to ingest the response, without closing it.
-            async for chunk in proxy_response._raw_stream:
+            async for chunk in stream:
                 pass
 
         return connection
@@ -187,18 +191,27 @@ class HTTPProxy(ConnectionPool):
             self.proxy_mode == DEFAULT_MODE and not origin.is_ssl
         ) or self.proxy_mode == FORWARD_ONLY
 
-    async def send(self, request: Request, timeout: Timeout = None) -> Response:
-        if self.should_forward_origin(Origin(request.url)):
+    async def send(
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
+        timeout: Timeout = None,
+    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+        if self.should_forward_origin(Origin(url)):
             # Change the request to have the target URL
             # as its full_path and switch the proxy URL
             # for where the request will be sent.
-            target_url = str(request.url)
-            request.url = self.proxy_url.copy_with()
-            request.url.full_path = target_url
+            target_url = str(url)
+            url = self.proxy_url.copy_with()
+            url.full_path = target_url
             for name, value in self.proxy_headers.items():
-                request.headers.setdefault(name, value)
+                headers.setdefault(name, value)
 
-        return await super().send(request=request, timeout=timeout)
+        return await super().send(
+            method, url, headers=headers, stream=stream, timeout=timeout
+        )
 
     def __repr__(self) -> str:
         return (

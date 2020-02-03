@@ -9,8 +9,9 @@ from .._config import (
     Timeout,
     VerifyTypes,
 )
+from .._content_streams import ContentStream
 from .._exceptions import PoolTimeout
-from .._models import Origin, Request, Response
+from .._models import URL, Headers, Origin
 from .._utils import get_logger
 from .base import AsyncDispatcher
 from .connection import HTTPConnection
@@ -144,19 +145,24 @@ class ConnectionPool(AsyncDispatcher):
                 self.max_connections.release()
                 await connection.close()
 
-    async def send(self, request: Request, timeout: Timeout = None) -> Response:
+    async def send(
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
+        timeout: Timeout = None,
+    ) -> typing.Tuple[int, str, Headers, ContentStream]:
         await self.check_keepalive_expiry()
-        connection = await self.acquire_connection(
-            origin=Origin(request.url), timeout=timeout
-        )
+        connection = await self.acquire_connection(origin=Origin(url), timeout=timeout)
         try:
-            response = await connection.send(request, timeout=timeout)
+            return await connection.send(
+                method, url, headers=headers, stream=stream, timeout=timeout
+            )
         except BaseException as exc:
             self.active_connections.remove(connection)
             self.max_connections.release()
             raise exc
-
-        return response
 
     async def acquire_connection(
         self, origin: Origin, timeout: Timeout = None

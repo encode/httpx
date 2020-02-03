@@ -1,23 +1,25 @@
-import json
+import typing
 
 import pytest
 
-from httpx import URL, AsyncClient, QueryParams, Request, Response
-from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx import URL, AsyncClient, Headers, QueryParams
+from httpx._config import TimeoutTypes
+from httpx._content_streams import ContentStream, JSONStream
 from httpx._dispatch.base import AsyncDispatcher
 
 
 class MockDispatch(AsyncDispatcher):
     async def send(
         self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
         timeout: TimeoutTypes = None,
-    ) -> Response:
-        if request.url.path.startswith("/echo_queryparams"):
-            body = json.dumps({"ok": "ok"}).encode()
-            return Response(200, content=body, request=request)
+    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+        headers = Headers()
+        body = JSONStream({"ok": "ok"})
+        return 200, "HTTP/1.1", headers, body
 
 
 def test_client_queryparams():

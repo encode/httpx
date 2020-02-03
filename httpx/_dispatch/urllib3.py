@@ -15,8 +15,8 @@ from .._config import (
     Timeout,
     VerifyTypes,
 )
-from .._content_streams import IteratorStream
-from .._models import Request, Response
+from .._content_streams import ContentStream, IteratorStream
+from .._models import URL, Headers
 from .._utils import as_network_error
 from .base import SyncDispatcher
 
@@ -85,20 +85,27 @@ class URLLib3Dispatcher(SyncDispatcher):
                 block=block,
             )
 
-    def send(self, request: Request, timeout: Timeout = None) -> Response:
+    def send(
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
+        timeout: Timeout = None,
+    ) -> typing.Tuple[int, str, Headers, ContentStream]:
         timeout = Timeout() if timeout is None else timeout
         urllib3_timeout = urllib3.util.Timeout(
             connect=timeout.connect_timeout, read=timeout.read_timeout
         )
-        chunked = request.headers.get("Transfer-Encoding") == "chunked"
-        content_length = int(request.headers.get("Content-Length", "0"))
-        body = request.stream if chunked or content_length else None
+        chunked = headers.get("Transfer-Encoding") == "chunked"
+        content_length = int(headers.get("Content-Length", "0"))
+        body = stream if chunked or content_length else None
 
         with as_network_error(MaxRetryError, SSLError, socket.error):
             conn = self.pool.urlopen(
-                method=request.method,
-                url=str(request.url),
-                headers=dict(request.headers),
+                method=method.decode(),
+                url=str(url),
+                headers=dict(headers),
                 body=body,
                 redirect=False,
                 assert_same_host=False,
@@ -114,15 +121,12 @@ class URLLib3Dispatcher(SyncDispatcher):
                 for chunk in conn.stream(4096, decode_content=False):
                     yield chunk
 
-        return Response(
-            status_code=conn.status,
-            http_version="HTTP/1.1",
-            headers=list(conn.headers.items()),
-            stream=IteratorStream(
-                iterator=response_bytes(), close_func=conn.release_conn
-            ),
-            request=request,
+        status_code = conn.status
+        headers = Headers(list(conn.headers.items()))
+        response_stream = IteratorStream(
+            iterator=response_bytes(), close_func=conn.release_conn
         )
+        return (status_code, "HTTP/1.1", headers, response_stream)
 
     def close(self) -> None:
         self.pool.clear()

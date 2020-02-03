@@ -12,9 +12,9 @@ from .._backends.base import (
     lookup_backend,
 )
 from .._config import Timeout
-from .._content_streams import AsyncIteratorStream
+from .._content_streams import AsyncIteratorStream, ContentStream
 from .._exceptions import ProtocolError
-from .._models import Request, Response
+from .._models import URL, Headers
 from .._utils import get_logger
 
 logger = get_logger(__name__)
@@ -52,7 +52,14 @@ class HTTP2Connection:
             self._initialization_lock = self.backend.create_lock()
         return self._initialization_lock
 
-    async def send(self, request: Request, timeout: Timeout = None) -> Response:
+    async def send(
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
+        timeout: Timeout = None,
+    ) -> typing.Tuple[int, str, Headers, ContentStream]:
         timeout = Timeout() if timeout is None else timeout
 
         async with self.init_lock:
@@ -62,10 +69,10 @@ class HTTP2Connection:
                 self.sent_connection_init = True
             stream_id = self.state.get_next_available_stream_id()
 
-        stream = HTTP2Stream(stream_id=stream_id, connection=self)
-        self.streams[stream_id] = stream
+        h2_stream = HTTP2Stream(stream_id=stream_id, connection=self)
+        self.streams[stream_id] = h2_stream
         self.events[stream_id] = []
-        return await stream.send(request, timeout)
+        return await h2_stream.send(method, url, headers, stream, timeout)
 
     async def send_connection_init(self, timeout: Timeout) -> None:
         """
@@ -199,58 +206,59 @@ class HTTP2Stream:
         self.stream_id = stream_id
         self.connection = connection
 
-    async def send(self, request: Request, timeout: Timeout) -> Response:
+    async def send(
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
+        timeout: Timeout,
+    ) -> typing.Tuple[int, str, Headers, ContentStream]:
         # Send the request.
-        has_body = (
-            "Content-Length" in request.headers
-            or "Transfer-Encoding" in request.headers
-        )
+        has_body = "Content-Length" in headers or "Transfer-Encoding" in headers
 
-        await self.send_headers(request, has_body, timeout)
+        await self.send_headers(method, url, headers, has_body, timeout)
         if has_body:
-            await self.send_body(request, timeout)
+            await self.send_body(stream, timeout)
 
         # Receive the response.
-        status_code, headers = await self.receive_response(timeout)
-        stream = AsyncIteratorStream(
+        status_code, response_headers = await self.receive_response(timeout)
+        response_stream = AsyncIteratorStream(
             aiterator=self.body_iter(timeout), close_func=self.close
         )
 
-        return Response(
-            status_code=status_code,
-            http_version="HTTP/2",
-            headers=headers,
-            stream=stream,
-            request=request,
-        )
+        return (status_code, "HTTP/2", Headers(response_headers), response_stream)
 
     async def send_headers(
-        self, request: Request, has_body: bool, timeout: Timeout
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        has_body: bool,
+        timeout: Timeout,
     ) -> None:
-        headers = [
-            (b":method", request.method.encode("ascii")),
-            (b":authority", request.url.authority.encode("ascii")),
-            (b":scheme", request.url.scheme.encode("ascii")),
-            (b":path", request.url.full_path.encode("ascii")),
-        ] + [
-            (k, v)
-            for k, v in request.headers.raw
-            if k not in (b"host", b"transfer-encoding")
-        ]
+        raw_headers = [
+            (b":method", method),
+            (b":authority", url.authority.encode("ascii")),
+            (b":scheme", url.scheme.encode("ascii")),
+            (b":path", url.full_path.encode("ascii")),
+        ] + [(k, v) for k, v in headers.raw if k not in (b"host", b"transfer-encoding")]
         end_stream = not has_body
 
         logger.trace(
             f"send_headers "
             f"stream_id={self.stream_id} "
-            f"method={request.method!r} "
-            f"target={request.url.full_path!r} "
+            f"method={method!r} "
+            f"target={url.full_path!r} "
             f"headers={headers!r}"
         )
-        await self.connection.send_headers(self.stream_id, headers, end_stream, timeout)
+        await self.connection.send_headers(
+            self.stream_id, raw_headers, end_stream, timeout
+        )
 
-    async def send_body(self, request: Request, timeout: Timeout) -> None:
+    async def send_body(self, request_stream: ContentStream, timeout: Timeout) -> None:
         logger.trace(f"send_body stream_id={self.stream_id}")
-        async for data in request.stream:
+        async for data in request_stream:
             while data:
                 max_flow = await self.connection.wait_for_outgoing_flow(
                     self.stream_id, timeout

@@ -670,15 +670,21 @@ class Client(BaseClient):
                 request = next_request
                 history.append(response)
 
-    def send_single_request(self, request: Request, timeout: Timeout,) -> Response:
+    def send_single_request(self, request: Request, timeout: Timeout) -> Response:
         """
         Sends a single request, without handling any redirections.
         """
 
         dispatcher = self.dispatcher_for_url(request.url)
 
+        method = request.method.encode()
+        url = request.url
+        headers = request.headers
+        stream = request.stream
         try:
-            response = dispatcher.send(request, timeout=timeout)
+            status_code, http_version, headers, stream = dispatcher.send(
+                method, url, headers=headers, stream=stream, timeout=timeout
+            )
         except HTTPError as exc:
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
@@ -686,6 +692,13 @@ class Client(BaseClient):
             if exc.request is None:
                 exc.request = request
             raise
+        response = Response(
+            status_code,
+            http_version=http_version,
+            headers=headers,
+            stream=stream,
+            request=request,
+        )
 
         self.cookies.extract_cookies(response)
 
@@ -1204,8 +1217,14 @@ class AsyncClient(BaseClient):
 
         dispatcher = self.dispatcher_for_url(request.url)
 
+        method = request.method.encode()
+        url = request.url
+        headers = request.headers
+        stream = request.stream
         try:
-            response = await dispatcher.send(request, timeout=timeout)
+            status_code, http_version, headers, stream = await dispatcher.send(
+                method, url, headers=headers, stream=stream, timeout=timeout
+            )
         except HTTPError as exc:
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
@@ -1213,6 +1232,13 @@ class AsyncClient(BaseClient):
             if exc.request is None:
                 exc.request = request
             raise
+        response = Response(
+            status_code,
+            http_version=http_version,
+            headers=headers,
+            stream=stream,
+            request=request,
+        )
 
         self.cookies.extract_cookies(response)
 

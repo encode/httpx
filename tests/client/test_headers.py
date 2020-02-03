@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 
-import json
+import typing
 
 import pytest
 
-from httpx import AsyncClient, Headers, Request, Response, __version__
-from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx import URL, AsyncClient, Headers, __version__
+from httpx._config import TimeoutTypes
+from httpx._content_streams import ContentStream, JSONStream
 from httpx._dispatch.base import AsyncDispatcher
 
 
 class MockDispatch(AsyncDispatcher):
     async def send(
         self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
         timeout: TimeoutTypes = None,
-    ) -> Response:
-        if request.url.path.startswith("/echo_headers"):
-            request_headers = dict(request.headers.items())
-            body = json.dumps({"headers": request_headers}).encode()
-            return Response(200, content=body, request=request)
+    ) -> typing.Tuple[int, bytes, Headers, ContentStream]:
+        body = JSONStream({"headers": dict(headers)})
+        return 200, "HTTP/1.1", Headers(), body
 
 
 @pytest.mark.asyncio

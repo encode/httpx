@@ -4,9 +4,9 @@ import h11
 
 from .._backends.base import BaseSocketStream
 from .._config import Timeout
-from .._content_streams import AsyncIteratorStream
+from .._content_streams import AsyncIteratorStream, ContentStream
 from .._exceptions import ConnectionClosed, ProtocolError
-from .._models import Request, Response
+from .._models import URL, Headers
 from .._utils import get_logger
 
 H11Event = typing.Union[
@@ -44,24 +44,25 @@ class HTTP11Connection:
     def is_http2(self) -> bool:
         return False
 
-    async def send(self, request: Request, timeout: Timeout = None) -> Response:
+    async def send(
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
+        timeout: Timeout = None,
+    ) -> typing.Tuple[int, str, Headers, ContentStream]:
         timeout = Timeout() if timeout is None else timeout
 
-        await self._send_request(request, timeout)
-        await self._send_request_body(request, timeout)
-        http_version, status_code, headers = await self._receive_response(timeout)
+        await self._send_request(method, url, headers, timeout)
+        await self._send_request_body(stream, timeout)
+        http_version, status_code, raw_headers = await self._receive_response(timeout)
         stream = AsyncIteratorStream(
             aiterator=self._receive_response_data(timeout),
             close_func=self.response_closed,
         )
 
-        return Response(
-            status_code=status_code,
-            http_version=http_version,
-            headers=headers,
-            stream=stream,
-            request=request,
-        )
+        return (status_code, http_version, Headers(raw_headers), stream)
 
     async def close(self) -> None:
         event = h11.ConnectionClosed()
@@ -73,29 +74,33 @@ class HTTP11Connection:
             pass
         await self.socket.close()
 
-    async def _send_request(self, request: Request, timeout: Timeout) -> None:
+    async def _send_request(
+        self, method: bytes, url: URL, headers: Headers, timeout: Timeout,
+    ) -> None:
         """
         Send the request method, URL, and headers to the network.
         """
         logger.trace(
-            f"send_headers method={request.method!r} "
-            f"target={request.url.full_path!r} "
-            f"headers={request.headers!r}"
+            f"send_headers method={method!r} "
+            f"target={url.full_path!r} "
+            f"headers={headers!r}"
         )
 
-        method = request.method.encode("ascii")
-        target = request.url.full_path.encode("ascii")
-        headers = request.headers.raw
-        event = h11.Request(method=method, target=target, headers=headers)
+        method = method
+        if method == b"CONNECT":
+            target = f"{url.host}:{url.port}".encode("ascii")
+        else:
+            target = url.full_path.encode("ascii")
+        event = h11.Request(method=method, target=target, headers=headers.raw)
         await self._send_event(event, timeout)
 
-    async def _send_request_body(self, request: Request, timeout: Timeout) -> None:
+    async def _send_request_body(self, stream: ContentStream, timeout: Timeout) -> None:
         """
         Send the request body to the network.
         """
         try:
             # Send the request body.
-            async for chunk in request.stream:
+            async for chunk in stream:
                 logger.trace(f"send_data data=Data(<{len(chunk)} bytes>)")
                 event = h11.Data(data=chunk)
                 await self._send_event(event, timeout)

@@ -2,13 +2,14 @@ import binascii
 import cgi
 import io
 import os
+import typing
 from unittest import mock
 
 import pytest
 
 import httpx
-from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx._content_streams import encode
+from httpx._config import TimeoutTypes
+from httpx._content_streams import AsyncIteratorStream, ContentStream, encode
 from httpx._dispatch.base import AsyncDispatcher
 from httpx._utils import format_form_param
 
@@ -16,13 +17,17 @@ from httpx._utils import format_form_param
 class MockDispatch(AsyncDispatcher):
     async def send(
         self,
-        request: httpx.Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
+        method: bytes,
+        url: httpx.URL,
+        headers: httpx.Headers,
+        stream: ContentStream,
         timeout: TimeoutTypes = None,
-    ) -> httpx.Response:
-        content = b"".join([part async for part in request.stream])
-        return httpx.Response(200, content=content, request=request)
+    ) -> typing.Tuple[int, bytes, httpx.Headers, ContentStream]:
+        request = httpx.Request(
+            method=method.decode(), url=url, headers=headers, stream=stream
+        )
+        content = AsyncIteratorStream(aiterator=(part async for part in request.stream))
+        return 200, b"HTTP/1.1", [], content
 
 
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))

@@ -2,8 +2,8 @@ import io
 import typing
 
 from .._config import TimeoutTypes
-from .._content_streams import IteratorStream
-from .._models import Request, Response
+from .._content_streams import ContentStream, IteratorStream
+from .._models import URL, Headers
 from .base import SyncDispatcher
 
 
@@ -52,24 +52,31 @@ class WSGIDispatch(SyncDispatcher):
         self.script_name = script_name
         self.remote_addr = remote_addr
 
-    def send(self, request: Request, timeout: TimeoutTypes = None) -> Response:
+    def send(
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
+        timeout: TimeoutTypes = None,
+    ) -> typing.Tuple[int, str, Headers, ContentStream]:
         environ = {
             "wsgi.version": (1, 0),
-            "wsgi.url_scheme": request.url.scheme,
-            "wsgi.input": io.BytesIO(request.read()),
+            "wsgi.url_scheme": url.scheme,
+            "wsgi.input": io.BytesIO(b"".join([chunk for chunk in stream])),
             "wsgi.errors": io.BytesIO(),
             "wsgi.multithread": True,
             "wsgi.multiprocess": False,
             "wsgi.run_once": False,
-            "REQUEST_METHOD": request.method,
+            "REQUEST_METHOD": method.decode(),
             "SCRIPT_NAME": self.script_name,
-            "PATH_INFO": request.url.path,
-            "QUERY_STRING": request.url.query,
-            "SERVER_NAME": request.url.host,
-            "SERVER_PORT": str(request.url.port),
+            "PATH_INFO": url.path,
+            "QUERY_STRING": url.query,
+            "SERVER_NAME": url.host,
+            "SERVER_PORT": str(url.port),
             "REMOTE_ADDR": self.remote_addr,
         }
-        for key, value in request.headers.items():
+        for key, value in headers.items():
             key = key.upper().replace("-", "_")
             if key not in ("CONTENT_TYPE", "CONTENT_LENGTH"):
                 key = "HTTP_" + key
@@ -94,10 +101,8 @@ class WSGIDispatch(SyncDispatcher):
         if seen_exc_info and self.raise_app_exceptions:
             raise seen_exc_info[1]
 
-        return Response(
-            status_code=int(seen_status.split()[0]),
-            http_version="HTTP/1.1",
-            headers=seen_response_headers,
-            stream=IteratorStream(chunk for chunk in result),
-            request=request,
-        )
+        status_code = int(seen_status.split()[0])
+        headers = Headers(seen_response_headers)
+        stream = IteratorStream(chunk for chunk in result)
+
+        return (status_code, "HTTP/1.1", headers, stream)

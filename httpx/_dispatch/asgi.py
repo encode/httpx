@@ -1,8 +1,8 @@
 import typing
 
 from .._config import TimeoutTypes
-from .._content_streams import ByteStream
-from .._models import Request, Response
+from .._content_streams import ByteStream, ContentStream
+from .._models import URL, Headers
 from .base import AsyncDispatcher
 
 
@@ -51,27 +51,34 @@ class ASGIDispatch(AsyncDispatcher):
         self.root_path = root_path
         self.client = client
 
-    async def send(self, request: Request, timeout: TimeoutTypes = None) -> Response:
+    async def send(
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
+        timeout: TimeoutTypes = None,
+    ) -> typing.Tuple[int, str, Headers, ContentStream]:
         scope = {
             "type": "http",
             "asgi": {"version": "3.0"},
             "http_version": "1.1",
-            "method": request.method,
-            "headers": request.headers.raw,
-            "scheme": request.url.scheme,
-            "path": request.url.path,
-            "query_string": request.url.query.encode("ascii"),
-            "server": request.url.host,
+            "method": method.decode(),
+            "headers": headers.raw,
+            "scheme": url.scheme,
+            "path": url.path,
+            "query_string": url.query.encode("ascii"),
+            "server": url.host,
             "client": self.client,
             "root_path": self.root_path,
         }
         status_code = None
-        headers = None
+        response_headers = None
         body_parts = []
         response_started = False
         response_complete = False
 
-        request_body_chunks = request.stream.__aiter__()
+        request_body_chunks = stream.__aiter__()
 
         async def receive() -> dict:
             try:
@@ -81,14 +88,14 @@ class ASGIDispatch(AsyncDispatcher):
             return {"type": "http.request", "body": body, "more_body": True}
 
         async def send(message: dict) -> None:
-            nonlocal status_code, headers, body_parts
+            nonlocal status_code, response_headers, body_parts
             nonlocal response_started, response_complete
 
             if message["type"] == "http.response.start":
                 assert not response_started
 
                 status_code = message["status"]
-                headers = message.get("headers", [])
+                response_headers = message.get("headers", [])
                 response_started = True
 
             elif message["type"] == "http.response.body":
@@ -96,7 +103,7 @@ class ASGIDispatch(AsyncDispatcher):
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
 
-                if body and request.method != "HEAD":
+                if body and method != b"HEAD":
                     body_parts.append(body)
 
                 if not more_body:
@@ -110,14 +117,8 @@ class ASGIDispatch(AsyncDispatcher):
 
         assert response_complete
         assert status_code is not None
-        assert headers is not None
+        assert response_headers is not None
 
         stream = ByteStream(b"".join(body_parts))
 
-        return Response(
-            status_code=status_code,
-            http_version="HTTP/1.1",
-            headers=headers,
-            stream=stream,
-            request=request,
-        )
+        return (status_code, "HTTP/1.1", Headers(response_headers), stream)

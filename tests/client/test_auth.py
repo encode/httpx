@@ -1,5 +1,4 @@
 import hashlib
-import json
 import os
 import typing
 
@@ -10,12 +9,14 @@ from httpx import (
     AsyncClient,
     Auth,
     DigestAuth,
+    Headers,
     ProtocolError,
     Request,
     RequestBodyUnavailable,
     Response,
 )
-from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx._config import TimeoutTypes
+from httpx._content_streams import ContentStream, JSONStream
 from httpx._dispatch.base import AsyncDispatcher
 
 
@@ -26,16 +27,17 @@ class MockDispatch(AsyncDispatcher):
 
     async def send(
         self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
         timeout: TimeoutTypes = None,
-    ) -> Response:
-        headers = [("www-authenticate", self.auth_header)] if self.auth_header else []
-        body = json.dumps({"auth": request.headers.get("Authorization")}).encode()
-        return Response(
-            self.status_code, headers=headers, content=body, request=request
+    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+        response_headers = Headers(
+            [("www-authenticate", self.auth_header)] if self.auth_header else []
         )
+        response_stream = JSONStream({"auth": headers.get("Authorization")})
+        return (self.status_code, "HTTP/1.1", response_headers, response_stream)
 
 
 class MockDigestAuthDispatch(AsyncDispatcher):
@@ -54,18 +56,21 @@ class MockDigestAuthDispatch(AsyncDispatcher):
 
     async def send(
         self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
         timeout: TimeoutTypes = None,
-    ) -> Response:
+    ) -> typing.Tuple[int, bytes, Headers, ContentStream]:
         if self._response_count < self.send_response_after_attempt:
-            return self.challenge_send(request)
+            return self.challenge_send(method, url, headers, stream)
 
-        body = json.dumps({"auth": request.headers.get("Authorization")}).encode()
-        return Response(200, content=body, request=request)
+        body = JSONStream({"auth": headers.get("Authorization")})
+        return 200, b"HTTP/1.1", [], body
 
-    def challenge_send(self, request: Request) -> Response:
+    def challenge_send(
+        self, method: bytes, url: URL, headers: Headers, stream: ContentStream,
+    ) -> typing.Tuple[int, bytes, Headers, ContentStream]:
         self._response_count += 1
         nonce = (
             hashlib.sha256(os.urandom(8)).hexdigest()
@@ -90,7 +95,7 @@ class MockDigestAuthDispatch(AsyncDispatcher):
         headers = [
             ("www-authenticate", 'Digest realm="httpx@example.org", ' + challenge_str)
         ]
-        return Response(401, headers=headers, content=b"", request=request)
+        return 401, b"HTTP/1.1", headers, ContentStream()
 
 
 @pytest.mark.asyncio

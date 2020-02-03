@@ -5,7 +5,8 @@ import h11
 
 from .._backends.base import ConcurrencyBackend, lookup_backend
 from .._config import SSLConfig, Timeout
-from .._models import URL, Origin, Request, Response
+from .._content_streams import ContentStream
+from .._models import URL, Headers, Origin
 from .._utils import get_logger
 from .base import AsyncDispatcher
 from .http2 import HTTP2Connection
@@ -35,13 +36,22 @@ class HTTPConnection(AsyncDispatcher):
         self.connection: typing.Union[None, HTTP11Connection, HTTP2Connection] = None
         self.expires_at: typing.Optional[float] = None
 
-    async def send(self, request: Request, timeout: Timeout = None) -> Response:
+    async def send(
+        self,
+        method: bytes,
+        url: URL,
+        headers: Headers,
+        stream: ContentStream,
+        timeout: Timeout = None,
+    ) -> typing.Tuple[int, str, Headers, ContentStream]:
         timeout = Timeout() if timeout is None else timeout
 
         if self.connection is None:
             self.connection = await self.connect(timeout=timeout)
 
-        return await self.connection.send(request, timeout=timeout)
+        return await self.connection.send(
+            method, url, headers=headers, stream=stream, timeout=timeout
+        )
 
     async def connect(
         self, timeout: Timeout
