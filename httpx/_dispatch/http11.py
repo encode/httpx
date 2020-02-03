@@ -87,10 +87,7 @@ class HTTP11Connection:
         )
 
         method = method
-        if method == b"CONNECT":
-            target = f"{url.host}:{url.port}".encode("ascii")
-        else:
-            target = url.full_path.encode("ascii")
+        target = url.full_path.encode("ascii")
         event = h11.Request(method=method, target=target, headers=headers.raw)
         await self._send_event(event, timeout)
 

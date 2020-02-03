@@ -14,7 +14,7 @@ from .._config import (
 )
 from .._content_streams import ContentStream
 from .._exceptions import ProxyError
-from .._models import URL, Headers, HeaderTypes, Origin, Request, URLTypes
+from .._models import URL, Headers, HeaderTypes, Origin, Request, Response, URLTypes
 from .._utils import get_logger
 from .connection import HTTPConnection
 from .connection_pool import ConnectionPool
@@ -169,10 +169,18 @@ class HTTPProxy(ConnectionPool):
             f"response={status_code!r}"
         )
         if not (200 <= status_code <= 299):
-            await stream.aclose()
+            proxy_response = Response(
+                status_code,
+                http_version=http_version,
+                headers=headers,
+                stream=stream,
+                request=proxy_request,
+            )
+            await proxy_response.aclose()
             raise ProxyError(
                 f"Non-2XX response received from HTTP proxy " f"({status_code})",
                 request=proxy_request,
+                response=proxy_response,
             )
         else:
             # Hack to ingest the response, without closing it.

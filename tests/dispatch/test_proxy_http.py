@@ -172,9 +172,7 @@ async def test_proxy_forwarding(proxy_mode):
         assert response.headers["Server"] == "origin-server"
 
         assert response.request.method == "GET"
-        assert response.request.url == "http://127.0.0.1:8000"
-        assert response.request.url.full_path == "http://example.com"
-        assert response.request.headers["Host"] == "example.com"
+        assert response.request.url == "http://example.com"
 
     recv = raw_io.received_data
     assert len(recv) == 2
