@@ -421,28 +421,39 @@ class MyCustomAuth(httpx.Auth):
         ...
 ```
 
-Similarly, if you are implementing a scheme that requires access to the response body, then use the `requires_response_body` property.
+Similarly, if you are implementing a scheme that requires access to the response body, then use the `requires_response_body` property.   You will then be able to access response body properties and methods such as `response.text`, `response.json()`, `response.iter_lines()`, etc.
 
 ```python
 class MyCustomAuth(httpx.Auth):
     requires_response_body = True
 
-    def __init__(self, token, refresh_url):
-        self.token = token
+    def __init__(self, access_token, refresh_token, refresh_url):
+        self.access_token = access_token
+        self.refresh_token = refresh_token
         self.refresh_url = refresh_url
 
     def auth_flow(self, request):
-        request.headers["X-Auth"] = self.token["access"]
-        if response.status_code == 401:
-            # refresh the token
-            refresh_request = httpx.Request(
-                "POST", refresh_url, data={"refresh_token": self.token["refresh"]}
-            )
-            response = yield refresh_request
-            self.token = response.json()
+        request.headers["X-Authentication"] = self.access_token
+        response = yield request
 
-            request.headers["X-Auth"] = self.token["access"]
-            yield requestclass MyCustomAuth(httpx.Auth):
+        if response.status_code == 401:
+            # If the server issues a 401 response, then issue a request to
+            # refresh tokens, and resend the request.
+            refresh_response = yield self.build_refresh_request()
+            self.update_tokens(refresh_response)
+
+            request.headers["X-Authentication"] = self.access_token
+            yield request
+
+    def build_refresh_request(self):
+        # Return an `httpx.Request` for refreshing tokens.
+        ...
+
+    def update_tokens(self, response):
+        # Update the `.access_token` and `.refresh_token` tokens
+        # based on a refresh response.
+        data = response.json()
+        ...
 ```
 
 ## SSL certificates

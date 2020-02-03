@@ -485,17 +485,20 @@ async def test_auth_reads_response_body() -> None:
 
         requires_response_body = True
 
+        def __init__(self, token):
+            self.token = token
+
         def auth_flow(
             self, request: Request
         ) -> typing.Generator[Request, Response, None]:
-            request.headers["Authorization"] = "xyz"
+            request.headers["Authorization"] = self.token
             response = yield request
             data = response.text
             request.headers["Authorization"] = data
             yield request
 
     url = "https://example.org/"
-    auth = ResponseBodyAuth()
+    auth = ResponseBodyAuth("xyz")
     client = AsyncClient(dispatch=MockDispatch())
 
     response = await client.get(url, auth=auth)
