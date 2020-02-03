@@ -421,6 +421,30 @@ class MyCustomAuth(httpx.Auth):
         ...
 ```
 
+Similarly, if you are implementing a scheme that requires access to the response body, then use the `requires_response_body` property.
+
+```python
+class MyCustomAuth(httpx.Auth):
+    requires_response_body = True
+
+    def __init__(self, token, refresh_url):
+        self.token = token
+        self.refresh_url = refresh_url
+
+    def auth_flow(self, request):
+        request.headers["X-Auth"] = self.token["access"]
+        if response.status_code == 401:
+            # refresh the token
+            refresh_request = httpx.Request(
+                "POST", refresh_url, data={"refresh_token": self.token["refresh"]}
+            )
+            response = yield refresh_request
+            self.token = response.json()
+
+            request.headers["X-Auth"] = self.token["access"]
+            yield requestclass MyCustomAuth(httpx.Auth):
+```
+
 ## SSL certificates
 
 When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
