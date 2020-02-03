@@ -1,4 +1,4 @@
-import typing
+from typing import AsyncIterator, Awaitable, Callable, List, Optional, Tuple, Union
 
 import h11
 
@@ -6,10 +6,10 @@ from .._backends.base import BaseSocketStream
 from .._config import Timeout
 from .._content_streams import AsyncIteratorStream, ContentStream
 from .._exceptions import ConnectionClosed, ProtocolError
-from .._models import URL, Headers
+from .._models import URL
 from .._utils import get_logger
 
-H11Event = typing.Union[
+H11Event = Union[
     h11.Request,
     h11.Response,
     h11.InformationalResponse,
@@ -22,7 +22,7 @@ H11Event = typing.Union[
 # Callback signature: async def callback() -> None
 # In practice the callback will be a functools partial, which binds
 # the `ConnectionPool.release_connection(conn: HTTPConnection)` method.
-OnReleaseCallback = typing.Callable[[], typing.Awaitable[None]]
+OnReleaseCallback = Callable[[], Awaitable[None]]
 
 
 logger = get_logger(__name__)
@@ -32,9 +32,7 @@ class HTTP11Connection:
     READ_NUM_BYTES = 4096
 
     def __init__(
-        self,
-        socket: BaseSocketStream,
-        on_release: typing.Optional[OnReleaseCallback] = None,
+        self, socket: BaseSocketStream, on_release: Optional[OnReleaseCallback] = None,
     ):
         self.socket = socket
         self.on_release = on_release
@@ -48,21 +46,21 @@ class HTTP11Connection:
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: List[Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: Timeout = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> Tuple[int, str, List[Tuple[bytes, bytes]], ContentStream]:
         timeout = Timeout() if timeout is None else timeout
 
         await self._send_request(method, url, headers, timeout)
         await self._send_request_body(stream, timeout)
-        http_version, status_code, raw_headers = await self._receive_response(timeout)
+        http_version, status_code, headers = await self._receive_response(timeout)
         stream = AsyncIteratorStream(
             aiterator=self._receive_response_data(timeout),
             close_func=self.response_closed,
         )
 
-        return (status_code, http_version, Headers(raw_headers), stream)
+        return (status_code, http_version, headers, stream)
 
     async def close(self) -> None:
         event = h11.ConnectionClosed()
@@ -75,7 +73,11 @@ class HTTP11Connection:
         await self.socket.close()
 
     async def _send_request(
-        self, method: bytes, url: URL, headers: Headers, timeout: Timeout,
+        self,
+        method: bytes,
+        url: URL,
+        headers: List[Tuple[bytes, bytes]],
+        timeout: Timeout,
     ) -> None:
         """
         Send the request method, URL, and headers to the network.
@@ -88,7 +90,7 @@ class HTTP11Connection:
 
         method = method
         target = url.full_path.encode("ascii")
-        event = h11.Request(method=method, target=target, headers=headers.raw)
+        event = h11.Request(method=method, target=target, headers=headers)
         await self._send_event(event, timeout)
 
     async def _send_request_body(self, stream: ContentStream, timeout: Timeout) -> None:
@@ -121,7 +123,7 @@ class HTTP11Connection:
 
     async def _receive_response(
         self, timeout: Timeout
-    ) -> typing.Tuple[str, int, typing.List[typing.Tuple[bytes, bytes]]]:
+    ) -> Tuple[str, int, List[Tuple[bytes, bytes]]]:
         """
         Read the response status and headers from the network.
         """
@@ -135,9 +137,7 @@ class HTTP11Connection:
         http_version = "HTTP/%s" % event.http_version.decode("latin-1", errors="ignore")
         return http_version, event.status_code, event.headers
 
-    async def _receive_response_data(
-        self, timeout: Timeout
-    ) -> typing.AsyncIterator[bytes]:
+    async def _receive_response_data(self, timeout: Timeout) -> AsyncIterator[bytes]:
         """
         Read the response data from the network.
         """

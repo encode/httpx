@@ -679,7 +679,7 @@ class Client(BaseClient):
 
         method = request.method.encode()
         url = request.url
-        headers = request.headers
+        headers = request.headers.raw
         stream = request.stream
         try:
             status_code, http_version, headers, stream = dispatcher.send(
@@ -1219,7 +1219,7 @@ class AsyncClient(BaseClient):
 
         method = request.method.encode()
         url = request.url
-        headers = request.headers
+        headers = request.headers.raw
         stream = request.stream
         try:
             status_code, http_version, headers, stream = await dispatcher.send(

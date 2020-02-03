@@ -3,10 +3,18 @@ from http.cookiejar import Cookie, CookieJar
 
 import pytest
 
-from httpx import URL, AsyncClient, Cookies, Headers
+from httpx import URL, AsyncClient, Cookies
 from httpx._config import TimeoutTypes
 from httpx._content_streams import ByteStream, ContentStream, JSONStream
 from httpx._dispatch.base import AsyncDispatcher
+
+
+def get_header_value(headers, key, default=None):
+    lookup = key.encode("ascii").lower()
+    for header_key, header_value in headers:
+        if header_key.lower() == lookup:
+            return header_value.decode("ascii")
+    return default
 
 
 class MockDispatch(AsyncDispatcher):
@@ -14,15 +22,16 @@ class MockDispatch(AsyncDispatcher):
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: typing.List[typing.Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: TimeoutTypes = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> typing.Tuple[int, str, typing.List[typing.Tuple[bytes, bytes]], ContentStream]:
         if url.path.startswith("/echo_cookies"):
-            body = JSONStream({"cookies": headers.get("Cookie")})
-            return 200, "HTTP/1.1", Headers(), body
+            cookie = get_header_value(headers, "cookie")
+            body = JSONStream({"cookies": cookie})
+            return 200, "HTTP/1.1", [], body
         elif url.path.startswith("/set_cookie"):
-            headers = Headers({"set-cookie": "example-name=example-value"})
+            headers = [(b"set-cookie", b"example-name=example-value")]
             body = ByteStream(b"")
             return 200, "HTTP/1.1", headers, body
         else:

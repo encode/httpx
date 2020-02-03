@@ -1,4 +1,4 @@
-import typing
+from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 from .._backends.base import BaseSemaphore, ConcurrencyBackend, lookup_backend
 from .._config import (
@@ -11,12 +11,12 @@ from .._config import (
 )
 from .._content_streams import ContentStream
 from .._exceptions import PoolTimeout
-from .._models import URL, Headers, Origin
+from .._models import URL, Origin
 from .._utils import get_logger
 from .base import AsyncDispatcher
 from .connection import HTTPConnection
 
-CONNECTIONS_DICT = typing.Dict[Origin, typing.List[HTTPConnection]]
+CONNECTIONS_DICT = Dict[Origin, List[HTTPConnection]]
 
 
 logger = get_logger(__name__)
@@ -40,12 +40,12 @@ class ConnectionStore:
     """
 
     def __init__(self) -> None:
-        self.all: typing.Dict[HTTPConnection, float] = {}
-        self.by_origin: typing.Dict[Origin, typing.Dict[HTTPConnection, float]] = {}
+        self.all: Dict[HTTPConnection, float] = {}
+        self.by_origin: Dict[Origin, Dict[HTTPConnection, float]] = {}
 
     def pop_by_origin(
         self, origin: Origin, http2_only: bool = False
-    ) -> typing.Optional[HTTPConnection]:
+    ) -> Optional[HTTPConnection]:
         try:
             connections = self.by_origin[origin]
         except KeyError:
@@ -79,7 +79,7 @@ class ConnectionStore:
         self.all.clear()
         self.by_origin.clear()
 
-    def __iter__(self) -> typing.Iterator[HTTPConnection]:
+    def __iter__(self) -> Iterator[HTTPConnection]:
         return iter(self.all.keys())
 
     def __len__(self) -> int:
@@ -97,8 +97,8 @@ class ConnectionPool(AsyncDispatcher):
         trust_env: bool = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http2: bool = False,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
-        uds: typing.Optional[str] = None,
+        backend: Union[str, ConcurrencyBackend] = "auto",
+        uds: Optional[str] = None,
     ):
         self.ssl = SSLConfig(verify=verify, cert=cert, trust_env=trust_env, http2=http2)
         self.pool_limits = pool_limits
@@ -149,10 +149,10 @@ class ConnectionPool(AsyncDispatcher):
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: List[Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: Timeout = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> Tuple[int, str, List[Tuple[bytes, bytes]], ContentStream]:
         await self.check_keepalive_expiry()
         connection = await self.acquire_connection(origin=Origin(url), timeout=timeout)
         try:
@@ -215,7 +215,7 @@ class ConnectionPool(AsyncDispatcher):
             self.max_connections.release()
             await connection.close()
 
-    def pop_connection(self, origin: Origin) -> typing.Optional[HTTPConnection]:
+    def pop_connection(self, origin: Origin) -> Optional[HTTPConnection]:
         connection = self.active_connections.pop_by_origin(origin, http2_only=True)
         if connection is None:
             connection = self.keepalive_connections.pop_by_origin(origin)

@@ -1,11 +1,10 @@
-import typing
 from types import TracebackType
+from typing import List, Tuple, Type
 
 from .._config import Timeout
 from .._content_streams import ContentStream
 from .._models import (
     URL,
-    Headers,
     HeaderTypes,
     QueryParamTypes,
     Request,
@@ -24,10 +23,10 @@ class SyncDispatcher:
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: List[Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: Timeout = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> Tuple[int, str, List[Tuple[bytes, bytes]], ContentStream]:
         raise NotImplementedError()  # pragma: nocover
 
     def close(self) -> None:
@@ -59,7 +58,7 @@ class AsyncDispatcher:
         status_code, http_version, headers, stream = await self.send(
             request.method.encode(),
             request.url,
-            request.headers,
+            request.headers.raw,
             request.stream,
             timeout=timeout,
         )
@@ -75,10 +74,10 @@ class AsyncDispatcher:
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: List[Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: Timeout = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> Tuple[int, str, List[Tuple[bytes, bytes]], ContentStream]:
         raise NotImplementedError()  # pragma: nocover
 
     async def close(self) -> None:
@@ -89,7 +88,7 @@ class AsyncDispatcher:
 
     async def __aexit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
+        exc_type: Type[BaseException] = None,
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:

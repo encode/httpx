@@ -1,4 +1,4 @@
-import typing
+from typing import AsyncIterator, Callable, Dict, List, Tuple, Union
 
 import h2.connection
 import h2.events
@@ -14,7 +14,7 @@ from .._backends.base import (
 from .._config import Timeout
 from .._content_streams import AsyncIteratorStream, ContentStream
 from .._exceptions import ProtocolError
-from .._models import URL, Headers
+from .._models import URL
 from .._utils import get_logger
 
 logger = get_logger(__name__)
@@ -27,16 +27,16 @@ class HTTP2Connection:
     def __init__(
         self,
         socket: BaseSocketStream,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
-        on_release: typing.Callable = None,
+        backend: Union[str, ConcurrencyBackend] = "auto",
+        on_release: Callable = None,
     ):
         self.socket = socket
         self.backend = lookup_backend(backend)
         self.on_release = on_release
         self.state = h2.connection.H2Connection(config=self.CONFIG)
 
-        self.streams = {}  # type: typing.Dict[int, HTTP2Stream]
-        self.events = {}  # type: typing.Dict[int, typing.List[h2.events.Event]]
+        self.streams = {}  # type: Dict[int, HTTP2Stream]
+        self.events = {}  # type: Dict[int, List[h2.events.Event]]
 
         self.sent_connection_init = False
 
@@ -56,10 +56,10 @@ class HTTP2Connection:
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: List[Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: Timeout = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> Tuple[int, str, List[Tuple[bytes, bytes]], ContentStream]:
         timeout = Timeout() if timeout is None else timeout
 
         async with self.init_lock:
@@ -167,7 +167,7 @@ class HTTP2Connection:
     async def send_headers(
         self,
         stream_id: int,
-        headers: typing.List[typing.Tuple[bytes, bytes]],
+        headers: List[Tuple[bytes, bytes]],
         end_stream: bool,
         timeout: Timeout,
     ) -> None:
@@ -210,12 +210,17 @@ class HTTP2Stream:
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: List[Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: Timeout,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> Tuple[int, str, List[Tuple[bytes, bytes]], ContentStream]:
         # Send the request.
-        has_body = "Content-Length" in headers or "Transfer-Encoding" in headers
+        has_body = False
+        for key, _ in headers:
+            key = key.lower()
+            if key in (b"content-length", b"transfer-encoding"):
+                has_body = True
+                break
 
         await self.send_headers(method, url, headers, has_body, timeout)
         if has_body:
@@ -227,13 +232,13 @@ class HTTP2Stream:
             aiterator=self.body_iter(timeout), close_func=self.close
         )
 
-        return (status_code, "HTTP/2", Headers(response_headers), response_stream)
+        return (status_code, "HTTP/2", response_headers, response_stream)
 
     async def send_headers(
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: List[Tuple[bytes, bytes]],
         has_body: bool,
         timeout: Timeout,
     ) -> None:
@@ -242,7 +247,11 @@ class HTTP2Stream:
             (b":authority", url.authority.encode("ascii")),
             (b":scheme", url.scheme.encode("ascii")),
             (b":path", url.full_path.encode("ascii")),
-        ] + [(k, v) for k, v in headers.raw if k not in (b"host", b"transfer-encoding")]
+        ] + [
+            (k.lower(), v)
+            for k, v in headers
+            if k.lower() not in (b"host", b"transfer-encoding")
+        ]
         end_stream = not has_body
 
         logger.trace(
@@ -271,7 +280,7 @@ class HTTP2Stream:
 
     async def receive_response(
         self, timeout: Timeout
-    ) -> typing.Tuple[int, typing.List[typing.Tuple[bytes, bytes]]]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]]]:
         """
         Read the response status and headers from the network.
         """
@@ -290,7 +299,7 @@ class HTTP2Stream:
 
         return (status_code, headers)
 
-    async def body_iter(self, timeout: Timeout) -> typing.AsyncIterator[bytes]:
+    async def body_iter(self, timeout: Timeout) -> AsyncIterator[bytes]:
         while True:
             event = await self.connection.wait_for_event(self.stream_id, timeout)
             if isinstance(event, h2.events.DataReceived):

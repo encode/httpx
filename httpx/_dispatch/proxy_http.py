@@ -1,7 +1,7 @@
 import enum
-import typing
 import warnings
 from base64 import b64encode
+from typing import List, Tuple, Union
 
 from .._backends.base import ConcurrencyBackend
 from .._config import (
@@ -51,7 +51,7 @@ class HTTPProxy(ConnectionPool):
         trust_env: bool = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         http2: bool = False,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
+        backend: Union[str, ConcurrencyBackend] = "auto",
     ):
 
         if isinstance(proxy_mode, HTTPProxyMode):  # pragma: nocover
@@ -159,7 +159,7 @@ class HTTPProxy(ConnectionPool):
         status_code, http_version, headers, stream = await connection.send(
             proxy_request.method.encode("ascii"),
             proxy_request.url,
-            proxy_request.headers,
+            proxy_request.headers.raw,
             proxy_request.stream,
         )
         logger.trace(
@@ -203,10 +203,10 @@ class HTTPProxy(ConnectionPool):
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: List[Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: Timeout = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> Tuple[int, str, List[Tuple[bytes, bytes]], ContentStream]:
         if self.should_forward_origin(Origin(url)):
             # Change the request to have the target URL
             # as its full_path and switch the proxy URL
@@ -214,8 +214,11 @@ class HTTPProxy(ConnectionPool):
             target_url = str(url)
             url = self.proxy_url.copy_with()
             url.full_path = target_url
-            for name, value in self.proxy_headers.items():
-                headers.setdefault(name, value)
+            headers = list(headers)
+            seen_headers = set([key.lower() for key, value in headers])
+            for name, value in self.proxy_headers.raw:
+                if name not in seen_headers:
+                    headers.append((name, value))
 
         return await super().send(
             method, url, headers=headers, stream=stream, timeout=timeout

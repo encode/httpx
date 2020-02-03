@@ -3,7 +3,7 @@ import typing
 
 from .._config import TimeoutTypes
 from .._content_streams import ContentStream, IteratorStream
-from .._models import URL, Headers
+from .._models import URL
 from .base import SyncDispatcher
 
 
@@ -56,10 +56,10 @@ class WSGIDispatch(SyncDispatcher):
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: typing.List[typing.Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: TimeoutTypes = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> typing.Tuple[int, str, typing.List[typing.Tuple[bytes, bytes]], ContentStream]:
         environ = {
             "wsgi.version": (1, 0),
             "wsgi.url_scheme": url.scheme,
@@ -76,11 +76,11 @@ class WSGIDispatch(SyncDispatcher):
             "SERVER_PORT": str(url.port),
             "REMOTE_ADDR": self.remote_addr,
         }
-        for key, value in headers.items():
-            key = key.upper().replace("-", "_")
+        for header_key, header_value in headers:
+            key = header_key.decode("ascii").upper().replace("-", "_")
             if key not in ("CONTENT_TYPE", "CONTENT_LENGTH"):
                 key = "HTTP_" + key
-            environ[key] = value
+            environ[key] = header_value.decode("ascii")
 
         seen_status = None
         seen_response_headers = None
@@ -102,7 +102,10 @@ class WSGIDispatch(SyncDispatcher):
             raise seen_exc_info[1]
 
         status_code = int(seen_status.split()[0])
-        headers = Headers(seen_response_headers)
+        headers = [
+            (key.encode("ascii"), value.encode("ascii"))
+            for key, value in seen_response_headers
+        ]
         stream = IteratorStream(chunk for chunk in result)
 
         return (status_code, "HTTP/1.1", headers, stream)

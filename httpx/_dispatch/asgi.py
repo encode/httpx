@@ -1,8 +1,8 @@
-import typing
+from typing import Callable, List, Tuple
 
 from .._config import TimeoutTypes
 from .._content_streams import ByteStream, ContentStream
-from .._models import URL, Headers
+from .._models import URL
 from .base import AsyncDispatcher
 
 
@@ -41,10 +41,10 @@ class ASGIDispatch(AsyncDispatcher):
 
     def __init__(
         self,
-        app: typing.Callable,
+        app: Callable,
         raise_app_exceptions: bool = True,
         root_path: str = "",
-        client: typing.Tuple[str, int] = ("127.0.0.1", 123),
+        client: Tuple[str, int] = ("127.0.0.1", 123),
     ) -> None:
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
@@ -55,16 +55,16 @@ class ASGIDispatch(AsyncDispatcher):
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: List[Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: TimeoutTypes = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> Tuple[int, str, List[Tuple[bytes, bytes]], ContentStream]:
         scope = {
             "type": "http",
             "asgi": {"version": "3.0"},
             "http_version": "1.1",
             "method": method.decode(),
-            "headers": headers.raw,
+            "headers": headers,
             "scheme": url.scheme,
             "path": url.path,
             "query_string": url.query.encode("ascii"),
@@ -121,4 +121,4 @@ class ASGIDispatch(AsyncDispatcher):
 
         stream = ByteStream(b"".join(body_parts))
 
-        return (status_code, "HTTP/1.1", Headers(response_headers), stream)
+        return (status_code, "HTTP/1.1", response_headers, stream)

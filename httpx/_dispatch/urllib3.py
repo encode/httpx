@@ -1,7 +1,7 @@
 import math
 import socket
 import ssl
-import typing
+from typing import Iterator, List, Optional, Tuple, Union
 
 import urllib3
 from urllib3.exceptions import MaxRetryError, SSLError
@@ -16,7 +16,7 @@ from .._config import (
     VerifyTypes,
 )
 from .._content_streams import ContentStream, IteratorStream
-from .._models import URL, Headers
+from .._models import URL
 from .._utils import as_network_error
 from .base import SyncDispatcher
 
@@ -62,12 +62,12 @@ class URLLib3Dispatcher(SyncDispatcher):
 
     def init_pool_manager(
         self,
-        proxy: typing.Optional[Proxy],
+        proxy: Optional[Proxy],
         ssl_context: ssl.SSLContext,
         num_pools: int,
         maxsize: int,
         block: bool,
-    ) -> typing.Union[urllib3.PoolManager, urllib3.ProxyManager]:
+    ) -> Union[urllib3.PoolManager, urllib3.ProxyManager]:
         if proxy is None:
             return urllib3.PoolManager(
                 ssl_context=ssl_context,
@@ -89,23 +89,35 @@ class URLLib3Dispatcher(SyncDispatcher):
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: List[Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: Timeout = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> Tuple[int, str, List[Tuple[bytes, bytes]], ContentStream]:
         timeout = Timeout() if timeout is None else timeout
         urllib3_timeout = urllib3.util.Timeout(
             connect=timeout.connect_timeout, read=timeout.read_timeout
         )
-        chunked = headers.get("Transfer-Encoding") == "chunked"
-        content_length = int(headers.get("Content-Length", "0"))
+
+        chunked = False
+        content_length = 0
+        for header_key, header_value in headers:
+            header_key = header_key.lower()
+            if header_key == b"transfer-encoding":
+                chunked = header_value == b"chunked"
+            if header_key == b"content-length":
+                content_length = int(header_value.decode("ascii"))
         body = stream if chunked or content_length else None
 
         with as_network_error(MaxRetryError, SSLError, socket.error):
             conn = self.pool.urlopen(
                 method=method.decode(),
                 url=str(url),
-                headers=dict(headers),
+                headers=dict(
+                    [
+                        (key.decode("ascii"), value.decode("ascii"))
+                        for key, value in headers
+                    ]
+                ),
                 body=body,
                 redirect=False,
                 assert_same_host=False,
@@ -116,13 +128,13 @@ class URLLib3Dispatcher(SyncDispatcher):
                 pool_timeout=timeout.pool_timeout,
             )
 
-        def response_bytes() -> typing.Iterator[bytes]:
+        def response_bytes() -> Iterator[bytes]:
             with as_network_error(socket.error):
                 for chunk in conn.stream(4096, decode_content=False):
                     yield chunk
 
         status_code = conn.status
-        headers = Headers(list(conn.headers.items()))
+        headers = list(conn.headers.items())
         response_stream = IteratorStream(
             iterator=response_bytes(), close_func=conn.release_conn
         )

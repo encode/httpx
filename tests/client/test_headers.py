@@ -15,12 +15,17 @@ class MockDispatch(AsyncDispatcher):
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: typing.List[typing.Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: TimeoutTypes = None,
-    ) -> typing.Tuple[int, bytes, Headers, ContentStream]:
-        body = JSONStream({"headers": dict(headers)})
-        return 200, "HTTP/1.1", Headers(), body
+    ) -> typing.Tuple[
+        int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
+        headers_dict = dict(
+            [(key.decode("ascii"), value.decode("ascii")) for key, value in headers]
+        )
+        body = JSONStream({"headers": headers_dict})
+        return 200, "HTTP/1.1", [], body
 
 
 @pytest.mark.asyncio

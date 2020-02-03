@@ -1,19 +1,19 @@
 import functools
-import typing
+from typing import Awaitable, Callable, List, Optional, Tuple, Union
 
 import h11
 
 from .._backends.base import ConcurrencyBackend, lookup_backend
 from .._config import SSLConfig, Timeout
 from .._content_streams import ContentStream
-from .._models import URL, Headers, Origin
+from .._models import URL, Origin
 from .._utils import get_logger
 from .base import AsyncDispatcher
 from .http2 import HTTP2Connection
 from .http11 import HTTP11Connection
 
 # Callback signature: async def callback(conn: HTTPConnection) -> None
-ReleaseCallback = typing.Callable[["HTTPConnection"], typing.Awaitable[None]]
+ReleaseCallback = Callable[["HTTPConnection"], Awaitable[None]]
 
 
 logger = get_logger(__name__)
@@ -22,28 +22,28 @@ logger = get_logger(__name__)
 class HTTPConnection(AsyncDispatcher):
     def __init__(
         self,
-        origin: typing.Union[str, Origin],
+        origin: Union[str, Origin],
         ssl: SSLConfig = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
-        release_func: typing.Optional[ReleaseCallback] = None,
-        uds: typing.Optional[str] = None,
+        backend: Union[str, ConcurrencyBackend] = "auto",
+        release_func: Optional[ReleaseCallback] = None,
+        uds: Optional[str] = None,
     ):
         self.origin = Origin(origin) if isinstance(origin, str) else origin
         self.ssl = SSLConfig() if ssl is None else ssl
         self.backend = lookup_backend(backend)
         self.release_func = release_func
         self.uds = uds
-        self.connection: typing.Union[None, HTTP11Connection, HTTP2Connection] = None
-        self.expires_at: typing.Optional[float] = None
+        self.connection: Union[None, HTTP11Connection, HTTP2Connection] = None
+        self.expires_at: Optional[float] = None
 
     async def send(
         self,
         method: bytes,
         url: URL,
-        headers: Headers,
+        headers: List[Tuple[bytes, bytes]],
         stream: ContentStream,
         timeout: Timeout = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+    ) -> Tuple[int, str, List[Tuple[bytes, bytes]], ContentStream]:
         timeout = Timeout() if timeout is None else timeout
 
         if self.connection is None:
@@ -55,7 +55,7 @@ class HTTPConnection(AsyncDispatcher):
 
     async def connect(
         self, timeout: Timeout
-    ) -> typing.Union[HTTP11Connection, HTTP2Connection]:
+    ) -> Union[HTTP11Connection, HTTP2Connection]:
         host = self.origin.host
         port = self.origin.port
         ssl_context = None if not self.origin.is_ssl else self.ssl.ssl_context
