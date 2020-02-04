@@ -421,7 +421,7 @@ class MyCustomAuth(httpx.Auth):
         ...
 ```
 
-Similarly, if you are implementing a scheme that requires access to the response body, then use the `requires_response_body` property.   You will then be able to access response body properties and methods such as `response.text`, `response.json()`, `response.iter_lines()`, etc.
+Similarly, if you are implementing a scheme that requires access to the response body, then use the `requires_response_body` property.   You will then be able to access response body properties and methods such as `response.content`, `response.text`, `response.json()`, etc.
 
 ```python
 class MyCustomAuth(httpx.Auth):
