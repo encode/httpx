@@ -23,6 +23,7 @@ class Auth:
     """
 
     requires_request_body = False
+    requires_response_body = False
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         """
