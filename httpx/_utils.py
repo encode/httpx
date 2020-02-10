@@ -134,9 +134,12 @@ class NetRCInfo:
             self._netrc_info = None
             for file_path in self.netrc_files:
                 expanded_path = Path(file_path).expanduser()
-                if expanded_path.is_file():
-                    self._netrc_info = netrc.netrc(str(expanded_path))
-                    break
+                try:
+                    if expanded_path.is_file():
+                        self._netrc_info = netrc.netrc(str(expanded_path))
+                        break
+                expect PermissionError:
+                    pass
         return self._netrc_info
 
     def get_credentials(
