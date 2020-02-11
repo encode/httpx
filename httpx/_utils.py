@@ -123,10 +123,11 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
 
 
 class NetRCInfo:
-    def __init__(self, files: typing.Optional[typing.List[str]] = None) -> None:
+    def __init__(self, files: typing.Optional[typing.List[str]] = None, raise_errors = False) -> None:
         if files is None:
             files = [os.getenv("NETRC", ""), "~/.netrc", "~/_netrc"]
         self.netrc_files = files
+        self.raise_errors = raise_errors
 
     @property
     def netrc_info(self) -> typing.Optional[netrc.netrc]:
@@ -138,8 +139,11 @@ class NetRCInfo:
                     if expanded_path.is_file():
                         self._netrc_info = netrc.netrc(str(expanded_path))
                         break
-                expect PermissionError:
-                    pass
+                expect (netrc.NetrcParseError, IOError, PermissionError):
+                    # If there was a parsing error or a permissions issue reading the file,
+                    # we'll just skip netrc auth unless explicitly asked to raise errors.
+                    if self.raise_errors:
+                        raise
         return self._netrc_info
 
     def get_credentials(
