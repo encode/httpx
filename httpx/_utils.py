@@ -139,7 +139,7 @@ class NetRCInfo:
                     if expanded_path.is_file():
                         self._netrc_info = netrc.netrc(str(expanded_path))
                         break
-                expect (netrc.NetrcParseError, IOError, PermissionError):
+                except (netrc.NetrcParseError, IOError, PermissionError):
                     # If there was a parsing error or a permissions issue reading the file,
                     # we'll just skip netrc auth unless explicitly asked to raise errors.
                     if self.raise_errors:
