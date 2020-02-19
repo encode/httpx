@@ -615,7 +615,7 @@ class Client(BaseClient):
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
-            urls = ((resp.request.method, resp.url) for resp in history)
+            urls = ((resp.request.method, resp.url) for resp in history[1:])
             if (request.method, request.url) in urls:
                 raise RedirectLoop()
 
@@ -1142,7 +1142,7 @@ class AsyncClient(BaseClient):
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
-            urls = ((resp.request.method, resp.url) for resp in history)
+            urls = ((resp.request.method, resp.url) for resp in history[1:])
             if (request.method, request.url) in urls:
                 raise RedirectLoop()
 
