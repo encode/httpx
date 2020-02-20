@@ -101,12 +101,6 @@ class TooManyRedirects(RedirectError):
     """
 
 
-class RedirectLoop(RedirectError):
-    """
-    Infinite redirect loop.
-    """
-
-
 class NotRedirectResponse(RedirectError):
     """
     Response was not a redirect response.

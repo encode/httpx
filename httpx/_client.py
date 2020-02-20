@@ -30,7 +30,6 @@ from ._dispatch.wsgi import WSGIDispatch
 from ._exceptions import (
     HTTPError,
     InvalidURL,
-    RedirectLoop,
     RequestBodyUnavailable,
     TooManyRedirects,
 )
@@ -615,9 +614,6 @@ class Client(BaseClient):
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
-            urls = ((resp.request.method, resp.url) for resp in history)
-            if (request.method, request.url) in urls:
-                raise RedirectLoop()
 
             response = self.send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
@@ -1142,9 +1138,6 @@ class AsyncClient(BaseClient):
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
-            urls = ((resp.request.method, resp.url) for resp in history)
-            if (request.method, request.url) in urls:
-                raise RedirectLoop()
 
             response = await self.send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
