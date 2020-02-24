@@ -64,6 +64,20 @@ is generally equivalent to
 client = httpx.Client(**kwargs)
 ```
 
+The HTTPX equivalent of `prepare_request` of `requests.Session` instance is `build_request` of `httpx.Client`.
+
+## Request arguments
+
+The `Request` class of `httpx` takes the arguments
+
+`(method, url, params=None, headers=None, cookies=None, data=None, files=None, json=None, stream=None)`
+
+where as `requests.Request` takes the arguments
+
+`(method, url, params=None, data=None, json=None, headers=None, cookies=None, files=None, auth=None, timeout=None, allow_redirects=True, proxies=None, verify=True, stream=None, cert=None)`
+
+The list of arguments that are not present in `httpx.Request` class are `auth`, `timeout`, `allow_redirects`, `proxies`, `verify` and `cert` however these are available in `httpx.request`, `httpx.get`, `httpx.post` etc.
+
 ## Mocking
 
 If you need to mock HTTPX the same way that test utilities like `responses` and `requests-mock` does for `requests`, see [RESPX](https://github.com/lundberg/respx).
