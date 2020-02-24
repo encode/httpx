@@ -515,13 +515,8 @@ class Headers(typing.MutableMapping[str, str]):
         Set the header `key` to `value`, removing any duplicate entries.
         Retains insertion order.
         """
-        try:
-            set_key = key.lower().encode(self.encoding)
-            set_value = value.encode(self.encoding)
-        except UnicodeEncodeError:
-            self.encoding = "utf8"
-            set_key = key.lower().encode(self.encoding)
-            set_value = value.encode(self.encoding)
+        set_key = key.lower().encode(self._encoding or "utf-8")
+        set_value = value.encode(self._encoding or "utf-8")
 
         found_indexes = []
         for idx, (item_key, _) in enumerate(self._list):
