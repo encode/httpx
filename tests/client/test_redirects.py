@@ -242,6 +242,13 @@ async def test_too_many_redirects_calling_next():
 
 
 @pytest.mark.usefixtures("async_environment")
+async def test_redirect_loop():
+    client = AsyncClient(dispatch=MockDispatch())
+    with pytest.raises(TooManyRedirects):
+        await client.get("https://example.org/redirect_loop")
+
+
+@pytest.mark.usefixtures("async_environment")
 async def test_cross_domain_redirect():
     client = AsyncClient(dispatch=MockDispatch())
     url = "https://example.com/cross_domain"
