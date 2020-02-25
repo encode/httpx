@@ -64,17 +64,22 @@ is generally equivalent to
 client = httpx.Client(**kwargs)
 ```
 
-The HTTPX equivalent of `prepare_request` of `requests.Session` instance is `build_request` of `httpx.Client`.
+## Request instantiation
 
-## Request arguments
+Whenever you get a `Response` from an API call, the `request` attribute is actually the `Request` that was used internally. There are cases in which you want to build a `Request` object but don't want to send it immediately. Here is how you can do it.
 
-The `Request` class of `httpx` takes the arguments
+```python
+req = httpx.Request("GET", "https://example.org")
+```
 
-`(method, url, params=None, headers=None, cookies=None, data=None, files=None, json=None, stream=None)`
+The above request object is ready to be sent. There’s no need for `prepare_request()` in HTTPX.
 
-where as `requests.Request` takes the arguments
+```python
+with httpx.Client() as client:
+    r = client.send(req)
+```
 
-`(method, url, params=None, data=None, json=None, headers=None, cookies=None, files=None, auth=None, timeout=None, allow_redirects=True, proxies=None, verify=True, stream=None, cert=None)`
+If you need to build a request while applying client defaults, see [here](https://www.python-httpx.org/advanced/#build-request).
 
 The list of arguments that are not present in `httpx.Request` class are `auth`, `timeout`, `allow_redirects`, `proxies`, `verify` and `cert` however these are available in `httpx.request`, `httpx.get`, `httpx.post` etc.
 
