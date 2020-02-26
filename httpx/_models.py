@@ -13,14 +13,14 @@ import chardet
 import rfc3986
 
 from .__version__ import __version__
-from .content_streams import (
+from ._content_streams import (
     ByteStream,
     ContentStream,
     RequestData,
     RequestFiles,
     encode,
 )
-from .decoders import (
+from ._decoders import (
     SUPPORTED_DECODERS,
     Decoder,
     IdentityDecoder,
@@ -28,7 +28,7 @@ from .decoders import (
     MultiDecoder,
     TextDecoder,
 )
-from .exceptions import (
+from ._exceptions import (
     CookieConflict,
     HTTPError,
     InvalidURL,
@@ -38,8 +38,8 @@ from .exceptions import (
     ResponseNotRead,
     StreamConsumed,
 )
-from .status_codes import StatusCode
-from .utils import (
+from ._status_codes import StatusCode
+from ._utils import (
     ElapsedTimer,
     flatten_queryparams,
     guess_json_utf,
@@ -52,7 +52,7 @@ from .utils import (
 )
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from .dispatch.base import AsyncDispatcher  # noqa: F401
+    from ._dispatch.base import AsyncDispatcher  # noqa: F401
 
 PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
 
@@ -515,8 +515,8 @@ class Headers(typing.MutableMapping[str, str]):
         Set the header `key` to `value`, removing any duplicate entries.
         Retains insertion order.
         """
-        set_key = key.lower().encode(self.encoding)
-        set_value = value.encode(self.encoding)
+        set_key = key.lower().encode(self._encoding or "utf-8")
+        set_value = value.encode(self._encoding or "utf-8")
 
         found_indexes = []
         for idx, (item_key, _) in enumerate(self._list):

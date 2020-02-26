@@ -6,8 +6,8 @@ from pathlib import Path
 
 import certifi
 
-from .models import URL, Headers, HeaderTypes, URLTypes
-from .utils import get_ca_bundle_from_env, get_logger
+from ._models import URL, Headers, HeaderTypes, URLTypes
+from ._utils import get_ca_bundle_from_env, get_logger
 
 CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
 VerifyTypes = typing.Union[str, bool, ssl.SSLContext]

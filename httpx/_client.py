@@ -4,8 +4,8 @@ from types import TracebackType
 
 import hstspreload
 
-from .auth import Auth, AuthTypes, BasicAuth, FunctionAuth
-from .config import (
+from ._auth import Auth, AuthTypes, BasicAuth, FunctionAuth
+from ._config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
@@ -19,21 +19,15 @@ from .config import (
     UnsetType,
     VerifyTypes,
 )
-from .content_streams import ContentStream
-from .dispatch.asgi import ASGIDispatch
-from .dispatch.base import AsyncDispatcher, SyncDispatcher
-from .dispatch.connection_pool import ConnectionPool
-from .dispatch.proxy_http import HTTPProxy
-from .dispatch.urllib3 import URLLib3Dispatcher
-from .dispatch.wsgi import WSGIDispatch
-from .exceptions import (
-    HTTPError,
-    InvalidURL,
-    RedirectLoop,
-    RequestBodyUnavailable,
-    TooManyRedirects,
-)
-from .models import (
+from ._content_streams import ContentStream
+from ._dispatch.asgi import ASGIDispatch
+from ._dispatch.base import AsyncDispatcher, SyncDispatcher
+from ._dispatch.connection_pool import ConnectionPool
+from ._dispatch.proxy_http import HTTPProxy
+from ._dispatch.urllib3 import URLLib3Dispatcher
+from ._dispatch.wsgi import WSGIDispatch
+from ._exceptions import HTTPError, InvalidURL, RequestBodyUnavailable, TooManyRedirects
+from ._models import (
     URL,
     Cookies,
     CookieTypes,
@@ -48,8 +42,8 @@ from .models import (
     Response,
     URLTypes,
 )
-from .status_codes import codes
-from .utils import NetRCInfo, get_environment_proxies, get_logger
+from ._status_codes import codes
+from ._utils import NetRCInfo, get_environment_proxies, get_logger
 
 logger = get_logger(__name__)
 
@@ -614,9 +608,6 @@ class Client(BaseClient):
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
-            urls = ((resp.request.method, resp.url) for resp in history)
-            if (request.method, request.url) in urls:
-                raise RedirectLoop()
 
             response = self.send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
@@ -656,6 +647,8 @@ class Client(BaseClient):
         request = next(auth_flow)
         while True:
             response = self.send_single_request(request, timeout)
+            if auth.requires_response_body:
+                response.read()
             try:
                 next_request = auth_flow.send(response)
             except StopIteration:
@@ -1129,9 +1122,6 @@ class AsyncClient(BaseClient):
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
-            urls = ((resp.request.method, resp.url) for resp in history)
-            if (request.method, request.url) in urls:
-                raise RedirectLoop()
 
             response = await self.send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
@@ -1171,6 +1161,8 @@ class AsyncClient(BaseClient):
         request = next(auth_flow)
         while True:
             response = await self.send_single_request(request, timeout)
+            if auth.requires_response_body:
+                await response.aread()
             try:
                 next_request = auth_flow.send(response)
             except StopIteration:

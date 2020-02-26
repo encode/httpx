@@ -7,16 +7,15 @@ from httpx import (
     URL,
     AsyncClient,
     NotRedirectResponse,
-    RedirectLoop,
     Request,
     RequestBodyUnavailable,
     Response,
     TooManyRedirects,
     codes,
 )
-from httpx.config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx.content_streams import AsyncIteratorStream
-from httpx.dispatch.base import AsyncDispatcher
+from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
+from httpx._content_streams import AsyncIteratorStream
+from httpx._dispatch.base import AsyncDispatcher
 
 
 class MockDispatch(AsyncDispatcher):
@@ -245,18 +244,8 @@ async def test_too_many_redirects_calling_next():
 @pytest.mark.usefixtures("async_environment")
 async def test_redirect_loop():
     client = AsyncClient(dispatch=MockDispatch())
-    with pytest.raises(RedirectLoop):
+    with pytest.raises(TooManyRedirects):
         await client.get("https://example.org/redirect_loop")
-
-
-@pytest.mark.usefixtures("async_environment")
-async def test_redirect_loop_calling_next():
-    client = AsyncClient(dispatch=MockDispatch())
-    url = "https://example.org/redirect_loop"
-    response = await client.get(url, allow_redirects=False)
-    with pytest.raises(RedirectLoop):
-        while response.is_redirect:
-            response = await response.anext()
 
 
 @pytest.mark.usefixtures("async_environment")

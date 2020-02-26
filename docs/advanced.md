@@ -99,8 +99,8 @@ app = Flask(__name__)
 def hello():
     return "Hello World!"
 
-with httpx.Client(app=app) as client:
-    r = client.get('http://example/')
+with httpx.Client(app=app, base_url="http://testserver") as client:
+    r = client.get("/")
     assert r.status_code == 200
     assert r.text == "Hello World!"
 ```
@@ -116,7 +116,7 @@ For example:
 ```python
 # Instantiate a client that makes WSGI requests with a client IP of "1.2.3.4".
 dispatch = httpx.WSGIDispatch(app=app, remote_addr="1.2.3.4")
-with httpx.Client(dispatch=dispatch) as client:
+with httpx.Client(dispatch=dispatch, base_url="http://testserver") as client:
     ...
 ```
 
@@ -418,6 +418,41 @@ class MyCustomAuth(httpx.Auth):
     def sign_request(self, request):
         # Create a request signature, based on `request.method`, `request.url`,
         # `request.headers`, and `request.content`.
+        ...
+```
+
+Similarly, if you are implementing a scheme that requires access to the response body, then use the `requires_response_body` property.   You will then be able to access response body properties and methods such as `response.content`, `response.text`, `response.json()`, etc.
+
+```python
+class MyCustomAuth(httpx.Auth):
+    requires_response_body = True
+
+    def __init__(self, access_token, refresh_token, refresh_url):
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+        self.refresh_url = refresh_url
+
+    def auth_flow(self, request):
+        request.headers["X-Authentication"] = self.access_token
+        response = yield request
+
+        if response.status_code == 401:
+            # If the server issues a 401 response, then issue a request to
+            # refresh tokens, and resend the request.
+            refresh_response = yield self.build_refresh_request()
+            self.update_tokens(refresh_response)
+
+            request.headers["X-Authentication"] = self.access_token
+            yield request
+
+    def build_refresh_request(self):
+        # Return an `httpx.Request` for refreshing tokens.
+        ...
+
+    def update_tokens(self, response):
+        # Update the `.access_token` and `.refresh_token` tokens
+        # based on a refresh response.
+        data = response.json()
         ...
 ```
 

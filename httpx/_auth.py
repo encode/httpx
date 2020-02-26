@@ -6,9 +6,9 @@ import typing
 from base64 import b64encode
 from urllib.request import parse_http_list
 
-from .exceptions import ProtocolError, RequestBodyUnavailable
-from .models import Request, Response
-from .utils import to_bytes, to_str, unquote
+from ._exceptions import ProtocolError, RequestBodyUnavailable
+from ._models import Request, Response
+from ._utils import to_bytes, to_str, unquote
 
 AuthTypes = typing.Union[
     typing.Tuple[typing.Union[str, bytes], typing.Union[str, bytes]],
@@ -23,6 +23,7 @@ class Auth:
     """
 
     requires_request_body = False
+    requires_response_body = False
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         """

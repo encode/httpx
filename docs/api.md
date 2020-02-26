@@ -62,10 +62,10 @@
 * `def .raise_for_status()` - **None**
 * `def .json()` - **Any**
 * `def .read()` - **bytes**
-* `def .iter_raw()` - **async bytes iterator**
-* `def .iter_bytes()` - **async bytes iterator**
-* `def .iter_text()` - **async text iterator**
-* `def .iter_lines()` - **async text iterator**
+* `def .iter_raw()` - **bytes iterator**
+* `def .iter_bytes()` - **bytes iterator**
+* `def .iter_text()` - **text iterator**
+* `def .iter_lines()` - **text iterator**
 * `def .close()` - **None**
 * `def .next()` - **Response**
 * `def .aread()` - **bytes**

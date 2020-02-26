@@ -159,8 +159,8 @@ We can make requests directly against the application, like so:
 
 ```python
 >>> import httpx
->>> async with httpx.AsyncClient(app=app) as client:
-...     r = await client.get('http://example/')
+>>> async with httpx.AsyncClient(app=app, base_url="http://testserver") as client:
+...     r = await client.get("/")
 ...     assert r.status_code == 200
 ...     assert r.text == "Hello World!"
 ```
@@ -177,7 +177,7 @@ For example:
 # Instantiate a client that makes ASGI requests with a client IP of "1.2.3.4",
 # on port 123.
 dispatch = httpx.ASGIDispatch(app=app, client=("1.2.3.4", 123))
-async with httpx.AsyncClient(dispatch=dispatch) as client:
+async with httpx.AsyncClient(dispatch=dispatch, base_url="http://testserver") as client:
     ...
 ```
 
