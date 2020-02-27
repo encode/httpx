@@ -7,7 +7,7 @@ import pytest
 from h2.settings import SettingCodes
 
 from httpx import AsyncClient, Response, TimeoutException
-from httpx.dispatch.connection_pool import ConnectionPool
+from httpx._dispatch.connection_pool import ConnectionPool
 
 from .utils import MockHTTP2Backend
 
