@@ -862,6 +862,8 @@ class Client(BaseClient):
 
     def close(self) -> None:
         self.dispatch.close()
+        for proxy in self.proxies.values():
+            proxy.close()
 
     def __enter__(self) -> "Client":
         return self
@@ -1388,6 +1390,8 @@ class AsyncClient(BaseClient):
 
     async def aclose(self) -> None:
         await self.dispatch.close()
+        for proxy in self.proxies.values():
+            await proxy.close()
 
     async def __aenter__(self) -> "AsyncClient":
         return self
