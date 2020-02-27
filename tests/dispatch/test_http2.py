@@ -7,6 +7,7 @@ import pytest
 from h2.settings import SettingCodes
 
 from httpx import AsyncClient, Response, TimeoutException
+from httpx._dispatch.connection_pool import ConnectionPool
 
 from .utils import MockHTTP2Backend
 
@@ -25,8 +26,9 @@ async def app(request):
 @pytest.mark.asyncio
 async def test_http2_get_request():
     backend = MockHTTP2Backend(app=app)
+    dispatch = ConnectionPool(backend=backend, http2=True)
 
-    async with AsyncClient(backend=backend, http2=True) as client:
+    async with AsyncClient(dispatch=dispatch) as client:
         response = await client.get("http://example.org")
 
     assert response.status_code == 200
@@ -36,8 +38,9 @@ async def test_http2_get_request():
 @pytest.mark.asyncio
 async def test_http2_post_request():
     backend = MockHTTP2Backend(app=app)
+    dispatch = ConnectionPool(backend=backend, http2=True)
 
-    async with AsyncClient(backend=backend, http2=True) as client:
+    async with AsyncClient(dispatch=dispatch) as client:
         response = await client.post("http://example.org", data=b"<data>")
 
     assert response.status_code == 200
@@ -51,9 +54,10 @@ async def test_http2_post_request():
 @pytest.mark.asyncio
 async def test_http2_large_post_request():
     backend = MockHTTP2Backend(app=app)
+    dispatch = ConnectionPool(backend=backend, http2=True)
 
     data = b"a" * 100000
-    async with AsyncClient(backend=backend, http2=True) as client:
+    async with AsyncClient(dispatch=dispatch) as client:
         response = await client.post("http://example.org", data=data)
     assert response.status_code == 200
     assert json.loads(response.content) == {
@@ -66,8 +70,9 @@ async def test_http2_large_post_request():
 @pytest.mark.asyncio
 async def test_http2_multiple_requests():
     backend = MockHTTP2Backend(app=app)
+    dispatch = ConnectionPool(backend=backend, http2=True)
 
-    async with AsyncClient(backend=backend, http2=True) as client:
+    async with AsyncClient(dispatch=dispatch) as client:
         response_1 = await client.get("http://example.org/1")
         response_2 = await client.get("http://example.org/2")
         response_3 = await client.get("http://example.org/3")
@@ -89,8 +94,9 @@ async def test_http2_reconnect():
     be seemlessly reconnected.
     """
     backend = MockHTTP2Backend(app=app)
+    dispatch = ConnectionPool(backend=backend, http2=True)
 
-    async with AsyncClient(backend=backend, http2=True) as client:
+    async with AsyncClient(dispatch=dispatch) as client:
         response_1 = await client.get("http://example.org/1")
         backend.server.close_connection = True
         response_2 = await client.get("http://example.org/2")
@@ -105,8 +111,9 @@ async def test_http2_reconnect():
 @pytest.mark.asyncio
 async def test_http2_settings_in_handshake():
     backend = MockHTTP2Backend(app=app)
+    dispatch = ConnectionPool(backend=backend, http2=True)
 
-    async with AsyncClient(backend=backend, http2=True) as client:
+    async with AsyncClient(dispatch=dispatch) as client:
         await client.get("http://example.org")
 
     h2_conn = backend.server.conn

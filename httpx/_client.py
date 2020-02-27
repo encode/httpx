@@ -5,7 +5,6 @@ from types import TracebackType
 import hstspreload
 
 from ._auth import Auth, AuthTypes, BasicAuth, FunctionAuth
-from ._backends.base import ConcurrencyBackend
 from ._config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
@@ -922,9 +921,6 @@ class AsyncClient(BaseClient):
     over the network.
     * **app** - *(optional)* An ASGI application to send requests to,
     rather than sending actual network requests.
-    * **backend** - *(optional)* A concurrency backend to use when issuing
-    async requests. Either 'auto', 'asyncio', 'trio', or a `ConcurrencyBackend`
-    instance. Defaults to 'auto', for autodetection.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
     * **uds** - *(optional)* A path to a Unix domain socket to connect through.
@@ -947,7 +943,6 @@ class AsyncClient(BaseClient):
         base_url: URLTypes = None,
         dispatch: AsyncDispatcher = None,
         app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
         uds: str = None,
     ):
@@ -971,7 +966,6 @@ class AsyncClient(BaseClient):
             pool_limits=pool_limits,
             dispatch=dispatch,
             app=app,
-            backend=backend,
             trust_env=trust_env,
             uds=uds,
         )
@@ -982,7 +976,6 @@ class AsyncClient(BaseClient):
                 cert=cert,
                 http2=http2,
                 pool_limits=pool_limits,
-                backend=backend,
                 trust_env=trust_env,
             )
             for key, proxy in proxy_map.items()
@@ -996,7 +989,6 @@ class AsyncClient(BaseClient):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         dispatch: AsyncDispatcher = None,
         app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
         uds: str = None,
     ) -> AsyncDispatcher:
@@ -1011,7 +1003,6 @@ class AsyncClient(BaseClient):
             cert=cert,
             http2=http2,
             pool_limits=pool_limits,
-            backend=backend,
             trust_env=trust_env,
             uds=uds,
         )
@@ -1023,7 +1014,6 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
     ) -> AsyncDispatcher:
         return HTTPProxy(
@@ -1034,7 +1024,6 @@ class AsyncClient(BaseClient):
             cert=cert,
             http2=http2,
             pool_limits=pool_limits,
-            backend=backend,
             trust_env=trust_env,
         )
 

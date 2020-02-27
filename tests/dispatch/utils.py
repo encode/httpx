@@ -10,9 +10,9 @@ from httpx._backends.base import BaseSocketStream, lookup_backend
 
 
 class MockHTTP2Backend:
-    def __init__(self, app, backend="auto"):
+    def __init__(self, app):
         self.app = app
-        self.backend = lookup_backend(backend)
+        self.backend = lookup_backend()
         self.server = None
 
     async def open_tcp_stream(
@@ -31,7 +31,7 @@ class MockHTTP2Backend:
 
 
 class MockHTTP2Server(BaseSocketStream):
-    def __init__(self, app, backend):
+    def __init__(self, app, backend: MockHTTP2Backend):
         config = h2.config.H2Configuration(client_side=False)
         self.conn = h2.connection.H2Connection(config=config)
         self.app = app
@@ -151,8 +151,8 @@ class MockHTTP2Server(BaseSocketStream):
 
 
 class MockRawSocketBackend:
-    def __init__(self, data_to_send=b"", backend="auto"):
-        self.backend = lookup_backend(backend)
+    def __init__(self, data_to_send=b""):
+        self.backend = lookup_backend()
         self.data_to_send = data_to_send
         self.received_data = []
         self.stream = MockRawSocketStream(self)
