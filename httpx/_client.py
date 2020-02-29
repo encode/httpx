@@ -43,7 +43,12 @@ from ._models import (
     URLTypes,
 )
 from ._status_codes import codes
-from ._utils import NetRCInfo, get_environment_proxies, get_logger, should_not_be_proxied
+from ._utils import (
+    NetRCInfo,
+    get_environment_proxies,
+    get_logger,
+    should_not_be_proxied,
+)
 
 logger = get_logger(__name__)
 

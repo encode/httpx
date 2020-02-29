@@ -1,6 +1,7 @@
 import pytest
 
 import httpx
+from httpx import URL
 
 
 @pytest.mark.parametrize(
@@ -87,3 +88,18 @@ def test_dispatcher_for_request(url, proxies, expected):
 def test_unsupported_proxy_scheme():
     with pytest.raises(ValueError):
         httpx.AsyncClient(proxies="ftp://127.0.0.1")
+
+
+def test_no_proxy_returns_correct_dispatcher(monkeypatch):
+    monkeypatch.setenv("HTTP_PROXY", "http://example.com")
+    monkeypatch.setenv("NO_PROXY", "google.com")
+    client = httpx.AsyncClient()
+    dispatcher = client.dispatcher_for_url(URL("http://google.com"))
+    assert dispatcher == client.dispatch
+
+
+def test_no_proxy_not_set_returns_correct_dispatcher(monkeypatch):
+    monkeypatch.setenv("HTTP_PROXY", "http://example.com")
+    client = httpx.AsyncClient()
+    dispatcher = client.dispatcher_for_url(URL("http://google.com"))
+    assert dispatcher == client.proxies["http"]
