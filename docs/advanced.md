@@ -2,21 +2,62 @@
 
 ## Client Instances
 
-Using a Client instance to make requests will give you HTTP connection pooling,
-will provide cookie persistence, and allows you to apply configuration across
-all outgoing requests.
-
 !!! hint
-    A Client instance is equivalent to a Session instance in `requests`.
+    If you are coming from Requests, `httpx.Client()` is what you can use instead of `requests.Session()`.
 
-!!! note
-    Starting from `httpx==0.10.0`, the default and recommended Client class is `AsyncClient`. This should help prevent breaking changes once sync support is reintroduced.
+### Why use a Client?
 
-    A `Client` synonym remains for compatibility with `httpx==0.9.*` releases, but you are encouraged to migrate to `AsyncClient` as soon as possible.
+!!! note "TL;DR"
+    If you do anything more than experimentation, one-off scripts, or prototypes, then you should use a `Client` instance.
+
+#### More efficient usage of network resources
+
+Using `Client` instances instead of the top-level API (`httpx.get()`, `httpx.post()`, etc.) generally results in **far more efficient usage of network resources** (i.e. HTTP connections).
+
+Benefits include:
+
+- Reduced latency across requests.
+- Reduced CPU usage.
+- Reduced bandwidth usage and network congestion.
+
+Indeed, when using the top-level API, an HTTP connection has to be opened and closed _for every single request_.
+
+So, if you are making 50 HTTP/1.1 requests per second to a host using the top-level API, then HTTPX needs to open and shutdown 50 connections per second. This is a lot of work! It can quickly become expensive, and slow down your programs. Reasons include higher latency due to handshaking, higher CPU usage due to repeated TLS handshakes, higher network congestion due to a higher number of TCP connections, etc.
+
+On the other hand, a `Client` instance use [HTTP connection pooling](https://en.wikipedia.org/wiki/HTTP_persistent_connection), which means that:
+
+- Connections are _cached and reused_ on a per-host basis.
+- If you make 50 HTTP/1.1 requests per second to a host using a `Client`, then HTTPX will only use 1 HTTP connection. The connection will be opened for the first request, and then reused for all subsequent requests. (This is a significant improvement!)
+- As a result, if your program makes requests to *N* different hosts, then the `Client` will only have roughly *N* open connections at any given time.
+
+#### Other features
+
+Client instances also support cookie persistance, applying configuration across all outgoing requests, sending requests through HTTP proxies, using [HTTP/2](/http2), and more.
+
+The other sections in this page will go in further detail about what you can do with a `Client` instance.
 
 ### Usage
 
 The recommended way to use a `Client` is as a context manager. This will ensure that connections are properly cleaned up when leaving the `with` block:
+
+```python
+with httpx.Client() as client:
+    ...
+```
+
+Alternatively, you can explicitly close the connection pool without block-usage using `.close()`:
+
+```python
+client = httpx.Client()
+try:
+    ...
+finally:
+    client.close()
+```
+
+### Making requests
+
+Once you have a `Client`, you can send requests using `.get()`, `.post()`, etc. For example:
 
 ```python
 >>> with httpx.Client() as client:
@@ -26,26 +67,24 @@ The recommended way to use a `Client` is as a context manager. This will ensure 
 <Response [200 OK]>
 ```
 
-Alternatively, you can explicitly close the connection pool without block-usage using `.close()`:
+These methods accept the same arguments than `httpx.get()`, `httpx.post()`, etc. This means that all features documented in the [Quickstart](/quickstart) guide are also available at the client level.
+
+For example, to send a request with custom headers...
 
 ```python
->>> client = httpx.Client()
->>> try:
-...     r = client.get('https://example.com')
-... finally:
-...     client.close()
+>>> with httpx.Client() as client:
+...     headers = {'X-Custom': 'value'}
+...     r = client.get('https://example.com', headers=headers)
 ...
->>> r
-<Response [200 OK]>
+>>> r.request.headers['X-Custom']
+'value'
 ```
 
-Once you have a `Client`, you can use all the features documented in the [Quickstart](/quickstart) guide.
-
-### Configuration
+### Sharing configuration across requests
 
 Clients allow you to apply configuration to all outgoing requests by passing parameters to the `Client` constructor.
 
-For example, to apply a set of custom headers on every request:
+For example, to apply a set of custom headers _on every request_:
 
 ```python
 >>> url = 'http://httpbin.org/headers'
@@ -57,15 +96,47 @@ For example, to apply a set of custom headers on every request:
 'my-app/0.0.1'
 ```
 
-!!! note
-    When you provide a parameter at both the client and request levels, one of two things can happen:
+### Merging of configuration
 
-    - For headers, query parameters and cookies, the values are merged into one.
-    - For all other parameters, the request-level value is used.
+When a configuration option is provided at both the client-level and request-level, one of two things can happen:
 
-Additionally, `Client` accepts some parameters that aren't available at the request level.
+- For headers, query parameters and cookies, the values are combined together. For example...
 
-One particularly useful parameter is `base_url`, which allows you to define a base URL to prepend to all outgoing requests:
+```python
+>>> headers = {'X-Auth': 'from-client'}
+>>> params = {'client_id': 'client1'}
+>>> with httpx.Client(headers=headers, params=params) as client:
+...     headers = {'X-Custom': 'from-request'}
+...     params = {'request_id': 'request1'}
+...     r = client.get('https://example.com', headers=headers, params=params)
+...
+>>> r.request.url
+URL('https://example.com?client_id=client1&request_id=request1')
+>>> r.request.headers['X-Auth']
+'from-client'
+>>> r.request.headers['X-Custom']
+'from-request'
+```
+
+- For all other parameters, the request-level value takes priority. For example...
+
+```python
+>>> with httpx.Client(auth=('tom', 'mot123')) as client:
+...     r = client.get('https://example.com', auth=('alice', 'ecila123'))
+...
+>>> _, _, auth = r.request.headers['Authorization'].partition(' ')
+>>> import base64
+>>> base64.b64decode(auth)
+b'alice:ecila123'
+```
+
+If you need finer-grained control on the merging of client-level and request-level parameters, see [Request instances](#request-instances).
+
+### Other Client-only configuration options
+
+Additionally, `Client` accepts some configuration options that aren't available at the request level.
+
+For example, `base_url` allows you to prepend an URL to all outgoing requests:
 
 ```python
 >>> with httpx.Client(base_url='http://httpbin.org') as client:
@@ -75,7 +146,7 @@ One particularly useful parameter is `base_url`, which allows you to define a ba
 URL('http://httpbin.org/headers')
 ```
 
-For a list of all available client-level parameters, see the [`Client` API reference](/api/#client).
+For a list of all available client parameters, see the [`Client`](/api/#client) API reference.
 
 ## Calling into Python Web Apps
 
@@ -120,19 +191,37 @@ with httpx.Client(dispatch=dispatch, base_url="http://testserver") as client:
     ...
 ```
 
-## Build Request
+## Request instances
 
-You can use `Client.build_request()` to build a request and
-make modifications before sending the request.
+For maximum control on what gets sent over the wire, HTTPX supports building explicit [`Request`](/api#request) instances:
 
 ```python
->>> with httpx.Client() as client:
-...     req = client.build_request("OPTIONS", "https://example.com")
-...     req.url.full_path = "*"  # Build an 'OPTIONS *' request for CORS
-...     r = client.send(req)
-...
->>> r
-<Response [200 OK]>
+request = httpx.Request("GET", "https://example.com")
+```
+
+To dispatch a `Request` instance across to the network, create a [`Client` instance](#client-instances) and use `.send()`:
+
+```python
+with httpx.Client() as client:
+    response = client.send(request)
+    ...
+```
+
+If you need to mix client-level and request-level options in a way that is not supported by the default [Merging of parameters](#merging-of-parameters), you can use `.build_request()` and then make arbitrary modifications the `Request` instance. For example...
+
+```python
+headers = {"X-Api-Key": "...", "X-Client-ID": "ABC123"}
+
+with httpx.Client(headers=headers) as client:
+    request = client.build_request("GET", "https://api.example.com")
+
+    print(request.headers["X-Client-ID"])  # "ABC123"
+
+    # Don't send the API key for this particular request.
+    del request.headers["X-Api-Key"]
+
+    response = client.send(request)
+    ...
 ```
 
 ## .netrc Support
