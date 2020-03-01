@@ -90,16 +90,30 @@ def test_unsupported_proxy_scheme():
         httpx.AsyncClient(proxies="ftp://127.0.0.1")
 
 
-def test_no_proxy_returns_correct_dispatcher(monkeypatch):
-    monkeypatch.setenv("HTTP_PROXY", "http://example.com")
-    monkeypatch.setenv("NO_PROXY", "google.com")
-    client = httpx.AsyncClient()
-    dispatcher = client.dispatcher_for_url(URL("http://google.com"))
-    assert dispatcher == client.dispatch
+@pytest.mark.parametrize(
+    ["url", "env", "expected"],
+    [
+        ("http://google.com", {}, None),
+        (
+            "http://google.com",
+            {"HTTP_PROXY": "http://example.com"},
+            "http://example.com",
+        ),
+        (
+            "http://google.com",
+            {"HTTP_PROXY": "http://example.com", "NO_PROXY": "google.com"},
+            None,
+        ),
+    ],
+)
+def test_proxies_environ(monkeypatch, url, env, expected):
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
 
-
-def test_no_proxy_not_set_returns_correct_dispatcher(monkeypatch):
-    monkeypatch.setenv("HTTP_PROXY", "http://example.com")
     client = httpx.AsyncClient()
-    dispatcher = client.dispatcher_for_url(URL("http://google.com"))
-    assert dispatcher == client.proxies["http"]
+    dispatcher = client.dispatcher_for_url(httpx.URL(url))
+
+    if expected is None:
+        assert dispatcher == client.dispatch
+    else:
+        assert dispatcher.proxy_url == expected
