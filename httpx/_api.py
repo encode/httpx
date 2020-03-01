@@ -66,8 +66,6 @@ def request(
     file, key file, password).
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
-    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
-    URLs.
 
     **Returns:** `Response`
 
