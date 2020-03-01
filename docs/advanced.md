@@ -24,7 +24,7 @@ Indeed, when using the top-level API, an HTTP connection has to be opened and cl
 
 So, if you are making 50 HTTP/1.1 requests per second to a host using the top-level API, then HTTPX needs to open and shutdown 50 connections per second. This is a lot of work! It can quickly become expensive, and slow down your programs. Reasons include higher latency due to handshaking, higher CPU usage due to repeated TLS handshakes, higher network congestion due to a higher number of TCP connections, etc.
 
-On the other hand, a `Client` instance use [HTTP connection pooling](https://en.wikipedia.org/wiki/HTTP_persistent_connection), which means that:
+On the other hand, a `Client` instance uses [HTTP connection pooling](https://en.wikipedia.org/wiki/HTTP_persistent_connection), which means that:
 
 - Connections are _cached and reused_ on a per-host basis.
 - If you make 50 HTTP/1.1 requests per second to a host using a `Client`, then HTTPX will only use 1 HTTP connection. The connection will be opened for the first request, and then reused for all subsequent requests. (This is a significant improvement!)
@@ -34,7 +34,7 @@ On the other hand, a `Client` instance use [HTTP connection pooling](https://en.
 
 Client instances also support cookie persistance, applying configuration across all outgoing requests, sending requests through HTTP proxies, using [HTTP/2](/http2), and more.
 
-The other sections in this page will go in further detail about what you can do with a `Client` instance.
+The other sections on this page go into further detail about what you can do with a `Client` instance.
 
 ### Usage
 
@@ -67,9 +67,9 @@ Once you have a `Client`, you can send requests using `.get()`, `.post()`, etc. 
 <Response [200 OK]>
 ```
 
-These methods accept the same arguments than `httpx.get()`, `httpx.post()`, etc. This means that all features documented in the [Quickstart](/quickstart) guide are also available at the client level.
+These methods accept the same arguments as `httpx.get()`, `httpx.post()`, etc. This means that all features documented in the [Quickstart](/quickstart) guide are also available at the client level.
 
-For example, to send a request with custom headers...
+For example, to send a request with custom headers:
 
 ```python
 >>> with httpx.Client() as client:
@@ -100,7 +100,7 @@ For example, to apply a set of custom headers _on every request_:
 
 When a configuration option is provided at both the client-level and request-level, one of two things can happen:
 
-- For headers, query parameters and cookies, the values are combined together. For example...
+- For headers, query parameters and cookies, the values are combined together. For example:
 
 ```python
 >>> headers = {'X-Auth': 'from-client'}
@@ -118,7 +118,7 @@ URL('https://example.com?client_id=client1&request_id=request1')
 'from-request'
 ```
 
-- For all other parameters, the request-level value takes priority. For example...
+- For all other parameters, the request-level value takes priority. For example:
 
 ```python
 >>> with httpx.Client(auth=('tom', 'mot123')) as client:
@@ -207,7 +207,7 @@ with httpx.Client() as client:
     ...
 ```
 
-If you need to mix client-level and request-level options in a way that is not supported by the default [Merging of parameters](#merging-of-parameters), you can use `.build_request()` and then make arbitrary modifications the `Request` instance. For example...
+If you need to mix client-level and request-level options in a way that is not supported by the default [Merging of parameters](#merging-of-parameters), you can use `.build_request()` and then make arbitrary modifications to the `Request` instance. For example:
 
 ```python
 headers = {"X-Api-Key": "...", "X-Client-ID": "ABC123"}
