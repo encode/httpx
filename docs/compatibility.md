@@ -22,7 +22,7 @@ HTTPX provides a `.stream()` interface rather than using `stream=True`. This ens
 For example:
 
 ```python
-with request.stream("GET", "https://www.example.com") as response:
+with httpx.stream("GET", "https://www.example.com") as response:
     ...
 ```
 
@@ -33,6 +33,8 @@ Within a `stream()` block request data is made available with:
 * `.iter_lines()` - Corresponding to `response.iter_lines()`
 * `.iter_raw()` - Use this instead of `response.raw`
 * `.read()` - Read the entire response body, making `request.text` and `response.content` available.
+
+For more information, see [Streaming Responses](/quickstart#streaming-responses).
 
 ## SSL configuration
 
