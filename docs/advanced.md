@@ -12,27 +12,25 @@
 
 #### More efficient usage of network resources
 
-Using `Client` instances instead of the top-level API (`httpx.get()`, `httpx.post()`, etc.) generally results in **far more efficient usage of network resources** (i.e. HTTP connections).
+When you make requests using the top-level API as documented in the [Quickstart](/quickstart) guide, HTTPX has to establish a new connection _for every single request_ (connections are not reused). As the number of requests to a host increases, this quickly becomes inefficient.
 
-Benefits include:
+On the other hand, a `Client` instance uses [HTTP connection pooling](https://en.wikipedia.org/wiki/HTTP_persistent_connection). This means that when you make several requests to the same host, the `Client` will reuse the underlying TCP connection, instead of recreating one for every single request.
 
-- Reduced latency across requests.
-- Reduced CPU usage.
-- Reduced bandwidth usage and network congestion.
+This can bring **significant performance improvements** compared to using the top-level API, including:
 
-Indeed, when using the top-level API, an HTTP connection has to be opened and closed _for every single request_.
+- Reduced latency across requests (no handshaking).
+- Reduced CPU usage and round-trips.
+- Reduced network congestion.
+- Etc...
 
-So, if you are making 50 HTTP/1.1 requests per second to a host using the top-level API, then HTTPX needs to open and shutdown 50 connections per second. This is a lot of work! It can quickly become expensive, and slow down your programs. Reasons include higher latency due to handshaking, higher CPU usage due to repeated TLS handshakes, higher network congestion due to a higher number of TCP connections, etc.
+#### Extra features
 
-On the other hand, a `Client` instance uses [HTTP connection pooling](https://en.wikipedia.org/wiki/HTTP_persistent_connection), which means that:
+`Client` instances also support features that aren't available at the top-level API, such as:
 
-- Connections are _cached and reused_ on a per-host basis.
-- If you make 50 HTTP/1.1 requests per second to a host using a `Client`, then HTTPX will only use 1 HTTP connection. The connection will be opened for the first request, and then reused for all subsequent requests. (This is a significant improvement!)
-- As a result, if your program makes requests to *N* different hosts, then the `Client` will only have roughly *N* open connections at any given time.
-
-#### Other features
-
-Client instances also support cookie persistance, applying configuration across all outgoing requests, sending requests through HTTP proxies, using [HTTP/2](/http2), and more.
+- Cookie persistance across requests.
+- Applying configuration across all outgoing requests.
+- Sending requests through HTTP proxies.
+- Using [HTTP/2](/http2).
 
 The other sections on this page go into further detail about what you can do with a `Client` instance.
 
