@@ -1,7 +1,6 @@
 import pytest
 
 import httpx
-from httpx import URL
 
 
 @pytest.mark.parametrize(
