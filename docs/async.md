@@ -78,7 +78,35 @@ The async response streaming methods are:
 * `Response.aiter_text()` - For streaming the response content as text.
 * `Response.aiter_lines()` - For streaming the response content as lines of text.
 * `Response.aiter_raw()` - For streaming the raw response bytes, without applying content decoding.
-* `Response.aclose()` - For closing the response. You don't usually need this, since `.stream` block close the response automatically on exit.
+* `Response.aclose()` - For closing the response. When using the context-managed syntax, `.stream()` will close the response automatically on exit.
+
+If you need to return the body as an async iterator without block usage, you can manually enter the `.stream()` async context, and make sure it gets closed eventually. For example, if building a Starlette web view that returns a streaming response, this can be achieved using `AsyncExitStack` and a background task:
+
+```python
+from contextlib import AsyncExitStack
+import httpx
+from starlette.applications import Starlette
+from starlette.routing import Route
+from starlette.background import BackgroundTask
+from starlette.responses import StreamingResponse
+
+client = httpx.AsyncClient()
+
+async def home(request):
+    data = await request.json()
+    url = data["url"]
+
+    exit_stack = AsyncExitStack()
+    r = await exit_stack.enter_async_context(client.stream("GET", url))
+
+    return StreamingResponse(
+        r.aiter_raw(),
+        media_type="application/octet-stream",
+        background=BackgroundTask(exit_stack.aclose),
+    )
+
+app = Starlette(routes=[Route("/", home, methods=["POST"])])
+```
 
 ### Streaming requests
 

@@ -337,6 +337,27 @@ If you're using streaming responses in any of these ways then the `response.cont
 ...         print(r.text)
 ```
 
+If you need to return the body as an iterator without block usage, you can manually enter the `.stream()` context and make sure it gets closed eventually. For example, if building a Flask web view that returns a streaming response, this can be achieved using `ExitStack` and werkzeug's `ClosingIterator`:
+
+```python
+from contextlib import ExitStack
+import httpx
+from flask import Flask, Response, request
+from werkzeug.wsgi import ClosingIterator
+
+app = Flask(__name__)
+
+@app.route("/", methods=["post"])
+def home() -> Response:
+    url = request.json["url"]
+
+    exit_stack = ExitStack()
+    r = exit_stack.enter_context(httpx.stream("GET", url))
+    body = ClosingIterator(r.iter_raw(), callbacks=[exit_stack.close])
+
+    return Response(body, mimetype="application/octet-stream")
+```
+
 ## Cookies
 
 Any cookies that are set on the response can be easily accessed:
