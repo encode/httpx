@@ -21,7 +21,6 @@ This can bring **significant performance improvements** compared to using the to
 - Reduced latency across requests (no handshaking).
 - Reduced CPU usage and round-trips.
 - Reduced network congestion.
-- Etc...
 
 #### Extra features
 
