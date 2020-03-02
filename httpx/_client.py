@@ -43,7 +43,12 @@ from ._models import (
     URLTypes,
 )
 from ._status_codes import codes
-from ._utils import NetRCInfo, get_environment_proxies, get_logger
+from ._utils import (
+    NetRCInfo,
+    get_environment_proxies,
+    get_logger,
+    should_not_be_proxied,
+)
 
 logger = get_logger(__name__)
 
@@ -517,7 +522,7 @@ class Client(BaseClient):
         Returns the SyncDispatcher instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        if self.proxies:
+        if self.proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
             )
@@ -1032,7 +1037,7 @@ class AsyncClient(BaseClient):
         Returns the AsyncDispatcher instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        if self.proxies:
+        if self.proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
             )
