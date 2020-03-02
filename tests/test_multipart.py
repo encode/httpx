@@ -99,8 +99,7 @@ def test_multipart_encode():
         "a": "1",
         "b": b"C",
         "c": ["11", "22", "33"],
-        "d": {"ff": ["1", b"2", "3"], "fff": ["11", b"22", "33"]},
-        "f": "",
+        "d": "",
     }
     files = {"file": ("name.txt", io.BytesIO(b"<file content>"))}
 
@@ -114,9 +113,7 @@ def test_multipart_encode():
             '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n11\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n22\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n33\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="d"\r\n\r\nff\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="d"\r\n\r\nfff\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="f"\r\n\r\n\r\n'
+            '--{0}\r\nContent-Disposition: form-data; name="d"\r\n\r\n\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="file";'
             ' filename="name.txt"\r\n'
             "Content-Type: text/plain\r\n\r\n<file content>\r\n"
