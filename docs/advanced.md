@@ -152,7 +152,7 @@ will be stripped:
 >>> r.request.url
 URL('http://api/headers')
 ```
-If you want to use a path prefix in your `base_url`, make sure you pass 
+If you want to use a path prefix in your `base_url`, make sure you'll pass 
 a relative URL to the outgoing request:
 
 ```python
