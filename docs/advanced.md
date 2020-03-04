@@ -143,6 +143,19 @@ For example, `base_url` allows you to prepend an URL to all outgoing requests:
 URL('http://httpbin.org/headers')
 ```
 
+Please note that the `base_url` should comply with RFC 3986. This means, 
+essentially, that the `base_url` must be be an absolute URL and any fragment 
+portion will be dropped. The following URL 'http://api/v3.0' would be 
+stripped to 'http://api' once the request is being prepared:   
+
+```python
+>>> with httpx.Client(base_url='http://api/v3.0') as client:
+...     r = client.get('/headers/')
+...
+>>> r.request.url
+URL('http://api/headers')
+```
+
 For a list of all available client parameters, see the [`Client`](/api/#client) API reference.
 
 ## Calling into Python Web Apps
