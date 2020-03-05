@@ -291,7 +291,7 @@ class MultipartStream(ContentStream):
         self, data: dict, files: dict
     ) -> typing.Iterator[typing.Union["FileField", "DataField"]]:
         for name, value in data.items():
-            if isinstance(value, (list, dict)):
+            if isinstance(value, list):
                 for item in value:
                     yield self.DataField(name=name, value=item)
             else:

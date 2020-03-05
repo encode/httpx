@@ -5,7 +5,6 @@ from types import TracebackType
 import hstspreload
 
 from ._auth import Auth, AuthTypes, BasicAuth, FunctionAuth
-from ._backends.base import ConcurrencyBackend
 from ._config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
@@ -27,13 +26,7 @@ from ._dispatch.connection_pool import ConnectionPool
 from ._dispatch.proxy_http import HTTPProxy
 from ._dispatch.urllib3 import URLLib3Dispatcher
 from ._dispatch.wsgi import WSGIDispatch
-from ._exceptions import (
-    HTTPError,
-    InvalidURL,
-    RedirectLoop,
-    RequestBodyUnavailable,
-    TooManyRedirects,
-)
+from ._exceptions import HTTPError, InvalidURL, RequestBodyUnavailable, TooManyRedirects
 from ._models import (
     URL,
     Cookies,
@@ -50,7 +43,12 @@ from ._models import (
     URLTypes,
 )
 from ._status_codes import codes
-from ._utils import NetRCInfo, get_environment_proxies, get_logger
+from ._utils import (
+    NetRCInfo,
+    get_environment_proxies,
+    get_logger,
+    should_not_be_proxied,
+)
 
 logger = get_logger(__name__)
 
@@ -524,7 +522,7 @@ class Client(BaseClient):
         Returns the SyncDispatcher instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        if self.proxies:
+        if self.proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
             )
@@ -615,9 +613,6 @@ class Client(BaseClient):
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
-            urls = ((resp.request.method, resp.url) for resp in history)
-            if (request.method, request.url) in urls:
-                raise RedirectLoop()
 
             response = self.send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
@@ -657,6 +652,8 @@ class Client(BaseClient):
         request = next(auth_flow)
         while True:
             response = self.send_single_request(request, timeout)
+            if auth.requires_response_body:
+                response.read()
             try:
                 next_request = auth_flow.send(response)
             except StopIteration:
@@ -882,6 +879,8 @@ class Client(BaseClient):
 
     def close(self) -> None:
         self.dispatch.close()
+        for proxy in self.proxies.values():
+            proxy.close()
 
     def __enter__(self) -> "Client":
         return self
@@ -940,9 +939,6 @@ class AsyncClient(BaseClient):
     over the network.
     * **app** - *(optional)* An ASGI application to send requests to,
     rather than sending actual network requests.
-    * **backend** - *(optional)* A concurrency backend to use when issuing
-    async requests. Either 'auto', 'asyncio', 'trio', or a `ConcurrencyBackend`
-    instance. Defaults to 'auto', for autodetection.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
     * **uds** - *(optional)* A path to a Unix domain socket to connect through.
@@ -965,7 +961,6 @@ class AsyncClient(BaseClient):
         base_url: URLTypes = None,
         dispatch: AsyncDispatcher = None,
         app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
         uds: str = None,
     ):
@@ -989,7 +984,6 @@ class AsyncClient(BaseClient):
             pool_limits=pool_limits,
             dispatch=dispatch,
             app=app,
-            backend=backend,
             trust_env=trust_env,
             uds=uds,
         )
@@ -1000,7 +994,6 @@ class AsyncClient(BaseClient):
                 cert=cert,
                 http2=http2,
                 pool_limits=pool_limits,
-                backend=backend,
                 trust_env=trust_env,
             )
             for key, proxy in proxy_map.items()
@@ -1014,7 +1007,6 @@ class AsyncClient(BaseClient):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         dispatch: AsyncDispatcher = None,
         app: typing.Callable = None,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
         uds: str = None,
     ) -> AsyncDispatcher:
@@ -1029,7 +1021,6 @@ class AsyncClient(BaseClient):
             cert=cert,
             http2=http2,
             pool_limits=pool_limits,
-            backend=backend,
             trust_env=trust_env,
             uds=uds,
         )
@@ -1041,7 +1032,6 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        backend: typing.Union[str, ConcurrencyBackend] = "auto",
         trust_env: bool = True,
     ) -> AsyncDispatcher:
         return HTTPProxy(
@@ -1052,7 +1042,6 @@ class AsyncClient(BaseClient):
             cert=cert,
             http2=http2,
             pool_limits=pool_limits,
-            backend=backend,
             trust_env=trust_env,
         )
 
@@ -1061,7 +1050,7 @@ class AsyncClient(BaseClient):
         Returns the AsyncDispatcher instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        if self.proxies:
+        if self.proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
             )
@@ -1153,9 +1142,6 @@ class AsyncClient(BaseClient):
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
-            urls = ((resp.request.method, resp.url) for resp in history)
-            if (request.method, request.url) in urls:
-                raise RedirectLoop()
 
             response = await self.send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
@@ -1195,6 +1181,8 @@ class AsyncClient(BaseClient):
         request = next(auth_flow)
         while True:
             response = await self.send_single_request(request, timeout)
+            if auth.requires_response_body:
+                await response.aread()
             try:
                 next_request = auth_flow.send(response)
             except StopIteration:
@@ -1422,6 +1410,8 @@ class AsyncClient(BaseClient):
 
     async def aclose(self) -> None:
         await self.dispatch.close()
+        for proxy in self.proxies.values():
+            await proxy.close()
 
     async def __aenter__(self) -> "AsyncClient":
         return self

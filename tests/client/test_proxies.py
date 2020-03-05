@@ -87,3 +87,32 @@ def test_dispatcher_for_request(url, proxies, expected):
 def test_unsupported_proxy_scheme():
     with pytest.raises(ValueError):
         httpx.AsyncClient(proxies="ftp://127.0.0.1")
+
+
+@pytest.mark.parametrize(
+    ["url", "env", "expected"],
+    [
+        ("http://google.com", {}, None),
+        (
+            "http://google.com",
+            {"HTTP_PROXY": "http://example.com"},
+            "http://example.com",
+        ),
+        (
+            "http://google.com",
+            {"HTTP_PROXY": "http://example.com", "NO_PROXY": "google.com"},
+            None,
+        ),
+    ],
+)
+def test_proxies_environ(monkeypatch, url, env, expected):
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+
+    client = httpx.AsyncClient()
+    dispatcher = client.dispatcher_for_url(httpx.URL(url))
+
+    if expected is None:
+        assert dispatcher == client.dispatch
+    else:
+        assert dispatcher.proxy_url == expected

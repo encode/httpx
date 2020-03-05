@@ -487,3 +487,40 @@ async def test_digest_auth_unavailable_streaming_body():
 
     with pytest.raises(RequestBodyUnavailable):
         await client.post(url, data=streaming_body(), auth=auth)
+
+
+@pytest.mark.asyncio
+async def test_auth_reads_response_body() -> None:
+    """
+    Test that we can read the response body in an auth flow if `requires_response_body`
+    is set.
+    """
+
+    class ResponseBodyAuth(Auth):
+        """
+        A mock authentication scheme that requires clients to send an 'Authorization'
+        header, then send back the contents of the response in the 'Authorization'
+        header.
+        """
+
+        requires_response_body = True
+
+        def __init__(self, token):
+            self.token = token
+
+        def auth_flow(
+            self, request: Request
+        ) -> typing.Generator[Request, Response, None]:
+            request.headers["Authorization"] = self.token
+            response = yield request
+            data = response.text
+            request.headers["Authorization"] = data
+            yield request
+
+    url = "https://example.org/"
+    auth = ResponseBodyAuth("xyz")
+    client = AsyncClient(dispatch=MockDispatch())
+
+    response = await client.get(url, auth=auth)
+    assert response.status_code == 200
+    assert response.json() == {"auth": '{"auth": "xyz"}'}
