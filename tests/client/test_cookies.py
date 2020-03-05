@@ -3,10 +3,9 @@ from http.cookiejar import Cookie, CookieJar
 
 import pytest
 
-from httpx import URL, AsyncClient, Cookies
-from httpx._config import TimeoutTypes
+import httpcore
+from httpx import AsyncClient, Cookies
 from httpx._content_streams import ByteStream, ContentStream, JSONStream
-from httpx._dispatch.base import AsyncDispatcher
 
 
 def get_header_value(headers, key, default=None):
@@ -17,23 +16,26 @@ def get_header_value(headers, key, default=None):
     return default
 
 
-class MockDispatch(AsyncDispatcher):
-    async def send(
+class MockDispatch(httpcore.AsyncHTTPTransport):
+    async def request(
         self,
         method: bytes,
-        url: URL,
+        url: typing.Tuple[bytes, bytes, int, bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
         stream: ContentStream,
-        timeout: TimeoutTypes = None,
-    ) -> typing.Tuple[int, str, typing.List[typing.Tuple[bytes, bytes]], ContentStream]:
-        if url.path.startswith("/echo_cookies"):
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
+        host, scheme, port, path = url
+        if path.startswith(b"/echo_cookies"):
             cookie = get_header_value(headers, "cookie")
             body = JSONStream({"cookies": cookie})
-            return 200, "HTTP/1.1", [], body
-        elif url.path.startswith("/set_cookie"):
+            return b"HTTP/1.1", 200, b"OK", [], body
+        elif path.startswith(b"/set_cookie"):
             headers = [(b"set-cookie", b"example-name=example-value")]
             body = ByteStream(b"")
-            return 200, "HTTP/1.1", headers, body
+            return b"HTTP/1.1", 200, b"OK", headers, body
         else:
             raise NotImplementedError()  # pragma: no cover
 

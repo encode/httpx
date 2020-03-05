@@ -1,12 +1,11 @@
-from typing import Callable, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
-from .._config import TimeoutTypes
-from .._content_streams import ByteStream, ContentStream
-from .._models import URL
-from .base import AsyncDispatcher
+import httpcore
+
+from .._content_streams import ByteStream
 
 
-class ASGIDispatch(AsyncDispatcher):
+class ASGIDispatch(httpcore.AsyncHTTPTransport):
     """
     A custom AsyncDispatcher that handles sending requests directly to an ASGI app.
     The simplest way to use this functionality is to use the `app` argument.
@@ -51,24 +50,26 @@ class ASGIDispatch(AsyncDispatcher):
         self.root_path = root_path
         self.client = client
 
-    async def send(
+    async def request(
         self,
         method: bytes,
-        url: URL,
-        headers: List[Tuple[bytes, bytes]],
-        stream: ContentStream,
-        timeout: TimeoutTypes = None,
-    ) -> Tuple[int, str, List[Tuple[bytes, bytes]], ContentStream]:
+        url: Tuple[bytes, bytes, int, bytes],
+        headers: List[Tuple[bytes, bytes]] = None,
+        stream: httpcore.AsyncByteStream = None,
+        timeout: Dict[str, Optional[float]] = None,
+    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
+        scheme, host, port, full_path = url
+        path, _, query = full_path.partition(b"?")
         scope = {
             "type": "http",
             "asgi": {"version": "3.0"},
             "http_version": "1.1",
             "method": method.decode(),
             "headers": headers,
-            "scheme": url.scheme,
-            "path": url.path,
-            "query_string": url.query.encode("ascii"),
-            "server": url.host,
+            "scheme": scheme.decode("ascii"),
+            "path": path.decode("ascii"),
+            "query_string": query,
+            "server": (host.decode("ascii"), port),
             "client": self.client,
             "root_path": self.root_path,
         }
@@ -77,6 +78,9 @@ class ASGIDispatch(AsyncDispatcher):
         body_parts = []
         response_started = False
         response_complete = False
+
+        headers = [] if headers is None else headers
+        stream = ByteStream(b"") if stream is None else stream
 
         request_body_chunks = stream.__aiter__()
 
@@ -121,4 +125,4 @@ class ASGIDispatch(AsyncDispatcher):
 
         stream = ByteStream(b"".join(body_parts))
 
-        return (status_code, "HTTP/1.1", response_headers, stream)
+        return (b"HTTP/1.1", status_code, b"", response_headers, stream)

@@ -4,6 +4,8 @@ from types import TracebackType
 
 import hstspreload
 
+import httpcore
+
 from ._auth import Auth, AuthTypes, BasicAuth, FunctionAuth
 from ._config import (
     DEFAULT_MAX_REDIRECTS,
@@ -14,6 +16,7 @@ from ._config import (
     PoolLimits,
     ProxiesTypes,
     Proxy,
+    SSLConfig,
     Timeout,
     TimeoutTypes,
     UnsetType,
@@ -21,10 +24,6 @@ from ._config import (
 )
 from ._content_streams import ContentStream
 from ._dispatch.asgi import ASGIDispatch
-from ._dispatch.base import AsyncDispatcher, SyncDispatcher
-from ._dispatch.connection_pool import ConnectionPool
-from ._dispatch.proxy_http import HTTPProxy
-from ._dispatch.urllib3 import URLLib3Dispatcher
 from ._dispatch.wsgi import WSGIDispatch
 from ._exceptions import HTTPError, InvalidURL, RequestBodyUnavailable, TooManyRedirects
 from ._models import (
@@ -96,7 +95,7 @@ class BaseClient:
         elif isinstance(proxies, (str, URL, Proxy)):
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
             return {"all": proxy}
-        elif isinstance(proxies, AsyncDispatcher):  # pragma: nocover
+        elif isinstance(proxies, httpcore.AsyncHTTPTransport):  # pragma: nocover
             raise RuntimeError(
                 "Passing a dispatcher instance to 'proxies=' is no longer "
                 "supported. Use `httpx.Proxy() instead.`"
@@ -107,7 +106,7 @@ class BaseClient:
                 if isinstance(value, (str, URL, Proxy)):
                     proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
                     new_proxies[str(key)] = proxy
-                elif isinstance(value, AsyncDispatcher):  # pragma: nocover
+                elif isinstance(value, httpcore.AsyncHTTPTransport):  # pragma: nocover
                     raise RuntimeError(
                         "Passing a dispatcher instance to 'proxies=' is "
                         "no longer supported. Use `httpx.Proxy() instead.`"
@@ -446,7 +445,7 @@ class Client(BaseClient):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
-        dispatch: SyncDispatcher = None,
+        dispatch: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
     ):
@@ -471,7 +470,7 @@ class Client(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self.proxies: typing.Dict[str, SyncDispatcher] = {
+        self.proxies: typing.Dict[str, httpcore.SyncHTTPTransport] = {
             key: self.init_proxy_dispatch(
                 proxy,
                 verify=verify,
@@ -487,18 +486,26 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        dispatch: SyncDispatcher = None,
+        dispatch: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
-    ) -> SyncDispatcher:
+    ) -> httpcore.SyncHTTPTransport:
         if dispatch is not None:
             return dispatch
 
         if app is not None:
             return WSGIDispatch(app=app)
 
-        return URLLib3Dispatcher(
-            verify=verify, cert=cert, pool_limits=pool_limits, trust_env=trust_env,
+        ssl_context = SSLConfig(
+            verify=verify, cert=cert, trust_env=trust_env
+        ).ssl_context
+        max_keepalive = pool_limits.soft_limit
+        max_connections = pool_limits.hard_limit
+
+        return httpcore.SyncConnectionPool(
+            ssl_context=ssl_context,
+            max_keepalive=max_keepalive,
+            max_connections=max_connections,
         )
 
     def init_proxy_dispatch(
@@ -508,18 +515,25 @@ class Client(BaseClient):
         cert: CertTypes = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         trust_env: bool = True,
-    ) -> SyncDispatcher:
-        return URLLib3Dispatcher(
-            proxy=proxy,
-            verify=verify,
-            cert=cert,
-            pool_limits=pool_limits,
-            trust_env=trust_env,
+    ) -> httpcore.SyncHTTPTransport:
+        ssl_context = SSLConfig(
+            verify=verify, cert=cert, trust_env=trust_env
+        ).ssl_context
+        max_keepalive = pool_limits.soft_limit
+        max_connections = pool_limits.hard_limit
+
+        return httpcore.SyncHTTPProxy(
+            proxy_origin=proxy.url.raw[:3],
+            proxy_headers=proxy.headers.raw,
+            proxy_mode=proxy.mode,
+            ssl_context=ssl_context,
+            max_keepalive=max_keepalive,
+            max_connections=max_connections,
         )
 
-    def dispatcher_for_url(self, url: URL) -> SyncDispatcher:
+    def dispatcher_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
         """
-        Returns the SyncDispatcher instance that should be used for a given URL.
+        Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
         if self.proxies and not should_not_be_proxied(url):
@@ -674,13 +688,19 @@ class Client(BaseClient):
 
         dispatcher = self.dispatcher_for_url(request.url)
 
-        method = request.method.encode()
-        url = request.url
-        headers = request.headers.raw
-        stream = request.stream
         try:
-            status_code, http_version, headers, stream = dispatcher.send(
-                method, url, headers=headers, stream=stream, timeout=timeout
+            (
+                http_version,
+                status_code,
+                reason_phrase,
+                headers,
+                stream,
+            ) = dispatcher.request(
+                request.method.encode(),
+                request.url.raw,
+                headers=request.headers.raw,
+                stream=request.stream,
+                timeout=timeout.as_dict(),
             )
         except HTTPError as exc:
             # Add the original request to any HTTPError unless
@@ -691,9 +711,9 @@ class Client(BaseClient):
             raise
         response = Response(
             status_code,
-            http_version=http_version,
+            http_version=http_version.decode("ascii"),
             headers=headers,
-            stream=stream,
+            stream=stream,  # type: ignore
             request=request,
         )
 
@@ -959,7 +979,7 @@ class AsyncClient(BaseClient):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
-        dispatch: AsyncDispatcher = None,
+        dispatch: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
         uds: str = None,
@@ -987,7 +1007,7 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
             uds=uds,
         )
-        self.proxies: typing.Dict[str, AsyncDispatcher] = {
+        self.proxies: typing.Dict[str, httpcore.AsyncHTTPTransport] = {
             key: self.init_proxy_dispatch(
                 proxy,
                 verify=verify,
@@ -1005,24 +1025,28 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        dispatch: AsyncDispatcher = None,
+        dispatch: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
         uds: str = None,
-    ) -> AsyncDispatcher:
+    ) -> httpcore.AsyncHTTPTransport:
         if dispatch is not None:
             return dispatch
 
         if app is not None:
             return ASGIDispatch(app=app)
 
-        return ConnectionPool(
-            verify=verify,
-            cert=cert,
+        ssl_context = SSLConfig(
+            verify=verify, cert=cert, trust_env=trust_env
+        ).ssl_context
+        max_keepalive = pool_limits.soft_limit
+        max_connections = pool_limits.hard_limit
+
+        return httpcore.AsyncConnectionPool(
+            ssl_context=ssl_context,
+            max_keepalive=max_keepalive,
+            max_connections=max_connections,
             http2=http2,
-            pool_limits=pool_limits,
-            trust_env=trust_env,
-            uds=uds,
         )
 
     def init_proxy_dispatch(
@@ -1033,21 +1057,25 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         trust_env: bool = True,
-    ) -> AsyncDispatcher:
-        return HTTPProxy(
-            proxy_url=proxy.url,
-            proxy_headers=proxy.headers,
+    ) -> httpcore.AsyncHTTPTransport:
+        ssl_context = SSLConfig(
+            verify=verify, cert=cert, trust_env=trust_env
+        ).ssl_context
+        max_keepalive = pool_limits.soft_limit
+        max_connections = pool_limits.hard_limit
+
+        return httpcore.AsyncHTTPProxy(
+            proxy_origin=proxy.url.raw[:3],
+            proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
-            verify=verify,
-            cert=cert,
-            http2=http2,
-            pool_limits=pool_limits,
-            trust_env=trust_env,
+            ssl_context=ssl_context,
+            max_keepalive=max_keepalive,
+            max_connections=max_connections,
         )
 
-    def dispatcher_for_url(self, url: URL) -> AsyncDispatcher:
+    def dispatcher_for_url(self, url: URL) -> httpcore.AsyncHTTPTransport:
         """
-        Returns the AsyncDispatcher instance that should be used for a given URL.
+        Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
         if self.proxies and not should_not_be_proxied(url):
@@ -1205,13 +1233,19 @@ class AsyncClient(BaseClient):
 
         dispatcher = self.dispatcher_for_url(request.url)
 
-        method = request.method.encode()
-        url = request.url
-        headers = request.headers.raw
-        stream = request.stream
         try:
-            status_code, http_version, headers, stream = await dispatcher.send(
-                method, url, headers=headers, stream=stream, timeout=timeout
+            (
+                http_version,
+                status_code,
+                reason_phrase,
+                headers,
+                stream,
+            ) = await dispatcher.request(
+                request.method.encode(),
+                request.url.raw,
+                headers=request.headers.raw,
+                stream=request.stream,
+                timeout=timeout.as_dict(),
             )
         except HTTPError as exc:
             # Add the original request to any HTTPError unless
@@ -1222,9 +1256,9 @@ class AsyncClient(BaseClient):
             raise
         response = Response(
             status_code,
-            http_version=http_version,
+            http_version=http_version.decode("ascii"),
             headers=headers,
-            stream=stream,
+            stream=stream,  # type: ignore
             request=request,
         )
 
@@ -1409,9 +1443,9 @@ class AsyncClient(BaseClient):
         )
 
     async def aclose(self) -> None:
-        await self.dispatch.close()
+        await self.dispatch.aclose()
         for proxy in self.proxies.values():
-            await proxy.close()
+            await proxy.aclose()
 
     async def __aenter__(self) -> "AsyncClient":
         return self

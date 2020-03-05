@@ -2,24 +2,25 @@ import typing
 
 import pytest
 
+import httpcore
 from httpx import URL, AsyncClient, Headers, QueryParams
-from httpx._config import TimeoutTypes
 from httpx._content_streams import ContentStream, JSONStream
-from httpx._dispatch.base import AsyncDispatcher
 
 
-class MockDispatch(AsyncDispatcher):
-    async def send(
+class MockDispatch(httpcore.AsyncHTTPTransport):
+    async def request(
         self,
         method: bytes,
-        url: URL,
-        headers: Headers,
+        url: typing.Tuple[bytes, bytes, int, bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
         stream: ContentStream,
-        timeout: TimeoutTypes = None,
-    ) -> typing.Tuple[int, str, Headers, ContentStream]:
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
         headers = Headers()
         body = JSONStream({"ok": "ok"})
-        return 200, "HTTP/1.1", headers, body
+        return b"HTTP/1.1", 200, b"OK", headers, body
 
 
 def test_client_queryparams():

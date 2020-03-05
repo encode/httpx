@@ -4,28 +4,27 @@ import typing
 
 import pytest
 
-from httpx import URL, AsyncClient, Headers, __version__
-from httpx._config import TimeoutTypes
+import httpcore
+from httpx import AsyncClient, Headers, __version__
 from httpx._content_streams import ContentStream, JSONStream
-from httpx._dispatch.base import AsyncDispatcher
 
 
-class MockDispatch(AsyncDispatcher):
-    async def send(
+class MockDispatch(httpcore.AsyncHTTPTransport):
+    async def request(
         self,
         method: bytes,
-        url: URL,
+        url: typing.Tuple[bytes, bytes, int, bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
         stream: ContentStream,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
-        int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
         headers_dict = dict(
             [(key.decode("ascii"), value.decode("ascii")) for key, value in headers]
         )
         body = JSONStream({"headers": headers_dict})
-        return 200, "HTTP/1.1", [], body
+        return b"HTTP/1.1", 200, b"OK", [], body
 
 
 @pytest.mark.asyncio

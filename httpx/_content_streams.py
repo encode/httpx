@@ -7,6 +7,8 @@ from json import dumps as json_dumps
 from pathlib import Path
 from urllib.parse import urlencode
 
+import httpcore
+
 from ._exceptions import StreamConsumed
 from ._utils import format_form_param
 
@@ -33,7 +35,7 @@ RequestFiles = typing.Dict[
 ]
 
 
-class ContentStream:
+class ContentStream(httpcore.AsyncByteStream, httpcore.SyncByteStream):
     def get_headers(self) -> typing.Dict[str, str]:
         """
         Return a dictionary of headers that are implied by the encoding.

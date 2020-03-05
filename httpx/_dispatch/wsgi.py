@@ -1,15 +1,14 @@
 import io
 import typing
 
-from .._config import TimeoutTypes
-from .._content_streams import ContentStream, IteratorStream
-from .._models import URL
-from .base import SyncDispatcher
+import httpcore
+
+from .._content_streams import ByteStream, IteratorStream
 
 
-class WSGIDispatch(SyncDispatcher):
+class WSGIDispatch(httpcore.SyncHTTPTransport):
     """
-    A custom SyncDispatcher that handles sending requests directly to an WSGI app.
+    A custom transport that handles sending requests directly to an WSGI app.
     The simplest way to use this functionality is to use the `app` argument.
 
     ```
@@ -52,17 +51,28 @@ class WSGIDispatch(SyncDispatcher):
         self.script_name = script_name
         self.remote_addr = remote_addr
 
-    def send(
+    def request(
         self,
         method: bytes,
-        url: URL,
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: ContentStream,
-        timeout: TimeoutTypes = None,
-    ) -> typing.Tuple[int, str, typing.List[typing.Tuple[bytes, bytes]], ContentStream]:
+        url: typing.Tuple[bytes, bytes, int, bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
+        stream: httpcore.SyncByteStream = None,
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes,
+        int,
+        bytes,
+        typing.List[typing.Tuple[bytes, bytes]],
+        httpcore.SyncByteStream,
+    ]:
+        headers = [] if headers is None else headers
+        stream = ByteStream(b"") if stream is None else stream
+
+        scheme, host, port, full_path = url
+        path, _, query = full_path.partition(b"?")
         environ = {
             "wsgi.version": (1, 0),
-            "wsgi.url_scheme": url.scheme,
+            "wsgi.url_scheme": scheme.decode("ascii"),
             "wsgi.input": io.BytesIO(b"".join([chunk for chunk in stream])),
             "wsgi.errors": io.BytesIO(),
             "wsgi.multithread": True,
@@ -70,10 +80,10 @@ class WSGIDispatch(SyncDispatcher):
             "wsgi.run_once": False,
             "REQUEST_METHOD": method.decode(),
             "SCRIPT_NAME": self.script_name,
-            "PATH_INFO": url.path,
-            "QUERY_STRING": url.query,
-            "SERVER_NAME": url.host,
-            "SERVER_PORT": str(url.port),
+            "PATH_INFO": path.decode("ascii"),
+            "QUERY_STRING": query.decode("ascii"),
+            "SERVER_NAME": host.decode("ascii"),
+            "SERVER_PORT": str(port),
             "REMOTE_ADDR": self.remote_addr,
         }
         for header_key, header_value in headers:
@@ -108,4 +118,4 @@ class WSGIDispatch(SyncDispatcher):
         ]
         stream = IteratorStream(chunk for chunk in result)
 
-        return (status_code, "HTTP/1.1", headers, stream)
+        return (b"HTTP/1.1", status_code, b"", headers, stream)

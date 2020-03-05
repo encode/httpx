@@ -4,6 +4,7 @@ from urllib.parse import parse_qs
 
 import pytest
 
+import httpcore
 from httpx import (
     URL,
     AsyncClient,
@@ -12,9 +13,7 @@ from httpx import (
     TooManyRedirects,
     codes,
 )
-from httpx._config import TimeoutTypes
 from httpx._content_streams import AsyncIteratorStream, ByteStream, ContentStream
-from httpx._dispatch.base import AsyncDispatcher
 
 
 def get_header_value(headers, key, default=None):
@@ -25,19 +24,23 @@ def get_header_value(headers, key, default=None):
     return default
 
 
-class MockDispatch(AsyncDispatcher):
-    async def send(
+class MockDispatch(httpcore.AsyncHTTPTransport):
+    async def request(
         self,
         method: bytes,
-        url: URL,
+        url: typing.Tuple[bytes, bytes, int, bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
         stream: ContentStream,
-        timeout: TimeoutTypes = None,
-    ) -> typing.Tuple[int, str, typing.List[typing.Tuple[bytes, bytes]], ContentStream]:
-        if url.path == "/no_redirect":
-            return codes.OK, "HTTP/1.1", [], ByteStream(b"")
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
+        scheme, host, port, path = url
+        path, _, query = path.partition(b"?")
+        if path == b"/no_redirect":
+            return b"HTTP/1.1", codes.OK, b"OK", [], ByteStream(b"")
 
-        elif url.path == "/redirect_301":
+        elif path == b"/redirect_301":
 
             async def body():
                 yield b"<a href='https://example.org/'>here</a>"
@@ -45,74 +48,75 @@ class MockDispatch(AsyncDispatcher):
             status_code = codes.MOVED_PERMANENTLY
             headers = [(b"location", b"https://example.org/")]
             stream = AsyncIteratorStream(aiterator=body())
-            return status_code, "HTTP/1.1", headers, stream
+            return b"HTTP/1.1", status_code, b"Moved Permanently", headers, stream
 
-        elif url.path == "/redirect_302":
+        elif path == b"/redirect_302":
             status_code = codes.FOUND
             headers = [(b"location", b"https://example.org/")]
-            return status_code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", status_code, b"Found", headers, ByteStream(b"")
 
-        elif url.path == "/redirect_303":
+        elif path == b"/redirect_303":
             status_code = codes.SEE_OTHER
             headers = [(b"location", b"https://example.org/")]
-            return status_code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
 
-        elif url.path == "/relative_redirect":
+        elif path == b"/relative_redirect":
             status_code = codes.SEE_OTHER
             headers = [(b"location", b"/")]
-            return status_code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
 
-        elif url.path == "/malformed_redirect":
+        elif path == b"/malformed_redirect":
             status_code = codes.SEE_OTHER
             headers = [(b"location", b"https://:443/")]
-            return status_code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
 
-        elif url.path == "/no_scheme_redirect":
+        elif path == b"/no_scheme_redirect":
             status_code = codes.SEE_OTHER
             headers = [(b"location", b"//example.org/")]
-            return status_code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
 
-        elif url.path == "/multiple_redirects":
-            params = parse_qs(url.query)
+        elif path == b"/multiple_redirects":
+            params = parse_qs(query.decode("ascii"))
             count = int(params.get("count", "0")[0])
             redirect_count = count - 1
             code = codes.SEE_OTHER if count else codes.OK
+            phrase = b"See Other" if count else b"OK"
             location = b"/multiple_redirects"
             if redirect_count:
                 location += b"?count=" + str(redirect_count).encode("ascii")
             headers = [(b"location", location)] if count else []
-            return code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", code, phrase, headers, ByteStream(b"")
 
-        if url.path == "/redirect_loop":
+        if path == b"/redirect_loop":
             code = codes.SEE_OTHER
             headers = [(b"location", b"/redirect_loop")]
-            return code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", code, b"See Other", headers, ByteStream(b"")
 
-        elif url.path == "/cross_domain":
+        elif path == b"/cross_domain":
             code = codes.SEE_OTHER
             headers = [(b"location", b"https://example.org/cross_domain_target")]
-            return code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", code, b"See Other", headers, ByteStream(b"")
 
-        elif url.path == "/cross_domain_target":
+        elif path == b"/cross_domain_target":
             headers_dict = dict(
                 [(key.decode("ascii"), value.decode("ascii")) for key, value in headers]
             )
             content = ByteStream(json.dumps({"headers": headers_dict}).encode())
-            return 200, "HTTP/1.1", [], content
+            return b"HTTP/1.1", 200, b"OK", [], content
 
-        elif url.path == "/redirect_body":
+        elif path == b"/redirect_body":
             _ = b"".join([part async for part in stream])
             code = codes.PERMANENT_REDIRECT
             headers = [(b"location", b"/redirect_body_target")]
-            return code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", code, b"Permanent Redirect", headers, ByteStream(b"")
 
-        elif url.path == "/redirect_no_body":
+        elif path == b"/redirect_no_body":
             _ = b"".join([part async for part in stream])
             code = codes.SEE_OTHER
             headers = [(b"location", b"/redirect_body_target")]
-            return code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", code, b"See Other", headers, ByteStream(b"")
 
-        elif url.path == "/redirect_body_target":
+        elif path == b"/redirect_body_target":
             content = b"".join([part async for part in stream])
             headers_dict = dict(
                 [(key.decode("ascii"), value.decode("ascii")) for key, value in headers]
@@ -120,17 +124,23 @@ class MockDispatch(AsyncDispatcher):
             body = ByteStream(
                 json.dumps({"body": content.decode(), "headers": headers_dict}).encode()
             )
-            return 200, "HTTP/1.1", [], body
+            return b"HTTP/1.1", 200, b"OK", [], body
 
-        elif url.path == "/cross_subdomain":
+        elif path == b"/cross_subdomain":
             host = get_header_value(headers, "host")
             if host != "www.example.org":
                 headers = [(b"location", b"https://www.example.org/cross_subdomain")]
-                return codes.PERMANENT_REDIRECT, "HTTP/1.1", headers, ByteStream(b"")
+                return (
+                    b"HTTP/1.1",
+                    codes.PERMANENT_REDIRECT,
+                    b"Permanent Redirect",
+                    headers,
+                    ByteStream(b""),
+                )
             else:
-                return 200, "HTTP/1.1", [], ByteStream(b"Hello, world!")
+                return b"HTTP/1.1", 200, b"OK", [], ByteStream(b"Hello, world!")
 
-        return 200, "HTTP/1.1", [], ByteStream(b"Hello, world!")
+        return b"HTTP/1.1", 200, b"OK", [], ByteStream(b"Hello, world!")
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -344,24 +354,27 @@ async def test_cross_subdomain_redirect():
     assert response.url == URL("https://www.example.org/cross_subdomain")
 
 
-class MockCookieDispatch(AsyncDispatcher):
-    async def send(
+class MockCookieDispatch(httpcore.AsyncHTTPTransport):
+    async def request(
         self,
         method: bytes,
-        url: URL,
+        url: typing.Tuple[bytes, bytes, int, bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
         stream: ContentStream,
-        timeout: TimeoutTypes = None,
-    ) -> typing.Tuple[int, str, typing.List[typing.Tuple[bytes, bytes]], ContentStream]:
-        if url.path == "/":
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
+        scheme, host, port, path = url
+        if path == b"/":
             cookie = get_header_value(headers, "Cookie")
             if cookie is not None:
                 content = b"Logged in"
             else:
                 content = b"Not logged in"
-            return 200, "HTTP/1.1", [], ByteStream(content)
+            return b"HTTP/1.1", 200, b"OK", [], ByteStream(content)
 
-        elif url.path == "/login":
+        elif path == b"/login":
             status_code = codes.SEE_OTHER
             headers = [
                 (b"location", b"/"),
@@ -373,9 +386,9 @@ class MockCookieDispatch(AsyncDispatcher):
                     ),
                 ),
             ]
-            return status_code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
 
-        elif url.path == "/logout":
+        elif path == b"/logout":
             status_code = codes.SEE_OTHER
             headers = [
                 (b"location", b"/"),
@@ -387,7 +400,7 @@ class MockCookieDispatch(AsyncDispatcher):
                     ),
                 ),
             ]
-            return status_code, "HTTP/1.1", headers, ByteStream(b"")
+            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
 
 
 @pytest.mark.usefixtures("async_environment")
