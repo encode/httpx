@@ -960,7 +960,6 @@ class AsyncClient(BaseClient):
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
-    * **uds** - *(optional)* A path to a Unix domain socket to connect through.
     """
 
     def __init__(
@@ -981,7 +980,6 @@ class AsyncClient(BaseClient):
         dispatch: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
-        uds: str = None,
     ):
         super().__init__(
             auth=auth,
@@ -1004,7 +1002,6 @@ class AsyncClient(BaseClient):
             dispatch=dispatch,
             app=app,
             trust_env=trust_env,
-            uds=uds,
         )
         self.proxies: typing.Dict[str, httpcore.AsyncHTTPTransport] = {
             key: self.init_proxy_dispatch(
@@ -1027,7 +1024,6 @@ class AsyncClient(BaseClient):
         dispatch: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
-        uds: str = None,
     ) -> httpcore.AsyncHTTPTransport:
         if dispatch is not None:
             return dispatch
