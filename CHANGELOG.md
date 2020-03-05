@@ -6,12 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## 0.12.0 (March 5th, 2020)
 
-The 0.12 release tightens up the API expectations for `httpx` by switching to
-private module names to enforce better clarity around public API.
+The 0.12 release tightens up the API expectations for `httpx` by switching to private module names to enforce better clarity around public API.
 
-All imports of `httpx` should import from the top-level package only,
-such as `from httpx import Request`, rather than importing from privately
-namespaced modules such as `from httpx._models import Request`.
+All imports of `httpx` should import from the top-level package only, such as `from httpx import Request`, rather than importing from privately namespaced modules such as `from httpx._models import Request`.
 
 ### Added
 
