@@ -2,9 +2,9 @@
 
 import typing
 
+import httpcore
 import pytest
 
-import httpcore
 from httpx import AsyncClient, Headers, __version__
 from httpx._content_streams import ContentStream, JSONStream
 

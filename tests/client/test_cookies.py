@@ -1,9 +1,9 @@
 import typing
 from http.cookiejar import Cookie, CookieJar
 
+import httpcore
 import pytest
 
-import httpcore
 from httpx import AsyncClient, Cookies
 from httpx._content_streams import ByteStream, ContentStream, JSONStream
 

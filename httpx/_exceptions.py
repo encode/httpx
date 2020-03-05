@@ -1,5 +1,7 @@
 import typing
 
+import httpcore
+
 if typing.TYPE_CHECKING:
     from ._models import Request, Response  # pragma: nocover
 
@@ -19,70 +21,33 @@ class HTTPError(Exception):
 
 # Timeout exceptions...
 
-
-class TimeoutException(HTTPError):
-    """
-    A base class for all timeouts.
-    """
-
-
-class ConnectTimeout(TimeoutException):
-    """
-    Timeout while establishing a connection.
-    """
+ConnectTimeout = httpcore.ConnectTimeout
+ReadTimeout = httpcore.ReadTimeout
+WriteTimeout = httpcore.WriteTimeout
+PoolTimeout = httpcore.PoolTimeout
 
 
-class ReadTimeout(TimeoutException):
-    """
-    Timeout while reading response data.
-    """
+# Core networking exceptions...
+
+NetworkError = httpcore.NetworkError
+ReadError = httpcore.ReadError
+WriteError = httpcore.WriteError
+ConnectError = httpcore.ConnectError
+CloseError = httpcore.CloseError
 
 
-class WriteTimeout(TimeoutException):
-    """
-    Timeout while writing request data.
-    """
+# Other transport exceptions...
 
-
-class PoolTimeout(TimeoutException):
-    """
-    Timeout while waiting to acquire a connection from the pool.
-    """
-
-
-class ProxyError(HTTPError):
-    """
-    Error from within a proxy
-    """
+ProxyError = httpcore.ProxyError
+ProtocolError = httpcore.ProtocolError
 
 
 # HTTP exceptions...
 
 
-class ProtocolError(HTTPError):
-    """
-    Malformed HTTP.
-    """
-
-
 class DecodingError(HTTPError):
     """
     Decoding of the response failed.
-    """
-
-
-# Network exceptions...
-
-
-class NetworkError(HTTPError):
-    """
-    A failure occurred while trying to access the network.
-    """
-
-
-class ConnectionClosed(NetworkError):
-    """
-    Expected more data from peer, but connection was closed.
     """
 
 

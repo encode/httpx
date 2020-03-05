@@ -3,7 +3,6 @@ import typing
 from types import TracebackType
 
 import hstspreload
-
 import httpcore
 
 from ._auth import Auth, AuthTypes, BasicAuth, FunctionAuth

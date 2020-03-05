@@ -2,9 +2,9 @@ import hashlib
 import os
 import typing
 
+import httpcore
 import pytest
 
-import httpcore
 from httpx import (
     URL,
     AsyncClient,

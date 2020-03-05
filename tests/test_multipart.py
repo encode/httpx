@@ -5,9 +5,9 @@ import os
 import typing
 from unittest import mock
 
+import httpcore
 import pytest
 
-import httpcore
 import httpx
 from httpx._content_streams import AsyncIteratorStream, encode
 from httpx._utils import format_form_param

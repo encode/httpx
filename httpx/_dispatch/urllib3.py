@@ -3,10 +3,9 @@ import socket
 import ssl
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
+import httpcore
 import urllib3
 from urllib3.exceptions import MaxRetryError, SSLError
-
-import httpcore
 
 from .._config import (
     DEFAULT_POOL_LIMITS,

@@ -2,9 +2,9 @@ import json
 import typing
 from urllib.parse import parse_qs
 
+import httpcore
 import pytest
 
-import httpcore
 from httpx import (
     URL,
     AsyncClient,

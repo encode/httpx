@@ -1,8 +1,8 @@
 import typing
 
+import httpcore
 import pytest
 
-import httpcore
 from httpx import URL, AsyncClient, Headers, QueryParams
 from httpx._content_streams import ContentStream, JSONStream
 
