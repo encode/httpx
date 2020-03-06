@@ -30,7 +30,7 @@ HTTPX is a fully featured HTTP client for Python 3, which provides sync and asyn
 !!! note
     HTTPX should currently be considered in beta.
 
-    We believe we've got the public API to a stable point now, but would strongly recommend pinning your dependencies to the `0.11.*` release, so that you're able to properly review [API changes between package updates](https://github.com/encode/httpx/blob/master/CHANGELOG.md).
+    We believe we've got the public API to a stable point now, but would strongly recommend pinning your dependencies to the `0.12.*` release, so that you're able to properly review [API changes between package updates](https://github.com/encode/httpx/blob/master/CHANGELOG.md).
 
     A 1.0 release is expected to be issued sometime on or before April 2020.
 
