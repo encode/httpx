@@ -118,7 +118,7 @@ class HTTPProxy(ConnectionPool):
         connection = self.pop_connection(origin)
 
         if connection is None:
-            connection = await self.request_tunnel_proxy_connection(origin)
+            connection = await self.request_tunnel_proxy_connection(origin, timeout)
 
             # After we receive the 2XX response from the proxy that our
             # tunnel is open we switch the connection's origin
@@ -135,7 +135,9 @@ class HTTPProxy(ConnectionPool):
 
         return connection
 
-    async def request_tunnel_proxy_connection(self, origin: Origin) -> HTTPConnection:
+    async def request_tunnel_proxy_connection(
+        self, origin: Origin, timeout: typing.Optional[Timeout] = None
+    ) -> HTTPConnection:
         """Creates an HTTPConnection by setting up a TCP tunnel"""
         proxy_headers = self.proxy_headers.copy()
         proxy_headers.setdefault("Accept", "*/*")
@@ -144,7 +146,8 @@ class HTTPProxy(ConnectionPool):
         )
         proxy_request.url.full_path = f"{origin.host}:{origin.port}"
 
-        await self.max_connections.acquire()
+        pool_timeout = None if timeout is None else timeout.pool_timeout
+        await self.max_connections.acquire(pool_timeout)
 
         connection = HTTPConnection(
             Origin(self.proxy_url),
@@ -155,7 +158,12 @@ class HTTPProxy(ConnectionPool):
         self.active_connections.add(connection)
 
         # See if our tunnel has been opened successfully
-        proxy_response = await connection.send(proxy_request)
+        try:
+            proxy_response = await connection.send(proxy_request, timeout=timeout)
+        except BaseException as exc:
+            self.active_connections.remove(connection)
+            self.max_connections.release()
+            raise exc
         logger.trace(
             f"tunnel_response "
             f"proxy_url={self.proxy_url!r} "
