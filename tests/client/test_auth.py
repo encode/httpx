@@ -27,7 +27,7 @@ def get_header_value(headers, key, default=None):
     return default
 
 
-class MockDispatch(httpcore.AsyncHTTPProxy):
+class MockDispatch(httpcore.AsyncHTTPTransport):
     def __init__(self, auth_header: bytes = b"", status_code: int = 200) -> None:
         self.auth_header = auth_header
         self.status_code = status_code
@@ -50,7 +50,7 @@ class MockDispatch(httpcore.AsyncHTTPProxy):
         return b"HTTP/1.1", self.status_code, b"", response_headers, response_stream
 
 
-class MockDigestAuthDispatch(httpcore.AsyncHTTPProxy):
+class MockDigestAuthDispatch(httpcore.AsyncHTTPTransport):
     def __init__(
         self,
         algorithm: str = "SHA-256",
