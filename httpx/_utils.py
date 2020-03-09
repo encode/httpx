@@ -326,9 +326,9 @@ def get_filelike_length(stream: typing.IO) -> int:
         fd = stream.fileno()
     except OSError:
         # No... is it something that supports random access, like `io.BytesIO`?
-        if not stream.seekable():
+        if not hasattr(stream, "seekable") or not stream.seekable():  # pragma: nocover
             # Not even that? Sorry, we're doomed...
-            raise  # pragma: nocover
+            raise
 
         # OK. Go to end of stream to figure out its length, then put it back in place.
         offset = stream.tell()
