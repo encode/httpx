@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.12.0 (March 5th, 2020)
+## 0.12.0 (March 9th, 2020)
 
 The 0.12 release tightens up the API expectations for `httpx` by switching to private module names to enforce better clarity around public API.
 
