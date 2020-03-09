@@ -1,14 +1,13 @@
 import binascii
-import mimetypes
+import functools
 import os
 import typing
-from io import BytesIO
 from json import dumps as json_dumps
 from pathlib import Path
 from urllib.parse import urlencode
 
 from ._exceptions import StreamConsumed
-from ._utils import format_form_param
+from ._utils import format_form_param, get_filelike_length, guess_content_type, to_bytes
 
 RequestData = typing.Union[
     dict, str, bytes, typing.Iterator[bytes], typing.AsyncIterator[bytes]
@@ -191,7 +190,7 @@ class URLEncodedStream(ContentStream):
 
 class MultipartStream(ContentStream):
     """
-    Request content as multipart encoded form data.
+    Request content as streaming multipart encoded form data.
     """
 
     class DataField:
@@ -207,16 +206,33 @@ class MultipartStream(ContentStream):
             self.name = name
             self.value = value
 
+        @functools.lru_cache(1)
         def render_headers(self) -> bytes:
             name = format_form_param("name", self.name)
             return b"".join([b"Content-Disposition: form-data; ", name, b"\r\n\r\n"])
 
+        @functools.lru_cache(1)
         def render_data(self) -> bytes:
             return (
                 self.value
                 if isinstance(self.value, bytes)
                 else self.value.encode("utf-8")
             )
+
+        @functools.lru_cache(1)
+        def get_length(self) -> int:
+            # Headers have a low memory foot print, and data is already in memory,
+            # so we can afford to render them in full.
+            headers = self.render_headers()
+            data = self.render_data()
+            return len(headers) + len(data)
+
+        def can_replay(self) -> bool:
+            return True
+
+        def render(self) -> typing.Iterator[bytes]:
+            yield self.render_headers()
+            yield self.render_data()
 
     class FileField:
         """
@@ -229,25 +245,16 @@ class MultipartStream(ContentStream):
             self.name = name
             if not isinstance(value, tuple):
                 self.filename = Path(str(getattr(value, "name", "upload"))).name
-                self.file = (
-                    value
-                )  # type: typing.Union[typing.IO[str], typing.IO[bytes]]
-                self.content_type = self.guess_content_type()
+                self.file: typing.Union[typing.IO[str], typing.IO[bytes]] = value
+                self.content_type = guess_content_type(self.filename)
             else:
                 self.filename = value[0]
                 self.file = value[1]
                 self.content_type = (
-                    value[2] if len(value) > 2 else self.guess_content_type()
+                    value[2] if len(value) > 2 else guess_content_type(self.filename)
                 )
 
-        def guess_content_type(self) -> typing.Optional[str]:
-            if self.filename:
-                return (
-                    mimetypes.guess_type(self.filename)[0] or "application/octet-stream"
-                )
-            else:
-                return None
-
+        @functools.lru_cache(1)
         def render_headers(self) -> bytes:
             parts = [
                 b"Content-Disposition: form-data; ",
@@ -262,54 +269,102 @@ class MultipartStream(ContentStream):
             parts.append(b"\r\n\r\n")
             return b"".join(parts)
 
-        def render_data(self) -> bytes:
+        def render_data(self) -> typing.Iterator[bytes]:
             if isinstance(self.file, str):
-                content = self.file
-            else:
-                content = self.file.read()
-            return content.encode("utf-8") if isinstance(content, str) else content
+                yield to_bytes(self.file)
+                return
 
-    def __init__(self, data: dict, files: dict, boundary: bytes = None) -> None:
-        body = BytesIO()
+            for chunk in self.file:
+                yield to_bytes(chunk)
+
+            # Get ready for the next replay, if possibe.
+            if self.file.seekable():
+                self.file.seek(0)
+
+        @functools.lru_cache(1)
+        def get_length(self) -> int:
+            # Headers have a small memory footprint, so let's render them in full.
+            headers = self.render_headers()
+
+            if isinstance(self.file, str):
+                return len(headers) + len(self.file)
+
+            # `file` is an I/O stream. Careful here not to load it into memory.
+            return len(headers) + get_filelike_length(self.file)
+
+        def can_replay(self) -> bool:
+            return True if isinstance(self.file, str) else self.file.seekable()
+
+        def render(self) -> typing.Iterator[bytes]:
+            yield self.render_headers()
+            yield from self.render_data()
+
+    def __init__(
+        self, data: typing.Mapping, files: typing.Mapping, boundary: bytes = None
+    ) -> None:
         if boundary is None:
             boundary = binascii.hexlify(os.urandom(16))
 
-        for field in self.iter_fields(data, files):
-            body.write(b"--%s\r\n" % boundary)
-            body.write(field.render_headers())
-            body.write(field.render_data())
-            body.write(b"\r\n")
-
-        body.write(b"--%s--\r\n" % boundary)
-
+        self.data = data
+        self.files = files
+        self.boundary = boundary
         self.content_type = "multipart/form-data; boundary=%s" % boundary.decode(
             "ascii"
         )
-        self.body = body.getvalue()
 
-    def iter_fields(
-        self, data: dict, files: dict
-    ) -> typing.Iterator[typing.Union["FileField", "DataField"]]:
-        for name, value in data.items():
+    @functools.lru_cache(1)
+    def iter_fields(self) -> typing.Iterable[typing.Union["FileField", "DataField"]]:
+        fields: list = []
+
+        for name, value in self.data.items():
             if isinstance(value, list):
                 for item in value:
-                    yield self.DataField(name=name, value=item)
+                    fields.append(self.DataField(name=name, value=item))
             else:
-                yield self.DataField(name=name, value=value)
+                fields.append(self.DataField(name=name, value=value))
 
-        for name, value in files.items():
-            yield self.FileField(name=name, value=value)
+        for name, value in self.files.items():
+            fields.append(self.FileField(name=name, value=value))
+
+        return fields
+
+    def iter_chunks(self) -> typing.Iterator[bytes]:
+        for field in self.iter_fields():
+            yield b"--%s\r\n" % self.boundary
+            yield from field.render()
+            yield b"\r\n"
+        yield b"--%s--\r\n" % self.boundary
+
+    def iter_chunks_lengths(self) -> typing.Iterator[int]:
+        boundary_length = len(self.boundary)
+        # Follow closely what `.iter_chunks()` does.
+        for field in self.iter_fields():
+            yield 2 + boundary_length + 2
+            yield field.get_length()
+            yield 2
+        yield 2 + boundary_length + 4
+
+    @functools.lru_cache(1)
+    def get_content_length(self) -> int:
+        return sum(self.iter_chunks_lengths())
+
+    # Content stream interface.
+
+    def can_replay(self) -> bool:
+        return all(field.can_replay() for field in self.iter_fields())
 
     def get_headers(self) -> typing.Dict[str, str]:
-        content_length = str(len(self.body))
+        content_length = str(self.get_content_length())
         content_type = self.content_type
         return {"Content-Length": content_length, "Content-Type": content_type}
 
     def __iter__(self) -> typing.Iterator[bytes]:
-        yield self.body
+        for chunk in self.iter_chunks():
+            yield chunk
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        yield self.body
+        for chunk in self.iter_chunks():
+            yield chunk
 
 
 def encode(

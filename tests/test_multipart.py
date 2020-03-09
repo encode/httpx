@@ -2,13 +2,14 @@ import binascii
 import cgi
 import io
 import os
+from typing import Any, cast
 from unittest import mock
 
 import pytest
 
 import httpx
 from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx._content_streams import encode
+from httpx._content_streams import MultipartStream, encode
 from httpx._dispatch.base import AsyncDispatcher
 from httpx._utils import format_form_param
 
@@ -94,20 +95,27 @@ async def test_multipart_file_tuple():
     assert multipart["file"] == [b"<file content>"]
 
 
-def test_multipart_encode():
+def test_multipart_encode(tmp_path: Any) -> None:
+    path = str(tmp_path / "name.txt")
+    with open(path, "wb") as f:
+        f.write(b"<file content>")
+
     data = {
         "a": "1",
         "b": b"C",
         "c": ["11", "22", "33"],
         "d": "",
     }
-    files = {"file": ("name.txt", io.BytesIO(b"<file content>"))}
+    files = {"file": ("name.txt", open(path, "rb"))}
 
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
-        stream = encode(data=data, files=files)
+
+        stream = cast(MultipartStream, encode(data=data, files=files))
+        assert stream.can_replay()
+
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
-        assert stream.body == (
+        content = (
             '--{0}\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="b"\r\n\r\nC\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n11\r\n'
@@ -120,17 +128,20 @@ def test_multipart_encode():
             "--{0}--\r\n"
             "".format(boundary).encode("ascii")
         )
+        assert stream.get_headers()["Content-Length"] == str(len(content))
+        assert b"".join(stream) == content
 
 
-def test_multipart_encode_files_allows_filenames_as_none():
+def test_multipart_encode_files_allows_filenames_as_none() -> None:
     files = {"file": (None, io.BytesIO(b"<file content>"))}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        stream = encode(data={}, files=files)
+        stream = cast(MultipartStream, encode(data={}, files=files))
+        assert stream.can_replay()
 
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
-        assert stream.body == (
+        assert b"".join(stream) == (
             '--{0}\r\nContent-Disposition: form-data; name="file"\r\n\r\n'
             "<file content>\r\n--{0}--\r\n"
             "".format(boundary).encode("ascii")
@@ -146,16 +157,17 @@ def test_multipart_encode_files_allows_filenames_as_none():
     ],
 )
 def test_multipart_encode_files_guesses_correct_content_type(
-    file_name, expected_content_type
-):
+    file_name: str, expected_content_type: str
+) -> None:
     files = {"file": (file_name, io.BytesIO(b"<file content>"))}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        stream = encode(data={}, files=files)
+        stream = cast(MultipartStream, encode(data={}, files=files))
+        assert stream.can_replay()
 
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
-        assert stream.body == (
+        assert b"".join(stream) == (
             f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
             f'filename="{file_name}"\r\nContent-Type: '
             f"{expected_content_type}\r\n\r\n<file content>\r\n--{boundary}--\r\n"
@@ -163,21 +175,24 @@ def test_multipart_encode_files_guesses_correct_content_type(
         )
 
 
-def test_multipart_encode_files_allows_str_content():
+def test_multipart_encode_files_allows_str_content() -> None:
     files = {"file": ("test.txt", "<string content>", "text/plain")}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        stream = encode(data={}, files=files)
+        stream = cast(MultipartStream, encode(data={}, files=files))
+        assert stream.can_replay()
 
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
-        assert stream.body == (
+        content = (
             '--{0}\r\nContent-Disposition: form-data; name="file"; '
             'filename="test.txt"\r\n'
             "Content-Type: text/plain\r\n\r\n<string content>\r\n"
             "--{0}--\r\n"
             "".format(boundary).encode("ascii")
         )
+        assert stream.get_headers()["Content-Length"] == str(len(content))
+        assert b"".join(stream) == content
 
 
 class TestHeaderParamHTML5Formatting:

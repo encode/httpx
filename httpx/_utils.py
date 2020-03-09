@@ -2,6 +2,7 @@ import codecs
 import collections
 import contextlib
 import logging
+import mimetypes
 import netrc
 import os
 import re
@@ -307,6 +308,37 @@ def to_bytes_or_str(value: str, match_type_of: typing.AnyStr) -> typing.AnyStr:
 
 def unquote(value: str) -> str:
     return value[1:-1] if value[0] == value[-1] == '"' else value
+
+
+def guess_content_type(filename: typing.Optional[str]) -> typing.Optional[str]:
+    if filename:
+        return mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return None
+
+
+def get_filelike_length(stream: typing.IO) -> int:
+    """
+    Given a file-like stream object, efficiently compute and return its length
+    in number of bytes.
+    """
+    try:
+        # Is it an actual file?
+        fd = stream.fileno()
+    except OSError:
+        # No... is it something that supports random access, like `io.BytesIO`?
+        if not stream.seekable():
+            # Not even that? Sorry, we're doomed...
+            raise  # pragma: nocover
+
+        # OK. Go to end of stream to figure out its length, then put it back in place.
+        offset = stream.tell()
+        length = stream.seek(0, os.SEEK_END)
+        stream.seek(offset)
+
+        return length
+    else:
+        # Yup, seems to be an actual file.
+        return os.fstat(fd).st_size
 
 
 def flatten_queryparams(
