@@ -222,7 +222,7 @@ def test_multipart_file_streaming_memory(tmp_path: Any) -> None:
     # Rationale: if streaming works correctly, all lines should use roughly the
     # same amount of memory. In particular, they should use the same amount of memory
     # than the first operation in `main()`.
-    percents = 0.1
+    percents = 1
     baseline = memory_per_line[0]
     max_allowed_memory = (100 + percents) / 100 * baseline
 
