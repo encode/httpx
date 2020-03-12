@@ -1,5 +1,4 @@
 import binascii
-import functools
 import os
 import typing
 from json import dumps as json_dumps
@@ -206,12 +205,10 @@ class MultipartStream(ContentStream):
             self.name = name
             self.value = value
 
-        @functools.lru_cache(1)
         def render_headers(self) -> bytes:
             name = format_form_param("name", self.name)
             return b"".join([b"Content-Disposition: form-data; ", name, b"\r\n\r\n"])
 
-        @functools.lru_cache(1)
         def render_data(self) -> bytes:
             return (
                 self.value
@@ -219,7 +216,6 @@ class MultipartStream(ContentStream):
                 else self.value.encode("utf-8")
             )
 
-        @functools.lru_cache(1)
         def get_length(self) -> int:
             # Headers have a low memory foot print, and data is already in memory,
             # so we can afford to render them in full.
@@ -254,7 +250,6 @@ class MultipartStream(ContentStream):
                     value[2] if len(value) > 2 else guess_content_type(self.filename)
                 )
 
-        @functools.lru_cache(1)
         def render_headers(self) -> bytes:
             parts = [
                 b"Content-Disposition: form-data; ",
@@ -281,7 +276,6 @@ class MultipartStream(ContentStream):
             if self.file.seekable():
                 self.file.seek(0)
 
-        @functools.lru_cache(1)
         def get_length(self) -> int:
             # Headers have a small memory footprint, so let's render them in full.
             headers = self.render_headers()
@@ -312,21 +306,16 @@ class MultipartStream(ContentStream):
             "ascii"
         )
 
-    @functools.lru_cache(1)
     def iter_fields(self) -> typing.Iterable[typing.Union["FileField", "DataField"]]:
-        fields: list = []
-
         for name, value in self.data.items():
             if isinstance(value, list):
                 for item in value:
-                    fields.append(self.DataField(name=name, value=item))
+                    yield self.DataField(name=name, value=item)
             else:
-                fields.append(self.DataField(name=name, value=value))
+                yield self.DataField(name=name, value=value)
 
         for name, value in self.files.items():
-            fields.append(self.FileField(name=name, value=value))
-
-        return fields
+            yield self.FileField(name=name, value=value)
 
     def iter_chunks(self) -> typing.Iterator[bytes]:
         for field in self.iter_fields():
@@ -344,7 +333,6 @@ class MultipartStream(ContentStream):
             yield 2
         yield 2 + boundary_length + 4
 
-    @functools.lru_cache(1)
     def get_content_length(self) -> int:
         return sum(self.iter_chunks_lengths())
 
