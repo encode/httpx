@@ -2,7 +2,7 @@ import binascii
 import cgi
 import io
 import os
-from typing import Any, cast, List
+from typing import Any, List, cast
 from unittest import mock
 
 import memory_profiler

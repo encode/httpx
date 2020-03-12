@@ -189,7 +189,6 @@ async def test_multipart_data_and_files_content():
     )
 
 
-
 def test_invalid_argument():
     with pytest.raises(TypeError):
         encode(123)
