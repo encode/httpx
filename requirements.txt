@@ -11,6 +11,7 @@ flake8
 flake8-bugbear
 flake8-pie
 isort
+memory-profiler==0.57.*
 mkdocs
 mkautodoc
 mkdocs-material
