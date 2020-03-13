@@ -174,6 +174,15 @@ class URL:
         return self._uri_reference.fragment or ""
 
     @property
+    def raw(self) -> typing.Tuple[bytes, bytes, int, bytes]:
+        return (
+            self.scheme.encode("ascii"),
+            self.host.encode("ascii"),
+            self.port,
+            self.full_path.encode("ascii"),
+        )
+
+    @property
     def is_ssl(self) -> bool:
         return self.scheme == "https"
 

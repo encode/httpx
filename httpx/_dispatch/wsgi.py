@@ -1,15 +1,14 @@
 import io
 import typing
 
-from .._config import TimeoutTypes
-from .._content_streams import IteratorStream
-from .._models import Request, Response
-from .base import SyncDispatcher
+import httpcore
+
+from .._content_streams import ByteStream, IteratorStream
 
 
-class WSGIDispatch(SyncDispatcher):
+class WSGIDispatch(httpcore.SyncHTTPTransport):
     """
-    A custom SyncDispatcher that handles sending requests directly to an WSGI app.
+    A custom transport that handles sending requests directly to an WSGI app.
     The simplest way to use this functionality is to use the `app` argument.
 
     ```
@@ -52,28 +51,46 @@ class WSGIDispatch(SyncDispatcher):
         self.script_name = script_name
         self.remote_addr = remote_addr
 
-    def send(self, request: Request, timeout: TimeoutTypes = None) -> Response:
+    def request(
+        self,
+        method: bytes,
+        url: typing.Tuple[bytes, bytes, int, bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
+        stream: httpcore.SyncByteStream = None,
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes,
+        int,
+        bytes,
+        typing.List[typing.Tuple[bytes, bytes]],
+        httpcore.SyncByteStream,
+    ]:
+        headers = [] if headers is None else headers
+        stream = ByteStream(b"") if stream is None else stream
+
+        scheme, host, port, full_path = url
+        path, _, query = full_path.partition(b"?")
         environ = {
             "wsgi.version": (1, 0),
-            "wsgi.url_scheme": request.url.scheme,
-            "wsgi.input": io.BytesIO(request.read()),
+            "wsgi.url_scheme": scheme.decode("ascii"),
+            "wsgi.input": io.BytesIO(b"".join([chunk for chunk in stream])),
             "wsgi.errors": io.BytesIO(),
             "wsgi.multithread": True,
             "wsgi.multiprocess": False,
             "wsgi.run_once": False,
-            "REQUEST_METHOD": request.method,
+            "REQUEST_METHOD": method.decode(),
             "SCRIPT_NAME": self.script_name,
-            "PATH_INFO": request.url.path,
-            "QUERY_STRING": request.url.query,
-            "SERVER_NAME": request.url.host,
-            "SERVER_PORT": str(request.url.port),
+            "PATH_INFO": path.decode("ascii"),
+            "QUERY_STRING": query.decode("ascii"),
+            "SERVER_NAME": host.decode("ascii"),
+            "SERVER_PORT": str(port),
             "REMOTE_ADDR": self.remote_addr,
         }
-        for key, value in request.headers.items():
-            key = key.upper().replace("-", "_")
+        for header_key, header_value in headers:
+            key = header_key.decode("ascii").upper().replace("-", "_")
             if key not in ("CONTENT_TYPE", "CONTENT_LENGTH"):
                 key = "HTTP_" + key
-            environ[key] = value
+            environ[key] = header_value.decode("ascii")
 
         seen_status = None
         seen_response_headers = None
@@ -94,10 +111,11 @@ class WSGIDispatch(SyncDispatcher):
         if seen_exc_info and self.raise_app_exceptions:
             raise seen_exc_info[1]
 
-        return Response(
-            status_code=int(seen_status.split()[0]),
-            http_version="HTTP/1.1",
-            headers=seen_response_headers,
-            stream=IteratorStream(chunk for chunk in result),
-            request=request,
-        )
+        status_code = int(seen_status.split()[0])
+        headers = [
+            (key.encode("ascii"), value.encode("ascii"))
+            for key, value in seen_response_headers
+        ]
+        stream = IteratorStream(chunk for chunk in result)
+
+        return (b"HTTP/1.1", status_code, b"", headers, stream)

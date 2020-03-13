@@ -24,7 +24,7 @@ def test_proxies_parameter(proxies, expected_proxies):
 
     for proxy_key, url in expected_proxies:
         assert proxy_key in client.proxies
-        assert client.proxies[proxy_key].proxy_url == url
+        assert client.proxies[proxy_key].proxy_origin == httpx.URL(url).raw[:3]
 
     assert len(expected_proxies) == len(client.proxies)
 
@@ -81,7 +81,7 @@ def test_dispatcher_for_request(url, proxies, expected):
     if expected is None:
         assert dispatcher is client.dispatch
     else:
-        assert dispatcher.proxy_url == expected
+        assert dispatcher.proxy_origin == httpx.URL(expected).raw[:3]
 
 
 def test_unsupported_proxy_scheme():
@@ -115,4 +115,4 @@ def test_proxies_environ(monkeypatch, url, env, expected):
     if expected is None:
         assert dispatcher == client.dispatch
     else:
-        assert dispatcher.proxy_url == expected
+        assert dispatcher.proxy_origin == httpx.URL(expected).raw[:3]

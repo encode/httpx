@@ -2,29 +2,36 @@ import binascii
 import cgi
 import io
 import os
+import typing
 from typing import Any, List, cast
 from unittest import mock
 
+import httpcore
 import memory_profiler
 import pytest
 
 import httpx
-from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx._content_streams import MultipartStream, encode
-from httpx._dispatch.base import AsyncDispatcher
+from httpx._content_streams import AsyncIteratorStream, MultipartStream, encode
 from httpx._utils import format_form_param
 
 
-class MockDispatch(AsyncDispatcher):
-    async def send(
+class MockDispatch(httpcore.AsyncHTTPTransport):
+    async def request(
         self,
-        request: httpx.Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-    ) -> httpx.Response:
-        content = b"".join([part async for part in request.stream])
-        return httpx.Response(200, content=content, request=request)
+        method: bytes,
+        url: typing.Tuple[bytes, bytes, int, bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
+        stream: httpcore.AsyncByteStream = None,
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes,
+        int,
+        bytes,
+        typing.List[typing.Tuple[bytes, bytes]],
+        httpcore.AsyncByteStream,
+    ]:
+        content = AsyncIteratorStream(aiterator=(part async for part in stream))
+        return b"HTTP/1.1", 200, b"OK", [], content
 
 
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
