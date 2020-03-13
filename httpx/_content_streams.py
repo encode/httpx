@@ -330,7 +330,7 @@ def encode(
         else:
             return ByteStream(body=b"")
     elif isinstance(data, dict):
-        if files is not None:
+        if files:
             return MultipartStream(data=data, files=files, boundary=boundary)
         else:
             return URLEncodedStream(data=data)
