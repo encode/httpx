@@ -263,6 +263,7 @@ class MultipartStream(ContentStream):
             return b"".join(parts)
 
         def render_data(self) -> bytes:
+            content: typing.Union[str, bytes]
             if isinstance(self.file, str):
                 content = self.file
             else:
