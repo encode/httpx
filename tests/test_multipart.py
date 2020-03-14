@@ -2,7 +2,7 @@ import binascii
 import cgi
 import io
 import os
-from typing import Any, List, cast
+from typing import Any, Iterator, List, cast
 from unittest import mock
 
 import memory_profiler
@@ -194,6 +194,46 @@ def test_multipart_encode_files_allows_str_content() -> None:
         )
         assert stream.get_headers()["Content-Length"] == str(len(content))
         assert b"".join(stream) == content
+
+
+def test_multipart_encode_non_seekable_filelike() -> None:
+    """
+    Test that special readable but non-seekable filelike objects are supported,
+    at the cost of reading them into memory at most once.
+    """
+
+    class IteratorIO(io.IOBase):
+        def __init__(self, iterator: Iterator[bytes]) -> None:
+            self._iterator = iterator
+
+        def seekable(self) -> bool:
+            return False
+
+        def read(self, *args: Any) -> bytes:
+            return b"".join(self._iterator)
+
+    def data() -> Iterator[bytes]:
+        yield b"Hello"
+        yield b"World"
+
+    fileobj = IteratorIO(data())
+    files = {"file": fileobj}
+    stream = encode(files=files, boundary=b"+++")
+    assert not stream.can_replay()
+
+    content = (
+        b"--+++\r\n"
+        b'Content-Disposition: form-data; name="file"; filename="upload"\r\n'
+        b"Content-Type: application/octet-stream\r\n"
+        b"\r\n"
+        b"HelloWorld\r\n"
+        b"--+++--\r\n"
+    )
+    assert stream.get_headers() == {
+        "Content-Type": "multipart/form-data; boundary=+++",
+        "Content-Length": str(len(content)),
+    }
+    assert b"".join(stream) == content
 
 
 def test_multipart_file_streaming_memory(tmp_path: Any) -> None:

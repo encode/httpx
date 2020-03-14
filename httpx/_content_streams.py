@@ -6,7 +6,12 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from ._exceptions import StreamConsumed
-from ._utils import format_form_param, get_filelike_length, guess_content_type, to_bytes
+from ._utils import (
+    format_form_param,
+    guess_content_type,
+    peek_filelike_length,
+    to_bytes,
+)
 
 RequestData = typing.Union[
     dict, str, bytes, typing.Iterator[bytes], typing.AsyncIterator[bytes]
@@ -197,6 +202,9 @@ class MultipartStream(ContentStream):
         A single form field item, within a multipart form field.
         """
 
+        _headers: bytes
+        _data: bytes
+
         def __init__(self, name: str, value: typing.Union[str, bytes]) -> None:
             if not isinstance(name, str):
                 raise TypeError("Invalid type for name. Expected str.")
@@ -206,19 +214,25 @@ class MultipartStream(ContentStream):
             self.value = value
 
         def render_headers(self) -> bytes:
-            name = format_form_param("name", self.name)
-            return b"".join([b"Content-Disposition: form-data; ", name, b"\r\n\r\n"])
+            if not hasattr(self, "_headers"):
+                name = format_form_param("name", self.name)
+                self._headers = b"".join(
+                    [b"Content-Disposition: form-data; ", name, b"\r\n\r\n"]
+                )
+
+            return self._headers
 
         def render_data(self) -> bytes:
-            return (
-                self.value
-                if isinstance(self.value, bytes)
-                else self.value.encode("utf-8")
-            )
+            if not hasattr(self, "_data"):
+                self._data = (
+                    self.value
+                    if isinstance(self.value, bytes)
+                    else self.value.encode("utf-8")
+                )
+
+            return self._data
 
         def get_length(self) -> int:
-            # Headers have a low memory foot print, and data is already in memory,
-            # so we can afford to render them in full.
             headers = self.render_headers()
             data = self.render_data()
             return len(headers) + len(data)
@@ -235,6 +249,9 @@ class MultipartStream(ContentStream):
         A single file field item, within a multipart form field.
         """
 
+        _headers: bytes
+        _data: bytes
+
         def __init__(
             self, name: str, value: typing.Union[typing.IO[typing.AnyStr], tuple]
         ) -> None:
@@ -250,41 +267,57 @@ class MultipartStream(ContentStream):
                     value[2] if len(value) > 2 else guess_content_type(self.filename)
                 )
 
+        def get_length(self) -> int:
+            headers = self.render_headers()
+
+            if isinstance(self.file, str):
+                return len(headers) + len(self.file)
+
+            # `file` is an I/O stream -- let's do our best not to read it into memory.
+            try:
+                file_length = peek_filelike_length(self.file)
+            except OSError:
+                # Failed. As a last resort, let's read and cache contents for later.
+                assert not hasattr(self, "_data")
+                self._data = to_bytes(self.file.read())
+                file_length = len(self._data)
+
+            return len(headers) + file_length
+
         def render_headers(self) -> bytes:
-            parts = [
-                b"Content-Disposition: form-data; ",
-                format_form_param("name", self.name),
-            ]
-            if self.filename:
-                filename = format_form_param("filename", self.filename)
-                parts.extend([b"; ", filename])
-            if self.content_type is not None:
-                content_type = self.content_type.encode()
-                parts.extend([b"\r\nContent-Type: ", content_type])
-            parts.append(b"\r\n\r\n")
-            return b"".join(parts)
+            if not hasattr(self, "_headers"):
+                parts = [
+                    b"Content-Disposition: form-data; ",
+                    format_form_param("name", self.name),
+                ]
+                if self.filename:
+                    filename = format_form_param("filename", self.filename)
+                    parts.extend([b"; ", filename])
+                if self.content_type is not None:
+                    content_type = self.content_type.encode()
+                    parts.extend([b"\r\nContent-Type: ", content_type])
+                parts.append(b"\r\n\r\n")
+                self._headers = b"".join(parts)
+
+            return self._headers
 
         def render_data(self) -> typing.Iterator[bytes]:
             if isinstance(self.file, str):
                 yield to_bytes(self.file)
                 return
 
+            if hasattr(self, "_data"):
+                # Already rendered.
+                yield self._data
+                return
+
             for chunk in self.file:
                 yield to_bytes(chunk)
 
-            # Get ready for the next replay, if possibe.
-            if self.file.seekable():
+            # Get ready for the next replay, if possible.
+            if self.can_replay():
+                assert self.file.seekable()
                 self.file.seek(0)
-
-        def get_length(self) -> int:
-            # Headers have a small memory footprint, so let's render them in full.
-            headers = self.render_headers()
-
-            if isinstance(self.file, str):
-                return len(headers) + len(self.file)
-
-            # `file` is an I/O stream. Careful here not to load it into memory.
-            return len(headers) + get_filelike_length(self.file)
 
         def can_replay(self) -> bool:
             return True if isinstance(self.file, str) else self.file.seekable()
@@ -305,8 +338,9 @@ class MultipartStream(ContentStream):
         self.content_type = "multipart/form-data; boundary=%s" % boundary.decode(
             "ascii"
         )
+        self.fields = list(self._iter_fields())
 
-    def iter_fields(self) -> typing.Iterable[typing.Union["FileField", "DataField"]]:
+    def _iter_fields(self) -> typing.Iterator[typing.Union["FileField", "DataField"]]:
         for name, value in self.data.items():
             if isinstance(value, list):
                 for item in value:
@@ -318,7 +352,7 @@ class MultipartStream(ContentStream):
             yield self.FileField(name=name, value=value)
 
     def iter_chunks(self) -> typing.Iterator[bytes]:
-        for field in self.iter_fields():
+        for field in self.fields:
             yield b"--%s\r\n" % self.boundary
             yield from field.render()
             yield b"\r\n"
@@ -327,7 +361,7 @@ class MultipartStream(ContentStream):
     def iter_chunks_lengths(self) -> typing.Iterator[int]:
         boundary_length = len(self.boundary)
         # Follow closely what `.iter_chunks()` does.
-        for field in self.iter_fields():
+        for field in self.fields:
             yield 2 + boundary_length + 2
             yield field.get_length()
             yield 2
@@ -339,7 +373,7 @@ class MultipartStream(ContentStream):
     # Content stream interface.
 
     def can_replay(self) -> bool:
-        return all(field.can_replay() for field in self.iter_fields())
+        return all(field.can_replay() for field in self.fields)
 
     def get_headers(self) -> typing.Dict[str, str]:
         content_length = str(self.get_content_length())

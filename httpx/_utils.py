@@ -316,26 +316,27 @@ def guess_content_type(filename: typing.Optional[str]) -> typing.Optional[str]:
     return None
 
 
-def get_filelike_length(stream: typing.IO) -> int:
+def peek_filelike_length(stream: typing.IO) -> int:
     """
-    Given a file-like stream object, efficiently compute and return its length
-    in number of bytes.
+    Given a file-like stream object, return its length in number of bytes
+    without reading it into memory.
     """
     try:
         # Is it an actual file?
         fd = stream.fileno()
     except OSError:
-        # No... is it something that supports random access, like `io.BytesIO`?
-        if not hasattr(stream, "seekable") or not stream.seekable():  # pragma: nocover
+        # No... Maybe it's something that supports random access, like `io.BytesIO`?
+        try:
+            # Assuming so, go to end of stream to figure out its length,
+            # then put it back in place.
+            offset = stream.tell()
+            length = stream.seek(0, os.SEEK_END)
+            stream.seek(offset)
+        except OSError:
             # Not even that? Sorry, we're doomed...
             raise
-
-        # OK. Go to end of stream to figure out its length, then put it back in place.
-        offset = stream.tell()
-        length = stream.seek(0, os.SEEK_END)
-        stream.seek(offset)
-
-        return length
+        else:
+            return length
     else:
         # Yup, seems to be an actual file.
         return os.fstat(fd).st_size
