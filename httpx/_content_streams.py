@@ -332,23 +332,23 @@ class MultipartStream(ContentStream):
         if boundary is None:
             boundary = binascii.hexlify(os.urandom(16))
 
-        self.data = data
-        self.files = files
         self.boundary = boundary
         self.content_type = "multipart/form-data; boundary=%s" % boundary.decode(
             "ascii"
         )
-        self.fields = list(self._iter_fields())
+        self.fields = list(self._iter_fields(data, files))
 
-    def _iter_fields(self) -> typing.Iterator[typing.Union["FileField", "DataField"]]:
-        for name, value in self.data.items():
+    def _iter_fields(
+        self, data: typing.Mapping, files: typing.Mapping
+    ) -> typing.Iterator[typing.Union["FileField", "DataField"]]:
+        for name, value in data.items():
             if isinstance(value, list):
                 for item in value:
                     yield self.DataField(name=name, value=item)
             else:
                 yield self.DataField(name=name, value=value)
 
-        for name, value in self.files.items():
+        for name, value in files.items():
             yield self.FileField(name=name, value=value)
 
     def iter_chunks(self) -> typing.Iterator[bytes]:
