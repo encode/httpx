@@ -323,7 +323,7 @@ def encode(
     Handles encoding the given `data`, `files`, and `json`, returning
     a `ContentStream` implementation.
     """
-    if data is None:
+    if not data:
         if json is not None:
             return JSONStream(json=json)
         elif files:
@@ -331,7 +331,7 @@ def encode(
         else:
             return ByteStream(body=b"")
     elif isinstance(data, dict):
-        if files is not None:
+        if files:
             return MultipartStream(data=data, files=files, boundary=boundary)
         else:
             return URLEncodedStream(data=data)
