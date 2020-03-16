@@ -198,7 +198,6 @@ async def test_empty_request():
     assert stream.can_replay()
     assert stream.get_headers() == {
         "Content-Length": "0",
-        "Content-Type": "application/x-www-form-urlencoded",
     }
     assert sync_content == b""
     assert async_content == b""
