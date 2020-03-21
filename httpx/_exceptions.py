@@ -4,7 +4,7 @@ if typing.TYPE_CHECKING:
     from ._models import Request, Response  # pragma: nocover
 
 
-class HTTPError(Exception):
+class RequestError(Exception):
     """
     Base class for all httpx exceptions.
     """
@@ -17,10 +17,12 @@ class HTTPError(Exception):
         super().__init__(*args)
 
 
+HTTPError = RequestError  # For backward compatibility purposes.
+
 # Timeout exceptions...
 
 
-class TimeoutException(HTTPError):
+class TimeoutException(RequestError):
     """
     A base class for all timeouts.
     """
@@ -50,7 +52,7 @@ class PoolTimeout(TimeoutException):
     """
 
 
-class ProxyError(HTTPError):
+class ProxyError(RequestError):
     """
     Error from within a proxy
     """
@@ -59,19 +61,19 @@ class ProxyError(HTTPError):
 # HTTP exceptions...
 
 
-class ProtocolError(HTTPError):
+class ProtocolError(RequestError):
     """
     Malformed HTTP.
     """
 
 
-class DecodingError(HTTPError):
+class DecodingError(RequestError):
     """
     Decoding of the response failed.
     """
 
 
-class HTTPStatusError(HTTPError):
+class HTTPStatusError(RequestError):
     """
     HTTP Status Error.
     """
@@ -80,7 +82,7 @@ class HTTPStatusError(HTTPError):
 # Network exceptions...
 
 
-class NetworkError(HTTPError):
+class NetworkError(RequestError):
     """
     A failure occurred while trying to access the network.
     """
@@ -95,7 +97,7 @@ class ConnectionClosed(NetworkError):
 # Redirect exceptions...
 
 
-class RedirectError(HTTPError):
+class RedirectError(RequestError):
     """
     Base class for HTTP redirect errors.
     """
@@ -116,7 +118,7 @@ class NotRedirectResponse(RedirectError):
 # Stream exceptions...
 
 
-class StreamError(HTTPError):
+class StreamError(RequestError):
     """
     The base class for stream exceptions.
 
@@ -162,13 +164,13 @@ class ResponseClosed(StreamError):
 # Other cases...
 
 
-class InvalidURL(HTTPError):
+class InvalidURL(RequestError):
     """
     URL was missing a hostname, or was not one of HTTP/HTTPS.
     """
 
 
-class CookieConflict(HTTPError):
+class CookieConflict(RequestError):
     """
     Attempted to lookup a cookie by name, but multiple cookies existed.
     """

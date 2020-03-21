@@ -26,7 +26,12 @@ from ._dispatch.connection_pool import ConnectionPool
 from ._dispatch.proxy_http import HTTPProxy
 from ._dispatch.urllib3 import URLLib3Dispatcher
 from ._dispatch.wsgi import WSGIDispatch
-from ._exceptions import HTTPError, InvalidURL, RequestBodyUnavailable, TooManyRedirects
+from ._exceptions import (
+    InvalidURL,
+    RequestBodyUnavailable,
+    RequestError,
+    TooManyRedirects,
+)
 from ._models import (
     URL,
     Cookies,
@@ -676,8 +681,8 @@ class Client(BaseClient):
 
         try:
             response = dispatcher.send(request, timeout=timeout)
-        except HTTPError as exc:
-            # Add the original request to any HTTPError unless
+        except RequestError as exc:
+            # Add the original request to any RequestError unless
             # there'a already a request attached in the case of
             # a ProxyError.
             if exc.request is None:
@@ -1194,8 +1199,8 @@ class AsyncClient(BaseClient):
 
         try:
             response = await dispatcher.send(request, timeout=timeout)
-        except HTTPError as exc:
-            # Add the original request to any HTTPError unless
+        except RequestError as exc:
+            # Add the original request to any RequestError unless
             # there'a already a request attached in the case of
             # a ProxyError.
             if exc.request is None:
