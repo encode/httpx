@@ -30,7 +30,7 @@ from ._decoders import (
 )
 from ._exceptions import (
     CookieConflict,
-    HTTPError,
+    HTTPStatusError,
     InvalidURL,
     NotRedirectResponse,
     RequestNotRead,
@@ -840,10 +840,10 @@ class Response:
 
         if StatusCode.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
-            raise HTTPError(message, response=self)
+            raise HTTPStatusError(message, response=self)
         elif StatusCode.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
-            raise HTTPError(message, response=self)
+            raise HTTPStatusError(message, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Union[dict, list]:
         if self.charset_encoding is None and self.content and len(self.content) > 3:

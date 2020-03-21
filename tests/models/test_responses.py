@@ -364,6 +364,20 @@ def test_json_without_specified_encoding():
     assert response.json() == data
 
 
+def test_raise_for_status_5XX():
+    response = httpx.Response(500, request=REQUEST)
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        response.raise_for_status()
+    assert exc_info.value.response.status_code == 500
+
+
+def test_raise_for_status_4XX():
+    response = httpx.Response(400, request=REQUEST)
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        response.raise_for_status()
+    assert exc_info.value.response.status_code == 400
+
+
 def test_json_without_specified_encoding_decode_error():
     data = {"greeting": "hello", "recipient": "world"}
     content = json.dumps(data).encode("utf-32-be")

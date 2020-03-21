@@ -71,6 +71,12 @@ class DecodingError(HTTPError):
     """
 
 
+class HTTPStatusError(HTTPError):
+    """
+    HTTP Status Error.
+    """
+
+
 # Network exceptions...
 
 
