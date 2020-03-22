@@ -1,9 +1,9 @@
+import typing
+
 import pytest
+from uvicorn.main import Server
 
 import httpx
-
-import typing
-from uvicorn.main import Server
 
 
 def test_get(server: Server) -> None:
