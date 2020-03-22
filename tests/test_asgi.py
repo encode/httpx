@@ -31,7 +31,9 @@ async def raise_exc(scope: Dict, receive: Callable, send: Callable) -> None:
     raise ValueError()
 
 
-async def raise_exc_after_response(scope: Dict, receive: Callable, send: Callable) -> None:
+async def raise_exc_after_response(
+    scope: Dict, receive: Callable, send: Callable
+) -> None:
     status = 200
     output = b"Hello, World!"
     headers = [(b"content-type", "text/plain"), (b"content-length", str(len(output)))]
