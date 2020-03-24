@@ -137,6 +137,21 @@ async def test_delete(server):
 
 
 @pytest.mark.usefixtures("async_environment")
+async def test_delete_json(server):
+    async with httpx.AsyncClient() as client:
+        response = await client.delete(server.url, json={"text": "Hello, world!"})
+    assert response.status_code == 200
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_delete_data(server):
+    url = server.url
+    async with httpx.AsyncClient() as client:
+        response = await client.delete(url, data=b"Hello, world!")
+    assert response.status_code == 200
+
+
+@pytest.mark.usefixtures("async_environment")
 async def test_100_continue(server):
     headers = {"Expect": "100-continue"}
     data = b"Echo request body"

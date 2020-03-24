@@ -132,6 +132,21 @@ def test_delete(server):
     assert response.reason_phrase == "OK"
 
 
+async def test_delete_json(server):
+    async with httpx.Client() as client:
+        response = await client.delete(server.url, json={"text": "Hello, world!"})
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
+async def test_delete_data(server):
+    url = server.url
+    async with httpx.Client() as client:
+        response = await client.delete(url, data=b"Hello, world!")
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
 def test_base_url(server):
     base_url = server.url
     with httpx.Client(base_url=base_url) as client:
