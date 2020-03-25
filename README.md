@@ -101,6 +101,8 @@ For more advanced topics, see the [Advanced Usage](https://www.python-httpx.org/
 
 The [Developer Interface](https://www.python-httpx.org/api/) provides a comprehensive API reference.
 
+To find out about tools that integrate with HTTPX, see [Third Party Packages](https://www.python-httpx.org/third-party-packages/).
+
 ## Contribute
 
 If you want to contribute with HTTPX check out the [Contributing Guide](https://www.python-httpx.org/contributing/) to learn how to start.
