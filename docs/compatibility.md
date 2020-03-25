@@ -66,22 +66,9 @@ client = httpx.Client(**kwargs)
 
 ## Request instantiation
 
-Whenever you get a `Response` from an API call, the `request` attribute is actually the `Request` that was used internally. There are cases in which you want to build a `Request` object but don't want to send it immediately. Here is how you can do it.
+There is no notion of [prepared requests](https://requests.readthedocs.io/en/stable/user/advanced/#prepared-requests) in HTTPX. If you need to customize request instantiation, see [Request instances](/advanced#request-instances).
 
-```python
-req = httpx.Request("GET", "https://example.org")
-```
-
-The above request object is ready to be sent. There’s no need for `prepare_request()` in HTTPX.
-
-```python
-with httpx.Client() as client:
-    r = client.send(req)
-```
-
-If you need to build a request while applying client defaults, see [here](https://www.python-httpx.org/advanced/#build-request).
-
-The list of arguments that are not present in `httpx.Request` class are `auth`, `timeout`, `allow_redirects`, `proxies`, `verify` and `cert` however these are available in `httpx.request`, `httpx.get`, `httpx.post` etc.
+Besides, `httpx.Request()` does not support the `auth`, `timeout`, `allow_redirects`, `proxies`, `verify` and `cert` parameters. However these are available in `httpx.request`, `httpx.get`, `httpx.post` etc., as well as on [`Client` instances](/advanced#client-instances).
 
 ## Mocking
 
