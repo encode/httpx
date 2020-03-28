@@ -12,8 +12,10 @@ class HTTPError(Exception):
     def __init__(
         self, *args: typing.Any, request: "Request" = None, response: "Response" = None
     ) -> None:
+        if request is None and response is not None:
+            request = response.request
         self.response = response
-        self.request = request or getattr(self.response, "request", None)
+        self.request = request
         super().__init__(*args)
 
 
