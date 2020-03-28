@@ -680,8 +680,8 @@ class Client(BaseClient):
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
             # a ProxyError.
-            if exc.request is None:
-                exc.request = request
+            if exc._request is None:
+                exc._request = request
             raise
 
         self.cookies.extract_cookies(response)
@@ -1198,8 +1198,8 @@ class AsyncClient(BaseClient):
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
             # a ProxyError.
-            if exc.request is None:
-                exc.request = request
+            if exc._request is None:
+                exc._request = request
             raise
 
         self.cookies.extract_cookies(response)

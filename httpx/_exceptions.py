@@ -12,9 +12,16 @@ class HTTPError(Exception):
     def __init__(
         self, *args: typing.Any, request: "Request" = None, response: "Response" = None
     ) -> None:
-        self.response = response
-        self.request = request or getattr(self.response, "request", None)
         super().__init__(*args)
+        self._request = request or (response.request if response is not None else None)
+        self.response = response
+
+    @property
+    def request(self) -> "Request":
+        # NOTE: this property exists so that a `Request` is exposed to type
+        # checkers, instead of `Optional[Request]`.
+        assert self._request is not None  # Populated by the client.
+        return self._request
 
 
 # Timeout exceptions...
