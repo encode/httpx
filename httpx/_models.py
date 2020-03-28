@@ -5,7 +5,7 @@ import json as jsonlib
 import typing
 import urllib.request
 import warnings
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
 
@@ -380,7 +380,7 @@ class Headers(typing.MutableMapping[str, str]):
             self._list = []  # type: typing.List[typing.Tuple[bytes, bytes]]
         elif isinstance(headers, Headers):
             self._list = list(headers.raw)
-        elif isinstance(headers, dict):
+        elif isinstance(headers, Mapping):
             self._list = [
                 (normalize_header_key(k, encoding), normalize_header_value(v, encoding))
                 for k, v in headers.items()
@@ -1023,9 +1023,9 @@ class Cookies(MutableMapping):
     """
 
     def __init__(self, cookies: CookieTypes = None) -> None:
-        if cookies is None or isinstance(cookies, dict):
+        if cookies is None or isinstance(cookies, Mapping):
             self.jar = CookieJar()
-            if isinstance(cookies, dict):
+            if isinstance(cookies, Mapping):
                 for key, value in cookies.items():
                     self.set(key, value)
         elif isinstance(cookies, Cookies):
