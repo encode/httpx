@@ -9,11 +9,7 @@ from .base import SyncDispatcher
 
 
 def _get_non_empty_chunk(body: typing.Iterable) -> typing.Iterable:
-    """
-    Get a non-empty chunk from body. This is needed because the status returned
-    by start_response shouldn't be used until the first non-empty chunk has been
-    served.
-    """
+    """Get a non-empty chunk from body."""
     body = iter(body)
     for chunk in body:
         if chunk:
@@ -102,6 +98,8 @@ class WSGIDispatch(SyncDispatcher):
             seen_exc_info = exc_info
 
         result = self.app(environ, start_response)
+        # This is needed because the status returned by start_response
+        # shouldn't be used until the first non-empty chunk has been served.
         result = _get_non_empty_chunk(result)
 
         assert seen_status is not None
