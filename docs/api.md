@@ -38,6 +38,8 @@
     :docstring:
     :members: headers cookies params request get head options post put patch delete build_request send close
 
+## `AsyncClient`
+
 ::: httpx.AsyncClient
     :docstring:
     :members: headers cookies params request get head options post put patch delete build_request send
