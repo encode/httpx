@@ -4,8 +4,7 @@
 brotlipy==0.7.*
 
 autoflake
-# See: https://github.com/encode/httpx/pull/639#issuecomment-566235998
-black --no-binary=regex
+black
 cryptography
 flake8
 flake8-bugbear
@@ -23,5 +22,3 @@ trio
 trustme
 uvicorn
 seed-isort-config
-
-attrs>=19.2  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665
