@@ -16,11 +16,11 @@ about: Report a bug to help improve this project
 
 ### To reproduce
 
-<!--
-Provide steps to reproduce the bug locally.
+<!-- Provide a *minimal* example with steps to reproduce the bug locally.
 
-An example is provided below, feel free to adapt it.
--->
+If you are requesting an external host, please try to setup a local server that allows reproducing the issue.
+
+An example is provided below, feel free to adapt it to your needs. -->
 
 1. Create and start a local server:
 
@@ -34,7 +34,7 @@ from starlette.responses import PlainTextResponse
 async def home(request):
     return PlainTextResponse("Hello, world!")
 
-app = Starlette(route=[Route("/", home)])
+app = Starlette(routes=[Route("/", home)])
 
 uvicorn.run(app)
 ```
@@ -49,7 +49,8 @@ print(r)
 ```
 
 4. Run the test script.
-5. It raises an error (see traceback below).
+5. It raises an error.
+6. But I expected it to successfully print the response.
 
 ### Expected behavior
 
@@ -59,13 +60,14 @@ print(r)
 
 <!-- A clear and concise description of what actually happens. -->
 
-### Additional material
+### Debugging material
 
-<!--
-Any tracebacks, screenshots, etc. that can help understanding the problem.
+<!-- Any tracebacks, screenshots, etc. that can help understanding the problem.
 
-NOTE: if relevant, consider turning on DEBUG or TRACE logs for additional detail.
-See: https://www.python-httpx.org/environment_variables/#httpx_log_level
+NOTE:
+- Please list tracebacks in full (don't truncate them).
+- If relevant, consider turning on DEBUG or TRACE logs for additional details (see https://www.python-httpx.org/environment_variables/#httpx_log_level).
+- Consider using `<details>` to make tracebacks/logs collapsible if they're very large (see https://gist.github.com/ericclemmons/b146fe5da72ca1f706b2ef72a20ac39d).
 -->
 
 ### Environment
@@ -73,12 +75,12 @@ See: https://www.python-httpx.org/environment_variables/#httpx_log_level
 - OS: <!-- eg Linux/Windows/macOS. -->
 - Python version: <!-- eg 3.8.2 (get it with `$ python -V`). -->
 - HTTPX version: <!-- eg 0.12.0 (get it with `$ pip show httpx`). -->
-- HTTP proxies: <!-- yes/no/irrelevant, if yes please try reproducing without first. -->
-- Custom certificates: <!-- yes/no/irrelevant, if yes please try reproducing without first. -->
+- Async environment: <!-- eg asyncio/trio. If using asyncio, include whether the bug reproduces on trio (and vice versa). -->
+- HTTP proxy: <!-- yes/no, if yes please try reproducing without it. -->
+- Custom certificates: <!-- yes/no, if yes please try reproducing without them. If the bug is related to SSL/TLS, you can setup HTTPS on a local server using these instructions: https://www.python-httpx.org/advanced/#making-https-requests-to-a-local-server. -->
 
 ### Additional context
 
-<!--
-Any additional information that can help understanding the problem,
-eg. linked issues, or a description of what you were trying to achieve.
--->
+<!-- Any additional information that can help understanding the problem.
+
+Eg. linked issues, or a description of what you were trying to achieve. -->
