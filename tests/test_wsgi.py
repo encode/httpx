@@ -92,3 +92,12 @@ def test_wsgi_exc():
     client = httpx.Client(app=raise_exc)
     with pytest.raises(ValueError):
         client.get("http://www.example.org/")
+
+
+def test_wsgi_generator():
+    output = [b"", b"", b"Some content", b" and more content"]
+    client = httpx.Client(app=application_factory(output))
+    response = client.get("http://www.example.org/")
+    assert response.status_code == 200
+    assert response.text == "Some content and more content"
+    assert response.content == b"Some content and more content"
