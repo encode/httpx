@@ -17,6 +17,7 @@ def application_factory(output):
 
         for item in output:
             yield item
+
     return application
 
 
