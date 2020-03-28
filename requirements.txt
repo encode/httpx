@@ -22,3 +22,5 @@ trio
 trustme
 uvicorn
 seed-isort-config
+
+attrs>=19.2  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665
