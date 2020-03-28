@@ -426,7 +426,7 @@ class Client(BaseClient):
     request URLs.
     * **dispatch** - *(optional)* A dispatch class to use for sending requests
     over the network.
-    * **app** - *(optional)* An ASGI application to send requests to,
+    * **app** - *(optional)* An WSGI application to send requests to,
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
