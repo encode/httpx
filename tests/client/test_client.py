@@ -155,9 +155,7 @@ def test_elapsed_delay(server):
     assert response.elapsed.total_seconds() > 0.0
 
 
-def test_wsgi_app_generator():
-    def application(env, start_response):
-        body = b"""
+_wsgi_body = b"""
 
 
 <!DOCTYPE html>
@@ -170,10 +168,39 @@ def test_wsgi_app_generator():
   </body>
 </html>
 """
+
+
+def test_wsgi_app():
+    def application(env, start_response):
         start_response("200 OK", [("Content-Type", "text/html")])
-        for line in body.split(b"\n"):
+        return [_wsgi_body]
+
+    with httpx.Client(app=application) as client:
+        response = client.get("http://example.com/")
+        assert response.status_code == 200
+        assert b"This page deliberately left blank" in response.content
+
+
+def test_wsgi_app_generator():
+    def application(env, start_response):
+        start_response("200 OK", [("Content-Type", "text/html")])
+        for line in _wsgi_body.split(b"\n"):
             yield line
 
     with httpx.Client(app=application) as client:
         response = client.get("http://example.com/")
+        assert response.status_code == 200
         assert b"This page deliberately left blank" in response.content
+
+
+def test_wsgi_app_generator_empty():
+    def application(env, start_response):
+        body = [b"", b"", b""]
+        start_response("200 OK", [("Content-Type", "text/html")])
+        for line in body:
+            yield line
+
+    with httpx.Client(app=application) as client:
+        response = client.get("http://example.com/")
+        assert response.status_code == 200
+        assert response.content == b""

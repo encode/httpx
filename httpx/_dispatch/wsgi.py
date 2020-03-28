@@ -18,6 +18,7 @@ def _get_non_empty_chunk(body: typing.Iterable) -> typing.Iterable:
     for chunk in body:
         if chunk:
             return itertools.chain([chunk], body)
+    return []
 
 
 class WSGIDispatch(SyncDispatcher):
