@@ -153,3 +153,27 @@ def test_elapsed_delay(server):
     with httpx.Client() as client:
         response = client.get(url)
     assert response.elapsed.total_seconds() > 0.0
+
+
+def test_wsgi_app_generator():
+    def application(env, start_response):
+        body = b"""
+
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>This is not a web page</title>
+  </head>
+  <body>
+    <p>This page deliberately left blank</p>
+  </body>
+</html>
+"""
+        start_response('200 OK', [('Content-Type','text/html')])
+        for line in body.split(b"\n"):
+            yield line
+
+    with httpx.Client(app=application) as client:
+        response = client.get("http://example.com/")
+        assert b"This page deliberately left blank" in response.content

@@ -1,10 +1,23 @@
 import io
+import itertools
 import typing
 
 from .._config import TimeoutTypes
 from .._content_streams import IteratorStream
 from .._models import Request, Response
 from .base import SyncDispatcher
+
+
+def _get_non_empty_chunk(body):
+    """
+    Get a non-empty chunk from body. This is needed because the status returned
+    by start_response shouldn't be used until the first non-empty chunk has been
+    served.
+    """
+    body = iter(body)
+    for chunk in body:
+        if chunk:
+            return itertools.chain([chunk], body)
 
 
 class WSGIDispatch(SyncDispatcher):
@@ -88,6 +101,7 @@ class WSGIDispatch(SyncDispatcher):
             seen_exc_info = exc_info
 
         result = self.app(environ, start_response)
+        result = _get_non_empty_chunk(result)
 
         assert seen_status is not None
         assert seen_response_headers is not None
