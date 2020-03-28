@@ -6,7 +6,7 @@ if typing.TYPE_CHECKING:
 
 class HTTPError(Exception):
     """
-    Base class for all httpx exceptions.
+    Base class for all HTTPX exceptions.
     """
 
     def __init__(

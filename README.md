@@ -89,7 +89,7 @@ Install with pip:
 $ pip install httpx
 ```
 
-httpx requires Python 3.6+
+HTTPX requires Python 3.6+.
 
 ## Documentation
 
@@ -109,7 +109,7 @@ If you want to contribute with HTTPX check out the [Contributing Guide](https://
 
 ## Dependencies
 
-The httpx project relies on these excellent libraries:
+The HTTPX project relies on these excellent libraries:
 
 * `urllib3` - Sync client support.
 * `h11` - HTTP/1.1 support.
