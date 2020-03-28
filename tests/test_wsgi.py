@@ -26,7 +26,6 @@ def echo_body(environ, start_response):
 
     response_headers = [
         ("Content-type", "text/plain"),
-        ("Content-Length", str(len(output))),
     ]
 
     start_response(status, response_headers)
@@ -57,7 +56,6 @@ def raise_exc(environ, start_response):
 
     response_headers = [
         ("Content-type", "text/plain"),
-        ("Content-Length", str(len(output))),
     ]
 
     try:
