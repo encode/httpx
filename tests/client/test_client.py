@@ -170,7 +170,7 @@ def test_wsgi_app_generator():
   </body>
 </html>
 """
-        start_response('200 OK', [('Content-Type','text/html')])
+        start_response("200 OK", [("Content-Type", "text/html")])
         for line in body.split(b"\n"):
             yield line
 
