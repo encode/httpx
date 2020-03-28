@@ -451,3 +451,25 @@ as above:
 >>> httpx.get("https://example.com", auth=auth)
 <Response [200 OK]>
 ```
+
+## Errors and Exceptions
+
+In some situations, HTTPX can raise exceptions:
+
+* `NetworkError` in case of a network problem (e.g. DNS failure, refused connection, ...).
+* `ConnectTimeout`, `ReadTimeout`, `WriteTimeout`, `PoolTimeout` in case of configured timeout is reached. All of them inherit from `TimeoutException`.
+* `TooManyRedirects` if a request exceeds the configured number of maximum redirections.
+* `HTTPStatusError` when calling `.raise_for_status()` on a response with status code 4xx or 5xx.
+
+All exceptions that HTTPX raises inherit from `httpx.RequestError` and contain the request, as well as any received response.
+
+```python
+try:
+    httpx.get("https.example.com")
+except httpx.HTTPStatusError as exc:
+    print(f"The request `{exc.request}` return the status code {exc.request.status_code}")
+except TimeoutException as exc:
+    print(f"The request `{exc.request}` have reached the timeout")
+except NetworkError as exc:
+    print(f"The request `{exc.request}` have failed")
+```
