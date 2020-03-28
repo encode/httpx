@@ -8,7 +8,7 @@ from .._models import Request, Response
 from .base import SyncDispatcher
 
 
-def _get_non_empty_chunk(body):
+def _get_non_empty_chunk(body: typing.Iterable) -> typing.Iterable:
     """
     Get a non-empty chunk from body. This is needed because the status returned
     by start_response shouldn't be used until the first non-empty chunk has been
