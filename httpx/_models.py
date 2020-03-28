@@ -13,13 +13,7 @@ import chardet
 import rfc3986
 
 from .__version__ import __version__
-from ._content_streams import (
-    ByteStream,
-    ContentStream,
-    RequestData,
-    RequestFiles,
-    encode,
-)
+from ._content_streams import ByteStream, ContentStream, encode
 from ._decoders import (
     SUPPORTED_DECODERS,
     Decoder,
@@ -39,6 +33,15 @@ from ._exceptions import (
     StreamConsumed,
 )
 from ._status_codes import StatusCode
+from ._types import (
+    CookieTypes,
+    HeaderTypes,
+    PrimitiveData,
+    QueryParamTypes,
+    RequestData,
+    RequestFiles,
+    URLTypes,
+)
 from ._utils import (
     ElapsedTimer,
     flatten_queryparams,
@@ -53,25 +56,6 @@ from ._utils import (
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._dispatch.base import AsyncDispatcher  # noqa: F401
-
-PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
-
-URLTypes = typing.Union["URL", str]
-
-QueryParamTypes = typing.Union[
-    "QueryParams",
-    typing.Mapping[str, typing.Union[PrimitiveData, typing.Sequence[PrimitiveData]]],
-    typing.List[typing.Tuple[str, PrimitiveData]],
-    str,
-]
-
-HeaderTypes = typing.Union[
-    "Headers",
-    typing.Dict[typing.AnyStr, typing.AnyStr],
-    typing.List[typing.Tuple[typing.AnyStr, typing.AnyStr]],
-]
-
-CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 
 
 class URL:

@@ -8,29 +8,8 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from ._exceptions import StreamConsumed
+from ._types import RequestData, RequestFile, RequestFiles, RequestFormData
 from ._utils import format_form_param
-
-RequestData = typing.Union[
-    dict, str, bytes, typing.Iterator[bytes], typing.AsyncIterator[bytes]
-]
-
-RequestFiles = typing.Dict[
-    str,
-    typing.Union[
-        # file (or str)
-        typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-        # (filename, file (or str))
-        typing.Tuple[
-            typing.Optional[str], typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-        ],
-        # (filename, file (or str), content_type)
-        typing.Tuple[
-            typing.Optional[str],
-            typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
-            typing.Optional[str],
-        ],
-    ],
-]
 
 
 class ContentStream:
@@ -223,28 +202,30 @@ class MultipartStream(ContentStream):
         A single file field item, within a multipart form field.
         """
 
-        def __init__(
-            self, name: str, value: typing.Union[typing.IO[typing.AnyStr], tuple]
-        ) -> None:
+        def __init__(self, name: str, value: RequestFile) -> None:
             self.name = name
-            if not isinstance(value, tuple):
-                self.filename = Path(str(getattr(value, "name", "upload"))).name
-                self.file = (
-                    value
-                )  # type: typing.Union[typing.IO[str], typing.IO[bytes]]
-                self.content_type = self.guess_content_type()
-            else:
-                self.filename = value[0]
-                self.file = value[1]
-                self.content_type = (
-                    value[2] if len(value) > 2 else self.guess_content_type()
-                )
 
-        def guess_content_type(self) -> typing.Optional[str]:
-            if self.filename:
-                return (
-                    mimetypes.guess_type(self.filename)[0] or "application/octet-stream"
-                )
+            filename: typing.Optional[str]
+
+            if not isinstance(value, tuple):
+                filename = Path(str(getattr(value, "name", "upload"))).name
+                file = value
+                content_type = self.guess_content_type(filename)
+            else:
+                filename = value[0]
+                file = value[1]
+                try:
+                    content_type = value[2]  # type: ignore
+                except IndexError:
+                    content_type = self.guess_content_type(filename)
+
+            self.filename = filename
+            self.file = file
+            self.content_type = content_type
+
+        def guess_content_type(self, filename: str = None) -> typing.Optional[str]:
+            if filename is not None:
+                return mimetypes.guess_type(filename)[0] or "application/octet-stream"
             else:
                 return None
 
@@ -264,13 +245,15 @@ class MultipartStream(ContentStream):
 
         def render_data(self) -> bytes:
             content: typing.Union[str, bytes]
-            if isinstance(self.file, str):
+            if isinstance(self.file, (str, bytes)):
                 content = self.file
             else:
                 content = self.file.read()
             return content.encode("utf-8") if isinstance(content, str) else content
 
-    def __init__(self, data: dict, files: dict, boundary: bytes = None) -> None:
+    def __init__(
+        self, data: RequestFormData, files: RequestFiles, boundary: bytes = None
+    ) -> None:
         body = BytesIO()
         if boundary is None:
             boundary = binascii.hexlify(os.urandom(16))
@@ -289,7 +272,7 @@ class MultipartStream(ContentStream):
         self.body = body.getvalue()
 
     def iter_fields(
-        self, data: dict, files: dict
+        self, data: RequestFormData, files: RequestFiles
     ) -> typing.Iterator[typing.Union["FileField", "DataField"]]:
         for name, value in data.items():
             if isinstance(value, list):
@@ -298,8 +281,8 @@ class MultipartStream(ContentStream):
             else:
                 yield self.DataField(name=name, value=value)
 
-        for name, value in files.items():
-            yield self.FileField(name=name, value=value)
+        for name, filevalue in files.items():
+            yield self.FileField(name=name, value=filevalue)
 
     def get_headers(self) -> typing.Dict[str, str]:
         content_length = str(len(self.body))

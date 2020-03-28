@@ -1,8 +1,8 @@
 import typing
 
-from .._config import TimeoutTypes
 from .._content_streams import ByteStream
 from .._models import Request, Response
+from .._types import TimeoutTypes
 from .base import AsyncDispatcher
 
 

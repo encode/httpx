@@ -2,14 +2,8 @@ import typing
 from types import TracebackType
 
 from .._config import Timeout
-from .._models import (
-    HeaderTypes,
-    QueryParamTypes,
-    Request,
-    RequestData,
-    Response,
-    URLTypes,
-)
+from .._models import Request, RequestData, Response
+from .._types import HeaderTypes, QueryParamTypes, URLTypes
 
 
 class SyncDispatcher:

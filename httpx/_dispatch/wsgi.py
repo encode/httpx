@@ -1,9 +1,9 @@
 import io
 import typing
 
-from .._config import TimeoutTypes
 from .._content_streams import IteratorStream
 from .._models import Request, Response
+from .._types import TimeoutTypes
 from .base import SyncDispatcher
 
 

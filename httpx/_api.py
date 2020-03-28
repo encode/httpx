@@ -1,6 +1,5 @@
 import typing
 
-from ._auth import AuthTypes
 from ._client import Client, StreamContextManager
 from ._config import DEFAULT_TIMEOUT_CONFIG, CertTypes, TimeoutTypes, VerifyTypes
 from ._models import (
@@ -13,6 +12,7 @@ from ._models import (
     Response,
     URLTypes,
 )
+from ._types import AuthTypes
 
 
 def request(

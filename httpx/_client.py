@@ -4,20 +4,16 @@ from types import TracebackType
 
 import hstspreload
 
-from ._auth import Auth, AuthTypes, BasicAuth, FunctionAuth
+from ._auth import Auth, BasicAuth, FunctionAuth
 from ._config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     UNSET,
-    CertTypes,
     PoolLimits,
-    ProxiesTypes,
     Proxy,
     Timeout,
-    TimeoutTypes,
     UnsetType,
-    VerifyTypes,
 )
 from ._content_streams import ContentStream
 from ._dispatch.asgi import ASGIDispatch
@@ -27,22 +23,21 @@ from ._dispatch.proxy_http import HTTPProxy
 from ._dispatch.urllib3 import URLLib3Dispatcher
 from ._dispatch.wsgi import WSGIDispatch
 from ._exceptions import HTTPError, InvalidURL, RequestBodyUnavailable, TooManyRedirects
-from ._models import (
-    URL,
-    Cookies,
+from ._models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
+from ._status_codes import codes
+from ._types import (
+    AuthTypes,
+    CertTypes,
     CookieTypes,
-    Headers,
     HeaderTypes,
-    Origin,
-    QueryParams,
+    ProxiesTypes,
     QueryParamTypes,
-    Request,
     RequestData,
     RequestFiles,
-    Response,
+    TimeoutTypes,
     URLTypes,
+    VerifyTypes,
 )
-from ._status_codes import codes
 from ._utils import (
     NetRCInfo,
     get_environment_proxies,
