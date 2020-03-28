@@ -39,6 +39,7 @@ from ._exceptions import (
     StreamConsumed,
 )
 from ._status_codes import StatusCode
+from ._types import StrOrBytes
 from ._utils import (
     ElapsedTimer,
     flatten_queryparams,
@@ -67,8 +68,8 @@ QueryParamTypes = typing.Union[
 
 HeaderTypes = typing.Union[
     "Headers",
-    typing.Dict[typing.AnyStr, typing.AnyStr],
-    typing.List[typing.Tuple[typing.AnyStr, typing.AnyStr]],
+    typing.Dict[StrOrBytes, StrOrBytes],
+    typing.Sequence[typing.Tuple[StrOrBytes, StrOrBytes]],
 ]
 
 CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]

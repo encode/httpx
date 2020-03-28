@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from ._exceptions import StreamConsumed
+from ._types import StrOrBytes
 from ._utils import format_form_param
 
 RequestData = typing.Union[
@@ -18,15 +19,16 @@ RequestFiles = typing.Dict[
     str,
     typing.Union[
         # file (or str)
-        typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
+        typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
         # (filename, file (or str))
         typing.Tuple[
-            typing.Optional[str], typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
+            typing.Optional[str],
+            typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
         ],
         # (filename, file (or str), content_type)
         typing.Tuple[
             typing.Optional[str],
-            typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
+            typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
             typing.Optional[str],
         ],
     ],
@@ -224,7 +226,9 @@ class MultipartStream(ContentStream):
         """
 
         def __init__(
-            self, name: str, value: typing.Union[typing.IO[typing.AnyStr], tuple]
+            self,
+            name: str,
+            value: typing.Union[typing.IO[str], typing.IO[bytes], tuple],
         ) -> None:
             self.name = name
             if not isinstance(value, tuple):
