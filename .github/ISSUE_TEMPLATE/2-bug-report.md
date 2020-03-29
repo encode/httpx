@@ -21,7 +21,7 @@ about: Report a bug to help improve this project
 NOTE: try to keep any external dependencies *at an absolute minimum* (servers, proxies, certificates...).
 In other words, remove anything that doesn't make the bug go away.
 
-If you need a local server to replicate against, you can build one using eg. Starlette [0] and Uvicorn [1], or any tool you feel comfortable with. Remember to share setup instructions here. :-)
+If you need a local server to replicate against, you can build one using eg. Starlette [0] and Uvicorn [1], or any tool you feel comfortable with. Check out other issues for examples and remember to share setup instructions here. :-)
 
 [0]: https://www.starlette.io
 [1]: https://www.uvicorn.org
