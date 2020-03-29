@@ -99,7 +99,7 @@ class WSGIDispatch(SyncDispatcher):
         result = self.app(environ, start_response)
         # This is needed because the status returned by start_response
         # shouldn't be used until the first non-empty chunk has been served.
-        result = _get_non_empty_chunk(result)
+        result = _skip_leading_empty_chunks(result)
 
         assert seen_status is not None
         assert seen_response_headers is not None
