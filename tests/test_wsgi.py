@@ -109,4 +109,3 @@ def test_wsgi_generator_empty():
     response = client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == ""
-    assert response.content == b""
