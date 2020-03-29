@@ -5,18 +5,20 @@ import pytest
 import httpx
 
 
-def hello_world(environ, start_response):
-    status = "200 OK"
-    output = b"Hello, World!"
+def application_factory(output):
+    def application(environ, start_response):
+        status = "200 OK"
 
-    response_headers = [
-        ("Content-type", "text/plain"),
-        ("Content-Length", str(len(output))),
-    ]
+        response_headers = [
+            ("Content-type", "text/plain"),
+        ]
 
-    start_response(status, response_headers)
+        start_response(status, response_headers)
 
-    return [output]
+        for item in output:
+            yield item
+
+    return application
 
 
 def echo_body(environ, start_response):
@@ -25,7 +27,6 @@ def echo_body(environ, start_response):
 
     response_headers = [
         ("Content-type", "text/plain"),
-        ("Content-Length", str(len(output))),
     ]
 
     start_response(status, response_headers)
@@ -56,7 +57,6 @@ def raise_exc(environ, start_response):
 
     response_headers = [
         ("Content-type", "text/plain"),
-        ("Content-Length", str(len(output))),
     ]
 
     try:
@@ -69,7 +69,7 @@ def raise_exc(environ, start_response):
 
 
 def test_wsgi():
-    client = httpx.Client(app=hello_world)
+    client = httpx.Client(app=application_factory([b"Hello, World!"]))
     response = client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == "Hello, World!"
@@ -93,3 +93,19 @@ def test_wsgi_exc():
     client = httpx.Client(app=raise_exc)
     with pytest.raises(ValueError):
         client.get("http://www.example.org/")
+
+
+def test_wsgi_generator():
+    output = [b"", b"", b"Some content", b" and more content"]
+    client = httpx.Client(app=application_factory(output))
+    response = client.get("http://www.example.org/")
+    assert response.status_code == 200
+    assert response.text == "Some content and more content"
+
+
+def test_wsgi_generator_empty():
+    output = [b"", b"", b"", b""]
+    client = httpx.Client(app=application_factory(output))
+    response = client.get("http://www.example.org/")
+    assert response.status_code == 200
+    assert response.text == ""
