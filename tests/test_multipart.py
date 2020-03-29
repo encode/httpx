@@ -2,10 +2,9 @@ import binascii
 import cgi
 import io
 import os
-from typing import Any, Iterator, List, cast
+from typing import Any, Iterator, cast
 from unittest import mock
 
-import memory_profiler
 import pytest
 
 import httpx
@@ -234,49 +233,6 @@ def test_multipart_encode_non_seekable_filelike() -> None:
         "Content-Length": str(len(content)),
     }
     assert b"".join(stream) == content
-
-
-def test_multipart_file_streaming_memory(tmp_path: Any) -> None:
-    """
-    Test that multipart file uploads are effectively streaming, i.e. they don't
-    result in loading the entire file into memory.
-    """
-    path = str(tmp_path / "name.txt")
-
-    # Flush a relatively large file to disk to read from.
-    ONE_MB = 1024 * 1024
-    size_mb = 1
-    with open(path, "wb") as out:
-        out.write(os.urandom(int(size_mb * ONE_MB)))
-
-    def bench() -> None:
-        files = {"file": open(path, "rb")}
-        stream = encode(files=files, boundary=b"+++")
-        # Consume the stream one chunk at a time.
-        for _ in stream:
-            pass
-
-    # Measure memory usage of `main()` -- one entry per LOC (plus init/teardown).
-    memory_per_line: List[float] = memory_profiler.memory_usage((bench, (), {}))
-
-    # Rationale: if streaming works correctly, all lines should use roughly the
-    # same amount of memory. In particular, they should use the same amount of memory
-    # than the first operation in `main()`.
-    percents = 1
-    baseline = memory_per_line[0]
-    max_allowed_memory = (100 + percents) / 100 * baseline
-
-    # Make sure initial file was big enough to exceed memory limits
-    # if it were to be consumed in full.
-    assert (
-        size_mb > max_allowed_memory - baseline
-    ), "Impact of loading entire file in memory wouldn't be detectable"
-
-    # Now verify memory usage.
-    assert all(memory < max_allowed_memory for memory in memory_per_line), (
-        max_allowed_memory,
-        memory_per_line,
-    )
 
 
 class TestHeaderParamHTML5Formatting:
