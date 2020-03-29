@@ -8,6 +8,7 @@ from typing import (
     TYPE_CHECKING,
     AsyncIterator,
     Callable,
+    Dict,
     Iterator,
     List,
     Mapping,
@@ -28,7 +29,7 @@ PrimitiveData = Optional[Union[str, int, float, bool]]
 
 URLTypes = Union["URL", str]
 HeaderTypes = Union[
-    "Headers", Mapping[StrOrBytes, StrOrBytes], Sequence[Tuple[StrOrBytes, StrOrBytes]],
+    "Headers", Dict[StrOrBytes, StrOrBytes], Sequence[Tuple[StrOrBytes, StrOrBytes]],
 ]
 QueryParamTypes = Union[
     "QueryParams",
@@ -36,7 +37,7 @@ QueryParamTypes = Union[
     List[Tuple[str, PrimitiveData]],
     str,
 ]
-CookieTypes = Union["Cookies", CookieJar, Mapping[str, str]]
+CookieTypes = Union["Cookies", CookieJar, Dict[str, str]]
 AuthTypes = Union[
     Tuple[StrOrBytes, StrOrBytes], Callable[["Request"], "Request"], "Auth",
 ]
