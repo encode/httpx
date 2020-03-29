@@ -8,8 +8,7 @@ from .._models import Request, Response
 from .base import SyncDispatcher
 
 
-def _get_non_empty_chunk(body: typing.Iterable) -> typing.Iterable:
-    """Get a non-empty chunk from body."""
+def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
     body = iter(body)
     for chunk in body:
         if chunk:
