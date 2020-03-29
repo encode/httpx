@@ -46,7 +46,7 @@ TimeoutTypes = Union[None, float, Tuple[float, float, float, float], "Timeout"]
 ProxiesTypes = Union[URLTypes, "Proxy", Mapping[URLTypes, Union[URLTypes, "Proxy"]]]
 
 RequestFormData = Mapping[str, Union[StrOrBytes, List[StrOrBytes]]]
-RequestData = Union[str, bytes, Iterator[bytes], AsyncIterator[bytes], RequestFormData]
+RequestData = Union[RequestFormData, str, bytes, Iterator[bytes], AsyncIterator[bytes]]
 
 RequestFileContent = Union[str, bytes, IO[str], IO[bytes]]
 RequestFile = Union[

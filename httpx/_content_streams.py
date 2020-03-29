@@ -50,8 +50,6 @@ class ByteStream(ContentStream):
         self.body = body.encode("utf-8") if isinstance(body, str) else body
 
     def get_headers(self) -> typing.Dict[str, str]:
-        if not self.body:
-            return {}
         content_length = str(len(self.body))
         return {"Content-Length": content_length}
 
