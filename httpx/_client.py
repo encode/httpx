@@ -424,7 +424,7 @@ class Client(BaseClient):
     request URLs.
     * **dispatch** - *(optional)* A dispatch class to use for sending requests
     over the network.
-    * **app** - *(optional)* An ASGI application to send requests to,
+    * **app** - *(optional)* An WSGI application to send requests to,
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
@@ -705,8 +705,8 @@ class Client(BaseClient):
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
             # a ProxyError.
-            if exc.request is None:
-                exc.request = request
+            if exc._request is None:
+                exc._request = request
             raise
         response = Response(
             status_code,
@@ -1246,8 +1246,8 @@ class AsyncClient(BaseClient):
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
             # a ProxyError.
-            if exc.request is None:
-                exc.request = request
+            if exc._request is None:
+                exc._request = request
             raise
         response = Response(
             status_code,

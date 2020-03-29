@@ -4,8 +4,7 @@
 brotlipy==0.7.*
 
 autoflake
-# See: https://github.com/encode/httpx/pull/639#issuecomment-566235998
-black --no-binary=regex
+black
 cryptography
 flake8
 flake8-bugbear

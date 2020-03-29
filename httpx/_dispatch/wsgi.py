@@ -1,9 +1,18 @@
 import io
+import itertools
 import typing
 
 import httpcore
 
 from .._content_streams import ByteStream, IteratorStream
+
+
+def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
+    body = iter(body)
+    for chunk in body:
+        if chunk:
+            return itertools.chain([chunk], body)
+    return []
 
 
 class WSGIDispatch(httpcore.SyncHTTPTransport):
@@ -105,6 +114,9 @@ class WSGIDispatch(httpcore.SyncHTTPTransport):
             seen_exc_info = exc_info
 
         result = self.app(environ, start_response)
+        # This is needed because the status returned by start_response
+        # shouldn't be used until the first non-empty chunk has been served.
+        result = _skip_leading_empty_chunks(result)
 
         assert seen_status is not None
         assert seen_response_headers is not None

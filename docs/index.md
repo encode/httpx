@@ -103,6 +103,8 @@ the [async support](async.md) section, or the [HTTP/2](http2.md) section.
 
 The [Developer Interface](api.md) provides a comprehensive API reference.
 
+To find out about tools that integrate with HTTPX, see [Third Party Packages](third-party-packages.md).
+
 ## Dependencies
 
 The HTTPX project relies on these excellent libraries:

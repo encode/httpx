@@ -307,7 +307,7 @@ async def test_body_redirect():
     response = await client.post(url, data=data)
     assert response.url == URL("https://example.org/redirect_body_target")
     assert response.json()["body"] == "Example request body"
-    assert "content-length" in response.json()["headers"]
+    assert response.json()["headers"]["content-length"] == "20"
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -321,7 +321,7 @@ async def test_no_body_redirect():
     response = await client.post(url, data=data)
     assert response.url == URL("https://example.org/redirect_body_target")
     assert response.json()["body"] == ""
-    assert "content-length" not in response.json()["headers"]
+    assert response.json()["headers"]["content-length"] == "0"
 
 
 @pytest.mark.usefixtures("async_environment")

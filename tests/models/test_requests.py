@@ -10,7 +10,7 @@ def test_request_repr():
 
 def test_no_content():
     request = httpx.Request("GET", "http://example.org")
-    assert "Content-Length" not in request.headers
+    assert request.headers["Content-Length"] == "0"
 
 
 def test_content_length_header():

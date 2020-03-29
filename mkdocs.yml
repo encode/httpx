@@ -18,6 +18,7 @@ nav:
     - Environment Variables: 'environment_variables.md'
     - Requests Compatibility: 'compatibility.md'
     - Developer Interface: 'api.md'
+    - Third Party Packages: 'third-party-packages.md'
     - Contributing: 'contributing.md'
 
 markdown_extensions:
