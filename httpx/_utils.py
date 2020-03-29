@@ -140,10 +140,8 @@ class NetRCInfo:
                         self._netrc_info = netrc.netrc(str(expanded_path))
                         break
                 except (netrc.NetrcParseError, IOError, PermissionError):
-                    # If there was a parsing error or a permissions issue reading the file,
-                    # we'll just skip netrc auth unless explicitly asked to raise errors.
-                    if self.raise_errors:
-                        raise
+                    # Issue while reading the netrc file, ignore...
+                    pass
         return self._netrc_info
 
     def get_credentials(
