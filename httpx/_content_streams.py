@@ -6,6 +6,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from ._exceptions import StreamConsumed
+from ._types import StrOrBytes
 from ._utils import (
     format_form_param,
     guess_content_type,
@@ -21,15 +22,16 @@ RequestFiles = typing.Dict[
     str,
     typing.Union[
         # file (or str)
-        typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
+        typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
         # (filename, file (or str))
         typing.Tuple[
-            typing.Optional[str], typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
+            typing.Optional[str],
+            typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
         ],
         # (filename, file (or str), content_type)
         typing.Tuple[
             typing.Optional[str],
-            typing.Union[typing.IO[typing.AnyStr], typing.AnyStr],
+            typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
             typing.Optional[str],
         ],
     ],
@@ -74,8 +76,6 @@ class ByteStream(ContentStream):
         self.body = body.encode("utf-8") if isinstance(body, str) else body
 
     def get_headers(self) -> typing.Dict[str, str]:
-        if not self.body:
-            return {}
         content_length = str(len(self.body))
         return {"Content-Length": content_length}
 
@@ -253,7 +253,9 @@ class MultipartStream(ContentStream):
         _data: bytes
 
         def __init__(
-            self, name: str, value: typing.Union[typing.IO[typing.AnyStr], tuple]
+            self,
+            name: str,
+            value: typing.Union[typing.IO[str], typing.IO[bytes], tuple],
         ) -> None:
             self.name = name
             if not isinstance(value, tuple):
@@ -399,7 +401,7 @@ def encode(
     Handles encoding the given `data`, `files`, and `json`, returning
     a `ContentStream` implementation.
     """
-    if data is None:
+    if not data:
         if json is not None:
             return JSONStream(json=json)
         elif files:
@@ -407,7 +409,7 @@ def encode(
         else:
             return ByteStream(body=b"")
     elif isinstance(data, dict):
-        if files is not None:
+        if files:
             return MultipartStream(data=data, files=files, boundary=boundary)
         else:
             return URLEncodedStream(data=data)
