@@ -18,39 +18,14 @@ about: Report a bug to help improve this project
 
 <!-- Provide a *minimal* example with steps to reproduce the bug locally.
 
-If you are requesting an external host, please try to setup a local server that allows reproducing the issue.
+NOTE: try to keep any external dependencies *at an absolute minimum* (servers, proxies, certificates...).
+In other words, remove anything that doesn't make the bug go away.
 
-An example is provided below, feel free to adapt it to your needs. -->
+If you need a local server to replicate against, you can build one using eg. Starlette [0] and Uvicorn [1], or any tool you feel comfortable with. Remember to share setup instructions here. :-)
 
-1. Create and start a local server:
-
-```python
-# $ pip install starlette uvicorn
-import uvicorn
-from starlette import Starlette
-from starlette.routing import Route
-from starlette.responses import PlainTextResponse
-
-async def home(request):
-    return PlainTextResponse("Hello, world!")
-
-app = Starlette(routes=[Route("/", home)])
-
-uvicorn.run(app)
-```
-
-2. Create a test script:
-
-```python
-import httpx
-
-r = httpx.get("http://localhost:8000")
-print(r)
-```
-
-4. Run the test script.
-5. It raises an error.
-6. But I expected it to successfully print the response.
+[0]: https://www.starlette.io
+[1]: https://www.uvicorn.org
+-->
 
 ### Expected behavior
 
