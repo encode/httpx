@@ -276,7 +276,7 @@ class MultipartStream(ContentStream):
         body = BytesIO()
         if boundary is None:
             boundary = binascii.hexlify(os.urandom(16))
-
+            
         for field in self.iter_fields(data, files):
             body.write(b"--%s\r\n" % boundary)
             body.write(field.render_headers())
@@ -301,7 +301,11 @@ class MultipartStream(ContentStream):
                 yield self.DataField(name=name, value=value)
 
         for name, value in files.items():
-            yield self.FileField(name=name, value=value)
+            if isinstance(value, list):
+                for item in value:
+                    yield self.FileField(name=name, value=item)
+            else:
+                yield self.FileField(name=name, value=value)
 
     def get_headers(self) -> typing.Dict[str, str]:
         content_length = str(len(self.body))
