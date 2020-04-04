@@ -29,6 +29,7 @@ from ._exceptions import (
 )
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import StatusCode, codes
+from ._requests import from_requests
 
 __all__ = [
     "__description__",
