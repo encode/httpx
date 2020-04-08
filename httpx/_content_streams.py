@@ -15,21 +15,44 @@ RequestData = typing.Union[
     dict, str, bytes, typing.Iterator[bytes], typing.AsyncIterator[bytes]
 ]
 
-RequestFiles = typing.Dict[
-    str,
-    typing.Union[
-        # file (or str)
-        typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
-        # (filename, file (or str))
-        typing.Tuple[
-            typing.Optional[str],
+RequestFiles = typing.Union[
+    typing.Dict[
+        str,
+        typing.Union[
+            # file (or str)
             typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
+            # (filename, file (or str))
+            typing.Tuple[
+                typing.Optional[str],
+                typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
+            ],
+            # (filename, file (or str), content_type)
+            typing.Tuple[
+                typing.Optional[str],
+                typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
+                typing.Optional[str],
+            ],
         ],
-        # (filename, file (or str), content_type)
+    ],
+    typing.List[
+        # (input_name, file_details)
         typing.Tuple[
-            typing.Optional[str],
-            typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
-            typing.Optional[str],
+            str,
+            typing.Union[
+                # file (or str)
+                typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
+                # (filename, file (or str))
+                typing.Tuple[
+                    typing.Optional[str],
+                    typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
+                ],
+                # (filename, file (or str), content_type)
+                typing.Tuple[
+                    typing.Optional[str],
+                    typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
+                    typing.Optional[str],
+                ],
+            ],
         ],
     ],
 ]
@@ -272,11 +295,13 @@ class MultipartStream(ContentStream):
                 content = self.file.read()
             return content.encode("utf-8") if isinstance(content, str) else content
 
-    def __init__(self, data: dict, files: dict, boundary: bytes = None) -> None:
+    def __init__(
+        self, data: dict, files: typing.Union[dict, list], boundary: bytes = None
+    ) -> None:
         body = BytesIO()
         if boundary is None:
             boundary = binascii.hexlify(os.urandom(16))
-            
+
         for field in self.iter_fields(data, files):
             body.write(b"--%s\r\n" % boundary)
             body.write(field.render_headers())
@@ -291,7 +316,7 @@ class MultipartStream(ContentStream):
         self.body = body.getvalue()
 
     def iter_fields(
-        self, data: dict, files: dict
+        self, data: dict, files: typing.Union[dict, list]
     ) -> typing.Iterator[typing.Union["FileField", "DataField"]]:
         for name, value in data.items():
             if isinstance(value, list):
@@ -300,12 +325,9 @@ class MultipartStream(ContentStream):
             else:
                 yield self.DataField(name=name, value=value)
 
-        for name, value in files.items():
-            if isinstance(value, list):
-                for item in value:
-                    yield self.FileField(name=name, value=item)
-            else:
-                yield self.FileField(name=name, value=value)
+        file_items = files.items() if isinstance(files, dict) else files
+        for name, value in file_items:
+            yield self.FileField(name=name, value=value)
 
     def get_headers(self) -> typing.Dict[str, str]:
         content_length = str(len(self.body))

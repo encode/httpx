@@ -150,7 +150,10 @@ async def test_multipart_files_content():
 
 @pytest.mark.asyncio
 async def test_multipart_multiple_files_single_input_content():
-    files = {"file": [io.BytesIO(b"<file content 1>"), io.BytesIO(b"<file content 2>")]}
+    files = [
+        ("file", io.BytesIO(b"<file content 1>")),
+        ("file", io.BytesIO(b"<file content 2>")),
+    ]
     stream = encode(files=files, boundary=b"+++")
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
