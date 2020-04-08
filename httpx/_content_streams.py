@@ -15,46 +15,24 @@ RequestData = typing.Union[
     dict, str, bytes, typing.Iterator[bytes], typing.AsyncIterator[bytes]
 ]
 
+FileEntry = typing.Union[
+    # file (or str)
+    typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
+    # (filename, file (or str))
+    typing.Tuple[
+        typing.Optional[str],
+        typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
+    ],
+    # (filename, file (or str), content_type)
+    typing.Tuple[
+        typing.Optional[str],
+        typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
+        typing.Optional[str],
+    ],
+]
+
 RequestFiles = typing.Union[
-    typing.Dict[
-        str,
-        typing.Union[
-            # file (or str)
-            typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
-            # (filename, file (or str))
-            typing.Tuple[
-                typing.Optional[str],
-                typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
-            ],
-            # (filename, file (or str), content_type)
-            typing.Tuple[
-                typing.Optional[str],
-                typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
-                typing.Optional[str],
-            ],
-        ],
-    ],
-    typing.List[
-        # (input_name, file_details)
-        typing.Tuple[
-            str,
-            typing.Union[
-                # file (or str)
-                typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
-                # (filename, file (or str))
-                typing.Tuple[
-                    typing.Optional[str],
-                    typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
-                ],
-                # (filename, file (or str), content_type)
-                typing.Tuple[
-                    typing.Optional[str],
-                    typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
-                    typing.Optional[str],
-                ],
-            ],
-        ],
-    ],
+    typing.Dict[str, FileEntry], typing.List[typing.Tuple[str, FileEntry]]
 ]
 
 
