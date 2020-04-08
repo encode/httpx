@@ -6,7 +6,6 @@ from ._config import PoolLimits, Proxy, Timeout
 from ._dispatch.asgi import ASGIDispatch
 from ._dispatch.wsgi import WSGIDispatch
 from ._exceptions import (
-    ConnectionClosed,
     ConnectTimeout,
     CookieConflict,
     DecodingError,
@@ -23,7 +22,6 @@ from ._exceptions import (
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
-    TimeoutException,
     TooManyRedirects,
     WriteTimeout,
 )
@@ -56,7 +54,6 @@ __all__ = [
     "Timeout",
     "ConnectTimeout",
     "CookieConflict",
-    "ConnectionClosed",
     "DecodingError",
     "HTTPError",
     "InvalidURL",
@@ -79,7 +76,6 @@ __all__ = [
     "Headers",
     "QueryParams",
     "Request",
-    "TimeoutException",
     "Response",
     "DigestAuth",
     "WSGIDispatch",
