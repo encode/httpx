@@ -115,6 +115,21 @@ async def test_urlencoded_content():
 
 
 @pytest.mark.asyncio
+async def test_urlencoded_list_content():
+    stream = encode(data=[("Hello", "world1!"), ("Hello", "world2!")])
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert stream.can_replay()
+    assert stream.get_headers() == {
+        "Content-Length": "31",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+    assert sync_content == b"Hello=world1%21&Hello=world2%21"
+    assert async_content == b"Hello=world1%21&Hello=world2%21"
+
+
+@pytest.mark.asyncio
 async def test_multipart_files_content():
     files = {"file": io.BytesIO(b"<file content>")}
     stream = encode(files=files, boundary=b"+++")

@@ -12,7 +12,7 @@ from ._types import StrOrBytes
 from ._utils import format_form_param
 
 RequestData = typing.Union[
-    dict, str, bytes, typing.Iterator[bytes], typing.AsyncIterator[bytes]
+    dict, list, str, bytes, typing.Iterator[bytes], typing.AsyncIterator[bytes]
 ]
 
 FileEntry = typing.Union[
@@ -175,7 +175,7 @@ class URLEncodedStream(ContentStream):
     Request content as URL encoded form data.
     """
 
-    def __init__(self, data: dict) -> None:
+    def __init__(self, data: typing.Union[dict, list]) -> None:
         self.body = urlencode(data, doseq=True).encode("utf-8")
 
     def get_headers(self) -> typing.Dict[str, str]:
@@ -274,7 +274,10 @@ class MultipartStream(ContentStream):
             return content.encode("utf-8") if isinstance(content, str) else content
 
     def __init__(
-        self, data: dict, files: typing.Union[dict, list], boundary: bytes = None
+        self,
+        data: typing.Union[dict, list],
+        files: typing.Union[dict, list],
+        boundary: bytes = None,
     ) -> None:
         body = BytesIO()
         if boundary is None:
@@ -294,9 +297,10 @@ class MultipartStream(ContentStream):
         self.body = body.getvalue()
 
     def iter_fields(
-        self, data: dict, files: typing.Union[dict, list]
+        self, data: typing.Union[dict, list], files: typing.Union[dict, list]
     ) -> typing.Iterator[typing.Union["FileField", "DataField"]]:
-        for name, value in data.items():
+        data_items = data.items() if isinstance(data, dict) else data
+        for name, value in data_items:
             if isinstance(value, list):
                 for item in value:
                     yield self.DataField(name=name, value=item)
@@ -336,7 +340,7 @@ def encode(
             return MultipartStream(data={}, files=files, boundary=boundary)
         else:
             return ByteStream(body=b"")
-    elif isinstance(data, dict):
+    elif isinstance(data, (dict, list)):
         if files:
             return MultipartStream(data=data, files=files, boundary=boundary)
         else:
