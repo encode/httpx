@@ -8,36 +8,13 @@ from urllib.parse import urlencode
 import httpcore
 
 from ._exceptions import StreamConsumed
-from ._types import StrOrBytes
+from ._types import RequestData, RequestFiles
 from ._utils import (
     format_form_param,
     guess_content_type,
     peek_filelike_length,
     to_bytes,
 )
-
-RequestData = typing.Union[
-    dict, str, bytes, typing.Iterator[bytes], typing.AsyncIterator[bytes]
-]
-
-RequestFiles = typing.Dict[
-    str,
-    typing.Union[
-        # file (or str)
-        typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
-        # (filename, file (or str))
-        typing.Tuple[
-            typing.Optional[str],
-            typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
-        ],
-        # (filename, file (or str), content_type)
-        typing.Tuple[
-            typing.Optional[str],
-            typing.Union[typing.IO[str], typing.IO[bytes], StrOrBytes],
-            typing.Optional[str],
-        ],
-    ],
-]
 
 
 class ContentStream(httpcore.AsyncByteStream, httpcore.SyncByteStream):

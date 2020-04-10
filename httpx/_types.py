@@ -2,6 +2,67 @@
 Type definitions for type checking purposes.
 """
 
-from typing import Union
+import ssl
+from http.cookiejar import CookieJar
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    AsyncIterator,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
+
+if TYPE_CHECKING:  # pragma: no cover
+    from ._auth import Auth  # noqa: F401
+    from ._config import Proxy, Timeout  # noqa: F401
+    from ._models import URL, Cookies, Headers, QueryParams, Request  # noqa: F401
 
 StrOrBytes = Union[str, bytes]
+
+PrimitiveData = Optional[Union[str, int, float, bool]]
+
+URLTypes = Union["URL", str]
+
+QueryParamTypes = Union[
+    "QueryParams",
+    Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
+    List[Tuple[str, PrimitiveData]],
+    str,
+]
+
+HeaderTypes = Union[
+    "Headers", Dict[StrOrBytes, StrOrBytes], Sequence[Tuple[StrOrBytes, StrOrBytes]],
+]
+
+CookieTypes = Union["Cookies", CookieJar, Dict[str, str]]
+
+CertTypes = Union[str, Tuple[str, str], Tuple[str, str, str]]
+VerifyTypes = Union[str, bool, ssl.SSLContext]
+TimeoutTypes = Union[None, float, Tuple[float, float, float, float], "Timeout"]
+ProxiesTypes = Union[URLTypes, "Proxy", Dict[URLTypes, Union[URLTypes, "Proxy"]]]
+
+AuthTypes = Union[
+    Tuple[Union[str, bytes], Union[str, bytes]],
+    Callable[["Request"], "Request"],
+    "Auth",
+]
+
+RequestData = Union[dict, str, bytes, Iterator[bytes], AsyncIterator[bytes]]
+
+FileContent = Union[IO[str], IO[bytes], str, bytes]
+FileTypes = Union[
+    # file (or text)
+    FileContent,
+    # (filename, file (or text))
+    Tuple[Optional[str], FileContent],
+    # (filename, file (or text), content_type)
+    Tuple[Optional[str], FileContent, Optional[str]],
+]
+RequestFiles = Dict[str, FileTypes]

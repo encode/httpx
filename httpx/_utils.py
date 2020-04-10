@@ -15,10 +15,9 @@ from types import TracebackType
 from urllib.request import getproxies
 
 from ._exceptions import NetworkError
-from ._types import StrOrBytes
+from ._types import PrimitiveData, StrOrBytes
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._models import PrimitiveData
     from ._models import URL
 
 

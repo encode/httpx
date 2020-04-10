@@ -7,15 +7,9 @@ import httpcore
 import urllib3
 from urllib3.exceptions import MaxRetryError, SSLError
 
-from .._config import (
-    DEFAULT_POOL_LIMITS,
-    CertTypes,
-    PoolLimits,
-    Proxy,
-    SSLConfig,
-    VerifyTypes,
-)
+from .._config import DEFAULT_POOL_LIMITS, PoolLimits, Proxy, SSLConfig
 from .._content_streams import ByteStream, IteratorStream
+from .._types import CertTypes, VerifyTypes
 from .._utils import as_network_error
 
 
