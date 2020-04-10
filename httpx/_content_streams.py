@@ -206,9 +206,6 @@ class MultipartStream(ContentStream):
         A single form field item, within a multipart form field.
         """
 
-        _headers: bytes
-        _data: bytes
-
         def __init__(self, name: str, value: typing.Union[str, bytes]) -> None:
             if not isinstance(name, str):
                 raise TypeError("Invalid type for name. Expected str.")
@@ -253,9 +250,6 @@ class MultipartStream(ContentStream):
         A single file field item, within a multipart form field.
         """
 
-        _headers: bytes
-        _data: bytes
-
         def __init__(
             self,
             name: str,
@@ -279,11 +273,11 @@ class MultipartStream(ContentStream):
             if isinstance(self.file, str):
                 return len(headers) + len(self.file)
 
-            # `file` is an I/O stream -- let's do our best not to read it into memory.
+            # Let's do our best not to read `file` into memory.
             try:
                 file_length = peek_filelike_length(self.file)
             except OSError:
-                # Failed. As a last resort, let's read and cache contents for later.
+                # As a last resort, read file and cache contents for later.
                 assert not hasattr(self, "_data")
                 self._data = to_bytes(self.file.read())
                 file_length = len(self._data)
