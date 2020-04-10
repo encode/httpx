@@ -1,26 +1,30 @@
 #!/usr/bin/env python3
 
-import json
+import typing
 
+import httpcore
 import pytest
 
-from httpx import AsyncClient, Headers, Request, Response, __version__
-from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx._dispatch.base import AsyncDispatcher
+from httpx import AsyncClient, Headers, __version__
+from httpx._content_streams import ContentStream, JSONStream
 
 
-class MockDispatch(AsyncDispatcher):
-    async def send(
+class MockDispatch(httpcore.AsyncHTTPTransport):
+    async def request(
         self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-    ) -> Response:
-        if request.url.path.startswith("/echo_headers"):
-            request_headers = dict(request.headers.items())
-            body = json.dumps({"headers": request_headers}).encode()
-            return Response(200, content=body, request=request)
+        method: bytes,
+        url: typing.Tuple[bytes, bytes, int, bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: ContentStream,
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
+        headers_dict = dict(
+            [(key.decode("ascii"), value.decode("ascii")) for key, value in headers]
+        )
+        body = JSONStream({"headers": headers_dict})
+        return b"HTTP/1.1", 200, b"OK", [], body
 
 
 @pytest.mark.asyncio
@@ -40,7 +44,6 @@ async def test_client_header():
             "accept": "*/*",
             "accept-encoding": "gzip, deflate, br",
             "connection": "keep-alive",
-            "content-length": "0",
             "example-header": "example-value",
             "host": "example.org",
             "user-agent": f"python-httpx/{__version__}",
@@ -62,7 +65,6 @@ async def test_header_merge():
             "accept": "*/*",
             "accept-encoding": "gzip, deflate, br",
             "connection": "keep-alive",
-            "content-length": "0",
             "host": "example.org",
             "user-agent": "python-myclient/0.2.1",
             "x-auth-token": "FooBarBazToken",
@@ -84,7 +86,6 @@ async def test_header_merge_conflicting_headers():
             "accept": "*/*",
             "accept-encoding": "gzip, deflate, br",
             "connection": "keep-alive",
-            "content-length": "0",
             "host": "example.org",
             "user-agent": f"python-httpx/{__version__}",
             "x-auth-token": "BazToken",
@@ -108,7 +109,6 @@ async def test_header_update():
             "accept": "*/*",
             "accept-encoding": "gzip, deflate, br",
             "connection": "keep-alive",
-            "content-length": "0",
             "host": "example.org",
             "user-agent": f"python-httpx/{__version__}",
         }
@@ -121,7 +121,6 @@ async def test_header_update():
             "accept-encoding": "gzip, deflate, br",
             "another-header": "AThing",
             "connection": "keep-alive",
-            "content-length": "0",
             "host": "example.org",
             "user-agent": "python-myclient/0.2.1",
         }
@@ -152,7 +151,6 @@ async def test_host_with_auth_and_port_in_url():
             "accept": "*/*",
             "accept-encoding": "gzip, deflate, br",
             "connection": "keep-alive",
-            "content-length": "0",
             "host": "example.org",
             "user-agent": f"python-httpx/{__version__}",
             "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
@@ -177,7 +175,6 @@ async def test_host_with_non_default_port_in_url():
             "accept": "*/*",
             "accept-encoding": "gzip, deflate, br",
             "connection": "keep-alive",
-            "content-length": "0",
             "host": "example.org:123",
             "user-agent": f"python-httpx/{__version__}",
             "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",

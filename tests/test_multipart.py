@@ -2,28 +2,34 @@ import binascii
 import cgi
 import io
 import os
-from typing import Any, Iterator, cast
+import typing
 from unittest import mock
 
+import httpcore
 import pytest
 
 import httpx
-from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx._content_streams import MultipartStream, encode
-from httpx._dispatch.base import AsyncDispatcher
+from httpx._content_streams import AsyncIteratorStream, encode
 from httpx._utils import format_form_param
 
 
-class MockDispatch(AsyncDispatcher):
-    async def send(
+class MockDispatch(httpcore.AsyncHTTPTransport):
+    async def request(
         self,
-        request: httpx.Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-    ) -> httpx.Response:
-        content = b"".join([part async for part in request.stream])
-        return httpx.Response(200, content=content, request=request)
+        method: bytes,
+        url: typing.Tuple[bytes, bytes, int, bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
+        stream: httpcore.AsyncByteStream = None,
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes,
+        int,
+        bytes,
+        typing.List[typing.Tuple[bytes, bytes]],
+        httpcore.AsyncByteStream,
+    ]:
+        content = AsyncIteratorStream(aiterator=(part async for part in stream))
+        return b"HTTP/1.1", 200, b"OK", [], content
 
 
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
@@ -95,7 +101,7 @@ async def test_multipart_file_tuple():
     assert multipart["file"] == [b"<file content>"]
 
 
-def test_multipart_encode(tmp_path: Any) -> None:
+def test_multipart_encode(tmp_path: typing.Any) -> None:
     path = str(tmp_path / "name.txt")
     with open(path, "wb") as f:
         f.write(b"<file content>")
@@ -111,7 +117,7 @@ def test_multipart_encode(tmp_path: Any) -> None:
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        stream = cast(MultipartStream, encode(data=data, files=files))
+        stream = encode(data=data, files=files)
         assert stream.can_replay()
 
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
@@ -137,7 +143,7 @@ def test_multipart_encode_files_allows_filenames_as_none() -> None:
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        stream = cast(MultipartStream, encode(data={}, files=files))
+        stream = encode(data={}, files=files)
         assert stream.can_replay()
 
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
@@ -163,7 +169,7 @@ def test_multipart_encode_files_guesses_correct_content_type(
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        stream = cast(MultipartStream, encode(data={}, files=files))
+        stream = encode(data={}, files=files)
         assert stream.can_replay()
 
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
@@ -180,7 +186,7 @@ def test_multipart_encode_files_allows_str_content() -> None:
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
-        stream = cast(MultipartStream, encode(data={}, files=files))
+        stream = encode(data={}, files=files)
         assert stream.can_replay()
 
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
@@ -202,16 +208,16 @@ def test_multipart_encode_non_seekable_filelike() -> None:
     """
 
     class IteratorIO(io.IOBase):
-        def __init__(self, iterator: Iterator[bytes]) -> None:
+        def __init__(self, iterator: typing.Iterator[bytes]) -> None:
             self._iterator = iterator
 
         def seekable(self) -> bool:
             return False
 
-        def read(self, *args: Any) -> bytes:
+        def read(self, *args: typing.Any) -> bytes:
             return b"".join(self._iterator)
 
-    def data() -> Iterator[bytes]:
+    def data() -> typing.Iterator[bytes]:
         yield b"Hello"
         yield b"World"
 

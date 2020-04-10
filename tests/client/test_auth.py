@@ -1,8 +1,8 @@
 import hashlib
-import json
 import os
 import typing
 
+import httpcore
 import pytest
 
 from httpx import (
@@ -10,35 +10,47 @@ from httpx import (
     AsyncClient,
     Auth,
     DigestAuth,
+    Headers,
     ProtocolError,
     Request,
     RequestBodyUnavailable,
     Response,
 )
-from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx._dispatch.base import AsyncDispatcher
+from httpx._content_streams import ContentStream, JSONStream
 
 
-class MockDispatch(AsyncDispatcher):
-    def __init__(self, auth_header: str = "", status_code: int = 200) -> None:
+def get_header_value(headers, key, default=None):
+    lookup = key.encode("ascii").lower()
+    for header_key, header_value in headers:
+        if header_key.lower() == lookup:
+            return header_value.decode("ascii")
+    return default
+
+
+class MockDispatch(httpcore.AsyncHTTPTransport):
+    def __init__(self, auth_header: bytes = b"", status_code: int = 200) -> None:
         self.auth_header = auth_header
         self.status_code = status_code
 
-    async def send(
+    async def request(
         self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-    ) -> Response:
-        headers = [("www-authenticate", self.auth_header)] if self.auth_header else []
-        body = json.dumps({"auth": request.headers.get("Authorization")}).encode()
-        return Response(
-            self.status_code, headers=headers, content=body, request=request
+        method: bytes,
+        url: typing.Tuple[bytes, bytes, int, bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: ContentStream,
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
+        authorization = get_header_value(headers, "Authorization")
+        response_headers = (
+            [(b"www-authenticate", self.auth_header)] if self.auth_header else []
         )
+        response_stream = JSONStream({"auth": authorization})
+        return b"HTTP/1.1", self.status_code, b"", response_headers, response_stream
 
 
-class MockDigestAuthDispatch(AsyncDispatcher):
+class MockDigestAuthDispatch(httpcore.AsyncHTTPTransport):
     def __init__(
         self,
         algorithm: str = "SHA-256",
@@ -52,20 +64,26 @@ class MockDigestAuthDispatch(AsyncDispatcher):
         self._regenerate_nonce = regenerate_nonce
         self._response_count = 0
 
-    async def send(
+    async def request(
         self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-    ) -> Response:
+        method: bytes,
+        url: typing.Tuple[bytes, bytes, int, bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: ContentStream,
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
         if self._response_count < self.send_response_after_attempt:
-            return self.challenge_send(request)
+            return self.challenge_send(method, url, headers, stream)
 
-        body = json.dumps({"auth": request.headers.get("Authorization")}).encode()
-        return Response(200, content=body, request=request)
+        authorization = get_header_value(headers, "Authorization")
+        body = JSONStream({"auth": authorization})
+        return b"HTTP/1.1", 200, b"", [], body
 
-    def challenge_send(self, request: Request) -> Response:
+    def challenge_send(
+        self, method: bytes, url: URL, headers: Headers, stream: ContentStream,
+    ) -> typing.Tuple[int, bytes, Headers, ContentStream]:
         self._response_count += 1
         nonce = (
             hashlib.sha256(os.urandom(8)).hexdigest()
@@ -88,9 +106,12 @@ class MockDigestAuthDispatch(AsyncDispatcher):
         )
 
         headers = [
-            ("www-authenticate", 'Digest realm="httpx@example.org", ' + challenge_str)
+            (
+                b"www-authenticate",
+                b'Digest realm="httpx@example.org", ' + challenge_str.encode("ascii"),
+            )
         ]
-        return Response(401, headers=headers, content=b"", request=request)
+        return b"HTTP/1.1", 401, b"", headers, ContentStream()
 
 
 @pytest.mark.asyncio
@@ -234,7 +255,7 @@ async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> 
 async def test_digest_auth_200_response_including_digest_auth_header() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
-    auth_header = 'Digest realm="realm@host.com",qop="auth",nonce="abc",opaque="xyz"'
+    auth_header = b'Digest realm="realm@host.com",qop="auth",nonce="abc",opaque="xyz"'
 
     client = AsyncClient(
         dispatch=MockDispatch(auth_header=auth_header, status_code=200)
@@ -251,7 +272,7 @@ async def test_digest_auth_401_response_without_digest_auth_header() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
 
-    client = AsyncClient(dispatch=MockDispatch(auth_header="", status_code=401))
+    client = AsyncClient(dispatch=MockDispatch(auth_header=b"", status_code=401))
     response = await client.get(url, auth=auth)
 
     assert response.status_code == 401
@@ -382,16 +403,16 @@ async def test_digest_auth_incorrect_credentials() -> None:
 @pytest.mark.parametrize(
     "auth_header",
     [
-        'Digest realm="httpx@example.org", qop="auth"',  # missing fields
-        'realm="httpx@example.org", qop="auth"',  # not starting with Digest
-        'DigestZ realm="httpx@example.org", qop="auth"'
-        'qop="auth,auth-int",nonce="abc",opaque="xyz"',
-        'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
+        b'Digest realm="httpx@example.org", qop="auth"',  # missing fields
+        b'realm="httpx@example.org", qop="auth"',  # not starting with Digest
+        b'DigestZ realm="httpx@example.org", qop="auth"'
+        b'qop="auth,auth-int",nonce="abc",opaque="xyz"',
+        b'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
     ],
 )
 @pytest.mark.asyncio
 async def test_digest_auth_raises_protocol_error_on_malformed_header(
-    auth_header: str,
+    auth_header: bytes,
 ) -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
@@ -439,7 +460,7 @@ async def test_auth_history() -> None:
 
     url = "https://example.org/"
     auth = RepeatAuth(repeat=2)
-    client = AsyncClient(dispatch=MockDispatch(auth_header="abc"))
+    client = AsyncClient(dispatch=MockDispatch(auth_header=b"abc"))
 
     response = await client.get(url, auth=auth)
     assert response.status_code == 200

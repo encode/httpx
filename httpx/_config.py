@@ -253,6 +253,14 @@ class Timeout:
                 timeout if isinstance(pool_timeout, UnsetType) else pool_timeout
             )
 
+    def as_dict(self) -> typing.Dict[str, typing.Optional[float]]:
+        return {
+            "connect": self.connect_timeout,
+            "read": self.read_timeout,
+            "write": self.write_timeout,
+            "pool": self.pool_timeout,
+        }
+
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)

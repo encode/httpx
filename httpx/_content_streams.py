@@ -5,6 +5,8 @@ from json import dumps as json_dumps
 from pathlib import Path
 from urllib.parse import urlencode
 
+import httpcore
+
 from ._exceptions import StreamConsumed
 from ._types import StrOrBytes
 from ._utils import (
@@ -38,7 +40,7 @@ RequestFiles = typing.Dict[
 ]
 
 
-class ContentStream:
+class ContentStream(httpcore.AsyncByteStream, httpcore.SyncByteStream):
     def get_headers(self) -> typing.Dict[str, str]:
         """
         Return a dictionary of headers that are implied by the encoding.
@@ -76,6 +78,8 @@ class ByteStream(ContentStream):
         self.body = body.encode("utf-8") if isinstance(body, str) else body
 
     def get_headers(self) -> typing.Dict[str, str]:
+        if not self.body:
+            return {}
         content_length = str(len(self.body))
         return {"Content-Length": content_length}
 
