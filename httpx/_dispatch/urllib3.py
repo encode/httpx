@@ -1,8 +1,9 @@
 import math
 import socket
 import ssl
-import typing
+from typing import Dict, Iterator, List, Optional, Tuple, Union
 
+import httpcore
 import urllib3
 from urllib3.exceptions import MaxRetryError, SSLError
 
@@ -12,16 +13,13 @@ from .._config import (
     PoolLimits,
     Proxy,
     SSLConfig,
-    Timeout,
     VerifyTypes,
 )
-from .._content_streams import IteratorStream
-from .._models import Request, Response
+from .._content_streams import ByteStream, IteratorStream
 from .._utils import as_network_error
-from .base import SyncDispatcher
 
 
-class URLLib3Dispatcher(SyncDispatcher):
+class URLLib3Dispatcher(httpcore.SyncHTTPTransport):
     def __init__(
         self,
         *,
@@ -62,12 +60,12 @@ class URLLib3Dispatcher(SyncDispatcher):
 
     def init_pool_manager(
         self,
-        proxy: typing.Optional[Proxy],
+        proxy: Optional[Proxy],
         ssl_context: ssl.SSLContext,
         num_pools: int,
         maxsize: int,
         block: bool,
-    ) -> typing.Union[urllib3.PoolManager, urllib3.ProxyManager]:
+    ) -> Union[urllib3.PoolManager, urllib3.ProxyManager]:
         if proxy is None:
             return urllib3.PoolManager(
                 ssl_context=ssl_context,
@@ -85,20 +83,58 @@ class URLLib3Dispatcher(SyncDispatcher):
                 block=block,
             )
 
-    def send(self, request: Request, timeout: Timeout = None) -> Response:
-        timeout = Timeout() if timeout is None else timeout
+    def request(
+        self,
+        method: bytes,
+        url: Tuple[bytes, bytes, int, bytes],
+        headers: List[Tuple[bytes, bytes]] = None,
+        stream: httpcore.SyncByteStream = None,
+        timeout: Dict[str, Optional[float]] = None,
+    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.SyncByteStream]:
+        headers = [] if headers is None else headers
+        stream = ByteStream(b"") if stream is None else stream
+        timeout = {} if timeout is None else timeout
+
         urllib3_timeout = urllib3.util.Timeout(
-            connect=timeout.connect_timeout, read=timeout.read_timeout
+            connect=timeout.get("connect"), read=timeout.get("read")
         )
-        chunked = request.headers.get("Transfer-Encoding") == "chunked"
-        content_length = int(request.headers.get("Content-Length", "0"))
-        body = request.stream if chunked or content_length else None
+
+        chunked = False
+        content_length = 0
+        for header_key, header_value in headers:
+            header_key = header_key.lower()
+            if header_key == b"transfer-encoding":
+                chunked = header_value == b"chunked"
+            if header_key == b"content-length":
+                content_length = int(header_value.decode("ascii"))
+        body = stream if chunked or content_length else None
+
+        scheme, host, port, path = url
+        default_scheme = {80: b"http", 443: "https"}.get(port)
+        if scheme == default_scheme:
+            url_str = "%s://%s%s" % (
+                scheme.decode("ascii"),
+                host.decode("ascii"),
+                path.decode("ascii"),
+            )
+        else:
+            url_str = "%s://%s:%d%s" % (
+                scheme.decode("ascii"),
+                host.decode("ascii"),
+                port,
+                path.decode("ascii"),
+            )
 
         with as_network_error(MaxRetryError, SSLError, socket.error):
             conn = self.pool.urlopen(
-                method=request.method,
-                url=str(request.url),
-                headers=dict(request.headers),
+                method=method.decode(),
+                url=url_str,
+                headers=dict(
+                    [
+                        (key.decode("ascii"), value.decode("ascii"))
+                        for key, value in headers
+                    ]
+                ),
                 body=body,
                 redirect=False,
                 assert_same_host=False,
@@ -106,23 +142,20 @@ class URLLib3Dispatcher(SyncDispatcher):
                 preload_content=False,
                 chunked=chunked,
                 timeout=urllib3_timeout,
-                pool_timeout=timeout.pool_timeout,
+                pool_timeout=timeout.get("pool"),
             )
 
-        def response_bytes() -> typing.Iterator[bytes]:
+        def response_bytes() -> Iterator[bytes]:
             with as_network_error(socket.error):
                 for chunk in conn.stream(4096, decode_content=False):
                     yield chunk
 
-        return Response(
-            status_code=conn.status,
-            http_version="HTTP/1.1",
-            headers=list(conn.headers.items()),
-            stream=IteratorStream(
-                iterator=response_bytes(), close_func=conn.release_conn
-            ),
-            request=request,
+        status_code = conn.status
+        headers = list(conn.headers.items())
+        response_stream = IteratorStream(
+            iterator=response_bytes(), close_func=conn.release_conn
         )
+        return (b"HTTP/1.1", status_code, conn.reason, headers, response_stream)
 
     def close(self) -> None:
         self.pool.clear()

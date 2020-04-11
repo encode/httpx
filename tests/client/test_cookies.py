@@ -1,29 +1,43 @@
-import json
+import typing
 from http.cookiejar import Cookie, CookieJar
 
+import httpcore
 import pytest
 
-from httpx import AsyncClient, Cookies, Request, Response
-from httpx._config import CertTypes, TimeoutTypes, VerifyTypes
-from httpx._dispatch.base import AsyncDispatcher
+from httpx import AsyncClient, Cookies
+from httpx._content_streams import ByteStream, ContentStream, JSONStream
 
 
-class MockDispatch(AsyncDispatcher):
-    async def send(
+def get_header_value(headers, key, default=None):
+    lookup = key.encode("ascii").lower()
+    for header_key, header_value in headers:
+        if header_key.lower() == lookup:
+            return header_value.decode("ascii")
+    return default
+
+
+class MockDispatch(httpcore.AsyncHTTPTransport):
+    async def request(
         self,
-        request: Request,
-        verify: VerifyTypes = None,
-        cert: CertTypes = None,
-        timeout: TimeoutTypes = None,
-    ) -> Response:
-        if request.url.path.startswith("/echo_cookies"):
-            body = json.dumps({"cookies": request.headers.get("Cookie")}).encode()
-            return Response(200, content=body, request=request)
-        elif request.url.path.startswith("/set_cookie"):
-            headers = {"set-cookie": "example-name=example-value"}
-            return Response(200, headers=headers, request=request)
+        method: bytes,
+        url: typing.Tuple[bytes, bytes, int, bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: ContentStream,
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
+        host, scheme, port, path = url
+        if path.startswith(b"/echo_cookies"):
+            cookie = get_header_value(headers, "cookie")
+            body = JSONStream({"cookies": cookie})
+            return b"HTTP/1.1", 200, b"OK", [], body
+        elif path.startswith(b"/set_cookie"):
+            headers = [(b"set-cookie", b"example-name=example-value")]
+            body = ByteStream(b"")
+            return b"HTTP/1.1", 200, b"OK", headers, body
         else:
-            raise NotImplementedError  # pragma: no cover
+            raise NotImplementedError()  # pragma: no cover
 
 
 @pytest.mark.asyncio

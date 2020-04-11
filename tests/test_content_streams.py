@@ -25,9 +25,7 @@ async def test_empty_content():
     async_content = b"".join([part async for part in stream])
 
     assert stream.can_replay()
-    assert stream.get_headers() == {
-        "Content-Length": "0",
-    }
+    assert stream.get_headers() == {}
     assert sync_content == b""
     assert async_content == b""
 
@@ -260,9 +258,7 @@ async def test_empty_request():
     async_content = b"".join([part async for part in stream])
 
     assert stream.can_replay()
-    assert stream.get_headers() == {
-        "Content-Length": "0",
-    }
+    assert stream.get_headers() == {}
     assert sync_content == b""
     assert async_content == b""
 

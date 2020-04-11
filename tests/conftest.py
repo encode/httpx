@@ -296,15 +296,6 @@ def server():
 
 
 @pytest.fixture(scope=SERVER_SCOPE)
-def uds_server():
-    uds = "test_server.sock"
-    config = Config(app=app, lifespan="off", loop="asyncio", uds=uds)
-    server = TestServer(config=config)
-    yield from serve_in_thread(server)
-    os.remove(uds)
-
-
-@pytest.fixture(scope=SERVER_SCOPE)
 def https_server(cert_pem_file, cert_private_key_file):
     config = Config(
         app=app,
@@ -317,19 +308,3 @@ def https_server(cert_pem_file, cert_private_key_file):
     )
     server = TestServer(config=config)
     yield from serve_in_thread(server)
-
-
-@pytest.fixture(scope=SERVER_SCOPE)
-def https_uds_server(cert_pem_file, cert_private_key_file):
-    uds = "https_test_server.sock"
-    config = Config(
-        app=app,
-        lifespan="off",
-        ssl_certfile=cert_pem_file,
-        ssl_keyfile=cert_private_key_file,
-        uds=uds,
-        loop="asyncio",
-    )
-    server = TestServer(config=config)
-    yield from serve_in_thread(server)
-    os.remove(uds)
