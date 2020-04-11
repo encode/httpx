@@ -401,6 +401,72 @@ class Headers(typing.MutableMapping[str, str]):
     HTTP headers, as a case-insensitive multi-dict.
     """
 
+    class _HeadersKeysView(typing.KeysView[str]):
+        def __init__(
+            self, raw: typing.List[typing.Tuple[bytes, bytes]], encoding: str
+        ) -> None:
+            self._raw = raw
+            self._encoding = encoding
+
+        def __contains__(self, key: typing.Any) -> bool:
+            try:
+                normalized_key = key.lower().encode(self._encoding)
+            except AttributeError:
+                return False
+            return any(k == normalized_key for k, _ in self._raw)
+
+        def __iter__(self) -> typing.Iterator[str]:
+            return iter(k.decode(self._encoding) for k, _ in self._raw)
+
+        def __len__(self) -> int:
+            return len(self._raw)
+
+    class _HeadersValuesView(typing.ValuesView[str]):
+        def __init__(
+            self, raw: typing.List[typing.Tuple[bytes, bytes]], encoding: str
+        ) -> None:
+            self._raw = raw
+            self._encoding = encoding
+
+        def __contains__(self, value: typing.Any) -> bool:
+            return any(v.decode(self._encoding) == value for _, v in self._raw)
+
+        def __iter__(self) -> typing.Iterator[str]:
+            return iter(v.decode(self._encoding) for _, v in self._raw)
+
+        def __len__(self) -> int:
+            return len(self._raw)
+
+    class _HeadersItemsView(typing.ItemsView[str, str]):
+        def __init__(
+            self, raw: typing.List[typing.Tuple[bytes, bytes]], encoding: str
+        ) -> None:
+            self._raw = raw
+            self._encoding = encoding
+
+        def __contains__(self, item: typing.Any) -> bool:
+            try:
+                key, value = item
+            except (TypeError, ValueError):
+                return False
+
+            try:
+                normalized_key = key.lower().encode(self._encoding)
+                normalized_value = value.encode(self._encoding)
+            except AttributeError:
+                return False
+
+            return (normalized_key, normalized_value) in self._raw
+
+        def __iter__(self) -> typing.Iterator[typing.Tuple[str, str]]:
+            return iter(
+                (k.decode(self._encoding), v.decode(self._encoding))
+                for k, v in self._raw
+            )
+
+        def __len__(self) -> int:
+            return len(self._raw)
+
     def __init__(self, headers: HeaderTypes = None, encoding: str = None) -> None:
         if headers is None:
             self._list = []  # type: typing.List[typing.Tuple[bytes, bytes]]
@@ -455,17 +521,14 @@ class Headers(typing.MutableMapping[str, str]):
         """
         return self._list
 
-    def keys(self) -> typing.List[str]:  # type: ignore
-        return [key.decode(self.encoding) for key, value in self._list]
+    def keys(self) -> typing.KeysView[str]:
+        return self._HeadersKeysView(self._list, self.encoding)
 
-    def values(self) -> typing.List[str]:  # type: ignore
-        return [value.decode(self.encoding) for key, value in self._list]
+    def values(self) -> typing.ValuesView[str]:
+        return self._HeadersValuesView(self._list, self.encoding)
 
-    def items(self) -> typing.List[typing.Tuple[str, str]]:  # type: ignore
-        return [
-            (key.decode(self.encoding), value.decode(self.encoding))
-            for key, value in self._list
-        ]
+    def items(self) -> typing.ItemsView[str, str]:
+        return self._HeadersItemsView(self._list, self.encoding)
 
     def get(self, key: str, default: typing.Any = None) -> typing.Any:
         try:
@@ -499,7 +562,7 @@ class Headers(typing.MutableMapping[str, str]):
             self[header] = headers[header]
 
     def copy(self) -> "Headers":
-        return Headers(self.items(), encoding=self.encoding)
+        return Headers(self.raw, encoding=self.encoding)
 
     def __getitem__(self, key: str) -> str:
         """

@@ -1,3 +1,5 @@
+from collections.abc import ItemsView, KeysView, ValuesView
+
 import pytest
 
 import httpx
@@ -14,9 +16,6 @@ def test_headers():
     assert h.get("a") == "123, 456"
     assert h.get("nope", default=None) is None
     assert h.getlist("a") == ["123", "456"]
-    assert h.keys() == ["a", "a", "b"]
-    assert h.values() == ["123", "456", "789"]
-    assert h.items() == [("a", "123"), ("a", "456"), ("b", "789")]
     assert list(h) == ["a", "a", "b"]
     assert dict(h) == {"a": "123, 456", "b": "789"}
     assert repr(h) == "Headers([('a', '123'), ('a', '456'), ('b', '789')])"
@@ -163,3 +162,41 @@ def test_sensitive_headers(header):
     value = "s3kr3t"
     h = httpx.Headers({header: value})
     assert repr(h) == "Headers({'%s': '[secure]'})" % header
+
+
+def test_headers_views() -> None:
+    headers = httpx.Headers([("a", "123"), ("a", "456"), ("b", "789")])
+
+    keys = headers.keys()
+    values = headers.values()
+    items = headers.items()
+
+    assert isinstance(keys, KeysView)
+    assert isinstance(values, ValuesView)
+    assert isinstance(items, ItemsView)
+
+    assert list(keys) == ["a", "a", "b"]
+    assert list(values) == ["123", "456", "789"]
+    assert list(items) == [("a", "123"), ("a", "456"), ("b", "789")]
+
+    assert len(keys) == len(values) == len(items) == 3
+
+    assert "a" in keys
+    assert "A" in keys
+    assert b"a" not in keys
+    assert 0 not in keys
+
+    assert "123" in values
+    assert b"123" not in values
+    assert 123 not in values
+
+    assert ("a", "123") in items
+    assert ("A", "123") in items
+    assert (b"a", "123") not in items
+    assert ("a", 123) not in items
+    assert "not-a-2tuple" not in items
+
+    headers["c"] = "101"
+    assert "c" in keys
+    assert "101" in values
+    assert ("c", "101") in items
