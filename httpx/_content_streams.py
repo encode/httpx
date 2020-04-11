@@ -328,7 +328,10 @@ class MultipartStream(ContentStream):
             yield from self.render_data()
 
     def __init__(
-        self, data: typing.Mapping, files: typing.Mapping, boundary: bytes = None
+        self,
+        data: typing.Union[typing.Mapping, list],
+        files: typing.Union[typing.Mapping, list],
+        boundary: bytes = None,
     ) -> None:
         if boundary is None:
             boundary = binascii.hexlify(os.urandom(16))
@@ -340,7 +343,9 @@ class MultipartStream(ContentStream):
         self.fields = list(self._iter_fields(data, files))
 
     def _iter_fields(
-        self, data: typing.Mapping, files: typing.Mapping
+        self,
+        data: typing.Union[typing.Mapping, list],
+        files: typing.Union[typing.Mapping, list],
     ) -> typing.Iterator[typing.Union["FileField", "DataField"]]:
         data_items = data.items() if isinstance(data, dict) else data
         for name, value in data_items:
