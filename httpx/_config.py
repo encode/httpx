@@ -6,18 +6,9 @@ from pathlib import Path
 
 import certifi
 
-from ._models import URL, Headers, HeaderTypes, URLTypes
+from ._models import URL, Headers
+from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._utils import get_ca_bundle_from_env, get_logger
-
-CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
-VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
-TimeoutTypes = typing.Union[
-    None, float, typing.Tuple[float, float, float, float], "Timeout"
-]
-ProxiesTypes = typing.Union[
-    URLTypes, "Proxy", typing.Dict[URLTypes, typing.Union[URLTypes, "Proxy"]]
-]
-
 
 DEFAULT_CIPHERS = ":".join(
     [
