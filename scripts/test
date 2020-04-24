@@ -7,7 +7,7 @@ fi
 
 set -x
 
-if [ -z $CI ]; then
+if [ -z $GITHUB_ACTIONS ]; then
     scripts/check
 fi
 
