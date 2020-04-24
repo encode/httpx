@@ -8,9 +8,6 @@
 <a href="https://github.com/encode/httpx/actions">
     <img src="https://github.com/encode/httpx/workflows/Test%20Suite/badge.svg" alt="Test Suite">
 </a>
-<a href="https://codecov.io/gh/encode/httpx">
-    <img src="https://codecov.io/gh/encode/httpx/branch/master/graph/badge.svg" alt="Coverage">
-</a>
 <a href="https://pypi.org/project/httpx/">
     <img src="https://badge.fury.io/py/httpx.svg" alt="Package version">
 </a>
