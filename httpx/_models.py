@@ -876,7 +876,8 @@ class Response:
     def stream(self):  # type: ignore
         warnings.warn(  # pragma: nocover
             "Response.stream() is due to be deprecated. "
-            "Use Response.aiter_bytes() instead."
+            "Use Response.aiter_bytes() instead.",
+            DeprecationWarning,
         )
         return self.aiter_bytes  # pragma: nocover
 
@@ -884,7 +885,8 @@ class Response:
     def raw(self):  # type: ignore
         warnings.warn(  # pragma: nocover
             "Response.raw() is due to be deprecated. "
-            "Use Response.aiter_raw() instead."
+            "Use Response.aiter_raw() instead.",
+            DeprecationWarning,
         )
         return self.aiter_raw  # pragma: nocover
 
