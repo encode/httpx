@@ -85,6 +85,11 @@ class ASGIDispatch(httpcore.AsyncHTTPTransport):
         request_body_chunks = stream.__aiter__()
 
         async def receive() -> dict:
+            nonlocal response_complete
+
+            if response_complete:
+                return {"type": "http.disconnect"}
+
             try:
                 body = await request_body_chunks.__anext__()
             except StopAsyncIteration:
