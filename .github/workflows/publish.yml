@@ -16,7 +16,11 @@ jobs:
       - uses: "actions/setup-python@v1"
         with:
           python-version: 3.7
-      - name: "Publish"
+      - name: "Install dependencies"
+        run: "scripts/install"
+      - name: "Build package & docs"
+        run: "scripts/build"
+      - name: "Publish to PyPI & deploy docs"
         run: "scripts/publish"
         env:
           TWINE_USERNAME: __token__

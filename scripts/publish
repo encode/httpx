@@ -1,7 +1,6 @@
 #!/bin/sh -e
 
-VERSION_FILE="httpx/__version__.py"
-PYTHONPATH=.
+VERSION_FILE="httpx/__init__.py"
 
 if [ -d 'venv' ] ; then
     PREFIX="venv/bin/"
@@ -23,7 +22,5 @@ fi
 
 set -x
 
-${PREFIX}pip install twine wheel mkdocs mkdocs-material mkautodoc
-${PREFIX}python setup.py sdist bdist_wheel
 ${PREFIX}twine upload dist/*
 ${PREFIX}mkdocs gh-deploy --force
