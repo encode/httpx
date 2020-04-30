@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-VERSION_FILE="httpx/__init__.py"
+VERSION_FILE="httpx/__version__.py"
 
 if [ -d 'venv' ] ; then
     PREFIX="venv/bin/"
