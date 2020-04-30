@@ -12,7 +12,9 @@ This release switches to `httpcore` for all the internal networking, which means
 
 * We're using the same codebase for both our sync and async clients.
 * HTTP/2 support is now available with the sync client.
-* We no longer have a `urllib3` dependancy for our sync client, although there is still an *optional* `URLLib3Dispatcher` class.
+* We no longer have a `urllib3` dependency for our sync client, although there is still an *optional* `URLLib3Dispatcher` class.
+
+It also means we've had to remove our UDS support, since maintaining that would have meant having to push back our work towards a 1.0 release, which isn't a trade-off we wanted to make.
 
 ## 0.12.1 (March 19th, 2020)
 
