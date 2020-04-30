@@ -1,41 +1,28 @@
 #!/bin/sh -e
 
-export PACKAGE="httpx"
-export VERSION=`cat ${PACKAGE}/__version__.py | grep __version__ | sed "s/__version__ = //" | sed "s/'//g"`
-export PREFIX=""
+VERSION_FILE="httpx/__version__.py"
+
 if [ -d 'venv' ] ; then
-    export PREFIX="venv/bin/"
+    PREFIX="venv/bin/"
+else
+    PREFIX=""
 fi
 
-scripts/clean
+if [ ! -z "$GITHUB_ACTIONS" ]; then
+  git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+  git config --local user.name "GitHub Action"
 
-if ! command -v "${PREFIX}twine" &>/dev/null ; then
-    echo "Unable to find the 'twine' command."
-    echo "Install from PyPI, using '${PREFIX}pip install twine'."
+  VERSION=`grep __version__ ${VERSION_FILE} | grep -o '[0-9][^"]*'`
+
+  if [ "refs/tags/${VERSION}" != "${GITHUB_REF}" ] ; then
+    echo "GitHub Ref '${GITHUB_REF}' did not match package version '${VERSION}'"
     exit 1
+  fi
 fi
 
-if ! ${PREFIX}pip show wheel &>/dev/null ; then
-    echo "Unable to find the 'wheel' command."
-    echo "Install from PyPI, using '${PREFIX}pip install wheel'."
-    exit 1
-fi
+set -x
 
-if ! command -v "${PREFIX}mkdocs" &>/dev/null ; then
-    echo "Unable to find the 'mkdocs' command."
-    echo "Install from PyPI, using '${PREFIX}pip install mkdocs'."
-    exit 1
-fi
-
-find ${PACKAGE} -type f -name "*.py[co]" -delete
-find ${PACKAGE} -type d -name __pycache__ -delete
-
+${PREFIX}pip install twine wheel mkdocs mkdocs-material mkautodoc
 ${PREFIX}python setup.py sdist bdist_wheel
 ${PREFIX}twine upload dist/*
-${PREFIX}mkdocs gh-deploy
-
-echo "You probably want to also tag the version now:"
-echo "git tag -a ${VERSION} -m 'version ${VERSION}'"
-echo "git push --tags"
-
-scripts/clean
+${PREFIX}mkdocs gh-deploy --force
