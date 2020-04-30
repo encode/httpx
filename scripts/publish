@@ -1,6 +1,7 @@
 #!/bin/sh -e
 
 VERSION_FILE="httpx/__version__.py"
+PYTHONPATH=.
 
 if [ -d 'venv' ] ; then
     PREFIX="venv/bin/"
