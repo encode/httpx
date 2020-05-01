@@ -140,7 +140,7 @@ which is used for HTML forms.
 }
 ```
 
-Form encoded data can also include multiple values form a given key.
+Form encoded data can also include multiple values from a given key.
 
 ```python
 >>> data = {'key1': ['value1', 'value2']}
