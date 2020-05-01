@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+if [ -d 'venv' ] ; then
+    PREFIX="venv/bin/"
+else
+    PREFIX=""
+fi
+
+set -x
+
+${PREFIX}python setup.py sdist bdist_wheel
+${PREFIX}twine check dist/*
+${PREFIX}mkdocs build
