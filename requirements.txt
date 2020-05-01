@@ -26,6 +26,7 @@ pytest-asyncio
 pytest-trio
 pytest-cov
 trio
+trio-typing
 trustme
 uvicorn
 seed-isort-config

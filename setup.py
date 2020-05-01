@@ -61,6 +61,7 @@ setup(
         "idna==2.*",
         "rfc3986>=1.3,<2",
         "httpcore>=0.8.1",
+        "sniffio",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
