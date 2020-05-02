@@ -838,7 +838,7 @@ class Response:
             message = message.format(self, error_type="Server Error")
             raise HTTPError(message, response=self)
 
-    def json(self, **kwargs: typing.Any) -> typing.Union[dict, list]:
+    def json(self, **kwargs: typing.Any) -> typing.Any:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
