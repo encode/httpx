@@ -1,9 +1,27 @@
+import typing
 from typing import Callable, Dict, List, Optional, Tuple
 
 import httpcore
+import sniffio
 
-from .._concurrency import create_event
 from .._content_streams import ByteStream
+
+if typing.TYPE_CHECKING:  # pragma: no cover
+    import asyncio
+    import trio
+
+    Event = typing.Union[asyncio.Event, trio.Event]
+
+
+def create_event() -> "Event":
+    if sniffio.current_async_library() == "trio":
+        import trio
+
+        return trio.Event()
+    else:
+        import asyncio
+
+        return asyncio.Event()
 
 
 class ASGIDispatch(httpcore.AsyncHTTPTransport):
