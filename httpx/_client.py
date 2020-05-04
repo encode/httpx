@@ -572,10 +572,7 @@ class Client(BaseClient):
             proxy_keys = (
                 f"{url.scheme}://{hostname}",
                 f"{url.scheme}://{url.host}" if is_default_port else None,
-                f"all://{hostname}",
-                f"all://{url.host}" if is_default_port else None,
                 url.scheme,
-                "all",
             )
             for proxy_key in proxy_keys:
                 if proxy_key and proxy_key in self.proxies:
