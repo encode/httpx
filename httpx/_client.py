@@ -115,7 +115,7 @@ class BaseClient:
     def _get_proxy_for_config_value(
         self, value: typing.Union[str, URL, Proxy], scheme: str
     ) -> Proxy:
-        if isinstance(value, httpcore.AsyncHTTPTransport):  # pragma: nocover
+        if isinstance(value, httpcore.AsyncHTTPTransport):
             raise RuntimeError(
                 "Passing a dispatcher instance to 'proxies=' is no longer "
                 "supported. Use `httpx.Proxy() instead.`"
