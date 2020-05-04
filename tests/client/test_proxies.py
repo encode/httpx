@@ -27,6 +27,17 @@ import httpx
             {"https": httpx.Proxy("https://127.0.0.1"), "all": "http://127.0.0.1"},
             [("http", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
         ),
+        (
+            {
+                "https": httpx.Proxy("https://127.0.0.1"),
+                "all://example.org": "http://127.0.0.1:8080",
+            },
+            [
+                ("https", "https://127.0.0.1"),
+                ("http://example.org", "http://127.0.0.1:8080"),
+                ("https://example.org", "http://127.0.0.1:8080"),
+            ],
+        ),
     ],
 )
 def test_proxies_parameter(proxies, expected_proxies):

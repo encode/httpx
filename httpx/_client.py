@@ -94,18 +94,21 @@ class BaseClient:
             }
         else:
             new_proxies = {}
-            for key in ("http", "https"):
-                if key in proxies:
+            for key, value in proxies.items():
+                # if the key starts with all, split into http and https
+                key = str(key)
+                if key.startswith("all"):
+                    for scheme in ("https", "http"):
+                        scheme_key = key.replace("all", scheme)
+                        if scheme_key not in new_proxies:
+                            new_proxies[
+                                scheme_key
+                            ] = self._get_proxy_for_config_value(value, scheme=scheme)
+                else:
+                    scheme = key if "://" not in key else key[: key.rfind("://")]
                     new_proxies[key] = self._get_proxy_for_config_value(
-                        proxies[key], scheme=key
+                        value, scheme=scheme
                     )
-
-            if "all" in proxies:
-                for key in ("http", "https"):
-                    if key not in new_proxies:
-                        new_proxies[key] = self._get_proxy_for_config_value(
-                            proxies["all"], scheme=key
-                        )
 
             return new_proxies
 
