@@ -1,9 +1,9 @@
 import os
 import ssl
 import typing
+import warnings
 from base64 import b64encode
 from pathlib import Path
-import warnings
 
 import certifi
 
@@ -354,7 +354,8 @@ class Proxy:
         self.headers = headers
         if mode == "DEFAULT":
             warnings.warn(
-                "DEFAULT proxy mode is deprecated, please use TUNNEL_ONLY or FORWARD_ONLY."
+                "DEFAULT proxy mode is deprecated, please use "
+                "TUNNEL_ONLY or FORWARD_ONLY."
             )
         self.mode = mode
 

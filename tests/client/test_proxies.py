@@ -1,6 +1,6 @@
+import httpcore
 import pytest
 
-import httpcore
 import httpx
 
 
