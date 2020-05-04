@@ -101,9 +101,9 @@ class BaseClient:
                     for scheme in ("https", "http"):
                         scheme_key = key.replace("all", scheme)
                         if scheme_key not in new_proxies:
-                            new_proxies[
-                                scheme_key
-                            ] = self._get_proxy_for_config_value(value, scheme=scheme)
+                            new_proxies[scheme_key] = self._get_proxy_for_config_value(
+                                value, scheme=scheme
+                            )
                 else:
                     scheme = key if "://" not in key else key[: key.rfind("://")]
                     new_proxies[key] = self._get_proxy_for_config_value(

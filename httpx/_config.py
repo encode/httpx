@@ -3,6 +3,7 @@ import ssl
 import typing
 from base64 import b64encode
 from pathlib import Path
+import warnings
 
 import certifi
 
@@ -351,6 +352,11 @@ class Proxy:
 
         self.url = url
         self.headers = headers
+        if mode == "DEFAULT":
+            warnings.warn(
+                f"DEFAULT proxy mode is deprecated, please "
+                f"use TUNNEL_ONLY or FORWARD_ONLY. "
+            )
         self.mode = mode
 
     def build_auth_header(self, username: str, password: str) -> str:

@@ -78,7 +78,6 @@ PROXY_URL = "http://[::1]"
             PROXY_URL + ":2",
         ),
         ("http://example.com", {"http": PROXY_URL + ":1"}, PROXY_URL + ":1"),
-        ("http://example.com", {"http": PROXY_URL + ":1"}, PROXY_URL + ":1"),
     ],
 )
 def test_transport_for_request(url, proxies, expected):
