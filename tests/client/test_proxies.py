@@ -1,21 +1,31 @@
 import pytest
 
+import httpcore
 import httpx
 
 
 @pytest.mark.parametrize(
     ["proxies", "expected_proxies"],
     [
-        ("http://127.0.0.1", [("all", "http://127.0.0.1")]),
-        ({"all": "http://127.0.0.1"}, [("all", "http://127.0.0.1")]),
+        (
+            "http://127.0.0.1",
+            [("http", "http://127.0.0.1"), ("https", "http://127.0.0.1")],
+        ),
+        (
+            {"all": "http://127.0.0.1"},
+            [("http", "http://127.0.0.1"), ("https", "http://127.0.0.1")],
+        ),
         (
             {"http": "http://127.0.0.1", "https": "https://127.0.0.1"},
             [("http", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
         ),
-        (httpx.Proxy("http://127.0.0.1"), [("all", "http://127.0.0.1")]),
+        (
+            httpx.Proxy("http://127.0.0.1"),
+            [("http", "http://127.0.0.1"), ("https", "http://127.0.0.1")],
+        ),
         (
             {"https": httpx.Proxy("https://127.0.0.1"), "all": "http://127.0.0.1"},
-            [("all", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
+            [("http", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
         ),
     ],
 )
@@ -27,6 +37,12 @@ def test_proxies_parameter(proxies, expected_proxies):
         assert client.proxies[proxy_key].proxy_origin == httpx.URL(url).raw[:3]
 
     assert len(expected_proxies) == len(client.proxies)
+
+
+@pytest.mark.parametrize("proxies", [{"https": 42}, httpcore.AsyncHTTPTransport()])
+def test_invalid_proxy_parameter(proxies):
+    with pytest.raises(RuntimeError):
+        httpx.AsyncClient(proxies=proxies)
 
 
 PROXY_URL = "http://[::1]"

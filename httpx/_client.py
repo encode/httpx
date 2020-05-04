@@ -87,26 +87,43 @@ class BaseClient:
                     for key, url in get_environment_proxies().items()
                 }
             return {}
-        elif isinstance(proxies, (str, URL, Proxy)):
-            proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
-            return {"all": proxy}
-        elif isinstance(proxies, httpcore.AsyncHTTPTransport):  # pragma: nocover
-            raise RuntimeError(
-                "Passing a transport instance to 'proxies=' is no longer "
-                "supported. Use `httpx.Proxy() instead.`"
-            )
+        elif isinstance(proxies, (str, URL, Proxy, httpcore.AsyncHTTPTransport)):
+            return {
+                "http": self._get_proxy_for_config_value(proxies, scheme="http"),
+                "https": self._get_proxy_for_config_value(proxies, scheme="https"),
+            }
         else:
             new_proxies = {}
-            for key, value in proxies.items():
-                if isinstance(value, (str, URL, Proxy)):
-                    proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
-                    new_proxies[str(key)] = proxy
-                elif isinstance(value, httpcore.AsyncHTTPTransport):  # pragma: nocover
-                    raise RuntimeError(
-                        "Passing a transport instance to 'proxies=' is "
-                        "no longer supported. Use `httpx.Proxy() instead.`"
+            for key in ("http", "https"):
+                if key in proxies:
+                    new_proxies[key] = self._get_proxy_for_config_value(
+                        proxies[key], scheme=key
                     )
+
+            if "all" in proxies:
+                for key in ("http", "https"):
+                    if key not in new_proxies:
+                        new_proxies[key] = self._get_proxy_for_config_value(
+                            proxies["all"], scheme=key
+                        )
+
             return new_proxies
+
+    def _get_proxy_for_config_value(
+        self, value: typing.Union[str, URL, Proxy], scheme: str
+    ) -> Proxy:
+        if isinstance(value, httpcore.AsyncHTTPTransport):  # pragma: nocover
+            raise RuntimeError(
+                "Passing a dispatcher instance to 'proxies=' is no longer "
+                "supported. Use `httpx.Proxy() instead.`"
+            )
+        elif isinstance(value, (str, URL)):
+            mode = "TUNNEL_ONLY" if scheme == "https" else "FORWARD_ONLY"
+            return Proxy(url=value, mode=mode)
+        elif isinstance(value, Proxy):
+            return value
+
+        raise RuntimeError("Unsupported value for proxy configuration")
 
     @property
     def headers(self) -> Headers:
