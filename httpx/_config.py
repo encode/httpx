@@ -354,8 +354,7 @@ class Proxy:
         self.headers = headers
         if mode == "DEFAULT":
             warnings.warn(
-                f"DEFAULT proxy mode is deprecated, please "
-                f"use TUNNEL_ONLY or FORWARD_ONLY. "
+                "DEFAULT proxy mode is deprecated, please use TUNNEL_ONLY or FORWARD_ONLY."
             )
         self.mode = mode
 
