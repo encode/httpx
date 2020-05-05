@@ -1,7 +1,6 @@
 import os
 import ssl
 import typing
-import warnings
 from base64 import b64encode
 from pathlib import Path
 
@@ -331,14 +330,14 @@ class PoolLimits:
 
 class Proxy:
     def __init__(
-        self, url: URLTypes, *, headers: HeaderTypes = None, mode: str = "DEFAULT",
+        self, url: URLTypes, *, headers: HeaderTypes = None, mode: str = None,
     ):
         url = URL(url)
         headers = Headers(headers)
 
         if url.scheme not in ("http", "https"):
             raise ValueError(f"Unknown scheme for proxy URL {url!r}")
-        if mode not in ("DEFAULT", "FORWARD_ONLY", "TUNNEL_ONLY"):
+        if mode is not None and mode not in ("DEFAULT", "FORWARD_ONLY", "TUNNEL_ONLY"):
             raise ValueError(f"Unknown proxy mode {mode!r}")
 
         if url.username or url.password:
@@ -352,12 +351,7 @@ class Proxy:
 
         self.url = url
         self.headers = headers
-        if mode == "DEFAULT":
-            warnings.warn(
-                "DEFAULT proxy mode is deprecated, please use "
-                "TUNNEL_ONLY or FORWARD_ONLY."
-            )
-        self.mode = mode
+        self.mode = mode or "DEFAULT"
 
     def build_auth_header(self, username: str, password: str) -> str:
         userpass = (username.encode("utf-8"), password.encode("utf-8"))

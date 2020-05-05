@@ -45,9 +45,23 @@ def test_proxies_parameter(proxies, expected_proxies):
 
     for proxy_key, url in expected_proxies:
         assert proxy_key in client.proxies
-        assert client.proxies[proxy_key].proxy_origin == httpx.URL(url).raw[:3]
+        proxy = client.proxies[proxy_key]
+        assert proxy.proxy_origin == httpx.URL(url).raw[:3]
+        assert proxy.proxy_mode == (
+            "TUNNEL_ONLY" if proxy_key.startswith("https") else "FORWARD_ONLY"
+        )
 
     assert len(expected_proxies) == len(client.proxies)
+
+
+def test_proxy_mode_is_respected():
+    proxies = {"all": httpx.Proxy("https://127.0.0.1", mode="FORWARD_ONLY")}
+    client = httpx.AsyncClient(proxies=proxies)
+
+    assert set(client.proxies.keys()) == {"http", "https"}
+    for proxy in client.proxies.values():
+        assert proxy.proxy_origin == httpx.URL("https://127.0.0.1").raw[:3]
+        assert proxy.proxy_mode == "FORWARD_ONLY"
 
 
 @pytest.mark.parametrize("proxies", [{"https": 42}, httpcore.AsyncHTTPTransport()])

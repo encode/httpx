@@ -1,3 +1,4 @@
+import copy
 import functools
 import typing
 from types import TracebackType
@@ -124,6 +125,12 @@ class BaseClient:
             mode = "TUNNEL_ONLY" if scheme == "https" else "FORWARD_ONLY"
             return Proxy(url=value, mode=mode)
         elif isinstance(value, Proxy):
+            # If the user specified a Proxy without an explict mode
+            # copy the Proxy and set the mode based on the request scheme
+            if value.mode == "DEFAULT":
+                proxy = copy.copy(value)
+                proxy.mode = "TUNNEL_ONLY" if scheme == "https" else "FORWARD_ONLY"
+                return proxy
             return value
 
         raise RuntimeError("Unsupported value for proxy configuration")
