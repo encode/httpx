@@ -108,6 +108,13 @@ class BaseClient:
             return new_proxies
 
     @property
+    def accepted_schemes(self) -> typing.Collection[str]:
+        """
+        Collection of URL schemes the client will handle.
+        """
+        return ("http", "https")
+
+    @property
     def headers(self) -> Headers:
         """
         HTTP headers to include when sending requests.
@@ -588,8 +595,11 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
-        if request.url.scheme not in ("http", "https"):
-            raise InvalidURL('URL scheme must be "http" or "https".')
+        if request.url.scheme not in self.accepted_schemes:
+            raise InvalidURL(
+                "URL scheme must be one of "
+                + " or ".join(map(repr, self.accepted_schemes))
+            )
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 

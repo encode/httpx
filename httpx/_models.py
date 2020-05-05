@@ -58,6 +58,9 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from ._dispatch.base import AsyncDispatcher  # noqa: F401
 
 
+_port_registry = {"https": 443, "http": 80}
+
+
 class URL:
     def __init__(
         self,
@@ -102,7 +105,7 @@ class URL:
     @property
     def authority(self) -> str:
         port_str = self._uri_reference.port
-        default_port_str = {"https": "443", "http": "80"}.get(self.scheme, "")
+        default_port_str = str(_port_registry.get(self.scheme, ""))
         if port_str is None or port_str == default_port_str:
             return self._uri_reference.host or ""
         return self._uri_reference.authority or ""
@@ -129,7 +132,7 @@ class URL:
     def port(self) -> int:
         port = self._uri_reference.port
         if port is None:
-            return {"https": 443, "http": 80}[self.scheme]
+            return _port_registry[self.scheme]
         return int(port)
 
     @property

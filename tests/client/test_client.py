@@ -1,8 +1,11 @@
 from datetime import timedelta
+from unittest import mock
 
+import httpcore
 import pytest
 
 import httpx
+from httpx._content_streams import ByteStream
 
 
 def test_get(server):
@@ -153,3 +156,35 @@ def test_elapsed_delay(server):
     with httpx.Client() as client:
         response = client.get(url)
     assert response.elapsed.total_seconds() > 0.0
+
+
+def test_check_scheme(server):
+    """Requests for unsupported schemes raise InvalidURL."""
+    with httpx.Client() as client:
+        with pytest.raises(httpx.InvalidURL) as excinfo:
+            client.get("ftp://server.test/file")
+    assert str(excinfo.value) == "URL scheme must be one of 'http' or 'https'"
+
+
+class ExtraSchemeClient(httpx.Client):
+    """Client that handles an additional custom scheme."""
+
+    @property
+    def accepted_schemes(self):
+        return {"http", "https", "http+mock"}
+
+
+class MockDispatch(httpcore.SyncHTTPTransport):
+    """Transport that always returns success."""
+
+    def request(self, method, url, headers, stream=None, timeout=None):
+        return b"HTTP/1.1", 200, b"OK", [], ByteStream(b"Success!")
+
+
+@mock.patch.dict("httpx._models._port_registry", {"http+mock": 80})
+def test_allow_scheme(server):
+    """A client can accept additional schemes for handling by dispatch."""
+    with ExtraSchemeClient(dispatch=MockDispatch()) as client:
+        response = client.get("http+mock://server.test/file")
+    assert response.request.url.scheme == "http+mock"
+    assert response.status_code == 200
