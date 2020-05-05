@@ -5,7 +5,7 @@ import httpcore
 import pytest
 
 from httpx import AsyncClient, Cookies
-from httpx._content_streams import ByteStream, ContentStream, JSONStream
+from httpx import ByteStream, ContentStream, JSONStream
 
 
 def get_header_value(headers, key, default=None):

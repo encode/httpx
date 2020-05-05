@@ -15,8 +15,9 @@ from httpx import (
     Request,
     RequestBodyUnavailable,
     Response,
+    ContentStream,
+    JSONStream,
 )
-from httpx._content_streams import ContentStream, JSONStream
 
 
 def get_header_value(headers, key, default=None):

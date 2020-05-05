@@ -6,7 +6,7 @@ import httpcore
 import pytest
 
 from httpx import AsyncClient, Headers, __version__
-from httpx._content_streams import ContentStream, JSONStream
+from httpx import ContentStream, JSONStream
 
 
 class MockDispatch(httpcore.AsyncHTTPTransport):

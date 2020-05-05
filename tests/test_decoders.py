@@ -4,7 +4,7 @@ import brotli
 import pytest
 
 import httpx
-from httpx._content_streams import AsyncIteratorStream
+from httpx import AsyncIteratorStream
 from httpx._decoders import (
     BrotliDecoder,
     DeflateDecoder,

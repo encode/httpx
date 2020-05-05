@@ -9,7 +9,8 @@ import httpcore
 import pytest
 
 import httpx
-from httpx._content_streams import AsyncIteratorStream, encode
+from httpx import AsyncIteratorStream
+from httpx._content_streams import encode
 from httpx._utils import format_form_param
 
 

@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 
 import httpx
-from httpx._content_streams import AsyncIteratorStream, IteratorStream
+from httpx import AsyncIteratorStream, IteratorStream
 
 REQUEST = httpx.Request("GET", "https://example.org")
 

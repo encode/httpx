@@ -13,7 +13,7 @@ from httpx import (
     TooManyRedirects,
     codes,
 )
-from httpx._content_streams import AsyncIteratorStream, ByteStream, ContentStream
+from httpx import AsyncIteratorStream, ByteStream, ContentStream
 
 
 def get_header_value(headers, key, default=None):
