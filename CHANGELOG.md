@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.13.0.dev1 (May 6th, 2020)
+
+The 0.13.0.dev1 is a *pre-release* version. To install it, use `pip install httpx --pre`.
+
+### Fixed
+
+- Passing `http2` flag to proxy dispatchers. (Pull #934)
+- Use [`httpcore` v0.8.3](https://github.com/encode/httpcore/releases/tag/0.8.3)
+which addresses problems in handling of headers when using proxies.
+
 ## 0.13.0.dev0 (April 30th, 2020)
 
 The 0.13.0.dev0 is a *pre-release* version. To install it, use `pip install httpx --pre`.
