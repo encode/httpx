@@ -108,7 +108,6 @@ class ASGIDispatch(httpcore.AsyncHTTPTransport):
             nonlocal request_complete, response_complete
 
             if request_complete:
-                # Simulate blocking until the response is complete and then disconnect
                 await response_complete.wait()
                 return {"type": "http.disconnect"}
 
