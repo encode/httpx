@@ -60,7 +60,7 @@ setup(
         "chardet==3.*",
         "idna==2.*",
         "rfc3986>=1.3,<2",
-        "httpcore>=0.8.1",
+        "httpcore>=0.8.3",
         "sniffio",
     ],
     classifiers=[
