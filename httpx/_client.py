@@ -1061,6 +1061,7 @@ class AsyncClient(BaseClient):
             ssl_context=ssl_context,
             max_keepalive=max_keepalive,
             max_connections=max_connections,
+            http2=http2,
         )
 
     def dispatcher_for_url(self, url: URL) -> httpcore.AsyncHTTPTransport:
