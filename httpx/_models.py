@@ -644,6 +644,11 @@ class Request:
             raise RequestNotRead()
         return self._content
 
+    @content.setter
+    def content(self, value: bytes) -> None:
+        self._content = value
+        self.stream = ByteStream(self._content)
+
     def read(self) -> bytes:
         """
         Read and return the request content.
