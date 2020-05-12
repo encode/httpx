@@ -1,3 +1,3 @@
 __title__ = "httpx"
 __description__ = "A next generation HTTP client, for Python 3."
-__version__ = "0.13.0.dev1"
+__version__ = "0.13.0.dev2"

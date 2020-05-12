@@ -57,11 +57,11 @@ setup(
     install_requires=[
         "certifi",
         "hstspreload",
+        "sniffio",
         "chardet==3.*",
         "idna==2.*",
         "rfc3986>=1.3,<2",
-        "httpcore>=0.8.3",
-        "sniffio",
+        "httpcore>=0.8.4",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
