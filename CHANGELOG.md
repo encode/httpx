@@ -16,6 +16,7 @@ and TRACE level logging. (HTTPCore Pull #79)
 ### Fixed
 
 - Reuse of connections on HTTP/2 in close concurrency situations. (HTTPCore Pull #81)
+- When using an `app=<ASGI app>` observe neater disconnect behaviour instead of sending empty body messages. (Pull #919)
 
 ## 0.13.0.dev1 (May 6th, 2020)
 
