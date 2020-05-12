@@ -69,8 +69,7 @@ async def test_asgi_exc_after_response():
         await client.get("http://www.example.org/")
 
 
-@pytest.mark.asyncio
-async def test_asgi_disconnect_after_response_complete():
+async def test_asgi_disconnect_after_response_complete(async_environment):
     disconnect = False
 
     async def read_body(scope, receive, send):
