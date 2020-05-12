@@ -146,10 +146,3 @@ def test_merge_url():
 
     assert url.scheme == "https"
     assert url.is_ssl
-
-
-def test_elapsed_delay(server):
-    url = server.url.copy_with(path="/slow_response/100")
-    with httpx.Client() as client:
-        response = client.get(url)
-    assert response.elapsed.total_seconds() > 0.0
