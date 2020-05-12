@@ -57,6 +57,7 @@ setup(
     install_requires=[
         "certifi",
         "hstspreload",
+        "sniffio",
         "chardet==3.*",
         "idna==2.*",
         "rfc3986>=1.3,<2",
