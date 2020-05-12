@@ -102,12 +102,7 @@ async def hello_world(scope, receive, send):
 
 
 async def slow_response(scope, receive, send):
-    delay_ms_str: str = scope["path"].replace("/slow_response/", "")
-    try:
-        delay_ms = float(delay_ms_str)
-    except ValueError:
-        delay_ms = 100
-    await sleep(delay_ms / 1000.0)
+    await sleep(1.0)
     await send(
         {
             "type": "http.response.start",
