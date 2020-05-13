@@ -290,7 +290,7 @@ class PoolLimits:
 
     * **soft_limit** - Allow the connection pool to maintain keep-alive connections
                        below this point.
-    * **hard_limit** - The maximum number of concurrenct connections that may be
+    * **hard_limit** - The maximum number of concurrent connections that may be
                        established.
     """
 

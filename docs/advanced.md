@@ -399,6 +399,22 @@ client = httpx.Client(timeout=timeout)
 response = client.get('http://example.com/')
 ```
 
+## Pool limit configuration
+
+You can control the connection pool size using the `pool_limits` keyword
+argument on the client. It takes instances of `httpx.PoolLimits` which define:
+
+- `soft_limit`, number of allowable keep-alive connections, or `None` to always
+allow. (Defaults 10)
+- `hard_limit`, maximum number of allowable connections, or` None` for no limits.
+(Default 100)
+
+
+```python
+limits = httpx.PoolLimits(soft_limit=5, hard_limit=10)
+client = httpx.Client(pool_limits=limits)
+```
+
 ## Multipart file encoding
 
 As mentioned in the [quickstart](/quickstart#sending-multipart-file-uploads)
@@ -558,7 +574,18 @@ import httpx
 r = httpx.get("https://example.org", verify="path/to/client.pem")
 ```
 
-You can also disable the SSL verification...
+Alternatively, you can pass a standard library `ssl.SSLContext`.
+
+```python
+>>> import ssl
+>>> import httpx
+>>> context = ssl.create_default_context()
+>>> context.load_verify_locations(cafile="/tmp/client.pem")
+>>> httpx.get('https://example.org', verify=context)
+<Response [200 OK]>
+```
+
+Or you can also disable the SSL verification entirely, which is _not_ recommended.
 
 ```python
 import httpx
