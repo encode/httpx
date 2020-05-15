@@ -9,7 +9,7 @@ if [ -z $GITHUB_ACTIONS ]; then
     set +e
     scripts/check
     while [ $? -ne 0 ]; do
-        read -p "Running 'scripts/check' failed. Do you want to run 'scripts/lint' now? [y/N]" yn
+        read -p "Running 'scripts/check' failed. Do you want to run 'scripts/lint' now? [y/N]  " yn
         case $yn in
            [Yy]* ) :;;
            * ) exit;;
