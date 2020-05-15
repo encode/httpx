@@ -22,3 +22,7 @@ fi
 set -ex
 
 ${PREFIX}pytest $@
+
+if [ -z $GITHUB_ACTIONS ]; then
+    scripts/coverage
+fi
