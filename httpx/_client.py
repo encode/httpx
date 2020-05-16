@@ -83,10 +83,11 @@ class BaseClient:
     ) -> typing.Dict[str, Proxy]:
         if proxies is None:
             if trust_env:
-                return {
-                    key: Proxy(url=url)
-                    for key, url in get_environment_proxies().items()
-                }
+                env_proxies = typing.cast(
+                    typing.Dict[URLTypes, typing.Union[URLTypes, Proxy]],
+                    get_environment_proxies(),
+                )
+                return self._split_proxy_map(env_proxies)
             return {}
         elif isinstance(proxies, (str, URL, Proxy, httpcore.AsyncHTTPTransport)):
             return {
@@ -94,24 +95,33 @@ class BaseClient:
                 "https": self._get_proxy_for_config_value(proxies, scheme="https"),
             }
         else:
-            new_proxies = {}
-            for key, value in proxies.items():
-                # if the key starts with all, split into http and https
-                key = str(key)
-                if key.startswith("all"):
-                    for scheme in ("https", "http"):
-                        scheme_key = key.replace("all", scheme)
-                        if scheme_key not in new_proxies:
-                            new_proxies[scheme_key] = self._get_proxy_for_config_value(
-                                value, scheme=scheme
-                            )
-                else:
-                    scheme = key if "://" not in key else key[: key.rfind("://")]
-                    new_proxies[key] = self._get_proxy_for_config_value(
-                        value, scheme=scheme
-                    )
+            return self._split_proxy_map(
+                typing.cast(
+                    typing.Dict[URLTypes, typing.Union[URLTypes, Proxy]], proxies
+                )
+            )
 
-            return new_proxies
+    def _split_proxy_map(
+        self, proxies: typing.Dict[URLTypes, typing.Union[URLTypes, Proxy]]
+    ) -> typing.Dict[str, Proxy]:
+        new_proxies = {}
+        for key, value in proxies.items():
+            # if the key starts with all, split into http and https
+            key = str(key)
+            if key.startswith("all"):
+                for scheme in ("https", "http"):
+                    scheme_key = key.replace("all", scheme)
+                    if scheme_key not in new_proxies:
+                        new_proxies[scheme_key] = self._get_proxy_for_config_value(
+                            value, scheme=scheme
+                        )
+            else:
+                scheme = key if "://" not in key else key[: key.rfind("://")]
+                new_proxies[key] = self._get_proxy_for_config_value(
+                    value, scheme=scheme
+                )
+
+        return new_proxies
 
     def _get_proxy_for_config_value(
         self, value: typing.Union[str, URL, Proxy], scheme: str
@@ -504,7 +514,7 @@ class Client(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self.proxies: typing.Dict[str, httpcore.SyncHTTPTransport] = {
+        self.proxies: typing.Dict[str, httpcore.SyncHTTPProxy] = {
             key: self.init_proxy_transport(
                 proxy,
                 verify=verify,
@@ -551,7 +561,7 @@ class Client(BaseClient):
         http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         trust_env: bool = True,
-    ) -> httpcore.SyncHTTPTransport:
+    ) -> httpcore.SyncHTTPProxy:
         ssl_context = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env
         ).ssl_context
@@ -1046,7 +1056,7 @@ class AsyncClient(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self.proxies: typing.Dict[str, httpcore.AsyncHTTPTransport] = {
+        self.proxies: typing.Dict[str, httpcore.AsyncHTTPProxy] = {
             key: self.init_proxy_transport(
                 proxy,
                 verify=verify,
@@ -1093,7 +1103,7 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         trust_env: bool = True,
-    ) -> httpcore.AsyncHTTPTransport:
+    ) -> httpcore.AsyncHTTPProxy:
         ssl_context = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env
         ).ssl_context

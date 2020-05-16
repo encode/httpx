@@ -1,3 +1,5 @@
+import typing
+
 import httpcore
 import pytest
 
@@ -96,11 +98,14 @@ PROXY_URL = "http://[::1]"
 )
 def test_transport_for_request(url, proxies, expected):
     client = httpx.AsyncClient(proxies=proxies)
-    transport = client.transport_for_url(httpx.URL(url))
+    transport = typing.cast(
+        httpcore.AsyncHTTPProxy, client.transport_for_url(httpx.URL(url))
+    )
 
     if expected is None:
         assert transport is client.transport
     else:
+        assert isinstance(transport, httpcore.AsyncHTTPProxy)
         assert transport.proxy_origin == httpx.URL(expected).raw[:3]
 
 
@@ -125,14 +130,56 @@ def test_unsupported_proxy_scheme():
         ),
     ],
 )
-def test_proxies_environ(monkeypatch, url, env, expected):
+def test_proxies_dispatch(monkeypatch, url, env, expected):
     for name, value in env.items():
         monkeypatch.setenv(name, value)
 
     client = httpx.AsyncClient()
-    transport = client.transport_for_url(httpx.URL(url))
+    transport = typing.cast(
+        httpcore.AsyncHTTPProxy, client.transport_for_url(httpx.URL(url))
+    )
 
     if expected is None:
         assert transport == client.transport
     else:
+        assert isinstance(transport, httpcore.AsyncHTTPProxy)
         assert transport.proxy_origin == httpx.URL(expected).raw[:3]
+
+
+@pytest.mark.parametrize(
+    ["env", "expected"],
+    [
+        ({}, {}),
+        ({"HTTP_PROXY": "http://example.com"}, {"http": (b"http", b"example.com", 80)}),
+        (
+            {"HTTPS_PROXY": "https://example.com"},
+            {"https": (b"https", b"example.com", 443)},
+        ),
+        (
+            {"ALL_PROXY": "https://example.com"},
+            {
+                "http": (b"https", b"example.com", 443),
+                "https": (b"https", b"example.com", 443),
+            },
+        ),
+        (
+            {"HTTP_PROXY": "http://example.com", "HTTPS_PROXY": "https://example.com"},
+            {
+                "http": (b"http", b"example.com", 80),
+                "https": (b"https", b"example.com", 443),
+            },
+        ),
+    ],
+)
+def test_proxies_from_environ(monkeypatch, env, expected):
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+
+    client = httpx.AsyncClient(trust_env=True)
+
+    for scheme, proxy_origin in expected.items():
+        proxy = client.proxies[scheme]
+        assert proxy.proxy_origin == proxy_origin
+        assert proxy.proxy_mode == (
+            "FORWARD_ONLY" if scheme == "http" else "TUNNEL_ONLY"
+        )
