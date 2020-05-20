@@ -1,5 +1,6 @@
 import typing
 from typing import Callable, Dict, List, Optional, Tuple
+import warnings
 
 import httpcore
 import sniffio
@@ -24,9 +25,9 @@ def create_event() -> "Event":
         return asyncio.Event()
 
 
-class ASGIDispatch(httpcore.AsyncHTTPTransport):
+class ASGITransport(httpcore.AsyncHTTPTransport):
     """
-    A custom AsyncDispatcher that handles sending requests directly to an ASGI app.
+    A custom AsyncTransport that handles sending requests directly to an ASGI app.
     The simplest way to use this functionality is to use the `app` argument.
 
     ```
@@ -35,10 +36,10 @@ class ASGIDispatch(httpcore.AsyncHTTPTransport):
 
     Alternatively, you can setup the dispatch instance explicitly.
     This allows you to include any additional configuration arguments specific
-    to the ASGIDispatch class:
+    to the ASGITransport class:
 
     ```
-    dispatch = httpx.ASGIDispatch(
+    dispatch = httpx.ASGITransport(
         app=app,
         root_path="/submount",
         client=("1.2.3.4", 123)
@@ -153,3 +154,20 @@ class ASGIDispatch(httpcore.AsyncHTTPTransport):
         stream = ByteStream(b"".join(body_parts))
 
         return (b"HTTP/1.1", status_code, b"", response_headers, stream)
+
+
+class ASGIDispatch(ASGITransport):
+    def __init__(
+        self,
+        app: Callable,
+        raise_app_exceptions: bool = True,
+        root_path: str = "",
+        client: Tuple[str, int] = ("127.0.0.1", 123),
+    ) -> None:
+        warnings.warn("ASGIDispatch is deprecated, please use ASGITransport")
+        super().__init__(
+            app=app,
+            raise_app_exceptions=raise_app_exceptions,
+            root_path=root_path,
+            client=client,
+        )

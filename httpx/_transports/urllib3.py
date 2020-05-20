@@ -2,6 +2,7 @@ import math
 import socket
 import ssl
 from typing import Dict, Iterator, List, Optional, Tuple, Union
+import warnings
 
 import httpcore
 import urllib3
@@ -13,7 +14,7 @@ from .._types import CertTypes, VerifyTypes
 from .._utils import as_network_error
 
 
-class URLLib3Dispatcher(httpcore.SyncHTTPTransport):
+class URLLib3Transport(httpcore.SyncHTTPTransport):
     def __init__(
         self,
         *,
@@ -153,3 +154,23 @@ class URLLib3Dispatcher(httpcore.SyncHTTPTransport):
 
     def close(self) -> None:
         self.pool.clear()
+
+
+class URLLib3Dispatch(URLLib3Transport):
+    def __init__(
+        self,
+        *,
+        proxy: Proxy = None,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        trust_env: bool = None,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+    ):
+        warnings.warn("URLLib3Dispatch is deprecated, please use URLLib3Transport")
+        super().__init__(
+            proxy=proxy,
+            verify=verify,
+            cert=cert,
+            trust_env=trust_env,
+            pool_limits=pool_limits,
+        )

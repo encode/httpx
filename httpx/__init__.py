@@ -3,8 +3,8 @@ from ._api import delete, get, head, options, patch, post, put, request, stream
 from ._auth import Auth, BasicAuth, DigestAuth
 from ._client import AsyncClient, Client
 from ._config import PoolLimits, Proxy, Timeout
-from ._dispatch.asgi import ASGIDispatch
-from ._dispatch.wsgi import WSGIDispatch
+from ._transports.asgi import ASGIDispatch, ASGITransport
+from ._transports.wsgi import WSGIDispatch, WSGITransport
 from ._exceptions import (
     ConnectTimeout,
     CookieConflict,
@@ -44,6 +44,7 @@ __all__ = [
     "stream",
     "codes",
     "ASGIDispatch",
+    "ASGITransport",
     "AsyncClient",
     "Auth",
     "BasicAuth",
@@ -79,4 +80,5 @@ __all__ = [
     "Response",
     "DigestAuth",
     "WSGIDispatch",
+    "WSGITransport",
 ]

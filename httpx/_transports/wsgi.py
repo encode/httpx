@@ -1,6 +1,7 @@
 import io
 import itertools
 import typing
+import warnings
 
 import httpcore
 
@@ -15,7 +16,7 @@ def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
     return []
 
 
-class WSGIDispatch(httpcore.SyncHTTPTransport):
+class WSGITransport(httpcore.SyncHTTPTransport):
     """
     A custom transport that handles sending requests directly to an WSGI app.
     The simplest way to use this functionality is to use the `app` argument.
@@ -26,10 +27,10 @@ class WSGIDispatch(httpcore.SyncHTTPTransport):
 
     Alternatively, you can setup the dispatch instance explicitly.
     This allows you to include any additional configuration arguments specific
-    to the WSGIDispatch class:
+    to the WSGITransport class:
 
     ```
-    dispatch = httpx.WSGIDispatch(
+    dispatch = httpx.WSGITransport(
         app=app,
         script_name="/submount",
         remote_addr="1.2.3.4"
@@ -131,3 +132,20 @@ class WSGIDispatch(httpcore.SyncHTTPTransport):
         stream = IteratorStream(chunk for chunk in result)
 
         return (b"HTTP/1.1", status_code, b"", headers, stream)
+
+
+class WSGIDispatch(WSGITransport):
+    def __init__(
+        self,
+        app: typing.Callable,
+        raise_app_exceptions: bool = True,
+        script_name: str = "",
+        remote_addr: str = "127.0.0.1",
+    ) -> None:
+        warnings.warn("WSGIDispatch is deprecated, please use WSGITransport")
+        super().__init__(
+            app=app,
+            raise_app_exceptions=raise_app_exceptions,
+            script_name=script_name,
+            remote_addr=remote_addr,
+        )
