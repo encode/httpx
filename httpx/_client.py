@@ -19,8 +19,8 @@ from ._config import (
     UnsetType,
 )
 from ._content_streams import ContentStream
-from ._dispatch.asgi import ASGIDispatch
-from ._dispatch.wsgi import WSGIDispatch
+from ._transports.asgi import ASGITransport
+from ._transports.wsgi import WSGITransport
 from ._exceptions import HTTPError, InvalidURL, RequestBodyUnavailable, TooManyRedirects
 from ._models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
 from ._status_codes import codes
@@ -501,7 +501,7 @@ class Client(BaseClient):
             return transport
 
         if app is not None:
-            return WSGIDispatch(app=app)
+            return WSGITransport(app=app)
 
         ssl_context = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env
@@ -1049,7 +1049,7 @@ class AsyncClient(BaseClient):
             return transport
 
         if app is not None:
-            return ASGIDispatch(app=app)
+            return ASGITransport(app=app)
 
         ssl_context = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env
