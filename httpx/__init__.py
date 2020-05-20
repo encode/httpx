@@ -26,8 +26,8 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import StatusCode, codes
 from ._transports.asgi import ASGIDispatch, ASGITransport
-from ._transports.wsgi import WSGIDispatch, WSGITransport
 from ._transports.urllib3 import URLLib3Transport
+from ._transports.wsgi import WSGIDispatch, WSGITransport
 
 __all__ = [
     "__description__",

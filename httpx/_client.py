@@ -19,11 +19,11 @@ from ._config import (
     UnsetType,
 )
 from ._content_streams import ContentStream
-from ._transports.asgi import ASGITransport
-from ._transports.wsgi import WSGITransport
 from ._exceptions import HTTPError, InvalidURL, RequestBodyUnavailable, TooManyRedirects
 from ._models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
 from ._status_codes import codes
+from ._transports.asgi import ASGITransport
+from ._transports.wsgi import WSGITransport
 from ._types import (
     AuthTypes,
     CertTypes,

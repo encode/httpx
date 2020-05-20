@@ -5,13 +5,17 @@ import warnings
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import httpcore
-import urllib3
-from urllib3.exceptions import MaxRetryError, SSLError
 
 from .._config import DEFAULT_POOL_LIMITS, PoolLimits, Proxy, SSLConfig
 from .._content_streams import ByteStream, IteratorStream
 from .._types import CertTypes, VerifyTypes
 from .._utils import as_network_error
+
+try:
+    import urllib3
+    from urllib3.exceptions import MaxRetryError, SSLError
+except ImportError:  # pragma: nocover
+    urllib3 = None
 
 
 class URLLib3Transport(httpcore.SyncHTTPTransport):
@@ -24,6 +28,10 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
         trust_env: bool = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
     ):
+        assert (
+            urllib3 is not None
+        ), "urllib3 must be installed separately in order to use URLLib3Transport"
+
         ssl_config = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env, http2=False
         )
