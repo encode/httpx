@@ -619,3 +619,28 @@ If you do need to make HTTPS connections to a local server, for example to test 
 >>> r
 Response <200 OK>
 ```
+
+## Custom Transports
+
+HTTPX's `Client` also accepts a `transport` argument. This argument allows you
+to inject a custom Transport objects that will be used to perform the actual
+sending of the requests.
+
+These Transport objects must implement some methods from
+[`httpcore`'s API](https://www.encode.io/httpcore/api/), either
+`httpcore.AsyncHTTPTransport` if you're using the asynchronous `Client`, or
+`httpcore.SyncHTTPTransport` if you're using a synchronous one.
+
+Specifically you *MUST* implement `request`, and `close` or `aclose` depending
+on the type of client you're using.
+
+For example, HTTPX ships with a transport that uses the excellent
+[`urllib3` library](https://urllib3.readthedocs.io/en/latest/):
+
+```python
+>>> import httpx
+>>> from httpx._dispatch.urllib3 import URLLib3Dispatcher
+>>> client = httpx.Client(transport=URLLib3Dispatcher())
+>>> client.get("https://example.org")
+<Response [200 OK]>
+```
