@@ -27,6 +27,7 @@ from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import StatusCode, codes
 from ._transports.asgi import ASGIDispatch, ASGITransport
 from ._transports.wsgi import WSGIDispatch, WSGITransport
+from ._transports.urllib3 import URLLib3Transport
 
 __all__ = [
     "__description__",
@@ -72,6 +73,7 @@ __all__ = [
     "TooManyRedirects",
     "WriteTimeout",
     "URL",
+    "URLLib3Transport",
     "StatusCode",
     "Cookies",
     "Headers",

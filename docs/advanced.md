@@ -639,8 +639,7 @@ For example, HTTPX ships with a transport that uses the excellent
 
 ```python
 >>> import httpx
->>> from httpx._dispatch.urllib3 import URLLib3Dispatcher
->>> client = httpx.Client(transport=URLLib3Dispatcher())
+>>> client = httpx.Client(transport=httpx.URLLib3Transport())
 >>> client.get("https://example.org")
 <Response [200 OK]>
 ```
