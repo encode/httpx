@@ -461,23 +461,24 @@ class Client(BaseClient):
 
         proxy_map = self.get_proxy_map(proxies, trust_env)
 
-        if transport is None and dispatch is not None:
+        if dispatch is not None:
             warnings.warn(
                 "The dispatch argument is deprecated since v0.13 and will be "
                 "removed in a future release, please use 'transport'"
             )
-            transport = dispatch
+            if transport is None:
+                transport = dispatch
 
         self.transport = self.init_transport(
             verify=verify,
             cert=cert,
             pool_limits=pool_limits,
-            dispatch=transport,
+            transport=transport,
             app=app,
             trust_env=trust_env,
         )
         self.proxies: typing.Dict[str, httpcore.SyncHTTPTransport] = {
-            key: self.init_proxy_dispatch(
+            key: self.init_proxy_transport(
                 proxy,
                 verify=verify,
                 cert=cert,
@@ -492,12 +493,12 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        dispatch: httpcore.SyncHTTPTransport = None,
+        transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
     ) -> httpcore.SyncHTTPTransport:
-        if dispatch is not None:
-            return dispatch
+        if transport is not None:
+            return transport
 
         if app is not None:
             return WSGIDispatch(app=app)
@@ -514,7 +515,7 @@ class Client(BaseClient):
             max_connections=max_connections,
         )
 
-    def init_proxy_dispatch(
+    def init_proxy_transport(
         self,
         proxy: Proxy,
         verify: VerifyTypes = True,
@@ -1003,12 +1004,13 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
-        if transport is None and dispatch is not None:
+        if dispatch is not None:
             warnings.warn(
                 "The dispatch argument is deprecated since v0.13 and will be "
                 "removed in a future release, please use 'transport'"
             )
-            transport = dispatch
+            if transport is None:
+                transport = dispatch
 
         proxy_map = self.get_proxy_map(proxies, trust_env)
 
@@ -1017,12 +1019,12 @@ class AsyncClient(BaseClient):
             cert=cert,
             http2=http2,
             pool_limits=pool_limits,
-            dispatch=dispatch,
+            transport=transport,
             app=app,
             trust_env=trust_env,
         )
         self.proxies: typing.Dict[str, httpcore.AsyncHTTPTransport] = {
-            key: self.init_proxy_dispatch(
+            key: self.init_proxy_transport(
                 proxy,
                 verify=verify,
                 cert=cert,
@@ -1039,12 +1041,12 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
-        dispatch: httpcore.AsyncHTTPTransport = None,
+        transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
     ) -> httpcore.AsyncHTTPTransport:
-        if dispatch is not None:
-            return dispatch
+        if transport is not None:
+            return transport
 
         if app is not None:
             return ASGIDispatch(app=app)
@@ -1062,7 +1064,7 @@ class AsyncClient(BaseClient):
             http2=http2,
         )
 
-    def init_proxy_dispatch(
+    def init_proxy_transport(
         self,
         proxy: Proxy,
         verify: VerifyTypes = True,
