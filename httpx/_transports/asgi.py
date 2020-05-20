@@ -1,6 +1,6 @@
 import typing
-from typing import Callable, Dict, List, Optional, Tuple
 import warnings
+from typing import Callable, Dict, List, Optional, Tuple
 
 import httpcore
 import sniffio

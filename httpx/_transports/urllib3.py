@@ -1,8 +1,8 @@
 import math
 import socket
 import ssl
-from typing import Dict, Iterator, List, Optional, Tuple, Union
 import warnings
+from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import httpcore
 import urllib3
