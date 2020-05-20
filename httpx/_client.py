@@ -421,8 +421,6 @@ class Client(BaseClient):
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
     * **dispatch** - *(optional)* A deprecated alias for transport.
-    * **transport** - *(optional)* A transport class to use for sending requests
-    over the network.
     * **app** - *(optional)* An WSGI application to send requests to,
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
@@ -962,8 +960,6 @@ class AsyncClient(BaseClient):
     that should be followed.
     * **base_url** - *(optional)* A URL to use as the base when building
     request URLs.
-    * **dispatch** - *(optional)* A dispatch class to use for sending requests
-    over the network.
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
     * **dispatch** - *(optional)* A deprecated alias for transport.
@@ -988,8 +984,8 @@ class AsyncClient(BaseClient):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
-        dispatch: httpcore.AsyncHTTPTransport = None,
         transport: httpcore.AsyncHTTPTransport = None,
+        dispatch: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
     ):
