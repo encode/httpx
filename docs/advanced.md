@@ -628,8 +628,8 @@ sending of the requests.
 
 These Transport objects must implement some methods from
 [`httpcore`'s API](https://www.encode.io/httpcore/api/), either
-`httpcore.AsyncHTTPTransport` if you're using the asynchronous `Client`, or
-`httpcore.SyncHTTPTransport` if you're using a synchronous one.
+`httpcore.AsyncHTTPTransport` if you're using `AsyncClient`, or
+`httpcore.SyncHTTPTransport` if you're using `Client`.
 
 Specifically you *MUST* implement `request`, and `close` or `aclose` depending
 on the type of client you're using.
