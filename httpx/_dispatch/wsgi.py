@@ -63,7 +63,7 @@ class WSGIDispatch(httpcore.SyncHTTPTransport):
     def request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, int, bytes],
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: httpcore.SyncByteStream = None,
         timeout: typing.Dict[str, typing.Optional[float]] = None,
