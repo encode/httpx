@@ -7,7 +7,7 @@ import httpcore
 from .._config import Proxy, SSLConfig
 from .._content_streams import ByteStream, IteratorStream
 from .._types import CertTypes, VerifyTypes
-from .._utils import as_network_error, warn_deprecated
+from .._utils import as_network_error
 
 try:
     import urllib3
@@ -145,27 +145,3 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
 
     def close(self) -> None:
         self.pool.clear()
-
-
-class URLLib3Dispatch(URLLib3Transport):
-    def __init__(
-        self,
-        *,
-        proxy: Proxy = None,
-        verify: VerifyTypes = True,
-        cert: CertTypes = None,
-        trust_env: bool = None,
-        pool_connections: int = 10,
-        pool_maxsize: int = 10,
-        pool_block: bool = False,
-    ):
-        warn_deprecated("URLLib3Dispatch is deprecated, please use URLLib3Transport")
-        super().__init__(
-            proxy=proxy,
-            verify=verify,
-            cert=cert,
-            trust_env=trust_env,
-            pool_connections=pool_connections,
-            pool_maxsize=pool_maxsize,
-            pool_block=pool_block,
-        )
