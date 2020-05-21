@@ -460,6 +460,9 @@ MIME header field.
 }
 ```
 
+!!! tip
+    It is safe to upload large files this way. File uploads are streaming by default, meaning that only one chunk will be loaded into memory at a time.
+ 
 ## Customizing authentication
 
 When issuing requests or instantiating a client, the `auth` argument can be used to pass an authentication scheme to use. The `auth` argument may be one of the following...
