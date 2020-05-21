@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import typing
+import warnings
 from datetime import timedelta
 from pathlib import Path
 from time import perf_counter
@@ -400,3 +401,7 @@ def as_network_error(*exception_classes: type) -> typing.Iterator[None]:
             if isinstance(exc, cls):
                 raise NetworkError(exc) from exc
         raise
+
+
+def warn_deprecated(message: str) -> None:
+    warnings.warn(message, DeprecationWarning)
