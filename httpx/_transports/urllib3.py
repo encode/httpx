@@ -25,7 +25,9 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        pool_connections: int = 10,
+        pool_maxsize: int = 10,
+        pool_block: bool = False,
     ):
         assert (
             urllib3 is not None
@@ -55,34 +57,34 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
         self.pool = self.init_pool_manager(
             proxy=proxy,
             ssl_context=ssl_config.ssl_context,
-            num_pools=num_pools,
-            maxsize=maxsize,
-            block=block,
+            pool_connections=pool_connections,
+            pool_maxsize=pool_maxsize,
+            pool_block=pool_block,
         )
 
     def init_pool_manager(
         self,
         proxy: Optional[Proxy],
         ssl_context: ssl.SSLContext,
-        num_pools: int,
-        maxsize: int,
-        block: bool,
+        pool_connections: int,
+        pool_maxsize: int,
+        pool_block: bool,
     ) -> Union[urllib3.PoolManager, urllib3.ProxyManager]:
         if proxy is None:
             return urllib3.PoolManager(
                 ssl_context=ssl_context,
-                num_pools=num_pools,
-                maxsize=maxsize,
-                block=block,
+                num_pools=pool_connections,
+                maxsize=pool_maxsize,
+                block=pool_block,
             )
         else:
             return urllib3.ProxyManager(
                 proxy_url=str(proxy.url),
                 proxy_headers=dict(proxy.headers),
                 ssl_context=ssl_context,
-                num_pools=num_pools,
-                maxsize=maxsize,
-                block=block,
+                num_pools=pool_connections,
+                maxsize=pool_maxsize,
+                block=pool_block,
             )
 
     def request(
