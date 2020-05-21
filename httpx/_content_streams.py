@@ -247,7 +247,7 @@ class MultipartStream(ContentStream):
         def get_length(self) -> int:
             headers = self.render_headers()
 
-            if isinstance(self.file, str):
+            if isinstance(self.file, (str, bytes)):
                 return len(headers) + len(self.file)
 
             # Let's do our best not to read `file` into memory.
@@ -279,7 +279,7 @@ class MultipartStream(ContentStream):
             return self._headers
 
         def render_data(self) -> typing.Iterator[bytes]:
-            if isinstance(self.file, str):
+            if isinstance(self.file, (str, bytes)):
                 yield to_bytes(self.file)
                 return
 
@@ -297,7 +297,7 @@ class MultipartStream(ContentStream):
                 self.file.seek(0)
 
         def can_replay(self) -> bool:
-            return True if isinstance(self.file, str) else self.file.seekable()
+            return True if isinstance(self.file, (str, bytes)) else self.file.seekable()
 
         def render(self) -> typing.Iterator[bytes]:
             yield self.render_headers()

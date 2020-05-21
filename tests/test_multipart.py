@@ -181,8 +181,14 @@ def test_multipart_encode_files_guesses_correct_content_type(
         )
 
 
-def test_multipart_encode_files_allows_str_content() -> None:
-    files = {"file": ("test.txt", "<string content>", "text/plain")}
+@pytest.mark.parametrize(
+    "value, output",
+    ((b"<bytes content>", "<bytes content>"), ("<string content>", "<string content>")),
+)
+def test_multipart_encode_files_allows_bytes_or_str_content(
+    value: typing.Union[str, bytes], output: str
+) -> None:
+    files = {"file": ("test.txt", value, "text/plain")}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
 
@@ -193,9 +199,9 @@ def test_multipart_encode_files_allows_str_content() -> None:
         content = (
             '--{0}\r\nContent-Disposition: form-data; name="file"; '
             'filename="test.txt"\r\n'
-            "Content-Type: text/plain\r\n\r\n<string content>\r\n"
+            "Content-Type: text/plain\r\n\r\n{1}\r\n"
             "--{0}--\r\n"
-            "".format(boundary).encode("ascii")
+            "".format(boundary, output).encode("ascii")
         )
         assert stream.get_headers()["Content-Length"] == str(len(content))
         assert b"".join(stream) == content
