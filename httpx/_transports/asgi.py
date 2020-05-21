@@ -1,11 +1,11 @@
 import typing
-import warnings
 from typing import Callable, Dict, List, Optional, Tuple
 
 import httpcore
 import sniffio
 
 from .._content_streams import ByteStream
+from .._utils import warn_deprecated
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     import asyncio
@@ -164,7 +164,7 @@ class ASGIDispatch(ASGITransport):
         root_path: str = "",
         client: Tuple[str, int] = ("127.0.0.1", 123),
     ) -> None:
-        warnings.warn("ASGIDispatch is deprecated, please use ASGITransport")
+        warn_deprecated("ASGIDispatch is deprecated, please use ASGITransport")
         super().__init__(
             app=app,
             raise_app_exceptions=raise_app_exceptions,

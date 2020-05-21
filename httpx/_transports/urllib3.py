@@ -1,7 +1,6 @@
 import math
 import socket
 import ssl
-import warnings
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import httpcore
@@ -9,7 +8,7 @@ import httpcore
 from .._config import DEFAULT_POOL_LIMITS, PoolLimits, Proxy, SSLConfig
 from .._content_streams import ByteStream, IteratorStream
 from .._types import CertTypes, VerifyTypes
-from .._utils import as_network_error
+from .._utils import as_network_error, warn_deprecated
 
 try:
     import urllib3
@@ -174,7 +173,7 @@ class URLLib3Dispatch(URLLib3Transport):
         trust_env: bool = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
     ):
-        warnings.warn("URLLib3Dispatch is deprecated, please use URLLib3Transport")
+        warn_deprecated("URLLib3Dispatch is deprecated, please use URLLib3Transport")
         super().__init__(
             proxy=proxy,
             verify=verify,

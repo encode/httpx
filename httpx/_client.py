@@ -1,6 +1,5 @@
 import functools
 import typing
-import warnings
 from types import TracebackType
 
 import hstspreload
@@ -42,6 +41,7 @@ from ._utils import (
     get_environment_proxies,
     get_logger,
     should_not_be_proxied,
+    warn_deprecated,
 )
 
 logger = get_logger(__name__)
@@ -460,10 +460,9 @@ class Client(BaseClient):
         proxy_map = self.get_proxy_map(proxies, trust_env)
 
         if dispatch is not None:
-            warnings.warn(
+            warn_deprecated(
                 "The dispatch argument is deprecated since v0.13 and will be "
-                "removed in a future release, please use 'transport'",
-                DeprecationWarning,
+                "removed in a future release, please use 'transport'"
             )
             if transport is None:
                 transport = dispatch
@@ -1002,10 +1001,9 @@ class AsyncClient(BaseClient):
         )
 
         if dispatch is not None:
-            warnings.warn(
+            warn_deprecated(
                 "The dispatch argument is deprecated since v0.13 and will be "
                 "removed in a future release, please use 'transport'",
-                DeprecationWarning,
             )
             if transport is None:
                 transport = dispatch

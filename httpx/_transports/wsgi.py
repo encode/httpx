@@ -1,11 +1,11 @@
 import io
 import itertools
 import typing
-import warnings
 
 import httpcore
 
 from .._content_streams import ByteStream, IteratorStream
+from .._utils import warn_deprecated
 
 
 def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
@@ -142,7 +142,7 @@ class WSGIDispatch(WSGITransport):
         script_name: str = "",
         remote_addr: str = "127.0.0.1",
     ) -> None:
-        warnings.warn("WSGIDispatch is deprecated, please use WSGITransport")
+        warn_deprecated("WSGIDispatch is deprecated, please use WSGITransport")
         super().__init__(
             app=app,
             raise_app_exceptions=raise_app_exceptions,
