@@ -173,7 +173,7 @@ with httpx.Client(app=app, base_url="http://testserver") as client:
     assert r.text == "Hello World!"
 ```
 
-For some more complex cases you might need to customize the WSGI dispatch. This allows you to:
+For some more complex cases you might need to customize the WSGI transport. This allows you to:
 
 * Inspect 500 error responses rather than raise exceptions by setting `raise_app_exceptions=False`.
 * Mount the WSGI application at a subpath by setting `script_name` (WSGI).
@@ -183,8 +183,8 @@ For example:
 
 ```python
 # Instantiate a client that makes WSGI requests with a client IP of "1.2.3.4".
-dispatch = httpx.WSGIDispatch(app=app, remote_addr="1.2.3.4")
-with httpx.Client(dispatch=dispatch, base_url="http://testserver") as client:
+transport = httpx.WSGITransport(app=app, remote_addr="1.2.3.4")
+with httpx.Client(transport=transport, base_url="http://testserver") as client:
     ...
 ```
 
