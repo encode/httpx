@@ -626,13 +626,14 @@ HTTPX's `Client` also accepts a `transport` argument. This argument allows you
 to provide a custom Transport object that will be used to perform the actual
 sending of the requests.
 
-These Transport objects must implement some methods from
+These Transport objects must implement at least one method from
 [`httpcore`'s API](https://www.encode.io/httpcore/api/), either
 `httpcore.AsyncHTTPTransport` if you're using `AsyncClient`, or
 `httpcore.SyncHTTPTransport` if you're using `Client`.
 
-Specifically you *MUST* implement `request`, and `close` or `aclose` depending
-on the type of client you're using.
+Specifically you *MUST* implement `request`. If you need additional logic for
+closing the transport you can also implement `close` or `aclose` depending on
+the type of client you're using.
 
 For example, HTTPX ships with a transport that uses the excellent
 [`urllib3` library](https://urllib3.readthedocs.io/en/latest/):
@@ -642,4 +643,35 @@ For example, HTTPX ships with a transport that uses the excellent
 >>> client = httpx.Client(transport=httpx.URLLib3Transport())
 >>> client.get("https://example.org")
 <Response [200 OK]>
+```
+
+A complete example of a transport implementation would be:
+
+```python
+import json
+
+import httpcore
+import httpx
+
+
+class JSONEchoTransport(httpcore.SyncHTTPTransport):
+    """
+    A mock transport that returns a JSON response containing the request body.
+    """
+
+    def request(self, method, url, headers=None, stream=None, timeout=None):
+        body = b"".join(stream).decode("utf-8")
+        content = json.dumps({"body": body}).encode("utf-8")
+        stream = httpcore.SyncByteStream([content])
+        headers = [(b"content-type", b"application/json")]
+        return b"HTTP/1.1", 200, b"OK", headers, stream
+```
+
+Which we can use in the same way:
+
+```python
+>>> client = httpx.Client(transport=JSONEchoTransport())
+>>> response = client.post("https://httpbin.org/post", data="Hello, world!")
+>>> response.json()
+{'body': 'Hello, world!'}
 ```
