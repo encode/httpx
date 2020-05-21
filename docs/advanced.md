@@ -626,14 +626,11 @@ HTTPX's `Client` also accepts a `transport` argument. This argument allows you
 to provide a custom Transport object that will be used to perform the actual
 sending of the requests.
 
-These Transport objects must implement at least one method from
-[`httpcore`'s API](https://www.encode.io/httpcore/api/), either
-`httpcore.AsyncHTTPTransport` if you're using `AsyncClient`, or
-`httpcore.SyncHTTPTransport` if you're using `Client`.
-
-Specifically you *MUST* implement `request`. If you need additional logic for
-closing the transport you can also implement `close` or `aclose` depending on
-the type of client you're using.
+A transport instance must implement the Transport API defined by
+[`httpcore`](https://www.encode.io/httpcore/api/). You
+should either subclass `httpcore.AsyncHTTPTransport` to implement a transport to
+use with `AsyncClient`, or subclass `httpcore.SyncHTTPTransport` to implement a
+transport to use with `Client`.
 
 For example, HTTPX ships with a transport that uses the excellent
 [`urllib3` library](https://urllib3.readthedocs.io/en/latest/):
