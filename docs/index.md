@@ -106,14 +106,16 @@ To find out about tools that integrate with HTTPX, see [Third Party Packages](th
 
 The HTTPX project relies on these excellent libraries:
 
-* `urllib3` - Sync client support.
-* `h11` - HTTP/1.1 support.
-* `h2` - HTTP/2 support.
+* `httpcore` - The underlying transport implementation for `httpx`.
+  * `h11` - HTTP/1.1 support.
+  * `h2` - HTTP/2 support.
 * `certifi` - SSL certificates.
 * `chardet` - Fallback auto-detection for response encoding.
 * `hstspreload` - determines whether IDNA-encoded host should be only accessed via HTTPS.
 * `idna` - Internationalized domain name support.
 * `rfc3986` - URL parsing & normalization.
+* `sniffio` - Async library autodetection.
+* `urllib3` - Support for the "httpx.URLLib3Transport" class. *(Optional)*
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
 
 A huge amount of credit is due to `requests` for the API layout that
