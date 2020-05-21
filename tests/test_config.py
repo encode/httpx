@@ -118,13 +118,13 @@ def test_ssl_eq():
 
 
 def test_limits_repr():
-    limits = httpx.PoolLimits(hard_limit=100)
-    assert repr(limits) == "PoolLimits(soft_limit=None, hard_limit=100)"
+    limits = httpx.PoolLimits(max_connections=100)
+    assert repr(limits) == "PoolLimits(max_keepalive=None, max_connections=100)"
 
 
 def test_limits_eq():
-    limits = httpx.PoolLimits(hard_limit=100)
-    assert limits == httpx.PoolLimits(hard_limit=100)
+    limits = httpx.PoolLimits(max_connections=100)
+    assert limits == httpx.PoolLimits(max_connections=100)
 
 
 def test_timeout_eq():

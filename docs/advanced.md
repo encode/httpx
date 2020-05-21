@@ -404,14 +404,14 @@ response = client.get('http://example.com/')
 You can control the connection pool size using the `pool_limits` keyword
 argument on the client. It takes instances of `httpx.PoolLimits` which define:
 
-- `soft_limit`, number of allowable keep-alive connections, or `None` to always
+- `max_keepalive`, number of allowable keep-alive connections, or `None` to always
 allow. (Defaults 10)
-- `hard_limit`, maximum number of allowable connections, or` None` for no limits.
+- `max_connections`, maximum number of allowable connections, or` None` for no limits.
 (Default 100)
 
 
 ```python
-limits = httpx.PoolLimits(soft_limit=5, hard_limit=10)
+limits = httpx.PoolLimits(max_keepalive=5, max_connections=10)
 client = httpx.Client(pool_limits=limits)
 ```
 
