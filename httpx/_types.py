@@ -65,4 +65,4 @@ FileTypes = Union[
     # (filename, file (or text), content_type)
     Tuple[Optional[str], FileContent, Optional[str]],
 ]
-RequestFiles = Dict[str, FileTypes]
+RequestFiles = Mapping[str, FileTypes]
