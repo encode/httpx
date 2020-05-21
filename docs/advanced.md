@@ -173,7 +173,7 @@ with httpx.Client(app=app, base_url="http://testserver") as client:
     assert r.text == "Hello World!"
 ```
 
-For some more complex cases you might need to customize the WSGI dispatch. This allows you to:
+For some more complex cases you might need to customize the WSGI transport. This allows you to:
 
 * Inspect 500 error responses rather than raise exceptions by setting `raise_app_exceptions=False`.
 * Mount the WSGI application at a subpath by setting `script_name` (WSGI).
@@ -183,8 +183,8 @@ For example:
 
 ```python
 # Instantiate a client that makes WSGI requests with a client IP of "1.2.3.4".
-dispatch = httpx.WSGIDispatch(app=app, remote_addr="1.2.3.4")
-with httpx.Client(dispatch=dispatch, base_url="http://testserver") as client:
+transport = httpx.WSGITransport(app=app, remote_addr="1.2.3.4")
+with httpx.Client(transport=transport, base_url="http://testserver") as client:
     ...
 ```
 
@@ -399,6 +399,22 @@ client = httpx.Client(timeout=timeout)
 response = client.get('http://example.com/')
 ```
 
+## Pool limit configuration
+
+You can control the connection pool size using the `pool_limits` keyword
+argument on the client. It takes instances of `httpx.PoolLimits` which define:
+
+- `soft_limit`, number of allowable keep-alive connections, or `None` to always
+allow. (Defaults 10)
+- `hard_limit`, maximum number of allowable connections, or` None` for no limits.
+(Default 100)
+
+
+```python
+limits = httpx.PoolLimits(soft_limit=5, hard_limit=10)
+client = httpx.Client(pool_limits=limits)
+```
+
 ## Multipart file encoding
 
 As mentioned in the [quickstart](/quickstart#sending-multipart-file-uploads)
@@ -558,7 +574,18 @@ import httpx
 r = httpx.get("https://example.org", verify="path/to/client.pem")
 ```
 
-You can also disable the SSL verification...
+Alternatively, you can pass a standard library `ssl.SSLContext`.
+
+```python
+>>> import ssl
+>>> import httpx
+>>> context = ssl.create_default_context()
+>>> context.load_verify_locations(cafile="/tmp/client.pem")
+>>> httpx.get('https://example.org', verify=context)
+<Response [200 OK]>
+```
+
+Or you can also disable the SSL verification entirely, which is _not_ recommended.
 
 ```python
 import httpx
@@ -591,4 +618,57 @@ If you do need to make HTTPS connections to a local server, for example to test 
 >>> r = httpx.get("https://localhost:8000", verify="/tmp/client.pem")
 >>> r
 Response <200 OK>
+```
+
+## Custom Transports
+
+HTTPX's `Client` also accepts a `transport` argument. This argument allows you
+to provide a custom Transport object that will be used to perform the actual
+sending of the requests.
+
+A transport instance must implement the Transport API defined by
+[`httpcore`](https://www.encode.io/httpcore/api/). You
+should either subclass `httpcore.AsyncHTTPTransport` to implement a transport to
+use with `AsyncClient`, or subclass `httpcore.SyncHTTPTransport` to implement a
+transport to use with `Client`.
+
+For example, HTTPX ships with a transport that uses the excellent
+[`urllib3` library](https://urllib3.readthedocs.io/en/latest/):
+
+```python
+>>> import httpx
+>>> client = httpx.Client(transport=httpx.URLLib3Transport())
+>>> client.get("https://example.org")
+<Response [200 OK]>
+```
+
+A complete example of a transport implementation would be:
+
+```python
+import json
+
+import httpcore
+import httpx
+
+
+class JSONEchoTransport(httpcore.SyncHTTPTransport):
+    """
+    A mock transport that returns a JSON response containing the request body.
+    """
+
+    def request(self, method, url, headers=None, stream=None, timeout=None):
+        body = b"".join(stream).decode("utf-8")
+        content = json.dumps({"body": body}).encode("utf-8")
+        stream = httpcore.SyncByteStream([content])
+        headers = [(b"content-type", b"application/json")]
+        return b"HTTP/1.1", 200, b"OK", headers, stream
+```
+
+Which we can use in the same way:
+
+```python
+>>> client = httpx.Client(transport=JSONEchoTransport())
+>>> response = client.post("https://httpbin.org/post", data="Hello, world!")
+>>> response.json()
+{'body': 'Hello, world!'}
 ```

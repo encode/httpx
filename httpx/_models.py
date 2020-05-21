@@ -4,7 +4,6 @@ import email.message
 import json as jsonlib
 import typing
 import urllib.request
-import warnings
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
@@ -13,13 +12,7 @@ import chardet
 import rfc3986
 
 from .__version__ import __version__
-from ._content_streams import (
-    ByteStream,
-    ContentStream,
-    RequestData,
-    RequestFiles,
-    encode,
-)
+from ._content_streams import ByteStream, ContentStream, encode
 from ._decoders import (
     SUPPORTED_DECODERS,
     Decoder,
@@ -39,7 +32,15 @@ from ._exceptions import (
     StreamConsumed,
 )
 from ._status_codes import StatusCode
-from ._types import StrOrBytes
+from ._types import (
+    CookieTypes,
+    HeaderTypes,
+    PrimitiveData,
+    QueryParamTypes,
+    RequestData,
+    RequestFiles,
+    URLTypes,
+)
 from ._utils import (
     ElapsedTimer,
     flatten_queryparams,
@@ -50,29 +51,11 @@ from ._utils import (
     obfuscate_sensitive_headers,
     parse_header_links,
     str_query_param,
+    warn_deprecated,
 )
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._dispatch.base import AsyncDispatcher  # noqa: F401
-
-PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
-
-URLTypes = typing.Union["URL", str]
-
-QueryParamTypes = typing.Union[
-    "QueryParams",
-    typing.Mapping[str, typing.Union[PrimitiveData, typing.Sequence[PrimitiveData]]],
-    typing.List[typing.Tuple[str, PrimitiveData]],
-    str,
-]
-
-HeaderTypes = typing.Union[
-    "Headers",
-    typing.Dict[StrOrBytes, StrOrBytes],
-    typing.Sequence[typing.Tuple[StrOrBytes, StrOrBytes]],
-]
-
-CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
 
 
 class URL:
@@ -918,7 +901,7 @@ class Response:
             message = message.format(self, error_type="Server Error")
             raise HTTPError(message, response=self)
 
-    def json(self, **kwargs: typing.Any) -> typing.Union[dict, list]:
+    def json(self, **kwargs: typing.Any) -> typing.Any:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
@@ -954,17 +937,17 @@ class Response:
 
     @property
     def stream(self):  # type: ignore
-        warnings.warn(  # pragma: nocover
+        warn_deprecated(  # pragma: nocover
             "Response.stream() is due to be deprecated. "
-            "Use Response.aiter_bytes() instead."
+            "Use Response.aiter_bytes() instead.",
         )
         return self.aiter_bytes  # pragma: nocover
 
     @property
     def raw(self):  # type: ignore
-        warnings.warn(  # pragma: nocover
+        warn_deprecated(  # pragma: nocover
             "Response.raw() is due to be deprecated. "
-            "Use Response.aiter_raw() instead."
+            "Use Response.aiter_raw() instead.",
         )
         return self.aiter_raw  # pragma: nocover
 

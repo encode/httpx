@@ -3,6 +3,16 @@
 # Optional
 brotlipy==0.7.*
 
+# Documentation
+mkdocs
+mkautodoc
+mkdocs-material
+
+# Packaging
+twine
+wheel
+
+# Tests & Linting
 autoflake
 black
 cryptography
@@ -10,15 +20,13 @@ flake8
 flake8-bugbear
 flake8-pie
 isort
-mkdocs
-mkautodoc
-mkdocs-material
 mypy
 pytest
 pytest-asyncio
 pytest-trio
 pytest-cov
 trio
+trio-typing
 trustme
 uvicorn
 seed-isort-config

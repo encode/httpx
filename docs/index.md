@@ -10,11 +10,8 @@ HTTPX
 
 <div align="center">
 <p>
-<a href="https://travis-ci.org/encode/httpx">
-    <img src="https://travis-ci.org/encode/httpx.svg?branch=master" alt="Build Status">
-</a>
-<a href="https://codecov.io/gh/encode/httpx">
-    <img src="https://codecov.io/gh/encode/httpx/branch/master/graph/badge.svg" alt="Coverage">
+<a href="https://github.com/encode/httpx/actions">
+    <img src="https://github.com/encode/httpx/workflows/Test%20Suite/badge.svg" alt="Test Suite">
 </a>
 <a href="https://pypi.org/project/httpx/">
     <img src="https://badge.fury.io/py/httpx.svg" alt="Package version">
@@ -32,7 +29,7 @@ HTTPX is a fully featured HTTP client for Python 3, which provides sync and asyn
 
     We believe we've got the public API to a stable point now, but would strongly recommend pinning your dependencies to the `0.12.*` release, so that you're able to properly review [API changes between package updates](https://github.com/encode/httpx/blob/master/CHANGELOG.md).
 
-    A 1.0 release is expected to be issued sometime on or before April 2020.
+    A 1.0 release is expected to be issued sometime around mid-2020.
 
 ---
 

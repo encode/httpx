@@ -1,14 +1,28 @@
-#!/bin/sh -e
+#!/bin/sh
 
 export PREFIX=""
 if [ -d 'venv' ] ; then
     export PREFIX="venv/bin/"
 fi
 
-set -x
-
-if [ -z $CI ]; then
+if [ -z $GITHUB_ACTIONS ]; then
+    set +e
     scripts/check
+    while [ $? -ne 0 ]; do
+        read -p "Running 'scripts/check' failed. Do you want to run 'scripts/lint' now? [y/N]  " yn
+        case $yn in
+           [Yy]* ) :;;
+           * ) exit;;
+        esac
+        scripts/lint
+        scripts/check
+    done
 fi
 
+set -ex
+
 ${PREFIX}pytest $@
+
+if [ -z $GITHUB_ACTIONS ]; then
+    scripts/coverage
+fi

@@ -484,7 +484,7 @@ async def test_digest_auth_unavailable_streaming_body():
     client = AsyncClient(dispatch=MockDispatch())
 
     async def streaming_body():
-        yield b"Example request body"
+        yield b"Example request body"  # pragma: nocover
 
     with pytest.raises(RequestBodyUnavailable):
         await client.post(url, data=streaming_body(), auth=auth)

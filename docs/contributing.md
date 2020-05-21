@@ -156,3 +156,60 @@ Before releasing a new version, create a pull request that includes:
 For an example, see [#362](https://github.com/encode/httpx/pull/362).
 
 Once the release PR is merged, run `$ scripts/publish` to publish the new release to PyPI.
+
+## Development proxy setup
+
+To test and debug requests via a proxy it's best to run a proxy server locally.
+Any server should do but HTTPCore's test suite uses
+[`mitmproxy`](https://mitmproxy.org/) which is written in Python, it's fully
+featured and has excellent UI and tools for introspection of requests.
+
+You can install `mitmproxy` using `pip install mitmproxy` or [several
+other ways](https://docs.mitmproxy.org/stable/overview-installation/).
+
+`mitmproxy` does require setting up local TLS certificates for HTTPS requests,
+as its main purpose is to allow developers to inspect requests that pass through
+it. We can set them up follows:
+
+1. [`pip install trustme-cli`](https://github.com/sethmlarson/trustme-cli/).
+2. `trustme-cli -i example.org www.example.org`, assuming you want to test
+connecting to that domain, this will create three files: `server.pem`,
+`server.key` and `client.pem`.
+3. `mitmproxy` requires a PEM file that includes the private key and the
+certificate so we need to concatenate them:
+`cat server.key server.pem > server.withkey.pem`.
+4. Start the proxy server `mitmproxy --certs server.withkey.pem`, or use the
+[other mitmproxy commands](https://docs.mitmproxy.org/stable/) with different
+UI options.
+
+At this point the server is ready to start serving requests, you'll need to
+configure HTTPX as described in the
+[proxy section](https://www.python-httpx.org/advanced/#http-proxying) and
+the [SSL certificates section](https://www.python-httpx.org/advanced/#ssl-certificates),
+this is where our previously generated `client.pem` comes in:
+
+```
+import httpx
+
+proxies = {"all": "http://127.0.0.1:8080/"}
+
+with httpx.Client(proxies=proxies, verify="/path/to/client.pem") as client:
+    response = client.get("https://example.org")
+    print(response.status_code)  # should print 200
+```
+
+Note, however, that HTTPS requests will only succeed to the host specified
+in the SSL/TLS certificate we generated, HTTPS requests to other hosts will
+raise an error like:
+
+```
+ssl.SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate
+verify failed: Hostname mismatch, certificate is not valid for
+'duckduckgo.com'. (_ssl.c:1108)
+```
+
+If you want to make requests to more hosts you'll need to regenerate the
+certificates and include all the hosts you intend to connect to in the
+seconds step, i.e.
+
+`trustme-cli -i example.org www.example.org duckduckgo.com www.duckduckgo.com`
