@@ -73,7 +73,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
     async def request(
         self,
         method: bytes,
-        url: Tuple[bytes, bytes, int, bytes],
+        url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.AsyncByteStream = None,
         timeout: Dict[str, Optional[float]] = None,
