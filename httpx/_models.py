@@ -4,7 +4,6 @@ import email.message
 import json as jsonlib
 import typing
 import urllib.request
-import warnings
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
@@ -52,6 +51,7 @@ from ._utils import (
     obfuscate_sensitive_headers,
     parse_header_links,
     str_query_param,
+    warn_deprecated,
 )
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -873,22 +873,20 @@ class Response:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
     @property
-    def stream(self):  # type: ignore
-        warnings.warn(  # pragma: nocover
+    def stream(self):  # type: ignore  # pragma: no cover
+        warn_deprecated(
             "Response.stream() is due to be deprecated. "
             "Use Response.aiter_bytes() instead.",
-            DeprecationWarning,
         )
-        return self.aiter_bytes  # pragma: nocover
+        return self.aiter_bytes
 
     @property
-    def raw(self):  # type: ignore
-        warnings.warn(  # pragma: nocover
+    def raw(self):  # type: ignore  # pragma: no cover
+        warn_deprecated(
             "Response.raw() is due to be deprecated. "
             "Use Response.aiter_raw() instead.",
-            DeprecationWarning,
         )
-        return self.aiter_raw  # pragma: nocover
+        return self.aiter_raw
 
     def read(self) -> bytes:
         """
