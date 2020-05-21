@@ -88,7 +88,7 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
     def request(
         self,
         method: bytes,
-        url: Tuple[bytes, bytes, int, bytes],
+        url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.SyncByteStream = None,
         timeout: Dict[str, Optional[float]] = None,
@@ -112,8 +112,8 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
         body = stream if chunked or content_length else None
 
         scheme, host, port, path = url
-        default_scheme = {80: b"http", 443: "https"}.get(port)
-        if scheme == default_scheme:
+        default_port = {b"http": 80, "https": 443}.get(scheme)
+        if port is None or port == default_port:
             url_str = "%s://%s%s" % (
                 scheme.decode("ascii"),
                 host.decode("ascii"),
