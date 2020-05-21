@@ -528,7 +528,7 @@ class Client(BaseClient):
         max_connections = pool_limits.hard_limit
 
         return httpcore.SyncHTTPProxy(
-            proxy_origin=proxy.url.raw[:3],
+            proxy_url=proxy.url.raw,
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
@@ -1076,7 +1076,7 @@ class AsyncClient(BaseClient):
         max_connections = pool_limits.hard_limit
 
         return httpcore.AsyncHTTPProxy(
-            proxy_origin=proxy.url.raw[:3],
+            proxy_url=proxy.url.raw,
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
