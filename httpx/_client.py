@@ -504,13 +504,11 @@ class Client(BaseClient):
         ssl_context = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env
         ).ssl_context
-        max_keepalive = pool_limits.soft_limit
-        max_connections = pool_limits.hard_limit
 
         return httpcore.SyncConnectionPool(
             ssl_context=ssl_context,
-            max_keepalive=max_keepalive,
-            max_connections=max_connections,
+            max_keepalive=pool_limits.max_keepalive,
+            max_connections=pool_limits.max_connections,
         )
 
     def init_proxy_transport(
@@ -524,16 +522,14 @@ class Client(BaseClient):
         ssl_context = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env
         ).ssl_context
-        max_keepalive = pool_limits.soft_limit
-        max_connections = pool_limits.hard_limit
 
         return httpcore.SyncHTTPProxy(
             proxy_url=proxy.url.raw,
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
-            max_keepalive=max_keepalive,
-            max_connections=max_connections,
+            max_keepalive=pool_limits.max_keepalive,
+            max_connections=pool_limits.max_connections,
         )
 
     def transport_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
@@ -1050,13 +1046,11 @@ class AsyncClient(BaseClient):
         ssl_context = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env
         ).ssl_context
-        max_keepalive = pool_limits.soft_limit
-        max_connections = pool_limits.hard_limit
 
         return httpcore.AsyncConnectionPool(
             ssl_context=ssl_context,
-            max_keepalive=max_keepalive,
-            max_connections=max_connections,
+            max_keepalive=pool_limits.max_keepalive,
+            max_connections=pool_limits.max_connections,
             http2=http2,
         )
 
@@ -1072,16 +1066,14 @@ class AsyncClient(BaseClient):
         ssl_context = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env
         ).ssl_context
-        max_keepalive = pool_limits.soft_limit
-        max_connections = pool_limits.hard_limit
 
         return httpcore.AsyncHTTPProxy(
             proxy_url=proxy.url.raw,
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
-            max_keepalive=max_keepalive,
-            max_connections=max_connections,
+            max_keepalive=pool_limits.max_keepalive,
+            max_connections=pool_limits.max_connections,
             http2=http2,
         )
 

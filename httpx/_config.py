@@ -8,7 +8,7 @@ import certifi
 
 from ._models import URL, Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
-from ._utils import get_ca_bundle_from_env, get_logger
+from ._utils import get_ca_bundle_from_env, get_logger, warn_deprecated
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -288,29 +288,43 @@ class PoolLimits:
 
     **Parameters:**
 
-    * **soft_limit** - Allow the connection pool to maintain keep-alive connections
+    * **max_keepalive** - Allow the connection pool to maintain keep-alive connections
                        below this point.
-    * **hard_limit** - The maximum number of concurrent connections that may be
+    * **max_connections** - The maximum number of concurrent connections that may be
                        established.
     """
 
     def __init__(
-        self, *, soft_limit: int = None, hard_limit: int = None,
+        self,
+        *,
+        max_keepalive: int = None,
+        max_connections: int = None,
+        soft_limit: int = None,
+        hard_limit: int = None,
     ):
-        self.soft_limit = soft_limit
-        self.hard_limit = hard_limit
+        self.max_keepalive = max_keepalive
+        self.max_connections = max_connections
+        if soft_limit is not None:  # pragma: nocover
+            self.max_keepalive = soft_limit
+            warn_deprecated("'soft_limit' is deprecated. Use 'max_keepalive' instead.",)
+        if hard_limit is not None:  # pragma: nocover
+            self.max_connections = hard_limit
+            warn_deprecated(
+                "'hard_limit' is deprecated. Use 'max_connections' instead.",
+            )
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self.soft_limit == other.soft_limit
-            and self.hard_limit == other.hard_limit
+            and self.max_keepalive == other.max_keepalive
+            and self.max_connections == other.max_connections
         )
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return (
-            f"{class_name}(soft_limit={self.soft_limit}, hard_limit={self.hard_limit})"
+            f"{class_name}(max_keepalive={self.max_keepalive}, "
+            f"max_connections={self.max_connections})"
         )
 
 
