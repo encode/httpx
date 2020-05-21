@@ -633,7 +633,8 @@ use with `AsyncClient`, or subclass `httpcore.SyncHTTPTransport` to implement a
 transport to use with `Client`.
 
 For example, HTTPX ships with a transport that uses the excellent
-[`urllib3` library](https://urllib3.readthedocs.io/en/latest/):
+[`urllib3` library](https://urllib3.readthedocs.io/en/latest/), which can be
+used with the sync `Client`...
 
 ```python
 >>> import httpx
@@ -642,7 +643,9 @@ For example, HTTPX ships with a transport that uses the excellent
 <Response [200 OK]>
 ```
 
-A complete example of a transport implementation would be:
+Note that you'll need to install the `urllib3` package to use `URLLib3Transport`.
+
+A complete example of a custom transport implementation would be:
 
 ```python
 import json
