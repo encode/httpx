@@ -462,7 +462,8 @@ class Client(BaseClient):
         if dispatch is not None:
             warnings.warn(
                 "The dispatch argument is deprecated since v0.13 and will be "
-                "removed in a future release, please use 'transport'"
+                "removed in a future release, please use 'transport'",
+                DeprecationWarning,
             )
             if transport is None:
                 transport = dispatch
@@ -1003,7 +1004,8 @@ class AsyncClient(BaseClient):
         if dispatch is not None:
             warnings.warn(
                 "The dispatch argument is deprecated since v0.13 and will be "
-                "removed in a future release, please use 'transport'"
+                "removed in a future release, please use 'transport'",
+                DeprecationWarning,
             )
             if transport is None:
                 transport = dispatch
