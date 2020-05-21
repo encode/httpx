@@ -1,11 +1,10 @@
-import math
 import socket
 import ssl
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import httpcore
 
-from .._config import DEFAULT_POOL_LIMITS, PoolLimits, Proxy, SSLConfig
+from .._config import Proxy, SSLConfig
 from .._content_streams import ByteStream, IteratorStream
 from .._types import CertTypes, VerifyTypes
 from .._utils import as_network_error, warn_deprecated
@@ -36,23 +35,6 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
         ssl_config = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env, http2=False
         )
-        max_connections = pool_limits.max_connections
-        max_keepalive = pool_limits.max_keepalive
-
-        # Our connection pool configuration doesn't quite match up with urllib3's
-        # controls, but we can put sensible mappings in place:
-        if max_connections is None:
-            block = False
-            if max_keepalive is None:
-                num_pools = 1000
-                maxsize = 1000
-            else:
-                num_pools = int(math.sqrt(max_keepalive))
-                maxsize = int(math.sqrt(max_keepalive))
-        else:
-            block = True
-            num_pools = int(math.sqrt(max_connections))
-            maxsize = int(math.sqrt(max_connections))
 
         self.pool = self.init_pool_manager(
             proxy=proxy,
@@ -173,7 +155,9 @@ class URLLib3Dispatch(URLLib3Transport):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        pool_connections: int = 10,
+        pool_maxsize: int = 10,
+        pool_block: bool = False,
     ):
         warn_deprecated("URLLib3Dispatch is deprecated, please use URLLib3Transport")
         super().__init__(
@@ -181,5 +165,7 @@ class URLLib3Dispatch(URLLib3Transport):
             verify=verify,
             cert=cert,
             trust_env=trust_env,
-            pool_limits=pool_limits,
+            pool_connections=pool_connections,
+            pool_maxsize=pool_maxsize,
+            pool_block=pool_block,
         )
