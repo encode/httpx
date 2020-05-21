@@ -1,7 +1,6 @@
 import os
 import ssl
 import typing
-import warnings
 from base64 import b64encode
 from pathlib import Path
 
@@ -9,7 +8,7 @@ import certifi
 
 from ._models import URL, Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
-from ._utils import get_ca_bundle_from_env, get_logger
+from ._utils import get_ca_bundle_from_env, get_logger, warn_deprecated
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -307,15 +306,13 @@ class PoolLimits:
         self.max_connections = max_connections
         if soft_limit is not None:  # pragma: nocover
             self.max_keepalive = soft_limit
-            warnings.warn(
+            warn_deprecated(
                 "'soft_limit' is deprecated. Use 'max_keepalive' instead.",
-                DeprecationWarning,
             )
         if hard_limit is not None:  # pragma: nocover
             self.max_connections = hard_limit
-            warnings.warn(
+            warn_deprecated(
                 "'hard_limit' is deprecated. Use 'max_connections' instead.",
-                DeprecationWarning,
             )
 
     def __eq__(self, other: typing.Any) -> bool:
