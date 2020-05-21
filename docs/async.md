@@ -165,7 +165,7 @@ We can make requests directly against the application, like so:
 ...     assert r.text == "Hello World!"
 ```
 
-For some more complex cases you might need to customise the ASGI dispatch. This allows you to:
+For some more complex cases you might need to customise the ASGI transport. This allows you to:
 
 * Inspect 500 error responses rather than raise exceptions by setting `raise_app_exceptions=False`.
 * Mount the ASGI application at a subpath by setting `root_path`.
@@ -176,8 +176,8 @@ For example:
 ```python
 # Instantiate a client that makes ASGI requests with a client IP of "1.2.3.4",
 # on port 123.
-dispatch = httpx.ASGIDispatch(app=app, client=("1.2.3.4", 123))
-async with httpx.AsyncClient(dispatch=dispatch, base_url="http://testserver") as client:
+transport = httpx.ASGITransport(app=app, client=("1.2.3.4", 123))
+async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
     ...
 ```
 

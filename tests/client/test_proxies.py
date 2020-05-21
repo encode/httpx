@@ -74,14 +74,14 @@ PROXY_URL = "http://[::1]"
         ),
     ],
 )
-def test_dispatcher_for_request(url, proxies, expected):
+def test_transport_for_request(url, proxies, expected):
     client = httpx.AsyncClient(proxies=proxies)
-    dispatcher = client.dispatcher_for_url(httpx.URL(url))
+    transport = client.transport_for_url(httpx.URL(url))
 
     if expected is None:
-        assert dispatcher is client.dispatch
+        assert transport is client.transport
     else:
-        assert dispatcher.proxy_origin == httpx.URL(expected).raw[:3]
+        assert transport.proxy_origin == httpx.URL(expected).raw[:3]
 
 
 def test_unsupported_proxy_scheme():
@@ -110,9 +110,9 @@ def test_proxies_environ(monkeypatch, url, env, expected):
         monkeypatch.setenv(name, value)
 
     client = httpx.AsyncClient()
-    dispatcher = client.dispatcher_for_url(httpx.URL(url))
+    transport = client.transport_for_url(httpx.URL(url))
 
     if expected is None:
-        assert dispatcher == client.dispatch
+        assert transport == client.transport
     else:
-        assert dispatcher.proxy_origin == httpx.URL(expected).raw[:3]
+        assert transport.proxy_origin == httpx.URL(expected).raw[:3]
