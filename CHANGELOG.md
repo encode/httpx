@@ -20,7 +20,7 @@ We also now have [a public "Transport API"](https://www.python-httpx.org/advance
 
 * Use `httpcore` for underlying HTTP transport. Drop `urllib3` requirement. (Pull #804, #967)
 * Rename pool limit options from `soft_limit`/`hard_limit` to `max_keepalive`/`max_connections`. (Pull #968)
-* The privious private "Dispatch API" has now been promoted to a public "Transport API". (Pull #963)
+* The previous private "Dispatch API" has now been promoted to a public "Transport API". When customizing the transport use `transport=...`. The `ASGIDispatch` and `WSGIDispatch` class naming is deprecated in favour of `ASGITransport` and `WSGITransport`. (Pull #963)
 
 ### Added
 
