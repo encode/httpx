@@ -14,9 +14,7 @@ This release switches to `httpcore` for all the internal networking, which means
 
 It also means we've had to remove our UDS support, since maintaining that would have meant having to push back our work towards a 1.0 release, which isn't a trade-off we wanted to make.
 
-We also now have [a public "Transport API"](https://www.python-httpx.org/advanced/#custom-transports),
-which you can use to implement custom transport implementations against. This formalises
-and replaces our previously private "Dispatch API".
+We also now have [a public "Transport API"](https://www.python-httpx.org/advanced/#custom-transports), which you can use to implement custom transport implementations against. This formalises and replaces our previously private "Dispatch API".
 
 ### Changed
 
