@@ -4,16 +4,20 @@ import ssl
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import httpcore
-import urllib3
-from urllib3.exceptions import MaxRetryError, SSLError
 
 from .._config import DEFAULT_POOL_LIMITS, PoolLimits, Proxy, SSLConfig
 from .._content_streams import ByteStream, IteratorStream
 from .._types import CertTypes, VerifyTypes
-from .._utils import as_network_error
+from .._utils import as_network_error, warn_deprecated
+
+try:
+    import urllib3
+    from urllib3.exceptions import MaxRetryError, SSLError
+except ImportError:  # pragma: nocover
+    urllib3 = None
 
 
-class URLLib3Dispatcher(httpcore.SyncHTTPTransport):
+class URLLib3Transport(httpcore.SyncHTTPTransport):
     def __init__(
         self,
         *,
@@ -23,6 +27,10 @@ class URLLib3Dispatcher(httpcore.SyncHTTPTransport):
         trust_env: bool = None,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
     ):
+        assert (
+            urllib3 is not None
+        ), "urllib3 must be installed separately in order to use URLLib3Transport"
+
         ssl_config = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env, http2=False
         )
@@ -153,3 +161,23 @@ class URLLib3Dispatcher(httpcore.SyncHTTPTransport):
 
     def close(self) -> None:
         self.pool.clear()
+
+
+class URLLib3Dispatch(URLLib3Transport):
+    def __init__(
+        self,
+        *,
+        proxy: Proxy = None,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        trust_env: bool = None,
+        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+    ):
+        warn_deprecated("URLLib3Dispatch is deprecated, please use URLLib3Transport")
+        super().__init__(
+            proxy=proxy,
+            verify=verify,
+            cert=cert,
+            trust_env=trust_env,
+            pool_limits=pool_limits,
+        )
