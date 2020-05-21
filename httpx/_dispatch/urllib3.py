@@ -26,23 +26,23 @@ class URLLib3Dispatcher(httpcore.SyncHTTPTransport):
         ssl_config = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env, http2=False
         )
-        hard_limit = pool_limits.hard_limit
-        soft_limit = pool_limits.soft_limit
+        max_connections = pool_limits.max_connections
+        max_keepalive = pool_limits.max_keepalive
 
         # Our connection pool configuration doesn't quite match up with urllib3's
         # controls, but we can put sensible mappings in place:
-        if hard_limit is None:
+        if max_connections is None:
             block = False
-            if soft_limit is None:
+            if max_keepalive is None:
                 num_pools = 1000
                 maxsize = 1000
             else:
-                num_pools = int(math.sqrt(soft_limit))
-                maxsize = int(math.sqrt(soft_limit))
+                num_pools = int(math.sqrt(max_keepalive))
+                maxsize = int(math.sqrt(max_keepalive))
         else:
             block = True
-            num_pools = int(math.sqrt(hard_limit))
-            maxsize = int(math.sqrt(hard_limit))
+            num_pools = int(math.sqrt(max_connections))
+            maxsize = int(math.sqrt(max_connections))
 
         self.pool = self.init_pool_manager(
             proxy=proxy,
