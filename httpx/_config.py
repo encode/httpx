@@ -306,9 +306,7 @@ class PoolLimits:
         self.max_connections = max_connections
         if soft_limit is not None:  # pragma: nocover
             self.max_keepalive = soft_limit
-            warn_deprecated(
-                "'soft_limit' is deprecated. Use 'max_keepalive' instead.",
-            )
+            warn_deprecated("'soft_limit' is deprecated. Use 'max_keepalive' instead.",)
         if hard_limit is not None:  # pragma: nocover
             self.max_connections = hard_limit
             warn_deprecated(
