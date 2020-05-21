@@ -623,7 +623,7 @@ Response <200 OK>
 ## Custom Transports
 
 HTTPX's `Client` also accepts a `transport` argument. This argument allows you
-to inject a custom Transport objects that will be used to perform the actual
+to provide a custom Transport object that will be used to perform the actual
 sending of the requests.
 
 These Transport objects must implement some methods from
