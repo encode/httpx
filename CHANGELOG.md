@@ -36,6 +36,8 @@ and TRACE level logging. (Pull encode/httpcore#79)
 * Fix support for generator based WSGI apps. (Pull #887)
 * Reuse of connections on HTTP/2 in close concurrency situations. (Pull encode/httpcore#81)
 * Honor HTTP/2 max concurrent streams settings (Pull encode/httpcore#89, encode/httpcore#90)
+* Fix bytes support in multipart uploads. (Pull #974)
+* Improve typing support for `files=...`. (Pull #976)
 
 ### Removed
 
