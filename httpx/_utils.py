@@ -404,4 +404,4 @@ def as_network_error(*exception_classes: type) -> typing.Iterator[None]:
 
 
 def warn_deprecated(message: str) -> None:
-    warnings.warn(message, DeprecationWarning)
+    warnings.warn(message, DeprecationWarning, stacklevel=2)
