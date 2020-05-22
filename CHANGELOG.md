@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.13.1 (May 22nd, 2020)
+
+### Fixed
+
+* Fix pool options deprecation warning. (Pull #980)
+* Include `httpx.URLLib3ProxyTransport` in top-level API. (Pull #979)
+
 ## 0.13.0 (May 22nd, 2020)
 
 This release switches to `httpcore` for all the internal networking, which means:
