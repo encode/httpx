@@ -436,6 +436,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http2: bool = False,
         proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
@@ -470,6 +471,7 @@ class Client(BaseClient):
         self.transport = self.init_transport(
             verify=verify,
             cert=cert,
+            http2=http2,
             pool_limits=pool_limits,
             transport=transport,
             app=app,
@@ -480,6 +482,7 @@ class Client(BaseClient):
                 proxy,
                 verify=verify,
                 cert=cert,
+                http2=http2,
                 pool_limits=pool_limits,
                 trust_env=trust_env,
             )
@@ -490,6 +493,7 @@ class Client(BaseClient):
         self,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -509,6 +513,7 @@ class Client(BaseClient):
             ssl_context=ssl_context,
             max_keepalive=pool_limits.max_keepalive,
             max_connections=pool_limits.max_connections,
+            http2=http2,
         )
 
     def init_proxy_transport(
@@ -516,6 +521,7 @@ class Client(BaseClient):
         proxy: Proxy,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http2: bool = False,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.SyncHTTPTransport:
@@ -530,6 +536,7 @@ class Client(BaseClient):
             ssl_context=ssl_context,
             max_keepalive=pool_limits.max_keepalive,
             max_connections=pool_limits.max_connections,
+            http2=http2,
         )
 
     def transport_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
