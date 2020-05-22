@@ -18,12 +18,10 @@ For a comprehensive guide to HTTP/2 you may want to check out "[HTTP2 Explained]
 
 ## Enabling HTTP/2
 
-The HTTPX client provides HTTP/2 support, **which is currently only available with the async client**.
-
-HTTP/2 support is not enabled by default, because HTTP/1.1 is a mature,
-battle-hardened transport layer, and our HTTP/1.1 may be considered the more robust
-option at this point in time. It is possible that a future version of `httpx` may
-enable HTTP/2 support by default.
+When using the `httpx` client, HTTP/2 support is not enabled by default, because
+HTTP/1.1 is a mature, battle-hardened transport layer, and our HTTP/1.1
+implementation may be considered the more robust option at this point in time.
+It is possible that a future version of `httpx` may enable HTTP/2 support by default.
 
 If you're issuing highly concurrent requests you might want to consider
 trying out our HTTP/2 support. You can do so by instantiating a client with
@@ -42,6 +40,10 @@ is exited.
 async with httpx.AsyncClient(http2=True) as client:
     ...
 ```
+
+HTTP/2 support is available on both `Client`, and `AsyncClient`, although it's
+typically more useful in async contexts if you're issuing lots of concurrent
+requests.
 
 ## Inspecting the HTTP version
 
