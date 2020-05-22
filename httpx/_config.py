@@ -367,5 +367,5 @@ class Proxy:
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
-DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
+DEFAULT_POOL_LIMITS = PoolLimits(max_keepalive=10, max_connections=100)
 DEFAULT_MAX_REDIRECTS = 20
