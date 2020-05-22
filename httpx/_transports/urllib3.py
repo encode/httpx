@@ -1,6 +1,5 @@
 import socket
-import ssl
-from typing import Dict, Iterator, List, Optional, Tuple, Union
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import httpcore
 
@@ -30,44 +29,18 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
     ):
         assert (
             urllib3 is not None
-        ), "urllib3 must be installed separately in order to use URLLib3Transport"
+        ), "urllib3 must be installed in order to use URLLib3Transport"
 
         ssl_config = SSLConfig(
             verify=verify, cert=cert, trust_env=trust_env, http2=False
         )
 
-        self.pool = self.init_pool_manager(
-            proxy=proxy,
+        self.pool = urllib3.PoolManager(
             ssl_context=ssl_config.ssl_context,
-            pool_connections=pool_connections,
-            pool_maxsize=pool_maxsize,
-            pool_block=pool_block,
+            num_pools=pool_connections,
+            maxsize=pool_maxsize,
+            block=pool_block,
         )
-
-    def init_pool_manager(
-        self,
-        proxy: Optional[Proxy],
-        ssl_context: ssl.SSLContext,
-        pool_connections: int,
-        pool_maxsize: int,
-        pool_block: bool,
-    ) -> Union[urllib3.PoolManager, urllib3.ProxyManager]:
-        if proxy is None:
-            return urllib3.PoolManager(
-                ssl_context=ssl_context,
-                num_pools=pool_connections,
-                maxsize=pool_maxsize,
-                block=pool_block,
-            )
-        else:
-            return urllib3.ProxyManager(
-                proxy_url=str(proxy.url),
-                proxy_headers=dict(proxy.headers),
-                ssl_context=ssl_context,
-                num_pools=pool_connections,
-                maxsize=pool_maxsize,
-                block=pool_block,
-            )
 
     def request(
         self,
@@ -145,3 +118,34 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
 
     def close(self) -> None:
         self.pool.clear()
+
+
+class URLLib3ProxyTransport(URLLib3Transport):
+    def __init__(
+        self,
+        *,
+        proxy_url: str,
+        proxy_headers: dict = None,
+        verify: VerifyTypes = True,
+        cert: CertTypes = None,
+        trust_env: bool = None,
+        pool_connections: int = 10,
+        pool_maxsize: int = 10,
+        pool_block: bool = False,
+    ):
+        assert (
+            urllib3 is not None
+        ), "urllib3 must be installed in order to use URLLib3ProxyTransport"
+
+        ssl_config = SSLConfig(
+            verify=verify, cert=cert, trust_env=trust_env, http2=False
+        )
+
+        self.pool = urllib3.ProxyManager(
+            proxy_url=proxy_url,
+            proxy_headers=proxy_headers,
+            ssl_context=ssl_config.ssl_context,
+            num_pools=pool_connections,
+            maxsize=pool_maxsize,
+            block=pool_block,
+        )
