@@ -7,6 +7,7 @@ from http.cookiejar import CookieJar
 from typing import (
     IO,
     TYPE_CHECKING,
+    AnyStr,
     AsyncIterator,
     Callable,
     Dict,
@@ -38,7 +39,14 @@ QueryParamTypes = Union[
 ]
 
 HeaderTypes = Union[
-    "Headers", Dict[StrOrBytes, StrOrBytes], Sequence[Tuple[StrOrBytes, StrOrBytes]],
+    "Headers",
+    # NOTE: Mapping is invariant in key (https://github.com/python/mypy/issues/1114).
+    # So using `StrOrBytes` as the mapping key type would result in
+    # users come across https://github.com/python/mypy/issues/8477.
+    # The suggested solution is to use a generic key type (defined as a `TypeVar`),
+    # hence `AnyStr` here.
+    Mapping[AnyStr, StrOrBytes],
+    Sequence[Tuple[StrOrBytes, StrOrBytes]],
 ]
 
 CookieTypes = Union["Cookies", CookieJar, Dict[str, str]]
