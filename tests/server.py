@@ -1,12 +1,13 @@
+import asyncio
+import contextlib
 import threading
 import time
-import contextlib
-import asyncio
 from typing import Iterator
 
 import uvicorn
 
 import httpx
+
 from .concurrency import sleep
 
 
