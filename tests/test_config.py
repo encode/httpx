@@ -8,7 +8,6 @@ import certifi
 import pytest
 
 import httpx
-from httpx._config import SSLConfig
 
 
 def test_load_ssl_config():
@@ -19,7 +18,7 @@ def test_load_ssl_config():
 
 def test_load_ssl_config_verify_non_existing_path():
     with pytest.raises(IOError):
-        SSLConfig(verify="/path/to/nowhere")
+        httpx.create_ssl_context(verify="/path/to/nowhere")
 
 
 def test_load_ssl_config_verify_existing_file():
@@ -35,10 +34,8 @@ def test_load_ssl_config_verify_env_file(https_server, ca_cert_pem_file, config)
         if config.endswith("_FILE")
         else str(Path(ca_cert_pem_file).parent)
     )
-    ssl_config = SSLConfig(trust_env=True)
-    assert ssl_config.verify == os.environ[config]
-
     context = httpx.create_ssl_context(trust_env=True)
+
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
@@ -81,12 +78,14 @@ def test_load_ssl_config_cert_and_key_invalid_password(
     cert_pem_file, cert_encrypted_private_key_file
 ):
     with pytest.raises(ssl.SSLError):
-        SSLConfig(cert=(cert_pem_file, cert_encrypted_private_key_file, "password1"))
+        httpx.create_ssl_context(
+            cert=(cert_pem_file, cert_encrypted_private_key_file, "password1")
+        )
 
 
 def test_load_ssl_config_cert_without_key_raises(cert_pem_file):
     with pytest.raises(ssl.SSLError):
-        SSLConfig(cert=cert_pem_file)
+        httpx.create_ssl_context(cert=cert_pem_file)
 
 
 def test_load_ssl_config_no_verify():
@@ -100,16 +99,6 @@ def test_load_ssl_context():
     context = httpx.create_ssl_context(verify=ssl_context)
 
     assert context is ssl_context
-
-
-def test_ssl_repr():
-    ssl = SSLConfig(verify=False)
-    assert repr(ssl) == "SSLConfig(cert=None, verify=False)"
-
-
-def test_ssl_eq():
-    ssl = SSLConfig(verify=False)
-    assert ssl == SSLConfig(verify=False)
 
 
 def test_create_ssl_context_with_get_request(server, cert_pem_file):
