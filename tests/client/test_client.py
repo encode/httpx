@@ -142,7 +142,7 @@ def test_base_url(server):
 
 def test_merge_url():
     client = httpx.Client(base_url="https://www.paypal.com/")
-    url = client.merge_url("http://www.paypal.com")
+    request = client.build_request("GET", "http://www.paypal.com")
 
-    assert url.scheme == "https"
-    assert url.is_ssl
+    assert request.url.scheme == "https"
+    assert request.url.is_ssl

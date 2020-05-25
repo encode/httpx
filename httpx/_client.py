@@ -189,10 +189,10 @@ class BaseClient:
         """
         Build and return a request instance.
         """
-        url = self.merge_url(url)
-        headers = self.merge_headers(headers)
-        cookies = self.merge_cookies(cookies)
-        params = self.merge_queryparams(params)
+        url = self._merge_url(url)
+        headers = self._merge_headers(headers)
+        cookies = self._merge_cookies(cookies)
+        params = self._merge_queryparams(params)
         return Request(
             method,
             url,
@@ -204,7 +204,7 @@ class BaseClient:
             cookies=cookies,
         )
 
-    def merge_url(self, url: URLTypes) -> URL:
+    def _merge_url(self, url: URLTypes) -> URL:
         """
         Merge a URL argument together with any 'base_url' on the client,
         to create the URL used for the outgoing request.
@@ -215,7 +215,7 @@ class BaseClient:
             url = url.copy_with(scheme="https", port=port)
         return url
 
-    def merge_cookies(
+    def _merge_cookies(
         self, cookies: CookieTypes = None
     ) -> typing.Optional[CookieTypes]:
         """
@@ -228,7 +228,7 @@ class BaseClient:
             return merged_cookies
         return cookies
 
-    def merge_headers(
+    def _merge_headers(
         self, headers: HeaderTypes = None
     ) -> typing.Optional[HeaderTypes]:
         """
@@ -241,7 +241,7 @@ class BaseClient:
             return merged_headers
         return headers
 
-    def merge_queryparams(
+    def _merge_queryparams(
         self, params: QueryParamTypes = None
     ) -> typing.Optional[QueryParamTypes]:
         """
@@ -254,7 +254,7 @@ class BaseClient:
             return merged_queryparams
         return params
 
-    def build_auth(self, request: Request, auth: AuthTypes = None) -> Auth:
+    def _build_auth(self, request: Request, auth: AuthTypes = None) -> Auth:
         auth = self.auth if auth is None else auth
 
         if auth is not None:
@@ -277,21 +277,21 @@ class BaseClient:
 
         return Auth()
 
-    def build_redirect_request(self, request: Request, response: Response) -> Request:
+    def _build_redirect_request(self, request: Request, response: Response) -> Request:
         """
         Given a request and a redirect response, return a new request that
         should be used to effect the redirect.
         """
-        method = self.redirect_method(request, response)
-        url = self.redirect_url(request, response)
-        headers = self.redirect_headers(request, url, method)
-        stream = self.redirect_stream(request, method)
+        method = self._redirect_method(request, response)
+        url = self._redirect_url(request, response)
+        headers = self._redirect_headers(request, url, method)
+        stream = self._redirect_stream(request, method)
         cookies = Cookies(self.cookies)
         return Request(
             method=method, url=url, headers=headers, cookies=cookies, stream=stream
         )
 
-    def redirect_method(self, request: Request, response: Response) -> str:
+    def _redirect_method(self, request: Request, response: Response) -> str:
         """
         When being redirected we may want to change the method of the request
         based on certain specs or browser behavior.
@@ -314,7 +314,7 @@ class BaseClient:
 
         return method
 
-    def redirect_url(self, request: Request, response: Response) -> URL:
+    def _redirect_url(self, request: Request, response: Response) -> URL:
         """
         Return the URL for the redirect to follow.
         """
@@ -338,7 +338,7 @@ class BaseClient:
 
         return url
 
-    def redirect_headers(self, request: Request, url: URL, method: str) -> Headers:
+    def _redirect_headers(self, request: Request, url: URL, method: str) -> Headers:
         """
         Return the headers that should be used for the redirect request.
         """
@@ -362,7 +362,7 @@ class BaseClient:
 
         return headers
 
-    def redirect_stream(
+    def _redirect_stream(
         self, request: Request, method: str
     ) -> typing.Optional[ContentStream]:
         """
@@ -607,9 +607,9 @@ class Client(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        auth = self.build_auth(request, auth)
+        auth = self._build_auth(request, auth)
 
-        response = self.send_handling_redirects(
+        response = self._send_handling_redirects(
             request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
         )
 
@@ -621,7 +621,7 @@ class Client(BaseClient):
 
         return response
 
-    def send_handling_redirects(
+    def _send_handling_redirects(
         self,
         request: Request,
         auth: Auth,
@@ -636,7 +636,7 @@ class Client(BaseClient):
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
 
-            response = self.send_handling_auth(
+            response = self._send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
             )
             response.history = list(history)
@@ -646,12 +646,12 @@ class Client(BaseClient):
 
             if allow_redirects:
                 response.read()
-            request = self.build_redirect_request(request, response)
+            request = self._build_redirect_request(request, response)
             history = history + [response]
 
             if not allow_redirects:
                 response.call_next = functools.partial(
-                    self.send_handling_redirects,
+                    self._send_handling_redirects,
                     request=request,
                     auth=auth,
                     timeout=timeout,
@@ -660,7 +660,7 @@ class Client(BaseClient):
                 )
                 return response
 
-    def send_handling_auth(
+    def _send_handling_auth(
         self,
         request: Request,
         history: typing.List[Response],
@@ -673,7 +673,7 @@ class Client(BaseClient):
         auth_flow = auth.auth_flow(request)
         request = next(auth_flow)
         while True:
-            response = self.send_single_request(request, timeout)
+            response = self._send_single_request(request, timeout)
             if auth.requires_response_body:
                 response.read()
             try:
@@ -689,7 +689,7 @@ class Client(BaseClient):
                 request = next_request
                 history.append(response)
 
-    def send_single_request(self, request: Request, timeout: Timeout) -> Response:
+    def _send_single_request(self, request: Request, timeout: Timeout) -> Response:
         """
         Sends a single request, without handling any redirections.
         """
@@ -1153,9 +1153,9 @@ class AsyncClient(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        auth = self.build_auth(request, auth)
+        auth = self._build_auth(request, auth)
 
-        response = await self.send_handling_redirects(
+        response = await self._send_handling_redirects(
             request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
         )
 
@@ -1167,7 +1167,7 @@ class AsyncClient(BaseClient):
 
         return response
 
-    async def send_handling_redirects(
+    async def _send_handling_redirects(
         self,
         request: Request,
         auth: Auth,
@@ -1182,7 +1182,7 @@ class AsyncClient(BaseClient):
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
 
-            response = await self.send_handling_auth(
+            response = await self._send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
             )
             response.history = list(history)
@@ -1192,12 +1192,12 @@ class AsyncClient(BaseClient):
 
             if allow_redirects:
                 await response.aread()
-            request = self.build_redirect_request(request, response)
+            request = self._build_redirect_request(request, response)
             history = history + [response]
 
             if not allow_redirects:
                 response.call_next = functools.partial(
-                    self.send_handling_redirects,
+                    self._send_handling_redirects,
                     request=request,
                     auth=auth,
                     timeout=timeout,
@@ -1206,7 +1206,7 @@ class AsyncClient(BaseClient):
                 )
                 return response
 
-    async def send_handling_auth(
+    async def _send_handling_auth(
         self,
         request: Request,
         history: typing.List[Response],
@@ -1219,7 +1219,7 @@ class AsyncClient(BaseClient):
         auth_flow = auth.auth_flow(request)
         request = next(auth_flow)
         while True:
-            response = await self.send_single_request(request, timeout)
+            response = await self._send_single_request(request, timeout)
             if auth.requires_response_body:
                 await response.aread()
             try:
@@ -1235,7 +1235,7 @@ class AsyncClient(BaseClient):
                 request = next_request
                 history.append(response)
 
-    async def send_single_request(
+    async def _send_single_request(
         self, request: Request, timeout: Timeout,
     ) -> Response:
         """
