@@ -12,8 +12,7 @@ from httpx._config import SSLConfig
 
 
 def test_load_ssl_config():
-    ssl_config = SSLConfig()
-    context = ssl_config.ssl_context
+    context = httpx.create_ssl_context()
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
@@ -24,8 +23,7 @@ def test_load_ssl_config_verify_non_existing_path():
 
 
 def test_load_ssl_config_verify_existing_file():
-    ssl_config = SSLConfig(verify=certifi.where())
-    context = ssl_config.ssl_context
+    context = httpx.create_ssl_context(verify=certifi.where())
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
@@ -38,10 +36,11 @@ def test_load_ssl_config_verify_env_file(https_server, ca_cert_pem_file, config)
         else str(Path(ca_cert_pem_file).parent)
     )
     ssl_config = SSLConfig(trust_env=True)
-    context = ssl_config.ssl_context
+    assert ssl_config.verify == os.environ[config]
+
+    context = httpx.create_ssl_context(trust_env=True)
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
-    assert ssl_config.verify == os.environ[config]
 
     # Skipping 'SSL_CERT_DIR' functional test for now because
     # we're unable to get the certificate within the directory to
@@ -56,15 +55,13 @@ def test_load_ssl_config_verify_env_file(https_server, ca_cert_pem_file, config)
 
 def test_load_ssl_config_verify_directory():
     path = Path(certifi.where()).parent
-    ssl_config = SSLConfig(verify=path)
-    context = ssl_config.ssl_context
+    context = httpx.create_ssl_context(verify=path)
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
 
 def test_load_ssl_config_cert_and_key(cert_pem_file, cert_private_key_file):
-    ssl_config = SSLConfig(cert=(cert_pem_file, cert_private_key_file))
-    context = ssl_config.ssl_context
+    context = httpx.create_ssl_context(cert=(cert_pem_file, cert_private_key_file))
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
@@ -73,10 +70,9 @@ def test_load_ssl_config_cert_and_key(cert_pem_file, cert_private_key_file):
 def test_load_ssl_config_cert_and_encrypted_key(
     cert_pem_file, cert_encrypted_private_key_file, password
 ):
-    ssl_config = SSLConfig(
+    context = httpx.create_ssl_context(
         cert=(cert_pem_file, cert_encrypted_private_key_file, password)
     )
-    context = ssl_config.ssl_context
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
@@ -94,17 +90,16 @@ def test_load_ssl_config_cert_without_key_raises(cert_pem_file):
 
 
 def test_load_ssl_config_no_verify():
-    ssl_config = SSLConfig(verify=False)
-    context = ssl_config.ssl_context
+    context = httpx.create_ssl_context(verify=False)
     assert context.verify_mode == ssl.VerifyMode.CERT_NONE
     assert context.check_hostname is False
 
 
 def test_load_ssl_context():
     ssl_context = ssl.create_default_context()
-    ssl_config = SSLConfig(verify=ssl_context)
+    context = httpx.create_ssl_context(verify=ssl_context)
 
-    assert ssl_config.ssl_context is ssl_context
+    assert context is ssl_context
 
 
 def test_ssl_repr():
@@ -121,13 +116,6 @@ def test_create_ssl_context_with_get_request(server, cert_pem_file):
     context = httpx.create_ssl_context(verify=cert_pem_file)
     response = httpx.get(server.url, verify=context)
     assert response.status_code == 200
-
-
-def test_create_ssl_context():
-    context = httpx.create_ssl_context()
-
-    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
-    assert context.check_hostname is True
 
 
 def test_limits_repr():
@@ -203,22 +191,22 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
     with monkeypatch.context() as m:
         m.delenv("SSLKEYLOGFILE", raising=False)
 
-        ssl_config = SSLConfig(trust_env=True)
+        context = httpx.create_ssl_context(trust_env=True)
 
-        assert ssl_config.ssl_context.keylog_filename is None
+        assert context.keylog_filename is None
 
     filename = str(tmpdir.join("test.log"))
 
     with monkeypatch.context() as m:
         m.setenv("SSLKEYLOGFILE", filename)
 
-        ssl_config = SSLConfig(trust_env=True)
+        context = httpx.create_ssl_context(trust_env=True)
 
-        assert ssl_config.ssl_context.keylog_filename == filename
+        assert context.keylog_filename == filename
 
-        ssl_config = SSLConfig(trust_env=False)
+        context = httpx.create_ssl_context(trust_env=False)
 
-        assert ssl_config.ssl_context.keylog_filename is None
+        assert context.keylog_filename is None
 
 
 @pytest.mark.parametrize(
