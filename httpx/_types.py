@@ -45,7 +45,11 @@ CookieTypes = Union["Cookies", CookieJar, Dict[str, str]]
 
 CertTypes = Union[str, Tuple[str, str], Tuple[str, str, str]]
 VerifyTypes = Union[str, bool, ssl.SSLContext]
-TimeoutTypes = Union[None, float, Tuple[float, float, float, float], "Timeout"]
+TimeoutTypes = Union[
+    Optional[float],
+    Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
+    "Timeout",
+]
 ProxiesTypes = Union[URLTypes, "Proxy", Dict[URLTypes, Union[URLTypes, "Proxy"]]]
 
 AuthTypes = Union[
