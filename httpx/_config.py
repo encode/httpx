@@ -40,6 +40,17 @@ class UnsetType:
 UNSET = UnsetType()
 
 
+def create_ssl_context(
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    trust_env: bool = None,
+    http2: bool = False,
+) -> ssl.SSLContext:
+    return SSLConfig(
+        cert=cert, verify=verify, trust_env=trust_env, http2=http2
+    ).ssl_context
+
+
 class SSLConfig:
     """
     SSL Configuration.

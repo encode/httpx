@@ -117,6 +117,19 @@ def test_ssl_eq():
     assert ssl == SSLConfig(verify=False)
 
 
+def test_create_ssl_context_with_get_request(server, cert_pem_file):
+    context = httpx.create_ssl_context(verify=cert_pem_file)
+    response = httpx.get(server.url, verify=context)
+    assert response.status_code == 200
+
+
+def test_create_ssl_context():
+    context = httpx.create_ssl_context()
+
+    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
+    assert context.check_hostname is True
+
+
 def test_limits_repr():
     limits = httpx.PoolLimits(max_connections=100)
     assert repr(limits) == "PoolLimits(max_keepalive=None, max_connections=100)"

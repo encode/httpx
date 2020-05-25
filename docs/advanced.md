@@ -588,6 +588,23 @@ Alternatively, you can pass a standard library `ssl.SSLContext`.
 <Response [200 OK]>
 ```
 
+We also include a helper function for creating properly configured `SSLContext` instances.
+
+```python
+>>> context = httpx.create_ssl_context()
+```
+
+The `create_ssl_context` function accepts the same set of SSL configuration arguments 
+(`trust_env`, `verify`, `cert` and `http2` arguments) 
+as `httpx.Client` or `httpx.AsyncClient`
+
+```python
+>>> import httpx
+>>> context = httpx.create_ssl_context(verify="/tmp/client.pem")
+>>> httpx.get('https://example.org', verify=context)
+<Response [200 OK]>
+```
+
 Or you can also disable the SSL verification entirely, which is _not_ recommended.
 
 ```python
