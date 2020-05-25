@@ -44,7 +44,8 @@ async def create_background_task(async_fn: typing.Callable) -> typing.Callable:
     else:
         import asyncio
 
-        task = asyncio.create_task(async_fn())
+        loop = asyncio.get_event_loop()
+        task = loop.create_task(async_fn())
 
         async def aclose(exc: Exception = None) -> None:
             if not task.done():
