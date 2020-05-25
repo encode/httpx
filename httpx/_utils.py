@@ -1,11 +1,13 @@
 import codecs
 import collections
 import contextlib
+import functools
 import logging
 import mimetypes
 import netrc
 import os
 import re
+import ssl
 import sys
 import typing
 import warnings
@@ -16,7 +18,7 @@ from types import TracebackType
 from urllib.request import getproxies
 
 from ._exceptions import NetworkError
-from ._types import PrimitiveData, StrOrBytes
+from ._types import CertTypes, PrimitiveData, StrOrBytes
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._models import URL
@@ -405,3 +407,99 @@ def as_network_error(*exception_classes: type) -> typing.Iterator[None]:
 
 def warn_deprecated(message: str) -> None:
     warnings.warn(message, DeprecationWarning, stacklevel=2)
+
+
+DEFAULT_CIPHERS = ":".join(
+    [
+        "ECDHE+AESGCM",
+        "ECDHE+CHACHA20",
+        "DHE+AESGCM",
+        "DHE+CHACHA20",
+        "ECDH+AESGCM",
+        "DH+AESGCM",
+        "ECDH+AES",
+        "DH+AES",
+        "RSA+AESGCM",
+        "RSA+AES",
+        "!aNULL",
+        "!eNULL",
+        "!MD5",
+        "!DSS",
+    ]
+)
+
+
+@functools.lru_cache(1)
+def create_and_verify_ssl_context(
+    verify_mode: int,
+    cert: CertTypes,
+    http2: bool,
+    trust_env: bool,
+    keylogfile: typing.Optional[str] = None,
+    ca_bundle_path: typing.Optional[Path] = None,
+) -> ssl.SSLContext:
+    def create_default_ssl_context() -> ssl.SSLContext:
+        """
+        Creates the default SSLContext object that's used for both verified
+        and unverified connections.
+        """
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        context.options |= ssl.OP_NO_SSLv2
+        context.options |= ssl.OP_NO_SSLv3
+        context.options |= ssl.OP_NO_TLSv1
+        context.options |= ssl.OP_NO_TLSv1_1
+        context.options |= ssl.OP_NO_COMPRESSION
+        context.set_ciphers(DEFAULT_CIPHERS)
+
+        if ssl.HAS_ALPN:
+            alpn_idents = ["http/1.1", "h2"] if http2 else ["http/1.1"]
+            context.set_alpn_protocols(alpn_idents)
+
+        if (
+            hasattr(context, "keylog_filename") and trust_env and keylogfile
+        ):  # pragma: nocover (Available in 3.8+)
+            context.keylog_filename = keylogfile  # type: ignore
+
+        return context
+
+    context = create_default_ssl_context()
+    context.verify_mode = verify_mode
+    context.check_hostname = verify_mode != ssl.CERT_NONE
+
+    if context.check_hostname and ca_bundle_path is not None:
+        # Signal to server support for PHA in TLS 1.3. Raises an
+        # AttributeError if only read-only access is implemented.
+        try:
+            context.post_handshake_auth = True  # type: ignore
+        except AttributeError:  # pragma: nocover
+            pass
+
+        # Disable using 'commonName' for SSLContext.check_hostname
+        # when the 'subjectAltName' extension isn't available.
+        try:
+            context.hostname_checks_common_name = False  # type: ignore
+        except AttributeError:  # pragma: nocover
+            pass
+
+        if ca_bundle_path.is_file():
+            context.load_verify_locations(cafile=str(ca_bundle_path))
+        elif ca_bundle_path.is_dir():
+            context.load_verify_locations(capath=str(ca_bundle_path))
+
+    load_client_certs(context, cert)
+    return context
+
+
+def load_client_certs(ssl_context: ssl.SSLContext, cert: CertTypes) -> None:
+    """
+    Loads client certificates into our SSLContext object
+    """
+    if cert is not None:
+        if isinstance(cert, str):
+            ssl_context.load_cert_chain(certfile=cert)
+        elif isinstance(cert, tuple) and len(cert) == 2:
+            ssl_context.load_cert_chain(certfile=cert[0], keyfile=cert[1])
+        elif isinstance(cert, tuple) and len(cert) == 3:
+            ssl_context.load_cert_chain(
+                certfile=cert[0], keyfile=cert[1], password=cert[2],  # type: ignore
+            )

@@ -117,6 +117,40 @@ def test_ssl_eq():
     assert ssl == SSLConfig(verify=False)
 
 
+def test_ssl_context_cache():
+    ssl1 = SSLConfig()
+    ssl2 = SSLConfig()
+    assert id(ssl1.ssl_context) == id(ssl2.ssl_context)
+
+    ssl3 = SSLConfig(http2=True)
+    assert id(ssl1.ssl_context) != id(ssl3.ssl_context)
+
+    ssl4 = SSLConfig(http2=True, trust_env=None)
+    assert id(ssl3.ssl_context) == id(ssl4.ssl_context)
+
+    ssl5 = SSLConfig(http2=True, trust_env=True)
+    assert id(ssl4.ssl_context) != id(ssl5.ssl_context)
+
+
+def test_ssl_context_cache_for_path_param(
+    cert_pem_file, cert_private_key_file, cert_encrypted_private_key_file
+):
+    ssl1 = SSLConfig(cert=(cert_pem_file, cert_private_key_file))
+    ssl2 = SSLConfig(cert=(cert_pem_file, cert_encrypted_private_key_file, "password"))
+    ssl3 = SSLConfig(cert=(cert_pem_file, cert_encrypted_private_key_file, b"password"))
+
+    assert id(ssl1.ssl_context) != id(ssl2.ssl_context) != id(ssl3.ssl_context)
+
+
+def test_ssl_context_cache_for_cert_param():
+    path = Path(certifi.where()).parent
+    ssl1 = SSLConfig()
+    ssl2 = SSLConfig(verify=path)
+    ssl3 = SSLConfig(verify="/")
+
+    assert id(ssl1.ssl_context) != id(ssl2.ssl_context) != id(ssl3.ssl_context)
+
+
 def test_limits_repr():
     limits = httpx.PoolLimits(max_connections=100)
     assert repr(limits) == "PoolLimits(max_keepalive=None, max_connections=100)"
