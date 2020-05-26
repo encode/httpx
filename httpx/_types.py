@@ -7,7 +7,6 @@ from http.cookiejar import CookieJar
 from typing import (
     IO,
     TYPE_CHECKING,
-    AnyStr,
     AsyncIterator,
     Callable,
     Dict,
