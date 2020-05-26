@@ -37,7 +37,7 @@ def test_build_request(server):
     assert response.json()["Custom-header"] == "value"
 
 
-def test_build_port_request(server):
+def test_build_post_request(server):
     url = server.url.copy_with(path="/echo_headers")
     headers = {"Custom-header": "value"}
 
