@@ -330,14 +330,14 @@ class PoolLimits:
 
 class Proxy:
     def __init__(
-        self, url: URLTypes, *, headers: HeaderTypes = None, mode: str = None,
+        self, url: URLTypes, *, headers: HeaderTypes = None, mode: str = "DEFAULT",
     ):
         url = URL(url)
         headers = Headers(headers)
 
         if url.scheme not in ("http", "https"):
             raise ValueError(f"Unknown scheme for proxy URL {url!r}")
-        if mode is not None and mode not in ("DEFAULT", "FORWARD_ONLY", "TUNNEL_ONLY"):
+        if mode not in ("DEFAULT", "FORWARD_ONLY", "TUNNEL_ONLY"):
             raise ValueError(f"Unknown proxy mode {mode!r}")
 
         if url.username or url.password:
@@ -351,7 +351,7 @@ class Proxy:
 
         self.url = url
         self.headers = headers
-        self.mode = mode or "DEFAULT"
+        self.mode = mode
 
     def build_auth_header(self, username: str, password: str) -> str:
         userpass = (username.encode("utf-8"), password.encode("utf-8"))
