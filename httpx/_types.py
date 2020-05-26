@@ -38,7 +38,11 @@ QueryParamTypes = Union[
 ]
 
 HeaderTypes = Union[
-    "Headers", Dict[AnyStr, AnyStr], Sequence[Tuple[AnyStr, AnyStr]],
+    "Headers",
+    Dict[str, str],
+    Dict[bytes, bytes],
+    Sequence[Tuple[str, str]],
+    Sequence[Tuple[bytes, bytes]],
 ]
 
 CookieTypes = Union["Cookies", CookieJar, Dict[str, str]]
