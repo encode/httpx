@@ -1,3 +1,4 @@
+import itertools
 import os
 import ssl
 import typing
@@ -6,6 +7,7 @@ from pathlib import Path
 
 import certifi
 
+from .exceptions import ConnectTimeout, HTTPError, NetworkError, PoolTimeout
 from .models import URL, Headers, HeaderTypes, URLTypes
 from .utils import get_ca_bundle_from_env, get_logger
 
@@ -17,6 +19,7 @@ TimeoutTypes = typing.Union[
 ProxiesTypes = typing.Union[
     URLTypes, "Proxy", typing.Dict[URLTypes, typing.Union[URLTypes, "Proxy"]]
 ]
+RetriesTypes = typing.Union[None, int, "Retries"]
 
 
 DEFAULT_CIPHERS = ":".join(
@@ -350,6 +353,77 @@ class Proxy:
             f"headers={dict(self.headers)!r}, "
             f"mode={self.mode!r})"
         )
+
+
+class Retries:
+    """
+    Retries configuration.
+
+    Defines the maximum amount of connection failures to retry on, and
+    implements a configurable exponential backoff algorithm.
+    """
+
+    _RETRYABLE_EXCEPTIONS: typing.Sequence[typing.Type[HTTPError]] = (
+        ConnectTimeout,
+        PoolTimeout,
+        NetworkError,
+    )
+    _RETRYABLE_METHODS: typing.Container[str] = frozenset(
+        ("HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE")
+    )
+
+    def __init__(
+        self, retries: RetriesTypes = None, *, backoff_factor: float = None
+    ) -> None:
+        if retries is None:
+            limit = 0
+        elif isinstance(retries, int):
+            limit = retries
+        else:
+            assert isinstance(retries, Retries)
+            assert backoff_factor is None
+            backoff_factor = retries.backoff_factor
+            limit = retries.limit
+
+        if backoff_factor is None:
+            backoff_factor = 0.2
+
+        assert limit >= 0
+        assert backoff_factor > 0
+
+        self.limit: int = limit
+        self.backoff_factor: float = backoff_factor
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return (
+            isinstance(other, Retries)
+            and self.limit == other.limit
+            and self.backoff_factor == other.backoff_factor
+        )
+
+    @classmethod
+    def should_retry_on_exception(cls, exc: HTTPError) -> bool:
+        is_retryable_exception_class = any(
+            isinstance(exc, exc_cls) for exc_cls in cls._RETRYABLE_EXCEPTIONS
+        )
+
+        if not is_retryable_exception_class:
+            return False
+
+        assert exc.request is not None
+        method = exc.request.method.upper()
+        if method not in cls._RETRYABLE_METHODS:
+            return False
+
+        return True
+
+    def get_delays(self) -> typing.Iterator[float]:
+        """
+        Used by clients to determine how long to wait before issuing a new request.
+        """
+        yield 0  # Retry immediately.
+        for n in itertools.count(2):
+            yield self.backoff_factor * (2 ** (n - 2))
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)

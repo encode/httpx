@@ -2,7 +2,13 @@ import typing
 
 from .auth import AuthTypes
 from .client import Client, StreamContextManager
-from .config import DEFAULT_TIMEOUT_CONFIG, CertTypes, TimeoutTypes, VerifyTypes
+from .config import (
+    DEFAULT_TIMEOUT_CONFIG,
+    CertTypes,
+    RetriesTypes,
+    TimeoutTypes,
+    VerifyTypes,
+)
 from .models import (
     CookieTypes,
     HeaderTypes,
@@ -26,6 +32,7 @@ def request(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
+    retries: RetriesTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     allow_redirects: bool = True,
     verify: VerifyTypes = True,
@@ -54,6 +61,8 @@ def request(
     request.
     * **auth** - *(optional)* An authentication class to use when sending the
     request.
+    * **retries** - *(optional)* The maximum number of connection failures to
+    retry on.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     the request.
     * **allow_redirects** - *(optional)* Enables or disables HTTP redirects.
@@ -81,7 +90,7 @@ def request(
     ```
     """
     with Client(
-        cert=cert, verify=verify, timeout=timeout, trust_env=trust_env,
+        cert=cert, verify=verify, retries=retries, timeout=timeout, trust_env=trust_env,
     ) as client:
         return client.request(
             method=method,
@@ -108,13 +117,14 @@ def stream(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
+    retries: RetriesTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     allow_redirects: bool = True,
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     trust_env: bool = True,
 ) -> StreamContextManager:
-    client = Client(cert=cert, verify=verify, trust_env=trust_env)
+    client = Client(cert=cert, verify=verify, retries=retries, trust_env=trust_env)
     request = Request(
         method=method,
         url=url,
@@ -145,6 +155,7 @@ def get(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
+    retries: RetriesTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -166,6 +177,7 @@ def get(
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
+        retries=retries,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -181,6 +193,7 @@ def options(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
+    retries: RetriesTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -202,6 +215,7 @@ def options(
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
+        retries=retries,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -217,6 +231,7 @@ def head(
     allow_redirects: bool = False,  # Note: Differs to usual default.
     cert: CertTypes = None,
     verify: VerifyTypes = True,
+    retries: RetriesTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -240,6 +255,7 @@ def head(
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
+        retries=retries,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -258,6 +274,7 @@ def post(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
+    retries: RetriesTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -279,6 +296,7 @@ def post(
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
+        retries=retries,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -297,6 +315,7 @@ def put(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
+    retries: RetriesTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -318,6 +337,7 @@ def put(
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
+        retries=retries,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -336,6 +356,7 @@ def patch(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
+    retries: RetriesTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -357,6 +378,7 @@ def patch(
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
+        retries=retries,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -372,6 +394,7 @@ def delete(
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
+    retries: RetriesTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -393,6 +416,7 @@ def delete(
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
+        retries=retries,
         timeout=timeout,
         trust_env=trust_env,
     )

@@ -471,3 +471,70 @@ If you do need to make HTTPS connections to a local server, for example to test 
 >>> r
 Response <200 OK>
 ```
+
+## Retries
+
+Communicating with a peer over a network is by essence subject to errors. HTTPX provides built-in retry functionality to increase the resilience to connection issues.
+
+Retries are disabled by default. When retries are enabled, HTTPX will retry sending the request up to the specified number of times. This behavior is restricted to **connection failures only**, i.e.:
+
+* Failures to establish or acquire a connection (`ConnectTimeout`, `PoolTimeout`).
+* Failures to keep the connection open (`NetworkError`).
+
+!!! important
+    HTTPX will **NOT** retry on failures that aren't related to establishing or maintaining connections. This includes in particular:
+
+    * Errors related to data transfer, such as `ReadTimeout` or `ProtocolError`.
+    * HTTP error responses (4xx, 5xx), such as `429 Too Many Requests` or `503 Service Unavailable`.
+
+If HTTPX could not get a response after the specified number of retries, a `TooManyRetries` exception is raised.
+
+The delay between each retry is increased exponentially to prevent overloading the requested host.
+
+### Enabling retries
+
+You can enable retries for a given request:
+
+```python
+# Using the top-level API:
+response = httpx.get("https://example.org", retries=3)
+
+# Using a client instance:
+with httpx.Client() as client:
+    response = client.get("https://example.org", retries=3)
+```
+
+Or enable them on a client instance, which results in the given `retries` being used as a default for requests made with this client:
+
+```python
+# Retry at most 3 times on connection failures everywhere.
+with httpx.Client(retries=3) as client:
+    # This request now has retries enabled...
+    response = client.get("https://example.org")
+```
+
+When using a client with retries enabled, you can still explicitly override or disable retries for a given request:
+
+```python
+with httpx.Client(retries=3) as client:
+    # Retry at most 5 times for this particular request.
+    response = client.get("https://example.org", retries=5)
+
+    # Don't retry for this particular request.
+    response = client.get("https://example.org", retries=None)
+```
+
+### Fine-tuning the retries configuration
+
+When enabling retries, the `retries` argument can also be an `httpx.Retries()` instance. It accepts the following arguments:
+
+* An integer, given as a required positional argument, representing the maximum number of connection failures to retry on.
+* `backoff_factor` (optional), which defines the increase rate of the time to wait between retries. By default this is `0.2`, which corresponds to issuing a new request after `(0s, 0.2s, 0.4s, 0.8s, ...)`. (Note that most connection failures are immediately resolved by retrying, so HTTPX will always issue the initial retry right away.)
+
+```python
+# Retry at most 5 times on connection failures everywhere,
+# and issue new requests after `(0s, 0.5s, 1s, 2s, 4s, ...)`.
+retries = httpx.Retries(5, backoff_factor=0.5)
+with httpx.Client(retries=retries) as client:
+    ...
+```

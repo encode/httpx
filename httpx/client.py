@@ -5,7 +5,8 @@ from types import TracebackType
 import hstspreload
 
 from .auth import Auth, AuthTypes, BasicAuth, FunctionAuth
-from .backends.base import ConcurrencyBackend
+from .backends.base import ConcurrencyBackend, lookup_backend
+from .backends.sync import SyncBackend
 from .config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_POOL_LIMITS,
@@ -15,6 +16,8 @@ from .config import (
     PoolLimits,
     ProxiesTypes,
     Proxy,
+    Retries,
+    RetriesTypes,
     Timeout,
     TimeoutTypes,
     UnsetType,
@@ -33,6 +36,7 @@ from .exceptions import (
     RedirectLoop,
     RequestBodyUnavailable,
     TooManyRedirects,
+    TooManyRetries,
 )
 from .models import (
     URL,
@@ -63,6 +67,7 @@ class BaseClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
+        retries: RetriesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
@@ -80,6 +85,7 @@ class BaseClient:
         self._params = QueryParams(params)
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
+        self.retries = Retries(retries)
         self.timeout = Timeout(timeout)
         self.max_redirects = max_redirects
         self.trust_env = trust_env
@@ -418,6 +424,8 @@ class Client(BaseClient):
     file, key file, password).
     * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
     URLs.
+    * **retries** - *(optional)* The maximum number of connection failures to
+    retry on.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
     * **pool_limits** - *(optional)* The connection pool configuration to use
@@ -444,6 +452,7 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         proxies: ProxiesTypes = None,
+        retries: RetriesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
@@ -457,6 +466,7 @@ class Client(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
+            retries=retries,
             timeout=timeout,
             max_redirects=max_redirects,
             base_url=base_url,
@@ -483,6 +493,7 @@ class Client(BaseClient):
             )
             for key, proxy in proxy_map.items()
         }
+        self.backend = SyncBackend()
 
     def init_dispatch(
         self,
@@ -557,6 +568,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         request = self.build_request(
@@ -570,7 +582,11 @@ class Client(BaseClient):
             cookies=cookies,
         )
         return self.send(
-            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout,
+            request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            retries=retries,
+            timeout=timeout,
         )
 
     def send(
@@ -580,6 +596,7 @@ class Client(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         if request.url.scheme not in ("http", "https"):
@@ -587,10 +604,16 @@ class Client(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
+        retries = self.retries if isinstance(retries, UnsetType) else Retries(retries)
+
         auth = self.build_auth(request, auth)
 
-        response = self.send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        response = self.send_handling_retries(
+            request,
+            auth=auth,
+            retries=retries,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
         )
 
         if not stream:
@@ -600,6 +623,48 @@ class Client(BaseClient):
                 response.close()
 
         return response
+
+    def send_handling_retries(
+        self,
+        request: Request,
+        auth: Auth,
+        retries: Retries,
+        timeout: Timeout,
+        allow_redirects: bool = True,
+    ) -> Response:
+        if not retries.limit:
+            return self.send_handling_redirects(
+                request, auth=auth, timeout=timeout, allow_redirects=allow_redirects
+            )
+
+        backend = self.backend
+        retries_left = retries.limit
+        delays = retries.get_delays()
+
+        while True:
+            try:
+                return self.send_handling_redirects(
+                    request,
+                    auth=auth,
+                    timeout=timeout,
+                    allow_redirects=allow_redirects,
+                )
+            except HTTPError as exc:
+                if not retries.should_retry_on_exception(exc):
+                    # Even if we have retries left, we're told to not even consider
+                    # retrying in this case. So let's re-raise immediately to avoid
+                    # polluting logs or the exception stack.
+                    raise
+
+                logger.debug(f"HTTP Request failed: {exc!r}")
+
+                if not retries_left:
+                    raise TooManyRetries(exc, request=request)
+
+                retries_left -= 1
+                delay = next(delays)
+                logger.debug(f"Retrying in {delay} seconds")
+                backend.sleep(delay)
 
     def send_handling_redirects(
         self,
@@ -704,6 +769,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -714,6 +780,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -726,6 +793,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -736,6 +804,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -748,6 +817,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -758,6 +828,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -773,6 +844,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -786,6 +858,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -801,6 +874,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -814,6 +888,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -829,6 +904,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -842,6 +918,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -854,6 +931,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return self.request(
@@ -864,6 +942,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -915,6 +994,8 @@ class AsyncClient(BaseClient):
     enabled. Defaults to `False`.
     * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
     URLs.
+    * **retries** - *(optional)* The maximum number of connection failures to
+    retry on.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
     * **pool_limits** - *(optional)* The connection pool configuration to use
@@ -946,6 +1027,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         proxies: ProxiesTypes = None,
+        retries: RetriesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
@@ -961,6 +1043,7 @@ class AsyncClient(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
+            retries=retries,
             timeout=timeout,
             max_redirects=max_redirects,
             base_url=base_url,
@@ -1081,6 +1164,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         request = self.build_request(
@@ -1094,7 +1178,11 @@ class AsyncClient(BaseClient):
             cookies=cookies,
         )
         response = await self.send(
-            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout,
+            request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            retries=retries,
+            timeout=timeout,
         )
         return response
 
@@ -1105,6 +1193,7 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         if request.url.scheme not in ("http", "https"):
@@ -1112,10 +1201,16 @@ class AsyncClient(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
+        retries = self.retries if isinstance(retries, UnsetType) else Retries(retries)
+
         auth = self.build_auth(request, auth)
 
-        response = await self.send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        response = await self.send_handling_retries(
+            request,
+            auth=auth,
+            retries=retries,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
         )
 
         if not stream:
@@ -1125,6 +1220,49 @@ class AsyncClient(BaseClient):
                 await response.aclose()
 
         return response
+
+    async def send_handling_retries(
+        self,
+        request: Request,
+        auth: Auth,
+        retries: Retries,
+        timeout: Timeout,
+        allow_redirects: bool = True,
+    ) -> Response:
+        if not retries.limit:
+            return await self.send_handling_redirects(
+                request, auth=auth, timeout=timeout, allow_redirects=allow_redirects
+            )
+
+        backend = lookup_backend()
+
+        retries_left = retries.limit
+        delays = retries.get_delays()
+
+        while True:
+            try:
+                return await self.send_handling_redirects(
+                    request,
+                    auth=auth,
+                    timeout=timeout,
+                    allow_redirects=allow_redirects,
+                )
+            except HTTPError as exc:
+                if not retries.should_retry_on_exception(exc):
+                    # Even if we have retries left, we're told to not even consider
+                    # retrying in this case. So let's re-raise immediately to avoid
+                    # polluting logs or the exception stack.
+                    raise
+
+                logger.debug(f"HTTP Request failed: {exc!r}")
+
+                if not retries_left:
+                    raise TooManyRetries(exc, request=request)
+
+                retries_left -= 1
+                delay = next(delays)
+                logger.debug(f"Retrying in {delay} seconds")
+                await backend.sleep(delay)
 
     async def send_handling_redirects(
         self,
@@ -1231,6 +1369,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1241,6 +1380,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1253,6 +1393,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1263,6 +1404,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1275,6 +1417,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1285,6 +1428,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1300,6 +1444,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1313,6 +1458,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1328,6 +1474,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1341,6 +1488,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1356,6 +1504,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1369,6 +1518,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1381,6 +1531,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         return await self.request(
@@ -1391,6 +1542,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
+            retries=retries,
             timeout=timeout,
         )
 
@@ -1417,6 +1569,7 @@ class StreamContextManager:
         *,
         auth: AuthTypes = None,
         allow_redirects: bool = True,
+        retries: typing.Union[RetriesTypes, UnsetType] = UNSET,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         close_client: bool = False,
     ) -> None:
@@ -1424,6 +1577,7 @@ class StreamContextManager:
         self.request = request
         self.auth = auth
         self.allow_redirects = allow_redirects
+        self.retries = retries
         self.timeout = timeout
         self.close_client = close_client
 
@@ -1433,6 +1587,7 @@ class StreamContextManager:
             request=self.request,
             auth=self.auth,
             allow_redirects=self.allow_redirects,
+            retries=self.retries,
             timeout=self.timeout,
             stream=True,
         )
@@ -1455,6 +1610,7 @@ class StreamContextManager:
             request=self.request,
             auth=self.auth,
             allow_redirects=self.allow_redirects,
+            retries=self.retries,
             timeout=self.timeout,
             stream=True,
         )

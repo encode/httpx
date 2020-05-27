@@ -113,6 +113,15 @@ class NotRedirectResponse(RedirectError):
     """
 
 
+# Retries...
+
+
+class TooManyRetries(HTTPError):
+    """
+    The maximum number of retries allowed for a request was exceeded.
+    """
+
+
 # Stream exceptions...
 
 
