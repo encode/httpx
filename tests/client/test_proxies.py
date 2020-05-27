@@ -105,11 +105,12 @@ def test_unsupported_proxy_scheme():
         ),
     ],
 )
-def test_proxies_environ(monkeypatch, url, env, expected):
+@pytest.mark.parametrize("client_class", [httpx.Client, httpx.AsyncClient])
+def test_proxies_environ(monkeypatch, client_class, url, env, expected):
     for name, value in env.items():
         monkeypatch.setenv(name, value)
 
-    client = httpx.AsyncClient()
+    client = client_class()
     transport = client.transport_for_url(httpx.URL(url))
 
     if expected is None:
