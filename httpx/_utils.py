@@ -16,7 +16,7 @@ from types import TracebackType
 from urllib.request import getproxies
 
 from ._exceptions import NetworkError
-from ._types import PrimitiveData, StrOrBytes
+from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._models import URL
@@ -31,7 +31,9 @@ _HTML5_FORM_ENCODING_RE = re.compile(
 )
 
 
-def normalize_header_key(value: StrOrBytes, encoding: str = None) -> bytes:
+def normalize_header_key(
+    value: typing.Union[str, bytes], encoding: str = None
+) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header key.
     """
@@ -40,7 +42,9 @@ def normalize_header_key(value: StrOrBytes, encoding: str = None) -> bytes:
     return value.encode(encoding or "ascii").lower()
 
 
-def normalize_header_value(value: StrOrBytes, encoding: str = None) -> bytes:
+def normalize_header_value(
+    value: typing.Union[str, bytes], encoding: str = None
+) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header value.
     """
@@ -206,8 +210,8 @@ SENSITIVE_HEADERS = {"authorization", "proxy-authorization"}
 
 
 def obfuscate_sensitive_headers(
-    items: typing.Iterable[typing.Tuple[StrOrBytes, StrOrBytes]]
-) -> typing.Iterator[typing.Tuple[StrOrBytes, StrOrBytes]]:
+    items: typing.Iterable[typing.Tuple[typing.AnyStr, typing.AnyStr]]
+) -> typing.Iterator[typing.Tuple[typing.AnyStr, typing.AnyStr]]:
     for k, v in items:
         if to_str(k.lower()) in SENSITIVE_HEADERS:
             v = to_bytes_or_str("[secure]", match_type_of=v)
@@ -303,7 +307,7 @@ def to_str(value: typing.Union[str, bytes], encoding: str = "utf-8") -> str:
     return value if isinstance(value, str) else value.decode(encoding)
 
 
-def to_bytes_or_str(value: str, match_type_of: StrOrBytes) -> StrOrBytes:
+def to_bytes_or_str(value: str, match_type_of: typing.AnyStr) -> typing.AnyStr:
     return value if isinstance(match_type_of, str) else value.encode()
 
 

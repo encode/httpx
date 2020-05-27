@@ -24,7 +24,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from ._config import Proxy, Timeout  # noqa: F401
     from ._models import URL, Cookies, Headers, QueryParams, Request  # noqa: F401
 
-StrOrBytes = Union[str, bytes]
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
@@ -38,7 +37,11 @@ QueryParamTypes = Union[
 ]
 
 HeaderTypes = Union[
-    "Headers", Dict[StrOrBytes, StrOrBytes], Sequence[Tuple[StrOrBytes, StrOrBytes]],
+    "Headers",
+    Dict[str, str],
+    Dict[bytes, bytes],
+    Sequence[Tuple[str, str]],
+    Sequence[Tuple[bytes, bytes]],
 ]
 
 CookieTypes = Union["Cookies", CookieJar, Dict[str, str]]
