@@ -8,6 +8,7 @@ import pytest
 from httpx import (
     URL,
     AsyncClient,
+    InvalidURL,
     NotRedirectResponse,
     RequestBodyUnavailable,
     TooManyRedirects,
@@ -139,6 +140,17 @@ class MockDispatch(httpcore.AsyncHTTPTransport):
                 )
             else:
                 return b"HTTP/1.1", 200, b"OK", [], ByteStream(b"Hello, world!")
+
+        elif path == b"/redirect_custom_scheme":
+            status_code = codes.MOVED_PERMANENTLY
+            headers = [(b"location", b"market://details?id=42")]
+            return (
+                b"HTTP/1.1",
+                status_code,
+                b"Moved Permanently",
+                headers,
+                ByteStream(b""),
+            )
 
         return b"HTTP/1.1", 200, b"OK", [], ByteStream(b"Hello, world!")
 
@@ -431,3 +443,11 @@ async def test_redirect_cookie_behavior():
     response = await client.get("https://example.com/")
     assert response.url == "https://example.com/"
     assert response.text == "Not logged in"
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_redirect_custom_scheme():
+    client = AsyncClient(dispatch=MockDispatch())
+    with pytest.raises(InvalidURL) as e:
+        await client.post("https://example.org/redirect_custom_scheme")
+    assert str(e.value) == 'Scheme "market" not supported.'
