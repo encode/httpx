@@ -37,6 +37,22 @@ def test_build_request(server):
     assert response.json()["Custom-header"] == "value"
 
 
+def test_build_post_request(server):
+    url = server.url.copy_with(path="/echo_headers")
+    headers = {"Custom-header": "value"}
+
+    with httpx.Client() as client:
+        request = client.build_request("POST", url)
+        request.headers.update(headers)
+        response = client.send(request)
+
+    assert response.status_code == 200
+    assert response.url == url
+
+    assert response.json()["Content-length"] == "0"
+    assert response.json()["Custom-header"] == "value"
+
+
 def test_post(server):
     with httpx.Client() as client:
         response = client.post(server.url, data=b"Hello, world!")
@@ -94,7 +110,7 @@ def test_raise_for_status(server):
                     response.raise_for_status()
                 assert exc_info.value.response == response
             else:
-                assert response.raise_for_status() is None
+                assert response.raise_for_status() is None  # type: ignore
 
 
 def test_options(server):
