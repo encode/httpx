@@ -46,6 +46,8 @@ from ._utils import (
 
 logger = get_logger(__name__)
 
+KEEPALIVE_EXPIRY = 5.0
+
 
 class BaseClient:
     def __init__(
@@ -517,6 +519,7 @@ class Client(BaseClient):
             ssl_context=ssl_context,
             max_keepalive=pool_limits.max_keepalive,
             max_connections=pool_limits.max_connections,
+            keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 
@@ -540,6 +543,7 @@ class Client(BaseClient):
             ssl_context=ssl_context,
             max_keepalive=pool_limits.max_keepalive,
             max_connections=pool_limits.max_connections,
+            keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 
@@ -1062,6 +1066,7 @@ class AsyncClient(BaseClient):
             ssl_context=ssl_context,
             max_keepalive=pool_limits.max_keepalive,
             max_connections=pool_limits.max_connections,
+            keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 
@@ -1085,6 +1090,7 @@ class AsyncClient(BaseClient):
             ssl_context=ssl_context,
             max_keepalive=pool_limits.max_keepalive,
             max_connections=pool_limits.max_connections,
+            keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 
