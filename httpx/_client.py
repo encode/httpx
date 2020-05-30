@@ -46,6 +46,8 @@ from ._utils import (
 
 logger = get_logger(__name__)
 
+KEEPALIVE_EXPIRY = 5.0
+
 
 class BaseClient:
     def __init__(
@@ -322,6 +324,10 @@ class BaseClient:
 
         url = URL(location, allow_relative=True)
 
+        # Check that we can handle the scheme
+        if url.scheme and url.scheme not in ("http", "https"):
+            raise InvalidURL(f'Scheme "{url.scheme}" not supported.')
+
         # Handle malformed 'Location' headers that are "absolute" form, have no host.
         # See: https://github.com/encode/httpx/issues/771
         if url.scheme and not url.host:
@@ -513,6 +519,7 @@ class Client(BaseClient):
             ssl_context=ssl_context,
             max_keepalive=pool_limits.max_keepalive,
             max_connections=pool_limits.max_connections,
+            keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 
@@ -536,6 +543,7 @@ class Client(BaseClient):
             ssl_context=ssl_context,
             max_keepalive=pool_limits.max_keepalive,
             max_connections=pool_limits.max_connections,
+            keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 
@@ -1058,6 +1066,7 @@ class AsyncClient(BaseClient):
             ssl_context=ssl_context,
             max_keepalive=pool_limits.max_keepalive,
             max_connections=pool_limits.max_connections,
+            keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 
@@ -1081,6 +1090,7 @@ class AsyncClient(BaseClient):
             ssl_context=ssl_context,
             max_keepalive=pool_limits.max_keepalive,
             max_connections=pool_limits.max_connections,
+            keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 

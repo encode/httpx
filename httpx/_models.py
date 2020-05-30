@@ -54,9 +54,6 @@ from ._utils import (
     warn_deprecated,
 )
 
-if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._dispatch.base import AsyncDispatcher  # noqa: F401
-
 
 class URL:
     def __init__(
