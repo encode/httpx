@@ -7,7 +7,7 @@ from httpx import URL, AsyncClient, Headers, QueryParams
 from httpx._content_streams import ContentStream, JSONStream
 
 
-class MockDispatch(httpcore.AsyncHTTPTransport):
+class MockTransport(httpcore.AsyncHTTPTransport):
     async def request(
         self,
         method: bytes,
@@ -45,7 +45,7 @@ async def test_client_queryparams_echo():
     url = "http://example.org/echo_queryparams"
     client_queryparams = "first=str"
     request_queryparams = {"second": "dict"}
-    client = AsyncClient(dispatch=MockDispatch(), params=client_queryparams)
+    client = AsyncClient(transport=MockTransport(), params=client_queryparams)
     response = await client.get(url, params=request_queryparams)
 
     assert response.status_code == 200

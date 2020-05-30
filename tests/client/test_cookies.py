@@ -16,7 +16,7 @@ def get_header_value(headers, key, default=None):
     return default
 
 
-class MockDispatch(httpcore.AsyncHTTPTransport):
+class MockTransport(httpcore.AsyncHTTPTransport):
     async def request(
         self,
         method: bytes,
@@ -48,7 +48,7 @@ async def test_set_cookie() -> None:
     url = "http://example.org/echo_cookies"
     cookies = {"example-name": "example-value"}
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     response = await client.get(url, cookies=cookies)
 
     assert response.status_code == 200
@@ -84,7 +84,7 @@ async def test_set_cookie_with_cookiejar() -> None:
     )
     cookies.set_cookie(cookie)
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     response = await client.get(url, cookies=cookies)
 
     assert response.status_code == 200
@@ -120,7 +120,7 @@ async def test_setting_client_cookies_to_cookiejar() -> None:
     )
     cookies.set_cookie(cookie)
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     client.cookies = cookies  # type: ignore
     response = await client.get(url)
 
@@ -138,7 +138,7 @@ async def test_set_cookie_with_cookies_model() -> None:
     cookies = Cookies()
     cookies["example-name"] = "example-value"
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     response = await client.get(url, cookies=cookies)
 
     assert response.status_code == 200
@@ -149,7 +149,7 @@ async def test_set_cookie_with_cookies_model() -> None:
 async def test_get_cookie() -> None:
     url = "http://example.org/set_cookie"
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     response = await client.get(url)
 
     assert response.status_code == 200
@@ -162,7 +162,7 @@ async def test_cookie_persistence() -> None:
     """
     Ensure that Client instances persist cookies between requests.
     """
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
 
     response = await client.get("http://example.org/echo_cookies")
     assert response.status_code == 200

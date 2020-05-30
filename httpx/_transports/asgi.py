@@ -34,17 +34,17 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
     client = httpx.AsyncClient(app=app)
     ```
 
-    Alternatively, you can setup the dispatch instance explicitly.
+    Alternatively, you can setup the transport instance explicitly.
     This allows you to include any additional configuration arguments specific
     to the ASGITransport class:
 
     ```
-    dispatch = httpx.ASGITransport(
+    transport = httpx.ASGITransport(
         app=app,
         root_path="/submount",
         client=("1.2.3.4", 123)
     )
-    client = httpx.AsyncClient(dispatch=dispatch)
+    client = httpx.AsyncClient(transport=transport)
     ```
 
     Arguments:
