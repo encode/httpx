@@ -13,7 +13,7 @@ from httpx._content_streams import AsyncIteratorStream, encode
 from httpx._utils import format_form_param
 
 
-class MockDispatch(httpcore.AsyncHTTPTransport):
+class MockTransport(httpcore.AsyncHTTPTransport):
     async def request(
         self,
         method: bytes,
@@ -35,7 +35,7 @@ class MockDispatch(httpcore.AsyncHTTPTransport):
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
 @pytest.mark.asyncio
 async def test_multipart(value, output):
-    client = httpx.AsyncClient(dispatch=MockDispatch())
+    client = httpx.AsyncClient(transport=MockTransport())
 
     # Test with a single-value 'data' argument, and a plain file 'files' argument.
     data = {"text": value}
@@ -59,7 +59,7 @@ async def test_multipart(value, output):
 @pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))
 @pytest.mark.asyncio
 async def test_multipart_invalid_key(key):
-    client = httpx.AsyncClient(dispatch=MockDispatch())
+    client = httpx.AsyncClient(transport=MockTransport())
     data = {key: "abc"}
     files = {"file": io.BytesIO(b"<file content>")}
     with pytest.raises(TypeError) as e:
@@ -70,7 +70,7 @@ async def test_multipart_invalid_key(key):
 @pytest.mark.parametrize(("value"), (1, 2.3, None, [None, "abc"], {None: "abc"}))
 @pytest.mark.asyncio
 async def test_multipart_invalid_value(value):
-    client = httpx.AsyncClient(dispatch=MockDispatch())
+    client = httpx.AsyncClient(transport=MockTransport())
     data = {"text": value}
     files = {"file": io.BytesIO(b"<file content>")}
     with pytest.raises(TypeError) as e:
@@ -80,7 +80,7 @@ async def test_multipart_invalid_value(value):
 
 @pytest.mark.asyncio
 async def test_multipart_file_tuple():
-    client = httpx.AsyncClient(dispatch=MockDispatch())
+    client = httpx.AsyncClient(transport=MockTransport())
 
     # Test with a list of values 'data' argument, and a tuple style 'files' argument.
     data = {"text": ["abc"]}
