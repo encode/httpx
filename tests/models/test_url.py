@@ -192,6 +192,11 @@ def test_origin_from_url_string():
     assert origin.port == 443
 
 
+def test_origin_repr():
+    origin = Origin("https://example.com:8080")
+    assert str(origin) == "Origin(scheme='https' host='example.com' port=8080)"
+
+
 def test_url_copywith_for_authority():
     copy_with_kwargs = {
         "username": "username",

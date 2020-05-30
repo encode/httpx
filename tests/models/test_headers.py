@@ -46,7 +46,14 @@ def test_header_mutations():
     assert h.raw == [(b"b", b"4")]
 
 
-def test_copy_headers():
+def test_copy_headers_method():
+    headers = httpx.Headers({"custom": "example"})
+    headers_copy = headers.copy()
+    assert headers == headers_copy
+    assert headers is not headers_copy
+
+
+def test_copy_headers_init():
     headers = httpx.Headers({"custom": "example"})
     headers_copy = httpx.Headers(headers)
     assert headers == headers_copy

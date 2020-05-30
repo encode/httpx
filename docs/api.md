@@ -151,7 +151,8 @@ True
 'application/json'
 ```
 
-* `def __init__(self, headers)`
+* `def __init__(self, headers, encoding=None)`
+* `def copy()` - **Headers**
 
 ## `Cookies`
 
