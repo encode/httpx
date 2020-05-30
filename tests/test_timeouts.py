@@ -34,7 +34,7 @@ async def test_connect_timeout(server):
 
 @pytest.mark.usefixtures("async_environment")
 async def test_pool_timeout(server):
-    pool_limits = httpx.PoolLimits(hard_limit=1)
+    pool_limits = httpx.PoolLimits(max_connections=1)
     timeout = httpx.Timeout(pool_timeout=1e-4)
 
     async with httpx.AsyncClient(pool_limits=pool_limits, timeout=timeout) as client:
