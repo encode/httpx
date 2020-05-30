@@ -182,20 +182,3 @@ async with httpx.AsyncClient(transport=transport, base_url="http://testserver") 
 ```
 
 See [the ASGI documentation](https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope) for more details on the `client` and `root_path` keys.
-
-## Unix Domain Sockets
-
-The async client provides support for connecting through a unix domain socket via the `uds` parameter. This is useful when making requests to a server that is bound to a socket file rather than an IP address.
-
-Here's an example requesting the Docker Engine API:
-
-```python
-import httpx
-
-
-async with httpx.AsyncClient(uds="/var/run/docker.sock") as client:
-    # This request will connect through the socket file.
-    resp = await client.get("http://localhost/version")
-```
-
-This functionality is not currently available in the synchronous client.
