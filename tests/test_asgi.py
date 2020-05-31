@@ -1,3 +1,5 @@
+from functools import partial
+
 import pytest
 
 import httpx
@@ -25,8 +27,8 @@ async def echo_body(scope, receive, send):
         await send({"type": "http.response.body", "body": body, "more_body": more_body})
 
 
-async def raise_exc(scope, receive, send):
-    raise ValueError()
+async def raise_exc(scope, receive, send, exc=ValueError):
+    raise exc()
 
 
 async def raise_exc_after_response(scope, receive, send):
@@ -59,6 +61,13 @@ async def test_asgi_upload():
 async def test_asgi_exc():
     client = httpx.AsyncClient(app=raise_exc)
     with pytest.raises(ValueError):
+        await client.get("http://www.example.org/")
+
+
+@pytest.mark.asyncio
+async def test_asgi_http_error():
+    client = httpx.AsyncClient(app=partial(raise_exc, exc=httpx.HTTPError))
+    with pytest.raises(httpx.HTTPError):
         await client.get("http://www.example.org/")
 
 
