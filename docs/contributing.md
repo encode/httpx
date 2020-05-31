@@ -101,7 +101,7 @@ Here are some common ways the test suite can fail:
 ### Check Job Failed
 
 <p align="center" style="margin: 0 0 10px">
-  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/gh-action-fail-check.png" alt='Failing GitHub action lint job'>
+  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/gh-actions-fail-check.png" alt='Failing GitHub action lint job'>
 </p>
 
 This job failing means there is either a code formatting issue or type-annotation issue.
