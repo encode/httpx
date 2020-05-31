@@ -249,8 +249,8 @@ We can raise an exception for any Client or Server error responses (4xx or 5xx s
 >>> not_found.raise_for_status()
 Traceback (most recent call last):
   File "/Users/tomchristie/GitHub/encode/httpcore/httpx/models.py", line 776, in raise_for_status
-    raise HttpError(message)
-httpx.exceptions.HttpError: 404 Not Found
+    raise HTTPError(message)
+httpx.HTTPError: 404 Not Found
 ```
 
 Any successful response codes will simply return `None` rather than raising an exception.
