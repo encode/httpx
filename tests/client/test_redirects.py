@@ -26,8 +26,8 @@ def get_header_value(headers, key, default=None):
     return default
 
 
-class AsyncMockTransport(httpcore.AsyncHTTPTransport):
-    async def request(
+class MockTransport:
+    def _request(
         self,
         method: bytes,
         url: typing.Tuple[bytes, bytes, int, bytes],
@@ -107,19 +107,17 @@ class AsyncMockTransport(httpcore.AsyncHTTPTransport):
             return b"HTTP/1.1", 200, b"OK", [], content
 
         elif path == b"/redirect_body":
-            _ = b"".join([part async for part in stream])
             code = codes.PERMANENT_REDIRECT
             headers = [(b"location", b"/redirect_body_target")]
             return b"HTTP/1.1", code, b"Permanent Redirect", headers, ByteStream(b"")
 
         elif path == b"/redirect_no_body":
-            _ = b"".join([part async for part in stream])
             code = codes.SEE_OTHER
             headers = [(b"location", b"/redirect_body_target")]
             return b"HTTP/1.1", code, b"See Other", headers, ByteStream(b"")
 
         elif path == b"/redirect_body_target":
-            content = b"".join([part async for part in stream])
+            content = b"".join(stream)
             headers_dict = dict(
                 [(key.decode("ascii"), value.decode("ascii")) for key, value in headers]
             )
@@ -156,38 +154,22 @@ class AsyncMockTransport(httpcore.AsyncHTTPTransport):
         return b"HTTP/1.1", 200, b"OK", [], ByteStream(b"Hello, world!")
 
 
-class SyncMockTransport(httpcore.SyncHTTPTransport):
-    def request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, int, bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: ContentStream,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
+class AsyncMockTransport(MockTransport, httpcore.AsyncHTTPTransport):
+    async def request(
+        self, *args, **kwargs
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
-        scheme, host, port, path = url
-        path, _, query = path.partition(b"?")
-        if path == b"/multiple_redirects":
-            params = parse_qs(query.decode("ascii"))
-            count = int(params.get("count", "0")[0])
-            redirect_count = count - 1
-            code = codes.SEE_OTHER if count else codes.OK
-            phrase = b"See Other" if count else b"OK"
-            location = b"/multiple_redirects"
-            if redirect_count:
-                location += b"?count=" + str(redirect_count).encode("ascii")
-            headers = [(b"location", location)] if count else []
-            return b"HTTP/1.1", code, phrase, headers, ByteStream(b"")
+        return self._request(*args, **kwargs)
 
-        return (
-            b"HTTP/1.1",
-            200,
-            b"OK",
-            [],
-            ByteStream(b"Hello, world!"),
-        )  # pragma: nocover
+
+class SyncMockTransport(MockTransport, httpcore.SyncHTTPTransport):
+    def request(
+        self, *args, **kwargs
+    ) -> typing.Tuple[
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
+        return self._request(*args, **kwargs)
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -402,7 +384,7 @@ async def test_cannot_redirect_streaming_body():
     url = "https://example.org/redirect_body"
 
     async def streaming_body():
-        yield b"Example request body"
+        yield b"Example request body"  # pragma: nocover
 
     with pytest.raises(RequestBodyUnavailable):
         await client.post(url, data=streaming_body())
