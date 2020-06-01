@@ -28,50 +28,45 @@ def get_header_value(headers, key, default=None):
     return default
 
 
-class AsyncMockTransport(httpcore.AsyncHTTPTransport):
+class MockTransport:
     def __init__(self, auth_header: bytes = b"", status_code: int = 200) -> None:
         self.auth_header = auth_header
         self.status_code = status_code
 
+    def _request(
+        self,
+        method: bytes,
+        url: typing.Tuple[bytes, bytes, int, bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: ContentStream,
+        timeout: typing.Dict[str, typing.Optional[float]] = None,
+    ) -> typing.Tuple[
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
+        authorization = get_header_value(headers, "Authorization")
+        response_headers = (
+            [(b"www-authenticate", self.auth_header)] if self.auth_header else []
+        )
+        response_stream = JSONStream({"auth": authorization})
+        return b"HTTP/1.1", self.status_code, b"", response_headers, response_stream
+
+
+class AsyncMockTransport(MockTransport, httpcore.AsyncHTTPTransport):
     async def request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, int, bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: ContentStream,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
+        self, *args, **kwargs
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
-        authorization = get_header_value(headers, "Authorization")
-        response_headers = (
-            [(b"www-authenticate", self.auth_header)] if self.auth_header else []
-        )
-        response_stream = JSONStream({"auth": authorization})
-        return b"HTTP/1.1", self.status_code, b"", response_headers, response_stream
+        return self._request(*args, **kwargs)
 
 
-class SyncMockTransport(httpcore.SyncHTTPTransport):
-    def __init__(self, auth_header: bytes = b"", status_code: int = 200) -> None:
-        self.auth_header = auth_header
-        self.status_code = status_code
-
+class SyncMockTransport(MockTransport, httpcore.SyncHTTPTransport):
     def request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, int, bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: ContentStream,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
+        self, *args, **kwargs
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
-        authorization = get_header_value(headers, "Authorization")
-        response_headers = (
-            [(b"www-authenticate", self.auth_header)] if self.auth_header else []
-        )
-        response_stream = JSONStream({"auth": authorization})
-        return b"HTTP/1.1", self.status_code, b"", response_headers, response_stream
+        return self._request(*args, **kwargs)
 
 
 class MockDigestAuthTransport(httpcore.AsyncHTTPTransport):
