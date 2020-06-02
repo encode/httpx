@@ -1539,5 +1539,3 @@ class StreamContextManager:
     ) -> None:
         assert isinstance(self.client, AsyncClient)
         await self.response.aclose()
-        if self.close_client:
-            await self.client.aclose()

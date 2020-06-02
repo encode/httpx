@@ -10,6 +10,6 @@ import trio
 
 async def sleep(seconds: float) -> None:
     if sniffio.current_async_library() == "trio":
-        await trio.sleep(seconds)
+        await trio.sleep(seconds)  # pragma: nocover
     else:
         await asyncio.sleep(seconds)

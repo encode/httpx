@@ -197,6 +197,14 @@ def test_origin_repr():
     assert str(origin) == "Origin(scheme='https' host='example.com' port=8080)"
 
 
+def test_origin_equal():
+    origin1 = Origin("https://example.com")
+    origin2 = Origin("https://example.com")
+    assert origin1 is not origin2
+    assert origin1 == origin2
+    assert len({origin1, origin2}) == 1
+
+
 def test_url_copywith_for_authority():
     copy_with_kwargs = {
         "username": "username",

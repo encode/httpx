@@ -826,7 +826,7 @@ class Response:
 
     def raise_for_status(self) -> None:
         """
-        Raise the `HttpError` if one occurred.
+        Raise the `HTTPError` if one occurred.
         """
         message = (
             "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
