@@ -84,7 +84,7 @@ Documentation pages are located under the `docs/` folder.
 To run the documentation site locally (useful for previewing changes), use:
 
 ```shell
-$ scripts/docs-serve
+$ scripts/docs
 ```
 
 ## Resolving Build / Travis Failures
@@ -93,7 +93,7 @@ Once you've submitted your pull request, the test suite will automatically run, 
 If the test suite fails, you'll want to click through to the "Details" link, and try to identify why the test suite failed.
 
 <p align="center" style="margin: 0 0 10px">
-  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail.png" alt='Failing PR commit status'>
+  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/gh-actions-fail.png" alt='Failing PR commit status'>
 </p>
 
 Here are some common ways the test suite can fail:
@@ -101,7 +101,7 @@ Here are some common ways the test suite can fail:
 ### Check Job Failed
 
 <p align="center" style="margin: 0 0 10px">
-  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail-check.png" alt='Failing Travis lint job'>
+  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/gh-actions-fail-check.png" alt='Failing GitHub action lint job'>
 </p>
 
 This job failing means there is either a code formatting issue or type-annotation issue.
@@ -122,7 +122,7 @@ a variety of reasons like invalid markdown or missing configuration within `mkdo
 ### Python 3.X Job Failed
 
 <p align="center" style="margin: 0 0 10px">
-  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail-test.png" alt='Failing Travis test job'>
+  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/gh-actions-fail-test.png" alt='Failing GitHub action test job'>
 </p>
 
 This job failing means the unit tests failed or not all code paths are covered by unit tests.
@@ -131,12 +131,10 @@ If tests are failing you will see this message under the coverage report:
 
 `=== 1 failed, 435 passed, 1 skipped, 1 xfailed in 11.09s ===`
 
-If tests succeed but coverage isn't 100% you will see this message under the coverage report:
+If tests succeed but coverage doesn't reach our current threshold, you will see this
+message under the coverage report:
 
 `FAIL Required test coverage of 100% not reached. Total coverage: 99.00%`
-
-Look at the [coverage report from codecov](https://codecov.io/gh/encode/httpx/pulls)
-for the pull request for help debugging coverage.
 
 ## Releasing
 
@@ -153,9 +151,19 @@ Before releasing a new version, create a pull request that includes:
         - Keep it concise and to-the-point. 🎯
 - **A version bump**: see `__version__.py`.
 
-For an example, see [#362](https://github.com/encode/httpx/pull/362).
+For an example, see [#1006](https://github.com/encode/httpx/pull/1006).
 
-Once the release PR is merged, run `$ scripts/publish` to publish the new release to PyPI.
+Once the release PR is merged, create a
+[new release](https://github.com/encode/httpx/releases/new) including:
+
+- Tag version like `0.13.3`.
+- Release title `Version 0.13.3`
+- Description copied from the changelog.
+
+Once created this release will be automatically uploaded to PyPI.
+
+If something goes wrong with the PyPI job the release can be published using the
+`scripts/publish` script.
 
 ## Development proxy setup
 
