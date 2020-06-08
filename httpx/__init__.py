@@ -3,6 +3,7 @@ from ._api import delete, get, head, options, patch, post, put, request, stream
 from ._auth import Auth, BasicAuth, DigestAuth
 from ._client import AsyncClient, Client
 from ._config import PoolLimits, Proxy, Timeout
+from ._content_streams import AsyncMultipartContent
 from ._exceptions import (
     ConnectTimeout,
     CookieConflict,
@@ -47,6 +48,7 @@ __all__ = [
     "ASGIDispatch",
     "ASGITransport",
     "AsyncClient",
+    "AsyncMultipartContent",
     "Auth",
     "BasicAuth",
     "Client",

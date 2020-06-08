@@ -23,6 +23,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from ._auth import Auth  # noqa: F401
     from ._config import Proxy, Timeout  # noqa: F401
     from ._models import URL, Cookies, Headers, QueryParams, Request  # noqa: F401
+    from ._content_streams import AsyncMultipartContent
 
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
@@ -63,7 +64,7 @@ AuthTypes = Union[
 
 RequestData = Union[dict, str, bytes, Iterator[bytes], AsyncIterator[bytes]]
 
-FileContent = Union[IO[str], IO[bytes], str, bytes]
+FileContent = Union[IO[str], IO[bytes], str, bytes, "AsyncMultipartContent"]
 FileTypes = Union[
     # file (or text)
     FileContent,

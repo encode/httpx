@@ -173,6 +173,35 @@ class URLEncodedStream(ContentStream):
         yield self.body
 
 
+class AsyncMultipartContent(ContentStream):
+    """
+    Async streaming multipart request content.
+    """
+
+    # NOTE: this helper is part of the public API.
+
+    def __init__(
+        self, aiterator: typing.AsyncIterator[bytes], content_length: int
+    ) -> None:
+        self._aiterator = aiterator
+        self._content_length = content_length
+
+    def can_replay(self) -> bool:
+        return False
+
+    def get_headers(self) -> typing.Dict[str, str]:
+        return {"Transfer-Encoding": "chunked"}
+
+    def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        return self._aiterator.__aiter__()
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        raise RuntimeError("Attempted to call an async iterator on an sync stream.")
+
+    def length(self) -> int:
+        return self._content_length
+
+
 class MultipartStream(ContentStream):
     """
     Request content as streaming multipart encoded form data.
@@ -222,6 +251,10 @@ class MultipartStream(ContentStream):
             yield self.render_headers()
             yield self.render_data()
 
+        async def arender(self) -> typing.AsyncIterator[bytes]:
+            for chunk in self.render():
+                yield chunk
+
     class FileField:
         """
         A single file field item, within a multipart form field.
@@ -253,6 +286,9 @@ class MultipartStream(ContentStream):
             if isinstance(self.file, (str, bytes)):
                 return len(headers) + len(self.file)
 
+            if isinstance(self.file, AsyncMultipartContent):
+                return len(headers) + self.file.length()
+
             # Let's do our best not to read `file` into memory.
             try:
                 file_length = peek_filelike_length(self.file)
@@ -282,6 +318,11 @@ class MultipartStream(ContentStream):
             return self._headers
 
         def render_data(self) -> typing.Iterator[bytes]:
+            if isinstance(self.file, AsyncMultipartContent):
+                raise RuntimeError(
+                    "Received async multipart body for sync multipart upload"
+                )
+
             if isinstance(self.file, (str, bytes)):
                 yield to_bytes(self.file)
                 return
@@ -299,12 +340,29 @@ class MultipartStream(ContentStream):
                 assert self.file.seekable()
                 self.file.seek(0)
 
+        async def arender_data(self) -> typing.AsyncIterator[bytes]:
+            if isinstance(self.file, AsyncMultipartContent):
+                async for chunk in self.file:
+                    yield to_bytes(chunk)
+            else:
+                for chunk in self.render_data():
+                    yield chunk
+
         def can_replay(self) -> bool:
-            return True if isinstance(self.file, (str, bytes)) else self.file.seekable()
+            if isinstance(self.file, (str, bytes)):
+                return True
+            if isinstance(self.file, AsyncMultipartContent):
+                return self.file.can_replay()
+            return self.file.seekable()
 
         def render(self) -> typing.Iterator[bytes]:
             yield self.render_headers()
             yield from self.render_data()
+
+        async def arender(self) -> typing.AsyncIterator[bytes]:
+            yield self.render_headers()
+            async for chunk in self.arender_data():
+                yield chunk
 
     def __init__(
         self, data: typing.Mapping, files: RequestFiles, boundary: bytes = None
@@ -338,6 +396,14 @@ class MultipartStream(ContentStream):
             yield b"\r\n"
         yield b"--%s--\r\n" % self.boundary
 
+    async def aiter_chunks(self) -> typing.AsyncIterator[bytes]:
+        for field in self.fields:
+            yield b"--%s\r\n" % self.boundary
+            async for chunk in field.arender():
+                yield chunk
+            yield b"\r\n"
+        yield b"--%s--\r\n" % self.boundary
+
     def iter_chunks_lengths(self) -> typing.Iterator[int]:
         boundary_length = len(self.boundary)
         # Follow closely what `.iter_chunks()` does.
@@ -365,7 +431,7 @@ class MultipartStream(ContentStream):
             yield chunk
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        for chunk in self.iter_chunks():
+        async for chunk in self.aiter_chunks():
             yield chunk
 
 

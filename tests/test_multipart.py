@@ -28,8 +28,16 @@ class MockDispatch(httpcore.AsyncHTTPTransport):
         typing.List[typing.Tuple[bytes, bytes]],
         httpcore.AsyncByteStream,
     ]:
+        assert stream is not None
         content = AsyncIteratorStream(aiterator=(part async for part in stream))
-        return b"HTTP/1.1", 200, b"OK", [], content
+
+        request_headers = httpx.Headers(headers)
+        response_headers = httpx.Headers()
+        content_length = request_headers.get("x-response-content-length")
+        if content_length is not None:
+            response_headers["content-length"] = content_length
+
+        return b"HTTP/1.1", 200, b"OK", response_headers.raw, content
 
 
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
@@ -99,6 +107,28 @@ async def test_multipart_file_tuple():
     # appears to differs from 3.6 to 3.7+
     assert multipart["text"] == ["abc"] or multipart["text"] == [b"abc"]
     assert multipart["file"] == [b"<file content>"]
+
+
+@pytest.mark.asyncio
+async def test_multipart_async_content():
+    client = httpx.AsyncClient(dispatch=MockDispatch())
+
+    data = {"example": "data"}
+    headers = {"x-response-content-length": "4"}
+
+    async with client.stream(
+        "POST", "http://127.0.0.1:8000/", data=data, headers=headers
+    ) as r:
+        content_length = int(r.headers["content-length"])
+        files = {
+            "file": (None, httpx.AsyncMultipartContent(r.aiter_bytes(), content_length))
+        }
+
+        response = await client.post("http://127.0.0.1:8000/", files=files)
+
+        assert response.status_code == 200
+        assert b'name="file"' in response.content
+        assert b"example=data" in response.content
 
 
 def test_multipart_encode(tmp_path: typing.Any) -> None:
