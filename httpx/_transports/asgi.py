@@ -171,6 +171,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         headers = [] if headers is None else headers
         stream = ByteStream(b"") if stream is None else stream
 
+        # Prepare ASGI scope.
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
         scope = {
@@ -188,7 +189,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         }
 
         # Request.
-        request_body = stream.__aiter__()
+        request_body_chunks = stream.__aiter__()
         request_complete = False
 
         # Response.
@@ -198,8 +199,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         produce_body, aclose_body, consume_body = create_channel(1)
         response_complete = create_event()
 
-        # Error handling.
-        app_exception: Optional[Exception] = None
+        # ASGI receive/send callables.
 
         async def receive() -> dict:
             nonlocal request_complete
@@ -209,7 +209,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
                 return {"type": "http.disconnect"}
 
             try:
-                body = await request_body.__anext__()
+                body = await request_body_chunks.__anext__()
             except StopAsyncIteration:
                 request_complete = True
                 return {"type": "http.request", "body": b"", "more_body": False}
@@ -218,14 +218,13 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         async def send(message: dict) -> None:
             nonlocal status_code, response_headers
             if message["type"] == "http.response.start":
-                # App is sending the response headers.
                 assert not response_started_or_app_crashed.is_set()
                 status_code = message["status"]
                 response_headers = message.get("headers", [])
                 response_started_or_app_crashed.set()
 
             elif message["type"] == "http.response.body":
-                # App is sending a chunk of the response body.
+                assert not response_complete.is_set()
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
 
@@ -236,6 +235,10 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
                     await aclose_body()
                     response_complete.set()
 
+        # Application wrapper.
+
+        app_exception: Optional[Exception] = None
+
         async def run_app() -> None:
             nonlocal app_exception
             try:
@@ -245,12 +248,16 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
                 response_started_or_app_crashed.set()
                 await aclose_body()  # Stop response body consumer once flushed (*).
 
+        # Response body iterator.
+
         async def aiter_response_body() -> AsyncIterator[bytes]:
             async for chunk in consume_body():  # (*)
                 yield chunk
 
             if app_exception is not None and self.raise_app_exceptions:
                 raise app_exception
+
+        # Now we wire things up...
 
         aclose = await create_background_task(run_app)
 
@@ -263,7 +270,9 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
 
         assert status_code is not None
         assert response_headers is not None
+
         stream = AsyncIteratorStream(aiter_response_body(), close_func=aclose)
+
         return (b"HTTP/1.1", status_code, b"", response_headers, stream)
 
 
