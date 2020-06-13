@@ -1,8 +1,10 @@
 from datetime import timedelta
 
+import httpcore
 import pytest
 
 import httpx
+from httpx import ASGIDispatch
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -16,6 +18,13 @@ async def test_get(server):
     assert response.headers
     assert repr(response) == "<Response [200 OK]>"
     assert response.elapsed > timedelta(seconds=0)
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_get_invalid_url(server):
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.InvalidURL):
+            await client.get("invalid://example.org")
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -95,7 +104,7 @@ async def test_raise_for_status(server):
                     response.raise_for_status()
                 assert exc_info.value.response == response
             else:
-                assert response.raise_for_status() is None
+                assert response.raise_for_status() is None  # type: ignore
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -148,3 +157,28 @@ async def test_100_continue(server):
 
     assert response.status_code == 200
     assert response.content == data
+
+
+def test_dispatch_deprecated():
+    dispatch = httpcore.AsyncHTTPTransport()
+
+    with pytest.warns(DeprecationWarning) as record:
+        client = httpx.AsyncClient(dispatch=dispatch)
+
+    assert client.transport is dispatch
+    assert len(record) == 1
+    assert record[0].message.args[0] == (
+        "The dispatch argument is deprecated since v0.13 and will be "
+        "removed in a future release, please use 'transport'"
+    )
+
+
+def test_asgi_dispatch_deprecated():
+    with pytest.warns(DeprecationWarning) as record:
+        ASGIDispatch(None)
+
+    assert len(record) == 1
+    assert (
+        record[0].message.args[0]
+        == "ASGIDispatch is deprecated, please use ASGITransport"
+    )

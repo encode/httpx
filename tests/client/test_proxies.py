@@ -84,6 +84,17 @@ def test_transport_for_request(url, proxies, expected):
         assert transport.proxy_origin == httpx.URL(expected).raw[:3]
 
 
+@pytest.mark.asyncio
+async def test_async_proxy_close():
+    client = httpx.AsyncClient(proxies={"all": PROXY_URL})
+    await client.aclose()
+
+
+def test_sync_proxy_close():
+    client = httpx.Client(proxies={"all": PROXY_URL})
+    client.close()
+
+
 def test_unsupported_proxy_scheme():
     with pytest.raises(ValueError):
         httpx.AsyncClient(proxies="ftp://127.0.0.1")
@@ -105,11 +116,12 @@ def test_unsupported_proxy_scheme():
         ),
     ],
 )
-def test_proxies_environ(monkeypatch, url, env, expected):
+@pytest.mark.parametrize("client_class", [httpx.Client, httpx.AsyncClient])
+def test_proxies_environ(monkeypatch, client_class, url, env, expected):
     for name, value in env.items():
         monkeypatch.setenv(name, value)
 
-    client = httpx.AsyncClient()
+    client = client_class()
     transport = client.transport_for_url(httpx.URL(url))
 
     if expected is None:

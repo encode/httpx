@@ -54,9 +54,6 @@ from ._utils import (
     warn_deprecated,
 )
 
-if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._dispatch.base import AsyncDispatcher  # noqa: F401
-
 
 class URL:
     def __init__(
@@ -616,6 +613,9 @@ class Request:
         auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
 
         has_host = "host" in self.headers
+        has_content_length = (
+            "content-length" in self.headers or "transfer-encoding" in self.headers
+        )
         has_user_agent = "user-agent" in self.headers
         has_accept = "accept" in self.headers
         has_accept_encoding = "accept-encoding" in self.headers
@@ -626,6 +626,8 @@ class Request:
             if url.userinfo:
                 url = url.copy_with(username=None, password=None)
             auto_headers.append((b"host", url.authority.encode("ascii")))
+        if not has_content_length and self.method in ("POST", "PUT", "PATCH"):
+            auto_headers.append((b"content-length", b"0"))
         if not has_user_agent:
             auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
         if not has_accept:
@@ -824,7 +826,7 @@ class Response:
 
     def raise_for_status(self) -> None:
         """
-        Raise the `HttpError` if one occurred.
+        Raise the `HTTPError` if one occurred.
         """
         message = (
             "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
