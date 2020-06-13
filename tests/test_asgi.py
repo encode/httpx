@@ -41,7 +41,7 @@ async def raise_exc_after_response(scope, receive, send):
     raise ValueError()
 
 
-@pytest.mark.asyncio
+@pytest.mark.usefixtures("async_environment")
 async def test_asgi():
     client = httpx.AsyncClient(app=hello_world)
     response = await client.get("http://www.example.org/")
@@ -49,7 +49,7 @@ async def test_asgi():
     assert response.text == "Hello, World!"
 
 
-@pytest.mark.asyncio
+@pytest.mark.usefixtures("async_environment")
 async def test_asgi_upload():
     client = httpx.AsyncClient(app=echo_body)
     response = await client.post("http://www.example.org/", data=b"example")
@@ -57,28 +57,29 @@ async def test_asgi_upload():
     assert response.text == "example"
 
 
-@pytest.mark.asyncio
+@pytest.mark.usefixtures("async_environment")
 async def test_asgi_exc():
     client = httpx.AsyncClient(app=raise_exc)
     with pytest.raises(ValueError):
         await client.get("http://www.example.org/")
 
 
-@pytest.mark.asyncio
+@pytest.mark.usefixtures("async_environment")
 async def test_asgi_http_error():
     client = httpx.AsyncClient(app=partial(raise_exc, exc=httpx.HTTPError))
     with pytest.raises(httpx.HTTPError):
         await client.get("http://www.example.org/")
 
 
-@pytest.mark.asyncio
+@pytest.mark.usefixtures("async_environment")
 async def test_asgi_exc_after_response():
     client = httpx.AsyncClient(app=raise_exc_after_response)
     with pytest.raises(ValueError):
         await client.get("http://www.example.org/")
 
 
-async def test_asgi_disconnect_after_response_complete(async_environment):
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_disconnect_after_response_complete():
     disconnect = False
 
     async def read_body(scope, receive, send):
