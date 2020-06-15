@@ -191,6 +191,25 @@ of items for the file value:
 }
 ```
 
+If you need to include non-file data fields in the multipart form, use the `data=...` parameter:
+
+```python
+>>> data = {'message': 'Hello, world!'}
+>>> files = {'file': open('report.xls', 'rb')}
+>>> r = httpx.post("https://httpbin.org/post", data=data, files=files)
+>>> print(r.text)
+{
+  ...
+  "files": {
+    "file": "<... binary content ...>"
+  },
+  "form": {
+    "message": "Hello, world!",
+  },
+  ...
+}
+```
+
 ## Sending JSON Encoded Data
 
 Form encoded data is okay if all you need is a simple key-value data structure.
