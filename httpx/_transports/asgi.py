@@ -17,7 +17,7 @@ import sniffio
 from .._content_streams import AsyncIteratorStream, ByteStream
 from .._utils import warn_deprecated
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     import asyncio
     import trio
 
@@ -171,7 +171,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         headers = [] if headers is None else headers
         stream = ByteStream(b"") if stream is None else stream
 
-        # Prepare ASGI scope.
+        # ASGI scope.
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
         scope = {
@@ -193,13 +193,13 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         request_complete = False
 
         # Response.
-        response_headers: Optional[List[Tuple[bytes, bytes]]] = None
         status_code: Optional[int] = None
-        response_started_or_app_crashed = create_event()
+        response_headers: Optional[List[Tuple[bytes, bytes]]] = None
         produce_body, aclose_body, consume_body = create_channel(1)
+        response_started_or_app_crashed = create_event()
         response_complete = create_event()
 
-        # ASGI receive/send callables.
+        # ASGI callables.
 
         async def receive() -> dict:
             nonlocal request_complete
@@ -265,7 +265,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
 
         if app_exception is not None:
             await aclose()
-            if self.raise_app_exceptions:
+            if self.raise_app_exceptions or not response_complete.is_set():
                 raise app_exception
 
         assert status_code is not None
