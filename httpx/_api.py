@@ -1,6 +1,7 @@
+import contextlib
 import typing
 
-from ._client import Client, StreamContextManager
+from ._client import Client
 from ._config import DEFAULT_TIMEOUT_CONFIG
 from ._models import Request, Response
 from ._types import (
@@ -97,6 +98,7 @@ def request(
         )
 
 
+@contextlib.contextmanager
 def stream(
     method: str,
     url: URLTypes,
@@ -113,7 +115,7 @@ def stream(
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     trust_env: bool = True,
-) -> StreamContextManager:
+) -> typing.Iterator[Response]:
     client = Client(cert=cert, verify=verify, trust_env=trust_env)
     request = Request(
         method=method,
@@ -125,14 +127,18 @@ def stream(
         headers=headers,
         cookies=cookies,
     )
-    return StreamContextManager(
-        client=client,
+    response = client.send(
         request=request,
         auth=auth,
-        timeout=timeout,
         allow_redirects=allow_redirects,
-        close_client=True,
+        timeout=timeout,
+        stream=True,
     )
+    try:
+        yield response
+    finally:
+        response.close()
+        client.close()
 
 
 def get(

@@ -372,7 +372,7 @@ async def test_no_body_redirect():
 async def test_can_stream_if_no_redirect():
     client = AsyncClient(transport=AsyncMockTransport())
     url = "https://example.org/redirect_301"
-    async with client.stream("GET", url, allow_redirects=False) as response:
+    async with await client.stream("GET", url, allow_redirects=False) as response:
         assert not response.is_closed
     assert response.status_code == codes.MOVED_PERMANENTLY
     assert response.headers["location"] == "https://example.org/"

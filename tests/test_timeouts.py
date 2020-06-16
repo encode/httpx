@@ -38,6 +38,6 @@ async def test_pool_timeout(server):
     timeout = httpx.Timeout(pool_timeout=1e-4)
 
     async with httpx.AsyncClient(pool_limits=pool_limits, timeout=timeout) as client:
-        async with client.stream("GET", server.url):
+        async with await client.stream("GET", server.url):
             with pytest.raises(httpx.PoolTimeout):
                 await client.get("http://localhost:8000/")

@@ -143,39 +143,6 @@ class BaseClient:
     def params(self, params: QueryParamTypes) -> None:
         self._params = QueryParams(params)
 
-    def stream(
-        self,
-        method: str,
-        url: URLTypes,
-        *,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-    ) -> "StreamContextManager":
-        request = self.build_request(
-            method=method,
-            url=url,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-        )
-        return StreamContextManager(
-            client=self,
-            request=request,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
-        )
-
     def build_request(
         self,
         method: str,
@@ -599,6 +566,39 @@ class Client(BaseClient):
         )
         return self.send(
             request, auth=auth, allow_redirects=allow_redirects, timeout=timeout,
+        )
+
+    def stream(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> "Response":
+        request = self.build_request(
+            method=method,
+            url=url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        return self.send(
+            request=request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+            stream=True,
         )
 
     def send(
@@ -1149,6 +1149,39 @@ class AsyncClient(BaseClient):
         )
         return response
 
+    async def stream(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: AuthTypes = None,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> "Response":
+        request = self.build_request(
+            method=method,
+            url=url,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        return await self.send(
+            request=request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+            stream=True,
+        )
+
     async def send(
         self,
         request: Request,
@@ -1478,64 +1511,3 @@ class AsyncClient(BaseClient):
         traceback: TracebackType = None,
     ) -> None:
         await self.aclose()
-
-
-class StreamContextManager:
-    def __init__(
-        self,
-        client: BaseClient,
-        request: Request,
-        *,
-        auth: AuthTypes = None,
-        allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        close_client: bool = False,
-    ) -> None:
-        self.client = client
-        self.request = request
-        self.auth = auth
-        self.allow_redirects = allow_redirects
-        self.timeout = timeout
-        self.close_client = close_client
-
-    def __enter__(self) -> "Response":
-        assert isinstance(self.client, Client)
-        self.response = self.client.send(
-            request=self.request,
-            auth=self.auth,
-            allow_redirects=self.allow_redirects,
-            timeout=self.timeout,
-            stream=True,
-        )
-        return self.response
-
-    def __exit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        assert isinstance(self.client, Client)
-        self.response.close()
-        if self.close_client:
-            self.client.close()
-
-    async def __aenter__(self) -> "Response":
-        assert isinstance(self.client, AsyncClient)
-        self.response = await self.client.send(
-            request=self.request,
-            auth=self.auth,
-            allow_redirects=self.allow_redirects,
-            timeout=self.timeout,
-            stream=True,
-        )
-        return self.response
-
-    async def __aexit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        assert isinstance(self.client, AsyncClient)
-        await self.response.aclose()

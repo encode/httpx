@@ -6,6 +6,7 @@ import typing
 import urllib.request
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
+from types import TracebackType
 from urllib.parse import parse_qsl, urlencode
 
 import chardet
@@ -954,6 +955,17 @@ class Response:
             if hasattr(self, "_raw_stream"):
                 self._raw_stream.close()
 
+    def __enter__(self) -> "Response":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        self.close()
+
     async def aread(self) -> bytes:
         """
         Read and return the response content.
@@ -1026,6 +1038,17 @@ class Response:
             self._elapsed = self.request.timer.elapsed
             if hasattr(self, "_raw_stream"):
                 await self._raw_stream.aclose()
+
+    async def __aenter__(self) -> "Response":
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: typing.Type[BaseException] = None,
+        exc_value: BaseException = None,
+        traceback: TracebackType = None,
+    ) -> None:
+        await self.aclose()
 
 
 class Cookies(MutableMapping):
