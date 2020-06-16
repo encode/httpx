@@ -130,8 +130,8 @@ def stream(
     response = client.send(
         request=request,
         auth=auth,
-        allow_redirects=allow_redirects,
         timeout=timeout,
+        allow_redirects=allow_redirects,
         stream=True,
     )
     try:
