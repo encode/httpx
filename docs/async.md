@@ -62,13 +62,44 @@ await client.aclose()
 
 ### Streaming responses
 
-The `AsyncClient.stream(method, url, ...)` method is an async context block.
+The `await AsyncClient.stream(method, url, ...)` method can be used as async context block:
 
 ```python
->>> client = httpx.AsyncClient()
->>> async with client.stream('GET', 'https://www.example.com/') as response:
->>>     async for chunk in response.aiter_bytes():
->>>         ...
+async with httpx.AsyncClient() as client:
+    async with await client.stream('GET', 'https://www.example.com/') as r:
+        async for chunk in r.aiter_bytes():
+            ...
+```
+
+!!! note
+    The "`async with await`" here is not a typo: you must first call `await client.stream(...)`, and then use the result as an async context manager.
+
+Alternatively, use `r = await client.stream(method, url, ...)` if you want to close the response explicitly:
+
+```python
+client = httpx.AsyncClient()
+
+r = await client.stream('GET', 'https://www.example.com/')
+
+try:
+    async for chunk in r.aiter_bytes():
+        ...
+finally:
+    await r.aclose()
+```
+
+This alternative style can be particularly useful in the context of web frameworks, e.g. to forward a streaming response. An example using [Starlette](https://www.starlette.io):
+
+```python
+import httpx
+from starlette.background import BackgroundTask
+from starlette.responses import PlainTextResponse
+
+client = httpx.AsyncClient()
+
+async def home(request):
+    r = await client.stream('GET', 'https://www.example.com/')
+    return PlainTextResponse(r.aiter_text(), background=BackgroundTask(r.aclose))
 ```
 
 The async response streaming methods are:
