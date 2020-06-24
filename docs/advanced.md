@@ -467,12 +467,12 @@ MIME header field.
  
 You can also send multiple files in one go with a multiple file field form.
 To do that, pass a list of `(field, <file>)` items instead of a dictionary, allowing you to pass multiple items with the same `field`.
-For instance this request sends 2 files, `foo.png` and `bar.png` in one request on the `files` form field: 
+For instance this request sends 2 files, `foo.png` and `bar.png` in one request on the `images` form field: 
 
 ```python
->>> multiple_files = [('files', ('foo.png', open('foo.png', 'rb'), 'image/png')),
-                      ('files', ('bar.png', open('bar.png', 'rb'), 'image/png'))]
->>> r = httpx.post("https://httpbin.org/post", files=multiple_files)
+>>> files = [('images', ('foo.png', open('foo.png', 'rb'), 'image/png')),
+                      ('images', ('bar.png', open('bar.png', 'rb'), 'image/png'))]
+>>> r = httpx.post("https://httpbin.org/post", files=files)
 ```
 
 ## Customizing authentication
