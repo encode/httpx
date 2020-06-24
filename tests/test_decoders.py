@@ -255,6 +255,12 @@ def test_line_decoder_crnl():
     assert decoder.decode("\n\r\nb\r\nc") == ["a\n", "\n", "b\n"]
     assert decoder.flush() == ["c"]
 
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("12345\r\n") == ["12345\n"]
+    assert decoder.decode("foo ") == []
+    assert decoder.decode("bar ") == []
+    assert decoder.decode("baz\r\n") == ["foo bar baz\n"]
 
 def test_invalid_content_encoding_header():
     headers = [(b"Content-Encoding", b"invalid-header")]
