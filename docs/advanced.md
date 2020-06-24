@@ -464,6 +464,17 @@ MIME header field.
     It is safe to upload large files this way. File uploads are streaming by default, meaning that only one chunk will be loaded into memory at a time.
  
  Non-file data fields can be included in the multipart form using by passing them to `data=...`.
+ 
+You can also send multiple files in one go with a multiple file filed form.
+To do that you'll need to pass a list of tuples of the form `(form_field, (2_or_3_elements_tuple))` where the `2_or_3_elements_tuple` is described above and the `form_field` is the name of your form field.
+For instance this request sends 2 files, `foo.png` and `bar.png` in one request on the `images` form field: 
+
+```python
+>>> multiple_files = [('images', ('foo.png', open('foo.png', 'rb'), 'image/png')),
+                      ('images', ('bar.png', open('bar.png', 'rb'), 'image/png'))]
+>>> r = httpx.post("https://httpbin.org/post", files=multiple_files)
+>>> print(r.text)
+```
 
 ## Customizing authentication
 
