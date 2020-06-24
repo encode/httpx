@@ -81,7 +81,7 @@ def test_multi():
 
     gzip_compressor = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
     compressed_body = (
-        gzip_compressor.compress(compressed_body) + gzip_compressor.flush()
+            gzip_compressor.compress(compressed_body) + gzip_compressor.flush()
     )
 
     headers = [(b"Content-Encoding", b"deflate, gzip")]
@@ -157,12 +157,12 @@ def test_decoding_errors(header_value):
         ((b"\x83g\x83\x89\x83x\x83\x8b",) * 64, "shift-jis"),
         ((b"\x83g\x83\x89\x83x\x83\x8b",) * 600, "shift-jis"),
         (
-            (b"\xcb\xee\xf0\xe5\xec \xe8\xef\xf1\xf3\xec \xe4\xee\xeb\xee\xf0",) * 64,
-            "MacCyrillic",
+                (b"\xcb\xee\xf0\xe5\xec \xe8\xef\xf1\xf3\xec \xe4\xee\xeb\xee\xf0",) * 64,
+                "MacCyrillic",
         ),
         (
-            (b"\xa5\xa6\xa5\xa7\xa5\xd6\xa4\xce\xb9\xf1\xba\xdd\xb2\xbd",) * 512,
-            "euc-jp",
+                (b"\xa5\xa6\xa5\xa7\xa5\xd6\xa4\xce\xb9\xf1\xba\xdd\xb2\xbd",) * 512,
+                "euc-jp",
         ),
     ],
 )
@@ -225,6 +225,15 @@ def test_line_decoder_nl():
     assert decoder.decode("a\n\nb\nc\n") == ["a\n", "\n", "b\n", "c\n"]
     assert decoder.flush() == []
 
+    # Issue #1033
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("12345\n") == ["12345\n"]
+    assert decoder.decode("foo ") == []
+    assert decoder.decode("bar ") == []
+    assert decoder.decode("baz\n") == ["foo bar baz\n"]
+    assert decoder.flush() == []
+
 
 def test_line_decoder_cr():
     decoder = LineDecoder()
@@ -236,6 +245,16 @@ def test_line_decoder_cr():
     assert decoder.decode("") == []
     assert decoder.decode("a\r\rb\rc\r") == ["a\n", "\n", "b\n"]
     assert decoder.flush() == ["c\n"]
+
+    # Issue #1033
+    # TODO: This expectation seems like another bug; consider and fix expectations and results.
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("12345\r") == []
+    assert decoder.decode("foo ") == []
+    assert decoder.decode("bar ") == []
+    assert decoder.decode("baz\r") == []
+    assert decoder.flush() == ["12345\rfoo bar baz\n"]
 
 
 def test_line_decoder_crnl():
@@ -255,12 +274,15 @@ def test_line_decoder_crnl():
     assert decoder.decode("\n\r\nb\r\nc") == ["a\n", "\n", "b\n"]
     assert decoder.flush() == ["c"]
 
+    # Issue #1033
     decoder = LineDecoder()
     assert decoder.decode("") == []
     assert decoder.decode("12345\r\n") == ["12345\n"]
     assert decoder.decode("foo ") == []
     assert decoder.decode("bar ") == []
     assert decoder.decode("baz\r\n") == ["foo bar baz\n"]
+    assert decoder.flush() == []
+
 
 def test_invalid_content_encoding_header():
     headers = [(b"Content-Encoding", b"invalid-header")]
