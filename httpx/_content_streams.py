@@ -329,7 +329,7 @@ class MultipartStream(ContentStream):
                 yield self.DataField(name=name, value=value)
 
         file_items = files.items() if isinstance(files, dict) else files
-        for name, value in file_items:
+        for name, value in file_items:  # type: ignore
             yield self.FileField(name=name, value=value)
 
     def iter_chunks(self) -> typing.Iterator[bytes]:
