@@ -81,7 +81,7 @@ def test_multi():
 
     gzip_compressor = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
     compressed_body = (
-            gzip_compressor.compress(compressed_body) + gzip_compressor.flush()
+        gzip_compressor.compress(compressed_body) + gzip_compressor.flush()
     )
 
     headers = [(b"Content-Encoding", b"deflate, gzip")]
@@ -157,12 +157,12 @@ def test_decoding_errors(header_value):
         ((b"\x83g\x83\x89\x83x\x83\x8b",) * 64, "shift-jis"),
         ((b"\x83g\x83\x89\x83x\x83\x8b",) * 600, "shift-jis"),
         (
-                (b"\xcb\xee\xf0\xe5\xec \xe8\xef\xf1\xf3\xec \xe4\xee\xeb\xee\xf0",) * 64,
-                "MacCyrillic",
+            (b"\xcb\xee\xf0\xe5\xec \xe8\xef\xf1\xf3\xec \xe4\xee\xeb\xee\xf0",) * 64,
+            "MacCyrillic",
         ),
         (
-                (b"\xa5\xa6\xa5\xa7\xa5\xd6\xa4\xce\xb9\xf1\xba\xdd\xb2\xbd",) * 512,
-                "euc-jp",
+            (b"\xa5\xa6\xa5\xa7\xa5\xd6\xa4\xce\xb9\xf1\xba\xdd\xb2\xbd",) * 512,
+            "euc-jp",
         ),
     ],
 )
