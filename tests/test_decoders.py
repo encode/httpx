@@ -247,7 +247,7 @@ def test_line_decoder_cr():
     assert decoder.flush() == ["c\n"]
 
     # Issue #1033
-    # TODO: This expectation seems like another bug; consider and fix expectations and results.
+    # TODO: This seems like another bug; fix expectations and results.
     decoder = LineDecoder()
     assert decoder.decode("") == []
     assert decoder.decode("12345\r") == []
