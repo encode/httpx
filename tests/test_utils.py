@@ -1,5 +1,6 @@
 import asyncio
 import os
+from pathlib import Path
 
 import pytest
 
@@ -59,7 +60,7 @@ def test_bad_get_netrc_login():
 
 
 def test_get_netrc_login():
-    netrc_info = NetRCInfo(["tests/.netrc"])
+    netrc_info = NetRCInfo([(Path(__file__).parent / ".netrc").as_posix()])
     expected_credentials = (
         "example-username",
         "example-password",
@@ -137,14 +138,14 @@ def test_get_ssl_cert_file():
     # Two environments is not set.
     assert get_ca_bundle_from_env() is None
 
-    os.environ["SSL_CERT_DIR"] = "tests/"
+    os.environ["SSL_CERT_DIR"] = (Path(__file__).parent).as_posix()
     # SSL_CERT_DIR is correctly set, SSL_CERT_FILE is not set.
-    assert get_ca_bundle_from_env() == "tests"
+    assert get_ca_bundle_from_env() == (Path(__file__).parent).as_posix()
 
     del os.environ["SSL_CERT_DIR"]
-    os.environ["SSL_CERT_FILE"] = "tests/test_utils.py"
+    os.environ["SSL_CERT_FILE"] = (Path(__file__).parent /"test_utils.py" ).as_posix()
     # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
-    assert get_ca_bundle_from_env() == "tests/test_utils.py"
+    assert get_ca_bundle_from_env() == (Path(__file__).parent /"test_utils.py" ).as_posix()
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
@@ -155,14 +156,14 @@ def test_get_ssl_cert_file():
     # SSL_CERT_DIR is set with wrong path,  SSL_CERT_FILE is not set.
     assert get_ca_bundle_from_env() is None
 
-    os.environ["SSL_CERT_DIR"] = "tests/"
-    os.environ["SSL_CERT_FILE"] = "tests/test_utils.py"
+    os.environ["SSL_CERT_DIR"] = (Path(__file__).parent).as_posix()
+    os.environ["SSL_CERT_FILE"] = (Path(__file__).parent/ "test_utils.py").as_posix()
     # Two environments is correctly set.
-    assert get_ca_bundle_from_env() == "tests/test_utils.py"
+    assert get_ca_bundle_from_env() == (Path(__file__).parent / "test_utils.py").as_posix()
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # Two environments is set but SSL_CERT_FILE is not a file.
-    assert get_ca_bundle_from_env() == "tests"
+    assert get_ca_bundle_from_env() == (Path(__file__).parent).as_posix()
 
     os.environ["SSL_CERT_DIR"] = "wrongpath"
     # Two environments is set but both are not correct.
