@@ -143,9 +143,11 @@ def test_get_ssl_cert_file():
     assert get_ca_bundle_from_env() == (Path(__file__).parent).as_posix()
 
     del os.environ["SSL_CERT_DIR"]
-    os.environ["SSL_CERT_FILE"] = (Path(__file__).parent /"test_utils.py" ).as_posix()
+    os.environ["SSL_CERT_FILE"] = (Path(__file__).parent / "test_utils.py").as_posix()
     # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
-    assert get_ca_bundle_from_env() == (Path(__file__).parent /"test_utils.py" ).as_posix()
+    assert (
+        get_ca_bundle_from_env() == (Path(__file__).parent / "test_utils.py").as_posix()
+    )
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
@@ -157,9 +159,11 @@ def test_get_ssl_cert_file():
     assert get_ca_bundle_from_env() is None
 
     os.environ["SSL_CERT_DIR"] = (Path(__file__).parent).as_posix()
-    os.environ["SSL_CERT_FILE"] = (Path(__file__).parent/ "test_utils.py").as_posix()
+    os.environ["SSL_CERT_FILE"] = (Path(__file__).parent / "test_utils.py").as_posix()
     # Two environments is correctly set.
-    assert get_ca_bundle_from_env() == (Path(__file__).parent / "test_utils.py").as_posix()
+    assert (
+        get_ca_bundle_from_env() == (Path(__file__).parent / "test_utils.py").as_posix()
+    )
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # Two environments is set but SSL_CERT_FILE is not a file.
