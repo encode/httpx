@@ -94,7 +94,7 @@ def format_form_param(name: str, value: typing.Union[str, bytes]) -> bytes:
 
 
 # Null bytes; no need to recreate these on each call to guess_json_utf
-_null = "\x00".encode("ascii")  # encoding to ASCII for Python 3
+_null = b"\x00"
 _null2 = _null * 2
 _null3 = _null * 3
 
