@@ -20,9 +20,9 @@ class MockTransport(httpcore.AsyncHTTPTransport):
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
-        headers_dict = dict(
-            [(key.decode("ascii"), value.decode("ascii")) for key, value in headers]
-        )
+        headers_dict = {
+            key.decode("ascii"): value.decode("ascii") for key, value in headers
+        }
         body = JSONStream({"headers": headers_dict})
         return b"HTTP/1.1", 200, b"OK", [], body
 

@@ -83,7 +83,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         environ = {
             "wsgi.version": (1, 0),
             "wsgi.url_scheme": scheme.decode("ascii"),
-            "wsgi.input": io.BytesIO(b"".join([chunk for chunk in stream])),
+            "wsgi.input": io.BytesIO(b"".join(list(stream))),
             "wsgi.errors": io.BytesIO(),
             "wsgi.multithread": True,
             "wsgi.multiprocess": False,

@@ -100,9 +100,9 @@ class MockTransport:
             return b"HTTP/1.1", code, b"See Other", headers, ByteStream(b"")
 
         elif path == b"/cross_domain_target":
-            headers_dict = dict(
-                [(key.decode("ascii"), value.decode("ascii")) for key, value in headers]
-            )
+            headers_dict = {
+                key.decode("ascii"): value.decode("ascii") for key, value in headers
+            }
             content = ByteStream(json.dumps({"headers": headers_dict}).encode())
             return b"HTTP/1.1", 200, b"OK", [], content
 
@@ -118,9 +118,9 @@ class MockTransport:
 
         elif path == b"/redirect_body_target":
             content = b"".join(stream)
-            headers_dict = dict(
-                [(key.decode("ascii"), value.decode("ascii")) for key, value in headers]
-            )
+            headers_dict = {
+                key.decode("ascii"): value.decode("ascii") for key, value in headers
+            }
             body = ByteStream(
                 json.dumps({"body": content.decode(), "headers": headers_dict}).encode()
             )
