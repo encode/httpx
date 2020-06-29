@@ -126,7 +126,7 @@ class SSLConfig:
         # Signal to server support for PHA in TLS 1.3. Raises an
         # AttributeError if only read-only access is implemented.
         try:
-            context.post_handshake_auth = True
+            context.post_handshake_auth = True  # type: ignore
         except AttributeError:  # pragma: nocover
             pass
 
