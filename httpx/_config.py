@@ -102,7 +102,7 @@ class SSLConfig:
         if self.trust_env and self.verify is True:
             ca_bundle = get_ca_bundle_from_env()
             if ca_bundle is not None:
-                self.verify = ca_bundle  # type: ignore
+                self.verify = ca_bundle
 
         if isinstance(self.verify, ssl.SSLContext):
             # Allow passing in our own SSLContext object that's pre-configured.
