@@ -651,7 +651,7 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part for part in self.stream])
+            self._content = b"".join(self.stream)
             # If a streaming request has been read entirely into memory, then
             # we can replace the stream with a raw bytes implementation,
             # to ensure that any non-replayable streams can still be used.
@@ -895,7 +895,7 @@ class Response:
         Read and return the response content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part for part in self.iter_bytes()])
+            self._content = b"".join(self.iter_bytes())
         return self._content
 
     def iter_bytes(self) -> typing.Iterator[bytes]:

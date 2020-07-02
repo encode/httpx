@@ -88,12 +88,9 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
             conn = self.pool.urlopen(
                 method=method.decode(),
                 url=url_str,
-                headers=dict(
-                    [
-                        (key.decode("ascii"), value.decode("ascii"))
-                        for key, value in headers
-                    ]
-                ),
+                headers={
+                    key.decode("ascii"): value.decode("ascii") for key, value in headers
+                },
                 body=body,
                 redirect=False,
                 assert_same_host=False,
