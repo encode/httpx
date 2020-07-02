@@ -320,7 +320,7 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[key]
         return default
 
-    def update(self, params: QueryParamTypes = None) -> None:  # type: ignore
+    def update(self, params: QueryParamTypes = None) -> None:
         if not params:
             return
 
@@ -1098,7 +1098,7 @@ class Cookies(MutableMapping):
         value = None
         for cookie in self.jar:
             if cookie.name == name:
-                if domain is None or cookie.domain == domain:  # type: ignore
+                if domain is None or cookie.domain == domain:
                     if path is None or cookie.path == path:
                         if value is not None:
                             message = f"Multiple cookies exist with name={name}"
@@ -1120,12 +1120,12 @@ class Cookies(MutableMapping):
         remove = []
         for cookie in self.jar:
             if cookie.name == name:
-                if domain is None or cookie.domain == domain:  # type: ignore
+                if domain is None or cookie.domain == domain:
                     if path is None or cookie.path == path:
                         remove.append(cookie)
 
         for cookie in remove:
-            self.jar.clear(cookie.domain, cookie.path, cookie.name)  # type: ignore
+            self.jar.clear(cookie.domain, cookie.path, cookie.name)
 
     def clear(self, domain: str = None, path: str = None) -> None:
         """
