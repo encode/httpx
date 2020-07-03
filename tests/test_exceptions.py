@@ -30,8 +30,7 @@ def test_httpcore_exception_mapping() -> None:
     """
 
     # Make sure we don't just map to `NetworkError`.
-    # (TODO: Expose `ConnectError` on `httpx`.)
-    with pytest.raises(httpx._exceptions.ConnectError):
+    with pytest.raises(httpx.ConnectError):
         httpx.get("http://doesnotexist")
 
     # Make sure it also works with custom transports.
@@ -42,3 +41,21 @@ def test_httpcore_exception_mapping() -> None:
     client = httpx.Client(transport=MockTransport())
     with pytest.raises(httpx.ProtocolError):
         client.get("http://testserver")
+
+
+def test_httpx_exceptions_exposed() -> None:
+    """
+    All exception classes defined in `httpx._exceptions`
+    are exposed as public API.
+    """
+
+    not_exposed = [
+        value
+        for name, value in vars(httpx._exceptions).items()
+        if isinstance(value, type)
+        and issubclass(value, Exception)
+        and not hasattr(httpx, name)
+    ]
+
+    if not_exposed:
+        pytest.fail(f"Unexposed HTTPX exceptions: {not_exposed}")
