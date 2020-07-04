@@ -11,4 +11,4 @@ set -x
 ${PREFIX}black --check --diff --target-version=py36 $SOURCE_FILES
 ${PREFIX}flake8 $SOURCE_FILES
 ${PREFIX}mypy httpx
-${PREFIX}isort --check --diff --project=httpx --recursive $SOURCE_FILES
+${PREFIX}isort --check --diff --project=httpx $SOURCE_FILES

@@ -8,6 +8,7 @@ from .._utils import warn_deprecated
 
 if TYPE_CHECKING:  # pragma: no cover
     import asyncio
+
     import trio
 
     Event = Union[asyncio.Event, trio.Event]
