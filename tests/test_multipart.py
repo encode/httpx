@@ -1,4 +1,3 @@
-import binascii
 import cgi
 import io
 import os
@@ -115,7 +114,7 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
     files = {"file": ("name.txt", open(path, "rb"))}
 
     with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
+        boundary = os.urandom(16).hex()
 
         stream = encode(data=data, files=files)
         assert stream.can_replay()
@@ -141,7 +140,7 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
 def test_multipart_encode_files_allows_filenames_as_none() -> None:
     files = {"file": (None, io.BytesIO(b"<file content>"))}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
+        boundary = os.urandom(16).hex()
 
         stream = encode(data={}, files=files)
         assert stream.can_replay()
@@ -167,7 +166,7 @@ def test_multipart_encode_files_guesses_correct_content_type(
 ) -> None:
     files = {"file": (file_name, io.BytesIO(b"<file content>"))}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
+        boundary = os.urandom(16).hex()
 
         stream = encode(data={}, files=files)
         assert stream.can_replay()
@@ -190,7 +189,7 @@ def test_multipart_encode_files_allows_bytes_or_str_content(
 ) -> None:
     files = {"file": ("test.txt", value, "text/plain")}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = binascii.hexlify(os.urandom(16)).decode("ascii")
+        boundary = os.urandom(16).hex()
 
         stream = encode(data={}, files=files)
         assert stream.can_replay()
