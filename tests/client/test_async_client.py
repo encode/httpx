@@ -174,8 +174,11 @@ def test_dispatch_deprecated():
 
 
 def test_asgi_dispatch_deprecated():
+    async def app(scope, receive, send):
+        pass
+
     with pytest.warns(DeprecationWarning) as record:
-        ASGIDispatch(None)
+        ASGIDispatch(app)
 
     assert len(record) == 1
     assert (
