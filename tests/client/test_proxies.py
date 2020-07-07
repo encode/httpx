@@ -1,3 +1,4 @@
+import httpcore
 import pytest
 
 import httpx
@@ -24,7 +25,9 @@ def test_proxies_parameter(proxies, expected_proxies):
 
     for proxy_key, url in expected_proxies:
         assert proxy_key in client.proxies
-        assert client.proxies[proxy_key].proxy_origin == httpx.URL(url).raw[:3]
+        proxy = client.proxies[proxy_key]
+        assert isinstance(proxy, httpcore.AsyncHTTPProxy)
+        assert proxy.proxy_origin == httpx.URL(url).raw[:3]
 
     assert len(expected_proxies) == len(client.proxies)
 
@@ -81,6 +84,7 @@ def test_transport_for_request(url, proxies, expected):
     if expected is None:
         assert transport is client.transport
     else:
+        assert isinstance(transport, httpcore.AsyncHTTPProxy)
         assert transport.proxy_origin == httpx.URL(expected).raw[:3]
 
 

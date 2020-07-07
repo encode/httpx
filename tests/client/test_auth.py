@@ -11,7 +11,6 @@ from httpx import (
     Auth,
     Client,
     DigestAuth,
-    Headers,
     ProtocolError,
     Request,
     RequestBodyUnavailable,
@@ -88,23 +87,26 @@ class MockDigestAuthTransport(httpcore.AsyncHTTPTransport):
     async def request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, int, bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: ContentStream,
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
+        stream: httpcore.AsyncByteStream = None,
         timeout: typing.Dict[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
         if self._response_count < self.send_response_after_attempt:
-            return self.challenge_send(method, url, headers, stream)
+            assert headers is not None
+            return self.challenge_send(method, headers)
 
         authorization = get_header_value(headers, "Authorization")
         body = JSONStream({"auth": authorization})
         return b"HTTP/1.1", 200, b"", [], body
 
     def challenge_send(
-        self, method: bytes, url: URL, headers: Headers, stream: ContentStream,
-    ) -> typing.Tuple[int, bytes, Headers, ContentStream]:
+        self, method: bytes, headers: typing.List[typing.Tuple[bytes, bytes]],
+    ) -> typing.Tuple[
+        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+    ]:
         self._response_count += 1
         nonce = (
             hashlib.sha256(os.urandom(8)).hexdigest()
@@ -299,7 +301,8 @@ async def test_auth_hidden_header() -> None:
 async def test_auth_invalid_type() -> None:
     url = "https://example.org/"
     client = AsyncClient(
-        transport=AsyncMockTransport(), auth="not a tuple, not a callable",
+        transport=AsyncMockTransport(),
+        auth="not a tuple, not a callable",  # type: ignore
     )
     with pytest.raises(TypeError):
         await client.get(url)

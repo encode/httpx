@@ -203,7 +203,7 @@ async def test_empty_request():
 
 def test_invalid_argument():
     with pytest.raises(TypeError):
-        encode(123)
+        encode(123)  # type: ignore
 
 
 @pytest.mark.asyncio

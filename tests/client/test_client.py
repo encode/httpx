@@ -182,8 +182,11 @@ def test_dispatch_deprecated():
 
 
 def test_wsgi_dispatch_deprecated():
+    def app(start_response, environ):
+        pass
+
     with pytest.warns(DeprecationWarning) as record:
-        WSGIDispatch(None)
+        WSGIDispatch(app)
 
     assert len(record) == 1
     assert (

@@ -943,6 +943,15 @@ class Response:
             yield part
         self.close()
 
+    def next(self) -> "Response":
+        """
+        Get the next response from a redirect response.
+        """
+        if not self.is_redirect:
+            raise NotRedirectResponse()
+        assert self.call_next is not None
+        return self.call_next()
+
     def close(self) -> None:
         """
         Close the response and release the connection.
