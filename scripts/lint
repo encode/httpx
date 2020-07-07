@@ -10,5 +10,5 @@ set -x
 
 ${PREFIX}autoflake --in-place --recursive $SOURCE_FILES
 ${PREFIX}seed-isort-config --application-directories=httpx
-${PREFIX}isort --project=httpx --recursive --apply $SOURCE_FILES
+${PREFIX}isort --project=httpx $SOURCE_FILES
 ${PREFIX}black --target-version=py36 $SOURCE_FILES
