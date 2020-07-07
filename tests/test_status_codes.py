@@ -7,7 +7,7 @@ def test_status_code_as_int():
 
 
 def test_lowercase_status_code():
-    assert httpx.codes.not_found == 404
+    assert httpx.codes.not_found == 404  # type: ignore
 
 
 def test_reason_phrase_for_status_code():

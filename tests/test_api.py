@@ -68,7 +68,6 @@ def test_stream(server):
     assert response.http_version == "HTTP/1.1"
 
 
-@pytest.mark.asyncio
-async def test_get_invalid_url(server):
+def test_get_invalid_url():
     with pytest.raises(httpx.InvalidURL):
-        await httpx.get("invalid://example.org")
+        httpx.get("invalid://example.org")

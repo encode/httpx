@@ -13,13 +13,14 @@ class MockTransport(httpcore.AsyncHTTPTransport):
     async def request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, int, bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: ContentStream,
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
+        stream: httpcore.AsyncByteStream = None,
         timeout: typing.Dict[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
+        assert headers is not None
         headers_dict = {
             key.decode("ascii"): value.decode("ascii") for key, value in headers
         }
