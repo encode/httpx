@@ -310,7 +310,7 @@ def test_sync_too_many_redirects_calling_next():
     response = client.get(url, allow_redirects=False)
     with pytest.raises(TooManyRedirects):
         while response.is_redirect:
-            response = response.call_next()
+            response = response.next()
 
 
 @pytest.mark.usefixtures("async_environment")
