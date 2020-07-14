@@ -67,6 +67,11 @@ def test_get_netrc_login():
     assert netrc_info.get_credentials("netrcexample.org") == expected_credentials
 
 
+def test_get_netrc_unknown():
+    netrc_info = NetRCInfo(["tests/.netrc"])
+    assert netrc_info.get_credentials("nonexistant.org") is None
+
+
 @pytest.mark.parametrize(
     "value, expected",
     (

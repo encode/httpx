@@ -18,7 +18,14 @@ from ._config import (
     UnsetType,
 )
 from ._content_streams import ContentStream
-from ._exceptions import HTTPError, InvalidURL, RequestBodyUnavailable, TooManyRedirects
+from ._exceptions import (
+    HTTPCORE_EXC_MAP,
+    HTTPError,
+    InvalidURL,
+    RequestBodyUnavailable,
+    TooManyRedirects,
+    map_exceptions,
+)
 from ._models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
@@ -705,19 +712,20 @@ class Client(BaseClient):
         transport = self.transport_for_url(request.url)
 
         try:
-            (
-                http_version,
-                status_code,
-                reason_phrase,
-                headers,
-                stream,
-            ) = transport.request(
-                request.method.encode(),
-                request.url.raw,
-                headers=request.headers.raw,
-                stream=request.stream,
-                timeout=timeout.as_dict(),
-            )
+            with map_exceptions(HTTPCORE_EXC_MAP):
+                (
+                    http_version,
+                    status_code,
+                    reason_phrase,
+                    headers,
+                    stream,
+                ) = transport.request(
+                    request.method.encode(),
+                    request.url.raw,
+                    headers=request.headers.raw,
+                    stream=request.stream,
+                    timeout=timeout.as_dict(),
+                )
         except HTTPError as exc:
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
@@ -1255,19 +1263,20 @@ class AsyncClient(BaseClient):
         transport = self.transport_for_url(request.url)
 
         try:
-            (
-                http_version,
-                status_code,
-                reason_phrase,
-                headers,
-                stream,
-            ) = await transport.request(
-                request.method.encode(),
-                request.url.raw,
-                headers=request.headers.raw,
-                stream=request.stream,
-                timeout=timeout.as_dict(),
-            )
+            with map_exceptions(HTTPCORE_EXC_MAP):
+                (
+                    http_version,
+                    status_code,
+                    reason_phrase,
+                    headers,
+                    stream,
+                ) = await transport.request(
+                    request.method.encode(),
+                    request.url.raw,
+                    headers=request.headers.raw,
+                    stream=request.stream,
+                    timeout=timeout.as_dict(),
+                )
         except HTTPError as exc:
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
@@ -1539,5 +1548,3 @@ class StreamContextManager:
     ) -> None:
         assert isinstance(self.client, AsyncClient)
         await self.response.aclose()
-        if self.close_client:
-            await self.client.aclose()

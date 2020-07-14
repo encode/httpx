@@ -1,4 +1,5 @@
 import sys
+from functools import partial
 
 import pytest
 
@@ -51,7 +52,7 @@ def echo_body_with_response_stream(environ, start_response):
     return output_generator(f=environ["wsgi.input"])
 
 
-def raise_exc(environ, start_response):
+def raise_exc(environ, start_response, exc=ValueError):
     status = "500 Server Error"
     output = b"Nope!"
 
@@ -60,8 +61,8 @@ def raise_exc(environ, start_response):
     ]
 
     try:
-        raise ValueError()
-    except ValueError:
+        raise exc()
+    except exc:
         exc_info = sys.exc_info()
         start_response(status, response_headers, exc_info=exc_info)
 
@@ -92,6 +93,12 @@ def test_wsgi_upload_with_response_stream():
 def test_wsgi_exc():
     client = httpx.Client(app=raise_exc)
     with pytest.raises(ValueError):
+        client.get("http://www.example.org/")
+
+
+def test_wsgi_http_error():
+    client = httpx.Client(app=partial(raise_exc, exc=httpx.HTTPError))
+    with pytest.raises(httpx.HTTPError):
         client.get("http://www.example.org/")
 
 

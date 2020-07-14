@@ -54,9 +54,6 @@ from ._utils import (
     warn_deprecated,
 )
 
-if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._dispatch.base import AsyncDispatcher  # noqa: F401
-
 
 class URL:
     def __init__(
@@ -323,7 +320,7 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[key]
         return default
 
-    def update(self, params: QueryParamTypes = None) -> None:  # type: ignore
+    def update(self, params: QueryParamTypes = None) -> None:
         if not params:
             return
 
@@ -654,7 +651,7 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part for part in self.stream])
+            self._content = b"".join(self.stream)
             # If a streaming request has been read entirely into memory, then
             # we can replace the stream with a raw bytes implementation,
             # to ensure that any non-replayable streams can still be used.
@@ -829,7 +826,7 @@ class Response:
 
     def raise_for_status(self) -> None:
         """
-        Raise the `HttpError` if one occurred.
+        Raise the `HTTPError` if one occurred.
         """
         message = (
             "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
@@ -898,7 +895,7 @@ class Response:
         Read and return the response content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part for part in self.iter_bytes()])
+            self._content = b"".join(self.iter_bytes())
         return self._content
 
     def iter_bytes(self) -> typing.Iterator[bytes]:
@@ -945,6 +942,15 @@ class Response:
         for part in self._raw_stream:
             yield part
         self.close()
+
+    def next(self) -> "Response":
+        """
+        Get the next response from a redirect response.
+        """
+        if not self.is_redirect:
+            raise NotRedirectResponse()
+        assert self.call_next is not None
+        return self.call_next()
 
     def close(self) -> None:
         """
@@ -1101,7 +1107,7 @@ class Cookies(MutableMapping):
         value = None
         for cookie in self.jar:
             if cookie.name == name:
-                if domain is None or cookie.domain == domain:  # type: ignore
+                if domain is None or cookie.domain == domain:
                     if path is None or cookie.path == path:
                         if value is not None:
                             message = f"Multiple cookies exist with name={name}"
@@ -1123,12 +1129,12 @@ class Cookies(MutableMapping):
         remove = []
         for cookie in self.jar:
             if cookie.name == name:
-                if domain is None or cookie.domain == domain:  # type: ignore
+                if domain is None or cookie.domain == domain:
                     if path is None or cookie.path == path:
                         remove.append(cookie)
 
         for cookie in remove:
-            self.jar.clear(cookie.domain, cookie.path, cookie.name)  # type: ignore
+            self.jar.clear(cookie.domain, cookie.path, cookie.name)
 
     def clear(self, domain: str = None, path: str = None) -> None:
         """

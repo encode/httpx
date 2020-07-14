@@ -102,7 +102,7 @@ class SSLConfig:
         if self.trust_env and self.verify is True:
             ca_bundle = get_ca_bundle_from_env()
             if ca_bundle is not None:
-                self.verify = ca_bundle  # type: ignore
+                self.verify = ca_bundle
 
         if isinstance(self.verify, ssl.SSLContext):
             # Allow passing in our own SSLContext object that's pre-configured.
@@ -355,7 +355,7 @@ class Proxy:
 
     def build_auth_header(self, username: str, password: str) -> str:
         userpass = (username.encode("utf-8"), password.encode("utf-8"))
-        token = b64encode(b":".join(userpass)).decode().strip()
+        token = b64encode(b":".join(userpass)).decode()
         return f"Basic {token}"
 
     def __repr__(self) -> str:

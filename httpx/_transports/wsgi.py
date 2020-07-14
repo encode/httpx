@@ -25,17 +25,17 @@ class WSGITransport(httpcore.SyncHTTPTransport):
     client = httpx.Client(app=app)
     ```
 
-    Alternatively, you can setup the dispatch instance explicitly.
+    Alternatively, you can setup the transport instance explicitly.
     This allows you to include any additional configuration arguments specific
     to the WSGITransport class:
 
     ```
-    dispatch = httpx.WSGITransport(
+    transport = httpx.WSGITransport(
         app=app,
         script_name="/submount",
         remote_addr="1.2.3.4"
     )
-    client = httpx.Client(dispatch=dispatch)
+    client = httpx.Client(transport=transport)
     ```
 
     Arguments:
@@ -83,7 +83,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         environ = {
             "wsgi.version": (1, 0),
             "wsgi.url_scheme": scheme.decode("ascii"),
-            "wsgi.input": io.BytesIO(b"".join([chunk for chunk in stream])),
+            "wsgi.input": io.BytesIO(b"".join(stream)),
             "wsgi.errors": io.BytesIO(),
             "wsgi.multithread": True,
             "wsgi.multiprocess": False,

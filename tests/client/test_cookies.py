@@ -16,18 +16,19 @@ def get_header_value(headers, key, default=None):
     return default
 
 
-class MockDispatch(httpcore.AsyncHTTPTransport):
+class MockTransport(httpcore.AsyncHTTPTransport):
     async def request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, int, bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: ContentStream,
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
+        stream: httpcore.AsyncByteStream = None,
         timeout: typing.Dict[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
         host, scheme, port, path = url
+        body: ContentStream
         if path.startswith(b"/echo_cookies"):
             cookie = get_header_value(headers, "cookie")
             body = JSONStream({"cookies": cookie})
@@ -48,7 +49,7 @@ async def test_set_cookie() -> None:
     url = "http://example.org/echo_cookies"
     cookies = {"example-name": "example-value"}
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     response = await client.get(url, cookies=cookies)
 
     assert response.status_code == 200
@@ -84,7 +85,7 @@ async def test_set_cookie_with_cookiejar() -> None:
     )
     cookies.set_cookie(cookie)
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     response = await client.get(url, cookies=cookies)
 
     assert response.status_code == 200
@@ -120,7 +121,7 @@ async def test_setting_client_cookies_to_cookiejar() -> None:
     )
     cookies.set_cookie(cookie)
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     client.cookies = cookies  # type: ignore
     response = await client.get(url)
 
@@ -138,7 +139,7 @@ async def test_set_cookie_with_cookies_model() -> None:
     cookies = Cookies()
     cookies["example-name"] = "example-value"
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     response = await client.get(url, cookies=cookies)
 
     assert response.status_code == 200
@@ -149,7 +150,7 @@ async def test_set_cookie_with_cookies_model() -> None:
 async def test_get_cookie() -> None:
     url = "http://example.org/set_cookie"
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     response = await client.get(url)
 
     assert response.status_code == 200
@@ -162,7 +163,7 @@ async def test_cookie_persistence() -> None:
     """
     Ensure that Client instances persist cookies between requests.
     """
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
 
     response = await client.get("http://example.org/echo_cookies")
     assert response.status_code == 200
