@@ -549,15 +549,11 @@ class Client(BaseClient):
         This will either be the standard connection pool, or a proxy.
         """
         if self._proxies and not should_not_be_proxied(url):
-            is_default_port = (url.scheme == "http" and url.port == 80) or (
-                url.scheme == "https" and url.port == 443
-            )
-            hostname = f"{url.host}:{url.port}"
             proxy_keys = (
-                f"{url.scheme}://{hostname}",
-                f"{url.scheme}://{url.host}" if is_default_port else None,
-                f"all://{hostname}",
-                f"all://{url.host}" if is_default_port else None,
+                f"{url.scheme}://{url.authority}",
+                f"{url.scheme}://{url.host}",
+                f"all://{url.authority}",
+                f"all://{url.host}",
                 url.scheme,
                 "all",
             )
@@ -1087,15 +1083,11 @@ class AsyncClient(BaseClient):
         This will either be the standard connection pool, or a proxy.
         """
         if self._proxies and not should_not_be_proxied(url):
-            is_default_port = (url.scheme == "http" and url.port == 80) or (
-                url.scheme == "https" and url.port == 443
-            )
-            hostname = f"{url.host}:{url.port}"
             proxy_keys = (
-                f"{url.scheme}://{hostname}",
-                f"{url.scheme}://{url.host}" if is_default_port else None,
-                f"all://{hostname}",
-                f"all://{url.host}" if is_default_port else None,
+                f"{url.scheme}://{url.authority}",
+                f"{url.scheme}://{url.host}",
+                f"all://{url.authority}",
+                f"all://{url.host}",
                 url.scheme,
                 "all",
             )
