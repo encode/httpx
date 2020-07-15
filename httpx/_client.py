@@ -48,7 +48,6 @@ from ._utils import (
     get_environment_proxies,
     get_logger,
     should_not_be_proxied,
-    warn_deprecated,
 )
 
 logger = get_logger(__name__)
@@ -472,14 +471,6 @@ class Client(BaseClient):
         )
 
         proxy_map = self.get_proxy_map(proxies, trust_env)
-
-        if dispatch is not None:
-            warn_deprecated(
-                "The dispatch argument is deprecated since v0.13 and will be "
-                "removed in a future release, please use 'transport'"
-            )
-            if transport is None:
-                transport = dispatch
 
         self.transport = self.init_transport(
             verify=verify,
@@ -1004,7 +995,6 @@ class AsyncClient(BaseClient):
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         transport: httpcore.AsyncHTTPTransport = None,
-        dispatch: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
     ):
@@ -1018,14 +1008,6 @@ class AsyncClient(BaseClient):
             base_url=base_url,
             trust_env=trust_env,
         )
-
-        if dispatch is not None:
-            warn_deprecated(
-                "The dispatch argument is deprecated since v0.13 and will be "
-                "removed in a future release, please use 'transport'",
-            )
-            if transport is None:
-                transport = dispatch
 
         proxy_map = self.get_proxy_map(proxies, trust_env)
 
