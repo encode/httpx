@@ -1,10 +1,8 @@
 from datetime import timedelta
 
-import httpcore
 import pytest
 
 import httpx
-from httpx import WSGIDispatch
 
 
 def test_get(server):
@@ -165,17 +163,3 @@ def test_merge_url():
 
     assert url.scheme == "https"
     assert url.is_ssl
-
-
-def test_wsgi_dispatch_deprecated():
-    def app(start_response, environ):
-        pass
-
-    with pytest.warns(DeprecationWarning) as record:
-        WSGIDispatch(app)
-
-    assert len(record) == 1
-    assert (
-        record[0].message.args[0]
-        == "WSGIDispatch is deprecated, please use WSGITransport"
-    )
