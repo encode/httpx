@@ -51,7 +51,6 @@ from ._utils import (
     obfuscate_sensitive_headers,
     parse_header_links,
     str_query_param,
-    warn_deprecated,
 )
 
 
@@ -873,22 +872,6 @@ class Response:
 
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
-
-    @property
-    def stream(self):  # type: ignore
-        warn_deprecated(  # pragma: nocover
-            "Response.stream() is due to be deprecated. "
-            "Use Response.aiter_bytes() instead.",
-        )
-        return self.aiter_bytes  # pragma: nocover
-
-    @property
-    def raw(self):  # type: ignore
-        warn_deprecated(  # pragma: nocover
-            "Response.raw() is due to be deprecated. "
-            "Use Response.aiter_raw() instead.",
-        )
-        return self.aiter_raw  # pragma: nocover
 
     def read(self) -> bytes:
         """
