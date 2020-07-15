@@ -1,10 +1,8 @@
 from datetime import timedelta
 
-import httpcore
 import pytest
 
 import httpx
-from httpx import WSGIDispatch
 
 
 def test_get(server):
@@ -164,31 +162,3 @@ def test_merge_url():
     request = client.build_request("GET", "http://www.paypal.com")
     assert request.url.scheme == "https"
     assert request.url.is_ssl
-
-
-def test_dispatch_deprecated():
-    dispatch = httpcore.SyncHTTPTransport()
-
-    with pytest.warns(DeprecationWarning) as record:
-        client = httpx.Client(dispatch=dispatch)
-
-    assert client.transport is dispatch
-    assert len(record) == 1
-    assert record[0].message.args[0] == (
-        "The dispatch argument is deprecated since v0.13 and will be "
-        "removed in a future release, please use 'transport'"
-    )
-
-
-def test_wsgi_dispatch_deprecated():
-    def app(start_response, environ):
-        pass
-
-    with pytest.warns(DeprecationWarning) as record:
-        WSGIDispatch(app)
-
-    assert len(record) == 1
-    assert (
-        record[0].message.args[0]
-        == "WSGIDispatch is deprecated, please use WSGITransport"
-    )

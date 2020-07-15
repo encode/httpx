@@ -1,10 +1,8 @@
 from datetime import timedelta
 
-import httpcore
 import pytest
 
 import httpx
-from httpx import ASGIDispatch
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -157,31 +155,3 @@ async def test_100_continue(server):
 
     assert response.status_code == 200
     assert response.content == data
-
-
-def test_dispatch_deprecated():
-    dispatch = httpcore.AsyncHTTPTransport()
-
-    with pytest.warns(DeprecationWarning) as record:
-        client = httpx.AsyncClient(dispatch=dispatch)
-
-    assert client.transport is dispatch
-    assert len(record) == 1
-    assert record[0].message.args[0] == (
-        "The dispatch argument is deprecated since v0.13 and will be "
-        "removed in a future release, please use 'transport'"
-    )
-
-
-def test_asgi_dispatch_deprecated():
-    async def app(scope, receive, send):
-        pass
-
-    with pytest.warns(DeprecationWarning) as record:
-        ASGIDispatch(app)
-
-    assert len(record) == 1
-    assert (
-        record[0].message.args[0]
-        == "ASGIDispatch is deprecated, please use ASGITransport"
-    )
