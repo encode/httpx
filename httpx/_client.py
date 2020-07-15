@@ -470,7 +470,7 @@ class Client(BaseClient):
 
         proxy_map = self.get_proxy_map(proxies, trust_env)
 
-        self.transport = self.init_transport(
+        self._transport = self.init_transport(
             verify=verify,
             cert=cert,
             http2=http2,
@@ -479,7 +479,7 @@ class Client(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self.proxies: typing.Dict[str, httpcore.SyncHTTPTransport] = {
+        self._proxies: typing.Dict[str, httpcore.SyncHTTPTransport] = {
             key: self.init_proxy_transport(
                 proxy,
                 verify=verify,
@@ -548,7 +548,7 @@ class Client(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        if self.proxies and not should_not_be_proxied(url):
+        if self._proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
             )
@@ -562,11 +562,11 @@ class Client(BaseClient):
                 "all",
             )
             for proxy_key in proxy_keys:
-                if proxy_key and proxy_key in self.proxies:
-                    transport = self.proxies[proxy_key]
+                if proxy_key and proxy_key in self._proxies:
+                    transport = self._proxies[proxy_key]
                     return transport
 
-        return self.transport
+        return self._transport
 
     def request(
         self,
@@ -911,8 +911,8 @@ class Client(BaseClient):
         )
 
     def close(self) -> None:
-        self.transport.close()
-        for proxy in self.proxies.values():
+        self._transport.close()
+        for proxy in self._proxies.values():
             proxy.close()
 
     def __enter__(self) -> "Client":
@@ -1008,7 +1008,7 @@ class AsyncClient(BaseClient):
 
         proxy_map = self.get_proxy_map(proxies, trust_env)
 
-        self.transport = self.init_transport(
+        self._transport = self.init_transport(
             verify=verify,
             cert=cert,
             http2=http2,
@@ -1017,7 +1017,7 @@ class AsyncClient(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self.proxies: typing.Dict[str, httpcore.AsyncHTTPTransport] = {
+        self._proxies: typing.Dict[str, httpcore.AsyncHTTPTransport] = {
             key: self.init_proxy_transport(
                 proxy,
                 verify=verify,
@@ -1086,7 +1086,7 @@ class AsyncClient(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        if self.proxies and not should_not_be_proxied(url):
+        if self._proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
             )
@@ -1100,11 +1100,11 @@ class AsyncClient(BaseClient):
                 "all",
             )
             for proxy_key in proxy_keys:
-                if proxy_key and proxy_key in self.proxies:
-                    transport = self.proxies[proxy_key]
+                if proxy_key and proxy_key in self._proxies:
+                    transport = self._proxies[proxy_key]
                     return transport
 
-        return self.transport
+        return self._transport
 
     async def request(
         self,
@@ -1452,8 +1452,8 @@ class AsyncClient(BaseClient):
         )
 
     async def aclose(self) -> None:
-        await self.transport.aclose()
-        for proxy in self.proxies.values():
+        await self._transport.aclose()
+        for proxy in self._proxies.values():
             await proxy.aclose()
 
     async def __aenter__(self) -> "AsyncClient":

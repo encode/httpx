@@ -3,35 +3,6 @@ import pytest
 
 import httpx
 
-
-@pytest.mark.parametrize(
-    ["proxies", "expected_proxies"],
-    [
-        ("http://127.0.0.1", [("all", "http://127.0.0.1")]),
-        ({"all": "http://127.0.0.1"}, [("all", "http://127.0.0.1")]),
-        (
-            {"http": "http://127.0.0.1", "https": "https://127.0.0.1"},
-            [("http", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
-        ),
-        (httpx.Proxy("http://127.0.0.1"), [("all", "http://127.0.0.1")]),
-        (
-            {"https": httpx.Proxy("https://127.0.0.1"), "all": "http://127.0.0.1"},
-            [("all", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
-        ),
-    ],
-)
-def test_proxies_parameter(proxies, expected_proxies):
-    client = httpx.AsyncClient(proxies=proxies)
-
-    for proxy_key, url in expected_proxies:
-        assert proxy_key in client.proxies
-        proxy = client.proxies[proxy_key]
-        assert isinstance(proxy, httpcore.AsyncHTTPProxy)
-        assert proxy.proxy_origin == httpx.URL(url).raw[:3]
-
-    assert len(expected_proxies) == len(client.proxies)
-
-
 PROXY_URL = "http://[::1]"
 
 
@@ -82,7 +53,7 @@ def test_transport_for_request(url, proxies, expected):
     transport = client.transport_for_url(httpx.URL(url))
 
     if expected is None:
-        assert transport is client.transport
+        assert isinstance(transport, httpcore.AsyncHTTPTransport)
     else:
         assert isinstance(transport, httpcore.AsyncHTTPProxy)
         assert transport.proxy_origin == httpx.URL(expected).raw[:3]
@@ -129,6 +100,9 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
     transport = client.transport_for_url(httpx.URL(url))
 
     if expected is None:
-        assert transport == client.transport
+        assert isinstance(
+            transport, (httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport)
+        )
     else:
+        assert isinstance(transport, (httpcore.SyncHTTPProxy, httpcore.AsyncHTTPProxy))
         assert transport.proxy_origin == httpx.URL(expected).raw[:3]
