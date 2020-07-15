@@ -293,7 +293,7 @@ def get_environment_proxies() -> typing.Dict[str, str]:
     return {
         key: val
         for key, val in getproxies().items()
-        if ("://" in key or key in supported_proxy_schemes)
+        if (key in supported_proxy_schemes)
     }
 
 
