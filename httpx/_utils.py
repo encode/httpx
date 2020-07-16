@@ -297,6 +297,58 @@ def get_environment_proxies() -> typing.Dict[str, str]:
     }
 
 
+def url_keys(url: "URL") -> typing.List[str]:
+    """
+    Given a URL return a list of keys to use for looking up mounted transports.
+    For example...
+
+    url_keys(URL("https://www.google.com:1234")) == [
+        "https://www.google.com:1234",
+        "all://www.google.com:1234",
+        "https://www.google.com",
+        "all://www.google.com",
+        "https://*.google.com",
+        "all://*.google.com",
+        "https://*.com",
+        "all://*.com",
+        "https",
+        "all"
+    ]
+    """
+
+    keys = []
+
+    # Match the hostname and an explicit port.
+    if url.authority != url.host:
+        keys += [
+            f"{url.scheme}://{url.authority}",
+            f"all://{url.authority}",
+        ]
+
+    # Match just the hostname.
+    keys += [
+        f"{url.scheme}://{url.host}",
+        f"all://{url.host}",
+    ]
+
+    # Match against wildcard domains.
+    split_host = url.host.split(".")
+    for idx in range(1, len(split_host)):
+        wildcard_host = ".".join(["*"] + split_host[idx:])
+        keys += [
+            f"{url.scheme}://{wildcard_host}",
+            f"all://{wildcard_host}",
+        ]
+
+    # Match against 'https', 'all'.
+    keys += [
+        url.scheme,
+        "all",
+    ]
+
+    return keys
+
+
 def to_bytes(value: typing.Union[str, bytes], encoding: str = "utf-8") -> bytes:
     return value.encode(encoding) if isinstance(value, str) else value
 

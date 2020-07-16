@@ -13,6 +13,7 @@ from httpx._utils import (
     obfuscate_sensitive_headers,
     parse_header_links,
     should_not_be_proxied,
+    url_keys,
 )
 from tests.utils import override_log_level
 
@@ -288,3 +289,19 @@ def test_should_not_be_proxied(url, no_proxy, expected):
     os.environ.update(no_proxy)
     parsed_url = httpx.URL(url)
     assert should_not_be_proxied(parsed_url) == expected
+
+
+def test_url_keys():
+    url = httpx.URL("https://www.google.com:1234")
+    assert url_keys(url) == [
+        "https://www.google.com:1234",
+        "all://www.google.com:1234",
+        "https://www.google.com",
+        "all://www.google.com",
+        "https://*.google.com",
+        "all://*.google.com",
+        "https://*.com",
+        "all://*.com",
+        "https",
+        "all",
+    ]

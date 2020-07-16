@@ -48,6 +48,7 @@ from ._utils import (
     get_environment_proxies,
     get_logger,
     should_not_be_proxied,
+    url_keys,
 )
 
 logger = get_logger(__name__)
@@ -538,15 +539,7 @@ class Client(BaseClient):
         This will either be the standard connection pool, or a proxy.
         """
         if self._proxies and not should_not_be_proxied(url):
-            proxy_keys = (
-                f"{url.scheme}://{url.authority}",
-                f"{url.scheme}://{url.host}",
-                f"all://{url.authority}",
-                f"all://{url.host}",
-                url.scheme,
-                "all",
-            )
-            for proxy_key in proxy_keys:
+            for proxy_key in url_keys(url):
                 if proxy_key and proxy_key in self._proxies:
                     transport = self._proxies[proxy_key]
                     return transport
@@ -1072,15 +1065,7 @@ class AsyncClient(BaseClient):
         This will either be the standard connection pool, or a proxy.
         """
         if self._proxies and not should_not_be_proxied(url):
-            proxy_keys = (
-                f"{url.scheme}://{url.authority}",
-                f"{url.scheme}://{url.host}",
-                f"all://{url.authority}",
-                f"all://{url.host}",
-                url.scheme,
-                "all",
-            )
-            for proxy_key in proxy_keys:
+            for proxy_key in url_keys(url):
                 if proxy_key and proxy_key in self._proxies:
                     transport = self._proxies[proxy_key]
                     return transport
