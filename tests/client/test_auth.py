@@ -18,6 +18,8 @@ from httpx import (
 )
 from httpx._content_streams import ContentStream, JSONStream
 
+from ..common import FIXTURES_DIR
+
 
 def get_header_value(headers, key, default=None):
     lookup = key.encode("ascii").lower()
@@ -233,7 +235,7 @@ async def test_custom_auth() -> None:
 
 @pytest.mark.asyncio
 async def test_netrc_auth() -> None:
-    os.environ["NETRC"] = "tests/.netrc"
+    os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
     url = "http://netrcexample.org"
 
     client = AsyncClient(transport=AsyncMockTransport())
@@ -247,7 +249,7 @@ async def test_netrc_auth() -> None:
 
 @pytest.mark.asyncio
 async def test_auth_header_has_priority_over_netrc() -> None:
-    os.environ["NETRC"] = "tests/.netrc"
+    os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
     url = "http://netrcexample.org"
 
     client = AsyncClient(transport=AsyncMockTransport())
@@ -259,7 +261,7 @@ async def test_auth_header_has_priority_over_netrc() -> None:
 
 @pytest.mark.asyncio
 async def test_trust_env_auth() -> None:
-    os.environ["NETRC"] = "tests/.netrc"
+    os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
     url = "http://netrcexample.org"
 
     client = AsyncClient(transport=AsyncMockTransport(), trust_env=False)
