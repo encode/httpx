@@ -68,9 +68,6 @@ class BaseClient:
         else:
             self.base_url = URL(base_url)
 
-        if params is None:
-            params = {}
-
         self.auth = auth
         self._params = QueryParams(params)
         self._headers = Headers(headers)
