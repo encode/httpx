@@ -16,6 +16,8 @@ from httpx._utils import (
 )
 from tests.utils import override_log_level
 
+from .common import FIXTURES_DIR, TESTS_DIR
+
 
 @pytest.mark.parametrize(
     "encoding",
@@ -54,12 +56,12 @@ def test_guess_by_bom(encoding, expected):
 
 
 def test_bad_get_netrc_login():
-    netrc_info = NetRCInfo(["tests/does-not-exist"])
+    netrc_info = NetRCInfo([str(FIXTURES_DIR / "does-not-exist")])
     assert netrc_info.get_credentials("netrcexample.org") is None
 
 
 def test_get_netrc_login():
-    netrc_info = NetRCInfo(["tests/.netrc"])
+    netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
     expected_credentials = (
         "example-username",
         "example-password",
@@ -68,7 +70,7 @@ def test_get_netrc_login():
 
 
 def test_get_netrc_unknown():
-    netrc_info = NetRCInfo(["tests/.netrc"])
+    netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
     assert netrc_info.get_credentials("nonexistant.org") is None
 
 
@@ -137,14 +139,16 @@ def test_get_ssl_cert_file():
     # Two environments is not set.
     assert get_ca_bundle_from_env() is None
 
-    os.environ["SSL_CERT_DIR"] = "tests/"
+    os.environ["SSL_CERT_DIR"] = str(TESTS_DIR)
     # SSL_CERT_DIR is correctly set, SSL_CERT_FILE is not set.
-    assert get_ca_bundle_from_env() == "tests"
+    ca_bundle = get_ca_bundle_from_env()
+    assert ca_bundle is not None and ca_bundle.endswith("tests")
 
     del os.environ["SSL_CERT_DIR"]
-    os.environ["SSL_CERT_FILE"] = "tests/test_utils.py"
+    os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
     # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
-    assert get_ca_bundle_from_env() == "tests/test_utils.py"
+    ca_bundle = get_ca_bundle_from_env()
+    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
@@ -155,14 +159,16 @@ def test_get_ssl_cert_file():
     # SSL_CERT_DIR is set with wrong path,  SSL_CERT_FILE is not set.
     assert get_ca_bundle_from_env() is None
 
-    os.environ["SSL_CERT_DIR"] = "tests/"
-    os.environ["SSL_CERT_FILE"] = "tests/test_utils.py"
+    os.environ["SSL_CERT_DIR"] = str(TESTS_DIR)
+    os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
     # Two environments is correctly set.
-    assert get_ca_bundle_from_env() == "tests/test_utils.py"
+    ca_bundle = get_ca_bundle_from_env()
+    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # Two environments is set but SSL_CERT_FILE is not a file.
-    assert get_ca_bundle_from_env() == "tests"
+    ca_bundle = get_ca_bundle_from_env()
+    assert ca_bundle is not None and ca_bundle.endswith("tests")
 
     os.environ["SSL_CERT_DIR"] = "wrongpath"
     # Two environments is set but both are not correct.
