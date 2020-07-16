@@ -189,8 +189,7 @@ async def test_none_headers():
     For compatibility with Requests, `None` header values are allowed but ignored.
     """
     url = "http://example.org/echo_headers"
-    value: typing.Optional[str] = None
-    headers = {"foo": value}
+    headers = {"x-ignore": None}
     client = AsyncClient(transport=MockTransport(), headers=headers)
     response = await client.get(url)
     assert response.status_code == 200
