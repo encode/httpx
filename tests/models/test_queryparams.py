@@ -44,6 +44,9 @@ def test_queryparams(source):
 
 
 def test_queryparam_types():
+    q = QueryParams(None)
+    assert str(q) == ""
+
     q = QueryParams({"a": True})
     assert str(q) == "a=true"
 
