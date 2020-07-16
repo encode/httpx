@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Optional
 
 import pytest
 
@@ -159,8 +160,6 @@ async def test_100_continue(server):
 
 @pytest.mark.usefixtures("async_environment")
 async def test_request_with_none_header(server):
-    headers = {'foo': None}
-    with pytest.raises(AttributeError) as e:
-        async with httpx.AsyncClient() as client:
-            r = await client.get(server.url, headers = {'foo': None})
-    assert e
+    value: Optional[str] = None
+    async with httpx.AsyncClient() as client:
+        await client.get(server.url, headers={"foo": value})

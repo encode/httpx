@@ -41,6 +41,8 @@ HeaderTypes = Union[
     "Headers",
     Dict[str, str],
     Dict[bytes, bytes],
+    Dict[str, Optional[str]],
+    Dict[bytes, Optional[bytes]],
     Sequence[Tuple[str, str]],
     Sequence[Tuple[bytes, bytes]],
 ]

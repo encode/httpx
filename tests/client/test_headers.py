@@ -181,3 +181,22 @@ async def test_host_with_non_default_port_in_url():
             "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
         }
     }
+
+
+@pytest.mark.asyncio
+async def test_none_headers():
+    url = "http://example.org/echo_headers"
+    value: typing.Optional[str] = None
+    headers = {"foo": value}
+    client = AsyncClient(transport=MockTransport(), headers=headers)
+    response = await client.get(url)
+    assert response.status_code == 200
+    assert response.json() == {
+        "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "connection": "keep-alive",
+            "host": "example.org",
+            "user-agent": f"python-httpx/{__version__}",
+        }
+    }

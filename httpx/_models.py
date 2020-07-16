@@ -389,11 +389,13 @@ class Headers(typing.MutableMapping[str, str]):
             self._list = [
                 (normalize_header_key(k, encoding), normalize_header_value(v, encoding))
                 for k, v in headers.items()
+                if v is not None
             ]
         else:
             self._list = [
                 (normalize_header_key(k, encoding), normalize_header_value(v, encoding))
                 for k, v in headers
+                if v is not None
             ]
         self._encoding = encoding
 
