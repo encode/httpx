@@ -10,4 +10,3 @@ venv*/
 .python-version
 build/
 dist/
-.idea/
