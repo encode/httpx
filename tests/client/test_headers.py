@@ -185,6 +185,9 @@ async def test_host_with_non_default_port_in_url():
 
 @pytest.mark.asyncio
 async def test_none_headers():
+    """
+    For compatibility with Requests, `None` header values are allowed but ignored.
+    """
     url = "http://example.org/echo_headers"
     value: typing.Optional[str] = None
     headers = {"foo": value}
