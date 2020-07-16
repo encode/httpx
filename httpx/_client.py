@@ -98,22 +98,11 @@ class BaseClient:
         elif isinstance(proxies, (str, URL, Proxy)):
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
             return {"all": proxy}
-        elif isinstance(proxies, httpcore.AsyncHTTPTransport):  # pragma: nocover
-            raise RuntimeError(
-                "Passing a transport instance to 'proxies=' is no longer "
-                "supported. Use `httpx.Proxy() instead.`"
-            )
         else:
             new_proxies = {}
             for key, value in proxies.items():
-                if isinstance(value, (str, URL, Proxy)):
-                    proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
-                    new_proxies[str(key)] = proxy
-                elif isinstance(value, httpcore.AsyncHTTPTransport):  # pragma: nocover
-                    raise RuntimeError(
-                        "Passing a transport instance to 'proxies=' is "
-                        "no longer supported. Use `httpx.Proxy() instead.`"
-                    )
+                proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
+                new_proxies[str(key)] = proxy
             return new_proxies
 
     @property
