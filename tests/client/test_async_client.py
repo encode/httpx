@@ -156,10 +156,3 @@ async def test_100_continue(server):
 
     assert response.status_code == 200
     assert response.content == data
-
-
-@pytest.mark.usefixtures("async_environment")
-async def test_request_with_none_header(server):
-    value: Optional[str] = None
-    async with httpx.AsyncClient() as client:
-        await client.get(server.url, headers={"foo": value})
