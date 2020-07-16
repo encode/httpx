@@ -385,7 +385,7 @@ class Headers(typing.MutableMapping[str, str]):
             self._list = []  # type: typing.List[typing.Tuple[bytes, bytes]]
         elif isinstance(headers, Headers):
             self._list = list(headers.raw)
-        elif isinstance(headers, dict):
+        elif isinstance(headers, typing.Mapping):
             self._list = [
                 (normalize_header_key(k, encoding), normalize_header_value(v, encoding))
                 for k, v in headers.items()

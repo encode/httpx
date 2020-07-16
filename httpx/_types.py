@@ -39,10 +39,8 @@ QueryParamTypes = Union[
 
 HeaderTypes = Union[
     "Headers",
-    Dict[str, str],
-    Dict[bytes, bytes],
-    Dict[str, Optional[str]],
-    Dict[bytes, Optional[bytes]],
+    Mapping[str, Optional[str]],
+    Mapping[bytes, Optional[bytes]],
     Sequence[Tuple[str, Optional[str]]],
     Sequence[Tuple[bytes, Optional[bytes]]],
 ]
