@@ -5,8 +5,8 @@ import httpcore
 
 from .._config import Proxy, SSLConfig
 from .._content_streams import ByteStream, IteratorStream
+from .._exceptions import NetworkError, map_exceptions
 from .._types import CertTypes, VerifyTypes
-from .._utils import as_network_error
 
 try:
     import urllib3
@@ -84,7 +84,13 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
                 path.decode("ascii"),
             )
 
-        with as_network_error(MaxRetryError, SSLError, socket.error):
+        with map_exceptions(
+            {
+                MaxRetryError: NetworkError,
+                SSLError: NetworkError,
+                socket.error: NetworkError,
+            }
+        ):
             conn = self.pool.urlopen(
                 method=method.decode(),
                 url=url_str,
@@ -102,7 +108,7 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
             )
 
         def response_bytes() -> Iterator[bytes]:
-            with as_network_error(socket.error):
+            with map_exceptions({socket.error: NetworkError}):
                 for chunk in conn.stream(4096, decode_content=False):
                     yield chunk
 

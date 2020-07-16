@@ -48,7 +48,6 @@ from ._utils import (
     get_environment_proxies,
     get_logger,
     should_not_be_proxied,
-    warn_deprecated,
 )
 
 logger = get_logger(__name__)
@@ -99,22 +98,11 @@ class BaseClient:
         elif isinstance(proxies, (str, URL, Proxy)):
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
             return {"all": proxy}
-        elif isinstance(proxies, httpcore.AsyncHTTPTransport):  # pragma: nocover
-            raise RuntimeError(
-                "Passing a transport instance to 'proxies=' is no longer "
-                "supported. Use `httpx.Proxy() instead.`"
-            )
         else:
             new_proxies = {}
             for key, value in proxies.items():
-                if isinstance(value, (str, URL, Proxy)):
-                    proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
-                    new_proxies[str(key)] = proxy
-                elif isinstance(value, httpcore.AsyncHTTPTransport):  # pragma: nocover
-                    raise RuntimeError(
-                        "Passing a transport instance to 'proxies=' is "
-                        "no longer supported. Use `httpx.Proxy() instead.`"
-                    )
+                proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
+                new_proxies[str(key)] = proxy
             return new_proxies
 
     @property
@@ -433,7 +421,6 @@ class Client(BaseClient):
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
-    * **dispatch** - *(optional)* A deprecated alias for transport.
     * **app** - *(optional)* An WSGI application to send requests to,
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
@@ -456,7 +443,6 @@ class Client(BaseClient):
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         transport: httpcore.SyncHTTPTransport = None,
-        dispatch: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
     ):
@@ -472,14 +458,6 @@ class Client(BaseClient):
         )
 
         proxy_map = self.get_proxy_map(proxies, trust_env)
-
-        if dispatch is not None:
-            warn_deprecated(
-                "The dispatch argument is deprecated since v0.13 and will be "
-                "removed in a future release, please use 'transport'"
-            )
-            if transport is None:
-                transport = dispatch
 
         self.transport = self.init_transport(
             verify=verify,
@@ -981,7 +959,6 @@ class AsyncClient(BaseClient):
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
-    * **dispatch** - *(optional)* A deprecated alias for transport.
     * **app** - *(optional)* An ASGI application to send requests to,
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
@@ -1004,7 +981,6 @@ class AsyncClient(BaseClient):
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         transport: httpcore.AsyncHTTPTransport = None,
-        dispatch: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
     ):
@@ -1018,14 +994,6 @@ class AsyncClient(BaseClient):
             base_url=base_url,
             trust_env=trust_env,
         )
-
-        if dispatch is not None:
-            warn_deprecated(
-                "The dispatch argument is deprecated since v0.13 and will be "
-                "removed in a future release, please use 'transport'",
-            )
-            if transport is None:
-                transport = dispatch
 
         proxy_map = self.get_proxy_map(proxies, trust_env)
 
