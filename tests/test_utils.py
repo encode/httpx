@@ -12,7 +12,6 @@ from httpx._utils import (
     guess_json_utf,
     obfuscate_sensitive_headers,
     parse_header_links,
-    should_not_be_proxied,
     url_keys,
 )
 from tests.utils import override_log_level
@@ -196,7 +195,6 @@ async def test_elapsed_timer():
 )
 def test_get_environment_proxies(environment, proxies):
     os.environ.update(environment)
-
     assert get_environment_proxies() == proxies
 
 
@@ -220,75 +218,82 @@ def test_obfuscate_sensitive_headers(headers, output):
     [
         (
             "http://127.0.0.1",
-            {"NO_PROXY": ""},
+            {"NO_PROXY": "", "ALL_PROXY": "1.2.3.4"},
             False,
         ),  # everything proxied when no_proxy is empty/unset
         (
             "http://127.0.0.1",
-            {"NO_PROXY": "127.0.0.1"},
+            {"NO_PROXY": "127.0.0.1", "ALL_PROXY": "1.2.3.4"},
             True,
         ),  # no_proxy as ip case is matched
         (
             "http://127.0.0.1",
-            {"NO_PROXY": "https://127.0.0.1"},
+            {"NO_PROXY": "https://127.0.0.1", "ALL_PROXY": "1.2.3.4"},
             False,
         ),  # no_proxy with scheme is ignored
         (
             "http://127.0.0.1",
-            {"NO_PROXY": "1.1.1.1"},
+            {"NO_PROXY": "1.1.1.1", "ALL_PROXY": "1.2.3.4"},
             False,
         ),  # different no_proxy means its proxied
         (
             "http://courses.mit.edu",
-            {"NO_PROXY": "mit.edu"},
+            {"NO_PROXY": "mit.edu", "ALL_PROXY": "1.2.3.4"},
             True,
         ),  # no_proxy for sub-domain matches
         (
             "https://mit.edu.info",
-            {"NO_PROXY": "mit.edu"},
+            {"NO_PROXY": "mit.edu", "ALL_PROXY": "1.2.3.4"},
             False,
         ),  # domain is actually edu.info, so should be proxied
         (
             "https://mit.edu.info",
-            {"NO_PROXY": "mit.edu,edu.info"},
+            {"NO_PROXY": "mit.edu,edu.info", "ALL_PROXY": "1.2.3.4"},
             True,
         ),  # list in no_proxy, matches second domain
         (
             "https://mit.edu.info",
-            {"NO_PROXY": "mit.edu, edu.info"},
+            {"NO_PROXY": "mit.edu, edu.info", "ALL_PROXY": "1.2.3.4"},
             True,
         ),  # list with spaces in no_proxy
         (
             "https://mit.edu.info",
-            {"NO_PROXY": "mit.edu,mit.info"},
+            {"NO_PROXY": "mit.edu,mit.info", "ALL_PROXY": "1.2.3.4"},
             False,
         ),  # list in no_proxy, without any domain matching
         (
             "https://foo.example.com",
-            {"NO_PROXY": "www.example.com"},
+            {"NO_PROXY": "www.example.com", "ALL_PROXY": "1.2.3.4"},
             False,
         ),  # different subdomains foo vs www means we still proxy
         (
             "https://www.example1.com",
-            {"NO_PROXY": ".example1.com"},
+            {"NO_PROXY": ".example1.com", "ALL_PROXY": "1.2.3.4"},
             True,
         ),  # no_proxy starting with dot
         (
             "https://www.example2.com",
-            {"NO_PROXY": "ample2.com"},
+            {"NO_PROXY": "ample2.com", "ALL_PROXY": "1.2.3.4"},
             False,
         ),  # whole-domain matching
         (
             "https://www.example3.com",
-            {"NO_PROXY": "*"},
+            {"NO_PROXY": "*", "ALL_PROXY": "1.2.3.4"},
             True,
         ),  # wildcard * means nothing proxied
     ],
 )
 def test_should_not_be_proxied(url, no_proxy, expected):
     os.environ.update(no_proxy)
-    parsed_url = httpx.URL(url)
-    assert should_not_be_proxied(parsed_url) == expected
+    proxies = get_environment_proxies()
+
+    def should_not_proxy(url, proxies):
+        for key in url_keys(httpx.URL(url)):
+            if key in proxies:
+                return proxies[key] is None
+        return True
+
+    assert should_not_proxy(url, proxies) is expected
 
 
 def test_url_keys():

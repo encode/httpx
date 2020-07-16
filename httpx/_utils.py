@@ -260,41 +260,41 @@ def get_logger(name: str) -> Logger:
     return typing.cast(Logger, logger)
 
 
-def should_not_be_proxied(url: "URL") -> bool:
-    """ Return True if url should not be proxied,
-    return False otherwise.
+def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
     """
-    no_proxy = getproxies().get("no")
-    if not no_proxy:
-        return False
-    no_proxy_list = [host.strip() for host in no_proxy.split(",")]
-    for name in no_proxy_list:
-        if name == "*":
-            return True
-        if name:
-            name = name.lstrip(".")  # ignore leading dots
-            name = re.escape(name)
-            pattern = r"(.+\.)?%s$" % name
-            if re.match(pattern, url.host, re.I) or re.match(
-                pattern, url.authority, re.I
-            ):
-                return True
-    return False
+    Gets proxy information from the environment.
 
-
-def get_environment_proxies() -> typing.Dict[str, str]:
-    """Gets proxy information from the environment"""
+    Returns a dict of {<mount_key>: <Proxy or None>}
+    """
 
     # urllib.request.getproxies() falls back on System
     # Registry and Config for proxies on Windows and macOS.
-    # We don't want to propagate non-HTTP proxies into
-    # our configuration such as 'TRAVIS_APT_PROXY'.
-    supported_proxy_schemes = ("http", "https", "all")
-    return {
-        key: val
-        for key, val in getproxies().items()
-        if (key in supported_proxy_schemes)
-    }
+    proxy_info = getproxies()
+
+    mounts: typing.Dict[str, typing.Optional[str]] = {}
+
+    for scheme in ("http", "https", "all"):
+        if proxy_info.get(scheme):
+            mounts[scheme] = proxy_info[scheme]
+
+    no_proxy_hosts = [host.strip() for host in proxy_info.get("no", "").split(",")]
+    for hostname in no_proxy_hosts:
+        # See https://curl.haxx.se/libcurl/c/CURLOPT_NOPROXY.html for details
+        # on how names in `NO_PROXY` are handled.
+        if hostname == "*":
+            return {}
+        elif hostname.startswith("."):
+            # NO_PROXY=.google.com should disable "*.google.com"
+            mounts[f"http://*{hostname}"] = None
+            mounts[f"https://*{hostname}"] = None
+        elif hostname:
+            # NO_PROXY=google.com should disable ""*.google.com" and "google.com"
+            mounts[f"http://{hostname}"] = None
+            mounts[f"https://{hostname}"] = None
+            mounts[f"http://*.{hostname}"] = None
+            mounts[f"https://*.{hostname}"] = None
+
+    return mounts
 
 
 def url_keys(url: "URL") -> typing.List[str]:

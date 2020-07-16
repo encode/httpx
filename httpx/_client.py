@@ -43,13 +43,7 @@ from ._types import (
     URLTypes,
     VerifyTypes,
 )
-from ._utils import (
-    NetRCInfo,
-    get_environment_proxies,
-    get_logger,
-    should_not_be_proxied,
-    url_keys,
-)
+from ._utils import NetRCInfo, get_environment_proxies, get_logger, url_keys
 
 logger = get_logger(__name__)
 
@@ -86,25 +80,24 @@ class BaseClient:
         self.trust_env = trust_env
         self.netrc = NetRCInfo()
 
-    def get_proxy_map(
-        self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
-    ) -> typing.Dict[str, Proxy]:
-        if proxies is None:
-            if trust_env:
-                return {
-                    key: Proxy(url=url)
-                    for key, url in get_environment_proxies().items()
-                }
-            return {}
-        elif isinstance(proxies, (str, URL, Proxy)):
-            proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
-            return {"all": proxy}
-        else:
-            new_proxies = {}
-            for key, value in proxies.items():
-                proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
-                new_proxies[str(key)] = proxy
-            return new_proxies
+    def get_mount_mapping(
+        self, proxies: typing.Optional[ProxiesTypes]
+    ) -> typing.Dict[str, typing.Optional[Proxy]]:
+        if isinstance(proxies, dict):
+            mounts = {
+                str(key): Proxy(url=value) if isinstance(value, (str, URL)) else value
+                for key, value in proxies.items()
+            }
+            if "all" not in mounts and "http" not in mounts:
+                mounts["http"] = None
+            if "all" not in mounts and "https" not in mounts:
+                mounts["https"] = None
+            return mounts
+
+        proxy_or_none = (
+            Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
+        )
+        return {"http": proxy_or_none, "https": proxy_or_none}
 
     @property
     def headers(self) -> Headers:
@@ -458,28 +451,33 @@ class Client(BaseClient):
             trust_env=trust_env,
         )
 
-        proxy_map = self.get_proxy_map(proxies, trust_env)
+        if trust_env and proxies is None and app is None and transport is None:
+            proxies = get_environment_proxies()  # type: ignore
 
-        self._transport = self.init_transport(
-            verify=verify,
-            cert=cert,
-            http2=http2,
-            pool_limits=pool_limits,
-            transport=transport,
-            app=app,
-            trust_env=trust_env,
-        )
-        self._proxies: typing.Dict[str, httpcore.SyncHTTPTransport] = {
-            key: self.init_proxy_transport(
-                proxy,
-                verify=verify,
-                cert=cert,
-                http2=http2,
-                pool_limits=pool_limits,
-                trust_env=trust_env,
-            )
-            for key, proxy in proxy_map.items()
-        }
+        self._mounts = {}
+        transports: typing.Dict[typing.Optional[Proxy], httpcore.SyncHTTPTransport] = {}
+        for mount_key, proxy_or_none in self.get_mount_mapping(proxies).items():
+            if proxy_or_none not in transports:
+                if proxy_or_none is None:
+                    transports[None] = self.init_transport(
+                        verify=verify,
+                        cert=cert,
+                        http2=http2,
+                        pool_limits=pool_limits,
+                        transport=transport,
+                        app=app,
+                        trust_env=trust_env,
+                    )
+                else:
+                    transports[proxy_or_none] = self.init_proxy_transport(
+                        proxy_or_none,
+                        verify=verify,
+                        cert=cert,
+                        http2=http2,
+                        pool_limits=pool_limits,
+                        trust_env=trust_env,
+                    )
+            self._mounts[mount_key] = transports[proxy_or_none]
 
     def init_transport(
         self,
@@ -538,13 +536,11 @@ class Client(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        if self._proxies and not should_not_be_proxied(url):
-            for proxy_key in url_keys(url):
-                if proxy_key and proxy_key in self._proxies:
-                    transport = self._proxies[proxy_key]
-                    return transport
+        for proxy_key in url_keys(url):
+            if proxy_key in self._mounts:
+                return self._mounts[proxy_key]
 
-        return self._transport
+        raise InvalidURL(f"Unsupported scheme in URL: {url.scheme}")
 
     def request(
         self,
@@ -889,9 +885,8 @@ class Client(BaseClient):
         )
 
     def close(self) -> None:
-        self._transport.close()
-        for proxy in self._proxies.values():
-            proxy.close()
+        for transport in self._mounts.values():
+            transport.close()
 
     def __enter__(self) -> "Client":
         return self
@@ -984,28 +979,35 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
-        proxy_map = self.get_proxy_map(proxies, trust_env)
+        if trust_env and proxies is None and app is None and transport is None:
+            proxies = get_environment_proxies()  # type: ignore
 
-        self._transport = self.init_transport(
-            verify=verify,
-            cert=cert,
-            http2=http2,
-            pool_limits=pool_limits,
-            transport=transport,
-            app=app,
-            trust_env=trust_env,
-        )
-        self._proxies: typing.Dict[str, httpcore.AsyncHTTPTransport] = {
-            key: self.init_proxy_transport(
-                proxy,
-                verify=verify,
-                cert=cert,
-                http2=http2,
-                pool_limits=pool_limits,
-                trust_env=trust_env,
-            )
-            for key, proxy in proxy_map.items()
-        }
+        self._mounts = {}
+        transports: typing.Dict[
+            typing.Optional[Proxy], httpcore.AsyncHTTPTransport
+        ] = {}
+        for mount_key, proxy_or_none in self.get_mount_mapping(proxies).items():
+            if proxy_or_none not in transports:
+                if proxy_or_none is None:
+                    transports[None] = self.init_transport(
+                        verify=verify,
+                        cert=cert,
+                        http2=http2,
+                        pool_limits=pool_limits,
+                        transport=transport,
+                        app=app,
+                        trust_env=trust_env,
+                    )
+                else:
+                    transports[proxy_or_none] = self.init_proxy_transport(
+                        proxy_or_none,
+                        verify=verify,
+                        cert=cert,
+                        http2=http2,
+                        pool_limits=pool_limits,
+                        trust_env=trust_env,
+                    )
+            self._mounts[mount_key] = transports[proxy_or_none]
 
     def init_transport(
         self,
@@ -1064,13 +1066,11 @@ class AsyncClient(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        if self._proxies and not should_not_be_proxied(url):
-            for proxy_key in url_keys(url):
-                if proxy_key and proxy_key in self._proxies:
-                    transport = self._proxies[proxy_key]
-                    return transport
+        for proxy_key in url_keys(url):
+            if proxy_key in self._mounts:
+                return self._mounts[proxy_key]
 
-        return self._transport
+        raise InvalidURL(f"Unsupported scheme in URL: {url.scheme}")
 
     async def request(
         self,
@@ -1418,9 +1418,8 @@ class AsyncClient(BaseClient):
         )
 
     async def aclose(self) -> None:
-        await self._transport.aclose()
-        for proxy in self._proxies.values():
-            await proxy.aclose()
+        for transport in self._mounts.values():
+            await transport.aclose()
 
     async def __aenter__(self) -> "AsyncClient":
         return self
