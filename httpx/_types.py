@@ -43,8 +43,8 @@ HeaderTypes = Union[
     Dict[bytes, bytes],
     Dict[str, Optional[str]],
     Dict[bytes, Optional[bytes]],
-    Sequence[Tuple[str, str]],
-    Sequence[Tuple[bytes, bytes]],
+    Sequence[Tuple[str, Optional[str]]],
+    Sequence[Tuple[bytes, Optional[bytes]]],
 ]
 
 CookieTypes = Union["Cookies", CookieJar, Dict[str, str]]
