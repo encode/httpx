@@ -24,12 +24,12 @@ def test_proxies_parameter(proxies, expected_proxies):
     client = httpx.AsyncClient(proxies=proxies)
 
     for proxy_key, url in expected_proxies:
-        assert proxy_key in client.proxies
-        proxy = client.proxies[proxy_key]
+        assert proxy_key in client._proxies
+        proxy = client._proxies[proxy_key]
         assert isinstance(proxy, httpcore.AsyncHTTPProxy)
         assert proxy.proxy_origin == httpx.URL(url).raw[:3]
 
-    assert len(expected_proxies) == len(client.proxies)
+    assert len(expected_proxies) == len(client._proxies)
 
 
 PROXY_URL = "http://[::1]"
@@ -79,10 +79,10 @@ PROXY_URL = "http://[::1]"
 )
 def test_transport_for_request(url, proxies, expected):
     client = httpx.AsyncClient(proxies=proxies)
-    transport = client.transport_for_url(httpx.URL(url))
+    transport = client._transport_for_url(httpx.URL(url))
 
     if expected is None:
-        assert transport is client.transport
+        assert transport is client._transport
     else:
         assert isinstance(transport, httpcore.AsyncHTTPProxy)
         assert transport.proxy_origin == httpx.URL(expected).raw[:3]
@@ -126,9 +126,9 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
         monkeypatch.setenv(name, value)
 
     client = client_class()
-    transport = client.transport_for_url(httpx.URL(url))
+    transport = client._transport_for_url(httpx.URL(url))
 
     if expected is None:
-        assert transport == client.transport
+        assert transport == client._transport
     else:
         assert transport.proxy_origin == httpx.URL(expected).raw[:3]
