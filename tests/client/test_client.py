@@ -22,6 +22,16 @@ def test_get(server):
     assert response.elapsed > timedelta(0)
 
 
+def test_get_invalid_url(server):
+    with httpx.Client() as client:
+        with pytest.raises(httpx.InvalidURL):
+            client.get("invalid://example.org")
+        with pytest.raises(httpx.InvalidURL):
+            client.get("://example.org")
+        with pytest.raises(httpx.InvalidURL):
+            client.get("http://")
+
+
 def test_build_request(server):
     url = server.url.copy_with(path="/echo_headers")
     headers = {"Custom-header": "value"}

@@ -110,11 +110,3 @@ def test_url():
     assert request.url.scheme == "https"
     assert request.url.port == 443
     assert request.url.full_path == "/abc?foo=bar"
-
-
-def test_invalid_urls():
-    with pytest.raises(httpx.InvalidURL):
-        httpx.Request("GET", "example.org")
-
-    with pytest.raises(httpx.InvalidURL):
-        httpx.Request("GET", "http:///foo")

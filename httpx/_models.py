@@ -24,7 +24,6 @@ from ._decoders import (
 from ._exceptions import (
     CookieConflict,
     HTTPStatusError,
-    InvalidURL,
     NotRedirectResponse,
     RequestNotRead,
     ResponseClosed,
@@ -55,12 +54,7 @@ from ._utils import (
 
 
 class URL:
-    def __init__(
-        self,
-        url: URLTypes,
-        allow_relative: bool = False,
-        params: QueryParamTypes = None,
-    ) -> None:
+    def __init__(self, url: URLTypes, params: QueryParamTypes = None,) -> None:
         if isinstance(url, str):
             self._uri_reference = rfc3986.api.iri_reference(url).encode()
         else:
@@ -79,13 +73,6 @@ class URL:
             else:
                 query_string = str(QueryParams(params))
             self._uri_reference = self._uri_reference.copy_with(query=query_string)
-
-        # Enforce absolute URLs by default.
-        if not allow_relative:
-            if not self.scheme:
-                raise InvalidURL("No scheme included in URL.")
-            if not self.host:
-                raise InvalidURL("No host included in URL.")
 
         # Allow setting full_path to custom attributes requests
         # like OPTIONS, CONNECT, and forwarding proxy requests.
@@ -205,10 +192,7 @@ class URL:
 
             kwargs["authority"] = authority
 
-        return URL(
-            self._uri_reference.copy_with(**kwargs).unsplit(),
-            allow_relative=self.is_relative_url,
-        )
+        return URL(self._uri_reference.copy_with(**kwargs).unsplit(),)
 
     def join(self, relative_url: URLTypes) -> "URL":
         """
@@ -220,7 +204,7 @@ class URL:
         # We drop any fragment portion, because RFC 3986 strictly
         # treats URLs with a fragment portion as not being absolute URLs.
         base_uri = self._uri_reference.copy_with(fragment=None)
-        relative_url = URL(relative_url, allow_relative=True)
+        relative_url = URL(relative_url)
         return URL(relative_url._uri_reference.resolve_with(base_uri).unsplit())
 
     def __hash__(self) -> int:

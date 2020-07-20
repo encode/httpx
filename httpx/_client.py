@@ -45,6 +45,7 @@ from ._types import (
 )
 from ._utils import (
     NetRCInfo,
+    enforce_http_url,
     get_environment_proxies,
     get_logger,
     should_not_be_proxied,
@@ -69,7 +70,7 @@ class BaseClient:
         trust_env: bool = True,
     ):
         if base_url is None:
-            self.base_url = URL("", allow_relative=True)
+            self.base_url = URL("")
         else:
             self.base_url = URL(base_url)
 
@@ -314,7 +315,7 @@ class BaseClient:
         """
         location = response.headers["Location"]
 
-        url = URL(location, allow_relative=True)
+        url = URL(location)
 
         # Check that we can handle the scheme
         if url.scheme and url.scheme not in ("http", "https"):
@@ -534,6 +535,8 @@ class Client(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
+        enforce_http_url(url)
+
         if self._proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
@@ -683,7 +686,6 @@ class Client(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-
         transport = self._transport_for_url(request.url)
 
         try:
@@ -1072,6 +1074,8 @@ class AsyncClient(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
+        enforce_http_url(url)
+
         if self._proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
@@ -1131,9 +1135,6 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
-        if request.url.scheme not in ("http", "https"):
-            raise InvalidURL('URL scheme must be "http" or "https".')
-
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_auth(request, auth)
@@ -1224,7 +1225,6 @@ class AsyncClient(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-
         transport = self._transport_for_url(request.url)
 
         try:
