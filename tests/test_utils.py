@@ -12,6 +12,7 @@ from httpx._utils import (
     guess_json_utf,
     obfuscate_sensitive_headers,
     parse_header_links,
+    same_origin,
     should_not_be_proxied,
 )
 from tests.utils import override_log_level
@@ -294,3 +295,15 @@ def test_should_not_be_proxied(url, no_proxy, expected):
     os.environ.update(no_proxy)
     parsed_url = httpx.URL(url)
     assert should_not_be_proxied(parsed_url) == expected
+
+
+def test_same_origin():
+    origin1 = httpx.URL("https://example.com")
+    origin2 = httpx.URL("HTTPS://EXAMPLE.COM:443")
+    assert same_origin(origin1, origin2)
+
+
+def test_now_same_origin():
+    origin1 = httpx.URL("https://example.com")
+    origin2 = httpx.URL("HTTP://EXAMPLE.COM")
+    assert not same_origin(origin1, origin2)
