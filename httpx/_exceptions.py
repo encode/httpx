@@ -121,6 +121,17 @@ class DecodingError(HTTPError):
     """
 
 
+class HTTPStatusError(HTTPError):
+    """
+    Response sent an error HTTP status.
+    """
+
+    def __init__(self, *args: typing.Any, response: "Response") -> None:
+        super().__init__(*args)
+        self._request = response.request
+        self.response = response
+
+
 # Redirect exceptions...
 
 
