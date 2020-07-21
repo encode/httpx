@@ -376,7 +376,8 @@ class BaseClient:
         if not request.stream.can_replay():
             raise RequestBodyUnavailable(
                 "Got a redirect response, but the request body was streaming "
-                "and is no longer available."
+                "and is no longer available.",
+                request=request,
             )
 
         return request.stream
@@ -628,7 +629,9 @@ class Client(BaseClient):
 
         while True:
             if len(history) > self.max_redirects:
-                raise TooManyRedirects()
+                raise TooManyRedirects(
+                    "Exceeded maximum allowed redirects.", request=request
+                )
 
             response = self._send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
@@ -1167,7 +1170,9 @@ class AsyncClient(BaseClient):
 
         while True:
             if len(history) > self.max_redirects:
-                raise TooManyRedirects()
+                raise TooManyRedirects(
+                    "Exceeded maximum allowed redirects.", request=request
+                )
 
             response = await self._send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
