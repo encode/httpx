@@ -267,9 +267,10 @@ We can raise an exception for any Client or Server error responses (4xx or 5xx s
 404
 >>> not_found.raise_for_status()
 Traceback (most recent call last):
-  File "/Users/tomchristie/GitHub/encode/httpcore/httpx/models.py", line 776, in raise_for_status
-    raise HTTPError(message)
-httpx.HTTPError: 404 Not Found
+  File "/Users/tomchristie/GitHub/encode/httpcore/httpx/models.py", line 837, in raise_for_status
+    raise HTTPStatusError(message, response=self)
+httpx._exceptions.HTTPStatusError: 404 Client Error: Not Found for url: https://httpbin.org/status/404
+For more information check: https://httpstatuses.com/404
 ```
 
 Any successful response codes will simply return `None` rather than raising an exception.
