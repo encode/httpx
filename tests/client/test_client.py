@@ -172,3 +172,18 @@ def test_merge_url():
     request = client.build_request("GET", "http://www.paypal.com")
     assert request.url.scheme == "https"
     assert request.url.is_ssl
+
+
+@pytest.mark.parametrize(
+    "url,scheme,is_ssl",
+    [
+        ("http://www.paypal.com", "https", True),
+        ("http://app", "http", False),
+        ("http://192.168.1.42", "http", False),
+    ],
+)
+def test_merge_url_hsts(url: str, scheme: str, is_ssl: bool):
+    client = httpx.Client()
+    request = client.build_request("GET", url)
+    assert request.url.scheme == scheme
+    assert request.url.is_ssl == is_ssl
