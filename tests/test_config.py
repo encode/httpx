@@ -56,7 +56,7 @@ def test_load_ssl_config_verify_env_file(https_server, ca_cert_pem_file, config)
 
 def test_load_ssl_config_verify_directory():
     path = Path(certifi.where()).parent
-    ssl_config = SSLConfig(verify=path)
+    ssl_config = SSLConfig(verify=str(path))
     context = ssl_config.ssl_context
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
@@ -192,7 +192,7 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
 
         ssl_config = SSLConfig(trust_env=True)
 
-        assert ssl_config.ssl_context.keylog_filename is None
+        assert ssl_config.ssl_context.keylog_filename is None  # type: ignore
 
     filename = str(tmpdir.join("test.log"))
 
@@ -201,11 +201,11 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
 
         ssl_config = SSLConfig(trust_env=True)
 
-        assert ssl_config.ssl_context.keylog_filename == filename
+        assert ssl_config.ssl_context.keylog_filename == filename  # type: ignore
 
         ssl_config = SSLConfig(trust_env=False)
 
-        assert ssl_config.ssl_context.keylog_filename is None
+        assert ssl_config.ssl_context.keylog_filename is None  # type: ignore
 
 
 @pytest.mark.parametrize(

@@ -1,3 +1,4 @@
+import contextlib
 import typing
 
 import httpcore
@@ -28,25 +29,87 @@ class HTTPError(Exception):
 
 # Timeout exceptions...
 
-ConnectTimeout = httpcore.ConnectTimeout
-ReadTimeout = httpcore.ReadTimeout
-WriteTimeout = httpcore.WriteTimeout
-PoolTimeout = httpcore.PoolTimeout
+
+class TimeoutException(HTTPError):
+    """
+    The base class for timeout errors.
+
+    An operation has timed out.
+    """
+
+
+class ConnectTimeout(TimeoutException):
+    """
+    Timed out while connecting to the host.
+    """
+
+
+class ReadTimeout(TimeoutException):
+    """
+    Timed out while receiving data from the host.
+    """
+
+
+class WriteTimeout(TimeoutException):
+    """
+    Timed out while sending data to the host.
+    """
+
+
+class PoolTimeout(TimeoutException):
+    """
+    Timed out waiting to acquire a connection from the pool.
+    """
 
 
 # Core networking exceptions...
 
-NetworkError = httpcore.NetworkError
-ReadError = httpcore.ReadError
-WriteError = httpcore.WriteError
-ConnectError = httpcore.ConnectError
-CloseError = httpcore.CloseError
+
+class NetworkError(HTTPError):
+    """
+    The base class for network-related errors.
+
+    An error occurred while interacting with the network.
+    """
+
+
+class ReadError(NetworkError):
+    """
+    Failed to receive data from the network.
+    """
+
+
+class WriteError(NetworkError):
+    """
+    Failed to send data through the network.
+    """
+
+
+class ConnectError(NetworkError):
+    """
+    Failed to establish a connection.
+    """
+
+
+class CloseError(NetworkError):
+    """
+    Failed to close a connection.
+    """
 
 
 # Other transport exceptions...
 
-ProxyError = httpcore.ProxyError
-ProtocolError = httpcore.ProtocolError
+
+class ProxyError(HTTPError):
+    """
+    An error occurred while proxying a request.
+    """
+
+
+class ProtocolError(HTTPError):
+    """
+    A protocol was violated by the server.
+    """
 
 
 # HTTP exceptions...
@@ -56,6 +119,17 @@ class DecodingError(HTTPError):
     """
     Decoding of the response failed.
     """
+
+
+class HTTPStatusError(HTTPError):
+    """
+    Response sent an error HTTP status.
+    """
+
+    def __init__(self, *args: typing.Any, response: "Response") -> None:
+        super().__init__(*args)
+        self._request = response.request
+        self.response = response
 
 
 # Redirect exceptions...
@@ -138,3 +212,43 @@ class CookieConflict(HTTPError):
     """
     Attempted to lookup a cookie by name, but multiple cookies existed.
     """
+
+
+@contextlib.contextmanager
+def map_exceptions(
+    mapping: typing.Mapping[typing.Type[Exception], typing.Type[Exception]]
+) -> typing.Iterator[None]:
+    try:
+        yield
+    except Exception as exc:
+        mapped_exc = None
+
+        for from_exc, to_exc in mapping.items():
+            if not isinstance(exc, from_exc):
+                continue
+            # We want to map to the most specific exception we can find.
+            # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to
+            # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.
+            if mapped_exc is None or issubclass(to_exc, mapped_exc):
+                mapped_exc = to_exc
+
+        if mapped_exc is None:
+            raise
+
+        raise mapped_exc(exc) from None
+
+
+HTTPCORE_EXC_MAP = {
+    httpcore.TimeoutException: TimeoutException,
+    httpcore.ConnectTimeout: ConnectTimeout,
+    httpcore.ReadTimeout: ReadTimeout,
+    httpcore.WriteTimeout: WriteTimeout,
+    httpcore.PoolTimeout: PoolTimeout,
+    httpcore.NetworkError: NetworkError,
+    httpcore.ConnectError: ConnectError,
+    httpcore.ReadError: ReadError,
+    httpcore.WriteError: WriteError,
+    httpcore.CloseError: CloseError,
+    httpcore.ProxyError: ProxyError,
+    httpcore.ProtocolError: ProtocolError,
+}

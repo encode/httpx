@@ -1,6 +1,5 @@
 import codecs
 import collections
-import contextlib
 import logging
 import mimetypes
 import netrc
@@ -15,7 +14,6 @@ from time import perf_counter
 from types import TracebackType
 from urllib.request import getproxies
 
-from ._exceptions import NetworkError
 from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -94,7 +92,7 @@ def format_form_param(name: str, value: typing.Union[str, bytes]) -> bytes:
 
 
 # Null bytes; no need to recreate these on each call to guess_json_utf
-_null = "\x00".encode("ascii")  # encoding to ASCII for Python 3
+_null = b"\x00"
 _null2 = _null * 2
 _null3 = _null * 3
 
@@ -396,16 +394,5 @@ class ElapsedTimer:
         return timedelta(seconds=self.end - self.start)
 
 
-@contextlib.contextmanager
-def as_network_error(*exception_classes: type) -> typing.Iterator[None]:
-    try:
-        yield
-    except BaseException as exc:
-        for cls in exception_classes:
-            if isinstance(exc, cls):
-                raise NetworkError(exc) from exc
-        raise
-
-
-def warn_deprecated(message: str) -> None:
+def warn_deprecated(message: str) -> None:  # pragma: nocover
     warnings.warn(message, DeprecationWarning, stacklevel=2)

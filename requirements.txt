@@ -19,7 +19,7 @@ cryptography
 flake8
 flake8-bugbear
 flake8-pie
-isort
+isort==5.*
 mypy
 pytest
 pytest-asyncio

@@ -23,7 +23,7 @@ from ._decoders import (
 )
 from ._exceptions import (
     CookieConflict,
-    HTTPError,
+    HTTPStatusError,
     InvalidURL,
     NotRedirectResponse,
     RequestNotRead,
@@ -51,7 +51,6 @@ from ._utils import (
     obfuscate_sensitive_headers,
     parse_header_links,
     str_query_param,
-    warn_deprecated,
 )
 
 
@@ -288,7 +287,7 @@ class QueryParams(typing.Mapping[str, str]):
         value = args[0] if args else kwargs
 
         items: typing.Sequence[typing.Tuple[str, PrimitiveData]]
-        if isinstance(value, str):
+        if value is None or isinstance(value, str):
             items = parse_qsl(value)
         elif isinstance(value, QueryParams):
             items = value.multi_items()
@@ -320,7 +319,7 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[key]
         return default
 
-    def update(self, params: QueryParamTypes = None) -> None:  # type: ignore
+    def update(self, params: QueryParamTypes = None) -> None:
         if not params:
             return
 
@@ -651,7 +650,7 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part for part in self.stream])
+            self._content = b"".join(self.stream)
             # If a streaming request has been read entirely into memory, then
             # we can replace the stream with a raw bytes implementation,
             # to ensure that any non-replayable streams can still be used.
@@ -826,7 +825,7 @@ class Response:
 
     def raise_for_status(self) -> None:
         """
-        Raise the `HTTPError` if one occurred.
+        Raise the `HTTPStatusError` if one occurred.
         """
         message = (
             "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
@@ -835,10 +834,10 @@ class Response:
 
         if StatusCode.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
-            raise HTTPError(message, response=self)
+            raise HTTPStatusError(message, response=self)
         elif StatusCode.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
-            raise HTTPError(message, response=self)
+            raise HTTPStatusError(message, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
@@ -874,28 +873,12 @@ class Response:
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
-    @property
-    def stream(self):  # type: ignore
-        warn_deprecated(  # pragma: nocover
-            "Response.stream() is due to be deprecated. "
-            "Use Response.aiter_bytes() instead.",
-        )
-        return self.aiter_bytes  # pragma: nocover
-
-    @property
-    def raw(self):  # type: ignore
-        warn_deprecated(  # pragma: nocover
-            "Response.raw() is due to be deprecated. "
-            "Use Response.aiter_raw() instead.",
-        )
-        return self.aiter_raw  # pragma: nocover
-
     def read(self) -> bytes:
         """
         Read and return the response content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part for part in self.iter_bytes()])
+            self._content = b"".join(self.iter_bytes())
         return self._content
 
     def iter_bytes(self) -> typing.Iterator[bytes]:
@@ -942,6 +925,15 @@ class Response:
         for part in self._raw_stream:
             yield part
         self.close()
+
+    def next(self) -> "Response":
+        """
+        Get the next response from a redirect response.
+        """
+        if not self.is_redirect:
+            raise NotRedirectResponse()
+        assert self.call_next is not None
+        return self.call_next()
 
     def close(self) -> None:
         """
@@ -1098,7 +1090,7 @@ class Cookies(MutableMapping):
         value = None
         for cookie in self.jar:
             if cookie.name == name:
-                if domain is None or cookie.domain == domain:  # type: ignore
+                if domain is None or cookie.domain == domain:
                     if path is None or cookie.path == path:
                         if value is not None:
                             message = f"Multiple cookies exist with name={name}"
@@ -1120,12 +1112,12 @@ class Cookies(MutableMapping):
         remove = []
         for cookie in self.jar:
             if cookie.name == name:
-                if domain is None or cookie.domain == domain:  # type: ignore
+                if domain is None or cookie.domain == domain:
                     if path is None or cookie.path == path:
                         remove.append(cookie)
 
         for cookie in remove:
-            self.jar.clear(cookie.domain, cookie.path, cookie.name)  # type: ignore
+            self.jar.clear(cookie.domain, cookie.path, cookie.name)
 
     def clear(self, domain: str = None, path: str = None) -> None:
         """

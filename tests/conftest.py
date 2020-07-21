@@ -56,7 +56,7 @@ def async_environment(request: typing.Any) -> str:
 
 
 @pytest.fixture(scope="function", autouse=True)
-def clean_environ() -> typing.Dict[str, typing.Any]:
+def clean_environ():
     """Keeps os.environ clean for every test without having to mock os.environ"""
     original_environ = os.environ.copy()
     os.environ.clear()

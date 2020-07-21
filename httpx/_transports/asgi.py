@@ -4,10 +4,10 @@ import httpcore
 import sniffio
 
 from .._content_streams import ByteStream
-from .._utils import warn_deprecated
 
 if TYPE_CHECKING:  # pragma: no cover
     import asyncio
+
     import trio
 
     Event = Union[asyncio.Event, trio.Event]
@@ -158,20 +158,3 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         stream = ByteStream(b"".join(body_parts))
 
         return (b"HTTP/1.1", status_code, b"", response_headers, stream)
-
-
-class ASGIDispatch(ASGITransport):
-    def __init__(
-        self,
-        app: Callable,
-        raise_app_exceptions: bool = True,
-        root_path: str = "",
-        client: Tuple[str, int] = ("127.0.0.1", 123),
-    ) -> None:
-        warn_deprecated("ASGIDispatch is deprecated, please use ASGITransport")
-        super().__init__(
-            app=app,
-            raise_app_exceptions=raise_app_exceptions,
-            root_path=root_path,
-            client=client,
-        )

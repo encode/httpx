@@ -1,10 +1,8 @@
 from datetime import timedelta
 
-import httpcore
 import pytest
 
 import httpx
-from httpx import WSGIDispatch
 
 
 def test_get(server):
@@ -108,7 +106,7 @@ def test_raise_for_status(server):
                 "GET", server.url.copy_with(path=f"/status/{status_code}")
             )
             if 400 <= status_code < 600:
-                with pytest.raises(httpx.HTTPError) as exc_info:
+                with pytest.raises(httpx.HTTPStatusError) as exc_info:
                     response.raise_for_status()
                 assert exc_info.value.response == response
                 assert exc_info.value.request.url.path == f"/status/{status_code}"
@@ -161,32 +159,6 @@ def test_base_url(server):
 
 def test_merge_url():
     client = httpx.Client(base_url="https://www.paypal.com/")
-    url = client.merge_url("http://www.paypal.com")
-
-    assert url.scheme == "https"
-    assert url.is_ssl
-
-
-def test_dispatch_deprecated():
-    dispatch = httpcore.SyncHTTPTransport()
-
-    with pytest.warns(DeprecationWarning) as record:
-        client = httpx.Client(dispatch=dispatch)
-
-    assert client.transport is dispatch
-    assert len(record) == 1
-    assert record[0].message.args[0] == (
-        "The dispatch argument is deprecated since v0.13 and will be "
-        "removed in a future release, please use 'transport'"
-    )
-
-
-def test_wsgi_dispatch_deprecated():
-    with pytest.warns(DeprecationWarning) as record:
-        WSGIDispatch(None)
-
-    assert len(record) == 1
-    assert (
-        record[0].message.args[0]
-        == "WSGIDispatch is deprecated, please use WSGITransport"
-    )
+    request = client.build_request("GET", "http://www.paypal.com")
+    assert request.url.scheme == "https"
+    assert request.url.is_ssl

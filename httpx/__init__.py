@@ -4,30 +4,38 @@ from ._auth import Auth, BasicAuth, DigestAuth
 from ._client import AsyncClient, Client
 from ._config import PoolLimits, Proxy, Timeout
 from ._exceptions import (
+    CloseError,
+    ConnectError,
     ConnectTimeout,
     CookieConflict,
     DecodingError,
     HTTPError,
+    HTTPStatusError,
     InvalidURL,
     NetworkError,
     NotRedirectResponse,
     PoolTimeout,
     ProtocolError,
     ProxyError,
+    ReadError,
     ReadTimeout,
+    RedirectError,
     RequestBodyUnavailable,
     RequestNotRead,
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
+    StreamError,
+    TimeoutException,
     TooManyRedirects,
+    WriteError,
     WriteTimeout,
 )
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import StatusCode, codes
-from ._transports.asgi import ASGIDispatch, ASGITransport
+from ._transports.asgi import ASGITransport
 from ._transports.urllib3 import URLLib3ProxyTransport, URLLib3Transport
-from ._transports.wsgi import WSGIDispatch, WSGITransport
+from ._transports.wsgi import WSGITransport
 
 __all__ = [
     "__description__",
@@ -44,7 +52,6 @@ __all__ = [
     "request",
     "stream",
     "codes",
-    "ASGIDispatch",
     "ASGITransport",
     "AsyncClient",
     "Auth",
@@ -54,23 +61,31 @@ __all__ = [
     "PoolLimits",
     "Proxy",
     "Timeout",
+    "CloseError",
+    "ConnectError",
     "ConnectTimeout",
     "CookieConflict",
     "DecodingError",
     "HTTPError",
+    "HTTPStatusError",
     "InvalidURL",
     "NetworkError",
     "NotRedirectResponse",
     "PoolTimeout",
     "ProtocolError",
+    "ReadError",
     "ReadTimeout",
+    "RedirectError",
     "RequestBodyUnavailable",
     "ResponseClosed",
     "ResponseNotRead",
     "RequestNotRead",
     "StreamConsumed",
+    "StreamError",
     "ProxyError",
+    "TimeoutException",
     "TooManyRedirects",
+    "WriteError",
     "WriteTimeout",
     "URL",
     "URLLib3Transport",
@@ -82,6 +97,5 @@ __all__ = [
     "Request",
     "Response",
     "DigestAuth",
-    "WSGIDispatch",
     "WSGITransport",
 ]

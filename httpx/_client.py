@@ -18,7 +18,14 @@ from ._config import (
     UnsetType,
 )
 from ._content_streams import ContentStream
-from ._exceptions import HTTPError, InvalidURL, RequestBodyUnavailable, TooManyRedirects
+from ._exceptions import (
+    HTTPCORE_EXC_MAP,
+    HTTPError,
+    InvalidURL,
+    RequestBodyUnavailable,
+    TooManyRedirects,
+    map_exceptions,
+)
 from ._models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
@@ -41,7 +48,6 @@ from ._utils import (
     get_environment_proxies,
     get_logger,
     should_not_be_proxied,
-    warn_deprecated,
 )
 
 logger = get_logger(__name__)
@@ -67,9 +73,6 @@ class BaseClient:
         else:
             self.base_url = URL(base_url)
 
-        if params is None:
-            params = {}
-
         self.auth = auth
         self._params = QueryParams(params)
         self._headers = Headers(headers)
@@ -79,7 +82,7 @@ class BaseClient:
         self.trust_env = trust_env
         self.netrc = NetRCInfo()
 
-    def get_proxy_map(
+    def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
     ) -> typing.Dict[str, Proxy]:
         if proxies is None:
@@ -92,22 +95,11 @@ class BaseClient:
         elif isinstance(proxies, (str, URL, Proxy)):
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
             return {"all": proxy}
-        elif isinstance(proxies, httpcore.AsyncHTTPTransport):  # pragma: nocover
-            raise RuntimeError(
-                "Passing a transport instance to 'proxies=' is no longer "
-                "supported. Use `httpx.Proxy() instead.`"
-            )
         else:
             new_proxies = {}
             for key, value in proxies.items():
-                if isinstance(value, (str, URL, Proxy)):
-                    proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
-                    new_proxies[str(key)] = proxy
-                elif isinstance(value, httpcore.AsyncHTTPTransport):  # pragma: nocover
-                    raise RuntimeError(
-                        "Passing a transport instance to 'proxies=' is "
-                        "no longer supported. Use `httpx.Proxy() instead.`"
-                    )
+                proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
+                new_proxies[str(key)] = proxy
             return new_proxies
 
     @property
@@ -191,10 +183,10 @@ class BaseClient:
         """
         Build and return a request instance.
         """
-        url = self.merge_url(url)
-        headers = self.merge_headers(headers)
-        cookies = self.merge_cookies(cookies)
-        params = self.merge_queryparams(params)
+        url = self._merge_url(url)
+        headers = self._merge_headers(headers)
+        cookies = self._merge_cookies(cookies)
+        params = self._merge_queryparams(params)
         return Request(
             method,
             url,
@@ -206,7 +198,7 @@ class BaseClient:
             cookies=cookies,
         )
 
-    def merge_url(self, url: URLTypes) -> URL:
+    def _merge_url(self, url: URLTypes) -> URL:
         """
         Merge a URL argument together with any 'base_url' on the client,
         to create the URL used for the outgoing request.
@@ -217,7 +209,7 @@ class BaseClient:
             url = url.copy_with(scheme="https", port=port)
         return url
 
-    def merge_cookies(
+    def _merge_cookies(
         self, cookies: CookieTypes = None
     ) -> typing.Optional[CookieTypes]:
         """
@@ -230,7 +222,7 @@ class BaseClient:
             return merged_cookies
         return cookies
 
-    def merge_headers(
+    def _merge_headers(
         self, headers: HeaderTypes = None
     ) -> typing.Optional[HeaderTypes]:
         """
@@ -243,7 +235,7 @@ class BaseClient:
             return merged_headers
         return headers
 
-    def merge_queryparams(
+    def _merge_queryparams(
         self, params: QueryParamTypes = None
     ) -> typing.Optional[QueryParamTypes]:
         """
@@ -256,7 +248,7 @@ class BaseClient:
             return merged_queryparams
         return params
 
-    def build_auth(self, request: Request, auth: AuthTypes = None) -> Auth:
+    def _build_auth(self, request: Request, auth: AuthTypes = None) -> Auth:
         auth = self.auth if auth is None else auth
 
         if auth is not None:
@@ -279,21 +271,21 @@ class BaseClient:
 
         return Auth()
 
-    def build_redirect_request(self, request: Request, response: Response) -> Request:
+    def _build_redirect_request(self, request: Request, response: Response) -> Request:
         """
         Given a request and a redirect response, return a new request that
         should be used to effect the redirect.
         """
-        method = self.redirect_method(request, response)
-        url = self.redirect_url(request, response)
-        headers = self.redirect_headers(request, url, method)
-        stream = self.redirect_stream(request, method)
+        method = self._redirect_method(request, response)
+        url = self._redirect_url(request, response)
+        headers = self._redirect_headers(request, url, method)
+        stream = self._redirect_stream(request, method)
         cookies = Cookies(self.cookies)
         return Request(
             method=method, url=url, headers=headers, cookies=cookies, stream=stream
         )
 
-    def redirect_method(self, request: Request, response: Response) -> str:
+    def _redirect_method(self, request: Request, response: Response) -> str:
         """
         When being redirected we may want to change the method of the request
         based on certain specs or browser behavior.
@@ -316,7 +308,7 @@ class BaseClient:
 
         return method
 
-    def redirect_url(self, request: Request, response: Response) -> URL:
+    def _redirect_url(self, request: Request, response: Response) -> URL:
         """
         Return the URL for the redirect to follow.
         """
@@ -344,7 +336,7 @@ class BaseClient:
 
         return url
 
-    def redirect_headers(self, request: Request, url: URL, method: str) -> Headers:
+    def _redirect_headers(self, request: Request, url: URL, method: str) -> Headers:
         """
         Return the headers that should be used for the redirect request.
         """
@@ -368,7 +360,7 @@ class BaseClient:
 
         return headers
 
-    def redirect_stream(
+    def _redirect_stream(
         self, request: Request, method: str
     ) -> typing.Optional[ContentStream]:
         """
@@ -426,7 +418,6 @@ class Client(BaseClient):
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
-    * **dispatch** - *(optional)* A deprecated alias for transport.
     * **app** - *(optional)* An WSGI application to send requests to,
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
@@ -449,7 +440,6 @@ class Client(BaseClient):
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         transport: httpcore.SyncHTTPTransport = None,
-        dispatch: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
     ):
@@ -464,17 +454,9 @@ class Client(BaseClient):
             trust_env=trust_env,
         )
 
-        proxy_map = self.get_proxy_map(proxies, trust_env)
+        proxy_map = self._get_proxy_map(proxies, trust_env)
 
-        if dispatch is not None:
-            warn_deprecated(
-                "The dispatch argument is deprecated since v0.13 and will be "
-                "removed in a future release, please use 'transport'"
-            )
-            if transport is None:
-                transport = dispatch
-
-        self.transport = self.init_transport(
+        self._transport = self._init_transport(
             verify=verify,
             cert=cert,
             http2=http2,
@@ -483,8 +465,8 @@ class Client(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self.proxies: typing.Dict[str, httpcore.SyncHTTPTransport] = {
-            key: self.init_proxy_transport(
+        self._proxies: typing.Dict[str, httpcore.SyncHTTPTransport] = {
+            key: self._init_proxy_transport(
                 proxy,
                 verify=verify,
                 cert=cert,
@@ -495,7 +477,7 @@ class Client(BaseClient):
             for key, proxy in proxy_map.items()
         }
 
-    def init_transport(
+    def _init_transport(
         self,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
@@ -523,7 +505,7 @@ class Client(BaseClient):
             http2=http2,
         )
 
-    def init_proxy_transport(
+    def _init_proxy_transport(
         self,
         proxy: Proxy,
         verify: VerifyTypes = True,
@@ -547,12 +529,12 @@ class Client(BaseClient):
             http2=http2,
         )
 
-    def transport_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
+    def _transport_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
         """
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        if self.proxies and not should_not_be_proxied(url):
+        if self._proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
             )
@@ -566,11 +548,11 @@ class Client(BaseClient):
                 "all",
             )
             for proxy_key in proxy_keys:
-                if proxy_key and proxy_key in self.proxies:
-                    transport = self.proxies[proxy_key]
+                if proxy_key and proxy_key in self._proxies:
+                    transport = self._proxies[proxy_key]
                     return transport
 
-        return self.transport
+        return self._transport
 
     def request(
         self,
@@ -615,9 +597,9 @@ class Client(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        auth = self.build_auth(request, auth)
+        auth = self._build_auth(request, auth)
 
-        response = self.send_handling_redirects(
+        response = self._send_handling_redirects(
             request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
         )
 
@@ -629,7 +611,7 @@ class Client(BaseClient):
 
         return response
 
-    def send_handling_redirects(
+    def _send_handling_redirects(
         self,
         request: Request,
         auth: Auth,
@@ -644,7 +626,7 @@ class Client(BaseClient):
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
 
-            response = self.send_handling_auth(
+            response = self._send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
             )
             response.history = list(history)
@@ -654,12 +636,12 @@ class Client(BaseClient):
 
             if allow_redirects:
                 response.read()
-            request = self.build_redirect_request(request, response)
+            request = self._build_redirect_request(request, response)
             history = history + [response]
 
             if not allow_redirects:
                 response.call_next = functools.partial(
-                    self.send_handling_redirects,
+                    self._send_handling_redirects,
                     request=request,
                     auth=auth,
                     timeout=timeout,
@@ -668,7 +650,7 @@ class Client(BaseClient):
                 )
                 return response
 
-    def send_handling_auth(
+    def _send_handling_auth(
         self,
         request: Request,
         history: typing.List[Response],
@@ -681,7 +663,7 @@ class Client(BaseClient):
         auth_flow = auth.auth_flow(request)
         request = next(auth_flow)
         while True:
-            response = self.send_single_request(request, timeout)
+            response = self._send_single_request(request, timeout)
             if auth.requires_response_body:
                 response.read()
             try:
@@ -697,27 +679,28 @@ class Client(BaseClient):
                 request = next_request
                 history.append(response)
 
-    def send_single_request(self, request: Request, timeout: Timeout) -> Response:
+    def _send_single_request(self, request: Request, timeout: Timeout) -> Response:
         """
         Sends a single request, without handling any redirections.
         """
 
-        transport = self.transport_for_url(request.url)
+        transport = self._transport_for_url(request.url)
 
         try:
-            (
-                http_version,
-                status_code,
-                reason_phrase,
-                headers,
-                stream,
-            ) = transport.request(
-                request.method.encode(),
-                request.url.raw,
-                headers=request.headers.raw,
-                stream=request.stream,
-                timeout=timeout.as_dict(),
-            )
+            with map_exceptions(HTTPCORE_EXC_MAP):
+                (
+                    http_version,
+                    status_code,
+                    reason_phrase,
+                    headers,
+                    stream,
+                ) = transport.request(
+                    request.method.encode(),
+                    request.url.raw,
+                    headers=request.headers.raw,
+                    stream=request.stream,
+                    timeout=timeout.as_dict(),
+                )
         except HTTPError as exc:
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
@@ -914,8 +897,8 @@ class Client(BaseClient):
         )
 
     def close(self) -> None:
-        self.transport.close()
-        for proxy in self.proxies.values():
+        self._transport.close()
+        for proxy in self._proxies.values():
             proxy.close()
 
     def __enter__(self) -> "Client":
@@ -973,7 +956,6 @@ class AsyncClient(BaseClient):
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
-    * **dispatch** - *(optional)* A deprecated alias for transport.
     * **app** - *(optional)* An ASGI application to send requests to,
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
@@ -996,7 +978,6 @@ class AsyncClient(BaseClient):
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         transport: httpcore.AsyncHTTPTransport = None,
-        dispatch: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
     ):
@@ -1011,17 +992,9 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
-        if dispatch is not None:
-            warn_deprecated(
-                "The dispatch argument is deprecated since v0.13 and will be "
-                "removed in a future release, please use 'transport'",
-            )
-            if transport is None:
-                transport = dispatch
+        proxy_map = self._get_proxy_map(proxies, trust_env)
 
-        proxy_map = self.get_proxy_map(proxies, trust_env)
-
-        self.transport = self.init_transport(
+        self._transport = self._init_transport(
             verify=verify,
             cert=cert,
             http2=http2,
@@ -1030,8 +1003,8 @@ class AsyncClient(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self.proxies: typing.Dict[str, httpcore.AsyncHTTPTransport] = {
-            key: self.init_proxy_transport(
+        self._proxies: typing.Dict[str, httpcore.AsyncHTTPTransport] = {
+            key: self._init_proxy_transport(
                 proxy,
                 verify=verify,
                 cert=cert,
@@ -1042,7 +1015,7 @@ class AsyncClient(BaseClient):
             for key, proxy in proxy_map.items()
         }
 
-    def init_transport(
+    def _init_transport(
         self,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
@@ -1070,7 +1043,7 @@ class AsyncClient(BaseClient):
             http2=http2,
         )
 
-    def init_proxy_transport(
+    def _init_proxy_transport(
         self,
         proxy: Proxy,
         verify: VerifyTypes = True,
@@ -1094,12 +1067,12 @@ class AsyncClient(BaseClient):
             http2=http2,
         )
 
-    def transport_for_url(self, url: URL) -> httpcore.AsyncHTTPTransport:
+    def _transport_for_url(self, url: URL) -> httpcore.AsyncHTTPTransport:
         """
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        if self.proxies and not should_not_be_proxied(url):
+        if self._proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
             )
@@ -1113,11 +1086,11 @@ class AsyncClient(BaseClient):
                 "all",
             )
             for proxy_key in proxy_keys:
-                if proxy_key and proxy_key in self.proxies:
-                    transport = self.proxies[proxy_key]
+                if proxy_key and proxy_key in self._proxies:
+                    transport = self._proxies[proxy_key]
                     return transport
 
-        return self.transport
+        return self._transport
 
     async def request(
         self,
@@ -1163,9 +1136,9 @@ class AsyncClient(BaseClient):
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        auth = self.build_auth(request, auth)
+        auth = self._build_auth(request, auth)
 
-        response = await self.send_handling_redirects(
+        response = await self._send_handling_redirects(
             request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
         )
 
@@ -1177,7 +1150,7 @@ class AsyncClient(BaseClient):
 
         return response
 
-    async def send_handling_redirects(
+    async def _send_handling_redirects(
         self,
         request: Request,
         auth: Auth,
@@ -1192,7 +1165,7 @@ class AsyncClient(BaseClient):
             if len(history) > self.max_redirects:
                 raise TooManyRedirects()
 
-            response = await self.send_handling_auth(
+            response = await self._send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
             )
             response.history = list(history)
@@ -1202,12 +1175,12 @@ class AsyncClient(BaseClient):
 
             if allow_redirects:
                 await response.aread()
-            request = self.build_redirect_request(request, response)
+            request = self._build_redirect_request(request, response)
             history = history + [response]
 
             if not allow_redirects:
                 response.call_next = functools.partial(
-                    self.send_handling_redirects,
+                    self._send_handling_redirects,
                     request=request,
                     auth=auth,
                     timeout=timeout,
@@ -1216,7 +1189,7 @@ class AsyncClient(BaseClient):
                 )
                 return response
 
-    async def send_handling_auth(
+    async def _send_handling_auth(
         self,
         request: Request,
         history: typing.List[Response],
@@ -1229,7 +1202,7 @@ class AsyncClient(BaseClient):
         auth_flow = auth.auth_flow(request)
         request = next(auth_flow)
         while True:
-            response = await self.send_single_request(request, timeout)
+            response = await self._send_single_request(request, timeout)
             if auth.requires_response_body:
                 await response.aread()
             try:
@@ -1245,29 +1218,30 @@ class AsyncClient(BaseClient):
                 request = next_request
                 history.append(response)
 
-    async def send_single_request(
+    async def _send_single_request(
         self, request: Request, timeout: Timeout,
     ) -> Response:
         """
         Sends a single request, without handling any redirections.
         """
 
-        transport = self.transport_for_url(request.url)
+        transport = self._transport_for_url(request.url)
 
         try:
-            (
-                http_version,
-                status_code,
-                reason_phrase,
-                headers,
-                stream,
-            ) = await transport.request(
-                request.method.encode(),
-                request.url.raw,
-                headers=request.headers.raw,
-                stream=request.stream,
-                timeout=timeout.as_dict(),
-            )
+            with map_exceptions(HTTPCORE_EXC_MAP):
+                (
+                    http_version,
+                    status_code,
+                    reason_phrase,
+                    headers,
+                    stream,
+                ) = await transport.request(
+                    request.method.encode(),
+                    request.url.raw,
+                    headers=request.headers.raw,
+                    stream=request.stream,
+                    timeout=timeout.as_dict(),
+                )
         except HTTPError as exc:
             # Add the original request to any HTTPError unless
             # there'a already a request attached in the case of
@@ -1464,8 +1438,8 @@ class AsyncClient(BaseClient):
         )
 
     async def aclose(self) -> None:
-        await self.transport.aclose()
-        for proxy in self.proxies.values():
+        await self._transport.aclose()
+        for proxy in self._proxies.values():
             await proxy.aclose()
 
     async def __aenter__(self) -> "AsyncClient":
