@@ -20,7 +20,6 @@ from ._config import (
 from ._content_streams import ContentStream
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
-    HTTPError,
     InvalidURL,
     RequestBodyUnavailable,
     TooManyRedirects,
@@ -690,28 +689,20 @@ class Client(BaseClient):
 
         transport = self._transport_for_url(request.url)
 
-        try:
-            with map_exceptions(HTTPCORE_EXC_MAP):
-                (
-                    http_version,
-                    status_code,
-                    reason_phrase,
-                    headers,
-                    stream,
-                ) = transport.request(
-                    request.method.encode(),
-                    request.url.raw,
-                    headers=request.headers.raw,
-                    stream=request.stream,
-                    timeout=timeout.as_dict(),
-                )
-        except HTTPError as exc:
-            # Add the original request to any HTTPError unless
-            # there'a already a request attached in the case of
-            # a ProxyError.
-            if exc._request is None:
-                exc._request = request
-            raise
+        with map_exceptions(HTTPCORE_EXC_MAP, request=request):
+            (
+                http_version,
+                status_code,
+                reason_phrase,
+                headers,
+                stream,
+            ) = transport.request(
+                request.method.encode(),
+                request.url.raw,
+                headers=request.headers.raw,
+                stream=request.stream,
+                timeout=timeout.as_dict(),
+            )
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),
@@ -1231,28 +1222,20 @@ class AsyncClient(BaseClient):
 
         transport = self._transport_for_url(request.url)
 
-        try:
-            with map_exceptions(HTTPCORE_EXC_MAP):
-                (
-                    http_version,
-                    status_code,
-                    reason_phrase,
-                    headers,
-                    stream,
-                ) = await transport.request(
-                    request.method.encode(),
-                    request.url.raw,
-                    headers=request.headers.raw,
-                    stream=request.stream,
-                    timeout=timeout.as_dict(),
-                )
-        except HTTPError as exc:
-            # Add the original request to any HTTPError unless
-            # there'a already a request attached in the case of
-            # a ProxyError.
-            if exc._request is None:
-                exc._request = request
-            raise
+        with map_exceptions(HTTPCORE_EXC_MAP, request=request):
+            (
+                http_version,
+                status_code,
+                reason_phrase,
+                headers,
+                stream,
+            ) = await transport.request(
+                request.method.encode(),
+                request.url.raw,
+                headers=request.headers.raw,
+                stream=request.stream,
+                timeout=timeout.as_dict(),
+            )
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),
