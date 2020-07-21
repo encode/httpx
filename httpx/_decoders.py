@@ -261,7 +261,7 @@ class LineDecoder:
                     text = text[idx + 1 :]
                     break
                 elif next_char is None:
-                    self.buffer = text
+                    self.buffer += text
                     text = ""
                     break
 
