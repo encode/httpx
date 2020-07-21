@@ -48,25 +48,15 @@ def test_response_content_type_encoding():
     assert response.encoding == "latin-1"
 
 
-def test_response_autodetect_encoding():
+def test_response_fallback_to_utf8():
     """
-    Autodetect encoding if there is no charset info in a Content-Type header.
-    """
-    content = "おはようございます。".encode("EUC-JP")
-    response = httpx.Response(200, content=content, request=REQUEST)
-    assert response.text == "おはようございます。"
-    assert response.encoding == "EUC-JP"
-
-
-def test_response_fallback_to_autodetect():
-    """
-    Fallback to autodetection if we get an invalid charset in the Content-Type header.
+    Fallback to utf-8 if we get an invalid charset in the Content-Type header.
     """
     headers = {"Content-Type": "text-plain; charset=invalid-codec-name"}
-    content = "おはようございます。".encode("EUC-JP")
+    content = "おはようございます。".encode("utf-8")
     response = httpx.Response(200, content=content, headers=headers, request=REQUEST)
     assert response.text == "おはようございます。"
-    assert response.encoding == "EUC-JP"
+    assert response.encoding == "utf-8"
 
 
 def test_response_default_text_encoding():
@@ -84,10 +74,11 @@ def test_response_default_text_encoding():
 
 def test_response_default_encoding():
     """
-    Default to utf-8 if all else fails.
+    Default to utf-8 for decoding.
     """
-    response = httpx.Response(200, content=b"", request=REQUEST)
-    assert response.text == ""
+    content = "おはようございます。".encode("utf-8")
+    response = httpx.Response(200, content=content, request=REQUEST)
+    assert response.text == "おはようございます。"
     assert response.encoding == "utf-8"
 
 
@@ -98,7 +89,7 @@ def test_response_non_text_encoding():
     headers = {"Content-Type": "image/png"}
     response = httpx.Response(200, content=b"xyz", headers=headers, request=REQUEST)
     assert response.text == "xyz"
-    assert response.encoding == "ascii"
+    assert response.encoding == "utf-8"
 
 
 def test_response_set_explicit_encoding():
@@ -129,7 +120,7 @@ def test_read():
 
     assert response.status_code == 200
     assert response.text == "Hello, world!"
-    assert response.encoding == "ascii"
+    assert response.encoding == "utf-8"
     assert response.is_closed
 
     content = response.read()
@@ -145,7 +136,7 @@ async def test_aread():
 
     assert response.status_code == 200
     assert response.text == "Hello, world!"
-    assert response.encoding == "ascii"
+    assert response.encoding == "utf-8"
     assert response.is_closed
 
     content = await response.aread()

@@ -8,7 +8,6 @@ from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
 
-import chardet
 import rfc3986
 
 from .__version__ import __version__
@@ -750,9 +749,7 @@ class Response:
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
-                encoding = self.apparent_encoding
-                if encoding is None or not is_known_encoding(encoding):
-                    encoding = "utf-8"
+                encoding = "utf-8"
             self._encoding = encoding
         return self._encoding
 
@@ -781,13 +778,6 @@ class Response:
             return "iso-8859-1"
 
         return None
-
-    @property
-    def apparent_encoding(self) -> typing.Optional[str]:
-        """
-        Return the encoding, as it appears to autodetection.
-        """
-        return chardet.detect(self.content)["encoding"]
 
     @property
     def decoder(self) -> Decoder:
