@@ -20,13 +20,12 @@ from ._config import (
 from ._content_streams import ContentStream
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
-    HTTPError,
     InvalidURL,
     RequestBodyUnavailable,
     TooManyRedirects,
     map_exceptions,
 )
-from ._models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
+from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
 from ._transports.wsgi import WSGITransport
@@ -48,6 +47,7 @@ from ._utils import (
     enforce_http_url,
     get_environment_proxies,
     get_logger,
+    same_origin,
     should_not_be_proxied,
 )
 
@@ -81,7 +81,7 @@ class BaseClient:
         self.timeout = Timeout(timeout)
         self.max_redirects = max_redirects
         self.trust_env = trust_env
-        self.netrc = NetRCInfo()
+        self._netrc = NetRCInfo()
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
@@ -270,7 +270,7 @@ class BaseClient:
             return BasicAuth(username=username, password=password)
 
         if self.trust_env and "Authorization" not in request.headers:
-            credentials = self.netrc.get_credentials(request.url.authority)
+            credentials = self._netrc.get_credentials(request.url.authority)
             if credentials is not None:
                 return BasicAuth(username=credentials[0], password=credentials[1])
 
@@ -347,7 +347,7 @@ class BaseClient:
         """
         headers = Headers(request.headers)
 
-        if Origin(url) != Origin(request.url):
+        if not same_origin(url, request.url):
             # Strip Authorization headers when responses are redirected away from
             # the origin.
             headers.pop("Authorization", None)
@@ -377,7 +377,8 @@ class BaseClient:
         if not request.stream.can_replay():
             raise RequestBodyUnavailable(
                 "Got a redirect response, but the request body was streaming "
-                "and is no longer available."
+                "and is no longer available.",
+                request=request,
             )
 
         return request.stream
@@ -631,7 +632,9 @@ class Client(BaseClient):
 
         while True:
             if len(history) > self.max_redirects:
-                raise TooManyRedirects()
+                raise TooManyRedirects(
+                    "Exceeded maximum allowed redirects.", request=request
+                )
 
             response = self._send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
@@ -692,28 +695,20 @@ class Client(BaseClient):
         """
         transport = self._transport_for_url(request.url)
 
-        try:
-            with map_exceptions(HTTPCORE_EXC_MAP):
-                (
-                    http_version,
-                    status_code,
-                    reason_phrase,
-                    headers,
-                    stream,
-                ) = transport.request(
-                    request.method.encode(),
-                    request.url.raw,
-                    headers=request.headers.raw,
-                    stream=request.stream,
-                    timeout=timeout.as_dict(),
-                )
-        except HTTPError as exc:
-            # Add the original request to any HTTPError unless
-            # there'a already a request attached in the case of
-            # a ProxyError.
-            if exc._request is None:
-                exc._request = request
-            raise
+        with map_exceptions(HTTPCORE_EXC_MAP, request=request):
+            (
+                http_version,
+                status_code,
+                reason_phrase,
+                headers,
+                stream,
+            ) = transport.request(
+                request.method.encode(),
+                request.url.raw,
+                headers=request.headers.raw,
+                stream=request.stream,
+                timeout=timeout.as_dict(),
+            )
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),
@@ -1168,7 +1163,9 @@ class AsyncClient(BaseClient):
 
         while True:
             if len(history) > self.max_redirects:
-                raise TooManyRedirects()
+                raise TooManyRedirects(
+                    "Exceeded maximum allowed redirects.", request=request
+                )
 
             response = await self._send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
@@ -1231,28 +1228,20 @@ class AsyncClient(BaseClient):
         """
         transport = self._transport_for_url(request.url)
 
-        try:
-            with map_exceptions(HTTPCORE_EXC_MAP):
-                (
-                    http_version,
-                    status_code,
-                    reason_phrase,
-                    headers,
-                    stream,
-                ) = await transport.request(
-                    request.method.encode(),
-                    request.url.raw,
-                    headers=request.headers.raw,
-                    stream=request.stream,
-                    timeout=timeout.as_dict(),
-                )
-        except HTTPError as exc:
-            # Add the original request to any HTTPError unless
-            # there'a already a request attached in the case of
-            # a ProxyError.
-            if exc._request is None:
-                exc._request = request
-            raise
+        with map_exceptions(HTTPCORE_EXC_MAP, request=request):
+            (
+                http_version,
+                status_code,
+                reason_phrase,
+                headers,
+                stream,
+            ) = await transport.request(
+                request.method.encode(),
+                request.url.raw,
+                headers=request.headers.raw,
+                stream=request.stream,
+                timeout=timeout.as_dict(),
+            )
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),

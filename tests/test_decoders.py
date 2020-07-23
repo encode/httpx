@@ -247,14 +247,13 @@ def test_line_decoder_cr():
     assert decoder.flush() == ["c\n"]
 
     # Issue #1033
-    # TODO: This seems like another bug; fix expectations and results.
     decoder = LineDecoder()
     assert decoder.decode("") == []
     assert decoder.decode("12345\r") == []
-    assert decoder.decode("foo ") == []
+    assert decoder.decode("foo ") == ["12345\n"]
     assert decoder.decode("bar ") == []
     assert decoder.decode("baz\r") == []
-    assert decoder.flush() == ["12345\rfoo bar baz\n"]
+    assert decoder.flush() == ["foo bar baz\n"]
 
 
 def test_line_decoder_crnl():

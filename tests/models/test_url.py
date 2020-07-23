@@ -1,7 +1,6 @@
 import pytest
 
 from httpx import URL
-from httpx._models import Origin
 
 
 @pytest.mark.parametrize(
@@ -172,34 +171,6 @@ def test_url_set():
     url_set = set(urls)
 
     assert all(url in urls for url in url_set)
-
-
-def test_url_full_path_setter():
-    url = URL("http://example.org")
-
-    url.full_path = "http://example.net"
-    assert url.full_path == "http://example.net"
-
-
-def test_origin_from_url_string():
-    origin = Origin("https://example.com")
-    assert origin.scheme == "https"
-    assert origin.is_ssl
-    assert origin.host == "example.com"
-    assert origin.port == 443
-
-
-def test_origin_repr():
-    origin = Origin("https://example.com:8080")
-    assert str(origin) == "Origin(scheme='https' host='example.com' port=8080)"
-
-
-def test_origin_equal():
-    origin1 = Origin("https://example.com")
-    origin2 = Origin("https://example.com")
-    assert origin1 is not origin2
-    assert origin1 == origin2
-    assert len({origin1, origin2}) == 1
 
 
 def test_url_copywith_for_authority():
