@@ -18,15 +18,19 @@ async def test_get(server):
     assert response.elapsed > timedelta(seconds=0)
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        pytest.param("invalid://example.org", id="scheme-not-http(s)"),
+        pytest.param("://example.org", id="no-scheme"),
+        pytest.param("http://", id="no-host"),
+    ],
+)
 @pytest.mark.usefixtures("async_environment")
-async def test_get_invalid_url(server):
+async def test_get_invalid_url(server, url):
     async with httpx.AsyncClient() as client:
         with pytest.raises(httpx.InvalidURL):
-            await client.get("invalid://example.org")
-        with pytest.raises(httpx.InvalidURL):
-            await client.get("://example.org")
-        with pytest.raises(httpx.InvalidURL):
-            await client.get("http://")
+            await client.get(url)
 
 
 @pytest.mark.usefixtures("async_environment")
