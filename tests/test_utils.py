@@ -303,7 +303,7 @@ def test_same_origin():
     assert same_origin(origin1, origin2)
 
 
-def test_now_same_origin():
+def test_not_same_origin():
     origin1 = httpx.URL("https://example.com")
     origin2 = httpx.URL("HTTP://EXAMPLE.COM")
     assert not same_origin(origin1, origin2)
