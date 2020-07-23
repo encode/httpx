@@ -23,6 +23,10 @@ async def test_get_invalid_url(server):
     async with httpx.AsyncClient() as client:
         with pytest.raises(httpx.InvalidURL):
             await client.get("invalid://example.org")
+        with pytest.raises(httpx.InvalidURL):
+            await client.get("://example.org")
+        with pytest.raises(httpx.InvalidURL):
+            await client.get("http://")
 
 
 @pytest.mark.usefixtures("async_environment")

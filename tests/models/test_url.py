@@ -1,6 +1,6 @@
 import pytest
 
-from httpx import URL, InvalidURL
+from httpx import URL
 
 
 @pytest.mark.parametrize(
@@ -115,9 +115,6 @@ def test_url_join_rfc3986():
     """
 
     url = URL("http://example.com/b/c/d;p?q")
-
-    with pytest.raises(InvalidURL):
-        assert url.join("g:h") == "g:h"
 
     assert url.join("g") == "http://example.com/b/c/g"
     assert url.join("./g") == "http://example.com/b/c/g"
