@@ -191,12 +191,18 @@ class LineDecoder:
     def decode(self, text: str) -> typing.List[str]:
         lines = []
 
-        if text.startswith("\n") and self.buffer and self.buffer[-1] == "\r":
-            # Handle the case where we have an "\r\n" split across
-            # our previous input, and our new chunk.
-            lines.append(self.buffer[:-1] + "\n")
-            self.buffer = ""
-            text = text[1:]
+        if text and self.buffer and self.buffer[-1] == "\r":
+            if text.startswith("\n"):
+                # Handle the case where we have an "\r\n" split across
+                # our previous input, and our new chunk.
+                lines.append(self.buffer[:-1] + "\n")
+                self.buffer = ""
+                text = text[1:]
+            else:
+                # Handle the case where we have "\r" at the end of our
+                # previous input.
+                lines.append(self.buffer[:-1] + "\n")
+                self.buffer = ""
 
         while text:
             num_chars = len(text)

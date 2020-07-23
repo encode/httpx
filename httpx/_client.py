@@ -20,13 +20,12 @@ from ._config import (
 from ._content_streams import ContentStream
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
-    HTTPError,
     InvalidURL,
     RequestBodyUnavailable,
     TooManyRedirects,
     map_exceptions,
 )
-from ._models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
+from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
 from ._transports.wsgi import WSGITransport
@@ -45,8 +44,10 @@ from ._types import (
 )
 from ._utils import (
     NetRCInfo,
+    enforce_http_url,
     get_environment_proxies,
     get_logger,
+    same_origin,
     should_not_be_proxied,
 )
 
@@ -69,7 +70,7 @@ class BaseClient:
         trust_env: bool = True,
     ):
         if base_url is None:
-            self.base_url = URL("", allow_relative=True)
+            self.base_url = URL("")
         else:
             self.base_url = URL(base_url)
 
@@ -80,7 +81,7 @@ class BaseClient:
         self.timeout = Timeout(timeout)
         self.max_redirects = max_redirects
         self.trust_env = trust_env
-        self.netrc = NetRCInfo()
+        self._netrc = NetRCInfo()
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
@@ -269,7 +270,7 @@ class BaseClient:
             return BasicAuth(username=username, password=password)
 
         if self.trust_env and "Authorization" not in request.headers:
-            credentials = self.netrc.get_credentials(request.url.authority)
+            credentials = self._netrc.get_credentials(request.url.authority)
             if credentials is not None:
                 return BasicAuth(username=credentials[0], password=credentials[1])
 
@@ -318,7 +319,7 @@ class BaseClient:
         """
         location = response.headers["Location"]
 
-        url = URL(location, allow_relative=True)
+        url = URL(location)
 
         # Check that we can handle the scheme
         if url.scheme and url.scheme not in ("http", "https"):
@@ -346,7 +347,7 @@ class BaseClient:
         """
         headers = Headers(request.headers)
 
-        if Origin(url) != Origin(request.url):
+        if not same_origin(url, request.url):
             # Strip Authorization headers when responses are redirected away from
             # the origin.
             headers.pop("Authorization", None)
@@ -376,7 +377,8 @@ class BaseClient:
         if not request.stream.can_replay():
             raise RequestBodyUnavailable(
                 "Got a redirect response, but the request body was streaming "
-                "and is no longer available."
+                "and is no longer available.",
+                request=request,
             )
 
         return request.stream
@@ -538,6 +540,8 @@ class Client(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
+        enforce_http_url(url)
+
         if self._proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
@@ -628,7 +632,9 @@ class Client(BaseClient):
 
         while True:
             if len(history) > self.max_redirects:
-                raise TooManyRedirects()
+                raise TooManyRedirects(
+                    "Exceeded maximum allowed redirects.", request=request
+                )
 
             response = self._send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
@@ -687,31 +693,22 @@ class Client(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-
         transport = self._transport_for_url(request.url)
 
-        try:
-            with map_exceptions(HTTPCORE_EXC_MAP):
-                (
-                    http_version,
-                    status_code,
-                    reason_phrase,
-                    headers,
-                    stream,
-                ) = transport.request(
-                    request.method.encode(),
-                    request.url.raw,
-                    headers=request.headers.raw,
-                    stream=request.stream,
-                    timeout=timeout.as_dict(),
-                )
-        except HTTPError as exc:
-            # Add the original request to any HTTPError unless
-            # there'a already a request attached in the case of
-            # a ProxyError.
-            if exc._request is None:
-                exc._request = request
-            raise
+        with map_exceptions(HTTPCORE_EXC_MAP, request=request):
+            (
+                http_version,
+                status_code,
+                reason_phrase,
+                headers,
+                stream,
+            ) = transport.request(
+                request.method.encode(),
+                request.url.raw,
+                headers=request.headers.raw,
+                stream=request.stream,
+                timeout=timeout.as_dict(),
+            )
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),
@@ -1076,6 +1073,8 @@ class AsyncClient(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
+        enforce_http_url(url)
+
         if self._proxies and not should_not_be_proxied(url):
             is_default_port = (url.scheme == "http" and url.port == 80) or (
                 url.scheme == "https" and url.port == 443
@@ -1135,9 +1134,6 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
-        if request.url.scheme not in ("http", "https"):
-            raise InvalidURL('URL scheme must be "http" or "https".')
-
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_auth(request, auth)
@@ -1167,7 +1163,9 @@ class AsyncClient(BaseClient):
 
         while True:
             if len(history) > self.max_redirects:
-                raise TooManyRedirects()
+                raise TooManyRedirects(
+                    "Exceeded maximum allowed redirects.", request=request
+                )
 
             response = await self._send_handling_auth(
                 request, auth=auth, timeout=timeout, history=history
@@ -1228,31 +1226,22 @@ class AsyncClient(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-
         transport = self._transport_for_url(request.url)
 
-        try:
-            with map_exceptions(HTTPCORE_EXC_MAP):
-                (
-                    http_version,
-                    status_code,
-                    reason_phrase,
-                    headers,
-                    stream,
-                ) = await transport.request(
-                    request.method.encode(),
-                    request.url.raw,
-                    headers=request.headers.raw,
-                    stream=request.stream,
-                    timeout=timeout.as_dict(),
-                )
-        except HTTPError as exc:
-            # Add the original request to any HTTPError unless
-            # there'a already a request attached in the case of
-            # a ProxyError.
-            if exc._request is None:
-                exc._request = request
-            raise
+        with map_exceptions(HTTPCORE_EXC_MAP, request=request):
+            (
+                http_version,
+                status_code,
+                reason_phrase,
+                headers,
+                stream,
+            ) = await transport.request(
+                request.method.encode(),
+                request.url.raw,
+                headers=request.headers.raw,
+                stream=request.stream,
+                timeout=timeout.as_dict(),
+            )
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),

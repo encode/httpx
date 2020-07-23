@@ -23,7 +23,6 @@ from ._decoders import (
 from ._exceptions import (
     CookieConflict,
     HTTPStatusError,
-    InvalidURL,
     NotRedirectResponse,
     RequestNotRead,
     ResponseClosed,
@@ -54,12 +53,7 @@ from ._utils import (
 
 
 class URL:
-    def __init__(
-        self,
-        url: URLTypes,
-        allow_relative: bool = False,
-        params: QueryParamTypes = None,
-    ) -> None:
+    def __init__(self, url: URLTypes, params: QueryParamTypes = None) -> None:
         if isinstance(url, str):
             self._uri_reference = rfc3986.api.iri_reference(url).encode()
         else:
@@ -78,17 +72,6 @@ class URL:
             else:
                 query_string = str(QueryParams(params))
             self._uri_reference = self._uri_reference.copy_with(query=query_string)
-
-        # Enforce absolute URLs by default.
-        if not allow_relative:
-            if not self.scheme:
-                raise InvalidURL("No scheme included in URL.")
-            if not self.host:
-                raise InvalidURL("No host included in URL.")
-
-        # Allow setting full_path to custom attributes requests
-        # like OPTIONS, CONNECT, and forwarding proxy requests.
-        self._full_path: typing.Optional[str] = None
 
     @property
     def scheme(self) -> str:
@@ -137,16 +120,10 @@ class URL:
 
     @property
     def full_path(self) -> str:
-        if self._full_path is not None:
-            return self._full_path
         path = self.path
         if self.query:
             path += "?" + self.query
         return path
-
-    @full_path.setter
-    def full_path(self, value: typing.Optional[str]) -> None:
-        self._full_path = value
 
     @property
     def fragment(self) -> str:
@@ -204,10 +181,7 @@ class URL:
 
             kwargs["authority"] = authority
 
-        return URL(
-            self._uri_reference.copy_with(**kwargs).unsplit(),
-            allow_relative=self.is_relative_url,
-        )
+        return URL(self._uri_reference.copy_with(**kwargs).unsplit(),)
 
     def join(self, relative_url: URLTypes) -> "URL":
         """
@@ -219,7 +193,7 @@ class URL:
         # We drop any fragment portion, because RFC 3986 strictly
         # treats URLs with a fragment portion as not being absolute URLs.
         base_uri = self._uri_reference.copy_with(fragment=None)
-        relative_url = URL(relative_url, allow_relative=True)
+        relative_url = URL(relative_url)
         return URL(relative_url._uri_reference.resolve_with(base_uri).unsplit())
 
     def __hash__(self) -> int:
@@ -241,37 +215,6 @@ class URL:
                 .unsplit()
             )
         return f"{class_name}({url_str!r})"
-
-
-class Origin:
-    """
-    The URL scheme and authority information, as a comparable, hashable object.
-    """
-
-    def __init__(self, url: URLTypes) -> None:
-        if not isinstance(url, URL):
-            url = URL(url)
-        self.scheme = url.scheme
-        self.is_ssl = url.is_ssl
-        self.host = url.host
-        self.port = url.port
-
-    def __eq__(self, other: typing.Any) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self.scheme == other.scheme
-            and self.host == other.host
-            and self.port == other.port
-        )
-
-    def __hash__(self) -> int:
-        return hash((self.scheme, self.host, self.port))
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return (
-            f"{class_name}(scheme={self.scheme!r} host={self.host!r} port={self.port})"
-        )
 
 
 class QueryParams(typing.Mapping[str, str]):
