@@ -272,7 +272,7 @@ def enforce_http_url(url: "URL") -> None:
     if url.scheme not in ("http", "https"):
         raise InvalidURL('URL scheme must be "http" or "https".')
 
-        
+
 def same_origin(url: "URL", other: "URL") -> bool:
     """
     Return 'True' if the given URLs share the same origin.
