@@ -100,7 +100,12 @@ class DigestAuth(Auth):
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         if not request.stream.can_replay():
-            raise RequestBodyUnavailable("Request body is no longer available.")
+            raise RequestBodyUnavailable(
+                "Cannot use digest auth with streaming requests that are unable "
+                "to replay the request body if a second request is required.",
+                request=request,
+            )
+
         response = yield request
 
         if response.status_code != 401 or "www-authenticate" not in response.headers:
