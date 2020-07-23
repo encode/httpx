@@ -26,7 +26,7 @@ from ._exceptions import (
     TooManyRedirects,
     map_exceptions,
 )
-from ._models import URL, Cookies, Headers, Origin, QueryParams, Request, Response
+from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
 from ._transports.wsgi import WSGITransport
@@ -47,6 +47,7 @@ from ._utils import (
     NetRCInfo,
     get_environment_proxies,
     get_logger,
+    same_origin,
     should_not_be_proxied,
 )
 
@@ -346,7 +347,7 @@ class BaseClient:
         """
         headers = Headers(request.headers)
 
-        if Origin(url) != Origin(request.url):
+        if not same_origin(url, request.url):
             # Strip Authorization headers when responses are redirected away from
             # the origin.
             headers.pop("Authorization", None)

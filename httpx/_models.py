@@ -234,37 +234,6 @@ class URL:
         return f"{class_name}({url_str!r})"
 
 
-class Origin:
-    """
-    The URL scheme and authority information, as a comparable, hashable object.
-    """
-
-    def __init__(self, url: URLTypes) -> None:
-        if not isinstance(url, URL):
-            url = URL(url)
-        self.scheme = url.scheme
-        self.is_ssl = url.is_ssl
-        self.host = url.host
-        self.port = url.port
-
-    def __eq__(self, other: typing.Any) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self.scheme == other.scheme
-            and self.host == other.host
-            and self.port == other.port
-        )
-
-    def __hash__(self) -> int:
-        return hash((self.scheme, self.host, self.port))
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return (
-            f"{class_name}(scheme={self.scheme!r} host={self.host!r} port={self.port})"
-        )
-
-
 class QueryParams(typing.Mapping[str, str]):
     """
     URL query parameters, as a multi-dict.

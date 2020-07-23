@@ -260,8 +260,18 @@ def get_logger(name: str) -> Logger:
     return typing.cast(Logger, logger)
 
 
+def same_origin(url: "URL", other: "URL") -> bool:
+    """
+    Return 'True' if the given URLs share the same origin.
+    """
+    return (
+        url.scheme == other.scheme and url.host == other.host and url.port == other.port
+    )
+
+
 def should_not_be_proxied(url: "URL") -> bool:
-    """ Return True if url should not be proxied,
+    """
+    Return True if url should not be proxied,
     return False otherwise.
     """
     no_proxy = getproxies().get("no")
