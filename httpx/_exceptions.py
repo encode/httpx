@@ -216,7 +216,8 @@ class CookieConflict(HTTPError):
 
 @contextlib.contextmanager
 def map_exceptions(
-    mapping: typing.Mapping[typing.Type[Exception], typing.Type[Exception]]
+    mapping: typing.Mapping[typing.Type[Exception], typing.Type[Exception]],
+    **kwargs: typing.Any,
 ) -> typing.Iterator[None]:
     try:
         yield
@@ -235,7 +236,8 @@ def map_exceptions(
         if mapped_exc is None:
             raise
 
-        raise mapped_exc(exc) from None
+        message = str(exc)
+        raise mapped_exc(message, **kwargs) from None  # type: ignore
 
 
 HTTPCORE_EXC_MAP = {
