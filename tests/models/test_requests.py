@@ -102,11 +102,11 @@ def test_url():
     url = "http://example.org"
     request = httpx.Request("GET", url)
     assert request.url.scheme == "http"
-    assert request.url.port == 80
+    assert request.url.port is None
     assert request.url.full_path == "/"
 
     url = "https://example.org/abc?foo=bar"
     request = httpx.Request("GET", url)
     assert request.url.scheme == "https"
-    assert request.url.port == 443
+    assert request.url.port is None
     assert request.url.full_path == "/abc?foo=bar"

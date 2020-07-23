@@ -214,7 +214,7 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
         ("https://example.com", "https://example.com", {}, "DEFAULT"),
         (
             "https://user:pass@example.com",
-            "https://example.com:443",
+            "https://example.com",
             {"proxy-authorization": "Basic dXNlcjpwYXNz"},
             "DEFAULT",
         ),

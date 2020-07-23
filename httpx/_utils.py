@@ -273,12 +273,20 @@ def enforce_http_url(url: "URL") -> None:
         raise InvalidURL('URL scheme must be "http" or "https".')
 
 
+def port_or_default(url: "URL") -> typing.Optional[int]:
+    if url.port is not None:
+        return url.port
+    return {"http": 80, "https": 443}.get(url.scheme)
+
+
 def same_origin(url: "URL", other: "URL") -> bool:
     """
     Return 'True' if the given URLs share the same origin.
     """
     return (
-        url.scheme == other.scheme and url.host == other.host and url.port == other.port
+        url.scheme == other.scheme
+        and url.host == other.host
+        and port_or_default(url) == port_or_default(other)
     )
 
 

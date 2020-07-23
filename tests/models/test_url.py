@@ -18,9 +18,9 @@ from httpx import URL
             "http://xn--knigsgchen-b4a3dun.de",
             "xn--knigsgchen-b4a3dun.de",
             "http",
-            80,
+            None,
         ),
-        ("https://faß.de", "https://xn--fa-hia.de", "xn--fa-hia.de", "https", 443),
+        ("https://faß.de", "https://xn--fa-hia.de", "xn--fa-hia.de", "https", None),
         (
             "https://βόλος.com:443",
             "https://xn--nxasmm1c.com:443",
