@@ -176,13 +176,6 @@ def test_url_set():
     assert all(url in urls for url in url_set)
 
 
-def test_url_full_path_setter():
-    url = URL("http://example.org")
-
-    url.full_path = "http://example.net"
-    assert url.full_path == "http://example.net"
-
-
 def test_url_copywith_for_authority():
     copy_with_kwargs = {
         "username": "username",
