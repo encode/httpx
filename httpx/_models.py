@@ -54,7 +54,7 @@ from ._utils import (
 
 
 class URL:
-    def __init__(self, url: URLTypes, params: QueryParamTypes = None,) -> None:
+    def __init__(self, url: URLTypes, params: QueryParamTypes = None) -> None:
         if isinstance(url, str):
             self._uri_reference = rfc3986.api.iri_reference(url).encode()
         else:
