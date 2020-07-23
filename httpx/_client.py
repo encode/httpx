@@ -81,7 +81,7 @@ class BaseClient:
         self.timeout = Timeout(timeout)
         self.max_redirects = max_redirects
         self.trust_env = trust_env
-        self.netrc = NetRCInfo()
+        self._netrc = NetRCInfo()
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
@@ -270,7 +270,7 @@ class BaseClient:
             return BasicAuth(username=username, password=password)
 
         if self.trust_env and "Authorization" not in request.headers:
-            credentials = self.netrc.get_credentials(request.url.authority)
+            credentials = self._netrc.get_credentials(request.url.authority)
             if credentials is not None:
                 return BasicAuth(username=credentials[0], password=credentials[1])
 
