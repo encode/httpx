@@ -22,14 +22,18 @@ def test_get(server):
     assert response.elapsed > timedelta(0)
 
 
-def test_get_invalid_url(server):
+@pytest.mark.parametrize(
+    "url",
+    [
+        pytest.param("invalid://example.org", id="scheme-not-http(s)"),
+        pytest.param("://example.org", id="no-scheme"),
+        pytest.param("http://", id="no-host"),
+    ],
+)
+def test_get_invalid_url(server, url):
     with httpx.Client() as client:
         with pytest.raises(httpx.InvalidURL):
-            client.get("invalid://example.org")
-        with pytest.raises(httpx.InvalidURL):
-            client.get("://example.org")
-        with pytest.raises(httpx.InvalidURL):
-            client.get("http://")
+            client.get(url)
 
 
 def test_build_request(server):
