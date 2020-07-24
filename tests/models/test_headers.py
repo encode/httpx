@@ -14,10 +14,11 @@ def test_headers():
     assert h.get("a") == "123, 456"
     assert h.get("nope", default=None) is None
     assert h.getlist("a") == ["123", "456"]
-    assert h.keys() == ["a", "a", "b"]
-    assert h.values() == ["123", "456", "789"]
-    assert h.items() == [("a", "123"), ("a", "456"), ("b", "789")]
-    assert list(h) == ["a", "a", "b"]
+    assert h.keys() == ["a", "b"]
+    assert h.values() == ["123, 456", "789"]
+    assert h.items() == [("a", "123, 456"), ("b", "789")]
+    assert h.multi_items() == [("a", "123"), ("a", "456"), ("b", "789")]
+    assert list(h) == ["a", "b"]
     assert dict(h) == {"a": "123, 456", "b": "789"}
     assert repr(h) == "Headers([('a', '123'), ('a', '456'), ('b', '789')])"
     assert h == httpx.Headers([("a", "123"), ("b", "789"), ("a", "456")])
