@@ -195,6 +195,7 @@ class Timeout:
 
     **Usage**:
 
+    Timeout(None)                       # No timeouts.
     Timeout(5.0)                        # 5s timeout on all operations.
     Timeout(None, connect_timeout=5.0)  # 5s timeout on connect, no other timeouts.
     Timeout(5.0, connect_timeout=10.0)  # 10s timeout on connect. 5s timeout elsewhere.
