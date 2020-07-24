@@ -132,8 +132,15 @@ def test_timeout_eq():
     assert timeout == httpx.Timeout(timeout=5.0)
 
 
+def test_timeout_all_parameters_set():
+    timeout = httpx.Timeout(
+        connect_timeout=5.0, read_timeout=5.0, write_timeout=5.0, pool_timeout=5.0
+    )
+    assert timeout == httpx.Timeout(timeout=5.0)
+
+
 def test_timeout_from_nothing():
-    timeout = httpx.Timeout()
+    timeout = httpx.Timeout(None)
     assert timeout.connect_timeout is None
     assert timeout.read_timeout is None
     assert timeout.write_timeout is None
@@ -142,16 +149,16 @@ def test_timeout_from_nothing():
 
 def test_timeout_from_none():
     timeout = httpx.Timeout(timeout=None)
-    assert timeout == httpx.Timeout()
+    assert timeout == httpx.Timeout(None)
 
 
 def test_timeout_from_one_none_value():
-    timeout = httpx.Timeout(read_timeout=None)
-    assert timeout == httpx.Timeout()
+    timeout = httpx.Timeout(None, read_timeout=None)
+    assert timeout == httpx.Timeout(None)
 
 
 def test_timeout_from_one_value():
-    timeout = httpx.Timeout(read_timeout=5.0)
+    timeout = httpx.Timeout(None, read_timeout=5.0)
     assert timeout == httpx.Timeout(timeout=(None, 5.0, None, None))
 
 
@@ -174,7 +181,7 @@ def test_timeout_repr():
     timeout = httpx.Timeout(timeout=5.0)
     assert repr(timeout) == "Timeout(timeout=5.0)"
 
-    timeout = httpx.Timeout(read_timeout=5.0)
+    timeout = httpx.Timeout(None, read_timeout=5.0)
     assert repr(timeout) == (
         "Timeout(connect_timeout=None, read_timeout=5.0, "
         "write_timeout=None, pool_timeout=None)"
