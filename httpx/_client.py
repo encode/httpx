@@ -545,11 +545,8 @@ class Client(BaseClient):
         if self._proxies and not should_not_be_proxied(url):
             default_port = {"http": 80, "https": 443}[url.scheme]
             is_default_port = url.port is None or url.port == default_port
-            hostname = (
-                f"{url.host}:{default_port}"
-                if url.port is None
-                else f"{url.host}:{url.port}"
-            )
+            port = url.port or default_port
+            hostname = f"{url.host}:{port}"
             proxy_keys = (
                 f"{url.scheme}://{hostname}",
                 f"{url.scheme}://{url.host}" if is_default_port else None,
@@ -1081,11 +1078,8 @@ class AsyncClient(BaseClient):
         if self._proxies and not should_not_be_proxied(url):
             default_port = {"http": 80, "https": 443}[url.scheme]
             is_default_port = url.port is None or url.port == default_port
-            hostname = (
-                f"{url.host}:{default_port}"
-                if url.port is None
-                else f"{url.host}:{url.port}"
-            )
+            port = url.port or default_port
+            hostname = f"{url.host}:{port}"
             proxy_keys = (
                 f"{url.scheme}://{hostname}",
                 f"{url.scheme}://{url.host}" if is_default_port else None,
