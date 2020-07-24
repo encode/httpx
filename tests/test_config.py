@@ -45,7 +45,7 @@ def test_load_ssl_config_verify_env_file(
 
 def test_load_ssl_config_verify_directory():
     path = Path(certifi.where()).parent
-    context = httpx.create_ssl_context(verify=path)
+    context = httpx.create_ssl_context(verify=str(path))
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
@@ -175,7 +175,7 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
 
         context = httpx.create_ssl_context(trust_env=True)
 
-        assert context.keylog_filename is None
+        assert context.keylog_filename is None  # type: ignore
 
     filename = str(tmpdir.join("test.log"))
 
@@ -184,11 +184,11 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
 
         context = httpx.create_ssl_context(trust_env=True)
 
-        assert context.keylog_filename == filename
+        assert context.keylog_filename == filename  # type: ignore
 
         context = httpx.create_ssl_context(trust_env=False)
 
-        assert context.keylog_filename is None
+        assert context.keylog_filename is None  # type: ignore
 
 
 @pytest.mark.parametrize(
@@ -197,7 +197,7 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
         ("https://example.com", "https://example.com", {}, "DEFAULT"),
         (
             "https://user:pass@example.com",
-            "https://example.com:443",
+            "https://example.com",
             {"proxy-authorization": "Basic dXNlcjpwYXNz"},
             "DEFAULT",
         ),

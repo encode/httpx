@@ -1,6 +1,19 @@
+import httpcore
 import pytest
 
 import httpx
+
+
+def url_to_origin(url: str):
+    """
+    Given a URL string, return the origin in the raw tuple format that
+    `httpcore` uses for it's representation.
+    """
+    DEFAULT_PORTS = {b"http": 80, b"https": 443}
+    scheme, host, explicit_port = httpx.URL(url).raw[:3]
+    default_port = DEFAULT_PORTS[scheme]
+    port = default_port if explicit_port is None else explicit_port
+    return scheme, host, port
 
 
 @pytest.mark.parametrize(
@@ -23,10 +36,12 @@ def test_proxies_parameter(proxies, expected_proxies):
     client = httpx.AsyncClient(proxies=proxies)
 
     for proxy_key, url in expected_proxies:
-        assert proxy_key in client.proxies
-        assert client.proxies[proxy_key].proxy_origin == httpx.URL(url).raw[:3]
+        assert proxy_key in client._proxies
+        proxy = client._proxies[proxy_key]
+        assert isinstance(proxy, httpcore.AsyncHTTPProxy)
+        assert proxy.proxy_origin == url_to_origin(url)
 
-    assert len(expected_proxies) == len(client.proxies)
+    assert len(expected_proxies) == len(client._proxies)
 
 
 PROXY_URL = "http://[::1]"
@@ -76,12 +91,24 @@ PROXY_URL = "http://[::1]"
 )
 def test_transport_for_request(url, proxies, expected):
     client = httpx.AsyncClient(proxies=proxies)
-    transport = client.transport_for_url(httpx.URL(url))
+    transport = client._transport_for_url(httpx.URL(url))
 
     if expected is None:
-        assert transport is client.transport
+        assert transport is client._transport
     else:
-        assert transport.proxy_origin == httpx.URL(expected).raw[:3]
+        assert isinstance(transport, httpcore.AsyncHTTPProxy)
+        assert transport.proxy_origin == url_to_origin(expected)
+
+
+@pytest.mark.asyncio
+async def test_async_proxy_close():
+    client = httpx.AsyncClient(proxies={"all": PROXY_URL})
+    await client.aclose()
+
+
+def test_sync_proxy_close():
+    client = httpx.Client(proxies={"all": PROXY_URL})
+    client.close()
 
 
 def test_unsupported_proxy_scheme():
@@ -105,14 +132,15 @@ def test_unsupported_proxy_scheme():
         ),
     ],
 )
-def test_proxies_environ(monkeypatch, url, env, expected):
+@pytest.mark.parametrize("client_class", [httpx.Client, httpx.AsyncClient])
+def test_proxies_environ(monkeypatch, client_class, url, env, expected):
     for name, value in env.items():
         monkeypatch.setenv(name, value)
 
-    client = httpx.AsyncClient()
-    transport = client.transport_for_url(httpx.URL(url))
+    client = client_class()
+    transport = client._transport_for_url(httpx.URL(url))
 
     if expected is None:
-        assert transport == client.transport
+        assert transport == client._transport
     else:
-        assert transport.proxy_origin == httpx.URL(expected).raw[:3]
+        assert transport.proxy_origin == url_to_origin(expected)

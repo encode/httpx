@@ -18,6 +18,21 @@ async def test_get(server):
     assert response.elapsed > timedelta(seconds=0)
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        pytest.param("invalid://example.org", id="scheme-not-http(s)"),
+        pytest.param("://example.org", id="no-scheme"),
+        pytest.param("http://", id="no-host"),
+    ],
+)
+@pytest.mark.usefixtures("async_environment")
+async def test_get_invalid_url(server, url):
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(httpx.InvalidURL):
+            await client.get(url)
+
+
 @pytest.mark.usefixtures("async_environment")
 async def test_build_request(server):
     url = server.url.copy_with(path="/echo_headers")
@@ -91,11 +106,11 @@ async def test_raise_for_status(server):
             )
 
             if 400 <= status_code < 600:
-                with pytest.raises(httpx.HTTPError) as exc_info:
+                with pytest.raises(httpx.HTTPStatusError) as exc_info:
                     response.raise_for_status()
                 assert exc_info.value.response == response
             else:
-                assert response.raise_for_status() is None
+                assert response.raise_for_status() is None  # type: ignore
 
 
 @pytest.mark.usefixtures("async_environment")

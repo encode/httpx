@@ -5,7 +5,6 @@ import typing
 import httpcore
 
 from .._content_streams import ByteStream, IteratorStream
-from .._utils import warn_deprecated
 
 
 def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
@@ -25,17 +24,17 @@ class WSGITransport(httpcore.SyncHTTPTransport):
     client = httpx.Client(app=app)
     ```
 
-    Alternatively, you can setup the dispatch instance explicitly.
+    Alternatively, you can setup the transport instance explicitly.
     This allows you to include any additional configuration arguments specific
     to the WSGITransport class:
 
     ```
-    dispatch = httpx.WSGITransport(
+    transport = httpx.WSGITransport(
         app=app,
         script_name="/submount",
         remote_addr="1.2.3.4"
     )
-    client = httpx.Client(dispatch=dispatch)
+    client = httpx.Client(transport=transport)
     ```
 
     Arguments:
@@ -83,7 +82,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         environ = {
             "wsgi.version": (1, 0),
             "wsgi.url_scheme": scheme.decode("ascii"),
-            "wsgi.input": io.BytesIO(b"".join([chunk for chunk in stream])),
+            "wsgi.input": io.BytesIO(b"".join(stream)),
             "wsgi.errors": io.BytesIO(),
             "wsgi.multithread": True,
             "wsgi.multiprocess": False,
@@ -132,20 +131,3 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         stream = IteratorStream(chunk for chunk in result)
 
         return (b"HTTP/1.1", status_code, b"", headers, stream)
-
-
-class WSGIDispatch(WSGITransport):
-    def __init__(
-        self,
-        app: typing.Callable,
-        raise_app_exceptions: bool = True,
-        script_name: str = "",
-        remote_addr: str = "127.0.0.1",
-    ) -> None:
-        warn_deprecated("WSGIDispatch is deprecated, please use WSGITransport")
-        super().__init__(
-            app=app,
-            raise_app_exceptions=raise_app_exceptions,
-            script_name=script_name,
-            remote_addr=remote_addr,
-        )

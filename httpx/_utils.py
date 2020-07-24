@@ -1,6 +1,5 @@
 import codecs
 import collections
-import contextlib
 import logging
 import mimetypes
 import netrc
@@ -15,8 +14,8 @@ from time import perf_counter
 from types import TracebackType
 from urllib.request import getproxies
 
-from ._exceptions import NetworkError
-from ._types import PrimitiveData, StrOrBytes
+from ._exceptions import InvalidURL
+from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._models import URL
@@ -31,7 +30,9 @@ _HTML5_FORM_ENCODING_RE = re.compile(
 )
 
 
-def normalize_header_key(value: StrOrBytes, encoding: str = None) -> bytes:
+def normalize_header_key(
+    value: typing.Union[str, bytes], encoding: str = None
+) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header key.
     """
@@ -40,7 +41,9 @@ def normalize_header_key(value: StrOrBytes, encoding: str = None) -> bytes:
     return value.encode(encoding or "ascii").lower()
 
 
-def normalize_header_value(value: StrOrBytes, encoding: str = None) -> bytes:
+def normalize_header_value(
+    value: typing.Union[str, bytes], encoding: str = None
+) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header value.
     """
@@ -90,7 +93,7 @@ def format_form_param(name: str, value: typing.Union[str, bytes]) -> bytes:
 
 
 # Null bytes; no need to recreate these on each call to guess_json_utf
-_null = "\x00".encode("ascii")  # encoding to ASCII for Python 3
+_null = b"\x00"
 _null2 = _null * 2
 _null3 = _null * 3
 
@@ -206,8 +209,8 @@ SENSITIVE_HEADERS = {"authorization", "proxy-authorization"}
 
 
 def obfuscate_sensitive_headers(
-    items: typing.Iterable[typing.Tuple[StrOrBytes, StrOrBytes]]
-) -> typing.Iterator[typing.Tuple[StrOrBytes, StrOrBytes]]:
+    items: typing.Iterable[typing.Tuple[typing.AnyStr, typing.AnyStr]]
+) -> typing.Iterator[typing.Tuple[typing.AnyStr, typing.AnyStr]]:
     for k, v in items:
         if to_str(k.lower()) in SENSITIVE_HEADERS:
             v = to_bytes_or_str("[secure]", match_type_of=v)
@@ -258,8 +261,38 @@ def get_logger(name: str) -> Logger:
     return typing.cast(Logger, logger)
 
 
+def enforce_http_url(url: "URL") -> None:
+    """
+    Raise an appropriate InvalidURL for any non-HTTP URLs.
+    """
+    if not url.scheme:
+        raise InvalidURL("No scheme included in URL.")
+    if not url.host:
+        raise InvalidURL("No host included in URL.")
+    if url.scheme not in ("http", "https"):
+        raise InvalidURL('URL scheme must be "http" or "https".')
+
+
+def port_or_default(url: "URL") -> typing.Optional[int]:
+    if url.port is not None:
+        return url.port
+    return {"http": 80, "https": 443}.get(url.scheme)
+
+
+def same_origin(url: "URL", other: "URL") -> bool:
+    """
+    Return 'True' if the given URLs share the same origin.
+    """
+    return (
+        url.scheme == other.scheme
+        and url.host == other.host
+        and port_or_default(url) == port_or_default(other)
+    )
+
+
 def should_not_be_proxied(url: "URL") -> bool:
-    """ Return True if url should not be proxied,
+    """
+    Return True if url should not be proxied,
     return False otherwise.
     """
     no_proxy = getproxies().get("no")
@@ -303,7 +336,7 @@ def to_str(value: typing.Union[str, bytes], encoding: str = "utf-8") -> str:
     return value if isinstance(value, str) else value.decode(encoding)
 
 
-def to_bytes_or_str(value: str, match_type_of: StrOrBytes) -> StrOrBytes:
+def to_bytes_or_str(value: str, match_type_of: typing.AnyStr) -> typing.AnyStr:
     return value if isinstance(match_type_of, str) else value.encode()
 
 
@@ -392,16 +425,5 @@ class ElapsedTimer:
         return timedelta(seconds=self.end - self.start)
 
 
-@contextlib.contextmanager
-def as_network_error(*exception_classes: type) -> typing.Iterator[None]:
-    try:
-        yield
-    except BaseException as exc:
-        for cls in exception_classes:
-            if isinstance(exc, cls):
-                raise NetworkError(exc) from exc
-        raise
-
-
-def warn_deprecated(message: str) -> None:
+def warn_deprecated(message: str) -> None:  # pragma: nocover
     warnings.warn(message, DeprecationWarning, stacklevel=2)

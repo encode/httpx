@@ -24,7 +24,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from ._config import Proxy, Timeout  # noqa: F401
     from ._models import URL, Cookies, Headers, QueryParams, Request  # noqa: F401
 
-StrOrBytes = Union[str, bytes]
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
@@ -35,17 +34,26 @@ QueryParamTypes = Union[
     Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
     List[Tuple[str, PrimitiveData]],
     str,
+    None,
 ]
 
 HeaderTypes = Union[
-    "Headers", Dict[StrOrBytes, StrOrBytes], Sequence[Tuple[StrOrBytes, StrOrBytes]],
+    "Headers",
+    Dict[str, str],
+    Dict[bytes, bytes],
+    Sequence[Tuple[str, str]],
+    Sequence[Tuple[bytes, bytes]],
 ]
 
 CookieTypes = Union["Cookies", CookieJar, Dict[str, str]]
 
 CertTypes = Union[str, Tuple[str, str], Tuple[str, str, str]]
 VerifyTypes = Union[str, bool, ssl.SSLContext]
-TimeoutTypes = Union[None, float, Tuple[float, float, float, float], "Timeout"]
+TimeoutTypes = Union[
+    Optional[float],
+    Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
+    "Timeout",
+]
 ProxiesTypes = Union[URLTypes, "Proxy", Dict[URLTypes, Union[URLTypes, "Proxy"]]]
 
 AuthTypes = Union[
@@ -65,4 +73,4 @@ FileTypes = Union[
     # (filename, file (or text), content_type)
     Tuple[Optional[str], FileContent, Optional[str]],
 ]
-RequestFiles = Mapping[str, FileTypes]
+RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]

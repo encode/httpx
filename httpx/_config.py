@@ -8,7 +8,7 @@ import certifi
 
 from ._models import URL, Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
-from ._utils import get_ca_bundle_from_env, get_logger, warn_deprecated
+from ._utils import get_ca_bundle_from_env, get_logger
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -102,7 +102,7 @@ class SSLConfig:
         if self.trust_env and self.verify is True:
             ca_bundle = get_ca_bundle_from_env()
             if ca_bundle is not None:
-                self.verify = ca_bundle  # type: ignore
+                self.verify = ca_bundle
 
         if isinstance(self.verify, ssl.SSLContext):
             # Allow passing in our own SSLContext object that's pre-configured.
@@ -295,23 +295,10 @@ class PoolLimits:
     """
 
     def __init__(
-        self,
-        *,
-        max_keepalive: int = None,
-        max_connections: int = None,
-        soft_limit: int = None,
-        hard_limit: int = None,
+        self, *, max_keepalive: int = None, max_connections: int = None,
     ):
         self.max_keepalive = max_keepalive
         self.max_connections = max_connections
-        if soft_limit is not None:  # pragma: nocover
-            self.max_keepalive = soft_limit
-            warn_deprecated("'soft_limit' is deprecated. Use 'max_keepalive' instead.",)
-        if hard_limit is not None:  # pragma: nocover
-            self.max_connections = hard_limit
-            warn_deprecated(
-                "'hard_limit' is deprecated. Use 'max_connections' instead.",
-            )
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
@@ -355,7 +342,7 @@ class Proxy:
 
     def build_auth_header(self, username: str, password: str) -> str:
         userpass = (username.encode("utf-8"), password.encode("utf-8"))
-        token = b64encode(b":".join(userpass)).decode().strip()
+        token = b64encode(b":".join(userpass)).decode()
         return f"Basic {token}"
 
     def __repr__(self) -> str:

@@ -9,20 +9,21 @@ from httpx import AsyncClient, Headers, __version__
 from httpx._content_streams import ContentStream, JSONStream
 
 
-class MockDispatch(httpcore.AsyncHTTPTransport):
+class MockTransport(httpcore.AsyncHTTPTransport):
     async def request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, int, bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: ContentStream,
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
+        stream: httpcore.AsyncByteStream = None,
         timeout: typing.Dict[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
-        headers_dict = dict(
-            [(key.decode("ascii"), value.decode("ascii")) for key, value in headers]
-        )
+        assert headers is not None
+        headers_dict = {
+            key.decode("ascii"): value.decode("ascii") for key, value in headers
+        }
         body = JSONStream({"headers": headers_dict})
         return b"HTTP/1.1", 200, b"OK", [], body
 
@@ -35,7 +36,7 @@ async def test_client_header():
     url = "http://example.org/echo_headers"
     headers = {"Example-Header": "example-value"}
 
-    client = AsyncClient(dispatch=MockDispatch(), headers=headers)
+    client = AsyncClient(transport=MockTransport(), headers=headers)
     response = await client.get(url)
 
     assert response.status_code == 200
@@ -56,7 +57,7 @@ async def test_header_merge():
     url = "http://example.org/echo_headers"
     client_headers = {"User-Agent": "python-myclient/0.2.1"}
     request_headers = {"X-Auth-Token": "FooBarBazToken"}
-    client = AsyncClient(dispatch=MockDispatch(), headers=client_headers)
+    client = AsyncClient(transport=MockTransport(), headers=client_headers)
     response = await client.get(url, headers=request_headers)
 
     assert response.status_code == 200
@@ -77,7 +78,7 @@ async def test_header_merge_conflicting_headers():
     url = "http://example.org/echo_headers"
     client_headers = {"X-Auth-Token": "FooBar"}
     request_headers = {"X-Auth-Token": "BazToken"}
-    client = AsyncClient(dispatch=MockDispatch(), headers=client_headers)
+    client = AsyncClient(transport=MockTransport(), headers=client_headers)
     response = await client.get(url, headers=request_headers)
 
     assert response.status_code == 200
@@ -96,7 +97,7 @@ async def test_header_merge_conflicting_headers():
 @pytest.mark.asyncio
 async def test_header_update():
     url = "http://example.org/echo_headers"
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     first_response = await client.get(url)
     client.headers.update(
         {"User-Agent": "python-myclient/0.2.1", "Another-Header": "AThing"}
@@ -142,7 +143,7 @@ async def test_host_with_auth_and_port_in_url():
     """
     url = "http://username:password@example.org:80/echo_headers"
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     response = await client.get(url)
 
     assert response.status_code == 200
@@ -166,7 +167,7 @@ async def test_host_with_non_default_port_in_url():
     """
     url = "http://username:password@example.org:123/echo_headers"
 
-    client = AsyncClient(dispatch=MockDispatch())
+    client = AsyncClient(transport=MockTransport())
     response = await client.get(url)
 
     assert response.status_code == 200
