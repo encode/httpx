@@ -4,6 +4,58 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.14.0
+
+The most notable feature of the 0.14.0 release is that it tightens up the public
+API for `httpx`, by ensuring that several internal attributes and methods become
+strictly private.
+
+The following previously had nominally public names on the client, but were
+all undocumented and intended solely for internal usage. They are all now
+replaced with underscored names, and should not be relied on or accessed.
+
+These changes should not affect users who have been working from the `httpx`
+documentation.
+
+* `.merge_url()`, `.merge_headers()`, `.merge_cookies()`, `.merge_queryparams()`
+* `.build_auth()`, `.build_redirect_request()`
+* `.redirect_method()`, `.redirect_url()`, `.redirect_headers()`, `.redirect_stream()`
+* `.send_handling_redirects()`, `.send_handling_auth()`, `.send_single_request()`
+* `.init_transport()`, `.init_proxy_transport()`
+* `.proxies`, `.transport`, `.netrc`, `.get_proxy_map()`
+
+See pull requests #997, #1065, #1071.
+
+Some areas of API which were already on the deprecation path, and were raising warnings or errors in 0.13.x
+have now been escalated to being fully removed.
+
+* Drop `ASGIDispatch`, `WSGIDispatch`, which have been replaced by `ASGITransport`, `WSGITransport`.
+* Drop `dispatch=...`` on client, which has been replaced by `transport=...``
+* Drop `soft_limit`, `hard_limit`, which have been replaced by `max_keepalive` and `max_connections`.
+* Drop `Response.stream` and` `Response.raw`, which have been replaced by ``.aiter_bytes` and `.aiter_raw`.
+* Drop `proxies=<transport instance>` in favor of `proxies=httpx.Proxy(...)`.
+
+See pull requests #1057, #1058.
+
+### Added
+
+* Added dedicated exception class `httpx.HTTPStatusError` for `.raise_for_status()` exceptions. (Pull #1072)
+* Support `QueryParams(None)` and `client.params = None`. (Pull #1060)
+
+### Changed
+
+* `URL.port` becomes `Optional[int]`. Now only returns a port if one is explicitly included in the URL string. (Pull #1080)
+* The `URL(..., allow_relative=[bool])` parameter no longer exists. All URL instances may be relative. (Pull #1073)
+* Drop unnecessary `url.full_path = ...` property setter. (Pull #1069)
+
+### Fixed
+
+* Add missing `Response.next()` method. (Pull #1055)
+* Ensure all exception classes are exposed as public API. (Pull #1045)
+* Support multiple items with an identical field name in multipart encodings. (Pull #777)
+* Skip HSTS preloading on single-label domains. (Pull #1074)
+* Fixes for `Response.iter_lines()`. (Pull #1033, #1075)
+
 ## 0.13.3 (May 29th, 2020)
 
 ### Fixed
