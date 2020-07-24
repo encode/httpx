@@ -1,7 +1,7 @@
 from enum import IntEnum
 
 
-class StatusCode(IntEnum):
+class codes(IntEnum):
     """HTTP status codes and reason phrases
     Status codes from the following RFCs are all observed:
         * RFC 7231: Hypertext Transfer Protocol (HTTP/1.1), obsoletes 2616
@@ -17,7 +17,7 @@ class StatusCode(IntEnum):
         * RFC 7725: An HTTP Status Code to Report Legal Obstacles
     """
 
-    def __new__(cls, value: int, phrase: str = "") -> "StatusCode":
+    def __new__(cls, value: int, phrase: str = "") -> "codes":
         obj = int.__new__(cls, value)  # type: ignore
         obj._value_ = value
 
@@ -30,7 +30,7 @@ class StatusCode(IntEnum):
     @classmethod
     def get_reason_phrase(cls, value: int) -> str:
         try:
-            return StatusCode(value).phrase  # type: ignore
+            return codes(value).phrase  # type: ignore
         except ValueError:
             return ""
 
@@ -38,15 +38,15 @@ class StatusCode(IntEnum):
     def is_redirect(cls, value: int) -> bool:
         return value in (
             # 301 (Cacheable redirect. Method may change to GET.)
-            StatusCode.MOVED_PERMANENTLY,
+            codes.MOVED_PERMANENTLY,
             # 302 (Uncacheable redirect. Method may change to GET.)
-            StatusCode.FOUND,
+            codes.FOUND,
             # 303 (Client should make a GET or HEAD request.)
-            StatusCode.SEE_OTHER,
+            codes.SEE_OTHER,
             # 307 (Equiv. 302, but retain method)
-            StatusCode.TEMPORARY_REDIRECT,
+            codes.TEMPORARY_REDIRECT,
             # 308 (Equiv. 301, but retain method)
-            StatusCode.PERMANENT_REDIRECT,
+            codes.PERMANENT_REDIRECT,
         )
 
     @classmethod
@@ -131,8 +131,6 @@ class StatusCode(IntEnum):
     NOT_EXTENDED = 510, "Not Extended"
     NETWORK_AUTHENTICATION_REQUIRED = 511, "Network Authentication Required"
 
-
-codes = StatusCode
 
 #  Include lower-case styles for `requests` compatibility.
 for code in codes:
