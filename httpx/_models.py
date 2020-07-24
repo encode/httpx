@@ -105,11 +105,9 @@ class URL:
         return self._uri_reference.host or ""
 
     @property
-    def port(self) -> int:
+    def port(self) -> typing.Optional[int]:
         port = self._uri_reference.port
-        if port is None:
-            return {"https": 443, "http": 80}[self.scheme]
-        return int(port)
+        return int(port) if port else None
 
     @property
     def path(self) -> str:
@@ -131,7 +129,7 @@ class URL:
         return self._uri_reference.fragment or ""
 
     @property
-    def raw(self) -> typing.Tuple[bytes, bytes, int, bytes]:
+    def raw(self) -> typing.Tuple[bytes, bytes, typing.Optional[int], bytes]:
         return (
             self.scheme.encode("ascii"),
             self.host.encode("ascii"),
@@ -167,7 +165,7 @@ class URL:
             or "port" in kwargs
         ):
             host = kwargs.pop("host", self.host)
-            port = kwargs.pop("port", None if self.is_relative_url else self.port)
+            port = kwargs.pop("port", self.port)
             username = kwargs.pop("username", self.username)
             password = kwargs.pop("password", self.password)
 

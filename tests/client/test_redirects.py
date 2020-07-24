@@ -242,7 +242,7 @@ async def test_malformed_redirect():
     client = AsyncClient(transport=AsyncMockTransport())
     response = await client.get("http://example.org/malformed_redirect")
     assert response.status_code == codes.OK
-    assert response.url == URL("https://example.org/")
+    assert response.url == URL("https://example.org:443/")
     assert len(response.history) == 1
 
 

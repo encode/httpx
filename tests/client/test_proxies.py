@@ -4,6 +4,18 @@ import pytest
 import httpx
 
 
+def url_to_origin(url: str):
+    """
+    Given a URL string, return the origin in the raw tuple format that
+    `httpcore` uses for it's representation.
+    """
+    DEFAULT_PORTS = {b"http": 80, b"https": 443}
+    scheme, host, explicit_port = httpx.URL(url).raw[:3]
+    default_port = DEFAULT_PORTS[scheme]
+    port = default_port if explicit_port is None else explicit_port
+    return scheme, host, port
+
+
 @pytest.mark.parametrize(
     ["proxies", "expected_proxies"],
     [
@@ -27,7 +39,7 @@ def test_proxies_parameter(proxies, expected_proxies):
         assert proxy_key in client._proxies
         proxy = client._proxies[proxy_key]
         assert isinstance(proxy, httpcore.AsyncHTTPProxy)
-        assert proxy.proxy_origin == httpx.URL(url).raw[:3]
+        assert proxy.proxy_origin == url_to_origin(url)
 
     assert len(expected_proxies) == len(client._proxies)
 
@@ -85,7 +97,7 @@ def test_transport_for_request(url, proxies, expected):
         assert transport is client._transport
     else:
         assert isinstance(transport, httpcore.AsyncHTTPProxy)
-        assert transport.proxy_origin == httpx.URL(expected).raw[:3]
+        assert transport.proxy_origin == url_to_origin(expected)
 
 
 @pytest.mark.asyncio
@@ -131,4 +143,4 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
     if expected is None:
         assert transport == client._transport
     else:
-        assert transport.proxy_origin == httpx.URL(expected).raw[:3]
+        assert transport.proxy_origin == url_to_origin(expected)

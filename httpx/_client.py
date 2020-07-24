@@ -543,10 +543,10 @@ class Client(BaseClient):
         enforce_http_url(url)
 
         if self._proxies and not should_not_be_proxied(url):
-            is_default_port = (url.scheme == "http" and url.port == 80) or (
-                url.scheme == "https" and url.port == 443
-            )
-            hostname = f"{url.host}:{url.port}"
+            default_port = {"http": 80, "https": 443}[url.scheme]
+            is_default_port = url.port is None or url.port == default_port
+            port = url.port or default_port
+            hostname = f"{url.host}:{port}"
             proxy_keys = (
                 f"{url.scheme}://{hostname}",
                 f"{url.scheme}://{url.host}" if is_default_port else None,
@@ -1076,10 +1076,10 @@ class AsyncClient(BaseClient):
         enforce_http_url(url)
 
         if self._proxies and not should_not_be_proxied(url):
-            is_default_port = (url.scheme == "http" and url.port == 80) or (
-                url.scheme == "https" and url.port == 443
-            )
-            hostname = f"{url.host}:{url.port}"
+            default_port = {"http": 80, "https": 443}[url.scheme]
+            is_default_port = url.port is None or url.port == default_port
+            port = url.port or default_port
+            hostname = f"{url.host}:{port}"
             proxy_keys = (
                 f"{url.scheme}://{hostname}",
                 f"{url.scheme}://{url.host}" if is_default_port else None,
