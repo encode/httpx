@@ -248,17 +248,31 @@ class QueryParams(typing.Mapping[str, str]):
         return self._dict.values()
 
     def items(self) -> typing.ItemsView:
+        """
+        Return all items in the query params. If a key occurs more than once
+        only the first item for that key is returned.
+        """
         return self._dict.items()
 
     def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
+        """
+        Return all items in the query params. Allow duplicate keys to occur.
+        """
         return list(self._list)
 
     def get(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
+        """
+        Get a value from the query param for a given key. If the key occurs
+        more than once, then only the first value is returned.
+        """
         if key in self._dict:
             return self._dict[key]
         return default
 
     def get_list(self, key: typing.Any) -> typing.List[str]:
+        """
+        Get all values from the query param for a given key.
+        """
         return [item_value for item_key, item_value in self._list if item_key == key]
 
     def update(self, params: QueryParamTypes = None) -> None:
