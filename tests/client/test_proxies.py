@@ -5,6 +5,10 @@ import httpx
 
 
 def url_to_origin(url: str):
+    """
+    Given a URL string, return the origin in the raw tuple format that
+    `httpcore` uses for it's representation.
+    """
     DEFAULT_PORTS = {b"http": 80, b"https": 443}
     scheme, host, explicit_port = httpx.URL(url).raw[:3]
     default_port = DEFAULT_PORTS[scheme]
