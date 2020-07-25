@@ -19,7 +19,6 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
     def __init__(
         self,
         *,
-        proxy: Proxy = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
