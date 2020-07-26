@@ -3,7 +3,7 @@ from typing import Dict, Iterator, List, Optional, Tuple
 
 import httpcore
 
-from .._config import Proxy, SSLConfig
+from .._config import SSLConfig
 from .._content_streams import ByteStream, IteratorStream
 from .._exceptions import NetworkError, map_exceptions
 from .._types import CertTypes, VerifyTypes
@@ -19,7 +19,6 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
     def __init__(
         self,
         *,
-        proxy: Proxy = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
