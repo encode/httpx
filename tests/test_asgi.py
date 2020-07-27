@@ -66,8 +66,8 @@ async def test_asgi_exc():
 
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_http_error():
-    client = httpx.AsyncClient(app=partial(raise_exc, exc=httpx.HTTPError))
-    with pytest.raises(httpx.HTTPError):
+    client = httpx.AsyncClient(app=partial(raise_exc, exc=RuntimeError))
+    with pytest.raises(RuntimeError):
         await client.get("http://www.example.org/")
 
 

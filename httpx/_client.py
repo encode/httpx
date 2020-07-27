@@ -323,7 +323,8 @@ class BaseClient:
 
         # Check that we can handle the scheme
         if url.scheme and url.scheme not in ("http", "https"):
-            raise InvalidURL(f'Scheme "{url.scheme}" not supported.')
+            message = f'Scheme "{url.scheme}" not supported.'
+            raise InvalidURL(message, request=request)
 
         # Handle malformed 'Location' headers that are "absolute" form, have no host.
         # See: https://github.com/encode/httpx/issues/771
@@ -535,12 +536,13 @@ class Client(BaseClient):
             http2=http2,
         )
 
-    def _transport_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
+    def _transport_for_url(self, request: Request) -> httpcore.SyncHTTPTransport:
         """
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        enforce_http_url(url)
+        url = request.url
+        enforce_http_url(request)
 
         if self._proxies and not should_not_be_proxied(url):
             default_port = {"http": 80, "https": 443}[url.scheme]
@@ -601,7 +603,8 @@ class Client(BaseClient):
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         if request.url.scheme not in ("http", "https"):
-            raise InvalidURL('URL scheme must be "http" or "https".')
+            message = 'URL scheme must be "http" or "https".'
+            raise InvalidURL(message, request=request)
 
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
@@ -693,7 +696,7 @@ class Client(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-        transport = self._transport_for_url(request.url)
+        transport = self._transport_for_url(request)
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (
@@ -1068,12 +1071,13 @@ class AsyncClient(BaseClient):
             http2=http2,
         )
 
-    def _transport_for_url(self, url: URL) -> httpcore.AsyncHTTPTransport:
+    def _transport_for_url(self, request: Request) -> httpcore.AsyncHTTPTransport:
         """
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        enforce_http_url(url)
+        url = request.url
+        enforce_http_url(request)
 
         if self._proxies and not should_not_be_proxied(url):
             default_port = {"http": 80, "https": 443}[url.scheme]
@@ -1226,7 +1230,7 @@ class AsyncClient(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-        transport = self._transport_for_url(request.url)
+        transport = self._transport_for_url(request)
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (

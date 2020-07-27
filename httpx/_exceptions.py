@@ -7,30 +7,20 @@ if typing.TYPE_CHECKING:
     from ._models import Request, Response  # pragma: nocover
 
 
-class HTTPError(Exception):
+class RequestError(Exception):
     """
     Base class for all HTTPX exceptions.
     """
 
-    def __init__(
-        self, *args: typing.Any, request: "Request" = None, response: "Response" = None
-    ) -> None:
-        super().__init__(*args)
-        self._request = request or (response.request if response is not None else None)
-        self.response = response
-
-    @property
-    def request(self) -> "Request":
-        # NOTE: this property exists so that a `Request` is exposed to type
-        # checkers, instead of `Optional[Request]`.
-        assert self._request is not None  # Populated by the client.
-        return self._request
+    def __init__(self, message: str, request: "Request",) -> None:
+        super().__init__(message)
+        self.request = request
 
 
 # Timeout exceptions...
 
 
-class TimeoutException(HTTPError):
+class TimeoutException(RequestError):
     """
     The base class for timeout errors.
 
@@ -65,7 +55,7 @@ class PoolTimeout(TimeoutException):
 # Core networking exceptions...
 
 
-class NetworkError(HTTPError):
+class NetworkError(RequestError):
     """
     The base class for network-related errors.
 
@@ -100,75 +90,81 @@ class CloseError(NetworkError):
 # Other transport exceptions...
 
 
-class ProxyError(HTTPError):
+class ProxyError(RequestError):
     """
     An error occurred while proxying a request.
     """
 
 
-class ProtocolError(HTTPError):
+class ProtocolError(RequestError):
     """
     A protocol was violated by the server.
     """
 
 
-# HTTP exceptions...
+# Other request exceptions...
 
 
-class DecodingError(HTTPError):
+class DecodingError(RequestError):
     """
     Decoding of the response failed.
     """
 
 
-class HTTPStatusError(HTTPError):
-    """
-    Response sent an error HTTP status.
-    """
-
-    def __init__(self, *args: typing.Any, response: "Response") -> None:
-        super().__init__(*args)
-        self._request = response.request
-        self.response = response
-
-
-# Redirect exceptions...
-
-
-class RedirectError(HTTPError):
-    """
-    Base class for HTTP redirect errors.
-    """
-
-
-class TooManyRedirects(RedirectError):
+class TooManyRedirects(RequestError):
     """
     Too many redirects.
     """
 
 
-class NotRedirectResponse(RedirectError):
+class RequestBodyUnavailable(RequestError):
+    """
+    Had to send the request again, but the request body was streaming, and is
+    no longer available.
+    """
+
+
+class InvalidURL(RequestError):
+    """
+    URL was missing a hostname, or was not one of HTTP/HTTPS.
+    """
+
+
+# Client errors
+
+
+class HTTPStatusError(Exception):
+    """
+    Response sent an error HTTP status.
+    """
+
+    def __init__(self, message: str, request: "Request", response: "Response") -> None:
+        super().__init__(message)
+        self.request = request
+        self.response = response
+
+
+class NotRedirectResponse(Exception):
     """
     Response was not a redirect response.
+    """
+
+
+class CookieConflict(Exception):
+    """
+    Attempted to lookup a cookie by name, but multiple cookies existed.
     """
 
 
 # Stream exceptions...
 
 
-class StreamError(HTTPError):
+class StreamError(Exception):
     """
     The base class for stream exceptions.
 
     The developer made an error in accessing the request stream in
     an invalid way.
-    """
-
-
-class RequestBodyUnavailable(StreamError):
-    """
-    Had to send the request again, but the request body was streaming, and is
-    no longer available.
     """
 
 
@@ -199,19 +195,7 @@ class ResponseClosed(StreamError):
     """
 
 
-# Other cases...
-
-
-class InvalidURL(HTTPError):
-    """
-    URL was missing a hostname, or was not one of HTTP/HTTPS.
-    """
-
-
-class CookieConflict(HTTPError):
-    """
-    Attempted to lookup a cookie by name, but multiple cookies existed.
-    """
+HTTPError = RequestError
 
 
 @contextlib.contextmanager
