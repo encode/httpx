@@ -28,6 +28,7 @@ from ._exceptions import (
     StreamError,
     TimeoutException,
     TooManyRedirects,
+    TransportError,
     WriteError,
     WriteTimeout,
 )
@@ -85,6 +86,7 @@ __all__ = [
     "ProxyError",
     "TimeoutException",
     "TooManyRedirects",
+    "TransportError",
     "WriteError",
     "WriteTimeout",
     "URL",
