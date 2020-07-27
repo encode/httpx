@@ -1,32 +1,32 @@
 """
 Our exception heirachy:
 
-    * RequestError
-      + TransportError
-        - TimeoutException
-          · ConnectTimeout
-          · ReadTimeout
-          · WriteTimeout
-          · PoolTimeout
-        - NetworkError
-          · ConnectError
-          · ReadError
-          · WriteError
-          · CloseError
-        - ProxyError
-        - ProtocolError
-      + DecodingError
-      + TooManyRedirects
-      + RequestBodyUnavailable
-      + InvalidURL
-    * HTTPStatusError
-    * NotRedirectResponse
-    * CookieConflict
-    * StreamError
-      + StreamConsumed
-      + ResponseNotRead
-      + RequestNotRead
-      + ResponseClosed
+* RequestError
+  + TransportError
+    - TimeoutException
+      · ConnectTimeout
+      · ReadTimeout
+      · WriteTimeout
+      · PoolTimeout
+    - NetworkError
+      · ConnectError
+      · ReadError
+      · WriteError
+      · CloseError
+    - ProxyError
+    - ProtocolError
+  + DecodingError
+  + TooManyRedirects
+  + RequestBodyUnavailable
+  + InvalidURL
+* HTTPStatusError
+* NotRedirectResponse
+* CookieConflict
+* StreamError
+  + StreamConsumed
+  + ResponseNotRead
+  + RequestNotRead
+  + ResponseClosed
 """
 import contextlib
 import typing
