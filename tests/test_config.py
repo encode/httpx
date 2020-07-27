@@ -167,6 +167,12 @@ def test_timeout_from_one_value_and_default():
     assert timeout == httpx.Timeout(timeout=(5.0, 5.0, 5.0, 60.0))
 
 
+def test_timeout_missing_default():
+    with pytest.warns(DeprecationWarning):
+        timeout = httpx.Timeout(pool_timeout=60.0)
+        assert timeout == httpx.Timeout(timeout=(None, None, None, 60.0))
+
+
 def test_timeout_from_tuple():
     timeout = httpx.Timeout(timeout=(5.0, 5.0, 5.0, 5.0))
     assert timeout == httpx.Timeout(timeout=5.0)
