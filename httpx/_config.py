@@ -349,7 +349,7 @@ class Proxy:
         if url.username or url.password:
             headers.setdefault(
                 "Proxy-Authorization",
-                self.build_auth_header(url.username, url.password),
+                self._build_auth_header(url.username, url.password),
             )
             # Remove userinfo from the URL authority, e.g.:
             # 'username:password@proxy_host:proxy_port' -> 'proxy_host:proxy_port'
@@ -359,7 +359,7 @@ class Proxy:
         self.headers = headers
         self.mode = mode
 
-    def build_auth_header(self, username: str, password: str) -> str:
+    def _build_auth_header(self, username: str, password: str) -> str:
         userpass = (username.encode("utf-8"), password.encode("utf-8"))
         token = b64encode(b":".join(userpass)).decode()
         return f"Basic {token}"
