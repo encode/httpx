@@ -32,7 +32,7 @@ from ._exceptions import (
     WriteTimeout,
 )
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
-from ._status_codes import codes
+from ._status_codes import StatusCode, codes
 from ._transports.asgi import ASGITransport
 from ._transports.urllib3 import URLLib3ProxyTransport, URLLib3Transport
 from ._transports.wsgi import WSGITransport
@@ -80,6 +80,7 @@ __all__ = [
     "ResponseClosed",
     "ResponseNotRead",
     "RequestNotRead",
+    "StatusCode",
     "StreamConsumed",
     "StreamError",
     "ProxyError",
