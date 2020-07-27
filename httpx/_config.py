@@ -40,6 +40,17 @@ class UnsetType:
 UNSET = UnsetType()
 
 
+def create_ssl_context(
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    trust_env: bool = None,
+    http2: bool = False,
+) -> ssl.SSLContext:
+    return SSLConfig(
+        cert=cert, verify=verify, trust_env=trust_env, http2=http2
+    ).ssl_context
+
+
 class SSLConfig:
     """
     SSL Configuration.
@@ -60,17 +71,6 @@ class SSLConfig:
         self.trust_env = trust_env
         self.http2 = http2
         self.ssl_context = self.load_ssl_context()
-
-    def __eq__(self, other: typing.Any) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self.cert == other.cert
-            and self.verify == other.verify
-        )
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return f"{class_name}(cert={self.cert}, verify={self.verify})"
 
     def load_ssl_context(self) -> ssl.SSLContext:
         logger.trace(
