@@ -167,7 +167,7 @@ def test_get_ssl_cert_file():
     # Two environments is correctly set.
     ca_bundle = get_ca_bundle_from_env()
     assert ca_bundle is not None and ca_bundle.endswith(
-        str(TESTS_DIR / "tests/test_utils.py")
+        str(TESTS_DIR / "test_utils.py")
     )
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
