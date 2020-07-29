@@ -425,5 +425,45 @@ class ElapsedTimer:
         return timedelta(seconds=self.end - self.start)
 
 
+class URLMatcher:
+    def __init__(self, pattern: str) -> None:
+        from ._models import URL
+
+        if pattern and ":" not in pattern:
+            pattern += "://"
+
+        url = URL(pattern)
+        self.pattern = pattern
+        self.scheme = "" if url.scheme == "all" else url.scheme
+        self.host = url.host
+        self.port = url.port
+
+    def matches(self, other: "URL") -> bool:
+        if self.scheme and self.scheme != other.scheme:
+            return False
+        if self.host and self.host != other.host:
+            return False
+        if self.port is not None and self.port != other.port:
+            return False
+        return True
+
+    @property
+    def priority(self) -> tuple:
+        """
+        The priority allows URLMatcher instances to be sortable, so that
+        if we can match from most specific to least specific.
+        """
+        port_priority = -1 if self.port is not None else 0
+        host_priority = -len(self.host)
+        scheme_priority = -len(self.scheme)
+        return (port_priority, host_priority, scheme_priority)
+
+    def __lt__(self, other: "URLMatcher") -> bool:
+        return self.priority < other.priority
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return isinstance(other, URLMatcher) and self.pattern == other.pattern
+
+
 def warn_deprecated(message: str) -> None:  # pragma: nocover
     warnings.warn(message, DeprecationWarning, stacklevel=2)
