@@ -21,7 +21,7 @@ flake8-bugbear
 flake8-pie
 isort==5.*
 mypy
-pytest
+pytest==5.*
 pytest-asyncio
 pytest-trio
 pytest-cov
