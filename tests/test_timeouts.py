@@ -19,7 +19,10 @@ async def test_write_timeout(server):
     async with httpx.AsyncClient(timeout=timeout) as client:
         with pytest.raises(httpx.WriteTimeout):
             data = b"*" * 1024 * 1024 * 100
-            await client.put(server.url.copy_with(path="/slow_response"), data=data)
+            response = await client.put(
+                server.url.copy_with(path="/slow_response"), data=data
+            )
+            print(response)
 
 
 @pytest.mark.usefixtures("async_environment")
