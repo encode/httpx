@@ -458,6 +458,9 @@ class URLMatcher:
         scheme_priority = -len(self.scheme)
         return (port_priority, host_priority, scheme_priority)
 
+    def __hash__(self) -> int:
+        return hash(self.pattern)
+
     def __lt__(self, other: "URLMatcher") -> bool:
         return self.priority < other.priority
 

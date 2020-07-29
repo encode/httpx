@@ -44,6 +44,7 @@ from ._types import (
 )
 from ._utils import (
     NetRCInfo,
+    URLMatcher,
     enforce_http_url,
     get_environment_proxies,
     get_logger,
@@ -471,8 +472,8 @@ class Client(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self._proxies: typing.Dict[str, httpcore.SyncHTTPTransport] = {
-            key: self._init_proxy_transport(
+        self._proxies: typing.Dict[URLMatcher, httpcore.SyncHTTPTransport] = {
+            URLMatcher(key): self._init_proxy_transport(
                 proxy,
                 verify=verify,
                 cert=cert,
@@ -482,6 +483,7 @@ class Client(BaseClient):
             )
             for key, proxy in proxy_map.items()
         }
+        self._proxies = dict(sorted(self._proxies.items()))
 
     def _init_transport(
         self,
@@ -539,21 +541,8 @@ class Client(BaseClient):
         enforce_http_url(url)
 
         if self._proxies and not should_not_be_proxied(url):
-            default_port = {"http": 80, "https": 443}[url.scheme]
-            is_default_port = url.port is None or url.port == default_port
-            port = url.port or default_port
-            hostname = f"{url.host}:{port}"
-            proxy_keys = (
-                f"{url.scheme}://{hostname}",
-                f"{url.scheme}://{url.host}" if is_default_port else None,
-                f"all://{hostname}",
-                f"all://{url.host}" if is_default_port else None,
-                url.scheme,
-                "all",
-            )
-            for proxy_key in proxy_keys:
-                if proxy_key and proxy_key in self._proxies:
-                    transport = self._proxies[proxy_key]
+            for matcher, transport in self._proxies.items():
+                if matcher.matches(url):
                     return transport
 
         return self._transport
@@ -1000,8 +989,8 @@ class AsyncClient(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self._proxies: typing.Dict[str, httpcore.AsyncHTTPTransport] = {
-            key: self._init_proxy_transport(
+        self._proxies: typing.Dict[URLMatcher, httpcore.AsyncHTTPTransport] = {
+            URLMatcher(key): self._init_proxy_transport(
                 proxy,
                 verify=verify,
                 cert=cert,
@@ -1011,6 +1000,7 @@ class AsyncClient(BaseClient):
             )
             for key, proxy in proxy_map.items()
         }
+        self._proxies = dict(sorted(self._proxies.items()))
 
     def _init_transport(
         self,
@@ -1068,21 +1058,8 @@ class AsyncClient(BaseClient):
         enforce_http_url(url)
 
         if self._proxies and not should_not_be_proxied(url):
-            default_port = {"http": 80, "https": 443}[url.scheme]
-            is_default_port = url.port is None or url.port == default_port
-            port = url.port or default_port
-            hostname = f"{url.host}:{port}"
-            proxy_keys = (
-                f"{url.scheme}://{hostname}",
-                f"{url.scheme}://{url.host}" if is_default_port else None,
-                f"all://{hostname}",
-                f"all://{url.host}" if is_default_port else None,
-                url.scheme,
-                "all",
-            )
-            for proxy_key in proxy_keys:
-                if proxy_key and proxy_key in self._proxies:
-                    transport = self._proxies[proxy_key]
+            for matcher, transport in self._proxies.items():
+                if matcher.matches(url):
                     return transport
 
         return self._transport
