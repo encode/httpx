@@ -26,9 +26,9 @@ async def test_write_timeout(server):
                 server.url.copy_with(path="/slow_response"), data=data
             )
             t1 = datetime.datetime.utcnow()
-            print("TIMEOUT")  # pragma: no cover
-            print(response)  # pragma: no cover
-            print(t1-t0)  # pragma: no cover
+            print("TIMEOUT")
+            print(response)
+            print(t1 - t0)
 
 
 @pytest.mark.usefixtures("async_environment")
