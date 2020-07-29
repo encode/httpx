@@ -1,5 +1,6 @@
 import asyncio
 import os
+from pathlib import Path
 
 import pytest
 
@@ -149,7 +150,7 @@ def test_get_ssl_cert_file():
     os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
     # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
     ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
+    assert ca_bundle is not None and ca_bundle.endswith(Path("tests/test_utils.py").as_posix())
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
