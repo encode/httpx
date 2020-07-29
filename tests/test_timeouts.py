@@ -22,6 +22,7 @@ async def test_write_timeout(server):
             response = await client.put(
                 server.url.copy_with(path="/slow_response"), data=data
             )
+            print("TIMEOUT")
             print(response)
 
 
