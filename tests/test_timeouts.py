@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 
 import httpx
@@ -18,12 +20,15 @@ async def test_write_timeout(server):
 
     async with httpx.AsyncClient(timeout=timeout) as client:
         with pytest.raises(httpx.WriteTimeout):
+            t0 = datetime.datetime.utcnow()
             data = b"*" * 1024 * 1024 * 100
             response = await client.put(
                 server.url.copy_with(path="/slow_response"), data=data
             )
+            t1 = datetime.datetime.utcnow()
             print("TIMEOUT")  # pragma: no cover
             print(response)  # pragma: no cover
+            print(t1-t0)  # pragma: no cover
 
 
 @pytest.mark.usefixtures("async_environment")
