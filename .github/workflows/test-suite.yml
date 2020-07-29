@@ -28,8 +28,10 @@ jobs:
         shell: bash
       - name: "Build package & docs"
         run: "scripts/build"
+        shell: bash
       - name: "Run tests"
         run: "scripts/test"
         shell: bash
       - name: "Enforce coverage"
         run: "scripts/coverage"
+        shell: bash
