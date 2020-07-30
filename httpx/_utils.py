@@ -123,11 +123,10 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
 
 
 class NetRCInfo:
-    def __init__(self, files: typing.Optional[typing.List[str]] = None, raise_errors = False) -> None:
+    def __init__(self, files: typing.Optional[typing.List[str]] = None) -> None:
         if files is None:
             files = [os.getenv("NETRC", ""), "~/.netrc", "~/_netrc"]
         self.netrc_files = files
-        self.raise_errors = raise_errors
 
     @property
     def netrc_info(self) -> typing.Optional[netrc.netrc]:
