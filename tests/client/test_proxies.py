@@ -56,6 +56,20 @@ PROXY_URL = "http://[::1]"
         ("http://example.com", {}, None),
         ("http://example.com", {"https": PROXY_URL}, None),
         ("http://example.com", {"http://example.net": PROXY_URL}, None),
+        # Using "*" should match any domain name.
+        ("http://example.com", {"http://*": PROXY_URL}, PROXY_URL),
+        ("https://example.com", {"http://*": PROXY_URL}, None),
+        # Using "example.com" should match example.com, but not www.example.com
+        ("http://example.com", {"http://example.com": PROXY_URL}, PROXY_URL),
+        ("http://www.example.com", {"http://example.com": PROXY_URL}, None),
+        # Using "*.example.com" should match www.example.com, but not example.com
+        ("http://example.com", {"http://*.example.com": PROXY_URL}, None),
+        ("http://www.example.com", {"http://*.example.com": PROXY_URL}, PROXY_URL),
+        # Using "*example.com" should match example.com and www.example.com
+        ("http://example.com", {"http://*example.com": PROXY_URL}, PROXY_URL),
+        ("http://www.example.com", {"http://*example.com": PROXY_URL}, PROXY_URL),
+        ("http://wwwexample.com", {"http://*example.com": PROXY_URL}, None),
+        # ...
         ("http://example.com:443", {"http://example.com": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all": PROXY_URL, "http://example.com": None}, None),

@@ -290,42 +290,38 @@ def same_origin(url: "URL", other: "URL") -> bool:
     )
 
 
-def should_not_be_proxied(url: "URL") -> bool:
-    """
-    Return True if url should not be proxied,
-    return False otherwise.
-    """
-    no_proxy = getproxies().get("no")
-    if not no_proxy:
-        return False
-    no_proxy_list = [host.strip() for host in no_proxy.split(",")]
-    for name in no_proxy_list:
-        if name == "*":
-            return True
-        if name:
-            name = name.lstrip(".")  # ignore leading dots
-            name = re.escape(name)
-            pattern = r"(.+\.)?%s$" % name
-            if re.match(pattern, url.host, re.I) or re.match(
-                pattern, url.authority, re.I
-            ):
-                return True
-    return False
-
-
-def get_environment_proxies() -> typing.Dict[str, str]:
+def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
     """Gets proxy information from the environment"""
 
     # urllib.request.getproxies() falls back on System
     # Registry and Config for proxies on Windows and macOS.
     # We don't want to propagate non-HTTP proxies into
     # our configuration such as 'TRAVIS_APT_PROXY'.
-    supported_proxy_schemes = ("http", "https", "all")
-    return {
-        key: val
-        for key, val in getproxies().items()
-        if ("://" in key or key in supported_proxy_schemes)
-    }
+    proxy_info = getproxies()
+    mounts: typing.Dict[str, typing.Optional[str]] = {}
+
+    for scheme in ("http", "https", "all"):
+        if proxy_info.get(scheme):
+            mounts[scheme] = proxy_info[scheme]
+
+    no_proxy_hosts = [host.strip() for host in proxy_info.get("no", "").split(",")]
+    for hostname in no_proxy_hosts:
+        # See https://curl.haxx.se/libcurl/c/CURLOPT_NOPROXY.html for details
+        # on how names in `NO_PROXY` are handled.
+        if hostname == "*":
+            # If NO_PROXY=* is used or if "*" occurs as any one of the comma
+            # seperated hostnames, then we should just bypass any information
+            # from HTTP_PROXY, HTTPS_PROXY, ALL_PROXY, and always ignore
+            # proxies.
+            return {}
+        elif hostname:
+            # NO_PROXY=.google.com is marked as "all://*.google.com,
+            #   which disables "www.google.com" but not "google.com"
+            # NO_PROXY=google.com is marked as "all://*.google.com,
+            #   which disables "www.google.com" and "google.com".
+            mounts[f"all://*{hostname}"] = None
+
+    return mounts
 
 
 def to_bytes(value: typing.Union[str, bytes], encoding: str = "utf-8") -> bytes:
@@ -476,13 +472,32 @@ class URLMatcher:
         url = URL(pattern)
         self.pattern = pattern
         self.scheme = "" if url.scheme == "all" else url.scheme
-        self.host = url.host
+        self.host = "" if url.host == "*" else url.host
         self.port = url.port
+        if not url.host or url.host == "*":
+            self.host_regex: typing.Optional[typing.Pattern[str]] = None
+        else:
+            if url.host.startswith("*."):
+                # *.example.com should match "www.example.com", but not "example.com"
+                domain = re.escape(url.host[2:])
+                self.host_regex = re.compile(f"^.+\\.{domain}$")
+            elif url.host.startswith("*"):
+                # *example.com should match "www.example.com" and "example.com"
+                domain = re.escape(url.host[1:])
+                self.host_regex = re.compile(f"^(.+\\.)?{domain}$")
+            else:
+                # example.com should match "example.com" but not "www.example.com"
+                domain = re.escape(url.host)
+                self.host_regex = re.compile(f"^{domain}$")
 
     def matches(self, other: "URL") -> bool:
         if self.scheme and self.scheme != other.scheme:
             return False
-        if self.host and self.host != other.host:
+        if (
+            self.host
+            and self.host_regex is not None
+            and not self.host_regex.match(other.host)
+        ):
             return False
         if self.port is not None and self.port != other.port:
             return False
@@ -494,8 +509,11 @@ class URLMatcher:
         The priority allows URLMatcher instances to be sortable, so that
         if we can match from most specific to least specific.
         """
-        port_priority = -1 if self.port is not None else 0
+        # URLs with a port should take priority over URLs without a port.
+        port_priority = 0 if self.port is not None else 1
+        # Longer hostnames should match first.
         host_priority = -len(self.host)
+        # Longer schemes should match first.
         scheme_priority = -len(self.scheme)
         return (port_priority, host_priority, scheme_priority)
 
