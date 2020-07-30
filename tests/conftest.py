@@ -56,7 +56,7 @@ def async_environment(request: typing.Any) -> str:
 
 
 @pytest.fixture(scope="function", autouse=True)
-def clean_environ() -> typing.Dict[str, typing.Any]:
+def clean_environ():
     """Keeps os.environ clean for every test without having to mock os.environ"""
     original_environ = os.environ.copy()
     os.environ.clear()
@@ -76,8 +76,6 @@ async def app(scope, receive, send):
     assert scope["type"] == "http"
     if scope["path"].startswith("/slow_response"):
         await slow_response(scope, receive, send)
-    elif scope["path"].startswith("/premature_close"):
-        await premature_close(scope, receive, send)
     elif scope["path"].startswith("/status"):
         await status_code(scope, receive, send)
     elif scope["path"].startswith("/echo_body"):
@@ -102,12 +100,7 @@ async def hello_world(scope, receive, send):
 
 
 async def slow_response(scope, receive, send):
-    delay_ms_str: str = scope["path"].replace("/slow_response/", "")
-    try:
-        delay_ms = float(delay_ms_str)
-    except ValueError:
-        delay_ms = 100
-    await sleep(delay_ms / 1000.0)
+    await sleep(1.0)
     await send(
         {
             "type": "http.response.start",
@@ -116,16 +109,6 @@ async def slow_response(scope, receive, send):
         }
     )
     await send({"type": "http.response.body", "body": b"Hello, world!"})
-
-
-async def premature_close(scope, receive, send):
-    await send(
-        {
-            "type": "http.response.start",
-            "status": 200,
-            "headers": [[b"content-type", b"text/plain"]],
-        }
-    )
 
 
 async def status_code(scope, receive, send):
@@ -250,7 +233,7 @@ class TestServer(Server):
         }
         await asyncio.wait(tasks)
 
-    async def restart(self) -> None:
+    async def restart(self) -> None:  # pragma: nocover
         # This coroutine may be called from a different thread than the one the
         # server is running on, and from an async environment that's not asyncio.
         # For this reason, we use an event to coordinate with the server
@@ -261,7 +244,7 @@ class TestServer(Server):
         while not self.started:
             await sleep(0.2)
 
-    async def watch_restarts(self):
+    async def watch_restarts(self):  # pragma: nocover
         while True:
             if self.should_exit:
                 return
@@ -296,15 +279,6 @@ def server():
 
 
 @pytest.fixture(scope=SERVER_SCOPE)
-def uds_server():
-    uds = "test_server.sock"
-    config = Config(app=app, lifespan="off", loop="asyncio", uds=uds)
-    server = TestServer(config=config)
-    yield from serve_in_thread(server)
-    os.remove(uds)
-
-
-@pytest.fixture(scope=SERVER_SCOPE)
 def https_server(cert_pem_file, cert_private_key_file):
     config = Config(
         app=app,
@@ -317,19 +291,3 @@ def https_server(cert_pem_file, cert_private_key_file):
     )
     server = TestServer(config=config)
     yield from serve_in_thread(server)
-
-
-@pytest.fixture(scope=SERVER_SCOPE)
-def https_uds_server(cert_pem_file, cert_private_key_file):
-    uds = "https_test_server.sock"
-    config = Config(
-        app=app,
-        lifespan="off",
-        ssl_certfile=cert_pem_file,
-        ssl_keyfile=cert_private_key_file,
-        uds=uds,
-        loop="asyncio",
-    )
-    server = TestServer(config=config)
-    yield from serve_in_thread(server)
-    os.remove(uds)

@@ -3,25 +3,32 @@
 # Optional
 brotlipy==0.7.*
 
+# Documentation
+mkdocs
+mkautodoc
+mkdocs-material
+
+# Packaging
+twine
+wheel
+
+# Tests & Linting
 autoflake
-# See: https://github.com/encode/httpx/pull/639#issuecomment-566235998
-black --no-binary=regex
+black
 cryptography
 flake8
 flake8-bugbear
 flake8-pie
-isort
-mkdocs
-mkautodoc
-mkdocs-material
+isort==5.*
 mypy
 pytest
 pytest-asyncio
 pytest-trio
 pytest-cov
 trio
+trio-typing
 trustme
 uvicorn
 seed-isort-config
 
-attrs>=19.2  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665
+attrs>=19.3.0  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665

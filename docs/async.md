@@ -78,7 +78,27 @@ The async response streaming methods are:
 * `Response.aiter_text()` - For streaming the response content as text.
 * `Response.aiter_lines()` - For streaming the response content as lines of text.
 * `Response.aiter_raw()` - For streaming the raw response bytes, without applying content decoding.
-* `Response.aclose()` - For closing the response. You don't usually need this, since `.stream` block close the response automatically on exit.
+* `Response.aclose()` - For closing the response. You don't usually need this, since `.stream` block closes the response automatically on exit.
+
+For situations when context block usage is not practical, it is possible to enter "manual mode" by sending a [`Request` instance](./advanced.md#request-instances) using `client.send(..., stream=True)`.
+
+Example in the context of forwarding the response to a streaming web endpoint with [Starlette](https://www.starlette.io):
+
+```python
+import httpx
+from starlette.background import BackgroundTask
+from starlette.responses import StreamingResponse
+
+client = httpx.AsyncClient()
+
+async def home(request):
+    req = client.build_request("GET", "https://www.example.com/")
+    r = await client.send(req, stream=True)
+    return StreamingResponse(r.aiter_text(), background=BackgroundTask(r.aclose))
+```
+
+!!! warning
+    When using this "manual streaming mode", it is your duty as a developer to make sure that `Response.aclose()` is called eventually. Failing to do so would leave connections open, most likely resulting in resource leaks down the line.
 
 ### Streaming requests
 
@@ -95,17 +115,8 @@ await client.post(url, data=upload_bytes())
 
 HTTPX supports either `asyncio` or `trio` as an async environment.
 
-By default it will auto-detect which of those two to use as the backend
+It will auto-detect which of those two to use as the backend
 for socket operations and concurrency primitives.
-
-You can also explicitly select a backend by instantiating a client with the
-`backend` argument...
-
-```python
-client = httpx.AsyncClient(backend='auto')     # Autodetection. The default case.
-client = httpx.AsyncClient(backend='asyncio')  # Use asyncio as the backend.
-client = httpx.AsyncClient(backend='trio')     # Use trio as the backend.
-```
 
 ### [AsyncIO](https://docs.python.org/3/library/asyncio.html)
 
@@ -174,7 +185,7 @@ We can make requests directly against the application, like so:
 ...     assert r.text == "Hello World!"
 ```
 
-For some more complex cases you might need to customise the ASGI dispatch. This allows you to:
+For some more complex cases you might need to customise the ASGI transport. This allows you to:
 
 * Inspect 500 error responses rather than raise exceptions by setting `raise_app_exceptions=False`.
 * Mount the ASGI application at a subpath by setting `root_path`.
@@ -185,26 +196,9 @@ For example:
 ```python
 # Instantiate a client that makes ASGI requests with a client IP of "1.2.3.4",
 # on port 123.
-dispatch = httpx.ASGIDispatch(app=app, client=("1.2.3.4", 123))
-async with httpx.AsyncClient(dispatch=dispatch, base_url="http://testserver") as client:
+transport = httpx.ASGITransport(app=app, client=("1.2.3.4", 123))
+async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
     ...
 ```
 
 See [the ASGI documentation](https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope) for more details on the `client` and `root_path` keys.
-
-## Unix Domain Sockets
-
-The async client provides support for connecting through a unix domain socket via the `uds` parameter. This is useful when making requests to a server that is bound to a socket file rather than an IP address.
-
-Here's an example requesting the Docker Engine API:
-
-```python
-import httpx
-
-
-async with httpx.AsyncClient(uds="/var/run/docker.sock") as client:
-    # This request will connect through the socket file.
-    resp = await client.get("http://localhost/version")
-```
-
-This functionality is not currently available in the synchronous client.

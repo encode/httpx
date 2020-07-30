@@ -140,7 +140,7 @@ which is used for HTML forms.
 }
 ```
 
-Form encoded data can also include multiple values form a given key.
+Form encoded data can also include multiple values from a given key.
 
 ```python
 >>> data = {'key1': ['value1', 'value2']}
@@ -186,6 +186,25 @@ of items for the file value:
   ...
   "files": {
     "upload-file": "<... binary content ...>"
+  },
+  ...
+}
+```
+
+If you need to include non-file data fields in the multipart form, use the `data=...` parameter:
+
+```python
+>>> data = {'message': 'Hello, world!'}
+>>> files = {'file': open('report.xls', 'rb')}
+>>> r = httpx.post("https://httpbin.org/post", data=data, files=files)
+>>> print(r.text)
+{
+  ...
+  "files": {
+    "file": "<... binary content ...>"
+  },
+  "form": {
+    "message": "Hello, world!",
   },
   ...
 }
@@ -248,9 +267,10 @@ We can raise an exception for any Client or Server error responses (4xx or 5xx s
 404
 >>> not_found.raise_for_status()
 Traceback (most recent call last):
-  File "/Users/tomchristie/GitHub/encode/httpcore/httpx/models.py", line 776, in raise_for_status
-    raise HttpError(message)
-httpx.exceptions.HttpError: 404 Not Found
+  File "/Users/tomchristie/GitHub/encode/httpcore/httpx/models.py", line 837, in raise_for_status
+    raise HTTPStatusError(message, response=self)
+httpx._exceptions.HTTPStatusError: 404 Client Error: Not Found for url: https://httpbin.org/status/404
+For more information check: https://httpstatuses.com/404
 ```
 
 Any successful response codes will simply return `None` rather than raising an exception.

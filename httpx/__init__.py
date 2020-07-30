@@ -2,33 +2,40 @@ from .__version__ import __description__, __title__, __version__
 from ._api import delete, get, head, options, patch, post, put, request, stream
 from ._auth import Auth, BasicAuth, DigestAuth
 from ._client import AsyncClient, Client
-from ._config import PoolLimits, Proxy, Timeout
-from ._dispatch.asgi import ASGIDispatch
-from ._dispatch.wsgi import WSGIDispatch
+from ._config import PoolLimits, Proxy, Timeout, create_ssl_context
 from ._exceptions import (
-    ConnectionClosed,
+    CloseError,
+    ConnectError,
     ConnectTimeout,
     CookieConflict,
     DecodingError,
     HTTPError,
+    HTTPStatusError,
     InvalidURL,
+    NetworkError,
     NotRedirectResponse,
     PoolTimeout,
     ProtocolError,
     ProxyError,
+    ReadError,
     ReadTimeout,
-    RedirectLoop,
+    RedirectError,
     RequestBodyUnavailable,
     RequestNotRead,
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
+    StreamError,
     TimeoutException,
     TooManyRedirects,
+    WriteError,
     WriteTimeout,
 )
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import StatusCode, codes
+from ._transports.asgi import ASGITransport
+from ._transports.urllib3 import URLLib3ProxyTransport, URLLib3Transport
+from ._transports.wsgi import WSGITransport
 
 __all__ = [
     "__description__",
@@ -45,7 +52,7 @@ __all__ = [
     "request",
     "stream",
     "codes",
-    "ASGIDispatch",
+    "ASGITransport",
     "AsyncClient",
     "Auth",
     "BasicAuth",
@@ -54,33 +61,42 @@ __all__ = [
     "PoolLimits",
     "Proxy",
     "Timeout",
+    "create_ssl_context",
+    "CloseError",
+    "ConnectError",
     "ConnectTimeout",
     "CookieConflict",
-    "ConnectionClosed",
     "DecodingError",
     "HTTPError",
+    "HTTPStatusError",
     "InvalidURL",
+    "NetworkError",
     "NotRedirectResponse",
     "PoolTimeout",
     "ProtocolError",
+    "ReadError",
     "ReadTimeout",
-    "RedirectLoop",
+    "RedirectError",
     "RequestBodyUnavailable",
     "ResponseClosed",
     "ResponseNotRead",
     "RequestNotRead",
+    "StatusCode",
     "StreamConsumed",
+    "StreamError",
     "ProxyError",
+    "TimeoutException",
     "TooManyRedirects",
+    "WriteError",
     "WriteTimeout",
     "URL",
-    "StatusCode",
+    "URLLib3Transport",
+    "URLLib3ProxyTransport",
     "Cookies",
     "Headers",
     "QueryParams",
     "Request",
-    "TimeoutException",
     "Response",
     "DigestAuth",
-    "WSGIDispatch",
+    "WSGITransport",
 ]

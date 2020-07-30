@@ -21,6 +21,23 @@ def test_get(server):
     assert repr(response) == "<Response [200 OK]>"
     assert response.elapsed > timedelta(0)
 
+    with pytest.raises(httpx.NotRedirectResponse):
+        response.next()
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        pytest.param("invalid://example.org", id="scheme-not-http(s)"),
+        pytest.param("://example.org", id="no-scheme"),
+        pytest.param("http://", id="no-host"),
+    ],
+)
+def test_get_invalid_url(server, url):
+    with httpx.Client() as client:
+        with pytest.raises(httpx.InvalidURL):
+            client.get(url)
+
 
 def test_build_request(server):
     url = server.url.copy_with(path="/echo_headers")
@@ -34,6 +51,22 @@ def test_build_request(server):
     assert response.status_code == 200
     assert response.url == url
 
+    assert response.json()["Custom-header"] == "value"
+
+
+def test_build_post_request(server):
+    url = server.url.copy_with(path="/echo_headers")
+    headers = {"Custom-header": "value"}
+
+    with httpx.Client() as client:
+        request = client.build_request("POST", url)
+        request.headers.update(headers)
+        response = client.send(request)
+
+    assert response.status_code == 200
+    assert response.url == url
+
+    assert response.json()["Content-length"] == "0"
     assert response.json()["Custom-header"] == "value"
 
 
@@ -87,14 +120,15 @@ def test_raise_for_status(server):
     with httpx.Client() as client:
         for status_code in (200, 400, 404, 500, 505):
             response = client.request(
-                "GET", server.url.copy_with(path="/status/{}".format(status_code))
+                "GET", server.url.copy_with(path=f"/status/{status_code}")
             )
             if 400 <= status_code < 600:
-                with pytest.raises(httpx.HTTPError) as exc_info:
+                with pytest.raises(httpx.HTTPStatusError) as exc_info:
                     response.raise_for_status()
                 assert exc_info.value.response == response
+                assert exc_info.value.request.url.path == f"/status/{status_code}"
             else:
-                assert response.raise_for_status() is None
+                assert response.raise_for_status() is None  # type: ignore
 
 
 def test_options(server):
@@ -142,14 +176,21 @@ def test_base_url(server):
 
 def test_merge_url():
     client = httpx.Client(base_url="https://www.paypal.com/")
-    url = client.merge_url("http://www.paypal.com")
+    request = client.build_request("GET", "http://www.paypal.com")
+    assert request.url.scheme == "https"
+    assert request.url.is_ssl
 
-    assert url.scheme == "https"
-    assert url.is_ssl
 
-
-def test_elapsed_delay(server):
-    url = server.url.copy_with(path="/slow_response/100")
-    with httpx.Client() as client:
-        response = client.get(url)
-    assert response.elapsed.total_seconds() > 0.0
+@pytest.mark.parametrize(
+    "url,scheme,is_ssl",
+    [
+        ("http://www.paypal.com", "https", True),
+        ("http://app", "http", False),
+        ("http://192.168.1.42", "http", False),
+    ],
+)
+def test_merge_url_hsts(url: str, scheme: str, is_ssl: bool):
+    client = httpx.Client()
+    request = client.build_request("GET", url)
+    assert request.url.scheme == scheme
+    assert request.url.is_ssl == is_ssl

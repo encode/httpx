@@ -5,11 +5,8 @@
 <p align="center"><strong>HTTPX</strong> <em>- A next-generation HTTP client for Python.</em></p>
 
 <p align="center">
-<a href="https://travis-ci.org/encode/httpx">
-    <img src="https://travis-ci.org/encode/httpx.svg?branch=master" alt="Build Status">
-</a>
-<a href="https://codecov.io/gh/encode/httpx">
-    <img src="https://codecov.io/gh/encode/httpx/branch/master/graph/badge.svg" alt="Coverage">
+<a href="https://github.com/encode/httpx/actions">
+    <img src="https://github.com/encode/httpx/workflows/Test%20Suite/badge.svg" alt="Test Suite">
 </a>
 <a href="https://pypi.org/project/httpx/">
     <img src="https://badge.fury.io/py/httpx.svg" alt="Package version">
@@ -19,8 +16,8 @@
 HTTPX is a fully featured HTTP client for Python 3, which provides sync and async APIs, and support for both HTTP/1.1 and HTTP/2.
 
 **Note**: _HTTPX should be considered in beta. We believe we've got the public API to
-a stable point now, but would strongly recommend pinning your dependencies to the `0.11.*`
-release, so that you're able to properly review [API changes between package updates](https://github.com/encode/httpx/blob/master/CHANGELOG.md). A 1.0 release is expected to be issued sometime on or before April 2020._
+a stable point now, but would strongly recommend pinning your dependencies to the `0.13.*`
+release, so that you're able to properly review [API changes between package updates](https://github.com/encode/httpx/blob/master/CHANGELOG.md). A 1.0 release is expected to be issued sometime around mid-2020._
 
 ---
 
@@ -89,7 +86,7 @@ Install with pip:
 $ pip install httpx
 ```
 
-httpx requires Python 3.6+
+HTTPX requires Python 3.6+.
 
 ## Documentation
 
@@ -101,23 +98,26 @@ For more advanced topics, see the [Advanced Usage](https://www.python-httpx.org/
 
 The [Developer Interface](https://www.python-httpx.org/api/) provides a comprehensive API reference.
 
+To find out about tools that integrate with HTTPX, see [Third Party Packages](https://www.python-httpx.org/third-party-packages/).
+
 ## Contribute
 
 If you want to contribute with HTTPX check out the [Contributing Guide](https://www.python-httpx.org/contributing/) to learn how to start.
 
 ## Dependencies
 
-The httpx project relies on these excellent libraries:
+The HTTPX project relies on these excellent libraries:
 
-* `urllib3` - Sync client support.
-* `h11` - HTTP/1.1 support.
-* `h2` - HTTP/2 support.
+* `httpcore` - The underlying transport implementation for `httpx`.
+  * `h11` - HTTP/1.1 support.
+  * `h2` - HTTP/2 support.
 * `certifi` - SSL certificates.
 * `chardet` - Fallback auto-detection for response encoding.
 * `hstspreload` - determines whether IDNA-encoded host should be only accessed via HTTPS.
 * `idna` - Internationalized domain name support.
 * `rfc3986` - URL parsing & normalization.
 * `sniffio` - Async library autodetection.
+* `urllib3` - Support for the `httpx.URLLib3Transport` class. *(Optional)*
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
 
 A huge amount of credit is due to `requests` for the API layout that

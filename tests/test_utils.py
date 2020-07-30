@@ -12,9 +12,12 @@ from httpx._utils import (
     guess_json_utf,
     obfuscate_sensitive_headers,
     parse_header_links,
+    same_origin,
     should_not_be_proxied,
 )
 from tests.utils import override_log_level
+
+from .common import FIXTURES_DIR, TESTS_DIR
 
 
 @pytest.mark.parametrize(
@@ -54,17 +57,22 @@ def test_guess_by_bom(encoding, expected):
 
 
 def test_bad_get_netrc_login():
-    netrc_info = NetRCInfo(["tests/does-not-exist"])
+    netrc_info = NetRCInfo([str(FIXTURES_DIR / "does-not-exist")])
     assert netrc_info.get_credentials("netrcexample.org") is None
 
 
 def test_get_netrc_login():
-    netrc_info = NetRCInfo(["tests/.netrc"])
+    netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
     expected_credentials = (
         "example-username",
         "example-password",
     )
     assert netrc_info.get_credentials("netrcexample.org") == expected_credentials
+
+
+def test_get_netrc_unknown():
+    netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
+    assert netrc_info.get_credentials("nonexistant.org") is None
 
 
 @pytest.mark.parametrize(
@@ -98,7 +106,6 @@ async def test_logs_debug(server, capsys):
             assert response.status_code == 200
     stderr = capsys.readouterr().err
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
-    assert "httpx._dispatch.connection_pool" not in stderr
 
 
 @pytest.mark.asyncio
@@ -109,7 +116,6 @@ async def test_logs_trace(server, capsys):
             assert response.status_code == 200
     stderr = capsys.readouterr().err
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
-    assert "httpx._dispatch.connection_pool" in stderr
 
 
 @pytest.mark.asyncio
@@ -134,14 +140,16 @@ def test_get_ssl_cert_file():
     # Two environments is not set.
     assert get_ca_bundle_from_env() is None
 
-    os.environ["SSL_CERT_DIR"] = "tests/"
+    os.environ["SSL_CERT_DIR"] = str(TESTS_DIR)
     # SSL_CERT_DIR is correctly set, SSL_CERT_FILE is not set.
-    assert get_ca_bundle_from_env() == "tests"
+    ca_bundle = get_ca_bundle_from_env()
+    assert ca_bundle is not None and ca_bundle.endswith("tests")
 
     del os.environ["SSL_CERT_DIR"]
-    os.environ["SSL_CERT_FILE"] = "tests/test_utils.py"
+    os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
     # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
-    assert get_ca_bundle_from_env() == "tests/test_utils.py"
+    ca_bundle = get_ca_bundle_from_env()
+    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
@@ -152,14 +160,16 @@ def test_get_ssl_cert_file():
     # SSL_CERT_DIR is set with wrong path,  SSL_CERT_FILE is not set.
     assert get_ca_bundle_from_env() is None
 
-    os.environ["SSL_CERT_DIR"] = "tests/"
-    os.environ["SSL_CERT_FILE"] = "tests/test_utils.py"
+    os.environ["SSL_CERT_DIR"] = str(TESTS_DIR)
+    os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
     # Two environments is correctly set.
-    assert get_ca_bundle_from_env() == "tests/test_utils.py"
+    ca_bundle = get_ca_bundle_from_env()
+    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # Two environments is set but SSL_CERT_FILE is not a file.
-    assert get_ca_bundle_from_env() == "tests"
+    ca_bundle = get_ca_bundle_from_env()
+    assert ca_bundle is not None and ca_bundle.endswith("tests")
 
     os.environ["SSL_CERT_DIR"] = "wrongpath"
     # Two environments is set but both are not correct.
@@ -285,3 +295,15 @@ def test_should_not_be_proxied(url, no_proxy, expected):
     os.environ.update(no_proxy)
     parsed_url = httpx.URL(url)
     assert should_not_be_proxied(parsed_url) == expected
+
+
+def test_same_origin():
+    origin1 = httpx.URL("https://example.com")
+    origin2 = httpx.URL("HTTPS://EXAMPLE.COM:443")
+    assert same_origin(origin1, origin2)
+
+
+def test_not_same_origin():
+    origin1 = httpx.URL("https://example.com")
+    origin2 = httpx.URL("HTTP://EXAMPLE.COM")
+    assert not same_origin(origin1, origin2)

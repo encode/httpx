@@ -189,6 +189,65 @@ async def test_multipart_data_and_files_content():
     )
 
 
+@pytest.mark.asyncio
+async def test_empty_request():
+    stream = encode(data={}, files={})
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert stream.can_replay()
+    assert stream.get_headers() == {}
+    assert sync_content == b""
+    assert async_content == b""
+
+
 def test_invalid_argument():
     with pytest.raises(TypeError):
-        encode(123)
+        encode(123)  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_multipart_multiple_files_single_input_content():
+    files = [
+        ("file", io.BytesIO(b"<file content 1>")),
+        ("file", io.BytesIO(b"<file content 2>")),
+    ]
+    stream = encode(files=files, boundary=b"+++")
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert stream.can_replay()
+    assert stream.get_headers() == {
+        "Content-Length": "271",
+        "Content-Type": "multipart/form-data; boundary=+++",
+    }
+    assert sync_content == b"".join(
+        [
+            b"--+++\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
+            b"Content-Type: application/octet-stream\r\n",
+            b"\r\n",
+            b"<file content 1>\r\n",
+            b"--+++\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
+            b"Content-Type: application/octet-stream\r\n",
+            b"\r\n",
+            b"<file content 2>\r\n",
+            b"--+++--\r\n",
+        ]
+    )
+    assert async_content == b"".join(
+        [
+            b"--+++\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
+            b"Content-Type: application/octet-stream\r\n",
+            b"\r\n",
+            b"<file content 1>\r\n",
+            b"--+++\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
+            b"Content-Type: application/octet-stream\r\n",
+            b"\r\n",
+            b"<file content 2>\r\n",
+            b"--+++--\r\n",
+        ]
+    )

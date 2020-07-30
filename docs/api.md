@@ -38,6 +38,13 @@
     :docstring:
     :members: headers cookies params request get head options post put patch delete build_request send close
 
+## `AsyncClient`
+
+::: httpx.AsyncClient
+    :docstring:
+    :members: headers cookies params request get head options post put patch delete build_request send
+
+
 ## `Response`
 
 *An HTTP response.*
@@ -113,26 +120,9 @@ what gets sent over the wire.*
 * `.full_path` - **str**
 * `.fragment` - **str**
 * `.is_ssl` - **bool**
-* `.origin` - **Origin**
 * `.is_absolute_url` - **bool**
 * `.is_relative_url` - **bool**
 * `def .copy_with([scheme], [authority], [path], [query], [fragment])` - **URL**
-* `def .resolve_with(url)` - **URL**
-
-## `Origin`
-
-*A normalized, IDNA supporting set of scheme/host/port info.*
-
-```python
->>> Origin('https://example.org') == Origin('HTTPS://EXAMPLE.ORG:443')
-True
-```
-
-* `def __init__(url)`
-* `.scheme` - **str**
-* `.is_ssl` - **bool**
-* `.host` - **str**
-* `.port` - **int**
 
 ## `Headers`
 
@@ -144,7 +134,8 @@ True
 'application/json'
 ```
 
-* `def __init__(self, headers)`
+* `def __init__(self, headers, encoding=None)`
+* `def copy()` - **Headers**
 
 ## `Cookies`
 

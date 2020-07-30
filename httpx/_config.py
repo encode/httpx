@@ -6,18 +6,9 @@ from pathlib import Path
 
 import certifi
 
-from ._models import URL, Headers, HeaderTypes, URLTypes
+from ._models import URL, Headers
+from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._utils import get_ca_bundle_from_env, get_logger
-
-CertTypes = typing.Union[str, typing.Tuple[str, str], typing.Tuple[str, str, str]]
-VerifyTypes = typing.Union[str, bool, ssl.SSLContext]
-TimeoutTypes = typing.Union[
-    None, float, typing.Tuple[float, float, float, float], "Timeout"
-]
-ProxiesTypes = typing.Union[
-    URLTypes, "Proxy", typing.Dict[URLTypes, typing.Union[URLTypes, "Proxy"]]
-]
-
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -49,6 +40,17 @@ class UnsetType:
 UNSET = UnsetType()
 
 
+def create_ssl_context(
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    trust_env: bool = None,
+    http2: bool = False,
+) -> ssl.SSLContext:
+    return SSLConfig(
+        cert=cert, verify=verify, trust_env=trust_env, http2=http2
+    ).ssl_context
+
+
 class SSLConfig:
     """
     SSL Configuration.
@@ -70,17 +72,6 @@ class SSLConfig:
         self.http2 = http2
         self.ssl_context = self.load_ssl_context()
 
-    def __eq__(self, other: typing.Any) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self.cert == other.cert
-            and self.verify == other.verify
-        )
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return f"{class_name}(cert={self.cert}, verify={self.verify})"
-
     def load_ssl_context(self) -> ssl.SSLContext:
         logger.trace(
             f"load_ssl_context "
@@ -101,6 +92,7 @@ class SSLConfig:
         context = self._create_default_ssl_context()
         context.verify_mode = ssl.CERT_NONE
         context.check_hostname = False
+        self._load_client_certs(context)
         return context
 
     def load_ssl_context_verify(self) -> ssl.SSLContext:
@@ -110,7 +102,7 @@ class SSLConfig:
         if self.trust_env and self.verify is True:
             ca_bundle = get_ca_bundle_from_env()
             if ca_bundle is not None:
-                self.verify = ca_bundle  # type: ignore
+                self.verify = ca_bundle
 
         if isinstance(self.verify, ssl.SSLContext):
             # Allow passing in our own SSLContext object that's pre-configured.
@@ -252,6 +244,14 @@ class Timeout:
                 timeout if isinstance(pool_timeout, UnsetType) else pool_timeout
             )
 
+    def as_dict(self) -> typing.Dict[str, typing.Optional[float]]:
+        return {
+            "connect": self.connect_timeout,
+            "read": self.read_timeout,
+            "write": self.write_timeout,
+            "pool": self.pool_timeout,
+        }
+
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
@@ -288,29 +288,30 @@ class PoolLimits:
 
     **Parameters:**
 
-    * **soft_limit** - Allow the connection pool to maintain keep-alive connections
+    * **max_keepalive** - Allow the connection pool to maintain keep-alive connections
                        below this point.
-    * **hard_limit** - The maximum number of concurrenct connections that may be
+    * **max_connections** - The maximum number of concurrent connections that may be
                        established.
     """
 
     def __init__(
-        self, *, soft_limit: int = None, hard_limit: int = None,
+        self, *, max_keepalive: int = None, max_connections: int = None,
     ):
-        self.soft_limit = soft_limit
-        self.hard_limit = hard_limit
+        self.max_keepalive = max_keepalive
+        self.max_connections = max_connections
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self.soft_limit == other.soft_limit
-            and self.hard_limit == other.hard_limit
+            and self.max_keepalive == other.max_keepalive
+            and self.max_connections == other.max_connections
         )
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return (
-            f"{class_name}(soft_limit={self.soft_limit}, hard_limit={self.hard_limit})"
+            f"{class_name}(max_keepalive={self.max_keepalive}, "
+            f"max_connections={self.max_connections})"
         )
 
 
@@ -329,7 +330,7 @@ class Proxy:
         if url.username or url.password:
             headers.setdefault(
                 "Proxy-Authorization",
-                self.build_auth_header(url.username, url.password),
+                self._build_auth_header(url.username, url.password),
             )
             # Remove userinfo from the URL authority, e.g.:
             # 'username:password@proxy_host:proxy_port' -> 'proxy_host:proxy_port'
@@ -339,9 +340,9 @@ class Proxy:
         self.headers = headers
         self.mode = mode
 
-    def build_auth_header(self, username: str, password: str) -> str:
+    def _build_auth_header(self, username: str, password: str) -> str:
         userpass = (username.encode("utf-8"), password.encode("utf-8"))
-        token = b64encode(b":".join(userpass)).decode().strip()
+        token = b64encode(b":".join(userpass)).decode()
         return f"Basic {token}"
 
     def __repr__(self) -> str:
@@ -353,5 +354,5 @@ class Proxy:
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
-DEFAULT_POOL_LIMITS = PoolLimits(soft_limit=10, hard_limit=100)
+DEFAULT_POOL_LIMITS = PoolLimits(max_keepalive=10, max_connections=100)
 DEFAULT_MAX_REDIRECTS = 20

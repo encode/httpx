@@ -4,7 +4,6 @@ import email.message
 import json as jsonlib
 import typing
 import urllib.request
-import warnings
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
@@ -13,13 +12,7 @@ import chardet
 import rfc3986
 
 from .__version__ import __version__
-from ._content_streams import (
-    ByteStream,
-    ContentStream,
-    RequestData,
-    RequestFiles,
-    encode,
-)
+from ._content_streams import ByteStream, ContentStream, encode
 from ._decoders import (
     SUPPORTED_DECODERS,
     Decoder,
@@ -30,15 +23,23 @@ from ._decoders import (
 )
 from ._exceptions import (
     CookieConflict,
-    HTTPError,
-    InvalidURL,
+    HTTPStatusError,
     NotRedirectResponse,
     RequestNotRead,
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
 )
-from ._status_codes import StatusCode
+from ._status_codes import codes
+from ._types import (
+    CookieTypes,
+    HeaderTypes,
+    PrimitiveData,
+    QueryParamTypes,
+    RequestData,
+    RequestFiles,
+    URLTypes,
+)
 from ._utils import (
     ElapsedTimer,
     flatten_queryparams,
@@ -51,36 +52,9 @@ from ._utils import (
     str_query_param,
 )
 
-if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._dispatch.base import AsyncDispatcher  # noqa: F401
-
-PrimitiveData = typing.Optional[typing.Union[str, int, float, bool]]
-
-URLTypes = typing.Union["URL", str]
-
-QueryParamTypes = typing.Union[
-    "QueryParams",
-    typing.Mapping[str, typing.Union[PrimitiveData, typing.Sequence[PrimitiveData]]],
-    typing.List[typing.Tuple[str, PrimitiveData]],
-    str,
-]
-
-HeaderTypes = typing.Union[
-    "Headers",
-    typing.Dict[typing.AnyStr, typing.AnyStr],
-    typing.List[typing.Tuple[typing.AnyStr, typing.AnyStr]],
-]
-
-CookieTypes = typing.Union["Cookies", CookieJar, typing.Dict[str, str]]
-
 
 class URL:
-    def __init__(
-        self,
-        url: URLTypes,
-        allow_relative: bool = False,
-        params: QueryParamTypes = None,
-    ) -> None:
+    def __init__(self, url: URLTypes, params: QueryParamTypes = None) -> None:
         if isinstance(url, str):
             self._uri_reference = rfc3986.api.iri_reference(url).encode()
         else:
@@ -99,17 +73,6 @@ class URL:
             else:
                 query_string = str(QueryParams(params))
             self._uri_reference = self._uri_reference.copy_with(query=query_string)
-
-        # Enforce absolute URLs by default.
-        if not allow_relative:
-            if not self.scheme:
-                raise InvalidURL("No scheme included in URL.")
-            if not self.host:
-                raise InvalidURL("No host included in URL.")
-
-        # Allow setting full_path to custom attributes requests
-        # like OPTIONS, CONNECT, and forwarding proxy requests.
-        self._full_path: typing.Optional[str] = None
 
     @property
     def scheme(self) -> str:
@@ -142,11 +105,9 @@ class URL:
         return self._uri_reference.host or ""
 
     @property
-    def port(self) -> int:
+    def port(self) -> typing.Optional[int]:
         port = self._uri_reference.port
-        if port is None:
-            return {"https": 443, "http": 80}[self.scheme]
-        return int(port)
+        return int(port) if port else None
 
     @property
     def path(self) -> str:
@@ -158,20 +119,23 @@ class URL:
 
     @property
     def full_path(self) -> str:
-        if self._full_path is not None:
-            return self._full_path
         path = self.path
         if self.query:
             path += "?" + self.query
         return path
 
-    @full_path.setter
-    def full_path(self, value: typing.Optional[str]) -> None:
-        self._full_path = value
-
     @property
     def fragment(self) -> str:
         return self._uri_reference.fragment or ""
+
+    @property
+    def raw(self) -> typing.Tuple[bytes, bytes, typing.Optional[int], bytes]:
+        return (
+            self.scheme.encode("ascii"),
+            self.host.encode("ascii"),
+            self.port,
+            self.full_path.encode("ascii"),
+        )
 
     @property
     def is_ssl(self) -> bool:
@@ -201,7 +165,7 @@ class URL:
             or "port" in kwargs
         ):
             host = kwargs.pop("host", self.host)
-            port = kwargs.pop("port", None if self.is_relative_url else self.port)
+            port = kwargs.pop("port", self.port)
             username = kwargs.pop("username", self.username)
             password = kwargs.pop("password", self.password)
 
@@ -216,10 +180,7 @@ class URL:
 
             kwargs["authority"] = authority
 
-        return URL(
-            self._uri_reference.copy_with(**kwargs).unsplit(),
-            allow_relative=self.is_relative_url,
-        )
+        return URL(self._uri_reference.copy_with(**kwargs).unsplit(),)
 
     def join(self, relative_url: URLTypes) -> "URL":
         """
@@ -231,7 +192,7 @@ class URL:
         # We drop any fragment portion, because RFC 3986 strictly
         # treats URLs with a fragment portion as not being absolute URLs.
         base_uri = self._uri_reference.copy_with(fragment=None)
-        relative_url = URL(relative_url, allow_relative=True)
+        relative_url = URL(relative_url)
         return URL(relative_url._uri_reference.resolve_with(base_uri).unsplit())
 
     def __hash__(self) -> int:
@@ -255,37 +216,6 @@ class URL:
         return f"{class_name}({url_str!r})"
 
 
-class Origin:
-    """
-    The URL scheme and authority information, as a comparable, hashable object.
-    """
-
-    def __init__(self, url: URLTypes) -> None:
-        if not isinstance(url, URL):
-            url = URL(url)
-        self.scheme = url.scheme
-        self.is_ssl = url.is_ssl
-        self.host = url.host
-        self.port = url.port
-
-    def __eq__(self, other: typing.Any) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self.scheme == other.scheme
-            and self.host == other.host
-            and self.port == other.port
-        )
-
-    def __hash__(self) -> int:
-        return hash((self.scheme, self.host, self.port))
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return (
-            f"{class_name}(scheme={self.scheme!r} host={self.host!r} port={self.port})"
-        )
-
-
 class QueryParams(typing.Mapping[str, str]):
     """
     URL query parameters, as a multi-dict.
@@ -298,7 +228,7 @@ class QueryParams(typing.Mapping[str, str]):
         value = args[0] if args else kwargs
 
         items: typing.Sequence[typing.Tuple[str, PrimitiveData]]
-        if isinstance(value, str):
+        if value is None or isinstance(value, str):
             items = parse_qsl(value)
         elif isinstance(value, QueryParams):
             items = value.multi_items()
@@ -330,7 +260,7 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[key]
         return default
 
-    def update(self, params: QueryParamTypes = None) -> None:  # type: ignore
+    def update(self, params: QueryParamTypes = None) -> None:
         if not params:
             return
 
@@ -515,8 +445,8 @@ class Headers(typing.MutableMapping[str, str]):
         Set the header `key` to `value`, removing any duplicate entries.
         Retains insertion order.
         """
-        set_key = key.lower().encode(self.encoding)
-        set_value = value.encode(self.encoding)
+        set_key = key.lower().encode(self._encoding or "utf-8")
+        set_value = value.encode(self._encoding or "utf-8")
 
         found_indexes = []
         for idx, (item_key, _) in enumerate(self._list):
@@ -623,6 +553,9 @@ class Request:
         auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
 
         has_host = "host" in self.headers
+        has_content_length = (
+            "content-length" in self.headers or "transfer-encoding" in self.headers
+        )
         has_user_agent = "user-agent" in self.headers
         has_accept = "accept" in self.headers
         has_accept_encoding = "accept-encoding" in self.headers
@@ -633,6 +566,8 @@ class Request:
             if url.userinfo:
                 url = url.copy_with(username=None, password=None)
             auto_headers.append((b"host", url.authority.encode("ascii")))
+        if not has_content_length and self.method in ("POST", "PUT", "PATCH"):
+            auto_headers.append((b"content-length", b"0"))
         if not has_user_agent:
             auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
         if not has_accept:
@@ -656,7 +591,7 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part for part in self.stream])
+            self._content = b"".join(self.stream)
             # If a streaming request has been read entirely into memory, then
             # we can replace the stream with a raw bytes implementation,
             # to ensure that any non-replayable streams can still be used.
@@ -725,7 +660,7 @@ class Response:
 
     @property
     def reason_phrase(self) -> str:
-        return StatusCode.get_reason_phrase(self.status_code)
+        return codes.get_reason_phrase(self.status_code)
 
     @property
     def url(self) -> typing.Optional[URL]:
@@ -823,29 +758,29 @@ class Response:
 
     @property
     def is_error(self) -> bool:
-        return StatusCode.is_error(self.status_code)
+        return codes.is_error(self.status_code)
 
     @property
     def is_redirect(self) -> bool:
-        return StatusCode.is_redirect(self.status_code) and "location" in self.headers
+        return codes.is_redirect(self.status_code) and "location" in self.headers
 
     def raise_for_status(self) -> None:
         """
-        Raise the `HttpError` if one occurred.
+        Raise the `HTTPStatusError` if one occurred.
         """
         message = (
             "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
             "For more information check: https://httpstatuses.com/{0.status_code}"
         )
 
-        if StatusCode.is_client_error(self.status_code):
+        if codes.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
-            raise HTTPError(message, response=self)
-        elif StatusCode.is_server_error(self.status_code):
+            raise HTTPStatusError(message, response=self)
+        elif codes.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
-            raise HTTPError(message, response=self)
+            raise HTTPStatusError(message, response=self)
 
-    def json(self, **kwargs: typing.Any) -> typing.Union[dict, list]:
+    def json(self, **kwargs: typing.Any) -> typing.Any:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
@@ -879,28 +814,12 @@ class Response:
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
-    @property
-    def stream(self):  # type: ignore
-        warnings.warn(  # pragma: nocover
-            "Response.stream() is due to be deprecated. "
-            "Use Response.aiter_bytes() instead."
-        )
-        return self.aiter_bytes  # pragma: nocover
-
-    @property
-    def raw(self):  # type: ignore
-        warnings.warn(  # pragma: nocover
-            "Response.raw() is due to be deprecated. "
-            "Use Response.aiter_raw() instead."
-        )
-        return self.aiter_raw  # pragma: nocover
-
     def read(self) -> bytes:
         """
         Read and return the response content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part for part in self.iter_bytes()])
+            self._content = b"".join(self.iter_bytes())
         return self._content
 
     def iter_bytes(self) -> typing.Iterator[bytes]:
@@ -947,6 +866,15 @@ class Response:
         for part in self._raw_stream:
             yield part
         self.close()
+
+    def next(self) -> "Response":
+        """
+        Get the next response from a redirect response.
+        """
+        if not self.is_redirect:
+            raise NotRedirectResponse()
+        assert self.call_next is not None
+        return self.call_next()
 
     def close(self) -> None:
         """
@@ -1103,7 +1031,7 @@ class Cookies(MutableMapping):
         value = None
         for cookie in self.jar:
             if cookie.name == name:
-                if domain is None or cookie.domain == domain:  # type: ignore
+                if domain is None or cookie.domain == domain:
                     if path is None or cookie.path == path:
                         if value is not None:
                             message = f"Multiple cookies exist with name={name}"
@@ -1125,12 +1053,12 @@ class Cookies(MutableMapping):
         remove = []
         for cookie in self.jar:
             if cookie.name == name:
-                if domain is None or cookie.domain == domain:  # type: ignore
+                if domain is None or cookie.domain == domain:
                     if path is None or cookie.path == path:
                         remove.append(cookie)
 
         for cookie in remove:
-            self.jar.clear(cookie.domain, cookie.path, cookie.name)  # type: ignore
+            self.jar.clear(cookie.domain, cookie.path, cookie.name)
 
     def clear(self, domain: str = None, path: str = None) -> None:
         """

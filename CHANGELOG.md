@@ -4,6 +4,155 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.13.3 (May 29th, 2020)
+
+### Fixed
+
+* Include missing keepalive expiry configuration. (Pull #1005)
+* Improved error message when URL redirect has a custom scheme. (Pull #1002)
+
+## 0.13.2 (May 27th, 2020)
+
+### Fixed
+
+* Include explicit "Content-Length: 0" on POST, PUT, PATCH if no request body is used. (Pull #995)
+* Add `http2` option to `httpx.Client`. (Pull #982)
+* Tighten up API typing in places. (Pull #992, #999)
+
+## 0.13.1 (May 22nd, 2020)
+
+### Fixed
+
+* Fix pool options deprecation warning. (Pull #980)
+* Include `httpx.URLLib3ProxyTransport` in top-level API. (Pull #979)
+
+## 0.13.0 (May 22nd, 2020)
+
+This release switches to `httpcore` for all the internal networking, which means:
+
+* We're using the same codebase for both our sync and async clients.
+* HTTP/2 support is now available with the sync client.
+* We no longer have a `urllib3` dependency for our sync client, although there is still an *optional* `URLLib3Transport` class.
+
+It also means we've had to remove our UDS support, since maintaining that would have meant having to push back our work towards a 1.0 release, which isn't a trade-off we wanted to make.
+
+We also now have [a public "Transport API"](https://www.python-httpx.org/advanced/#custom-transports), which you can use to implement custom transport implementations against. This formalises and replaces our previously private "Dispatch API".
+
+### Changed
+
+* Use `httpcore` for underlying HTTP transport. Drop `urllib3` requirement. (Pull #804, #967)
+* Rename pool limit options from `soft_limit`/`hard_limit` to `max_keepalive`/`max_connections`. (Pull #968)
+* The previous private "Dispatch API" has now been promoted to a public "Transport API". When customizing the transport use `transport=...`. The `ASGIDispatch` and `WSGIDispatch` class naming is deprecated in favour of `ASGITransport` and `WSGITransport`. (Pull #963)
+
+### Added
+
+* Added `URLLib3Transport` class for optional `urllib3` transport support. (Pull #804, #963)
+* Streaming multipart uploads. (Pull #857)
+* Logging via HTTPCORE_LOG_LEVEL and HTTPX_LOG_LEVEL environment variables
+and TRACE level logging. (Pull encode/httpcore#79)
+
+### Fixed
+
+* Performance improvement in brotli decoder. (Pull #906)
+* Proper warning level of deprecation notice in `Response.stream` and `Response.raw`. (Pull #908)
+* Fix support for generator based WSGI apps. (Pull #887)
+* Reuse of connections on HTTP/2 in close concurrency situations. (Pull encode/httpcore#81)
+* Honor HTTP/2 max concurrent streams settings (Pull encode/httpcore#89, encode/httpcore#90)
+* Fix bytes support in multipart uploads. (Pull #974)
+* Improve typing support for `files=...`. (Pull #976)
+
+### Removed
+
+* Dropped support for `Client(uds=...)` (Pull #804)
+
+## 0.13.0.dev2 (May 12th, 2020)
+
+The 0.13.0.dev2 is a *pre-release* version. To install it, use `pip install httpx --pre`.
+
+### Added
+
+* Logging via HTTPCORE_LOG_LEVEL and HTTPX_LOG_LEVEL environment variables
+and TRACE level logging. (HTTPCore Pull #79)
+
+### Fixed
+
+* Reuse of connections on HTTP/2 in close concurrency situations. (HTTPCore Pull #81)
+* When using an `app=<ASGI app>` observe neater disconnect behaviour instead of sending empty body messages. (Pull #919)
+
+## 0.13.0.dev1 (May 6th, 2020)
+
+The 0.13.0.dev1 is a *pre-release* version. To install it, use `pip install httpx --pre`.
+
+### Fixed
+
+* Passing `http2` flag to proxy dispatchers. (Pull #934)
+* Use [`httpcore` v0.8.3](https://github.com/encode/httpcore/releases/tag/0.8.3)
+which addresses problems in handling of headers when using proxies.
+
+## 0.13.0.dev0 (April 30th, 2020)
+
+The 0.13.0.dev0 is a *pre-release* version. To install it, use `pip install httpx --pre`.
+
+This release switches to `httpcore` for all the internal networking, which means:
+
+* We're using the same codebase for both our sync and async clients.
+* HTTP/2 support is now available with the sync client.
+* We no longer have a `urllib3` dependency for our sync client, although there is still an *optional* `URLLib3Dispatcher` class.
+
+It also means we've had to remove our UDS support, since maintaining that would have meant having to push back our work towards a 1.0 release, which isn't a trade-off we wanted to make.
+
+### Changed
+
+* Use `httpcore` for underlying HTTP transport. Drop `urllib3` requirement. (Pull #804)
+
+### Added
+
+* Added `URLLib3Dispatcher` class for optional `urllib3` transport support. (Pull #804)
+* Streaming multipart uploads. (Pull #857)
+
+### Fixed
+
+* Performance improvement in brotli decoder. (Pull #906)
+* Proper warning level of deprecation notice in `Response.stream` and `Response.raw`. (Pull #908)
+* Fix support for generator based WSGI apps. (Pull #887)
+
+### Removed
+
+* Dropped support for `Client(uds=...)` (Pull #804)
+
+## 0.12.1 (March 19th, 2020)
+
+### Fixed
+
+* Resolved packaging issue, where additional files were being included.
+
+## 0.12.0 (March 9th, 2020)
+
+The 0.12 release tightens up the API expectations for `httpx` by switching to private module names to enforce better clarity around public API.
+
+All imports of `httpx` should import from the top-level package only, such as `from httpx import Request`, rather than importing from privately namespaced modules such as `from httpx._models import Request`.
+
+### Added
+
+* Support making response body available to auth classes with `.requires_response_body`. (Pull #803)
+* Export `NetworkError` exception. (Pull #814)
+* Add support for `NO_PROXY` environment variable. (Pull #835)
+
+### Changed
+
+* Switched to private module names. (Pull #785)
+* Drop redirect looping detection and the `RedirectLoop` exception, instead using `TooManyRedirects`. (Pull #819)
+* Drop `backend=...` parameter on `AsyncClient`, in favour of always autodetecting `trio`/`asyncio`. (Pull #791)
+
+### Fixed
+
+* Support basic auth credentials in proxy URLs. (Pull #780)
+* Fix `httpx.Proxy(url, mode="FORWARD_ONLY")` configuration. (Pull #788)
+* Fallback to setting headers as UTF-8 if no encoding is specified. (Pull #820)
+* Close proxy dispatches classes on client close. (Pull #826)
+* Support custom `cert` parameters even if `verify=False`. (Pull #796)
+* Don't support invalid dict-of-dicts form data in `data=...`. (Pull #811)
+
 ## 0.11.1 (January 17th, 2020)
 
 ### Fixed

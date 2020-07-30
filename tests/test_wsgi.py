@@ -1,22 +1,25 @@
 import sys
+from functools import partial
 
 import pytest
 
 import httpx
 
 
-def hello_world(environ, start_response):
-    status = "200 OK"
-    output = b"Hello, World!"
+def application_factory(output):
+    def application(environ, start_response):
+        status = "200 OK"
 
-    response_headers = [
-        ("Content-type", "text/plain"),
-        ("Content-Length", str(len(output))),
-    ]
+        response_headers = [
+            ("Content-type", "text/plain"),
+        ]
 
-    start_response(status, response_headers)
+        start_response(status, response_headers)
 
-    return [output]
+        for item in output:
+            yield item
+
+    return application
 
 
 def echo_body(environ, start_response):
@@ -25,7 +28,6 @@ def echo_body(environ, start_response):
 
     response_headers = [
         ("Content-type", "text/plain"),
-        ("Content-Length", str(len(output))),
     ]
 
     start_response(status, response_headers)
@@ -50,18 +52,17 @@ def echo_body_with_response_stream(environ, start_response):
     return output_generator(f=environ["wsgi.input"])
 
 
-def raise_exc(environ, start_response):
+def raise_exc(environ, start_response, exc=ValueError):
     status = "500 Server Error"
     output = b"Nope!"
 
     response_headers = [
         ("Content-type", "text/plain"),
-        ("Content-Length", str(len(output))),
     ]
 
     try:
-        raise ValueError()
-    except ValueError:
+        raise exc()
+    except exc:
         exc_info = sys.exc_info()
         start_response(status, response_headers, exc_info=exc_info)
 
@@ -69,7 +70,7 @@ def raise_exc(environ, start_response):
 
 
 def test_wsgi():
-    client = httpx.Client(app=hello_world)
+    client = httpx.Client(app=application_factory([b"Hello, World!"]))
     response = client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == "Hello, World!"
@@ -93,3 +94,25 @@ def test_wsgi_exc():
     client = httpx.Client(app=raise_exc)
     with pytest.raises(ValueError):
         client.get("http://www.example.org/")
+
+
+def test_wsgi_http_error():
+    client = httpx.Client(app=partial(raise_exc, exc=httpx.HTTPError))
+    with pytest.raises(httpx.HTTPError):
+        client.get("http://www.example.org/")
+
+
+def test_wsgi_generator():
+    output = [b"", b"", b"Some content", b" and more content"]
+    client = httpx.Client(app=application_factory(output))
+    response = client.get("http://www.example.org/")
+    assert response.status_code == 200
+    assert response.text == "Some content and more content"
+
+
+def test_wsgi_generator_empty():
+    output = [b"", b"", b"", b""]
+    client = httpx.Client(app=application_factory(output))
+    response = client.get("http://www.example.org/")
+    assert response.status_code == 200
+    assert response.text == ""

@@ -1,7 +1,6 @@
 import pytest
 
-from httpx import URL, InvalidURL
-from httpx._models import Origin
+from httpx import URL
 
 
 @pytest.mark.parametrize(
@@ -19,9 +18,9 @@ from httpx._models import Origin
             "http://xn--knigsgchen-b4a3dun.de",
             "xn--knigsgchen-b4a3dun.de",
             "http",
-            80,
+            None,
         ),
-        ("https://faß.de", "https://xn--fa-hia.de", "xn--fa-hia.de", "https", 443),
+        ("https://faß.de", "https://xn--fa-hia.de", "xn--fa-hia.de", "https", None),
         (
             "https://βόλος.com:443",
             "https://xn--nxasmm1c.com:443",
@@ -117,9 +116,6 @@ def test_url_join_rfc3986():
 
     url = URL("http://example.com/b/c/d;p?q")
 
-    with pytest.raises(InvalidURL):
-        assert url.join("g:h") == "g:h"
-
     assert url.join("g") == "http://example.com/b/c/g"
     assert url.join("./g") == "http://example.com/b/c/g"
     assert url.join("g/") == "http://example.com/b/c/g/"
@@ -175,21 +171,6 @@ def test_url_set():
     url_set = set(urls)
 
     assert all(url in urls for url in url_set)
-
-
-def test_url_full_path_setter():
-    url = URL("http://example.org")
-
-    url.full_path = "http://example.net"
-    assert url.full_path == "http://example.net"
-
-
-def test_origin_from_url_string():
-    origin = Origin("https://example.com")
-    assert origin.scheme == "https"
-    assert origin.is_ssl
-    assert origin.host == "example.com"
-    assert origin.port == 443
 
 
 def test_url_copywith_for_authority():

@@ -1,15 +1,19 @@
 #!/bin/sh -e
 
-export PREFIX="venv/bin/"
+# Use the Python executable provided from the `-p` option, or a default.
+[ "$1" = "-p" ] && PYTHON=$2 || PYTHON="python3"
+
+REQUIREMENTS="requirements.txt"
+VENV="venv"
 
 set -x
 
-python -m venv venv
-${PREFIX}python -m pip install -U pip
-${PREFIX}python -m pip install -r requirements.txt
+if [ -z "$GITHUB_ACTIONS" ]; then
+    "$PYTHON" -m venv "$VENV"
+    PIP="$VENV/bin/pip"
+else
+    PIP="pip"
+fi
 
-set +x
-
-echo
-echo "Success! You can now activate your virtual environment using:"
-echo "source ${PREFIX}activate"
+"$PIP" install -r "$REQUIREMENTS"
+"$PIP" install -e .

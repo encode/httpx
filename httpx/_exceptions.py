@@ -1,4 +1,7 @@
+import contextlib
 import typing
+
+import httpcore
 
 if typing.TYPE_CHECKING:
     from ._models import Request, Response  # pragma: nocover
@@ -6,15 +9,22 @@ if typing.TYPE_CHECKING:
 
 class HTTPError(Exception):
     """
-    Base class for all httpx exceptions.
+    Base class for all HTTPX exceptions.
     """
 
     def __init__(
         self, *args: typing.Any, request: "Request" = None, response: "Response" = None
     ) -> None:
-        self.response = response
-        self.request = request or getattr(self.response, "request", None)
         super().__init__(*args)
+        self._request = request or (response.request if response is not None else None)
+        self.response = response
+
+    @property
+    def request(self) -> "Request":
+        # NOTE: this property exists so that a `Request` is exposed to type
+        # checkers, instead of `Optional[Request]`.
+        assert self._request is not None  # Populated by the client.
+        return self._request
 
 
 # Timeout exceptions...
@@ -22,47 +32,87 @@ class HTTPError(Exception):
 
 class TimeoutException(HTTPError):
     """
-    A base class for all timeouts.
+    The base class for timeout errors.
+
+    An operation has timed out.
     """
 
 
 class ConnectTimeout(TimeoutException):
     """
-    Timeout while establishing a connection.
+    Timed out while connecting to the host.
     """
 
 
 class ReadTimeout(TimeoutException):
     """
-    Timeout while reading response data.
+    Timed out while receiving data from the host.
     """
 
 
 class WriteTimeout(TimeoutException):
     """
-    Timeout while writing request data.
+    Timed out while sending data to the host.
     """
 
 
 class PoolTimeout(TimeoutException):
     """
-    Timeout while waiting to acquire a connection from the pool.
+    Timed out waiting to acquire a connection from the pool.
     """
+
+
+# Core networking exceptions...
+
+
+class NetworkError(HTTPError):
+    """
+    The base class for network-related errors.
+
+    An error occurred while interacting with the network.
+    """
+
+
+class ReadError(NetworkError):
+    """
+    Failed to receive data from the network.
+    """
+
+
+class WriteError(NetworkError):
+    """
+    Failed to send data through the network.
+    """
+
+
+class ConnectError(NetworkError):
+    """
+    Failed to establish a connection.
+    """
+
+
+class CloseError(NetworkError):
+    """
+    Failed to close a connection.
+    """
+
+
+# Other transport exceptions...
 
 
 class ProxyError(HTTPError):
     """
-    Error from within a proxy
+    An error occurred while proxying a request.
     """
-
-
-# HTTP exceptions...
 
 
 class ProtocolError(HTTPError):
     """
-    Malformed HTTP.
+    A protocol was violated by the server.
     """
+
+
+# HTTP exceptions...
 
 
 class DecodingError(HTTPError):
@@ -71,19 +121,15 @@ class DecodingError(HTTPError):
     """
 
 
-# Network exceptions...
-
-
-class NetworkError(HTTPError):
+class HTTPStatusError(HTTPError):
     """
-    A failure occurred while trying to access the network.
+    Response sent an error HTTP status.
     """
 
-
-class ConnectionClosed(NetworkError):
-    """
-    Expected more data from peer, but connection was closed.
-    """
+    def __init__(self, *args: typing.Any, response: "Response") -> None:
+        super().__init__(*args)
+        self._request = response.request
+        self.response = response
 
 
 # Redirect exceptions...
@@ -98,12 +144,6 @@ class RedirectError(HTTPError):
 class TooManyRedirects(RedirectError):
     """
     Too many redirects.
-    """
-
-
-class RedirectLoop(RedirectError):
-    """
-    Infinite redirect loop.
     """
 
 
@@ -172,3 +212,45 @@ class CookieConflict(HTTPError):
     """
     Attempted to lookup a cookie by name, but multiple cookies existed.
     """
+
+
+@contextlib.contextmanager
+def map_exceptions(
+    mapping: typing.Mapping[typing.Type[Exception], typing.Type[Exception]],
+    **kwargs: typing.Any,
+) -> typing.Iterator[None]:
+    try:
+        yield
+    except Exception as exc:
+        mapped_exc = None
+
+        for from_exc, to_exc in mapping.items():
+            if not isinstance(exc, from_exc):
+                continue
+            # We want to map to the most specific exception we can find.
+            # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to
+            # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.
+            if mapped_exc is None or issubclass(to_exc, mapped_exc):
+                mapped_exc = to_exc
+
+        if mapped_exc is None:
+            raise
+
+        message = str(exc)
+        raise mapped_exc(message, **kwargs) from None  # type: ignore
+
+
+HTTPCORE_EXC_MAP = {
+    httpcore.TimeoutException: TimeoutException,
+    httpcore.ConnectTimeout: ConnectTimeout,
+    httpcore.ReadTimeout: ReadTimeout,
+    httpcore.WriteTimeout: WriteTimeout,
+    httpcore.PoolTimeout: PoolTimeout,
+    httpcore.NetworkError: NetworkError,
+    httpcore.ConnectError: ConnectError,
+    httpcore.ReadError: ReadError,
+    httpcore.WriteError: WriteError,
+    httpcore.CloseError: CloseError,
+    httpcore.ProxyError: ProxyError,
+    httpcore.ProtocolError: ProtocolError,
+}

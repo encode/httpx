@@ -84,7 +84,7 @@ Documentation pages are located under the `docs/` folder.
 To run the documentation site locally (useful for previewing changes), use:
 
 ```shell
-$ scripts/docs-serve
+$ scripts/docs
 ```
 
 ## Resolving Build / Travis Failures
@@ -93,7 +93,7 @@ Once you've submitted your pull request, the test suite will automatically run, 
 If the test suite fails, you'll want to click through to the "Details" link, and try to identify why the test suite failed.
 
 <p align="center" style="margin: 0 0 10px">
-  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail.png" alt='Failing PR commit status'>
+  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/gh-actions-fail.png" alt='Failing PR commit status'>
 </p>
 
 Here are some common ways the test suite can fail:
@@ -101,7 +101,7 @@ Here are some common ways the test suite can fail:
 ### Check Job Failed
 
 <p align="center" style="margin: 0 0 10px">
-  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail-check.png" alt='Failing Travis lint job'>
+  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/gh-actions-fail-check.png" alt='Failing GitHub action lint job'>
 </p>
 
 This job failing means there is either a code formatting issue or type-annotation issue.
@@ -122,7 +122,7 @@ a variety of reasons like invalid markdown or missing configuration within `mkdo
 ### Python 3.X Job Failed
 
 <p align="center" style="margin: 0 0 10px">
-  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/travis-fail-test.png" alt='Failing Travis test job'>
+  <img src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/gh-actions-fail-test.png" alt='Failing GitHub action test job'>
 </p>
 
 This job failing means the unit tests failed or not all code paths are covered by unit tests.
@@ -131,12 +131,10 @@ If tests are failing you will see this message under the coverage report:
 
 `=== 1 failed, 435 passed, 1 skipped, 1 xfailed in 11.09s ===`
 
-If tests succeed but coverage isn't 100% you will see this message under the coverage report:
+If tests succeed but coverage doesn't reach our current threshold, you will see this
+message under the coverage report:
 
 `FAIL Required test coverage of 100% not reached. Total coverage: 99.00%`
-
-Look at the [coverage report from codecov](https://codecov.io/gh/encode/httpx/pulls)
-for the pull request for help debugging coverage.
 
 ## Releasing
 
@@ -153,6 +151,73 @@ Before releasing a new version, create a pull request that includes:
         - Keep it concise and to-the-point. 🎯
 - **A version bump**: see `__version__.py`.
 
-For an example, see [#362](https://github.com/encode/httpx/pull/362).
+For an example, see [#1006](https://github.com/encode/httpx/pull/1006).
 
-Once the release PR is merged, run `$ scripts/publish` to publish the new release to PyPI.
+Once the release PR is merged, create a
+[new release](https://github.com/encode/httpx/releases/new) including:
+
+- Tag version like `0.13.3`.
+- Release title `Version 0.13.3`
+- Description copied from the changelog.
+
+Once created this release will be automatically uploaded to PyPI.
+
+If something goes wrong with the PyPI job the release can be published using the
+`scripts/publish` script.
+
+## Development proxy setup
+
+To test and debug requests via a proxy it's best to run a proxy server locally.
+Any server should do but HTTPCore's test suite uses
+[`mitmproxy`](https://mitmproxy.org/) which is written in Python, it's fully
+featured and has excellent UI and tools for introspection of requests.
+
+You can install `mitmproxy` using `pip install mitmproxy` or [several
+other ways](https://docs.mitmproxy.org/stable/overview-installation/).
+
+`mitmproxy` does require setting up local TLS certificates for HTTPS requests,
+as its main purpose is to allow developers to inspect requests that pass through
+it. We can set them up follows:
+
+1. [`pip install trustme-cli`](https://github.com/sethmlarson/trustme-cli/).
+2. `trustme-cli -i example.org www.example.org`, assuming you want to test
+connecting to that domain, this will create three files: `server.pem`,
+`server.key` and `client.pem`.
+3. `mitmproxy` requires a PEM file that includes the private key and the
+certificate so we need to concatenate them:
+`cat server.key server.pem > server.withkey.pem`.
+4. Start the proxy server `mitmproxy --certs server.withkey.pem`, or use the
+[other mitmproxy commands](https://docs.mitmproxy.org/stable/) with different
+UI options.
+
+At this point the server is ready to start serving requests, you'll need to
+configure HTTPX as described in the
+[proxy section](https://www.python-httpx.org/advanced/#http-proxying) and
+the [SSL certificates section](https://www.python-httpx.org/advanced/#ssl-certificates),
+this is where our previously generated `client.pem` comes in:
+
+```
+import httpx
+
+proxies = {"all": "http://127.0.0.1:8080/"}
+
+with httpx.Client(proxies=proxies, verify="/path/to/client.pem") as client:
+    response = client.get("https://example.org")
+    print(response.status_code)  # should print 200
+```
+
+Note, however, that HTTPS requests will only succeed to the host specified
+in the SSL/TLS certificate we generated, HTTPS requests to other hosts will
+raise an error like:
+
+```
+ssl.SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate
+verify failed: Hostname mismatch, certificate is not valid for
+'duckduckgo.com'. (_ssl.c:1108)
+```
+
+If you want to make requests to more hosts you'll need to regenerate the
+certificates and include all the hosts you intend to connect to in the
+seconds step, i.e.
+
+`trustme-cli -i example.org www.example.org duckduckgo.com www.duckduckgo.com`

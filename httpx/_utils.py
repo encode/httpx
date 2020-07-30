@@ -1,22 +1,23 @@
 import codecs
 import collections
-import contextlib
 import logging
+import mimetypes
 import netrc
 import os
 import re
 import sys
 import typing
+import warnings
 from datetime import timedelta
 from pathlib import Path
 from time import perf_counter
 from types import TracebackType
 from urllib.request import getproxies
 
-from ._exceptions import NetworkError
+from ._exceptions import InvalidURL
+from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._models import PrimitiveData
     from ._models import URL
 
 
@@ -29,7 +30,9 @@ _HTML5_FORM_ENCODING_RE = re.compile(
 )
 
 
-def normalize_header_key(value: typing.AnyStr, encoding: str = None) -> bytes:
+def normalize_header_key(
+    value: typing.Union[str, bytes], encoding: str = None
+) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header key.
     """
@@ -38,7 +41,9 @@ def normalize_header_key(value: typing.AnyStr, encoding: str = None) -> bytes:
     return value.encode(encoding or "ascii").lower()
 
 
-def normalize_header_value(value: typing.AnyStr, encoding: str = None) -> bytes:
+def normalize_header_value(
+    value: typing.Union[str, bytes], encoding: str = None
+) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header value.
     """
@@ -88,7 +93,7 @@ def format_form_param(name: str, value: typing.Union[str, bytes]) -> bytes:
 
 
 # Null bytes; no need to recreate these on each call to guess_json_utf
-_null = "\x00".encode("ascii")  # encoding to ASCII for Python 3
+_null = b"\x00"
 _null2 = _null * 2
 _null3 = _null * 3
 
@@ -260,8 +265,38 @@ def get_logger(name: str) -> Logger:
     return typing.cast(Logger, logger)
 
 
+def enforce_http_url(url: "URL") -> None:
+    """
+    Raise an appropriate InvalidURL for any non-HTTP URLs.
+    """
+    if not url.scheme:
+        raise InvalidURL("No scheme included in URL.")
+    if not url.host:
+        raise InvalidURL("No host included in URL.")
+    if url.scheme not in ("http", "https"):
+        raise InvalidURL('URL scheme must be "http" or "https".')
+
+
+def port_or_default(url: "URL") -> typing.Optional[int]:
+    if url.port is not None:
+        return url.port
+    return {"http": 80, "https": 443}.get(url.scheme)
+
+
+def same_origin(url: "URL", other: "URL") -> bool:
+    """
+    Return 'True' if the given URLs share the same origin.
+    """
+    return (
+        url.scheme == other.scheme
+        and url.host == other.host
+        and port_or_default(url) == port_or_default(other)
+    )
+
+
 def should_not_be_proxied(url: "URL") -> bool:
-    """ Return True if url should not be proxied,
+    """
+    Return True if url should not be proxied,
     return False otherwise.
     """
     no_proxy = getproxies().get("no")
@@ -313,6 +348,38 @@ def unquote(value: str) -> str:
     return value[1:-1] if value[0] == value[-1] == '"' else value
 
 
+def guess_content_type(filename: typing.Optional[str]) -> typing.Optional[str]:
+    if filename:
+        return mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return None
+
+
+def peek_filelike_length(stream: typing.IO) -> int:
+    """
+    Given a file-like stream object, return its length in number of bytes
+    without reading it into memory.
+    """
+    try:
+        # Is it an actual file?
+        fd = stream.fileno()
+    except OSError:
+        # No... Maybe it's something that supports random access, like `io.BytesIO`?
+        try:
+            # Assuming so, go to end of stream to figure out its length,
+            # then put it back in place.
+            offset = stream.tell()
+            length = stream.seek(0, os.SEEK_END)
+            stream.seek(offset)
+        except OSError:
+            # Not even that? Sorry, we're doomed...
+            raise
+        else:
+            return length
+    else:
+        # Yup, seems to be an actual file.
+        return os.fstat(fd).st_size
+
+
 def flatten_queryparams(
     queryparams: typing.Mapping[
         str, typing.Union["PrimitiveData", typing.Sequence["PrimitiveData"]]
@@ -362,12 +429,5 @@ class ElapsedTimer:
         return timedelta(seconds=self.end - self.start)
 
 
-@contextlib.contextmanager
-def as_network_error(*exception_classes: type) -> typing.Iterator[None]:
-    try:
-        yield
-    except BaseException as exc:
-        for cls in exception_classes:
-            if isinstance(exc, cls):
-                raise NetworkError(exc) from exc
-        raise
+def warn_deprecated(message: str) -> None:  # pragma: nocover
+    warnings.warn(message, DeprecationWarning, stacklevel=2)

@@ -105,15 +105,17 @@ class BrotliDecoder(Decoder):
         ), "The 'brotlipy' or 'brotli' library must be installed to use 'BrotliDecoder'"
         self.decompressor = brotli.Decompressor()
         self.seen_data = False
+        if hasattr(self.decompressor, "decompress"):
+            self._decompress = self.decompressor.decompress
+        else:
+            self._decompress = self.decompressor.process  # pragma: nocover
 
     def decode(self, data: bytes) -> bytes:
         if not data:
             return b""
         self.seen_data = True
         try:
-            if hasattr(self.decompressor, "decompress"):
-                return self.decompressor.decompress(data)
-            return self.decompressor.process(data)  # pragma: nocover
+            return self._decompress(data)
         except brotli.error as exc:
             raise DecodingError from exc
 
@@ -231,12 +233,18 @@ class LineDecoder:
     def decode(self, text: str) -> typing.List[str]:
         lines = []
 
-        if text.startswith("\n") and self.buffer and self.buffer[-1] == "\r":
-            # Handle the case where we have an "\r\n" split across
-            # our previous input, and our new chunk.
-            lines.append(self.buffer[:-1] + "\n")
-            self.buffer = ""
-            text = text[1:]
+        if text and self.buffer and self.buffer[-1] == "\r":
+            if text.startswith("\n"):
+                # Handle the case where we have an "\r\n" split across
+                # our previous input, and our new chunk.
+                lines.append(self.buffer[:-1] + "\n")
+                self.buffer = ""
+                text = text[1:]
+            else:
+                # Handle the case where we have "\r" at the end of our
+                # previous input.
+                lines.append(self.buffer[:-1] + "\n")
+                self.buffer = ""
 
         while text:
             num_chars = len(text)
@@ -259,7 +267,7 @@ class LineDecoder:
                     text = text[idx + 1 :]
                     break
                 elif next_char is None:
-                    self.buffer = text
+                    self.buffer += text
                     text = ""
                     break
 

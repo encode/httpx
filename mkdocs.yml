@@ -18,6 +18,7 @@ nav:
     - Environment Variables: 'environment_variables.md'
     - Requests Compatibility: 'compatibility.md'
     - Developer Interface: 'api.md'
+    - Third Party Packages: 'third-party-packages.md'
     - Contributing: 'contributing.md'
 
 markdown_extensions:
@@ -27,3 +28,7 @@ markdown_extensions:
 
 extra_css:
     - css/custom.css
+
+extra_javascript:
+  - 'js/chat.js'
+  - 'js/sidecar-1.5.0.js'

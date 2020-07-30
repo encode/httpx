@@ -1,3 +1,5 @@
+from functools import partial
+
 import pytest
 
 import httpx
@@ -25,8 +27,8 @@ async def echo_body(scope, receive, send):
         await send({"type": "http.response.body", "body": body, "more_body": more_body})
 
 
-async def raise_exc(scope, receive, send):
-    raise ValueError()
+async def raise_exc(scope, receive, send, exc=ValueError):
+    raise exc()
 
 
 async def raise_exc_after_response(scope, receive, send):
@@ -39,7 +41,7 @@ async def raise_exc_after_response(scope, receive, send):
     raise ValueError()
 
 
-@pytest.mark.asyncio
+@pytest.mark.usefixtures("async_environment")
 async def test_asgi():
     client = httpx.AsyncClient(app=hello_world)
     response = await client.get("http://www.example.org/")
@@ -47,7 +49,7 @@ async def test_asgi():
     assert response.text == "Hello, World!"
 
 
-@pytest.mark.asyncio
+@pytest.mark.usefixtures("async_environment")
 async def test_asgi_upload():
     client = httpx.AsyncClient(app=echo_body)
     response = await client.post("http://www.example.org/", data=b"example")
@@ -55,15 +57,55 @@ async def test_asgi_upload():
     assert response.text == "example"
 
 
-@pytest.mark.asyncio
+@pytest.mark.usefixtures("async_environment")
 async def test_asgi_exc():
     client = httpx.AsyncClient(app=raise_exc)
     with pytest.raises(ValueError):
         await client.get("http://www.example.org/")
 
 
-@pytest.mark.asyncio
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_http_error():
+    client = httpx.AsyncClient(app=partial(raise_exc, exc=httpx.HTTPError))
+    with pytest.raises(httpx.HTTPError):
+        await client.get("http://www.example.org/")
+
+
+@pytest.mark.usefixtures("async_environment")
 async def test_asgi_exc_after_response():
     client = httpx.AsyncClient(app=raise_exc_after_response)
     with pytest.raises(ValueError):
         await client.get("http://www.example.org/")
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_disconnect_after_response_complete():
+    disconnect = False
+
+    async def read_body(scope, receive, send):
+        nonlocal disconnect
+
+        status = 200
+        headers = [(b"content-type", "text/plain")]
+
+        await send(
+            {"type": "http.response.start", "status": status, "headers": headers}
+        )
+        more_body = True
+        while more_body:
+            message = await receive()
+            more_body = message.get("more_body", False)
+
+        await send({"type": "http.response.body", "body": b"", "more_body": False})
+
+        # The ASGI spec says of the Disconnect message:
+        # "Sent to the application when a HTTP connection is closed or if receive is
+        # called after a response has been sent."
+        # So if receive() is called again, the disconnect message should be received
+        message = await receive()
+        disconnect = message.get("type") == "http.disconnect"
+
+    client = httpx.AsyncClient(app=read_body)
+    response = await client.post("http://www.example.org/", data=b"example")
+    assert response.status_code == 200
+    assert disconnect
