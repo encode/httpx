@@ -13,9 +13,9 @@ from ._config import (
     UNSET,
     PoolLimits,
     Proxy,
-    SSLConfig,
     Timeout,
     UnsetType,
+    create_ssl_context,
 )
 from ._content_streams import ContentStream
 from ._exceptions import (
@@ -499,9 +499,7 @@ class Client(BaseClient):
         if app is not None:
             return WSGITransport(app=app)
 
-        ssl_context = SSLConfig(
-            verify=verify, cert=cert, trust_env=trust_env
-        ).ssl_context
+        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
         return httpcore.SyncConnectionPool(
             ssl_context=ssl_context,
@@ -520,9 +518,7 @@ class Client(BaseClient):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.SyncHTTPTransport:
-        ssl_context = SSLConfig(
-            verify=verify, cert=cert, trust_env=trust_env
-        ).ssl_context
+        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
         return httpcore.SyncHTTPProxy(
             proxy_url=proxy.url.raw,
@@ -1032,9 +1028,7 @@ class AsyncClient(BaseClient):
         if app is not None:
             return ASGITransport(app=app)
 
-        ssl_context = SSLConfig(
-            verify=verify, cert=cert, trust_env=trust_env
-        ).ssl_context
+        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
         return httpcore.AsyncConnectionPool(
             ssl_context=ssl_context,
@@ -1053,9 +1047,7 @@ class AsyncClient(BaseClient):
         pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.AsyncHTTPTransport:
-        ssl_context = SSLConfig(
-            verify=verify, cert=cert, trust_env=trust_env
-        ).ssl_context
+        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
         return httpcore.AsyncHTTPProxy(
             proxy_url=proxy.url.raw,
