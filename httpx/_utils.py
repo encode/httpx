@@ -143,7 +143,7 @@ class NetRCInfo:
                     if expanded_path.is_file():
                         self._netrc_info = netrc.netrc(str(expanded_path))
                         break
-                except (netrc.NetrcParseError, IOError):
+                except (netrc.NetrcParseError, IOError):  # pragma: nocover
                     # Issue while reading the netrc file, ignore...
                     pass
         return self._netrc_info
