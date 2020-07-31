@@ -210,7 +210,7 @@ class CookieConflict(Exception):
 # Stream exceptions...
 
 # These may occur as the result of a programming error, by accessing
-# the request/respose stream in an invalid manner.
+# the request/response stream in an invalid manner.
 
 
 class StreamError(Exception):
