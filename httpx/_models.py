@@ -434,7 +434,7 @@ class Headers(typing.MutableMapping[str, str]):
 
     def get(self, key: str, default: typing.Any = None) -> typing.Any:
         """
-        Return a header value. If multiple occurances of the header occur
+        Return a header value. If multiple occurences of the header occur
         then concatenate them together with commas.
         """
         try:
