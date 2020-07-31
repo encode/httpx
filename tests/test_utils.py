@@ -300,15 +300,10 @@ def test_should_not_be_proxied(url, no_proxy, expected):
     parsed_url = httpx.URL(url)
 
     should_not_proxy = True
-    print(get_environment_proxies())
-    print(url)
     for matcher, value in sorted(proxies.items()):
         if matcher.matches(parsed_url):
-            print("yup", matcher.pattern, value)
             should_not_proxy = value is None
             break
-        else:
-            print("nope", matcher.pattern)
 
     assert should_not_proxy == expected
 
