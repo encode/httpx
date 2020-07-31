@@ -139,9 +139,13 @@ class NetRCInfo:
             self._netrc_info = None
             for file_path in self.netrc_files:
                 expanded_path = Path(file_path).expanduser()
-                if expanded_path.is_file():
-                    self._netrc_info = netrc.netrc(str(expanded_path))
-                    break
+                try:
+                    if expanded_path.is_file():
+                        self._netrc_info = netrc.netrc(str(expanded_path))
+                        break
+                except (netrc.NetrcParseError, IOError):  # pragma: nocover
+                    # Issue while reading the netrc file, ignore...
+                    pass
         return self._netrc_info
 
     def get_credentials(
@@ -492,7 +496,7 @@ class URLMatcher:
     def priority(self) -> tuple:
         """
         The priority allows URLMatcher instances to be sortable, so that
-        if we can match from most specific to least specific.
+        we can match from most specific to least specific.
         """
         port_priority = -1 if self.port is not None else 0
         host_priority = -len(self.host)
