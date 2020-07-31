@@ -496,7 +496,7 @@ class URLMatcher:
     def priority(self) -> tuple:
         """
         The priority allows URLMatcher instances to be sortable, so that
-        if we can match from most specific to least specific.
+        we can match from most specific to least specific.
         """
         port_priority = -1 if self.port is not None else 0
         host_priority = -len(self.host)
