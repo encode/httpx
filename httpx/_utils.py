@@ -323,6 +323,7 @@ def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
             #   which disables "www.google.com" but not "google.com"
             # NO_PROXY=google.com is marked as "all://*google.com,
             #   which disables "www.google.com" and "google.com".
+            #   (But not "wwwgoogle.com")
             mounts[f"all://*{hostname}"] = None
 
     return mounts
