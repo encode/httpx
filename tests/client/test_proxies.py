@@ -2,6 +2,7 @@ import httpcore
 import pytest
 
 import httpx
+from httpx._utils import URLMatcher
 
 
 def url_to_origin(url: str):
@@ -36,8 +37,9 @@ def test_proxies_parameter(proxies, expected_proxies):
     client = httpx.AsyncClient(proxies=proxies)
 
     for proxy_key, url in expected_proxies:
-        assert proxy_key in client._proxies
-        proxy = client._proxies[proxy_key]
+        matcher = URLMatcher(proxy_key)
+        assert matcher in client._proxies
+        proxy = client._proxies[matcher]
         assert isinstance(proxy, httpcore.AsyncHTTPProxy)
         assert proxy.proxy_origin == url_to_origin(url)
 
@@ -54,15 +56,16 @@ PROXY_URL = "http://[::1]"
         ("http://example.com", {}, None),
         ("http://example.com", {"https": PROXY_URL}, None),
         ("http://example.com", {"http://example.net": PROXY_URL}, None),
-        ("http://example.com:443", {"http://example.com": PROXY_URL}, None),
+        ("http://example.com:443", {"http://example.com": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all": PROXY_URL}, PROXY_URL),
+        ("http://example.com", {"all": PROXY_URL, "http://example.com": None}, None),
         ("http://example.com", {"http": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all://example.com": PROXY_URL}, PROXY_URL),
-        ("http://example.com", {"all://example.com:80": PROXY_URL}, PROXY_URL),
+        ("http://example.com", {"all://example.com:80": PROXY_URL}, None),
         ("http://example.com", {"http://example.com": PROXY_URL}, PROXY_URL),
-        ("http://example.com", {"http://example.com:80": PROXY_URL}, PROXY_URL),
+        ("http://example.com", {"http://example.com:80": PROXY_URL}, None),
         ("http://example.com:8080", {"http://example.com:8080": PROXY_URL}, PROXY_URL),
-        ("http://example.com:8080", {"http://example.com": PROXY_URL}, None),
+        ("http://example.com:8080", {"http://example.com": PROXY_URL}, PROXY_URL),
         (
             "http://example.com",
             {

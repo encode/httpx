@@ -1,5 +1,6 @@
 import asyncio
 import os
+import random
 
 import pytest
 
@@ -7,6 +8,7 @@ import httpx
 from httpx._utils import (
     ElapsedTimer,
     NetRCInfo,
+    URLMatcher,
     get_ca_bundle_from_env,
     get_environment_proxies,
     guess_json_utf,
@@ -307,3 +309,43 @@ def test_not_same_origin():
     origin1 = httpx.URL("https://example.com")
     origin2 = httpx.URL("HTTP://EXAMPLE.COM")
     assert not same_origin(origin1, origin2)
+
+
+@pytest.mark.parametrize(
+    ["pattern", "url", "expected"],
+    [
+        ("http://example.com", "http://example.com", True,),
+        ("http://example.com", "https://example.com", False,),
+        ("http://example.com", "http://other.com", False,),
+        ("http://example.com:123", "http://example.com:123", True,),
+        ("http://example.com:123", "http://example.com:456", False,),
+        ("http://example.com:123", "http://example.com", False,),
+        ("all://example.com", "http://example.com", True,),
+        ("all://example.com", "https://example.com", True,),
+        ("http://", "http://example.com", True,),
+        ("http://", "https://example.com", False,),
+        ("http", "http://example.com", True,),
+        ("http", "https://example.com", False,),
+        ("all", "https://example.com:123", True,),
+        ("", "https://example.com:123", True,),
+    ],
+)
+def test_url_matches(pattern, url, expected):
+    matcher = URLMatcher(pattern)
+    assert matcher.matches(httpx.URL(url)) == expected
+
+
+def test_matcher_priority():
+    matchers = [
+        URLMatcher("all://"),
+        URLMatcher("http://"),
+        URLMatcher("http://example.com"),
+        URLMatcher("http://example.com:123"),
+    ]
+    random.shuffle(matchers)
+    assert sorted(matchers) == [
+        URLMatcher("http://example.com:123"),
+        URLMatcher("http://example.com"),
+        URLMatcher("http://"),
+        URLMatcher("all://"),
+    ]
