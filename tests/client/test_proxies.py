@@ -58,6 +58,7 @@ PROXY_URL = "http://[::1]"
         ("http://example.com", {"http://example.net": PROXY_URL}, None),
         ("http://example.com:443", {"http://example.com": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all": PROXY_URL}, PROXY_URL),
+        ("http://example.com", {"all": PROXY_URL, "http://example.com": None}, None),
         ("http://example.com", {"http": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all://example.com": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all://example.com:80": PROXY_URL}, None),

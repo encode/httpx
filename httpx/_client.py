@@ -86,7 +86,7 @@ class BaseClient:
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
-    ) -> typing.Dict[str, Proxy]:
+    ) -> typing.Dict[str, typing.Optional[Proxy]]:
         if proxies is None:
             if trust_env:
                 return {
@@ -94,15 +94,15 @@ class BaseClient:
                     for key, url in get_environment_proxies().items()
                 }
             return {}
-        elif isinstance(proxies, (str, URL, Proxy)):
-            proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
-            return {"all": proxy}
-        else:
+        if isinstance(proxies, dict):
             new_proxies = {}
             for key, value in proxies.items():
                 proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
                 new_proxies[str(key)] = proxy
             return new_proxies
+        else:
+            proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
+            return {"all": proxy}
 
     @property
     def headers(self) -> Headers:
@@ -472,8 +472,12 @@ class Client(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self._proxies: typing.Dict[URLMatcher, httpcore.SyncHTTPTransport] = {
-            URLMatcher(key): self._init_proxy_transport(
+        self._proxies: typing.Dict[
+            URLMatcher, typing.Optional[httpcore.SyncHTTPTransport]
+        ] = {
+            URLMatcher(key): None
+            if proxy is None
+            else self._init_proxy_transport(
                 proxy,
                 verify=verify,
                 cert=cert,
@@ -543,7 +547,7 @@ class Client(BaseClient):
         if self._proxies and not should_not_be_proxied(url):
             for matcher, transport in self._proxies.items():
                 if matcher.matches(url):
-                    return transport
+                    return self._transport if transport is None else transport
 
         return self._transport
 
@@ -885,7 +889,8 @@ class Client(BaseClient):
     def close(self) -> None:
         self._transport.close()
         for proxy in self._proxies.values():
-            proxy.close()
+            if proxy is not None:
+                proxy.close()
 
     def __enter__(self) -> "Client":
         return self
@@ -989,8 +994,12 @@ class AsyncClient(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self._proxies: typing.Dict[URLMatcher, httpcore.AsyncHTTPTransport] = {
-            URLMatcher(key): self._init_proxy_transport(
+        self._proxies: typing.Dict[
+            URLMatcher, typing.Optional[httpcore.AsyncHTTPTransport]
+        ] = {
+            URLMatcher(key): None
+            if proxy is None
+            else self._init_proxy_transport(
                 proxy,
                 verify=verify,
                 cert=cert,
@@ -1060,7 +1069,7 @@ class AsyncClient(BaseClient):
         if self._proxies and not should_not_be_proxied(url):
             for matcher, transport in self._proxies.items():
                 if matcher.matches(url):
-                    return transport
+                    return self._transport if transport is None else transport
 
         return self._transport
 
@@ -1402,7 +1411,8 @@ class AsyncClient(BaseClient):
     async def aclose(self) -> None:
         await self._transport.aclose()
         for proxy in self._proxies.values():
-            await proxy.aclose()
+            if proxy is not None:
+                await proxy.aclose()
 
     async def __aenter__(self) -> "AsyncClient":
         return self
