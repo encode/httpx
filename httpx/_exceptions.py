@@ -1,5 +1,5 @@
 """
-Our exception heirachy:
+Our exception hierarchy:
 
 * RequestError
   + TransportError
