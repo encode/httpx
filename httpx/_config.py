@@ -1,6 +1,7 @@
 import os
 import ssl
 import typing
+import warnings
 from base64 import b64encode
 from pathlib import Path
 
@@ -40,6 +41,17 @@ class UnsetType:
 UNSET = UnsetType()
 
 
+def create_ssl_context(
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    trust_env: bool = None,
+    http2: bool = False,
+) -> ssl.SSLContext:
+    return SSLConfig(
+        cert=cert, verify=verify, trust_env=trust_env, http2=http2
+    ).ssl_context
+
+
 class SSLConfig:
     """
     SSL Configuration.
@@ -60,17 +72,6 @@ class SSLConfig:
         self.trust_env = trust_env
         self.http2 = http2
         self.ssl_context = self.load_ssl_context()
-
-    def __eq__(self, other: typing.Any) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self.cert == other.cert
-            and self.verify == other.verify
-        )
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return f"{class_name}(cert={self.cert}, verify={self.verify})"
 
     def load_ssl_context(self) -> ssl.SSLContext:
         logger.trace(
@@ -195,9 +196,9 @@ class Timeout:
 
     **Usage**:
 
-    Timeout()                           # No timeout.
+    Timeout(None)                       # No timeouts.
     Timeout(5.0)                        # 5s timeout on all operations.
-    Timeout(connect_timeout=5.0)        # 5s timeout on connect, no other timeouts.
+    Timeout(None, connect_timeout=5.0)  # 5s timeout on connect, no other timeouts.
     Timeout(5.0, connect_timeout=10.0)  # 10s timeout on connect. 5s timeout elsewhere.
     Timeout(5.0, pool_timeout=None)     # No timeout on acquiring connection from pool.
                                         # 5s timeout elsewhere.
@@ -205,7 +206,7 @@ class Timeout:
 
     def __init__(
         self,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         *,
         connect_timeout: typing.Union[None, float, UnsetType] = UNSET,
         read_timeout: typing.Union[None, float, UnsetType] = UNSET,
@@ -230,7 +231,25 @@ class Timeout:
             self.read_timeout = timeout[1]
             self.write_timeout = None if len(timeout) < 3 else timeout[2]
             self.pool_timeout = None if len(timeout) < 4 else timeout[3]
+        elif not (
+            isinstance(connect_timeout, UnsetType)
+            or isinstance(read_timeout, UnsetType)
+            or isinstance(write_timeout, UnsetType)
+            or isinstance(pool_timeout, UnsetType)
+        ):
+            self.connect_timeout = connect_timeout
+            self.read_timeout = read_timeout
+            self.write_timeout = write_timeout
+            self.pool_timeout = pool_timeout
         else:
+            if isinstance(timeout, UnsetType):
+                warnings.warn(
+                    "httpx.Timeout must either include a default, or set all "
+                    "four parameters explicitly. Omitting the default argument "
+                    "is deprecated and will raise errors in a future version.",
+                    DeprecationWarning,
+                )
+                timeout = None
             self.connect_timeout = (
                 timeout if isinstance(connect_timeout, UnsetType) else connect_timeout
             )
@@ -330,7 +349,7 @@ class Proxy:
         if url.username or url.password:
             headers.setdefault(
                 "Proxy-Authorization",
-                self.build_auth_header(url.username, url.password),
+                self._build_auth_header(url.username, url.password),
             )
             # Remove userinfo from the URL authority, e.g.:
             # 'username:password@proxy_host:proxy_port' -> 'proxy_host:proxy_port'
@@ -340,7 +359,7 @@ class Proxy:
         self.headers = headers
         self.mode = mode
 
-    def build_auth_header(self, username: str, password: str) -> str:
+    def _build_auth_header(self, username: str, password: str) -> str:
         userpass = (username.encode("utf-8"), password.encode("utf-8"))
         token = b64encode(b":".join(userpass)).decode()
         return f"Basic {token}"

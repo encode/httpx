@@ -3,7 +3,7 @@ from typing import Dict, Iterator, List, Optional, Tuple
 
 import httpcore
 
-from .._config import Proxy, SSLConfig
+from .._config import create_ssl_context
 from .._content_streams import ByteStream, IteratorStream
 from .._exceptions import NetworkError, map_exceptions
 from .._types import CertTypes, VerifyTypes
@@ -19,7 +19,6 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
     def __init__(
         self,
         *,
-        proxy: Proxy = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
@@ -31,12 +30,10 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
             urllib3 is not None
         ), "urllib3 must be installed in order to use URLLib3Transport"
 
-        ssl_config = SSLConfig(
-            verify=verify, cert=cert, trust_env=trust_env, http2=False
-        )
-
         self.pool = urllib3.PoolManager(
-            ssl_context=ssl_config.ssl_context,
+            ssl_context=create_ssl_context(
+                verify=verify, cert=cert, trust_env=trust_env, http2=False
+            ),
             num_pools=pool_connections,
             maxsize=pool_maxsize,
             block=pool_block,
@@ -140,14 +137,12 @@ class URLLib3ProxyTransport(URLLib3Transport):
             urllib3 is not None
         ), "urllib3 must be installed in order to use URLLib3ProxyTransport"
 
-        ssl_config = SSLConfig(
-            verify=verify, cert=cert, trust_env=trust_env, http2=False
-        )
-
         self.pool = urllib3.ProxyManager(
             proxy_url=proxy_url,
             proxy_headers=proxy_headers,
-            ssl_context=ssl_config.ssl_context,
+            ssl_context=create_ssl_context(
+                verify=verify, cert=cert, trust_env=trust_env, http2=False
+            ),
             num_pools=pool_connections,
             maxsize=pool_maxsize,
             block=pool_block,

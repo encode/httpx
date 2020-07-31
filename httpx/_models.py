@@ -31,7 +31,7 @@ from ._exceptions import (
     ResponseNotRead,
     StreamConsumed,
 )
-from ._status_codes import StatusCode
+from ._status_codes import codes
 from ._types import (
     CookieTypes,
     HeaderTypes,
@@ -715,7 +715,7 @@ class Response:
 
     @property
     def reason_phrase(self) -> str:
-        return StatusCode.get_reason_phrase(self.status_code)
+        return codes.get_reason_phrase(self.status_code)
 
     @property
     def url(self) -> typing.Optional[URL]:
@@ -813,11 +813,11 @@ class Response:
 
     @property
     def is_error(self) -> bool:
-        return StatusCode.is_error(self.status_code)
+        return codes.is_error(self.status_code)
 
     @property
     def is_redirect(self) -> bool:
-        return StatusCode.is_redirect(self.status_code) and "location" in self.headers
+        return codes.is_redirect(self.status_code) and "location" in self.headers
 
     def raise_for_status(self) -> None:
         """
@@ -828,10 +828,10 @@ class Response:
             "For more information check: https://httpstatuses.com/{0.status_code}"
         )
 
-        if StatusCode.is_client_error(self.status_code):
+        if codes.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
             raise HTTPStatusError(message, response=self)
-        elif StatusCode.is_server_error(self.status_code):
+        elif codes.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
             raise HTTPStatusError(message, response=self)
 

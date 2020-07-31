@@ -2,7 +2,7 @@ from .__version__ import __description__, __title__, __version__
 from ._api import delete, get, head, options, patch, post, put, request, stream
 from ._auth import Auth, BasicAuth, DigestAuth
 from ._client import AsyncClient, Client
-from ._config import PoolLimits, Proxy, Timeout
+from ._config import PoolLimits, Proxy, Timeout, create_ssl_context
 from ._exceptions import (
     CloseError,
     ConnectError,
@@ -61,6 +61,7 @@ __all__ = [
     "PoolLimits",
     "Proxy",
     "Timeout",
+    "create_ssl_context",
     "CloseError",
     "ConnectError",
     "ConnectTimeout",
@@ -80,6 +81,7 @@ __all__ = [
     "ResponseClosed",
     "ResponseNotRead",
     "RequestNotRead",
+    "StatusCode",
     "StreamConsumed",
     "StreamError",
     "ProxyError",
@@ -90,7 +92,6 @@ __all__ = [
     "URL",
     "URLLib3Transport",
     "URLLib3ProxyTransport",
-    "StatusCode",
     "Cookies",
     "Headers",
     "QueryParams",
