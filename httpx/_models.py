@@ -424,7 +424,7 @@ class Headers(typing.MutableMapping[str, str]):
     def multi_items(self) -> typing.List[typing.Tuple[str, str]]:  # type: ignore
         """
         Return a list of `(key, value)` pairs of headers. Allow multiple
-        occurances of the same key without concatenating into a single
+        occurences of the same key without concatenating into a single
         comma seperated value.
         """
         return [
