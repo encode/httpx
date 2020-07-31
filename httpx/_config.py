@@ -1,6 +1,7 @@
 import os
 import ssl
 import typing
+import warnings
 from base64 import b64encode
 from pathlib import Path
 
@@ -195,9 +196,9 @@ class Timeout:
 
     **Usage**:
 
-    Timeout()                           # No timeout.
+    Timeout(None)                       # No timeouts.
     Timeout(5.0)                        # 5s timeout on all operations.
-    Timeout(connect_timeout=5.0)        # 5s timeout on connect, no other timeouts.
+    Timeout(None, connect_timeout=5.0)  # 5s timeout on connect, no other timeouts.
     Timeout(5.0, connect_timeout=10.0)  # 10s timeout on connect. 5s timeout elsewhere.
     Timeout(5.0, pool_timeout=None)     # No timeout on acquiring connection from pool.
                                         # 5s timeout elsewhere.
@@ -205,7 +206,7 @@ class Timeout:
 
     def __init__(
         self,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         *,
         connect_timeout: typing.Union[None, float, UnsetType] = UNSET,
         read_timeout: typing.Union[None, float, UnsetType] = UNSET,
@@ -230,7 +231,25 @@ class Timeout:
             self.read_timeout = timeout[1]
             self.write_timeout = None if len(timeout) < 3 else timeout[2]
             self.pool_timeout = None if len(timeout) < 4 else timeout[3]
+        elif not (
+            isinstance(connect_timeout, UnsetType)
+            or isinstance(read_timeout, UnsetType)
+            or isinstance(write_timeout, UnsetType)
+            or isinstance(pool_timeout, UnsetType)
+        ):
+            self.connect_timeout = connect_timeout
+            self.read_timeout = read_timeout
+            self.write_timeout = write_timeout
+            self.pool_timeout = pool_timeout
         else:
+            if isinstance(timeout, UnsetType):
+                warnings.warn(
+                    "httpx.Timeout must either include a default, or set all "
+                    "four parameters explicitly. Omitting the default argument "
+                    "is deprecated and will raise errors in a future version.",
+                    DeprecationWarning,
+                )
+                timeout = None
             self.connect_timeout = (
                 timeout if isinstance(connect_timeout, UnsetType) else connect_timeout
             )
