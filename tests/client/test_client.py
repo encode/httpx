@@ -194,3 +194,13 @@ def test_merge_url_hsts(url: str, scheme: str, is_ssl: bool):
     request = client.build_request("GET", url)
     assert request.url.scheme == scheme
     assert request.url.is_ssl == is_ssl
+
+
+def test_pool_limits_deprecated():
+    limits = httpx.Limits()
+
+    with pytest.warns(DeprecationWarning):
+        httpx.Client(pool_limits=limits)
+
+    with pytest.warns(DeprecationWarning):
+        httpx.AsyncClient(pool_limits=limits)

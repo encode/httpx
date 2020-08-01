@@ -401,8 +401,8 @@ response = client.get('http://example.com/')
 
 ## Pool limit configuration
 
-You can control the connection pool size using the `pool_limits` keyword
-argument on the client. It takes instances of `httpx.PoolLimits` which define:
+You can control the connection pool size using the `limits` keyword
+argument on the client. It takes instances of `httpx.Limits` which define:
 
 - `max_keepalive`, number of allowable keep-alive connections, or `None` to always
 allow. (Defaults 10)
@@ -411,8 +411,8 @@ allow. (Defaults 10)
 
 
 ```python
-limits = httpx.PoolLimits(max_keepalive=5, max_connections=10)
-client = httpx.Client(pool_limits=limits)
+limits = httpx.Limits(max_keepalive=5, max_connections=10)
+client = httpx.Client(limits=limits)
 ```
 
 ## Multipart file encoding
