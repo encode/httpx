@@ -14,9 +14,9 @@ def test_headers():
     assert h.get("a") == "123, 456"
     assert h.get("nope", default=None) is None
     assert h.get_list("a") == ["123", "456"]
-    assert h.keys() == ["a", "b"]
-    assert h.values() == ["123, 456", "789"]
-    assert h.items() == [("a", "123, 456"), ("b", "789")]
+    assert list(h.keys()) == ["a", "b"]
+    assert list(h.values()) == ["123, 456", "789"]
+    assert list(h.items()) == [("a", "123, 456"), ("b", "789")]
     assert h.multi_items() == [("a", "123"), ("a", "456"), ("b", "789")]
     assert list(h) == ["a", "b"]
     assert dict(h) == {"a": "123, 456", "b": "789"}
