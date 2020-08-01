@@ -405,23 +405,25 @@ class Headers(typing.MutableMapping[str, str]):
         """
         return self._list
 
-    def keys(self) -> typing.List[str]:  # type: ignore
-        return [key.decode(self.encoding) for key in self._dict.keys()]
+    def keys(self) -> typing.KeysView[str]:
+        return {key.decode(self.encoding): None for key in self._dict.keys()}.keys()
 
-    def values(self) -> typing.List[str]:  # type: ignore
-        return [value.decode(self.encoding) for value in self._dict.values()]
+    def values(self) -> typing.ValuesView[str]:
+        return {
+            key: value.decode(self.encoding) for key, value in self._dict.items()
+        }.values()
 
-    def items(self) -> typing.List[typing.Tuple[str, str]]:  # type: ignore
+    def items(self) -> typing.ItemsView[str, str]:
         """
-        Return a list of `(key, value)` pairs of headers. Concatenate headers
+        Return `(key, value)` items of headers. Concatenate headers
         into a single comma seperated value when a key occurs multiple times.
         """
-        return [
-            (key.decode(self.encoding), value.decode(self.encoding))
+        return {
+            key.decode(self.encoding): value.decode(self.encoding)
             for key, value in self._dict.items()
-        ]
+        }.items()
 
-    def multi_items(self) -> typing.List[typing.Tuple[str, str]]:  # type: ignore
+    def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
         """
         Return a list of `(key, value)` pairs of headers. Allow multiple
         occurences of the same key without concatenating into a single
@@ -470,7 +472,7 @@ class Headers(typing.MutableMapping[str, str]):
             self[header] = headers[header]
 
     def copy(self) -> "Headers":
-        return Headers(self.items(), encoding=self.encoding)
+        return Headers(dict(self.items()), encoding=self.encoding)
 
     def __getitem__(self, key: str) -> str:
         """

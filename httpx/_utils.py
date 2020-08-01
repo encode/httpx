@@ -431,24 +431,24 @@ class ElapsedTimer:
         return timedelta(seconds=self.end - self.start)
 
 
-class URLMatcher:
+class URLPattern:
     """
     A utility class currently used for making lookups against proxy keys...
 
     # Wildcard matching...
-    >>> pattern = URLMatcher("all")
+    >>> pattern = URLPattern("all")
     >>> pattern.matches(httpx.URL("http://example.com"))
     True
 
     # Witch scheme matching...
-    >>> pattern = URLMatcher("https")
+    >>> pattern = URLPattern("https")
     >>> pattern.matches(httpx.URL("https://example.com"))
     True
     >>> pattern.matches(httpx.URL("http://example.com"))
     False
 
     # With domain matching...
-    >>> pattern = URLMatcher("https://example.com")
+    >>> pattern = URLPattern("https://example.com")
     >>> pattern.matches(httpx.URL("https://example.com"))
     True
     >>> pattern.matches(httpx.URL("http://example.com"))
@@ -457,7 +457,7 @@ class URLMatcher:
     False
 
     # Wildcard scheme, with domain matching...
-    >>> pattern = URLMatcher("all://example.com")
+    >>> pattern = URLPattern("all://example.com")
     >>> pattern.matches(httpx.URL("https://example.com"))
     True
     >>> pattern.matches(httpx.URL("http://example.com"))
@@ -466,7 +466,7 @@ class URLMatcher:
     False
 
     # With port matching...
-    >>> pattern = URLMatcher("https://example.com:1234")
+    >>> pattern = URLPattern("https://example.com:1234")
     >>> pattern.matches(httpx.URL("https://example.com:1234"))
     True
     >>> pattern.matches(httpx.URL("https://example.com"))
@@ -516,7 +516,7 @@ class URLMatcher:
     @property
     def priority(self) -> tuple:
         """
-        The priority allows URLMatcher instances to be sortable, so that
+        The priority allows URLPattern instances to be sortable, so that
         we can match from most specific to least specific.
         """
         # URLs with a port should take priority over URLs without a port.
@@ -530,11 +530,11 @@ class URLMatcher:
     def __hash__(self) -> int:
         return hash(self.pattern)
 
-    def __lt__(self, other: "URLMatcher") -> bool:
+    def __lt__(self, other: "URLPattern") -> bool:
         return self.priority < other.priority
 
     def __eq__(self, other: typing.Any) -> bool:
-        return isinstance(other, URLMatcher) and self.pattern == other.pattern
+        return isinstance(other, URLPattern) and self.pattern == other.pattern
 
 
 def warn_deprecated(message: str) -> None:  # pragma: nocover

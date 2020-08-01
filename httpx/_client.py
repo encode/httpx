@@ -44,7 +44,7 @@ from ._types import (
 )
 from ._utils import (
     NetRCInfo,
-    URLMatcher,
+    URLPattern,
     enforce_http_url,
     get_environment_proxies,
     get_logger,
@@ -80,8 +80,12 @@ class BaseClient:
         self._cookies = Cookies(cookies)
         self.timeout = Timeout(timeout)
         self.max_redirects = max_redirects
-        self.trust_env = trust_env
+        self._trust_env = trust_env
         self._netrc = NetRCInfo()
+
+    @property
+    def trust_env(self) -> bool:
+        return self._trust_env
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
@@ -473,9 +477,9 @@ class Client(BaseClient):
             trust_env=trust_env,
         )
         self._proxies: typing.Dict[
-            URLMatcher, typing.Optional[httpcore.SyncHTTPTransport]
+            URLPattern, typing.Optional[httpcore.SyncHTTPTransport]
         ] = {
-            URLMatcher(key): None
+            URLPattern(key): None
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
@@ -545,8 +549,8 @@ class Client(BaseClient):
         url = request.url
         enforce_http_url(request)
 
-        for matcher, transport in self._proxies.items():
-            if matcher.matches(url):
+        for pattern, transport in self._proxies.items():
+            if pattern.matches(url):
                 return self._transport if transport is None else transport
 
         return self._transport
@@ -996,9 +1000,9 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
         self._proxies: typing.Dict[
-            URLMatcher, typing.Optional[httpcore.AsyncHTTPTransport]
+            URLPattern, typing.Optional[httpcore.AsyncHTTPTransport]
         ] = {
-            URLMatcher(key): None
+            URLPattern(key): None
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
@@ -1068,8 +1072,8 @@ class AsyncClient(BaseClient):
         url = request.url
         enforce_http_url(request)
 
-        for matcher, transport in self._proxies.items():
-            if matcher.matches(url):
+        for pattern, transport in self._proxies.items():
+            if pattern.matches(url):
                 return self._transport if transport is None else transport
 
         return self._transport
