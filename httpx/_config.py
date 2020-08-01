@@ -9,7 +9,7 @@ import certifi
 
 from ._models import URL, Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
-from ._utils import get_ca_bundle_from_env, get_logger
+from ._utils import get_ca_bundle_from_env, get_logger, warn_deprecated
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -196,29 +196,66 @@ class Timeout:
 
     **Usage**:
 
-    Timeout(None)                       # No timeouts.
-    Timeout(5.0)                        # 5s timeout on all operations.
-    Timeout(None, connect_timeout=5.0)  # 5s timeout on connect, no other timeouts.
-    Timeout(5.0, connect_timeout=10.0)  # 10s timeout on connect. 5s timeout elsewhere.
-    Timeout(5.0, pool_timeout=None)     # No timeout on acquiring connection from pool.
-                                        # 5s timeout elsewhere.
+    Timeout(None)               # No timeouts.
+    Timeout(5.0)                # 5s timeout on all operations.
+    Timeout(None, connect=5.0)  # 5s timeout on connect, no other timeouts.
+    Timeout(5.0, connect=10.0)  # 10s timeout on connect. 5s timeout elsewhere.
+    Timeout(5.0, pool=None)     # No timeout on acquiring connection from pool.
+                                # 5s timeout elsewhere.
     """
 
     def __init__(
         self,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         *,
+        connect: typing.Union[None, float, UnsetType] = UNSET,
+        read: typing.Union[None, float, UnsetType] = UNSET,
+        write: typing.Union[None, float, UnsetType] = UNSET,
+        pool: typing.Union[None, float, UnsetType] = UNSET,
+        # Deprecated aliases.
         connect_timeout: typing.Union[None, float, UnsetType] = UNSET,
         read_timeout: typing.Union[None, float, UnsetType] = UNSET,
         write_timeout: typing.Union[None, float, UnsetType] = UNSET,
         pool_timeout: typing.Union[None, float, UnsetType] = UNSET,
     ):
+        if not isinstance(connect_timeout, UnsetType):
+            warn_deprecated(
+                "httpx.Timeout(..., connect_timeout=...) is deprecated and will "
+                "raise errors in a future version. "
+                "Use httpx.Timeout(..., connect=...) instead."
+            )
+            connect = connect_timeout
+
+        if not isinstance(read_timeout, UnsetType):
+            warn_deprecated(
+                "httpx.Timeout(..., read_timeout=...) is deprecated and will "
+                "raise errors in a future version. "
+                "Use httpx.Timeout(..., write=...) instead."
+            )
+            read = read_timeout
+
+        if not isinstance(write_timeout, UnsetType):
+            warn_deprecated(
+                "httpx.Timeout(..., write_timeout=...) is deprecated and will "
+                "raise errors in a future version. "
+                "Use httpx.Timeout(..., write=...) instead."
+            )
+            write = write_timeout
+
+        if not isinstance(pool_timeout, UnsetType):
+            warn_deprecated(
+                "httpx.Timeout(..., pool_timeout=...) is deprecated and will "
+                "raise errors in a future version. "
+                "Use httpx.Timeout(..., pool=...) instead."
+            )
+            pool = pool_timeout
+
         if isinstance(timeout, Timeout):
             # Passed as a single explicit Timeout.
-            assert connect_timeout is UNSET
-            assert read_timeout is UNSET
-            assert write_timeout is UNSET
-            assert pool_timeout is UNSET
+            assert connect is UNSET
+            assert read is UNSET
+            assert write is UNSET
+            assert pool is UNSET
             self.connect_timeout = (
                 timeout.connect_timeout
             )  # type: typing.Optional[float]
@@ -232,15 +269,15 @@ class Timeout:
             self.write_timeout = None if len(timeout) < 3 else timeout[2]
             self.pool_timeout = None if len(timeout) < 4 else timeout[3]
         elif not (
-            isinstance(connect_timeout, UnsetType)
-            or isinstance(read_timeout, UnsetType)
-            or isinstance(write_timeout, UnsetType)
-            or isinstance(pool_timeout, UnsetType)
+            isinstance(connect, UnsetType)
+            or isinstance(read, UnsetType)
+            or isinstance(write, UnsetType)
+            or isinstance(pool, UnsetType)
         ):
-            self.connect_timeout = connect_timeout
-            self.read_timeout = read_timeout
-            self.write_timeout = write_timeout
-            self.pool_timeout = pool_timeout
+            self.connect_timeout = connect
+            self.read_timeout = read
+            self.write_timeout = write
+            self.pool_timeout = pool
         else:
             if isinstance(timeout, UnsetType):
                 warnings.warn(
@@ -251,17 +288,11 @@ class Timeout:
                 )
                 timeout = None
             self.connect_timeout = (
-                timeout if isinstance(connect_timeout, UnsetType) else connect_timeout
+                timeout if isinstance(connect, UnsetType) else connect
             )
-            self.read_timeout = (
-                timeout if isinstance(read_timeout, UnsetType) else read_timeout
-            )
-            self.write_timeout = (
-                timeout if isinstance(write_timeout, UnsetType) else write_timeout
-            )
-            self.pool_timeout = (
-                timeout if isinstance(pool_timeout, UnsetType) else pool_timeout
-            )
+            self.read_timeout = timeout if isinstance(read, UnsetType) else read
+            self.write_timeout = timeout if isinstance(write, UnsetType) else write
+            self.pool_timeout = timeout if isinstance(pool, UnsetType) else pool
 
     def as_dict(self) -> typing.Dict[str, typing.Optional[float]]:
         return {
