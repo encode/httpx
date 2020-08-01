@@ -2,7 +2,7 @@ from .__version__ import __description__, __title__, __version__
 from ._api import delete, get, head, options, patch, post, put, request, stream
 from ._auth import Auth, BasicAuth, DigestAuth
 from ._client import AsyncClient, Client
-from ._config import PoolLimits, Proxy, Timeout, create_ssl_context
+from ._config import Limits, PoolLimits, Proxy, Timeout, create_ssl_context
 from ._exceptions import (
     CloseError,
     ConnectError,
@@ -59,6 +59,7 @@ __all__ = [
     "BasicAuth",
     "Client",
     "DigestAuth",
+    "Limits",
     "PoolLimits",
     "Proxy",
     "Timeout",
