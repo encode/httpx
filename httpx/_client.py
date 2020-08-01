@@ -70,11 +70,7 @@ class BaseClient:
         base_url: URLTypes = None,
         trust_env: bool = True,
     ):
-        if base_url is None:
-            self.base_url = URL("")
-        else:
-            self.base_url = URL(base_url)
-
+        self.base_url = self._get_base_url(base_url)
         self.auth = auth
         self._params = QueryParams(params)
         self._headers = Headers(headers)
@@ -87,6 +83,26 @@ class BaseClient:
     @property
     def trust_env(self) -> bool:
         return self._trust_env
+
+    def _get_base_url(self, base_url: typing.Optional[URLTypes]) -> URL:
+        """
+        If base_url doesn't end with "/",
+        Include "/" character,
+        to manage to concat path strings.
+        """
+        if base_url is None:
+            return URL("")
+
+        if isinstance(base_url, str):
+            if not base_url.endswith("/"):
+                base_url += "/"
+        elif isinstance(base_url, URL):
+            path = base_url._uri_reference.path
+            if path and not path.endswith("/"):
+                base_url._uri_reference = base_url._uri_reference.copy_with(
+                    path=path + "/"
+                )
+        return URL(base_url)
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool,
@@ -204,12 +220,29 @@ class BaseClient:
             cookies=cookies,
         )
 
+    def _merge_base_url_with_url(self, url: URLTypes) -> URL:
+        """
+        In order to set path,
+        if base_url has a path and url starts with "/",
+        remove first character.
+        """
+        if self.base_url._uri_reference.path:
+            if isinstance(url, str):
+                if url.startswith("/"):
+                    url = url[1:]
+            elif isinstance(url, URL):
+                if url.path.startswith("/"):
+                    url._uri_reference = url._uri_reference.copy_with(path=url.path[1:])
+
+        return self.base_url.join(relative_url=url)
+
     def _merge_url(self, url: URLTypes) -> URL:
         """
         Merge a URL argument together with any 'base_url' on the client,
         to create the URL used for the outgoing request.
         """
-        url = self.base_url.join(relative_url=url)
+
+        url = self._merge_base_url_with_url(url)
         if (
             url.scheme == "http"
             and hstspreload.in_hsts_preload(url.host)

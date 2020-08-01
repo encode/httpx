@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 
 import httpx
+from httpx import URL
 
 
 def test_get(server):
@@ -172,6 +173,27 @@ def test_base_url(server):
         response = client.get("/")
     assert response.status_code == 200
     assert response.url == base_url
+
+
+@pytest.mark.parametrize(
+    ("base_url", "path"),
+    (
+        ("https://example.com/v1/", "/path"),
+        ("https://example.com/v1/", "path"),
+        ("https://example.com/v1", "/path"),
+        ("https://example.com/v1", "path"),
+    ),
+)
+def test_base_url_with_path(base_url, path):
+    for base_url, path in (
+        (base_url, path),
+        (URL(base_url), path),
+        (base_url, URL(path)),
+        (URL(base_url), URL(path)),
+    ):
+        client = httpx.Client(base_url=base_url)
+        request = client.build_request("GET", path)
+        assert "https://example.com/v1/path" == request.url
 
 
 def test_merge_url():
