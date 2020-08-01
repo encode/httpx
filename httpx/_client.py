@@ -82,8 +82,12 @@ class BaseClient:
         self._cookies = Cookies(cookies)
         self.timeout = Timeout(timeout)
         self.max_redirects = max_redirects
-        self.trust_env = trust_env
+        self._trust_env = trust_env
         self._netrc = NetRCInfo()
+
+    @property
+    def trust_env(self) -> bool:
+        return self._trust_env
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
