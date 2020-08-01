@@ -97,21 +97,20 @@ For example, to apply a set of custom headers _on every request_:
 
 When a configuration option is provided at both the client-level and request-level, one of two things can happen:
 
-- For headers, query parameters and cookies, the values are combined together. For example:
+- For headers, query parameters and cookies, the values are combined together. Passing `None` is treated as "do nothing" (i.e. "use the client value unchanged"). For example:
 
 ```python
->>> headers = {'X-Auth': 'from-client'}
+>>> headers = {'X-Client-Header': 'from-client'}
 >>> params = {'client_id': 'client1'}
 >>> with httpx.Client(headers=headers, params=params) as client:
-...     headers = {'X-Custom': 'from-request'}
-...     params = {'request_id': 'request1'}
-...     r = client.get('https://example.com', headers=headers, params=params)
+...     headers = {'X-Request-Header': 'from-request'}
+...     r = client.get('https://example.com', headers=headers, params=None)
 ...
 >>> r.request.url
-URL('https://example.com?client_id=client1&request_id=request1')
->>> r.request.headers['X-Auth']
+URL('https://example.com?client_id=client1')
+>>> r.request.headers['X-Client-Header']
 'from-client'
->>> r.request.headers['X-Custom']
+>>> r.request.headers['X-Request-Header']
 'from-request'
 ```
 
@@ -126,6 +125,15 @@ URL('https://example.com?client_id=client1&request_id=request1')
 >>> base64.b64decode(auth)
 b'alice:ecila123'
 ```
+
+!!! warning "Gotcha: request-level `auth=None` may not do what you'd expect"
+    Even if `auth` can be overridden at the request level, it cannot be _disabled_ at the request level.
+
+    Like for headers, params and cookies, `client.get(..., auth=None)` will be treated as "use the client default", instead of "don't use auth". (This is the same than if you didn't pass `auth=None` at all.)
+
+    In some cases you can get away with removing the `Authorization` header on the [request instance](#request-instances), but for complex auth flows this most likely won't be enough.
+
+    To reliably disable auth on a specific request, consider using a separate `Client` instance that doesn't have a client-level `auth`.
 
 If you need finer-grained control on the merging of client-level and request-level parameters, see [Request instances](#request-instances).
 
