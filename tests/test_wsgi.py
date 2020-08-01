@@ -97,8 +97,8 @@ def test_wsgi_exc():
 
 
 def test_wsgi_http_error():
-    client = httpx.Client(app=partial(raise_exc, exc=httpx.HTTPError))
-    with pytest.raises(httpx.HTTPError):
+    client = httpx.Client(app=partial(raise_exc, exc=RuntimeError))
+    with pytest.raises(RuntimeError):
         client.get("http://www.example.org/")
 
 
