@@ -122,10 +122,10 @@ def test_timeout_all_parameters_set():
 
 def test_timeout_from_nothing():
     timeout = httpx.Timeout(None)
-    assert timeout.connect_timeout is None
-    assert timeout.read_timeout is None
-    assert timeout.write_timeout is None
-    assert timeout.pool_timeout is None
+    assert timeout.connect is None
+    assert timeout.read is None
+    assert timeout.write is None
+    assert timeout.pool is None
 
 
 def test_timeout_from_none():
@@ -169,10 +169,7 @@ def test_timeout_repr():
     assert repr(timeout) == "Timeout(timeout=5.0)"
 
     timeout = httpx.Timeout(None, read=5.0)
-    assert repr(timeout) == (
-        "Timeout(connect_timeout=None, read_timeout=5.0, "
-        "write_timeout=None, pool_timeout=None)"
-    )
+    assert repr(timeout) == "Timeout(connect=None, read=5.0, write=None, pool=None)"
 
 
 @pytest.mark.skipif(

@@ -256,28 +256,26 @@ class Timeout:
             assert read is UNSET
             assert write is UNSET
             assert pool is UNSET
-            self.connect_timeout = (
-                timeout.connect_timeout
-            )  # type: typing.Optional[float]
-            self.read_timeout = timeout.read_timeout  # type: typing.Optional[float]
-            self.write_timeout = timeout.write_timeout  # type: typing.Optional[float]
-            self.pool_timeout = timeout.pool_timeout  # type: typing.Optional[float]
+            self.connect = timeout.connect  # type: typing.Optional[float]
+            self.read = timeout.read  # type: typing.Optional[float]
+            self.write = timeout.write  # type: typing.Optional[float]
+            self.pool = timeout.pool  # type: typing.Optional[float]
         elif isinstance(timeout, tuple):
             # Passed as a tuple.
-            self.connect_timeout = timeout[0]
-            self.read_timeout = timeout[1]
-            self.write_timeout = None if len(timeout) < 3 else timeout[2]
-            self.pool_timeout = None if len(timeout) < 4 else timeout[3]
+            self.connect = timeout[0]
+            self.read = timeout[1]
+            self.write = None if len(timeout) < 3 else timeout[2]
+            self.pool = None if len(timeout) < 4 else timeout[3]
         elif not (
             isinstance(connect, UnsetType)
             or isinstance(read, UnsetType)
             or isinstance(write, UnsetType)
             or isinstance(pool, UnsetType)
         ):
-            self.connect_timeout = connect
-            self.read_timeout = read
-            self.write_timeout = write
-            self.pool_timeout = pool
+            self.connect = connect
+            self.read = read
+            self.write = write
+            self.pool = pool
         else:
             if isinstance(timeout, UnsetType):
                 warnings.warn(
@@ -287,48 +285,35 @@ class Timeout:
                     DeprecationWarning,
                 )
                 timeout = None
-            self.connect_timeout = (
-                timeout if isinstance(connect, UnsetType) else connect
-            )
-            self.read_timeout = timeout if isinstance(read, UnsetType) else read
-            self.write_timeout = timeout if isinstance(write, UnsetType) else write
-            self.pool_timeout = timeout if isinstance(pool, UnsetType) else pool
+            self.connect = timeout if isinstance(connect, UnsetType) else connect
+            self.read = timeout if isinstance(read, UnsetType) else read
+            self.write = timeout if isinstance(write, UnsetType) else write
+            self.pool = timeout if isinstance(pool, UnsetType) else pool
 
     def as_dict(self) -> typing.Dict[str, typing.Optional[float]]:
         return {
-            "connect": self.connect_timeout,
-            "read": self.read_timeout,
-            "write": self.write_timeout,
-            "pool": self.pool_timeout,
+            "connect": self.connect,
+            "read": self.read,
+            "write": self.write,
+            "pool": self.pool,
         }
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self.connect_timeout == other.connect_timeout
-            and self.read_timeout == other.read_timeout
-            and self.write_timeout == other.write_timeout
-            and self.pool_timeout == other.pool_timeout
+            and self.connect == other.connect
+            and self.read == other.read
+            and self.write == other.write
+            and self.pool == other.pool
         )
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        if (
-            len(
-                {
-                    self.connect_timeout,
-                    self.read_timeout,
-                    self.write_timeout,
-                    self.pool_timeout,
-                }
-            )
-            == 1
-        ):
-            return f"{class_name}(timeout={self.connect_timeout})"
+        if len({self.connect, self.read, self.write, self.pool}) == 1:
+            return f"{class_name}(timeout={self.connect})"
         return (
-            f"{class_name}(connect_timeout={self.connect_timeout}, "
-            f"read_timeout={self.read_timeout}, write_timeout={self.write_timeout}, "
-            f"pool_timeout={self.pool_timeout})"
+            f"{class_name}(connect={self.connect}, "
+            f"read={self.read}, write={self.write}, pool={self.pool})"
         )
 
 
