@@ -44,7 +44,7 @@ from ._types import (
 )
 from ._utils import (
     NetRCInfo,
-    URLMatcher,
+    URLPattern,
     enforce_http_url,
     get_environment_proxies,
     get_logger,
@@ -474,9 +474,9 @@ class Client(BaseClient):
             trust_env=trust_env,
         )
         self._proxies: typing.Dict[
-            URLMatcher, typing.Optional[httpcore.SyncHTTPTransport]
+            URLPattern, typing.Optional[httpcore.SyncHTTPTransport]
         ] = {
-            URLMatcher(key): None
+            URLPattern(key): None
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
@@ -547,8 +547,8 @@ class Client(BaseClient):
         enforce_http_url(request)
 
         if self._proxies and not should_not_be_proxied(url):
-            for matcher, transport in self._proxies.items():
-                if matcher.matches(url):
+            for pattern, transport in self._proxies.items():
+                if pattern.matches(url):
                     return self._transport if transport is None else transport
 
         return self._transport
@@ -998,9 +998,9 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
         self._proxies: typing.Dict[
-            URLMatcher, typing.Optional[httpcore.AsyncHTTPTransport]
+            URLPattern, typing.Optional[httpcore.AsyncHTTPTransport]
         ] = {
-            URLMatcher(key): None
+            URLPattern(key): None
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
@@ -1071,8 +1071,8 @@ class AsyncClient(BaseClient):
         enforce_http_url(request)
 
         if self._proxies and not should_not_be_proxied(url):
-            for matcher, transport in self._proxies.items():
-                if matcher.matches(url):
+            for pattern, transport in self._proxies.items():
+                if pattern.matches(url):
                     return self._transport if transport is None else transport
 
         return self._transport

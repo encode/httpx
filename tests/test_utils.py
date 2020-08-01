@@ -8,7 +8,7 @@ import httpx
 from httpx._utils import (
     ElapsedTimer,
     NetRCInfo,
-    URLMatcher,
+    URLPattern,
     get_ca_bundle_from_env,
     get_environment_proxies,
     guess_json_utf,
@@ -331,21 +331,21 @@ def test_not_same_origin():
     ],
 )
 def test_url_matches(pattern, url, expected):
-    matcher = URLMatcher(pattern)
-    assert matcher.matches(httpx.URL(url)) == expected
+    pattern = URLPattern(pattern)
+    assert pattern.matches(httpx.URL(url)) == expected
 
 
-def test_matcher_priority():
+def test_pattern_priority():
     matchers = [
-        URLMatcher("all://"),
-        URLMatcher("http://"),
-        URLMatcher("http://example.com"),
-        URLMatcher("http://example.com:123"),
+        URLPattern("all://"),
+        URLPattern("http://"),
+        URLPattern("http://example.com"),
+        URLPattern("http://example.com:123"),
     ]
     random.shuffle(matchers)
     assert sorted(matchers) == [
-        URLMatcher("http://example.com:123"),
-        URLMatcher("http://example.com"),
-        URLMatcher("http://"),
-        URLMatcher("all://"),
+        URLPattern("http://example.com:123"),
+        URLPattern("http://example.com"),
+        URLPattern("http://"),
+        URLPattern("all://"),
     ]
