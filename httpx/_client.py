@@ -7,8 +7,8 @@ import httpcore
 
 from ._auth import Auth, BasicAuth, FunctionAuth
 from ._config import (
-    DEFAULT_MAX_REDIRECTS,
     DEFAULT_LIMITS,
+    DEFAULT_MAX_REDIRECTS,
     DEFAULT_TIMEOUT_CONFIG,
     UNSET,
     Limits,
