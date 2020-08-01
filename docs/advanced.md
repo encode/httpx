@@ -126,10 +126,10 @@ URL('https://example.com?client_id=client1')
 b'alice:ecila123'
 ```
 
-!!! warning "Gotcha: request-level `auth=None` may not do what you'd expect"
-    Even if `auth` can be overridden at the request level, it cannot be _disabled_ at the request level.
+!!! tip "Gotcha"
+    **Passing `auth=None` at the request-level is treated as "use the client-level auth", rather than "don't use auth".**
 
-    Like for headers, params and cookies, `client.get(..., auth=None)` will be treated as "use the client default", instead of "don't use auth". (This is the same than if you didn't pass `auth=None` at all.)
+    (This might be counter-intuitive given that _in general_ request-level `auth` will override the client-level value. But this is consistent with the behavior of request-level headers, query params and cookies, where `None` is treated as "don't change the client default".)
 
     In some cases you can get away with removing the `Authorization` header on the [request instance](#request-instances), but for complex auth flows this most likely won't be enough.
 
