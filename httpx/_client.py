@@ -89,10 +89,10 @@ class BaseClient:
         return self._trust_env
 
     def _get_proxy_map(
-        self, proxies: typing.Optional[ProxiesTypes], trust_env: bool,
+        self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool,
     ) -> typing.Dict[str, typing.Optional[Proxy]]:
         if proxies is None:
-            if trust_env:
+            if allow_env_proxies:
                 return {
                     key: None if url is None else Proxy(url=url)
                     for key, url in get_environment_proxies().items()
@@ -473,10 +473,8 @@ class Client(BaseClient):
             )
             limits = pool_limits
 
-        if app is None and transport is None:
-            proxy_map = self._get_proxy_map(proxies, trust_env)
-        else:
-            proxy_map = {}
+        allow_env_proxies = trust_env and app is None and transport is None
+        proxy_map = self._get_proxy_map(proxies, allow_env_proxies)
 
         self._transport = self._init_transport(
             verify=verify,
@@ -1006,10 +1004,8 @@ class AsyncClient(BaseClient):
             )
             limits = pool_limits
 
-        if app is None and transport is None:
-            proxy_map = self._get_proxy_map(proxies, trust_env)
-        else:
-            proxy_map = None
+        allow_env_proxies = trust_env and app is None and transport is None
+        proxy_map = self._get_proxy_map(proxies, allow_env_proxies)
 
         self._transport = self._init_transport(
             verify=verify,
