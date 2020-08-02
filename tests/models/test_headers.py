@@ -14,6 +14,10 @@ def test_headers():
     assert h.get("a") == "123, 456"
     assert h.get("nope", default=None) is None
     assert h.get_list("a") == ["123", "456"]
+
+    with pytest.warns(DeprecationWarning):
+        assert h.getlist("a") == ["123", "456"]
+
     assert list(h.keys()) == ["a", "b"]
     assert list(h.values()) == ["123, 456", "789"]
     assert list(h.items()) == [("a", "123, 456"), ("b", "789")]

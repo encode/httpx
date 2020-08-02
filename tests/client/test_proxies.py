@@ -56,6 +56,20 @@ PROXY_URL = "http://[::1]"
         ("http://example.com", {}, None),
         ("http://example.com", {"https": PROXY_URL}, None),
         ("http://example.com", {"http://example.net": PROXY_URL}, None),
+        # Using "*" should match any domain name.
+        ("http://example.com", {"http://*": PROXY_URL}, PROXY_URL),
+        ("https://example.com", {"http://*": PROXY_URL}, None),
+        # Using "example.com" should match example.com, but not www.example.com
+        ("http://example.com", {"http://example.com": PROXY_URL}, PROXY_URL),
+        ("http://www.example.com", {"http://example.com": PROXY_URL}, None),
+        # Using "*.example.com" should match www.example.com, but not example.com
+        ("http://example.com", {"http://*.example.com": PROXY_URL}, None),
+        ("http://www.example.com", {"http://*.example.com": PROXY_URL}, PROXY_URL),
+        # Using "*example.com" should match example.com and www.example.com
+        ("http://example.com", {"http://*example.com": PROXY_URL}, PROXY_URL),
+        ("http://www.example.com", {"http://*example.com": PROXY_URL}, PROXY_URL),
+        ("http://wwwexample.com", {"http://*example.com": PROXY_URL}, None),
+        # ...
         ("http://example.com:443", {"http://example.com": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all": PROXY_URL, "http://example.com": None}, None),
@@ -129,9 +143,90 @@ def test_unsupported_proxy_scheme():
             {"HTTP_PROXY": "http://example.com"},
             "http://example.com",
         ),
+        # Auto prepend http scheme
+        ("http://google.com", {"HTTP_PROXY": "example.com"}, "http://example.com"),
         (
             "http://google.com",
             {"HTTP_PROXY": "http://example.com", "NO_PROXY": "google.com"},
+            None,
+        ),
+        # Everything proxied when NO_PROXY is empty/unset
+        (
+            "http://127.0.0.1",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": ""},
+            "http://localhost:123",
+        ),
+        # Not proxied if NO_PROXY matches URL.
+        (
+            "http://127.0.0.1",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "127.0.0.1"},
+            None,
+        ),
+        # Proxied if NO_PROXY scheme does not match URL.
+        (
+            "http://127.0.0.1",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "https://127.0.0.1"},
+            "http://localhost:123",
+        ),
+        # Proxied if NO_PROXY scheme does not match host.
+        (
+            "http://127.0.0.1",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "1.1.1.1"},
+            "http://localhost:123",
+        ),
+        # Not proxied if NO_PROXY matches host domain suffix.
+        (
+            "http://courses.mit.edu",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "mit.edu"},
+            None,
+        ),
+        # Proxied even though NO_PROXY matches host domain *prefix*.
+        (
+            "https://mit.edu.info",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "mit.edu"},
+            "http://localhost:123",
+        ),
+        # Not proxied if one item in NO_PROXY case matches host domain suffix.
+        (
+            "https://mit.edu.info",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "mit.edu,edu.info"},
+            None,
+        ),
+        # Not proxied if one item in NO_PROXY case matches host domain suffix.
+        # May include whitespace.
+        (
+            "https://mit.edu.info",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "mit.edu, edu.info"},
+            None,
+        ),
+        # Proxied if no items in NO_PROXY match.
+        (
+            "https://mit.edu.info",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "mit.edu,mit.info"},
+            "http://localhost:123",
+        ),
+        # Proxied if NO_PROXY domain doesn't match.
+        (
+            "https://foo.example.com",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "www.example.com"},
+            "http://localhost:123",
+        ),
+        # Not proxied for subdomains matching NO_PROXY, with a leading ".".
+        (
+            "https://www.example1.com",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": ".example1.com"},
+            None,
+        ),
+        # Proxied, because NO_PROXY subdomains only match if "." seperated.
+        (
+            "https://www.example2.com",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "ample2.com"},
+            "http://localhost:123",
+        ),
+        # No requests are proxied if NO_PROXY="*" is set.
+        (
+            "https://www.example3.com",
+            {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "*"},
             None,
         ),
     ],
