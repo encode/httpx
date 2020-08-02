@@ -90,7 +90,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
         headers = [] if headers is None else headers
         stream = (
-            httpcore.AsyncByteStream(async_byte_iterator(b""))
+            httpcore.AsyncByteStream(aiterator=async_byte_iterator(b""))
             if stream is None
             else stream
         )
@@ -172,6 +172,6 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
 
         response_body = b"".join(body_parts)
 
-        stream = httpcore.AsyncByteStream(async_byte_iterator(response_body))
+        stream = httpcore.AsyncByteStream(aiterator=async_byte_iterator(response_body))
 
         return (b"HTTP/1.1", status_code, b"", response_headers, stream)

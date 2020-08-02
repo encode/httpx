@@ -18,6 +18,13 @@ from ._utils import (
 
 
 class ContentStream(httpcore.AsyncByteStream, httpcore.SyncByteStream):
+    def __init__(self) -> None:
+        # Note: Disregard the base class __init__ implementations.
+        #       We're subclassing because we implement their interfaces,
+        #       but we don't want to use the simple concrete implementations
+        #       that they provide.
+        pass  # pragma: nocover
+
     def get_headers(self) -> typing.Dict[str, str]:
         """
         Return a dictionary of headers that are implied by the encoding.

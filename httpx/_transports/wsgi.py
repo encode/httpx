@@ -74,7 +74,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
     ]:
         headers = [] if headers is None else headers
         stream = (
-            httpcore.SyncByteStream(chunk for chunk in [b""])
+            httpcore.SyncByteStream(iterator=(chunk for chunk in [b""]))
             if stream is None
             else stream
         )
@@ -130,6 +130,6 @@ class WSGITransport(httpcore.SyncHTTPTransport):
             (key.encode("ascii"), value.encode("ascii"))
             for key, value in seen_response_headers
         ]
-        stream = httpcore.SyncByteStream(chunk for chunk in result)
+        stream = httpcore.SyncByteStream(iterator=(chunk for chunk in result))
 
         return (b"HTTP/1.1", status_code, b"", headers, stream)
