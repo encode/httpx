@@ -295,7 +295,7 @@ def test_obfuscate_sensitive_headers(headers, output):
 def test_should_not_be_proxied(url, no_proxy, expected):
     os.environ.update(no_proxy)
     proxies = {
-        URLMatcher(key): value for key, value in get_environment_proxies().items()
+        URLPattern(key): value for key, value in get_environment_proxies().items()
     }
     parsed_url = httpx.URL(url)
 

@@ -7,11 +7,11 @@ import httpcore
 
 from ._auth import Auth, BasicAuth, FunctionAuth
 from ._config import (
+    DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
-    DEFAULT_POOL_LIMITS,
     DEFAULT_TIMEOUT_CONFIG,
     UNSET,
-    PoolLimits,
+    Limits,
     Proxy,
     Timeout,
     UnsetType,
@@ -49,6 +49,7 @@ from ._utils import (
     get_environment_proxies,
     get_logger,
     same_origin,
+    warn_deprecated,
 )
 
 logger = get_logger(__name__)
@@ -421,8 +422,7 @@ class Client(BaseClient):
     URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
-    * **pool_limits** - *(optional)* The connection pool configuration to use
-    when determining the maximum number of concurrently open HTTP connections.
+    * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
     * **base_url** - *(optional)* A URL to use as the base when building
@@ -447,7 +447,8 @@ class Client(BaseClient):
         http2: bool = False,
         proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        limits: Limits = DEFAULT_LIMITS,
+        pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         transport: httpcore.SyncHTTPTransport = None,
@@ -465,13 +466,20 @@ class Client(BaseClient):
             trust_env=trust_env,
         )
 
+        if pool_limits is not None:
+            warn_deprecated(
+                "Client(..., pool_limits=...) is deprecated and will raise "
+                "errors in the future. Use Client(..., limits=...) instead."
+            )
+            limits = pool_limits
+
         proxy_map = self._get_proxy_map(proxies, trust_env)
 
         self._transport = self._init_transport(
             verify=verify,
             cert=cert,
             http2=http2,
-            pool_limits=pool_limits,
+            limits=limits,
             transport=transport,
             app=app,
             trust_env=trust_env,
@@ -486,7 +494,7 @@ class Client(BaseClient):
                 verify=verify,
                 cert=cert,
                 http2=http2,
-                pool_limits=pool_limits,
+                limits=limits,
                 trust_env=trust_env,
             )
             for key, proxy in proxy_map.items()
@@ -498,7 +506,7 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        limits: Limits = DEFAULT_LIMITS,
         transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
@@ -513,8 +521,8 @@ class Client(BaseClient):
 
         return httpcore.SyncConnectionPool(
             ssl_context=ssl_context,
-            max_keepalive=pool_limits.max_keepalive,
-            max_connections=pool_limits.max_connections,
+            max_keepalive=limits.max_keepalive,
+            max_connections=limits.max_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
@@ -525,7 +533,7 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.SyncHTTPTransport:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
@@ -535,8 +543,8 @@ class Client(BaseClient):
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
-            max_keepalive=pool_limits.max_keepalive,
-            max_connections=pool_limits.max_connections,
+            max_keepalive=limits.max_keepalive,
+            max_connections=limits.max_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
@@ -944,8 +952,7 @@ class AsyncClient(BaseClient):
     URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
-    * **pool_limits** - *(optional)* The connection pool configuration to use
-    when determining the maximum number of concurrently open HTTP connections.
+    * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
     * **base_url** - *(optional)* A URL to use as the base when building
@@ -970,7 +977,8 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         proxies: ProxiesTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        limits: Limits = DEFAULT_LIMITS,
+        pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         transport: httpcore.AsyncHTTPTransport = None,
@@ -988,13 +996,20 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
+        if pool_limits is not None:
+            warn_deprecated(
+                "AsyncClient(..., pool_limits=...) is deprecated and will raise "
+                "errors in the future. Use AsyncClient(..., limits=...) instead."
+            )
+            limits = pool_limits
+
         proxy_map = self._get_proxy_map(proxies, trust_env)
 
         self._transport = self._init_transport(
             verify=verify,
             cert=cert,
             http2=http2,
-            pool_limits=pool_limits,
+            limits=limits,
             transport=transport,
             app=app,
             trust_env=trust_env,
@@ -1009,7 +1024,7 @@ class AsyncClient(BaseClient):
                 verify=verify,
                 cert=cert,
                 http2=http2,
-                pool_limits=pool_limits,
+                limits=limits,
                 trust_env=trust_env,
             )
             for key, proxy in proxy_map.items()
@@ -1021,7 +1036,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        limits: Limits = DEFAULT_LIMITS,
         transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
@@ -1036,8 +1051,8 @@ class AsyncClient(BaseClient):
 
         return httpcore.AsyncConnectionPool(
             ssl_context=ssl_context,
-            max_keepalive=pool_limits.max_keepalive,
-            max_connections=pool_limits.max_connections,
+            max_keepalive=limits.max_keepalive,
+            max_connections=limits.max_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
@@ -1048,7 +1063,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
-        pool_limits: PoolLimits = DEFAULT_POOL_LIMITS,
+        limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.AsyncHTTPTransport:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
@@ -1058,8 +1073,8 @@ class AsyncClient(BaseClient):
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
-            max_keepalive=pool_limits.max_keepalive,
-            max_connections=pool_limits.max_connections,
+            max_keepalive=limits.max_keepalive,
+            max_connections=limits.max_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )

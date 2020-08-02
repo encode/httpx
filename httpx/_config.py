@@ -317,9 +317,9 @@ class Timeout:
         )
 
 
-class PoolLimits:
+class Limits:
     """
-    Limits on the number of connections in a connection pool.
+    Configuration for limits to various client behaviors.
 
     **Parameters:**
 
@@ -348,6 +348,17 @@ class PoolLimits:
             f"{class_name}(max_keepalive={self.max_keepalive}, "
             f"max_connections={self.max_connections})"
         )
+
+
+class PoolLimits(Limits):
+    def __init__(
+        self, *, max_keepalive: int = None, max_connections: int = None,
+    ) -> None:
+        warn_deprecated(
+            "httpx.PoolLimits(...) is deprecated and will raise errors in the future. "
+            "Use httpx.Limits(...) instead."
+        )
+        super().__init__(max_keepalive=max_keepalive, max_connections=max_connections)
 
 
 class Proxy:
@@ -389,5 +400,5 @@ class Proxy:
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
-DEFAULT_POOL_LIMITS = PoolLimits(max_keepalive=10, max_connections=100)
+DEFAULT_LIMITS = Limits(max_keepalive=10, max_connections=100)
 DEFAULT_MAX_REDIRECTS = 20

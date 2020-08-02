@@ -101,13 +101,18 @@ def test_create_ssl_context_with_get_request(server, cert_pem_file):
 
 
 def test_limits_repr():
-    limits = httpx.PoolLimits(max_connections=100)
-    assert repr(limits) == "PoolLimits(max_keepalive=None, max_connections=100)"
+    limits = httpx.Limits(max_connections=100)
+    assert repr(limits) == "Limits(max_keepalive=None, max_connections=100)"
 
 
 def test_limits_eq():
-    limits = httpx.PoolLimits(max_connections=100)
-    assert limits == httpx.PoolLimits(max_connections=100)
+    limits = httpx.Limits(max_connections=100)
+    assert limits == httpx.Limits(max_connections=100)
+
+
+def test_pool_limits_deprecated():
+    with pytest.warns(DeprecationWarning):
+        httpx.PoolLimits()
 
 
 def test_timeout_eq():
