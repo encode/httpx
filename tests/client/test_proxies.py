@@ -143,6 +143,8 @@ def test_unsupported_proxy_scheme():
             {"HTTP_PROXY": "http://example.com"},
             "http://example.com",
         ),
+        # Auto prepend http scheme
+        ("http://google.com", {"HTTP_PROXY": "example.com"}, "http://example.com"),
         (
             "http://google.com",
             {"HTTP_PROXY": "http://example.com", "NO_PROXY": "google.com"},
