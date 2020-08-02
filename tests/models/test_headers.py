@@ -13,6 +13,7 @@ def test_headers():
     assert h["a"] == "123, 456"
     assert h.get("a") == "123, 456"
     assert h.get("nope", default=None) is None
+    assert h.getlist("a") == ["123", "456"]
     assert h.get_list("a") == ["123", "456"]
     assert list(h.keys()) == ["a", "b"]
     assert list(h.values()) == ["123, 456", "789"]

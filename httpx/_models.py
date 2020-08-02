@@ -281,7 +281,7 @@ class QueryParams(typing.Mapping[str, str]):
 
         params = QueryParams(params)
         for param in params:
-            item, *extras = params.getlist(param)
+            item, *extras = params.get_list(param)
             self[param] = item
             if extras:
                 self._list.extend((param, e) for e in extras)
@@ -795,7 +795,7 @@ class Response:
         """
         if not hasattr(self, "_decoder"):
             decoders: typing.List[Decoder] = []
-            values = self.headers.getlist("content-encoding", split_commas=True)
+            values = self.headers.get_list("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
                 try:

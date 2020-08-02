@@ -19,6 +19,7 @@ def test_queryparams(source):
     assert q["a"] == "456"
     assert q.get("a") == "456"
     assert q.get("nope", default=None) is None
+    assert q.getlist("a") == ["123", "456"]
     assert q.get_list("a") == ["123", "456"]
     assert list(q.keys()) == ["a", "b"]
     assert list(q.values()) == ["456", "789"]
