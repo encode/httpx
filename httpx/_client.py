@@ -49,7 +49,6 @@ from ._utils import (
     get_environment_proxies,
     get_logger,
     same_origin,
-    should_not_be_proxied,
     warn_deprecated,
 )
 
@@ -95,7 +94,7 @@ class BaseClient:
         if proxies is None:
             if trust_env:
                 return {
-                    key: Proxy(url=url)
+                    key: None if url is None else Proxy(url=url)
                     for key, url in get_environment_proxies().items()
                 }
             return {}
@@ -558,10 +557,9 @@ class Client(BaseClient):
         url = request.url
         enforce_http_url(request)
 
-        if self._proxies and not should_not_be_proxied(url):
-            for pattern, transport in self._proxies.items():
-                if pattern.matches(url):
-                    return self._transport if transport is None else transport
+        for pattern, transport in self._proxies.items():
+            if pattern.matches(url):
+                return self._transport if transport is None else transport
 
         return self._transport
 
@@ -1089,10 +1087,9 @@ class AsyncClient(BaseClient):
         url = request.url
         enforce_http_url(request)
 
-        if self._proxies and not should_not_be_proxied(url):
-            for pattern, transport in self._proxies.items():
-                if pattern.matches(url):
-                    return self._transport if transport is None else transport
+        for pattern, transport in self._proxies.items():
+            if pattern.matches(url):
+                return self._transport if transport is None else transport
 
         return self._transport
 
