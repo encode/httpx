@@ -473,7 +473,10 @@ class Client(BaseClient):
             )
             limits = pool_limits
 
-        proxy_map = self._get_proxy_map(proxies, trust_env)
+        if app is None and transport is None:
+            proxy_map = self._get_proxy_map(proxies, trust_env)
+        else:
+            proxy_map = {}
 
         self._transport = self._init_transport(
             verify=verify,
@@ -1003,7 +1006,10 @@ class AsyncClient(BaseClient):
             )
             limits = pool_limits
 
-        proxy_map = self._get_proxy_map(proxies, trust_env)
+        if app is None and transport is None:
+            proxy_map = self._get_proxy_map(proxies, trust_env)
+        else:
+            proxy_map = None
 
         self._transport = self._init_transport(
             verify=verify,
