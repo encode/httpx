@@ -281,7 +281,7 @@ class QueryParams(typing.Mapping[str, str]):
 
         params = QueryParams(params)
         for param in params:
-            item, *extras = params.getlist(param)
+            item, *extras = params.get_list(param)
             self[param] = item
             if extras:
                 self._list.extend((param, e) for e in extras)
@@ -334,7 +334,7 @@ class QueryParams(typing.Mapping[str, str]):
         message = (
             "QueryParams.getlist() is pending deprecation. Use QueryParams.get_list()"
         )
-        warnings.warn(message, PendingDeprecationWarning)
+        warnings.warn(message, DeprecationWarning)
         return self.get_list(key)
 
 
@@ -565,7 +565,7 @@ class Headers(typing.MutableMapping[str, str]):
 
     def getlist(self, key: str, split_commas: bool = False) -> typing.List[str]:
         message = "Headers.getlist() is pending deprecation. Use Headers.get_list()"
-        warnings.warn(message, PendingDeprecationWarning)
+        warnings.warn(message, DeprecationWarning)
         return self.get_list(key, split_commas=split_commas)
 
 
@@ -795,7 +795,7 @@ class Response:
         """
         if not hasattr(self, "_decoder"):
             decoders: typing.List[Decoder] = []
-            values = self.headers.getlist("content-encoding", split_commas=True)
+            values = self.headers.get_list("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
                 try:
