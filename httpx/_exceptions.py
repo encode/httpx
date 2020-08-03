@@ -15,11 +15,13 @@ Our exception hierarchy:
         · WriteError
         · CloseError
       - ProtocolError
+        · LocalProtocolError
+        · RemoteProtocolError
       - ProxyError
+      - UnsupportedProtocol
     + DecodingError
     + TooManyRedirects
     + RequestBodyUnavailable
-    + InvalidURL
   x HTTPStatusError
 * NotRedirectResponse
 * CookieConflict
@@ -153,9 +155,35 @@ class ProxyError(TransportError):
     """
 
 
+class UnsupportedProtocol(TransportError):
+    """
+    Attempted to make a request to a no-supported protocol.
+
+    For example issuing a request to `ftp://www.example.com`.
+    """
+
+
 class ProtocolError(TransportError):
     """
-    A protocol was violated by the server.
+    The protocol was violated.
+    """
+
+
+class LocalProtocolError(ProtocolError):
+    """
+    A protocol was violated by the client.
+
+    For example if the user instantiated a `Request` instance explicitly,
+    failed to include the mandatory `Host:` header, and then issued it directly
+    using `client.send()`.
+    """
+
+
+class RemoteProtocolError(ProtocolError):
+    """
+    The protocol was violated by the server.
+
+    For exaample, returning malformed HTTP.
     """
 
 
@@ -178,12 +206,6 @@ class RequestBodyUnavailable(RequestError):
     """
     Had to send the request again, but the request body was streaming, and is
     no longer available.
-    """
-
-
-class InvalidURL(RequestError):
-    """
-    URL was missing a hostname, or was not one of HTTP/HTTPS.
     """
 
 
@@ -297,6 +319,14 @@ class ResponseClosed(StreamError):
         super().__init__(message)
 
 
+# The `InvalidURL` class is no longer required. It was being used to enforce only
+# 'http'/'https' URLs being requested, but is now treated instead at the
+# transport layer using `UnsupportedProtocol()`.`
+
+# We are currently still exposing this class, but it will be removed in 1.0.
+InvalidURL = UnsupportedProtocol
+
+
 @contextlib.contextmanager
 def map_exceptions(
     mapping: typing.Mapping[typing.Type[Exception], typing.Type[Exception]],
@@ -335,5 +365,8 @@ HTTPCORE_EXC_MAP = {
     httpcore.WriteError: WriteError,
     httpcore.CloseError: CloseError,
     httpcore.ProxyError: ProxyError,
+    httpcore.UnsupportedProtocol: UnsupportedProtocol,
     httpcore.ProtocolError: ProtocolError,
+    httpcore.LocalProtocolError: LocalProtocolError,
+    httpcore.RemoteProtocolError: RemoteProtocolError,
 }

@@ -1,13 +1,4 @@
-from typing import (
-    TYPE_CHECKING,
-    AsyncIterator,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import TYPE_CHECKING, Callable, List, Mapping, Optional, Tuple, Union
 
 import httpcore
 import sniffio
@@ -29,10 +20,6 @@ def create_event() -> "Event":
         import asyncio
 
         return asyncio.Event()
-
-
-async def async_byte_iterator(bytestring: bytes) -> AsyncIterator[bytes]:
-    yield bytestring
 
 
 class ASGITransport(httpcore.AsyncHTTPTransport):
@@ -86,14 +73,10 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.AsyncByteStream = None,
-        timeout: Dict[str, Optional[float]] = None,
+        timeout: Mapping[str, Optional[float]] = None,
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
         headers = [] if headers is None else headers
-        stream = (
-            httpcore.AsyncByteStream(async_byte_iterator(b""))
-            if stream is None
-            else stream
-        )
+        stream = httpcore.AsyncByteStream(content=b"") if stream is None else stream
 
         # ASGI scope.
         scheme, host, port, full_path = url
@@ -170,8 +153,6 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         assert status_code is not None
         assert response_headers is not None
 
-        response_body = b"".join(body_parts)
-
-        stream = httpcore.AsyncByteStream(async_byte_iterator(response_body))
+        stream = httpcore.AsyncByteStream(content=b"".join(body_parts))
 
         return (b"HTTP/1.1", status_code, b"", response_headers, stream)

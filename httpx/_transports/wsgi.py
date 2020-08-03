@@ -64,7 +64,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: httpcore.SyncByteStream = None,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
+        timeout: typing.Mapping[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes,
         int,
@@ -73,11 +73,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         httpcore.SyncByteStream,
     ]:
         headers = [] if headers is None else headers
-        stream = (
-            httpcore.SyncByteStream(chunk for chunk in [b""])
-            if stream is None
-            else stream
-        )
+        stream = httpcore.SyncByteStream(content=b"") if stream is None else stream
 
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
@@ -130,6 +126,6 @@ class WSGITransport(httpcore.SyncHTTPTransport):
             (key.encode("ascii"), value.encode("ascii"))
             for key, value in seen_response_headers
         ]
-        stream = httpcore.SyncByteStream(chunk for chunk in result)
+        stream = httpcore.SyncByteStream(iterator=result)
 
         return (b"HTTP/1.1", status_code, b"", headers, stream)
