@@ -116,20 +116,24 @@ class DigestAuth(Auth):
             # need to build an authenticated request.
             return
 
-        header = response.headers["www-authenticate"]
-        challenge = self._parse_challenge(header)
+        challenge = self._parse_challenge(request, response)
         request.headers["Authorization"] = self._build_auth_header(request, challenge)
         yield request
 
-    def _parse_challenge(self, header: str) -> "_DigestAuthChallenge":
+    def _parse_challenge(
+        self, request: Request, response: Response
+    ) -> "_DigestAuthChallenge":
         """
         Returns a challenge from a Digest WWW-Authenticate header.
         These take the form of:
         `Digest realm="realm@host.com",qop="auth,auth-int",nonce="abc",opaque="xyz"`
         """
+        header = response.headers["www-authenticate"]
+
         scheme, _, fields = header.partition(" ")
         if scheme.lower() != "digest":
-            raise ProtocolError("Header does not start with 'Digest'")
+            message = "Header does not start with 'Digest'"
+            raise ProtocolError(message, request=request)
 
         header_dict: typing.Dict[str, str] = {}
         for field in parse_http_list(fields):
@@ -146,7 +150,8 @@ class DigestAuth(Auth):
                 realm=realm, nonce=nonce, qop=qop, opaque=opaque, algorithm=algorithm
             )
         except KeyError as exc:
-            raise ProtocolError("Malformed Digest WWW-Authenticate header") from exc
+            message = "Malformed Digest WWW-Authenticate header"
+            raise ProtocolError(message, request=request) from exc
 
     def _build_auth_header(
         self, request: Request, challenge: "_DigestAuthChallenge"
@@ -171,7 +176,7 @@ class DigestAuth(Auth):
         if challenge.algorithm.lower().endswith("-sess"):
             HA1 = digest(b":".join((HA1, challenge.nonce, cnonce)))
 
-        qop = self._resolve_qop(challenge.qop)
+        qop = self._resolve_qop(challenge.qop, request=request)
         if qop is None:
             digest_data = [HA1, challenge.nonce, HA2]
         else:
@@ -221,7 +226,9 @@ class DigestAuth(Auth):
 
         return header_value
 
-    def _resolve_qop(self, qop: typing.Optional[bytes]) -> typing.Optional[bytes]:
+    def _resolve_qop(
+        self, qop: typing.Optional[bytes], request: Request
+    ) -> typing.Optional[bytes]:
         if qop is None:
             return None
         qops = re.split(b", ?", qop)
@@ -231,7 +238,8 @@ class DigestAuth(Auth):
         if qops == [b"auth-int"]:
             raise NotImplementedError("Digest auth-int support is not yet implemented")
 
-        raise ProtocolError(f'Unexpected qop value "{qop!r}" in digest auth')
+        message = f'Unexpected qop value "{qop!r}" in digest auth'
+        raise ProtocolError(message, request=request)
 
 
 class _DigestAuthChallenge:

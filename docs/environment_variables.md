@@ -152,3 +152,5 @@ export HTTP_PROXY=http://127.0.0.1:3080
 # This request will be sent through the proxy
 python -c "import httpx; httpx.get('http://example.com')"
 ```
+
+For more information on using proxies in HTTPX, see [HTTP Proxying](/advanced/#http-proxying).

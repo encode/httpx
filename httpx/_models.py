@@ -4,6 +4,7 @@ import email.message
 import json as jsonlib
 import typing
 import urllib.request
+import warnings
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode
@@ -30,7 +31,7 @@ from ._exceptions import (
     ResponseNotRead,
     StreamConsumed,
 )
-from ._status_codes import StatusCode
+from ._status_codes import codes
 from ._types import (
     CookieTypes,
     HeaderTypes,
@@ -240,9 +241,6 @@ class QueryParams(typing.Mapping[str, str]):
         self._list = [(str(k), str_query_param(v)) for k, v in items]
         self._dict = {str(k): str_query_param(v) for k, v in items}
 
-    def getlist(self, key: typing.Any) -> typing.List[str]:
-        return [item_value for item_key, item_value in self._list if item_key == key]
-
     def keys(self) -> typing.KeysView:
         return self._dict.keys()
 
@@ -250,15 +248,32 @@ class QueryParams(typing.Mapping[str, str]):
         return self._dict.values()
 
     def items(self) -> typing.ItemsView:
+        """
+        Return all items in the query params. If a key occurs more than once
+        only the first item for that key is returned.
+        """
         return self._dict.items()
 
     def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
+        """
+        Return all items in the query params. Allow duplicate keys to occur.
+        """
         return list(self._list)
 
     def get(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
+        """
+        Get a value from the query param for a given key. If the key occurs
+        more than once, then only the first value is returned.
+        """
         if key in self._dict:
             return self._dict[key]
         return default
+
+    def get_list(self, key: typing.Any) -> typing.List[str]:
+        """
+        Get all values from the query param for a given key.
+        """
+        return [item_value for item_key, item_value in self._list if item_key == key]
 
     def update(self, params: QueryParamTypes = None) -> None:
         if not params:
@@ -266,7 +281,7 @@ class QueryParams(typing.Mapping[str, str]):
 
         params = QueryParams(params)
         for param in params:
-            item, *extras = params.getlist(param)
+            item, *extras = params.get_list(param)
             self[param] = item
             if extras:
                 self._list.extend((param, e) for e in extras)
@@ -315,6 +330,13 @@ class QueryParams(typing.Mapping[str, str]):
         query_string = str(self)
         return f"{class_name}({query_string!r})"
 
+    def getlist(self, key: typing.Any) -> typing.List[str]:
+        message = (
+            "QueryParams.getlist() is pending deprecation. Use QueryParams.get_list()"
+        )
+        warnings.warn(message, DeprecationWarning)
+        return self.get_list(key)
+
 
 class Headers(typing.MutableMapping[str, str]):
     """
@@ -336,6 +358,14 @@ class Headers(typing.MutableMapping[str, str]):
                 (normalize_header_key(k, encoding), normalize_header_value(v, encoding))
                 for k, v in headers
             ]
+
+        self._dict = {}  # type: typing.Dict[bytes, bytes]
+        for key, value in self._list:
+            if key in self._dict:
+                self._dict[key] = self._dict[key] + b", " + value
+            else:
+                self._dict[key] = value
+
         self._encoding = encoding
 
     @property
@@ -375,27 +405,50 @@ class Headers(typing.MutableMapping[str, str]):
         """
         return self._list
 
-    def keys(self) -> typing.List[str]:  # type: ignore
-        return [key.decode(self.encoding) for key, value in self._list]
+    def keys(self) -> typing.KeysView[str]:
+        return {key.decode(self.encoding): None for key in self._dict.keys()}.keys()
 
-    def values(self) -> typing.List[str]:  # type: ignore
-        return [value.decode(self.encoding) for key, value in self._list]
+    def values(self) -> typing.ValuesView[str]:
+        return {
+            key: value.decode(self.encoding) for key, value in self._dict.items()
+        }.values()
 
-    def items(self) -> typing.List[typing.Tuple[str, str]]:  # type: ignore
+    def items(self) -> typing.ItemsView[str, str]:
+        """
+        Return `(key, value)` items of headers. Concatenate headers
+        into a single comma seperated value when a key occurs multiple times.
+        """
+        return {
+            key.decode(self.encoding): value.decode(self.encoding)
+            for key, value in self._dict.items()
+        }.items()
+
+    def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
+        """
+        Return a list of `(key, value)` pairs of headers. Allow multiple
+        occurences of the same key without concatenating into a single
+        comma seperated value.
+        """
         return [
             (key.decode(self.encoding), value.decode(self.encoding))
             for key, value in self._list
         ]
 
     def get(self, key: str, default: typing.Any = None) -> typing.Any:
+        """
+        Return a header value. If multiple occurences of the header occur
+        then concatenate them together with commas.
+        """
         try:
             return self[key]
         except KeyError:
             return default
 
-    def getlist(self, key: str, split_commas: bool = False) -> typing.List[str]:
+    def get_list(self, key: str, split_commas: bool = False) -> typing.List[str]:
         """
-        Return multiple header values.
+        Return a list of all header values for a given key.
+        If `split_commas=True` is passed, then any comma seperated header
+        values are split into multiple return strings.
         """
         get_header_key = key.lower().encode(self.encoding)
 
@@ -419,7 +472,7 @@ class Headers(typing.MutableMapping[str, str]):
             self[header] = headers[header]
 
     def copy(self) -> "Headers":
-        return Headers(self.items(), encoding=self.encoding)
+        return Headers(dict(self.items()), encoding=self.encoding)
 
     def __getitem__(self, key: str) -> str:
         """
@@ -448,6 +501,8 @@ class Headers(typing.MutableMapping[str, str]):
         set_key = key.lower().encode(self._encoding or "utf-8")
         set_value = value.encode(self._encoding or "utf-8")
 
+        self._dict[set_key] = set_value
+
         found_indexes = []
         for idx, (item_key, _) in enumerate(self._list):
             if item_key == set_key:
@@ -468,22 +523,19 @@ class Headers(typing.MutableMapping[str, str]):
         """
         del_key = key.lower().encode(self.encoding)
 
+        del self._dict[del_key]
+
         pop_indexes = []
         for idx, (item_key, _) in enumerate(self._list):
             if item_key == del_key:
                 pop_indexes.append(idx)
-        if not pop_indexes:
-            raise KeyError(key)
 
         for idx in reversed(pop_indexes):
             del self._list[idx]
 
     def __contains__(self, key: typing.Any) -> bool:
-        get_header_key = key.lower().encode(self.encoding)
-        for header_key, _ in self._list:
-            if header_key == get_header_key:
-                return True
-        return False
+        header_key = key.lower().encode(self.encoding)
+        return header_key in self._dict
 
     def __iter__(self) -> typing.Iterator[typing.Any]:
         return iter(self.keys())
@@ -503,13 +555,18 @@ class Headers(typing.MutableMapping[str, str]):
         if self.encoding != "ascii":
             encoding_str = f", encoding={self.encoding!r}"
 
-        as_list = list(obfuscate_sensitive_headers(self.items()))
+        as_list = list(obfuscate_sensitive_headers(self.multi_items()))
         as_dict = dict(as_list)
 
         no_duplicate_keys = len(as_dict) == len(as_list)
         if no_duplicate_keys:
             return f"{class_name}({as_dict!r}{encoding_str})"
         return f"{class_name}({as_list!r}{encoding_str})"
+
+    def getlist(self, key: str, split_commas: bool = False) -> typing.List[str]:
+        message = "Headers.getlist() is pending deprecation. Use Headers.get_list()"
+        warnings.warn(message, DeprecationWarning)
+        return self.get_list(key, split_commas=split_commas)
 
 
 USER_AGENT = f"python-httpx/{__version__}"
@@ -660,7 +717,7 @@ class Response:
 
     @property
     def reason_phrase(self) -> str:
-        return StatusCode.get_reason_phrase(self.status_code)
+        return codes.get_reason_phrase(self.status_code)
 
     @property
     def url(self) -> typing.Optional[URL]:
@@ -738,31 +795,31 @@ class Response:
         """
         if not hasattr(self, "_decoder"):
             decoders: typing.List[Decoder] = []
-            values = self.headers.getlist("content-encoding", split_commas=True)
+            values = self.headers.get_list("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
                 try:
                     decoder_cls = SUPPORTED_DECODERS[value]
-                    decoders.append(decoder_cls())
+                    decoders.append(decoder_cls(request=self.request))
                 except KeyError:
                     continue
 
             if len(decoders) == 1:
                 self._decoder = decoders[0]
             elif len(decoders) > 1:
-                self._decoder = MultiDecoder(decoders)
+                self._decoder = MultiDecoder(children=decoders)
             else:
-                self._decoder = IdentityDecoder()
+                self._decoder = IdentityDecoder(request=self.request)
 
         return self._decoder
 
     @property
     def is_error(self) -> bool:
-        return StatusCode.is_error(self.status_code)
+        return codes.is_error(self.status_code)
 
     @property
     def is_redirect(self) -> bool:
-        return StatusCode.is_redirect(self.status_code) and "location" in self.headers
+        return codes.is_redirect(self.status_code) and "location" in self.headers
 
     def raise_for_status(self) -> None:
         """
@@ -773,12 +830,12 @@ class Response:
             "For more information check: https://httpstatuses.com/{0.status_code}"
         )
 
-        if StatusCode.is_client_error(self.status_code):
+        if codes.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
-            raise HTTPStatusError(message, response=self)
-        elif StatusCode.is_server_error(self.status_code):
+            raise HTTPStatusError(message, request=self.request, response=self)
+        elif codes.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
-            raise HTTPStatusError(message, response=self)
+            raise HTTPStatusError(message, request=self.request, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
@@ -840,7 +897,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.charset_encoding)
+        decoder = TextDecoder(request=self.request, encoding=self.charset_encoding)
         for chunk in self.iter_bytes():
             yield decoder.decode(chunk)
         yield decoder.flush()
@@ -872,7 +929,11 @@ class Response:
         Get the next response from a redirect response.
         """
         if not self.is_redirect:
-            raise NotRedirectResponse()
+            message = (
+                "Called .next(), but the response was not a redirect. "
+                "Calling code should check `response.is_redirect` first."
+            )
+            raise NotRedirectResponse(message)
         assert self.call_next is not None
         return self.call_next()
 
@@ -913,7 +974,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.charset_encoding)
+        decoder = TextDecoder(request=self.request, encoding=self.charset_encoding)
         async for chunk in self.aiter_bytes():
             yield decoder.decode(chunk)
         yield decoder.flush()
@@ -945,7 +1006,10 @@ class Response:
         Get the next response from a redirect response.
         """
         if not self.is_redirect:
-            raise NotRedirectResponse()
+            raise NotRedirectResponse(
+                "Called .anext(), but the response was not a redirect. "
+                "Calling code should check `response.is_redirect` first."
+            )
         assert self.call_next is not None
         return await self.call_next()
 
