@@ -280,7 +280,7 @@ with httpx.Client(proxies="http://localhost:8030") as client:
     ...
 ```
 
-To route HTTP and HTTPS requests to 2 different proxies, respectively located at `http://localhost:8030`, and `http://localhost:8031`, pass a `dict` of proxy URLs:
+For more advanced use cases, pass a proxies `dict`. For example, to route HTTP and HTTPS requests to 2 different proxies, respectively located at `http://localhost:8030`, and `http://localhost:8031`, pass a `dict` of proxy URLs:
 
 ```python
 proxies = {
@@ -314,7 +314,11 @@ proxies = {
 
 ### Routing
 
-HTTPX supports configuring which requests go through a given proxy and which don't based on the requested **scheme**, **domain**, **port**, or a combination of these.
+HTTPX provides fine-grained controls for deciding which requests should go through a proxy, and which shouldn't. This process is known as proxy routing.
+
+The `proxies` dictionary maps URL patterns ("proxy keys") to proxy URLs. HTTPX matches requested URLs against proxy keys to decide which proxy should be used, if any. Matching is done from most specific proxy keys (e.g. `https://<domain>:<port>`) to least specific ones (e.g. `https`).
+
+HTTPX supports routing proxies based on **scheme**, **domain**, **port**, or a combination of these.
 
 #### Wildcard routing
 
@@ -325,8 +329,6 @@ proxies = {
     "all": "http://localhost:8030",
 }
 ```
-
-(This is equivalent to `Client(..., proxies="http://localhost:8030")`.)
 
 #### Scheme routing
 
@@ -429,17 +431,6 @@ proxies = {
 HTTP proxying can also be configured through environment variables, although with less fine-grained control.
 
 See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](/environment_variables/#http_proxy-https_proxy-all_proxy) for more information.
-
-#### Routing algorithm overview
-
-For reference, the proxy routing algorithm used by HTTPX is roughly as follows...
-
-1. Sort proxy keys in decreasing order of specificity. (For example, a proxy on `all://example.com` comes before a proxy on `all`.) _This is done on client instanciation._
-1. When making a request, go through sorted proxies, looking for a matching key...
-    1. If a key matches...
-        1. ...But the value is `None`, no proxy is used.
-        1. Otherwise, the associated proxy is used.
-    1. If no key matched, no proxy is used.
 
 ### Proxy mechanisms
 
