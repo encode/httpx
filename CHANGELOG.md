@@ -6,9 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## 0.14.0
 
-The most notable feature of the 0.14.0 release is that it tightens up the public
-API for `httpx`, by ensuring that several internal attributes and methods become
-strictly private.
+The 0.14 release includes a range of improvements to the public API, intended
+on preparing for our upcoming 1.0 release.
+
+When upgrading you should be aware of the following public API changes. Note
+that deprecated usages will currently continue to function, but will issue
+warnings.
+
+* You should now use `httpx.codes` consistently in favour of `httpx.StatusCodes`.
+* Usage of `httpx.Timeout()` should now always include an explicit default. Eg. `httpx.Timeout(None, pool=5.0)`.
+* When using `httpx.Timeout()`, we now have more concisely named keyword arguments. Eg. `read=5.0`, instead of `read_timeout=5.0`.
+* Use `httpx.Limits()` instead of `httpx.PoolLimits()`, and `limits=...` instead of `pool_limits=...`.
+* The multidict methods `Headers.getlist` and `QueryParams.getlist` are deprecated in favour of more consistent `.get_list()` variants.
+
+One notable aspect of the 0.14.0 release is that it tightens up the public
+API for `httpx`, by ensuring that several internal attributes and methods have
+now become strictly private.
 
 The following previously had nominally public names on the client, but were
 all undocumented and intended solely for internal usage. They are all now
@@ -40,10 +53,17 @@ See pull requests #1057, #1058.
 ### Added
 
 * Added dedicated exception class `httpx.HTTPStatusError` for `.raise_for_status()` exceptions. (Pull #1072)
+* Added `httpx.create_ssl_context()` helper function. (Pull #996)
+* Support for proxy exlcusions like `proxies={"https://www.example.com": None}`. (Pull #1099)
 * Support `QueryParams(None)` and `client.params = None`. (Pull #1060)
 
 ### Changed
 
+* Use `httpx.codes` consistently in favour of `httpx.StatusCodes` which is placed into deprecation. (Pull #1088)
+* Usage of `httpx.Timeout()` should now always include an explicit default. Eg. `httpx.Timeout(None, pool=5.0)`. (Pull #1085)
+* Switch to more concise `httpx.Timeout()` keyword arguments. Eg. `read=5.0`, instead of `read_timeout=5.0`. (Pull #1111)
+* Use `httpx.Limits()` instead of `httpx.PoolLimits()`, and `limits=...` instead of `pool_limits=...`. (Pull #1113)
+* The multidict methods `Headers.getlist` and `QueryParams.getlist` are deprecated in favour of more consistent `.get_list()` variants. (Pull #1089)
 * `URL.port` becomes `Optional[int]`. Now only returns a port if one is explicitly included in the URL string. (Pull #1080)
 * The `URL(..., allow_relative=[bool])` parameter no longer exists. All URL instances may be relative. (Pull #1073)
 * Drop unnecessary `url.full_path = ...` property setter. (Pull #1069)
@@ -55,6 +75,11 @@ See pull requests #1057, #1058.
 * Support multiple items with an identical field name in multipart encodings. (Pull #777)
 * Skip HSTS preloading on single-label domains. (Pull #1074)
 * Fixes for `Response.iter_lines()`. (Pull #1033, #1075)
+* Ignore permission errors when accessing `.netrc` files. (Pull #1104)
+* Allow bare hostnames in `HTTP_PROXY` etc... environment variables. (Pull #1120)
+* Settings `app=...` or `transport=...` bypasses any environment based proxy defaults. (Pull #1122)
+
+---
 
 ## 0.13.3 (May 29th, 2020)
 
@@ -172,6 +197,8 @@ It also means we've had to remove our UDS support, since maintaining that would 
 
 * Dropped support for `Client(uds=...)` (Pull #804)
 
+---
+
 ## 0.12.1 (March 19th, 2020)
 
 ### Fixed
@@ -204,6 +231,8 @@ All imports of `httpx` should import from the top-level package only, such as `f
 * Close proxy dispatches classes on client close. (Pull #826)
 * Support custom `cert` parameters even if `verify=False`. (Pull #796)
 * Don't support invalid dict-of-dicts form data in `data=...`. (Pull #811)
+
+---
 
 ## 0.11.1 (January 17th, 2020)
 
@@ -243,6 +272,8 @@ We believe the API is now pretty much stable, and are aiming for a 1.0 release s
 
 - Redirect loop detection matches against `(method, url)` rather than `url`. (Pull #734)
 
+---
+
 ## 0.10.1 (December 31st, 2019)
 
 ### Fixed
@@ -275,6 +306,8 @@ If following redirects explicitly the `response.next()` method becomes `response
 
 - When using a client instance, the per-request usage of `verify`, `cert`, and `trust_env` have now escalated from raising a warning to raising an error. You should set these arguments on the client instead. (Pull #617)
 - Removed the undocumented `request.read()`, since end users should not require it.
+
+---
 
 ## 0.9.5 (December 20th, 2019)
 
@@ -347,11 +380,15 @@ importing modules within the package.
 - Pool timeouts are now on the timeout configuration, not the pool limits configuration. (Pull #563)
 - The timeout configuration is now named `httpx.Timeout(...)`, not `httpx.TimeoutConfig(...)`. The old version currently remains as a synonym for backwards compatability.  (Pull #591)
 
+---
+
 ## 0.8.0 (November 27, 2019)
 
 ### Removed
 
 - The synchronous API has been removed, in order to allow us to fundamentally change how we approach supporting both sync and async variants. (See #588 for more details.)
+
+---
 
 ## 0.7.8 (November 17, 2019)
 
@@ -474,6 +511,8 @@ importing modules within the package.
 - Add support for Google's `brotli` library. (Pull #156)
 - Remove deprecated TLS versions (TLSv1 and TLSv1.1) from default `SSLConfig`. (Pull #155)
 - Fix `URL.join(...)` to work similarly to RFC 3986 URL joining. (Pull #144)
+
+---
 
 ## 0.6.8 (July 25, 2019)
 
