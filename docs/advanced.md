@@ -143,6 +143,22 @@ For example, `base_url` allows you to prepend an URL to all outgoing requests:
 URL('http://httpbin.org/headers')
 ```
 
+`base_url` also accepts URLs with subpaths. In the following code examples, `r.request.url` gives the same result for `base_url` with a slash and no slash character:
+
+```python
+>>> with httpx.Client(base_url='http://httpbin.org/anything') as client:
+...     r = client.get('/headers')
+...
+>>> r.request.url
+URL('http://httpbin.org/anything/headers')
+
+>>> with httpx.Client(base_url='http://httpbin.org/anything/') as client:
+...     r = client.get('/headers')
+...
+>>> r.request.url
+URL('http://httpbin.org/anything/headers')
+```
+
 For a list of all available client parameters, see the [`Client`](/api/#client) API reference.
 
 ## Calling into Python Web Apps
