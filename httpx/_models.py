@@ -183,7 +183,7 @@ class URL:
 
         return URL(self._uri_reference.copy_with(**kwargs).unsplit(),)
 
-    def join(self, relative_url: URLTypes) -> "URL":
+    def join(self, url: URLTypes) -> "URL":
         """
         Return an absolute URL, using given this URL as the base.
         """
