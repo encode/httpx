@@ -208,7 +208,7 @@ class BaseClient:
         Merge a URL argument together with any 'base_url' on the client,
         to create the URL used for the outgoing request.
         """
-        return self.base_url.join(relative_url=url)
+        return self.base_url.join(url)
 
     def _merge_cookies(
         self, cookies: CookieTypes = None
