@@ -478,6 +478,11 @@ class URLPattern:
         from ._models import URL
 
         if pattern and ":" not in pattern:
+            warn_deprecated(
+                f"Proxy keys should use proper URL forms rather "
+                f"than plain scheme strings. "
+                f'Instead of "{pattern}", use "{pattern}://"'
+            )
             pattern += "://"
 
         url = URL(pattern)
