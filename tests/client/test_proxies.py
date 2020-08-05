@@ -263,5 +263,4 @@ def test_for_deprecated_proxy_params(proxies, expected_scheme):
 
     warning_message = str(block.pop(DeprecationWarning))
 
-    for scheme in expected_scheme:
-        assert scheme in warning_message
+    assert expected_scheme in warning_message
