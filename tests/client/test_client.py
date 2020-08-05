@@ -178,4 +178,13 @@ def test_merge_url():
     client = httpx.Client(base_url="https://www.paypal.com/")
     request = client.build_request("GET", "http://www.paypal.com")
     assert request.url.scheme == "http"
-    assert not request.url.is_ssl
+
+
+def test_pool_limits_deprecated():
+    limits = httpx.Limits()
+
+    with pytest.warns(DeprecationWarning):
+        httpx.Client(pool_limits=limits)
+
+    with pytest.warns(DeprecationWarning):
+        httpx.AsyncClient(pool_limits=limits)

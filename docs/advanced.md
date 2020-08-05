@@ -262,68 +262,219 @@ client = httpx.Client(trust_env=False)
 
 ## HTTP Proxying
 
-HTTPX supports setting up HTTP proxies the same way that Requests does via the `proxies` parameter.
-For example to forward all HTTP traffic to `http://127.0.0.1:3080` and all HTTPS traffic
-to `http://127.0.0.1:3081` your `proxies` config would look like this:
+HTTPX supports setting up [HTTP proxies](https://en.wikipedia.org/wiki/Proxy_server#Web_proxy_servers) via the `proxies` parameter to be passed on client initialization.
+
+_Note: SOCKS proxies are not supported yet._
+
+<div align="center">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Open_proxy_h2g2bob.svg/480px-Open_proxy_h2g2bob.svg.png"/>
+    <figcaption><em>Diagram of how a proxy works (source: Wikipedia). The left hand side "Internet" blob may be your HTTPX client requesting <code>example.com</code> through a proxy.</em></figcaption>
+</div>
+
+### Example
+
+To route all traffic (HTTP and HTTPS) to a proxy located at `http://localhost:8030`, pass the proxy URL to the client...
 
 ```python
->>> proxies = {
-...     "http": "http://127.0.0.1:3080",
-...     "https": "http://127.0.0.1:3081"
-... }
->>> with httpx.Client(proxies=proxies) as client:
-...     ...
+with httpx.Client(proxies="http://localhost:8030") as client:
+    ...
 ```
 
-Credentials may be passed in as part of the URL in the standard way, i.e.
-`http://username:password@127.0.0.1:3080`.
-
-Proxies can be configured for a specific scheme and host, all schemes of a host,
-all hosts for a scheme, or for all requests. When determining which proxy configuration
-to use for a given request this same order is used.
+For more advanced use cases, pass a proxies `dict`. For example, to route HTTP and HTTPS requests to 2 different proxies, respectively located at `http://localhost:8030`, and `http://localhost:8031`, pass a `dict` of proxy URLs:
 
 ```python
->>> proxies = {
-...     "http://example.com":  "...",  # Host+Scheme
-...     "all://example.com":  "...",  # Host
-...     "http": "...",  # Scheme
-...     "all": "...",  # All
-... }
->>> with httpx.Client(proxies=proxies) as client:
-...     ...
-...
->>> proxy = "..."  # Shortcut for {'all': '...'}
->>> with httpx.Client(proxies=proxy) as client:
-...     ...
+proxies = {
+    "http": "http://localhost:8030",
+    "https": "http://localhost:8031",
+}
+
+with httpx.Client(proxies=proxies) as client:
+    ...
 ```
 
-!!! warning
-    To make sure that proxies cannot read your traffic,
-    and even if the proxy_url uses HTTPS, it is recommended to
-    use HTTPS and tunnel requests if possible.
+For detailed information about proxy routing, see the [Routing](#routing) section.
 
-By default `httpx.Proxy` will operate as a forwarding proxy for `http://...` requests
-and will establish a `CONNECT` TCP tunnel for `https://` requests. This doesn't change
-regardless of the proxy `url` being `http` or `https`.
+!!! tip "Gotcha"
+    In most cases, the proxy URL for the `https` key _should_ use the `http://` scheme (that's not a typo!).
 
-Proxies can be configured to have different behavior such as forwarding or tunneling all requests:
+    This is because HTTP proxying requires initiating a connection with the proxy server. While it's possible that your proxy supports doing it via HTTPS, most proxies only support doing it via HTTP.
+
+    For more information, see [FORWARD vs TUNNEL](#forward-vs-tunnel).
+
+### Authentication
+
+Proxy credentials can be passed as the `userinfo` section of the proxy URL. For example:
 
 ```python
-proxy = httpx.Proxy(
-    url="https://127.0.0.1",
-    mode="TUNNEL_ONLY"  # May be "TUNNEL_ONLY" or "FORWARD_ONLY". Defaults to "DEFAULT".
-)
-with httpx.Client(proxies=proxy) as client:
-    # This request will be tunneled instead of forwarded.
-    r = client.get("http://example.com")
+proxies = {
+    "http": "http://username:password@localhost:8030",
+    # ...
+}
 ```
+
+### Routing
+
+HTTPX provides fine-grained controls for deciding which requests should go through a proxy, and which shouldn't. This process is known as proxy routing.
+
+The `proxies` dictionary maps URL patterns ("proxy keys") to proxy URLs. HTTPX matches requested URLs against proxy keys to decide which proxy should be used, if any. Matching is done from most specific proxy keys (e.g. `https://<domain>:<port>`) to least specific ones (e.g. `https`).
+
+HTTPX supports routing proxies based on **scheme**, **domain**, **port**, or a combination of these.
+
+#### Wildcard routing
+
+Route everything through a proxy...
+
+```python
+proxies = {
+    "all": "http://localhost:8030",
+}
+```
+
+#### Scheme routing
+
+Route HTTP requests through one proxy, and HTTPS requests through another...
+
+```python
+proxies = {
+    "http": "http://localhost:8030",
+    "https": "http://localhost:8031",
+}
+```
+
+#### Domain routing
+
+Proxy all requests on domain "example.com", let other requests pass through...
+
+```python
+proxies = {
+    "all://example.com": "http://localhost:8030",
+}
+```
+
+Proxy HTTP requests on domain "example.com", let HTTPS and other requests pass through...
+
+```python
+proxies = {
+    "http://example.com": "http://localhost:8030",
+}
+```
+
+Proxy all requests to "example.com" and its subdomains, let other requests pass through...
+
+```python
+proxies = {
+    "all://*example.com": "http://localhost:8030",
+}
+```
+
+Proxy all requests to strict subdomains of "example.com", let "example.com" and other requests pass through...
+
+```python
+proxies = {
+    "all://*.example.com": "http://localhost:8030",
+}
+```
+
+#### Port routing
+
+Proxy HTTPS requests on port 1234 to "example.com"...
+
+```python
+proxies = {
+    "https://example.com:1234": "http://localhost:8030",
+}
+```
+
+Proxy all requests on port 1234...
+
+```python
+proxies = {
+    "all://*:1234": "http://localhost:8030",
+}
+```
+
+#### No-proxy support
+
+It is also possible to define requests that _shouldn't_ be routed through proxies.
+
+To do so, pass `None` as the proxy URL. For example...
+
+```python
+proxies = {
+    # Route requests through a proxy by default...
+    "all": "http://localhost:8031",
+    # Except those for "example.com".
+    "all://example.com": None,
+}
+```
+
+#### Complex configuration example
+
+You can combine the routing features outlined above to build complex proxy routing configurations. For example...
+
+```python
+proxies = {
+    # Route all traffic through a proxy by default...
+    "all": "http://localhost:8030",
+    # But don't use proxies for HTTPS requests to "domain.io"...
+    "https://domain.io": None,
+    # And use another proxy for requests to "example.com" and its subdomains...
+    "all://*example.com": "http://localhost:8031",
+    # And yet another proxy if HTTP is used,
+    # and the "internal" subdomain on port 5550 is requested...
+    "http://internal.example.com:5550": "http://localhost:8032",
+}
+```
+
+#### Environment variables
+
+HTTP proxying can also be configured through environment variables, although with less fine-grained control.
+
+See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](/environment_variables/#http_proxy-https_proxy-all_proxy) for more information.
+
+### Proxy mechanisms
 
 !!! note
+    This section describes **advanced** proxy concepts and functionality.
 
-    To use proxies you must pass the proxy information at `Client` initialization,
-    rather than on the `.get(...)` call or other request methods.
+#### FORWARD vs TUNNEL
 
-SOCKS proxies are *not* supported yet.
+In general, the flow for making an HTTP request through a proxy is as follows:
+
+1. The client connects to the proxy (initial connection request).
+1. The proxy somehow transfers data to the server on your behalf.
+
+How exactly step 2/ is performed depends on which of two proxying mechanisms is used:
+
+* **Forwarding**: the proxy makes the request for you, and sends back the response it obtained from the server.
+* **Tunneling**: the proxy establishes a TCP connection to the server on your behalf, and the client reuses this connection to send the request and receive the response. This is known as an [HTTP Tunnel](https://en.wikipedia.org/wiki/HTTP_tunnel). This mechanism is how you can access websites that use HTTPS from an HTTP proxy (the client "upgrades" the connection to HTTPS by performing the TLS handshake with the server over the TCP connection provided by the proxy).
+
+#### Default behavior
+
+Given the technical definitions above, by default (and regardless of whether you're using an HTTP or HTTPS proxy), HTTPX will:
+
+* Use forwarding for HTTP requests.
+* Use tunneling for HTTPS requests.
+
+This ensures that you can make HTTP and HTTPS requests in all cases (i.e. regardless of which type of proxy you're using).
+
+#### Forcing the proxy mechanism
+
+In most cases, the default behavior should work just fine as well as provide enough security.
+
+But if you know what you're doing and you want to force which mechanism to use, you can do so by passing an `httpx.Proxy()` instance, setting the `mode` to either `FORWARD_ONLY` or `TUNNEL_ONLY`. For example...
+
+```python
+# Route all requests through an HTTPS proxy, using tunneling only.
+proxies = httpx.Proxy(
+    url="https://localhost:8030",
+    mode="TUNNEL_ONLY",
+)
+
+with httpx.Client(proxies=proxies) as client:
+    # This HTTP request will be tunneled instead of forwarded.
+    r = client.get("http://example.com")
+```
 
 ## Timeout Configuration
 
@@ -374,16 +525,16 @@ HTTPX also allows you to specify the timeout behavior in more fine grained detai
 There are four different types of timeouts that may occur. These are **connect**,
 **read**, **write**, and **pool** timeouts.
 
-* The **connect timeout** specifies the maximum amount of time to wait until
+* The **connect** timeout specifies the maximum amount of time to wait until
 a connection to the requested host is established. If HTTPX is unable to connect
 within this time frame, a `ConnectTimeout` exception is raised.
-* The **read timeout** specifies the maximum duration to wait for a chunk of
+* The **read** timeout specifies the maximum duration to wait for a chunk of
 data to be received (for example, a chunk of the response body). If HTTPX is
 unable to receive data within this time frame, a `ReadTimeout` exception is raised.
-* The **write timeout** specifies the maximum duration to wait for a chunk of
+* The **write** timeout specifies the maximum duration to wait for a chunk of
 data to be sent (for example, a chunk of the request body). If HTTPX is unable
 to send data within this time frame, a `WriteTimeout` exception is raised.
-* The **pool timeout** specifies the maximum duration to wait for acquiring
+* The **pool** timeout specifies the maximum duration to wait for acquiring
 a connection from the connection pool. If HTTPX is unable to acquire a connection
 within this time frame, a `PoolTimeout` exception is raised. A related
 configuration here is the maximum number of allowable connections in the
@@ -393,7 +544,7 @@ You can configure the timeout behavior for any of these values...
 
 ```python
 # A client with a 60s timeout for connecting, and a 10s timeout elsewhere.
-timeout = httpx.Timeout(10.0, connect_timeout=60.0)
+timeout = httpx.Timeout(10.0, connect=60.0)
 client = httpx.Client(timeout=timeout)
 
 response = client.get('http://example.com/')
@@ -401,8 +552,8 @@ response = client.get('http://example.com/')
 
 ## Pool limit configuration
 
-You can control the connection pool size using the `pool_limits` keyword
-argument on the client. It takes instances of `httpx.PoolLimits` which define:
+You can control the connection pool size using the `limits` keyword
+argument on the client. It takes instances of `httpx.Limits` which define:
 
 - `max_keepalive`, number of allowable keep-alive connections, or `None` to always
 allow. (Defaults 10)
@@ -411,8 +562,8 @@ allow. (Defaults 10)
 
 
 ```python
-limits = httpx.PoolLimits(max_keepalive=5, max_connections=10)
-client = httpx.Client(pool_limits=limits)
+limits = httpx.Limits(max_keepalive=5, max_connections=10)
+client = httpx.Client(limits=limits)
 ```
 
 ## Multipart file encoding
