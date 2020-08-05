@@ -1,4 +1,11 @@
-from httpx import AsyncClient, Cookies, Headers
+from httpx import URL, AsyncClient, Cookies, Headers
+
+
+def test_client_base_url():
+    client = AsyncClient()
+    client.base_url = "https://www.example.org/"  # type: ignore
+    assert isinstance(client.base_url, URL)
+    assert client.base_url == URL("https://www.example.org/")
 
 
 def test_client_headers():

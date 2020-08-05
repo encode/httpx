@@ -69,7 +69,7 @@ class BaseClient:
         base_url: URLTypes = "",
         trust_env: bool = True,
     ):
-        self.base_url = URL(base_url)
+        self._base_url = URL(base_url)
 
         self.auth = auth
         self._params = QueryParams(params)
@@ -103,6 +103,17 @@ class BaseClient:
         else:
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
             return {"all": proxy}
+
+    @property
+    def base_url(self) -> URL:
+        """
+        Base URL to use when sending requests with relative URLs.
+        """
+        return self._base_url
+
+    @base_url.setter
+    def base_url(self, url: URLTypes) -> None:
+        self._base_url = URL(url)
 
     @property
     def headers(self) -> Headers:
