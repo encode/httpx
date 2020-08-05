@@ -8,6 +8,20 @@ def test_client_base_url():
     assert client.base_url == URL("https://www.example.org/")
 
 
+def test_client_base_url_without_trailing_slash():
+    client = AsyncClient()
+    client.base_url = "https://www.example.org/path"  # type: ignore
+    assert isinstance(client.base_url, URL)
+    assert client.base_url == URL("https://www.example.org/path/")
+
+
+def test_client_base_url_with_trailing_slash():
+    client = AsyncClient()
+    client.base_url = "https://www.example.org/path/"  # type: ignore
+    assert isinstance(client.base_url, URL)
+    assert client.base_url == URL("https://www.example.org/path/")
+
+
 def test_client_headers():
     client = AsyncClient()
     client.headers = {"a": "b"}  # type: ignore

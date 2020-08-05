@@ -69,7 +69,7 @@ class BaseClient:
         base_url: URLTypes = "",
         trust_env: bool = True,
     ):
-        self._base_url = URL(base_url)
+        self.base_url = self._enforce_trailing_slash(URL(base_url))
 
         self.auth = auth
         self._params = QueryParams(params)
@@ -83,6 +83,12 @@ class BaseClient:
     @property
     def trust_env(self) -> bool:
         return self._trust_env
+
+    def _enforce_trailing_slash(self, url: URL) -> URL:
+        if url.path.endswith("/"):
+            return url
+        else:
+            return url.copy_with(path=url.path + "/")
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool,
@@ -113,7 +119,7 @@ class BaseClient:
 
     @base_url.setter
     def base_url(self, url: URLTypes) -> None:
-        self._base_url = URL(url)
+        self._base_url = self._enforce_trailing_slash(URL(url))
 
     @property
     def headers(self) -> Headers:
@@ -216,7 +222,13 @@ class BaseClient:
         Merge a URL argument together with any 'base_url' on the client,
         to create the URL used for the outgoing request.
         """
-        return self.base_url.join(url)
+        merge_url = URL(url)
+        if merge_url.is_relative_url:
+            # We always ensure the base_url paths include the trailing '/',
+            # and always strip any leading '/' from the merge URL.
+            merge_url = merge_url.copy_with(path=merge_url.path.lstrip("/"))
+            return self.base_url.join(merge_url)
+        return merge_url
 
     def _merge_cookies(
         self, cookies: CookieTypes = None

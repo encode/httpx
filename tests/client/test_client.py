@@ -174,11 +174,28 @@ def test_base_url(server):
     assert response.url == base_url
 
 
-def test_merge_url():
+def test_merge_absolute_url():
     client = httpx.Client(base_url="https://www.example.com/")
-    request = client.build_request("GET", "http://www.example.com")
-    assert request.url.scheme == "http"
-    assert not request.url.is_ssl
+    request = client.build_request("GET", "http://www.example.com/")
+    assert request.url == httpx.URL("http://www.example.com/")
+
+
+def test_merge_relative_url():
+    client = httpx.Client(base_url="https://www.example.com/")
+    request = client.build_request("GET", "/testing/123")
+    assert request.url == httpx.URL("https://www.example.com/testing/123")
+
+
+def test_merge_relative_url_with_path():
+    client = httpx.Client(base_url="https://www.example.com/some/path")
+    request = client.build_request("GET", "/testing/123")
+    assert request.url == httpx.URL("https://www.example.com/some/path/testing/123")
+
+
+def test_merge_relative_url_with_dotted_path():
+    client = httpx.Client(base_url="https://www.example.com/some/path")
+    request = client.build_request("GET", "../testing/123")
+    assert request.url == httpx.URL("https://www.example.com/some/testing/123")
 
 
 def test_pool_limits_deprecated():
