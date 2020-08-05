@@ -178,7 +178,8 @@ def test_merge_absolute_url():
     client = httpx.Client(base_url="https://www.example.com/")
     request = client.build_request("GET", "http://www.example.com/")
     assert request.url == httpx.URL("http://www.example.com/")
-    assert not request.url.is_ssl
+    with pytest.warns(DeprecationWarning):
+        assert not request.url.is_ssl
 
 
 def test_merge_relative_url():
