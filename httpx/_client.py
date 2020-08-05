@@ -2,7 +2,6 @@ import functools
 import typing
 from types import TracebackType
 
-import hstspreload
 import httpcore
 
 from ._auth import Auth, BasicAuth, FunctionAuth
@@ -209,15 +208,7 @@ class BaseClient:
         Merge a URL argument together with any 'base_url' on the client,
         to create the URL used for the outgoing request.
         """
-        url = self.base_url.join(relative_url=url)
-        if (
-            url.scheme == "http"
-            and hstspreload.in_hsts_preload(url.host)
-            and len(url.host.split(".")) > 1
-        ):
-            port = None if url.port == 80 else url.port
-            url = url.copy_with(scheme="https", port=port)
-        return url
+        return self.base_url.join(relative_url=url)
 
     def _merge_cookies(
         self, cookies: CookieTypes = None
