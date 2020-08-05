@@ -66,13 +66,10 @@ class BaseClient:
         cookies: CookieTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        base_url: URLTypes = None,
+        base_url: URLTypes = "",
         trust_env: bool = True,
     ):
-        if base_url is None:
-            self.base_url = URL("")
-        else:
-            self.base_url = URL(base_url)
+        self._base_url = self._enforce_trailing_slash(URL(base_url))
 
         self.auth = auth
         self._params = QueryParams(params)
@@ -86,6 +83,11 @@ class BaseClient:
     @property
     def trust_env(self) -> bool:
         return self._trust_env
+
+    def _enforce_trailing_slash(self, url: URL) -> URL:
+        if url.path.endswith("/"):
+            return url
+        return url.copy_with(path=url.path + "/")
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool,
@@ -106,6 +108,17 @@ class BaseClient:
         else:
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
             return {"all": proxy}
+
+    @property
+    def base_url(self) -> URL:
+        """
+        Base URL to use when sending requests with relative URLs.
+        """
+        return self._base_url
+
+    @base_url.setter
+    def base_url(self, url: URLTypes) -> None:
+        self._base_url = self._enforce_trailing_slash(URL(url))
 
     @property
     def headers(self) -> Headers:
@@ -208,7 +221,13 @@ class BaseClient:
         Merge a URL argument together with any 'base_url' on the client,
         to create the URL used for the outgoing request.
         """
-        return self.base_url.join(url)
+        merge_url = URL(url)
+        if merge_url.is_relative_url:
+            # We always ensure the base_url paths include the trailing '/',
+            # and always strip any leading '/' from the merge URL.
+            merge_url = merge_url.copy_with(path=merge_url.path.lstrip("/"))
+            return self.base_url.join(merge_url)
+        return merge_url
 
     def _merge_cookies(
         self, cookies: CookieTypes = None
@@ -441,7 +460,7 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        base_url: URLTypes = None,
+        base_url: URLTypes = "",
         transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
@@ -972,7 +991,7 @@ class AsyncClient(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        base_url: URLTypes = None,
+        base_url: URLTypes = "",
         transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
