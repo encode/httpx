@@ -34,6 +34,14 @@ Within a `stream()` block request data is made available with:
 * `.iter_raw()` - Use this instead of `response.raw`
 * `.read()` - Read the entire response body, making `request.text` and `response.content` available.
 
+## Proxy keys
+
+When using `httpx.Client(proxies={...})` to map to a selection of different proxies, we use full URL schemes, such as `proxies={"http://": ..., "https://": ...}`.
+
+This is different to the `requests` usage of `proxies={"http": ..., "https": ...}`.
+
+This change is for better consistency with more complex mappings, that might also include domain names, such as `proxies={"all://": ..., "all://www.example.com": None}` which maps all requests onto a proxy, except for requests to "www.example.com" which have an explicit exclusion.
+
 ## SSL configuration
 
 When using a `Client` instance, the `trust_env`, `verify`, and `cert` arguments should always be passed on client instantiation, rather than passed to the request method.
