@@ -20,16 +20,19 @@ def url_to_origin(url: str):
 @pytest.mark.parametrize(
     ["proxies", "expected_proxies"],
     [
-        ("http://127.0.0.1", [("all", "http://127.0.0.1")]),
-        ({"all": "http://127.0.0.1"}, [("all", "http://127.0.0.1")]),
+        ("http://127.0.0.1", [("all://", "http://127.0.0.1")]),
+        ({"all://": "http://127.0.0.1"}, [("all://", "http://127.0.0.1")]),
         (
-            {"http": "http://127.0.0.1", "https": "https://127.0.0.1"},
-            [("http", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
+            {"http://": "http://127.0.0.1", "https://": "https://127.0.0.1"},
+            [("http://", "http://127.0.0.1"), ("https://", "https://127.0.0.1")],
         ),
-        (httpx.Proxy("http://127.0.0.1"), [("all", "http://127.0.0.1")]),
+        (httpx.Proxy("http://127.0.0.1"), [("all://", "http://127.0.0.1")]),
         (
-            {"https": httpx.Proxy("https://127.0.0.1"), "all": "http://127.0.0.1"},
-            [("all", "http://127.0.0.1"), ("https", "https://127.0.0.1")],
+            {
+                "https://": httpx.Proxy("https://127.0.0.1"),
+                "all://": "http://127.0.0.1",
+            },
+            [("all://", "http://127.0.0.1"), ("https://", "https://127.0.0.1")],
         ),
     ],
 )
@@ -54,7 +57,7 @@ PROXY_URL = "http://[::1]"
     [
         ("http://example.com", None, None),
         ("http://example.com", {}, None),
-        ("http://example.com", {"https": PROXY_URL}, None),
+        ("http://example.com", {"https://": PROXY_URL}, None),
         ("http://example.com", {"http://example.net": PROXY_URL}, None),
         # Using "*" should match any domain name.
         ("http://example.com", {"http://*": PROXY_URL}, PROXY_URL),
@@ -71,9 +74,9 @@ PROXY_URL = "http://[::1]"
         ("http://wwwexample.com", {"http://*example.com": PROXY_URL}, None),
         # ...
         ("http://example.com:443", {"http://example.com": PROXY_URL}, PROXY_URL),
-        ("http://example.com", {"all": PROXY_URL}, PROXY_URL),
-        ("http://example.com", {"all": PROXY_URL, "http://example.com": None}, None),
-        ("http://example.com", {"http": PROXY_URL}, PROXY_URL),
+        ("http://example.com", {"all://": PROXY_URL}, PROXY_URL),
+        ("http://example.com", {"all://": PROXY_URL, "http://example.com": None}, None),
+        ("http://example.com", {"http://": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all://example.com": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all://example.com:80": PROXY_URL}, None),
         ("http://example.com", {"http://example.com": PROXY_URL}, PROXY_URL),
@@ -83,8 +86,8 @@ PROXY_URL = "http://[::1]"
         (
             "http://example.com",
             {
-                "all": PROXY_URL + ":1",
-                "http": PROXY_URL + ":2",
+                "all://": PROXY_URL + ":1",
+                "http://": PROXY_URL + ":2",
                 "all://example.com": PROXY_URL + ":3",
                 "http://example.com": PROXY_URL + ":4",
             },
@@ -93,15 +96,15 @@ PROXY_URL = "http://[::1]"
         (
             "http://example.com",
             {
-                "all": PROXY_URL + ":1",
-                "http": PROXY_URL + ":2",
+                "all://": PROXY_URL + ":1",
+                "http://": PROXY_URL + ":2",
                 "all://example.com": PROXY_URL + ":3",
             },
             PROXY_URL + ":3",
         ),
         (
             "http://example.com",
-            {"all": PROXY_URL + ":1", "http": PROXY_URL + ":2"},
+            {"all://": PROXY_URL + ":1", "http://": PROXY_URL + ":2"},
             PROXY_URL + ":2",
         ),
     ],
@@ -120,12 +123,12 @@ def test_transport_for_request(url, proxies, expected):
 
 @pytest.mark.asyncio
 async def test_async_proxy_close():
-    client = httpx.AsyncClient(proxies={"all": PROXY_URL})
+    client = httpx.AsyncClient(proxies={"all://": PROXY_URL})
     await client.aclose()
 
 
 def test_sync_proxy_close():
-    client = httpx.Client(proxies={"all": PROXY_URL})
+    client = httpx.Client(proxies={"all://": PROXY_URL})
     client.close()
 
 
@@ -244,3 +247,21 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
         assert transport == client._transport
     else:
         assert transport.proxy_origin == url_to_origin(expected)
+
+
+@pytest.mark.parametrize(
+    ["proxies", "expected_scheme"],
+    [
+        ({"http": "http://127.0.0.1"}, ["http://"]),
+        ({"https": "http://127.0.0.1"}, ["https://"]),
+        ({"all": "http://127.0.0.1"}, ["all://"]),
+    ],
+)
+def test_for_deprecated_proxy_params(proxies, expected_scheme):
+    with pytest.deprecated_call() as block:
+        httpx.AsyncClient(proxies=proxies)
+
+    warning_message = str(block.pop(DeprecationWarning))
+
+    for scheme in expected_scheme:
+        assert scheme in warning_message
