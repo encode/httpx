@@ -25,7 +25,7 @@ from ._exceptions import (
     TooManyRedirects,
     map_exceptions,
 )
-from ._middleware import Middleware, AsyncMiddleware
+from ._middleware import AsyncMiddleware, Middleware
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
