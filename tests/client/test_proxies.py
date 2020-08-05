@@ -252,9 +252,9 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
 @pytest.mark.parametrize(
     ["proxies", "expected_scheme"],
     [
-        ({"http": "http://127.0.0.1"}, ["http://"]),
-        ({"https": "http://127.0.0.1"}, ["https://"]),
-        ({"all": "http://127.0.0.1"}, ["all://"]),
+        ({"http": "http://127.0.0.1"}, "http://"),
+        ({"https": "http://127.0.0.1"}, "https://"),
+        ({"all": "http://127.0.0.1"}, "all://"),
     ],
 )
 def test_for_deprecated_proxy_params(proxies, expected_scheme):
