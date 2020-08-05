@@ -69,7 +69,7 @@ class BaseClient:
         base_url: URLTypes = "",
         trust_env: bool = True,
     ):
-        self.base_url = self._enforce_trailing_slash(URL(base_url))
+        self._base_url = self._enforce_trailing_slash(URL(base_url))
 
         self.auth = auth
         self._params = QueryParams(params)
@@ -87,8 +87,7 @@ class BaseClient:
     def _enforce_trailing_slash(self, url: URL) -> URL:
         if url.path.endswith("/"):
             return url
-        else:
-            return url.copy_with(path=url.path + "/")
+        return url.copy_with(path=url.path + "/")
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool,
