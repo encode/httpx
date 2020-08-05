@@ -175,9 +175,10 @@ def test_base_url(server):
 
 
 def test_merge_url():
-    client = httpx.Client(base_url="https://www.paypal.com/")
-    request = client.build_request("GET", "http://www.paypal.com")
+    client = httpx.Client(base_url="https://www.example.com/")
+    request = client.build_request("GET", "http://www.example.com")
     assert request.url.scheme == "http"
+    assert not request.url.is_ssl
 
 
 def test_pool_limits_deprecated():
