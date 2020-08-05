@@ -32,6 +32,7 @@ from ._exceptions import (
     WriteError,
     WriteTimeout,
 )
+from ._middleware import AsyncMiddleware, Middleware
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import StatusCode, codes
 from ._transports.asgi import ASGITransport
@@ -55,6 +56,8 @@ __all__ = [
     "codes",
     "ASGITransport",
     "AsyncClient",
+    "AsyncMiddleware",
+    "Middleware",
     "Auth",
     "BasicAuth",
     "Client",

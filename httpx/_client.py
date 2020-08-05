@@ -25,6 +25,7 @@ from ._exceptions import (
     TooManyRedirects,
     map_exceptions,
 )
+from ._middleware import Middleware, AsyncMiddleware
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
@@ -452,6 +453,7 @@ class Client(BaseClient):
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         transport: httpcore.SyncHTTPTransport = None,
+        middleware: typing.Sequence[Middleware] = (),
         app: typing.Callable = None,
         trust_env: bool = True,
     ):
@@ -501,6 +503,8 @@ class Client(BaseClient):
             for key, proxy in proxy_map.items()
         }
         self._proxies = dict(sorted(self._proxies.items()))
+
+        self._middleware = middleware
 
     def _init_transport(
         self,
@@ -610,9 +614,16 @@ class Client(BaseClient):
 
         auth = self._build_auth(request, auth)
 
-        response = self._send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        call_next = functools.partial(
+            self._send_handling_redirects,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
         )
+        for middleware in self._middleware:
+            call_next = functools.partial(middleware.send, call_next=call_next)
+
+        response = call_next(request)
 
         if not stream:
             try:
@@ -983,6 +994,7 @@ class AsyncClient(BaseClient):
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         base_url: URLTypes = None,
         transport: httpcore.AsyncHTTPTransport = None,
+        middleware: typing.Sequence[AsyncMiddleware] = (),
         app: typing.Callable = None,
         trust_env: bool = True,
     ):
@@ -1032,6 +1044,8 @@ class AsyncClient(BaseClient):
             for key, proxy in proxy_map.items()
         }
         self._proxies = dict(sorted(self._proxies.items()))
+
+        self._middleware = middleware
 
     def _init_transport(
         self,
@@ -1138,9 +1152,16 @@ class AsyncClient(BaseClient):
 
         auth = self._build_auth(request, auth)
 
-        response = await self._send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
+        call_next = functools.partial(
+            self._send_handling_redirects,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
         )
+        for middleware in self._middleware:
+            call_next = functools.partial(middleware.asend, call_next=call_next)
+
+        response = await call_next(request)
 
         if not stream:
             try:
