@@ -1,32 +1,33 @@
 """
 Our exception hierarchy:
 
-* RequestError
-  + TransportError
-    - TimeoutException
-      · ConnectTimeout
-      · ReadTimeout
-      · WriteTimeout
-      · PoolTimeout
-    - NetworkError
-      · ConnectError
-      · ReadError
-      · WriteError
-      · CloseError
-    - ProxyError
-    - ProtocolError
-  + DecodingError
-  + TooManyRedirects
-  + RequestBodyUnavailable
-  + InvalidURL
-* HTTPStatusError
+* HTTPError
+  x RequestError
+    + TransportError
+      - TimeoutException
+        · ConnectTimeout
+        · ReadTimeout
+        · WriteTimeout
+        · PoolTimeout
+      - NetworkError
+        · ConnectError
+        · ReadError
+        · WriteError
+        · CloseError
+      - ProtocolError
+      - ProxyError
+    + DecodingError
+    + TooManyRedirects
+    + RequestBodyUnavailable
+    + InvalidURL
+  x HTTPStatusError
 * NotRedirectResponse
 * CookieConflict
 * StreamError
-  + StreamConsumed
-  + ResponseNotRead
-  + RequestNotRead
-  + ResponseClosed
+  x StreamConsumed
+  x ResponseNotRead
+  x RequestNotRead
+  x ResponseClosed
 """
 import contextlib
 import typing
@@ -37,14 +38,34 @@ if typing.TYPE_CHECKING:
     from ._models import Request, Response  # pragma: nocover
 
 
-class RequestError(Exception):
+class HTTPError(Exception):
     """
-    Base class for all exceptions that may occur when issuing a `.request()`.
+    Base class for `RequestError` and `HTTPStatusError`.
+
+    Useful for `try...except` blocks when issuing a request,
+    and then calling .raise_for_status().
+
+    For example:
+
+    try:
+        response = httpx.get("https://www.example.com")
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        print(f"HTTP Exception for {exc.request.url} - {exc.message}")
     """
 
     def __init__(self, message: str, *, request: "Request") -> None:
         super().__init__(message)
         self.request = request
+
+
+class RequestError(HTTPError):
+    """
+    Base class for all exceptions that may occur when issuing a `.request()`.
+    """
+
+    def __init__(self, message: str, *, request: "Request") -> None:
+        super().__init__(message, request=request)
 
 
 class TransportError(RequestError):
@@ -169,7 +190,7 @@ class InvalidURL(RequestError):
 # Client errors
 
 
-class HTTPStatusError(Exception):
+class HTTPStatusError(HTTPError):
     """
     Response sent an error HTTP status.
 
@@ -179,8 +200,7 @@ class HTTPStatusError(Exception):
     def __init__(
         self, message: str, *, request: "Request", response: "Response"
     ) -> None:
-        super().__init__(message)
-        self.request = request
+        super().__init__(message, request=request)
         self.response = response
 
 
@@ -275,11 +295,6 @@ class ResponseClosed(StreamError):
             "been closed."
         )
         super().__init__(message)
-
-
-# We're continuing to expose this earlier naming at the moment.
-# It is due to be deprecated. Don't use it.
-HTTPError = RequestError
 
 
 @contextlib.contextmanager
