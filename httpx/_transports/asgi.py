@@ -76,7 +76,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         timeout: Mapping[str, Optional[float]] = None,
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
         headers = [] if headers is None else headers
-        stream = httpcore.AsyncByteStream(content=b"") if stream is None else stream
+        stream = httpcore.SimpleByteStream(content=b"") if stream is None else stream
 
         # ASGI scope.
         scheme, host, port, full_path = url
@@ -153,6 +153,6 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         assert status_code is not None
         assert response_headers is not None
 
-        stream = httpcore.AsyncByteStream(content=b"".join(body_parts))
+        stream = httpcore.SimpleByteStream(content=b"".join(body_parts))
 
         return (b"HTTP/1.1", status_code, b"", response_headers, stream)
