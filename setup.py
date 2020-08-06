@@ -56,7 +56,6 @@ setup(
     zip_safe=False,
     install_requires=[
         "certifi",
-        "hstspreload",
         "sniffio",
         "chardet==3.*",
         "idna==2.*",

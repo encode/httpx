@@ -319,6 +319,7 @@ class ResponseClosed(StreamError):
         super().__init__(message)
 
 
+<<<<<<< HEAD
 # The `InvalidURL` class is no longer required. It was being used to enforce only
 # 'http'/'https' URLs being requested, but is now treated instead at the
 # transport layer using `UnsupportedProtocol()`.`
@@ -327,6 +328,8 @@ class ResponseClosed(StreamError):
 InvalidURL = UnsupportedProtocol
 
 
+=======
+>>>>>>> master
 @contextlib.contextmanager
 def map_exceptions(
     mapping: typing.Mapping[typing.Type[Exception], typing.Type[Exception]],
