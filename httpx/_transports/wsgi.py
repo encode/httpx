@@ -73,7 +73,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         httpcore.SyncByteStream,
     ]:
         headers = [] if headers is None else headers
-        stream = httpcore.SimpleByteStream(content=b"") if stream is None else stream
+        stream = httpcore.PlainByteStream(content=b"") if stream is None else stream
 
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
