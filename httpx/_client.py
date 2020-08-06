@@ -105,7 +105,7 @@ class BaseClient:
             return new_proxies
         else:
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
-            return {"all": proxy}
+            return {"all://": proxy}
 
     @property
     def timeout(self) -> Timeout:
@@ -1020,6 +1020,7 @@ class AsyncClient(BaseClient):
             app=app,
             trust_env=trust_env,
         )
+
         self._proxies: typing.Dict[
             URLPattern, typing.Optional[httpcore.AsyncHTTPTransport]
         ] = {
