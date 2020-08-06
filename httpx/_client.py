@@ -75,7 +75,7 @@ class BaseClient:
         self._params = QueryParams(params)
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
-        self.timeout = Timeout(timeout)
+        self._timeout = Timeout(timeout)
         self.max_redirects = max_redirects
         self._trust_env = trust_env
         self._netrc = NetRCInfo()
@@ -108,6 +108,14 @@ class BaseClient:
         else:
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
             return {"all": proxy}
+
+    @property
+    def timeout(self) -> Timeout:
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, timeout: TimeoutTypes) -> None:
+        self._timeout = Timeout(timeout)
 
     @property
     def base_url(self) -> URL:
