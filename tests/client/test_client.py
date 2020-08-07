@@ -7,7 +7,7 @@ import httpx
 
 def test_get(server):
     url = server.url
-    with httpx.Client() as http:
+    with httpx.Client(http2=True) as http:
         response = http.get(url)
     assert response.status_code == 200
     assert response.url == url

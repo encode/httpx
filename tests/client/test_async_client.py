@@ -8,7 +8,7 @@ import httpx
 @pytest.mark.usefixtures("async_environment")
 async def test_get(server):
     url = server.url
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(http2=True) as client:
         response = await client.get(url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"

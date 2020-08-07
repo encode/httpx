@@ -477,6 +477,15 @@ class Client(BaseClient):
             trust_env=trust_env,
         )
 
+        if http2:
+            try:
+                import h2  # noqa
+            except ImportError:  # pragma: nocover
+                raise ImportError(
+                    "Using http2=True, but the 'h2' package is not installed. "
+                    "Make sure to install httpx using `pip install httpx[http2]`."
+                ) from None
+
         if pool_limits is not None:
             warn_deprecated(
                 "Client(..., pool_limits=...) is deprecated and will raise "
@@ -1000,6 +1009,15 @@ class AsyncClient(BaseClient):
             base_url=base_url,
             trust_env=trust_env,
         )
+
+        if http2:
+            try:
+                import h2  # noqa
+            except ImportError:  # pragma: nocover
+                raise ImportError(
+                    "Using http2=True, but the 'h2' package is not installed. "
+                    "Make sure to install httpx using `pip install httpx[http2]`."
+                ) from None
 
         if pool_limits is not None:
             warn_deprecated(
