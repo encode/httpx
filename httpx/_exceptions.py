@@ -45,15 +45,17 @@ class HTTPError(Exception):
     Base class for `RequestError` and `HTTPStatusError`.
 
     Useful for `try...except` blocks when issuing a request,
-    and then calling .raise_for_status().
+    and then calling `.raise_for_status()`.
 
     For example:
 
+    ```
     try:
         response = httpx.get("https://www.example.com")
         response.raise_for_status()
     except httpx.HTTPError as exc:
         print(f"HTTP Exception for {exc.request.url} - {exc.message}")
+    ```
     """
 
     def __init__(self, message: str, *, request: "Request") -> None:
@@ -72,7 +74,9 @@ class RequestError(HTTPError):
 
 class TransportError(RequestError):
     """
-    Base class for all exceptions that are mapped from the httpcore API.
+    Base class for all exceptions that occur at the level of the Transport API.
+
+    All of these exceptions also have an equivelent mapping in `httpcore`.
     """
 
 
@@ -151,7 +155,7 @@ class CloseError(NetworkError):
 
 class ProxyError(TransportError):
     """
-    An error occurred while proxying a request.
+    An error occurred while establishing a proxy connection.
     """
 
 
@@ -192,7 +196,7 @@ class RemoteProtocolError(ProtocolError):
 
 class DecodingError(RequestError):
     """
-    Decoding of the response failed.
+    Decoding of the response failed, due to a malformed encoding.
     """
 
 
@@ -214,7 +218,7 @@ class RequestBodyUnavailable(RequestError):
 
 class HTTPStatusError(HTTPError):
     """
-    Response sent an error HTTP status.
+    The response had an error HTTP status of 4xx or 5xx.
 
     May be raised when calling `response.raise_for_status()`
     """
