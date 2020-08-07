@@ -24,8 +24,14 @@ implementation may be considered the more robust option at this point in time.
 It is possible that a future version of `httpx` may enable HTTP/2 support by default.
 
 If you're issuing highly concurrent requests you might want to consider
-trying out our HTTP/2 support. You can do so by instantiating a client with
-HTTP/2 support enabled:
+trying out our HTTP/2 support. You can do so by first making sure to install
+the optional HTTP/2 dependencies...
+
+```shell
+$ pip install httpx[http2]
+```
+
+And then then instantiating a client with HTTP/2 support enabled:
 
 ```python
 client = httpx.AsyncClient(http2=True)
@@ -41,7 +47,7 @@ async with httpx.AsyncClient(http2=True) as client:
     ...
 ```
 
-HTTP/2 support is available on both `Client`, and `AsyncClient`, although it's
+HTTP/2 support is available on both `Client` and `AsyncClient`, although it's
 typically more useful in async contexts if you're issuing lots of concurrent
 requests.
 
