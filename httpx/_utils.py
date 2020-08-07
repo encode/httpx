@@ -14,11 +14,10 @@ from time import perf_counter
 from types import TracebackType
 from urllib.request import getproxies
 
-from ._exceptions import InvalidURL
 from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._models import URL, Request
+    from ._models import URL
 
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
@@ -263,23 +262,6 @@ def get_logger(name: str) -> Logger:
     logger.trace = trace  # type: ignore
 
     return typing.cast(Logger, logger)
-
-
-def enforce_http_url(request: "Request") -> None:
-    """
-    Raise an appropriate InvalidURL for any non-HTTP URLs.
-    """
-    url = request.url
-
-    if not url.scheme:
-        message = "No scheme included in URL."
-        raise InvalidURL(message, request=request)
-    if not url.host:
-        message = "No host included in URL."
-        raise InvalidURL(message, request=request)
-    if url.scheme not in ("http", "https"):
-        message = 'URL scheme must be "http" or "https".'
-        raise InvalidURL(message, request=request)
 
 
 def port_or_default(url: "URL") -> typing.Optional[int]:
