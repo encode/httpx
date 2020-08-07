@@ -411,5 +411,5 @@ class Proxy:
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
-DEFAULT_LIMITS = Limits(max_keepalive=10, max_connections=100)
+DEFAULT_LIMITS = Limits(max_connections=100, max_keepalive_connections=20)
 DEFAULT_MAX_REDIRECTS = 20
