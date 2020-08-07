@@ -49,7 +49,7 @@ Some areas of API which were already on the deprecation path, and were raising w
 
 See pull requests #1057, #1058.
 
-#### Added
+### Added
 
 * Added dedicated exception class `httpx.HTTPStatusError` for `.raise_for_status()` exceptions. (Pull #1072)
 * Added `httpx.create_ssl_context()` helper function. (Pull #996)
