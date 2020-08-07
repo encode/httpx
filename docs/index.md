@@ -129,6 +129,12 @@ Install with pip:
 $ pip install httpx
 ```
 
+Or, to include the optional HTTP/2 support, use:
+
+```shell
+$ pip install httpx[http2]
+```
+
 HTTPX requires Python 3.6+
 
 [sync-support]: https://github.com/encode/httpx/issues/572
