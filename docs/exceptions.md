@@ -130,21 +130,17 @@ except httpx.HTTPStatusError as exc:
 ::: httpx.ProtocolError
     :docstring:
 
-<!--
 ::: httpx.LocalProtocolError
     :docstring:
 
 ::: httpx.RemoteProtocolError
     :docstring:
--->
 
 ::: httpx.ProxyError
     :docstring:
 
-<!--
 ::: httpx.UnsupportedProtocol
     :docstring:
--->
 
 ::: httpx.DecodingError
     :docstring:
