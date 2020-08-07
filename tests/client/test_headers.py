@@ -16,7 +16,7 @@ class MockTransport(httpcore.AsyncHTTPTransport):
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: httpcore.AsyncByteStream = None,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
+        timeout: typing.Mapping[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:

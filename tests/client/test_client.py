@@ -35,7 +35,7 @@ def test_get(server):
 )
 def test_get_invalid_url(server, url):
     with httpx.Client() as client:
-        with pytest.raises(httpx.InvalidURL):
+        with pytest.raises((httpx.UnsupportedProtocol, httpx.LocalProtocolError)):
             client.get(url)
 
 
@@ -174,26 +174,30 @@ def test_base_url(server):
     assert response.url == base_url
 
 
-def test_merge_url():
-    client = httpx.Client(base_url="https://www.paypal.com/")
-    request = client.build_request("GET", "http://www.paypal.com")
-    assert request.url.scheme == "https"
-    assert request.url.is_ssl
+def test_merge_absolute_url():
+    client = httpx.Client(base_url="https://www.example.com/")
+    request = client.build_request("GET", "http://www.example.com/")
+    assert request.url == httpx.URL("http://www.example.com/")
+    with pytest.warns(DeprecationWarning):
+        assert not request.url.is_ssl
 
 
-@pytest.mark.parametrize(
-    "url,scheme,is_ssl",
-    [
-        ("http://www.paypal.com", "https", True),
-        ("http://app", "http", False),
-        ("http://192.168.1.42", "http", False),
-    ],
-)
-def test_merge_url_hsts(url: str, scheme: str, is_ssl: bool):
-    client = httpx.Client()
-    request = client.build_request("GET", url)
-    assert request.url.scheme == scheme
-    assert request.url.is_ssl == is_ssl
+def test_merge_relative_url():
+    client = httpx.Client(base_url="https://www.example.com/")
+    request = client.build_request("GET", "/testing/123")
+    assert request.url == httpx.URL("https://www.example.com/testing/123")
+
+
+def test_merge_relative_url_with_path():
+    client = httpx.Client(base_url="https://www.example.com/some/path")
+    request = client.build_request("GET", "/testing/123")
+    assert request.url == httpx.URL("https://www.example.com/some/path/testing/123")
+
+
+def test_merge_relative_url_with_dotted_path():
+    client = httpx.Client(base_url="https://www.example.com/some/path")
+    request = client.build_request("GET", "../testing/123")
+    assert request.url == httpx.URL("https://www.example.com/some/testing/123")
 
 
 def test_pool_limits_deprecated():

@@ -56,12 +56,11 @@ setup(
     zip_safe=False,
     install_requires=[
         "certifi",
-        "hstspreload",
         "sniffio",
         "chardet==3.*",
         "idna==2.*",
         "rfc3986>=1.3,<2",
-        "httpcore==0.9.*",
+        "httpcore[http2]==0.10.*",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",

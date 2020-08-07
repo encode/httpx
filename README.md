@@ -113,7 +113,6 @@ The HTTPX project relies on these excellent libraries:
   * `h2` - HTTP/2 support.
 * `certifi` - SSL certificates.
 * `chardet` - Fallback auto-detection for response encoding.
-* `hstspreload` - determines whether IDNA-encoded host should be only accessed via HTTPS.
 * `idna` - Internationalized domain name support.
 * `rfc3986` - URL parsing & normalization.
 * `sniffio` - Async library autodetection.

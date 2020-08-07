@@ -284,8 +284,8 @@ For more advanced use cases, pass a proxies `dict`. For example, to route HTTP a
 
 ```python
 proxies = {
-    "http": "http://localhost:8030",
-    "https": "http://localhost:8031",
+    "http://": "http://localhost:8030",
+    "https://": "http://localhost:8031",
 }
 
 with httpx.Client(proxies=proxies) as client:
@@ -295,7 +295,7 @@ with httpx.Client(proxies=proxies) as client:
 For detailed information about proxy routing, see the [Routing](#routing) section.
 
 !!! tip "Gotcha"
-    In most cases, the proxy URL for the `https` key _should_ use the `http://` scheme (that's not a typo!).
+    In most cases, the proxy URL for the `https://` key _should_ use the `http://` scheme (that's not a typo!).
 
     This is because HTTP proxying requires initiating a connection with the proxy server. While it's possible that your proxy supports doing it via HTTPS, most proxies only support doing it via HTTP.
 
@@ -307,7 +307,7 @@ Proxy credentials can be passed as the `userinfo` section of the proxy URL. For 
 
 ```python
 proxies = {
-    "http": "http://username:password@localhost:8030",
+    "http://": "http://username:password@localhost:8030",
     # ...
 }
 ```
@@ -316,7 +316,7 @@ proxies = {
 
 HTTPX provides fine-grained controls for deciding which requests should go through a proxy, and which shouldn't. This process is known as proxy routing.
 
-The `proxies` dictionary maps URL patterns ("proxy keys") to proxy URLs. HTTPX matches requested URLs against proxy keys to decide which proxy should be used, if any. Matching is done from most specific proxy keys (e.g. `https://<domain>:<port>`) to least specific ones (e.g. `https`).
+The `proxies` dictionary maps URL patterns ("proxy keys") to proxy URLs. HTTPX matches requested URLs against proxy keys to decide which proxy should be used, if any. Matching is done from most specific proxy keys (e.g. `https://<domain>:<port>`) to least specific ones (e.g. `https://`).
 
 HTTPX supports routing proxies based on **scheme**, **domain**, **port**, or a combination of these.
 
@@ -326,7 +326,7 @@ Route everything through a proxy...
 
 ```python
 proxies = {
-    "all": "http://localhost:8030",
+    "all://": "http://localhost:8030",
 }
 ```
 
@@ -336,8 +336,8 @@ Route HTTP requests through one proxy, and HTTPS requests through another...
 
 ```python
 proxies = {
-    "http": "http://localhost:8030",
-    "https": "http://localhost:8031",
+    "http://": "http://localhost:8030",
+    "https://": "http://localhost:8031",
 }
 ```
 
@@ -402,7 +402,7 @@ To do so, pass `None` as the proxy URL. For example...
 ```python
 proxies = {
     # Route requests through a proxy by default...
-    "all": "http://localhost:8031",
+    "all://": "http://localhost:8031",
     # Except those for "example.com".
     "all://example.com": None,
 }
@@ -415,7 +415,7 @@ You can combine the routing features outlined above to build complex proxy routi
 ```python
 proxies = {
     # Route all traffic through a proxy by default...
-    "all": "http://localhost:8030",
+    "all://": "http://localhost:8030",
     # But don't use proxies for HTTPS requests to "domain.io"...
     "https://domain.io": None,
     # And use another proxy for requests to "example.com" and its subdomains...
