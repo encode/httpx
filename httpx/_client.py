@@ -19,7 +19,6 @@ from ._config import (
 from ._content_streams import ContentStream
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
-    InvalidURL,
     RequestBodyUnavailable,
     TooManyRedirects,
     map_exceptions,
@@ -44,7 +43,6 @@ from ._types import (
 from ._utils import (
     NetRCInfo,
     URLPattern,
-    enforce_http_url,
     get_environment_proxies,
     get_logger,
     same_origin,
@@ -344,11 +342,6 @@ class BaseClient:
 
         url = URL(location)
 
-        # Check that we can handle the scheme
-        if url.scheme and url.scheme not in ("http", "https"):
-            message = f'Scheme "{url.scheme}" not supported.'
-            raise InvalidURL(message, request=request)
-
         # Handle malformed 'Location' headers that are "absolute" form, have no host.
         # See: https://github.com/encode/httpx/issues/771
         if url.scheme and not url.host:
@@ -540,8 +533,8 @@ class Client(BaseClient):
 
         return httpcore.SyncConnectionPool(
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
@@ -562,20 +555,17 @@ class Client(BaseClient):
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 
-    def _transport_for_url(self, request: Request) -> httpcore.SyncHTTPTransport:
+    def _transport_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
         """
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        url = request.url
-        enforce_http_url(request)
-
         for pattern, transport in self._proxies.items():
             if pattern.matches(url):
                 return self._transport if transport is None else transport
@@ -620,10 +610,6 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
-        if request.url.scheme not in ("http", "https"):
-            message = 'URL scheme must be "http" or "https".'
-            raise InvalidURL(message, request=request)
-
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_auth(request, auth)
@@ -714,7 +700,7 @@ class Client(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-        transport = self._transport_for_url(request)
+        transport = self._transport_for_url(request.url)
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (
@@ -1072,8 +1058,8 @@ class AsyncClient(BaseClient):
 
         return httpcore.AsyncConnectionPool(
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
@@ -1094,20 +1080,17 @@ class AsyncClient(BaseClient):
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 
-    def _transport_for_url(self, request: Request) -> httpcore.AsyncHTTPTransport:
+    def _transport_for_url(self, url: URL) -> httpcore.AsyncHTTPTransport:
         """
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        url = request.url
-        enforce_http_url(request)
-
         for pattern, transport in self._proxies.items():
             if pattern.matches(url):
                 return self._transport if transport is None else transport
@@ -1245,7 +1228,7 @@ class AsyncClient(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-        transport = self._transport_for_url(request)
+        transport = self._transport_for_url(request.url)
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (

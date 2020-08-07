@@ -111,8 +111,7 @@ PROXY_URL = "http://[::1]"
 )
 def test_transport_for_request(url, proxies, expected):
     client = httpx.AsyncClient(proxies=proxies)
-    request = httpx.Request(method="GET", url=url)
-    transport = client._transport_for_url(request)
+    transport = client._transport_for_url(httpx.URL(url))
 
     if expected is None:
         assert transport is client._transport
@@ -240,8 +239,7 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
         monkeypatch.setenv(name, value)
 
     client = client_class()
-    request = httpx.Request(method="GET", url=url)
-    transport = client._transport_for_url(request)
+    transport = client._transport_for_url(httpx.URL(url))
 
     if expected is None:
         assert transport == client._transport
