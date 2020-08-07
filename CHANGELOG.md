@@ -17,6 +17,7 @@ When upgrading you should be aware of the following public API changes. Note tha
 * Usage of `httpx.Timeout()` should now always include an explicit default. Eg. `httpx.Timeout(None, pool=5.0)`.
 * When using `httpx.Timeout()`, we now have more concisely named keyword arguments. Eg. `read=5.0`, instead of `read_timeout=5.0`.
 * Use `httpx.Limits()` instead of `httpx.PoolLimits()`, and `limits=...` instead of `pool_limits=...`.
+* The `httpx.Limits(max_keepalive=...)` argument is now deprecated in favour of a more explicit `httpx.Limits(max_keepalive_connections=...)`.
 * Keys used with `Client(proxies={...})` should now be in the style of `{"http://": ...}`, rather than `{"http": ...}`.
 * The multidict methods `Headers.getlist()` and `QueryParams.getlist()` are deprecated in favour of more consistent `.get_list()` variants.
 * The `URL.is_ssl` property is deprecated in favour of `URL.scheme == "https"`.
