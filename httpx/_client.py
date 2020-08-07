@@ -533,8 +533,8 @@ class Client(BaseClient):
 
         return httpcore.SyncConnectionPool(
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
@@ -555,8 +555,8 @@ class Client(BaseClient):
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
@@ -1058,8 +1058,8 @@ class AsyncClient(BaseClient):
 
         return httpcore.AsyncConnectionPool(
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
@@ -1080,8 +1080,8 @@ class AsyncClient(BaseClient):
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
