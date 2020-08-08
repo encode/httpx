@@ -134,7 +134,7 @@ async def test_asgi_streaming_exc():
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_streaming_exc_after_response():
     client = httpx.AsyncClient(app=raise_exc_after_response)
-    async with client.stream("GET", "http://www.example.org/") as response:
-        with pytest.raises(ValueError):
+    with pytest.raises(ValueError):
+        async with client.stream("GET", "http://www.example.org/") as response:
             async for _ in response.aiter_bytes():
                 pass  # pragma: no cover

@@ -1,6 +1,8 @@
 -e .[http2]
 
 # Optional
+async_generator; python_version < '3.7'
+anyio
 brotlipy==0.7.*
 
 # Documentation
