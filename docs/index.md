@@ -27,9 +27,9 @@ HTTPX is a fully featured HTTP client for Python 3, which provides sync and asyn
 !!! note
     HTTPX should currently be considered in beta.
 
-    We believe we've got the public API to a stable point now, but would strongly recommend pinning your dependencies to the `0.13.*` release, so that you're able to properly review [API changes between package updates](https://github.com/encode/httpx/blob/master/CHANGELOG.md).
+    We believe we've got the public API to a stable point now, but would strongly recommend pinning your dependencies to the `0.14.*` release, so that you're able to properly review [API changes between package updates](https://github.com/encode/httpx/blob/master/CHANGELOG.md).
 
-    A 1.0 release is expected to be issued sometime around mid-2020.
+    A 1.0 release is expected to be issued sometime around september 2020.
 
 ---
 
@@ -111,7 +111,6 @@ The HTTPX project relies on these excellent libraries:
   * `h2` - HTTP/2 support.
 * `certifi` - SSL certificates.
 * `chardet` - Fallback auto-detection for response encoding.
-* `hstspreload` - determines whether IDNA-encoded host should be only accessed via HTTPS.
 * `idna` - Internationalized domain name support.
 * `rfc3986` - URL parsing & normalization.
 * `sniffio` - Async library autodetection.
@@ -128,6 +127,12 @@ Install with pip:
 
 ```shell
 $ pip install httpx
+```
+
+Or, to include the optional HTTP/2 support, use:
+
+```shell
+$ pip install httpx[http2]
 ```
 
 HTTPX requires Python 3.6+

@@ -135,7 +135,8 @@ def test_empty_content(header_value):
     "decoder", (BrotliDecoder, DeflateDecoder, GZipDecoder, IdentityDecoder)
 )
 def test_decoders_empty_cases(decoder):
-    instance = decoder()
+    request = httpx.Request(method="GET", url="https://www.example.com")
+    instance = decoder(request)
     assert instance.decode(b"") == b""
     assert instance.flush() == b""
 
@@ -206,10 +207,12 @@ async def test_text_decoder_known_encoding():
 
 
 def test_text_decoder_empty_cases():
-    decoder = TextDecoder()
+    request = httpx.Request(method="GET", url="https://www.example.com")
+
+    decoder = TextDecoder(request=request)
     assert decoder.flush() == ""
 
-    decoder = TextDecoder()
+    decoder = TextDecoder(request=request)
     assert decoder.decode(b"") == ""
     assert decoder.flush() == ""
 
@@ -225,6 +228,15 @@ def test_line_decoder_nl():
     assert decoder.decode("a\n\nb\nc\n") == ["a\n", "\n", "b\n", "c\n"]
     assert decoder.flush() == []
 
+    # Issue #1033
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("12345\n") == ["12345\n"]
+    assert decoder.decode("foo ") == []
+    assert decoder.decode("bar ") == []
+    assert decoder.decode("baz\n") == ["foo bar baz\n"]
+    assert decoder.flush() == []
+
 
 def test_line_decoder_cr():
     decoder = LineDecoder()
@@ -236,6 +248,15 @@ def test_line_decoder_cr():
     assert decoder.decode("") == []
     assert decoder.decode("a\r\rb\rc\r") == ["a\n", "\n", "b\n"]
     assert decoder.flush() == ["c\n"]
+
+    # Issue #1033
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("12345\r") == []
+    assert decoder.decode("foo ") == ["12345\n"]
+    assert decoder.decode("bar ") == []
+    assert decoder.decode("baz\r") == []
+    assert decoder.flush() == ["foo bar baz\n"]
 
 
 def test_line_decoder_crnl():
@@ -254,6 +275,15 @@ def test_line_decoder_crnl():
     assert decoder.decode("a\r") == []
     assert decoder.decode("\n\r\nb\r\nc") == ["a\n", "\n", "b\n"]
     assert decoder.flush() == ["c"]
+
+    # Issue #1033
+    decoder = LineDecoder()
+    assert decoder.decode("") == []
+    assert decoder.decode("12345\r\n") == ["12345\n"]
+    assert decoder.decode("foo ") == []
+    assert decoder.decode("bar ") == []
+    assert decoder.decode("baz\r\n") == ["foo bar baz\n"]
+    assert decoder.flush() == []
 
 
 def test_invalid_content_encoding_header():

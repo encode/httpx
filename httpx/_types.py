@@ -34,6 +34,7 @@ QueryParamTypes = Union[
     Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
     List[Tuple[str, PrimitiveData]],
     str,
+    None,
 ]
 
 HeaderTypes = Union[
@@ -53,7 +54,7 @@ TimeoutTypes = Union[
     Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
     "Timeout",
 ]
-ProxiesTypes = Union[URLTypes, "Proxy", Dict[URLTypes, Union[URLTypes, "Proxy"]]]
+ProxiesTypes = Union[URLTypes, "Proxy", Dict[URLTypes, Union[None, URLTypes, "Proxy"]]]
 
 AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
@@ -72,4 +73,4 @@ FileTypes = Union[
     # (filename, file (or text), content_type)
     Tuple[Optional[str], FileContent, Optional[str]],
 ]
-RequestFiles = Mapping[str, FileTypes]
+RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]

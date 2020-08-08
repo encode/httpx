@@ -4,8 +4,8 @@ from typing import (
     AsyncIterator,
     Awaitable,
     Callable,
-    Dict,
     List,
+    Mapping,
     Optional,
     Tuple,
     Union,
@@ -14,11 +14,9 @@ from typing import (
 import httpcore
 import sniffio
 
-from .._content_streams import AsyncIteratorStream, ByteStream
-from .._utils import warn_deprecated
-
 if TYPE_CHECKING:  # pragma: no cover
     import asyncio
+
     import trio
 
     Event = Union[asyncio.Event, trio.Event]
@@ -166,10 +164,10 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.AsyncByteStream = None,
-        timeout: Dict[str, Optional[float]] = None,
+        timeout: Mapping[str, Optional[float]] = None,
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
         headers = [] if headers is None else headers
-        stream = ByteStream(b"") if stream is None else stream
+        stream = httpcore.PlainByteStream(content=b"") if stream is None else stream
 
         # ASGI scope.
         scheme, host, port, full_path = url
@@ -271,23 +269,8 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         assert status_code is not None
         assert response_headers is not None
 
-        stream = AsyncIteratorStream(aiter_response_body(), close_func=aclose)
+        stream = httpcore.AsyncIteratorByteStream(
+            aiter_response_body(), aclose_func=aclose
+        )
 
         return (b"HTTP/1.1", status_code, b"", response_headers, stream)
-
-
-class ASGIDispatch(ASGITransport):
-    def __init__(
-        self,
-        app: Callable,
-        raise_app_exceptions: bool = True,
-        root_path: str = "",
-        client: Tuple[str, int] = ("127.0.0.1", 123),
-    ) -> None:
-        warn_deprecated("ASGIDispatch is deprecated, please use ASGITransport")
-        super().__init__(
-            app=app,
-            raise_app_exceptions=raise_app_exceptions,
-            root_path=root_path,
-            client=client,
-        )

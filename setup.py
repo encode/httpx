@@ -56,13 +56,15 @@ setup(
     zip_safe=False,
     install_requires=[
         "certifi",
-        "hstspreload",
         "sniffio",
         "chardet==3.*",
         "idna==2.*",
         "rfc3986>=1.3,<2",
-        "httpcore==0.9.*",
+        "httpcore==0.10.*",
     ],
+    extras_require={
+        "http2": "h2==3.*",
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Web Environment",

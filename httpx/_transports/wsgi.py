@@ -4,9 +4,6 @@ import typing
 
 import httpcore
 
-from .._content_streams import ByteStream, IteratorStream
-from .._utils import warn_deprecated
-
 
 def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
     body = iter(body)
@@ -67,7 +64,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: httpcore.SyncByteStream = None,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
+        timeout: typing.Mapping[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes,
         int,
@@ -76,14 +73,14 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         httpcore.SyncByteStream,
     ]:
         headers = [] if headers is None else headers
-        stream = ByteStream(b"") if stream is None else stream
+        stream = httpcore.PlainByteStream(content=b"") if stream is None else stream
 
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
         environ = {
             "wsgi.version": (1, 0),
             "wsgi.url_scheme": scheme.decode("ascii"),
-            "wsgi.input": io.BytesIO(b"".join([chunk for chunk in stream])),
+            "wsgi.input": io.BytesIO(b"".join(stream)),
             "wsgi.errors": io.BytesIO(),
             "wsgi.multithread": True,
             "wsgi.multiprocess": False,
@@ -129,23 +126,6 @@ class WSGITransport(httpcore.SyncHTTPTransport):
             (key.encode("ascii"), value.encode("ascii"))
             for key, value in seen_response_headers
         ]
-        stream = IteratorStream(chunk for chunk in result)
+        stream = httpcore.IteratorByteStream(iterator=result)
 
         return (b"HTTP/1.1", status_code, b"", headers, stream)
-
-
-class WSGIDispatch(WSGITransport):
-    def __init__(
-        self,
-        app: typing.Callable,
-        raise_app_exceptions: bool = True,
-        script_name: str = "",
-        remote_addr: str = "127.0.0.1",
-    ) -> None:
-        warn_deprecated("WSGIDispatch is deprecated, please use WSGITransport")
-        super().__init__(
-            app=app,
-            raise_app_exceptions=raise_app_exceptions,
-            script_name=script_name,
-            remote_addr=remote_addr,
-        )

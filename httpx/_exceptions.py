@@ -1,3 +1,37 @@
+"""
+Our exception hierarchy:
+
+* HTTPError
+  x RequestError
+    + TransportError
+      - TimeoutException
+        · ConnectTimeout
+        · ReadTimeout
+        · WriteTimeout
+        · PoolTimeout
+      - NetworkError
+        · ConnectError
+        · ReadError
+        · WriteError
+        · CloseError
+      - ProtocolError
+        · LocalProtocolError
+        · RemoteProtocolError
+      - ProxyError
+      - UnsupportedProtocol
+    + DecodingError
+    + TooManyRedirects
+    + RequestBodyUnavailable
+  x HTTPStatusError
+* NotRedirectResponse
+* CookieConflict
+* StreamError
+  x StreamConsumed
+  x ResponseNotRead
+  x RequestNotRead
+  x ResponseClosed
+"""
+import contextlib
 import typing
 
 import httpcore
@@ -8,81 +42,224 @@ if typing.TYPE_CHECKING:
 
 class HTTPError(Exception):
     """
-    Base class for all HTTPX exceptions.
+    Base class for `RequestError` and `HTTPStatusError`.
+
+    Useful for `try...except` blocks when issuing a request,
+    and then calling `.raise_for_status()`.
+
+    For example:
+
+    ```
+    try:
+        response = httpx.get("https://www.example.com")
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        print(f"HTTP Exception for {exc.request.url} - {exc.message}")
+    ```
     """
 
-    def __init__(
-        self, *args: typing.Any, request: "Request" = None, response: "Response" = None
-    ) -> None:
-        super().__init__(*args)
-        self._request = request or (response.request if response is not None else None)
-        self.response = response
+    def __init__(self, message: str, *, request: "Request") -> None:
+        super().__init__(message)
+        self.request = request
 
-    @property
-    def request(self) -> "Request":
-        # NOTE: this property exists so that a `Request` is exposed to type
-        # checkers, instead of `Optional[Request]`.
-        assert self._request is not None  # Populated by the client.
-        return self._request
+
+class RequestError(HTTPError):
+    """
+    Base class for all exceptions that may occur when issuing a `.request()`.
+    """
+
+    def __init__(self, message: str, *, request: "Request") -> None:
+        super().__init__(message, request=request)
+
+
+class TransportError(RequestError):
+    """
+    Base class for all exceptions that occur at the level of the Transport API.
+
+    All of these exceptions also have an equivelent mapping in `httpcore`.
+    """
 
 
 # Timeout exceptions...
 
-ConnectTimeout = httpcore.ConnectTimeout
-ReadTimeout = httpcore.ReadTimeout
-WriteTimeout = httpcore.WriteTimeout
-PoolTimeout = httpcore.PoolTimeout
+
+class TimeoutException(TransportError):
+    """
+    The base class for timeout errors.
+
+    An operation has timed out.
+    """
+
+
+class ConnectTimeout(TimeoutException):
+    """
+    Timed out while connecting to the host.
+    """
+
+
+class ReadTimeout(TimeoutException):
+    """
+    Timed out while receiving data from the host.
+    """
+
+
+class WriteTimeout(TimeoutException):
+    """
+    Timed out while sending data to the host.
+    """
+
+
+class PoolTimeout(TimeoutException):
+    """
+    Timed out waiting to acquire a connection from the pool.
+    """
 
 
 # Core networking exceptions...
 
-NetworkError = httpcore.NetworkError
-ReadError = httpcore.ReadError
-WriteError = httpcore.WriteError
-ConnectError = httpcore.ConnectError
-CloseError = httpcore.CloseError
+
+class NetworkError(TransportError):
+    """
+    The base class for network-related errors.
+
+    An error occurred while interacting with the network.
+    """
+
+
+class ReadError(NetworkError):
+    """
+    Failed to receive data from the network.
+    """
+
+
+class WriteError(NetworkError):
+    """
+    Failed to send data through the network.
+    """
+
+
+class ConnectError(NetworkError):
+    """
+    Failed to establish a connection.
+    """
+
+
+class CloseError(NetworkError):
+    """
+    Failed to close a connection.
+    """
 
 
 # Other transport exceptions...
 
-ProxyError = httpcore.ProxyError
-ProtocolError = httpcore.ProtocolError
 
-
-# HTTP exceptions...
-
-
-class DecodingError(HTTPError):
+class ProxyError(TransportError):
     """
-    Decoding of the response failed.
+    An error occurred while establishing a proxy connection.
     """
 
 
-# Redirect exceptions...
-
-
-class RedirectError(HTTPError):
+class UnsupportedProtocol(TransportError):
     """
-    Base class for HTTP redirect errors.
+    Attempted to make a request to an unsupported protocol.
+
+    For example issuing a request to `ftp://www.example.com`.
     """
 
 
-class TooManyRedirects(RedirectError):
+class ProtocolError(TransportError):
+    """
+    The protocol was violated.
+    """
+
+
+class LocalProtocolError(ProtocolError):
+    """
+    A protocol was violated by the client.
+
+    For example if the user instantiated a `Request` instance explicitly,
+    failed to include the mandatory `Host:` header, and then issued it directly
+    using `client.send()`.
+    """
+
+
+class RemoteProtocolError(ProtocolError):
+    """
+    The protocol was violated by the server.
+
+    For exaample, returning malformed HTTP.
+    """
+
+
+# Other request exceptions...
+
+
+class DecodingError(RequestError):
+    """
+    Decoding of the response failed, due to a malformed encoding.
+    """
+
+
+class TooManyRedirects(RequestError):
     """
     Too many redirects.
     """
 
 
-class NotRedirectResponse(RedirectError):
+class RequestBodyUnavailable(RequestError):
+    """
+    Had to send the request again, but the request body was streaming, and is
+    no longer available.
+    """
+
+
+# Client errors
+
+
+class HTTPStatusError(HTTPError):
+    """
+    The response had an error HTTP status of 4xx or 5xx.
+
+    May be raised when calling `response.raise_for_status()`
+    """
+
+    def __init__(
+        self, message: str, *, request: "Request", response: "Response"
+    ) -> None:
+        super().__init__(message, request=request)
+        self.response = response
+
+
+class NotRedirectResponse(Exception):
     """
     Response was not a redirect response.
+
+    May be raised if `response.next()` is called without first
+    properly checking `response.is_redirect`.
     """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
+class CookieConflict(Exception):
+    """
+    Attempted to lookup a cookie by name, but multiple cookies existed.
+
+    Can occur when calling `response.cookies.get(...)`.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
 
 # Stream exceptions...
 
+# These may occur as the result of a programming error, by accessing
+# the request/response stream in an invalid manner.
 
-class StreamError(HTTPError):
+
+class StreamError(Exception):
     """
     The base class for stream exceptions.
 
@@ -90,12 +267,8 @@ class StreamError(HTTPError):
     an invalid way.
     """
 
-
-class RequestBodyUnavailable(StreamError):
-    """
-    Had to send the request again, but the request body was streaming, and is
-    no longer available.
-    """
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
 
 class StreamConsumed(StreamError):
@@ -104,6 +277,13 @@ class StreamConsumed(StreamError):
     been streamed.
     """
 
+    def __init__(self) -> None:
+        message = (
+            "Attempted to read or stream response content, but the content has "
+            "already been streamed."
+        )
+        super().__init__(message)
+
 
 class ResponseNotRead(StreamError):
     """
@@ -111,11 +291,22 @@ class ResponseNotRead(StreamError):
     after a streaming response.
     """
 
+    def __init__(self) -> None:
+        message = (
+            "Attempted to access response content, without having called `read()` "
+            "after a streaming response."
+        )
+        super().__init__(message)
+
 
 class RequestNotRead(StreamError):
     """
     Attempted to access request content, without having called `read()`.
     """
+
+    def __init__(self) -> None:
+        message = "Attempted to access request content, without having called `read()`."
+        super().__init__(message)
 
 
 class ResponseClosed(StreamError):
@@ -124,17 +315,62 @@ class ResponseClosed(StreamError):
     closed.
     """
 
-
-# Other cases...
-
-
-class InvalidURL(HTTPError):
-    """
-    URL was missing a hostname, or was not one of HTTP/HTTPS.
-    """
+    def __init__(self) -> None:
+        message = (
+            "Attempted to read or stream response content, but the request has "
+            "been closed."
+        )
+        super().__init__(message)
 
 
-class CookieConflict(HTTPError):
-    """
-    Attempted to lookup a cookie by name, but multiple cookies existed.
-    """
+# The `InvalidURL` class is no longer required. It was being used to enforce only
+# 'http'/'https' URLs being requested, but is now treated instead at the
+# transport layer using `UnsupportedProtocol()`.`
+
+# We are currently still exposing this class, but it will be removed in 1.0.
+InvalidURL = UnsupportedProtocol
+
+
+@contextlib.contextmanager
+def map_exceptions(
+    mapping: typing.Mapping[typing.Type[Exception], typing.Type[Exception]],
+    **kwargs: typing.Any,
+) -> typing.Iterator[None]:
+    try:
+        yield
+    except Exception as exc:
+        mapped_exc = None
+
+        for from_exc, to_exc in mapping.items():
+            if not isinstance(exc, from_exc):
+                continue
+            # We want to map to the most specific exception we can find.
+            # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to
+            # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.
+            if mapped_exc is None or issubclass(to_exc, mapped_exc):
+                mapped_exc = to_exc
+
+        if mapped_exc is None:
+            raise
+
+        message = str(exc)
+        raise mapped_exc(message, **kwargs) from None  # type: ignore
+
+
+HTTPCORE_EXC_MAP = {
+    httpcore.TimeoutException: TimeoutException,
+    httpcore.ConnectTimeout: ConnectTimeout,
+    httpcore.ReadTimeout: ReadTimeout,
+    httpcore.WriteTimeout: WriteTimeout,
+    httpcore.PoolTimeout: PoolTimeout,
+    httpcore.NetworkError: NetworkError,
+    httpcore.ConnectError: ConnectError,
+    httpcore.ReadError: ReadError,
+    httpcore.WriteError: WriteError,
+    httpcore.CloseError: CloseError,
+    httpcore.ProxyError: ProxyError,
+    httpcore.UnsupportedProtocol: UnsupportedProtocol,
+    httpcore.ProtocolError: ProtocolError,
+    httpcore.LocalProtocolError: LocalProtocolError,
+    httpcore.RemoteProtocolError: RemoteProtocolError,
+}

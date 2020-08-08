@@ -1,4 +1,4 @@
--e .
+-e .[http2]
 
 # Optional
 brotlipy==0.7.*
@@ -19,9 +19,9 @@ cryptography
 flake8
 flake8-bugbear
 flake8-pie
-isort
+isort==5.*
 mypy
-pytest
+pytest==5.*
 pytest-asyncio
 pytest-trio
 pytest-cov
@@ -31,4 +31,4 @@ trustme
 uvicorn
 seed-isort-config
 
-attrs>=19.2  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665
+attrs>=19.3.0  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665

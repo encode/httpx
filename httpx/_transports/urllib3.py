@@ -1,12 +1,12 @@
 import socket
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Iterator, List, Mapping, Optional, Tuple
 
 import httpcore
 
-from .._config import Proxy, SSLConfig
+from .._config import create_ssl_context
 from .._content_streams import ByteStream, IteratorStream
+from .._exceptions import NetworkError, map_exceptions
 from .._types import CertTypes, VerifyTypes
-from .._utils import as_network_error
 
 try:
     import urllib3
@@ -19,7 +19,6 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
     def __init__(
         self,
         *,
-        proxy: Proxy = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         trust_env: bool = None,
@@ -31,12 +30,10 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
             urllib3 is not None
         ), "urllib3 must be installed in order to use URLLib3Transport"
 
-        ssl_config = SSLConfig(
-            verify=verify, cert=cert, trust_env=trust_env, http2=False
-        )
-
         self.pool = urllib3.PoolManager(
-            ssl_context=ssl_config.ssl_context,
+            ssl_context=create_ssl_context(
+                verify=verify, cert=cert, trust_env=trust_env, http2=False
+            ),
             num_pools=pool_connections,
             maxsize=pool_maxsize,
             block=pool_block,
@@ -48,7 +45,7 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.SyncByteStream = None,
-        timeout: Dict[str, Optional[float]] = None,
+        timeout: Mapping[str, Optional[float]] = None,
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.SyncByteStream]:
         headers = [] if headers is None else headers
         stream = ByteStream(b"") if stream is None else stream
@@ -84,16 +81,19 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
                 path.decode("ascii"),
             )
 
-        with as_network_error(MaxRetryError, SSLError, socket.error):
+        with map_exceptions(
+            {
+                MaxRetryError: NetworkError,
+                SSLError: NetworkError,
+                socket.error: NetworkError,
+            }
+        ):
             conn = self.pool.urlopen(
                 method=method.decode(),
                 url=url_str,
-                headers=dict(
-                    [
-                        (key.decode("ascii"), value.decode("ascii"))
-                        for key, value in headers
-                    ]
-                ),
+                headers={
+                    key.decode("ascii"): value.decode("ascii") for key, value in headers
+                },
                 body=body,
                 redirect=False,
                 assert_same_host=False,
@@ -105,7 +105,7 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
             )
 
         def response_bytes() -> Iterator[bytes]:
-            with as_network_error(socket.error):
+            with map_exceptions({socket.error: NetworkError}):
                 for chunk in conn.stream(4096, decode_content=False):
                     yield chunk
 
@@ -137,14 +137,12 @@ class URLLib3ProxyTransport(URLLib3Transport):
             urllib3 is not None
         ), "urllib3 must be installed in order to use URLLib3ProxyTransport"
 
-        ssl_config = SSLConfig(
-            verify=verify, cert=cert, trust_env=trust_env, http2=False
-        )
-
         self.pool = urllib3.ProxyManager(
             proxy_url=proxy_url,
             proxy_headers=proxy_headers,
-            ssl_context=ssl_config.ssl_context,
+            ssl_context=create_ssl_context(
+                verify=verify, cert=cert, trust_env=trust_env, http2=False
+            ),
             num_pools=pool_connections,
             maxsize=pool_maxsize,
             block=pool_block,

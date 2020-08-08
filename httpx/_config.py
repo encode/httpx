@@ -1,6 +1,7 @@
 import os
 import ssl
 import typing
+import warnings
 from base64 import b64encode
 from pathlib import Path
 
@@ -40,6 +41,17 @@ class UnsetType:
 UNSET = UnsetType()
 
 
+def create_ssl_context(
+    cert: CertTypes = None,
+    verify: VerifyTypes = True,
+    trust_env: bool = None,
+    http2: bool = False,
+) -> ssl.SSLContext:
+    return SSLConfig(
+        cert=cert, verify=verify, trust_env=trust_env, http2=http2
+    ).ssl_context
+
+
 class SSLConfig:
     """
     SSL Configuration.
@@ -60,17 +72,6 @@ class SSLConfig:
         self.trust_env = trust_env
         self.http2 = http2
         self.ssl_context = self.load_ssl_context()
-
-    def __eq__(self, other: typing.Any) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self.cert == other.cert
-            and self.verify == other.verify
-        )
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return f"{class_name}(cert={self.cert}, verify={self.verify})"
 
     def load_ssl_context(self) -> ssl.SSLContext:
         logger.trace(
@@ -102,7 +103,7 @@ class SSLConfig:
         if self.trust_env and self.verify is True:
             ca_bundle = get_ca_bundle_from_env()
             if ca_bundle is not None:
-                self.verify = ca_bundle  # type: ignore
+                self.verify = ca_bundle
 
         if isinstance(self.verify, ssl.SSLContext):
             # Allow passing in our own SSLContext object that's pre-configured.
@@ -195,137 +196,180 @@ class Timeout:
 
     **Usage**:
 
-    Timeout()                           # No timeout.
-    Timeout(5.0)                        # 5s timeout on all operations.
-    Timeout(connect_timeout=5.0)        # 5s timeout on connect, no other timeouts.
-    Timeout(5.0, connect_timeout=10.0)  # 10s timeout on connect. 5s timeout elsewhere.
-    Timeout(5.0, pool_timeout=None)     # No timeout on acquiring connection from pool.
-                                        # 5s timeout elsewhere.
+    Timeout(None)               # No timeouts.
+    Timeout(5.0)                # 5s timeout on all operations.
+    Timeout(None, connect=5.0)  # 5s timeout on connect, no other timeouts.
+    Timeout(5.0, connect=10.0)  # 10s timeout on connect. 5s timeout elsewhere.
+    Timeout(5.0, pool=None)     # No timeout on acquiring connection from pool.
+                                # 5s timeout elsewhere.
     """
 
     def __init__(
         self,
-        timeout: TimeoutTypes = None,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         *,
+        connect: typing.Union[None, float, UnsetType] = UNSET,
+        read: typing.Union[None, float, UnsetType] = UNSET,
+        write: typing.Union[None, float, UnsetType] = UNSET,
+        pool: typing.Union[None, float, UnsetType] = UNSET,
+        # Deprecated aliases.
         connect_timeout: typing.Union[None, float, UnsetType] = UNSET,
         read_timeout: typing.Union[None, float, UnsetType] = UNSET,
         write_timeout: typing.Union[None, float, UnsetType] = UNSET,
         pool_timeout: typing.Union[None, float, UnsetType] = UNSET,
     ):
+        if not isinstance(connect_timeout, UnsetType):
+            warn_deprecated(
+                "httpx.Timeout(..., connect_timeout=...) is deprecated and will "
+                "raise errors in a future version. "
+                "Use httpx.Timeout(..., connect=...) instead."
+            )
+            connect = connect_timeout
+
+        if not isinstance(read_timeout, UnsetType):
+            warn_deprecated(
+                "httpx.Timeout(..., read_timeout=...) is deprecated and will "
+                "raise errors in a future version. "
+                "Use httpx.Timeout(..., write=...) instead."
+            )
+            read = read_timeout
+
+        if not isinstance(write_timeout, UnsetType):
+            warn_deprecated(
+                "httpx.Timeout(..., write_timeout=...) is deprecated and will "
+                "raise errors in a future version. "
+                "Use httpx.Timeout(..., write=...) instead."
+            )
+            write = write_timeout
+
+        if not isinstance(pool_timeout, UnsetType):
+            warn_deprecated(
+                "httpx.Timeout(..., pool_timeout=...) is deprecated and will "
+                "raise errors in a future version. "
+                "Use httpx.Timeout(..., pool=...) instead."
+            )
+            pool = pool_timeout
+
         if isinstance(timeout, Timeout):
             # Passed as a single explicit Timeout.
-            assert connect_timeout is UNSET
-            assert read_timeout is UNSET
-            assert write_timeout is UNSET
-            assert pool_timeout is UNSET
-            self.connect_timeout = (
-                timeout.connect_timeout
-            )  # type: typing.Optional[float]
-            self.read_timeout = timeout.read_timeout  # type: typing.Optional[float]
-            self.write_timeout = timeout.write_timeout  # type: typing.Optional[float]
-            self.pool_timeout = timeout.pool_timeout  # type: typing.Optional[float]
+            assert connect is UNSET
+            assert read is UNSET
+            assert write is UNSET
+            assert pool is UNSET
+            self.connect = timeout.connect  # type: typing.Optional[float]
+            self.read = timeout.read  # type: typing.Optional[float]
+            self.write = timeout.write  # type: typing.Optional[float]
+            self.pool = timeout.pool  # type: typing.Optional[float]
         elif isinstance(timeout, tuple):
             # Passed as a tuple.
-            self.connect_timeout = timeout[0]
-            self.read_timeout = timeout[1]
-            self.write_timeout = None if len(timeout) < 3 else timeout[2]
-            self.pool_timeout = None if len(timeout) < 4 else timeout[3]
+            self.connect = timeout[0]
+            self.read = timeout[1]
+            self.write = None if len(timeout) < 3 else timeout[2]
+            self.pool = None if len(timeout) < 4 else timeout[3]
+        elif not (
+            isinstance(connect, UnsetType)
+            or isinstance(read, UnsetType)
+            or isinstance(write, UnsetType)
+            or isinstance(pool, UnsetType)
+        ):
+            self.connect = connect
+            self.read = read
+            self.write = write
+            self.pool = pool
         else:
-            self.connect_timeout = (
-                timeout if isinstance(connect_timeout, UnsetType) else connect_timeout
-            )
-            self.read_timeout = (
-                timeout if isinstance(read_timeout, UnsetType) else read_timeout
-            )
-            self.write_timeout = (
-                timeout if isinstance(write_timeout, UnsetType) else write_timeout
-            )
-            self.pool_timeout = (
-                timeout if isinstance(pool_timeout, UnsetType) else pool_timeout
-            )
+            if isinstance(timeout, UnsetType):
+                warnings.warn(
+                    "httpx.Timeout must either include a default, or set all "
+                    "four parameters explicitly. Omitting the default argument "
+                    "is deprecated and will raise errors in a future version.",
+                    DeprecationWarning,
+                )
+                timeout = None
+            self.connect = timeout if isinstance(connect, UnsetType) else connect
+            self.read = timeout if isinstance(read, UnsetType) else read
+            self.write = timeout if isinstance(write, UnsetType) else write
+            self.pool = timeout if isinstance(pool, UnsetType) else pool
 
     def as_dict(self) -> typing.Dict[str, typing.Optional[float]]:
         return {
-            "connect": self.connect_timeout,
-            "read": self.read_timeout,
-            "write": self.write_timeout,
-            "pool": self.pool_timeout,
+            "connect": self.connect,
+            "read": self.read,
+            "write": self.write,
+            "pool": self.pool,
         }
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self.connect_timeout == other.connect_timeout
-            and self.read_timeout == other.read_timeout
-            and self.write_timeout == other.write_timeout
-            and self.pool_timeout == other.pool_timeout
+            and self.connect == other.connect
+            and self.read == other.read
+            and self.write == other.write
+            and self.pool == other.pool
         )
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        if (
-            len(
-                {
-                    self.connect_timeout,
-                    self.read_timeout,
-                    self.write_timeout,
-                    self.pool_timeout,
-                }
-            )
-            == 1
-        ):
-            return f"{class_name}(timeout={self.connect_timeout})"
+        if len({self.connect, self.read, self.write, self.pool}) == 1:
+            return f"{class_name}(timeout={self.connect})"
         return (
-            f"{class_name}(connect_timeout={self.connect_timeout}, "
-            f"read_timeout={self.read_timeout}, write_timeout={self.write_timeout}, "
-            f"pool_timeout={self.pool_timeout})"
+            f"{class_name}(connect={self.connect}, "
+            f"read={self.read}, write={self.write}, pool={self.pool})"
         )
 
 
-class PoolLimits:
+class Limits:
     """
-    Limits on the number of connections in a connection pool.
+    Configuration for limits to various client behaviors.
 
     **Parameters:**
 
-    * **max_keepalive** - Allow the connection pool to maintain keep-alive connections
-                       below this point.
     * **max_connections** - The maximum number of concurrent connections that may be
-                       established.
+            established.
+    * **max_keepalive_connections** - Allow the connection pool to maintain
+            keep-alive connections below this point. Should be less than or equal
+            to `max_connections`.
     """
 
     def __init__(
         self,
         *,
-        max_keepalive: int = None,
         max_connections: int = None,
-        soft_limit: int = None,
-        hard_limit: int = None,
+        max_keepalive_connections: int = None,
+        # Deprecated parameter naming, in favour of more explicit version:
+        max_keepalive: int = None,
     ):
-        self.max_keepalive = max_keepalive
-        self.max_connections = max_connections
-        if soft_limit is not None:  # pragma: nocover
-            self.max_keepalive = soft_limit
-            warn_deprecated("'soft_limit' is deprecated. Use 'max_keepalive' instead.",)
-        if hard_limit is not None:  # pragma: nocover
-            self.max_connections = hard_limit
-            warn_deprecated(
-                "'hard_limit' is deprecated. Use 'max_connections' instead.",
+        if max_keepalive is not None:
+            warnings.warn(
+                "'max_keepalive' is deprecated. Use 'max_keepalive_connections'.",
+                DeprecationWarning,
             )
+            max_keepalive_connections = max_keepalive
+
+        self.max_connections = max_connections
+        self.max_keepalive_connections = max_keepalive_connections
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self.max_keepalive == other.max_keepalive
             and self.max_connections == other.max_connections
+            and self.max_keepalive_connections == other.max_keepalive_connections
         )
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return (
-            f"{class_name}(max_keepalive={self.max_keepalive}, "
-            f"max_connections={self.max_connections})"
+            f"{class_name}(max_connections={self.max_connections}, "
+            f"max_keepalive_connections={self.max_keepalive_connections})"
         )
+
+
+class PoolLimits(Limits):
+    def __init__(self, **kwargs: typing.Any) -> None:
+        warn_deprecated(
+            "httpx.PoolLimits(...) is deprecated and will raise errors in the future. "
+            "Use httpx.Limits(...) instead."
+        )
+        super().__init__(**kwargs)
 
 
 class Proxy:
@@ -343,7 +387,7 @@ class Proxy:
         if url.username or url.password:
             headers.setdefault(
                 "Proxy-Authorization",
-                self.build_auth_header(url.username, url.password),
+                self._build_auth_header(url.username, url.password),
             )
             # Remove userinfo from the URL authority, e.g.:
             # 'username:password@proxy_host:proxy_port' -> 'proxy_host:proxy_port'
@@ -353,9 +397,9 @@ class Proxy:
         self.headers = headers
         self.mode = mode
 
-    def build_auth_header(self, username: str, password: str) -> str:
+    def _build_auth_header(self, username: str, password: str) -> str:
         userpass = (username.encode("utf-8"), password.encode("utf-8"))
-        token = b64encode(b":".join(userpass)).decode().strip()
+        token = b64encode(b":".join(userpass)).decode()
         return f"Basic {token}"
 
     def __repr__(self) -> str:
@@ -367,5 +411,5 @@ class Proxy:
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
-DEFAULT_POOL_LIMITS = PoolLimits(max_keepalive=10, max_connections=100)
+DEFAULT_LIMITS = Limits(max_connections=100, max_keepalive_connections=20)
 DEFAULT_MAX_REDIRECTS = 20
