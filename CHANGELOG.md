@@ -14,7 +14,7 @@ The 0.14 release includes a range of improvements to the public API, intended on
 
 When upgrading you should be aware of the following public API changes. Note that deprecated usages will currently continue to function, but will issue warnings.
 
-* You should now use `httpx.codes` consistently in favour of `httpx.StatusCodes`.
+* You should now use `httpx.codes` consistently instead of `httpx.StatusCodes`.
 * Usage of `httpx.Timeout()` should now always include an explicit default. Eg. `httpx.Timeout(None, pool=5.0)`.
 * When using `httpx.Timeout()`, we now have more concisely named keyword arguments. Eg. `read=5.0`, instead of `read_timeout=5.0`.
 * Use `httpx.Limits()` instead of `httpx.PoolLimits()`, and `limits=...` instead of `pool_limits=...`.
