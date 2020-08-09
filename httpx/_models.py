@@ -1196,6 +1196,6 @@ class Cookies(MutableMapping):
 
         def info(self) -> email.message.Message:
             info = email.message.Message()
-            for key, value in self.response.headers.items():
+            for key, value in self.response.headers.multi_items():
                 info[key] = value
             return info
