@@ -113,5 +113,5 @@ __all__ = [
 
 _locals = locals()
 for name in __all__:
-    if not name.startswith('__'):
-        setattr(_locals[name], '__module__', 'httpx')
+    if not name.startswith("__"):
+        setattr(_locals[name], "__module__", "httpx")
