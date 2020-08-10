@@ -114,4 +114,4 @@ __all__ = [
 _locals = locals()
 for name in __all__:
     if not name.startswith("__"):
-        setattr(_locals[name], "__module__", "httpx"). # noqa
+        setattr(_locals[name], "__module__", "httpx")  # noqa
