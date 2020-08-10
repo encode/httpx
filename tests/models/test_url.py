@@ -185,3 +185,15 @@ def test_url_copywith_for_authority():
     for k, v in copy_with_kwargs.items():
         assert getattr(new, k) == v
     assert str(new) == "https://username:password@example.net:444"
+
+
+def test_url_copywith_for_userinfo():
+    copy_with_kwargs = {
+        "username": "tom@example.org",
+        "password": "abc123@ %",
+    }
+    url = URL("https://example.org")
+    new = url.copy_with(**copy_with_kwargs)
+    assert str(new) == "https://tom%40example.org:abc123%40%20%25@example.org"
+    assert new.username == "tom@example.org"
+    assert new.password == "abc123@ %"

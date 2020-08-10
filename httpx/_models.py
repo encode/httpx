@@ -7,7 +7,7 @@ import urllib.request
 import warnings
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
-from urllib.parse import parse_qsl, urlencode
+from urllib.parse import parse_qsl, quote, unquote, urlencode
 
 import chardet
 import rfc3986
@@ -54,6 +54,10 @@ from ._utils import (
 )
 
 
+def _quote(component: typing.Optional[str]) -> typing.Optional[str]:
+    return None if component is None else quote(component)
+
+
 class URL:
     def __init__(self, url: URLTypes = "", params: QueryParamTypes = None) -> None:
         if isinstance(url, str):
@@ -94,12 +98,12 @@ class URL:
     @property
     def username(self) -> str:
         userinfo = self._uri_reference.userinfo or ""
-        return userinfo.partition(":")[0]
+        return unquote(userinfo.partition(":")[0])
 
     @property
     def password(self) -> str:
         userinfo = self._uri_reference.userinfo or ""
-        return userinfo.partition(":")[2]
+        return unquote(userinfo.partition(":")[2])
 
     @property
     def host(self) -> str:
@@ -169,8 +173,8 @@ class URL:
         ):
             host = kwargs.pop("host", self.host)
             port = kwargs.pop("port", self.port)
-            username = kwargs.pop("username", self.username)
-            password = kwargs.pop("password", self.password)
+            username = _quote(kwargs.pop("username", self.username))
+            password = _quote(kwargs.pop("password", self.password))
 
             authority = host
             if port is not None:
