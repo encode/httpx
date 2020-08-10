@@ -20,6 +20,7 @@ from ._decoders import (
     IdentityDecoder,
     LineDecoder,
     MultiDecoder,
+    RequestDecoder,
     TextDecoder,
 )
 from ._exceptions import (
@@ -796,23 +797,25 @@ class Response:
         content, depending on the Content-Encoding used in the response.
         """
         if not hasattr(self, "_decoder"):
-            decoders: typing.List[Decoder] = []
+            decoders: typing.List[RequestDecoder] = []
             values = self.headers.get_list("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
                 try:
                     decoder_cls = SUPPORTED_DECODERS[value]
-                    decoders.append(decoder_cls(request=self.request))
+                    decoders.append(decoder_cls(request=self.request))  # type: ignore
                 except KeyError:
                     continue
 
+            decoder: Decoder
             if len(decoders) == 1:
-                self._decoder = decoders[0]
+                decoder = decoders[0]
             elif len(decoders) > 1:
-                self._decoder = MultiDecoder(children=decoders)
+                decoder = MultiDecoder(children=decoders)
             else:
-                self._decoder = IdentityDecoder(request=self.request)
+                decoder = IdentityDecoder(request=self.request)
 
+            self._decoder: Decoder = decoder
         return self._decoder
 
     @property

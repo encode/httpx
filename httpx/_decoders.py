@@ -3,6 +3,7 @@ Handlers for Content-Encoding.
 
 See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 """
+import abc
 import codecs
 import typing
 import zlib
@@ -21,17 +22,24 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 
 class Decoder:
+    decode: typing.Callable
+    flush: typing.Callable
+
+
+class RequestDecoder(Decoder, abc.ABC):
     def __init__(self, request: "Request") -> None:
         self.request = request
 
+    @abc.abstractmethod
     def decode(self, data: bytes) -> bytes:
-        raise NotImplementedError()  # pragma: nocover
+        pass  # pragma: no cover
 
+    @abc.abstractmethod
     def flush(self) -> bytes:
-        raise NotImplementedError()  # pragma: nocover
+        pass  # pragma: no cover
 
 
-class IdentityDecoder(Decoder):
+class IdentityDecoder(RequestDecoder):
     """
     Handle unencoded data.
     """
@@ -43,7 +51,7 @@ class IdentityDecoder(Decoder):
         return b""
 
 
-class DeflateDecoder(Decoder):
+class DeflateDecoder(RequestDecoder):
     """
     Handle 'deflate' decoding.
 
@@ -51,7 +59,7 @@ class DeflateDecoder(Decoder):
     """
 
     def __init__(self, request: "Request") -> None:
-        self.request = request
+        super().__init__(request)
         self.first_attempt = True
         self.decompressor = zlib.decompressobj()
 
@@ -73,7 +81,7 @@ class DeflateDecoder(Decoder):
             raise DecodingError(message=str(exc), request=self.request)
 
 
-class GZipDecoder(Decoder):
+class GZipDecoder(RequestDecoder):
     """
     Handle 'gzip' decoding.
 
@@ -81,7 +89,7 @@ class GZipDecoder(Decoder):
     """
 
     def __init__(self, request: "Request") -> None:
-        self.request = request
+        super().__init__(request)
         self.decompressor = zlib.decompressobj(zlib.MAX_WBITS | 16)
 
     def decode(self, data: bytes) -> bytes:
@@ -97,7 +105,7 @@ class GZipDecoder(Decoder):
             raise DecodingError(message=str(exc), request=self.request)
 
 
-class BrotliDecoder(Decoder):
+class BrotliDecoder(RequestDecoder):
     """
     Handle 'brotli' decoding.
 
@@ -111,7 +119,7 @@ class BrotliDecoder(Decoder):
         assert (
             brotli is not None
         ), "The 'brotlipy' or 'brotli' library must be installed to use 'BrotliDecoder'"
-        self.request = request
+        super().__init__(request)
         self.decompressor = brotli.Decompressor()
         self.seen_data = False
         if hasattr(self.decompressor, "decompress"):
@@ -144,7 +152,7 @@ class MultiDecoder(Decoder):
     Handle the case where multiple encodings have been applied.
     """
 
-    def __init__(self, children: typing.Sequence[Decoder]) -> None:
+    def __init__(self, children: typing.Sequence[RequestDecoder]) -> None:
         """
         'children' should be a sequence of decoders in the order in which
         each was applied.
@@ -164,7 +172,7 @@ class MultiDecoder(Decoder):
         return data
 
 
-class TextDecoder:
+class TextDecoder(Decoder):
     """
     Handles incrementally decoding bytes into text
     """
@@ -230,7 +238,7 @@ class TextDecoder:
         return result
 
 
-class LineDecoder:
+class LineDecoder(Decoder):
     """
     Handles incrementally reading lines from text.
 
