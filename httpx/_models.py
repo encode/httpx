@@ -59,7 +59,7 @@ class URL:
         if isinstance(url, str):
             self._uri_reference = rfc3986.iri_reference(url).encode()
             if self.is_absolute_url:
-                #  We don't want to normalize relative URLs, since doing so
+                # We don't want to normalize relative URLs, since doing so
                 # removes any leading `../` portion.
                 self._uri_reference = self._uri_reference.normalize()
         else:
