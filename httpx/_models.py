@@ -57,13 +57,13 @@ from ._utils import (
 class URL:
     def __init__(self, url: URLTypes = "", params: QueryParamTypes = None) -> None:
         if isinstance(url, str):
-            self._uri_reference = rfc3986.api.iri_reference(url).encode()
+            self._uri_reference = rfc3986.iri_reference(url).encode()
+            if self.is_absolute_url:
+                # We don't want to normalize relative URLs, since doing so
+                # removes any leading `../` portion.
+                self._uri_reference = self._uri_reference.normalize()
         else:
             self._uri_reference = url._uri_reference
-
-        # Normalize scheme and domain name.
-        if self.is_absolute_url:
-            self._uri_reference = self._uri_reference.normalize()
 
         # Add any query parameters, merging with any in the URL if needed.
         if params:
