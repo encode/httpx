@@ -82,13 +82,15 @@ class BaseClient:
     def trust_env(self) -> bool:
         return self._trust_env
 
-    def _enforce_trailing_slash(self, url: URL) -> URL:
+    @staticmethod
+    def _enforce_trailing_slash(url: URL) -> URL:
         if url.path.endswith("/"):
             return url
         return url.copy_with(path=url.path + "/")
 
+    @staticmethod
     def _get_proxy_map(
-        self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool,
+        proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool,
     ) -> typing.Dict[str, typing.Optional[Proxy]]:
         if proxies is None:
             if allow_env_proxies:
@@ -311,7 +313,8 @@ class BaseClient:
             method=method, url=url, headers=headers, cookies=cookies, stream=stream
         )
 
-    def _redirect_method(self, request: Request, response: Response) -> str:
+    @staticmethod
+    def _redirect_method(request: Request, response: Response) -> str:
         """
         When being redirected we may want to change the method of the request
         based on certain specs or browser behavior.
@@ -334,7 +337,8 @@ class BaseClient:
 
         return method
 
-    def _redirect_url(self, request: Request, response: Response) -> URL:
+    @staticmethod
+    def _redirect_url(request: Request, response: Response) -> URL:
         """
         Return the URL for the redirect to follow.
         """
@@ -358,7 +362,8 @@ class BaseClient:
 
         return url
 
-    def _redirect_headers(self, request: Request, url: URL, method: str) -> Headers:
+    @staticmethod
+    def _redirect_headers(request: Request, url: URL, method: str) -> Headers:
         """
         Return the headers that should be used for the redirect request.
         """
@@ -382,8 +387,9 @@ class BaseClient:
 
         return headers
 
+    @staticmethod
     def _redirect_stream(
-        self, request: Request, method: str
+        request: Request, method: str
     ) -> typing.Optional[ContentStream]:
         """
         Return the body that should be used for the redirect request.
@@ -522,8 +528,8 @@ class Client(BaseClient):
         }
         self._proxies = dict(sorted(self._proxies.items()))
 
+    @staticmethod
     def _init_transport(
-        self,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
@@ -548,8 +554,8 @@ class Client(BaseClient):
             http2=http2,
         )
 
+    @staticmethod
     def _init_proxy_transport(
-        self,
         proxy: Proxy,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
@@ -1056,8 +1062,8 @@ class AsyncClient(BaseClient):
         }
         self._proxies = dict(sorted(self._proxies.items()))
 
+    @staticmethod
     def _init_transport(
-        self,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
@@ -1082,8 +1088,8 @@ class AsyncClient(BaseClient):
             http2=http2,
         )
 
+    @staticmethod
     def _init_proxy_transport(
-        self,
         proxy: Proxy,
         verify: VerifyTypes = True,
         cert: CertTypes = None,

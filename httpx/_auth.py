@@ -75,8 +75,9 @@ class BasicAuth(Auth):
         request.headers["Authorization"] = self._auth_header
         yield request
 
+    @staticmethod
     def _build_auth_header(
-        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
+        username: typing.Union[str, bytes], password: typing.Union[str, bytes]
     ) -> str:
         userpass = b":".join((to_bytes(username), to_bytes(password)))
         token = b64encode(userpass).decode()
@@ -120,8 +121,9 @@ class DigestAuth(Auth):
         request.headers["Authorization"] = self._build_auth_header(request, challenge)
         yield request
 
+    @staticmethod
     def _parse_challenge(
-        self, request: Request, response: Response
+        request: Request, response: Response
     ) -> "_DigestAuthChallenge":
         """
         Returns a challenge from a Digest WWW-Authenticate header.
@@ -200,7 +202,8 @@ class DigestAuth(Auth):
 
         return "Digest " + self._get_header_value(format_args)
 
-    def _get_client_nonce(self, nonce_count: int, nonce: bytes) -> bytes:
+    @staticmethod
+    def _get_client_nonce(nonce_count: int, nonce: bytes) -> bytes:
         s = str(nonce_count).encode()
         s += nonce
         s += time.ctime().encode()
@@ -208,7 +211,8 @@ class DigestAuth(Auth):
 
         return hashlib.sha1(s).hexdigest()[:16].encode()
 
-    def _get_header_value(self, header_fields: typing.Dict[str, bytes]) -> str:
+    @staticmethod
+    def _get_header_value(header_fields: typing.Dict[str, bytes]) -> str:
         NON_QUOTED_FIELDS = ("algorithm", "qop", "nc")
         QUOTED_TEMPLATE = '{}="{}"'
         NON_QUOTED_TEMPLATE = "{}={}"

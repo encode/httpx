@@ -215,7 +215,8 @@ class MultipartStream(ContentStream):
             data = self.render_data()
             return len(headers) + len(data)
 
-        def can_replay(self) -> bool:
+        @staticmethod
+        def can_replay() -> bool:
             return True
 
         def render(self) -> typing.Iterator[bytes]:
