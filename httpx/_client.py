@@ -284,8 +284,10 @@ class BaseClient:
             return merged_queryparams
         return params
 
-    def _build_auth(self, request: Request, auth: AuthTypes = None) -> Auth:
-        auth = self.auth if auth is None else auth
+    def _build_auth(
+        self, request: Request, auth: typing.Union[AuthTypes, UnsetType] = UNSET
+    ) -> Auth:
+        auth = self.auth if isinstance(auth, UnsetType) else auth
 
         if auth is not None:
             if isinstance(auth, tuple):
@@ -607,7 +609,7 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -646,7 +648,7 @@ class Client(BaseClient):
         request: Request,
         *,
         stream: bool = False,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -792,7 +794,7 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -819,7 +821,7 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -846,7 +848,7 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -876,7 +878,7 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -909,7 +911,7 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -942,7 +944,7 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -972,7 +974,7 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -1208,7 +1210,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -1248,7 +1250,7 @@ class AsyncClient(BaseClient):
         request: Request,
         *,
         stream: bool = False,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -1396,7 +1398,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -1423,7 +1425,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -1450,7 +1452,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -1480,7 +1482,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -1513,7 +1515,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -1546,7 +1548,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
@@ -1576,7 +1578,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
