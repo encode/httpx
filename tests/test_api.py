@@ -69,5 +69,5 @@ def test_stream(server):
 
 
 def test_get_invalid_url():
-    with pytest.raises(httpx.InvalidURL):
+    with pytest.raises(httpx.UnsupportedProtocol):
         httpx.get("invalid://example.org")

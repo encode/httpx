@@ -23,6 +23,7 @@ Our exception hierarchy:
     + TooManyRedirects
     + RequestBodyUnavailable
   x HTTPStatusError
+* InvalidURL
 * NotRedirectResponse
 * CookieConflict
 * StreamError
@@ -230,6 +231,15 @@ class HTTPStatusError(HTTPError):
         self.response = response
 
 
+class InvalidURL(Exception):
+    """
+    URL is improperly formed or cannot be parsed.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
 class NotRedirectResponse(Exception):
     """
     Response was not a redirect response.
@@ -321,14 +331,6 @@ class ResponseClosed(StreamError):
             "been closed."
         )
         super().__init__(message)
-
-
-# The `InvalidURL` class is no longer required. It was being used to enforce only
-# 'http'/'https' URLs being requested, but is now treated instead at the
-# transport layer using `UnsupportedProtocol()`.`
-
-# We are currently still exposing this class, but it will be removed in 1.0.
-InvalidURL = UnsupportedProtocol
 
 
 @contextlib.contextmanager
