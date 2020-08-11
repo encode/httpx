@@ -613,12 +613,12 @@ MIME header field.
 
 !!! tip
     It is safe to upload large files this way. File uploads are streaming by default, meaning that only one chunk will be loaded into memory at a time.
- 
+
  Non-file data fields can be included in the multipart form using by passing them to `data=...`.
- 
+
 You can also send multiple files in one go with a multiple file field form.
 To do that, pass a list of `(field, <file>)` items instead of a dictionary, allowing you to pass multiple items with the same `field`.
-For instance this request sends 2 files, `foo.png` and `bar.png` in one request on the `images` form field: 
+For instance this request sends 2 files, `foo.png` and `bar.png` in one request on the `images` form field:
 
 ```python
 >>> files = [('images', ('foo.png', open('foo.png', 'rb'), 'image/png')),
@@ -757,8 +757,8 @@ We also include a helper function for creating properly configured `SSLContext` 
 >>> context = httpx.create_ssl_context()
 ```
 
-The `create_ssl_context` function accepts the same set of SSL configuration arguments 
-(`trust_env`, `verify`, `cert` and `http2` arguments) 
+The `create_ssl_context` function accepts the same set of SSL configuration arguments
+(`trust_env`, `verify`, `cert` and `http2` arguments)
 as `httpx.Client` or `httpx.AsyncClient`
 
 ```python
@@ -809,13 +809,30 @@ HTTPX's `Client` also accepts a `transport` argument. This argument allows you
 to provide a custom Transport object that will be used to perform the actual
 sending of the requests.
 
-A transport instance must implement the Transport API defined by
-[`httpcore`](https://www.encode.io/httpcore/api/). You
-should either subclass `httpcore.AsyncHTTPTransport` to implement a transport to
-use with `AsyncClient`, or subclass `httpcore.SyncHTTPTransport` to implement a
-transport to use with `Client`.
+For some advanced configuration you might need to instantiate a transport
+class directly, and pass it to the client instance. The `httpcore` package
+provides a `local_address` configuration that is only available via this
+low-level API.
 
-For example, HTTPX ships with a transport that uses the excellent
+```python
+>>> import httpx, httpcore
+>>> ssl_context = httpx.create_ssl_context()
+>>> transport = httpcore.SyncConnectionPool(
+...     ssl_context=ssl_context,
+...     max_connections=100,
+...     max_keepalive_connections=20,
+...     keepalive_expiry=5.0,
+...     local_address="0.0.0.0"
+... )  # Use the standard HTTPX defaults, but with an IPv4 only 'local_address'.
+>>> client = httpx.Client(transport=transport)
+```
+
+Unlike the `httpx.Client()`, the lower-level `httpcore` transport instances
+do not include any default values for configuring aspects such as the
+connection pooling details, so you'll need to provide more explicit
+configuration when using this API.
+
+HTTPX also currently ships with a transport that uses the excellent
 [`urllib3` library](https://urllib3.readthedocs.io/en/latest/), which can be
 used with the sync `Client`...
 
@@ -828,24 +845,28 @@ used with the sync `Client`...
 
 Note that you'll need to install the `urllib3` package to use `URLLib3Transport`.
 
+A transport instance must implement the Transport API defined by
+[`httpcore`](https://www.encode.io/httpcore/api/). You
+should either subclass `httpcore.AsyncHTTPTransport` to implement a transport to
+use with `AsyncClient`, or subclass `httpcore.SyncHTTPTransport` to implement a
+transport to use with `Client`.
+
 A complete example of a custom transport implementation would be:
 
 ```python
 import json
-
 import httpcore
-import httpx
 
 
-class JSONEchoTransport(httpcore.SyncHTTPTransport):
+class HelloWorldTransport(httpcore.SyncHTTPTransport):
     """
-    A mock transport that returns a JSON response containing the request body.
+    A mock transport that always returns a JSON "Hello, world!" response.
     """
 
     def request(self, method, url, headers=None, stream=None, timeout=None):
-        body = b"".join(stream).decode("utf-8")
-        content = json.dumps({"body": body}).encode("utf-8")
-        stream = httpcore.SyncByteStream([content])
+        message = {"text": "Hello, world!"}
+        content = json.dumps(message).encode("utf-8")
+        stream = httpcore.PlainByteStream(content)
         headers = [(b"content-type", b"application/json")]
         return b"HTTP/1.1", 200, b"OK", headers, stream
 ```
@@ -853,8 +874,9 @@ class JSONEchoTransport(httpcore.SyncHTTPTransport):
 Which we can use in the same way:
 
 ```python
->>> client = httpx.Client(transport=JSONEchoTransport())
->>> response = client.post("https://httpbin.org/post", data="Hello, world!")
+>>> import httpx
+>>> client = httpx.Client(transport=HelloWorldTransport())
+>>> response = client.get("https://example.org/")
 >>> response.json()
-{'body': 'Hello, world!'}
+{"text": "Hello, world!"}
 ```
