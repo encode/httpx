@@ -73,7 +73,12 @@ def test_transfer_encoding_header():
     assert request.headers["Transfer-Encoding"] == "chunked"
 
 
-def test_ignore_transfer_encoding_header():
+def test_ignore_transfer_encoding_header_if_content_length_exists():
+    """
+    `Transfer-Encoding` should be ignored if `Content-Length` has been set explicitly.
+    See https://github.com/encode/httpx/issues/1168
+    """
+
     def streaming_body(data):
         yield data  # pragma: nocover
 
