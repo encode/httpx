@@ -60,6 +60,7 @@ AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
     Callable[["Request"], "Request"],
     "Auth",
+    None,
 ]
 
 RequestData = Union[dict, str, bytes, Iterator[bytes], AsyncIterator[bytes]]

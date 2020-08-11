@@ -613,6 +613,9 @@ class Request:
 
     def prepare(self) -> None:
         for key, value in self.stream.get_headers().items():
+            # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
+            if key.lower() == "transfer-encoding" and "content-length" in self.headers:
+                continue
             self.headers.setdefault(key, value)
 
         auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
