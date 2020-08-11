@@ -9,6 +9,7 @@ from httpx import (
     URL,
     AsyncClient,
     Client,
+    RemoteProtocolError,
     NotRedirectResponse,
     RequestBodyUnavailable,
     TooManyRedirects,
@@ -73,6 +74,11 @@ class MockTransport:
         elif path == b"/malformed_redirect":
             status_code = codes.SEE_OTHER
             headers = [(b"location", b"https://:443/")]
+            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
+
+        elif path == b"/invalid_redirect":
+            status_code = codes.SEE_OTHER
+            headers = [(b"location", "https://😇/".encode('utf-8'))]
             return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
 
         elif path == b"/no_scheme_redirect":
@@ -247,6 +253,13 @@ async def test_malformed_redirect():
     assert response.status_code == codes.OK
     assert response.url == URL("https://example.org:443/")
     assert len(response.history) == 1
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_invalid_redirect():
+    client = AsyncClient(transport=AsyncMockTransport())
+    with pytest.raises(RemoteProtocolError):
+        await client.get("http://example.org/invalid_redirect")
 
 
 @pytest.mark.usefixtures("async_environment")

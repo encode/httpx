@@ -189,7 +189,7 @@ class URL:
 
             kwargs["authority"] = authority
 
-        return URL(self._uri_reference.copy_with(**kwargs).unsplit(),)
+        return URL(self._uri_reference.copy_with(**kwargs).unsplit())
 
     def join(self, url: URLTypes) -> "URL":
         """

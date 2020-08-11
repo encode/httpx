@@ -189,4 +189,4 @@ def test_url_copywith_for_authority():
 
 def test_url_invalid():
     with pytest.raises(InvalidURL):
-        URL('http://Á*.com')
+        URL('https://😇/')
