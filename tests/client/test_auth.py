@@ -279,6 +279,18 @@ async def test_trust_env_auth() -> None:
     }
 
 
+@pytest.mark.asyncio
+async def test_auth_disable_per_request() -> None:
+    url = "https://example.org/"
+    auth = ("tomchristie", "password123")
+
+    client = AsyncClient(transport=AsyncMockTransport(), auth=auth)
+    response = await client.get(url, auth=None)
+
+    assert response.status_code == 200
+    assert response.json() == {"auth": None}
+
+
 def test_auth_hidden_url() -> None:
     url = "http://example-username:example-password@example.org/"
     expected = "URL('http://example-username:[secure]@example.org/')"
