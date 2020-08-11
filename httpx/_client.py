@@ -347,7 +347,7 @@ class BaseClient:
         except InvalidURL as exc:
             raise RemoteProtocolError(
                 f"Invalid URL in location header: {exc}.", request=request
-            )
+            ) from None
 
         # Handle malformed 'Location' headers that are "absolute" form, have no host.
         # See: https://github.com/encode/httpx/issues/771
