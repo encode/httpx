@@ -56,10 +56,6 @@ from ._utils import (
 )
 
 
-def _quote(component: typing.Optional[str]) -> typing.Optional[str]:
-    return None if component is None else quote(component)
-
-
 class URL:
     def __init__(self, url: URLTypes = "", params: QueryParamTypes = None) -> None:
         if isinstance(url, str):
@@ -179,8 +175,8 @@ class URL:
         ):
             host = kwargs.pop("host", self.host)
             port = kwargs.pop("port", self.port)
-            username = _quote(kwargs.pop("username", self.username))
-            password = _quote(kwargs.pop("password", self.password))
+            username = quote(kwargs.pop("username", self.username) or "")
+            password = quote(kwargs.pop("password", self.password) or "")
 
             authority = host
             if port is not None:
@@ -197,7 +193,7 @@ class URL:
 
     def join(self, url: URLTypes) -> "URL":
         """
-        Return an absolute URL, using given this URL as the base.
+        Return an absolute URL, using this URL as the base.
         """
         if self.is_relative_url:
             return URL(url)
