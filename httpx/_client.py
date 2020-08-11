@@ -19,6 +19,8 @@ from ._config import (
 from ._content_streams import ContentStream
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
+    InvalidURL,
+    RemoteProtocolError,
     RequestBodyUnavailable,
     TooManyRedirects,
     map_exceptions,
@@ -340,7 +342,12 @@ class BaseClient:
         """
         location = response.headers["Location"]
 
-        url = URL(location)
+        try:
+            url = URL(location)
+        except InvalidURL as exc:
+            raise RemoteProtocolError(
+                f"Invalid URL in location header: {exc}.", request=request
+            ) from None
 
         # Handle malformed 'Location' headers that are "absolute" form, have no host.
         # See: https://github.com/encode/httpx/issues/771
