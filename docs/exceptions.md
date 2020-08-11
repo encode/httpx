@@ -76,7 +76,7 @@ except httpx.HTTPStatusError as exc:
         * TooManyRedirects
         * RequestBodyUnavailable
     * HTTPStatusError
-* IvalidURL
+* InvalidURL
 * NotRedirectResponse
 * CookieConflict
 * StreamError
