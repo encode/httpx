@@ -73,6 +73,18 @@ def test_transfer_encoding_header():
     assert request.headers["Transfer-Encoding"] == "chunked"
 
 
+def test_ignore_transfer_encoding_header():
+    def streaming_body(data):
+        yield data  # pragma: nocover
+
+    data = streaming_body(b"abcd")
+
+    headers = {"Content-Length": "4"}
+    request = httpx.Request("POST", "http://example.org", data=data, headers=headers)
+    assert "Transfer-Encoding" not in request.headers
+    assert request.headers["Content-Length"] == "4"
+
+
 def test_override_host_header():
     headers = {"host": "1.2.3.4:80"}
 
