@@ -9,10 +9,11 @@ from httpx import (
     URL,
     AsyncClient,
     Client,
-    InvalidURL,
     NotRedirectResponse,
+    RemoteProtocolError,
     RequestBodyUnavailable,
     TooManyRedirects,
+    UnsupportedProtocol,
     codes,
 )
 from httpx._content_streams import AsyncIteratorStream, ByteStream, ContentStream
@@ -33,11 +34,14 @@ class MockTransport:
         url: typing.Tuple[bytes, bytes, int, bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
         stream: ContentStream,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
+        timeout: typing.Mapping[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
         scheme, host, port, path = url
+        if scheme not in (b"http", b"https"):
+            raise httpcore.UnsupportedProtocol(f"Scheme {scheme!r} not supported.")
+
         path, _, query = path.partition(b"?")
         if path == b"/no_redirect":
             return b"HTTP/1.1", codes.OK, b"OK", [], ByteStream(b"")
@@ -70,6 +74,11 @@ class MockTransport:
         elif path == b"/malformed_redirect":
             status_code = codes.SEE_OTHER
             headers = [(b"location", b"https://:443/")]
+            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
+
+        elif path == b"/invalid_redirect":
+            status_code = codes.SEE_OTHER
+            headers = [(b"location", "https://😇/".encode("utf-8"))]
             return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
 
         elif path == b"/no_scheme_redirect":
@@ -247,6 +256,13 @@ async def test_malformed_redirect():
 
 
 @pytest.mark.usefixtures("async_environment")
+async def test_invalid_redirect():
+    client = AsyncClient(transport=AsyncMockTransport())
+    with pytest.raises(RemoteProtocolError):
+        await client.get("http://example.org/invalid_redirect")
+
+
+@pytest.mark.usefixtures("async_environment")
 async def test_no_scheme_redirect():
     client = AsyncClient(transport=AsyncMockTransport())
     response = await client.get("https://example.org/no_scheme_redirect")
@@ -405,7 +421,7 @@ class MockCookieTransport(httpcore.AsyncHTTPTransport):
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: httpcore.AsyncByteStream = None,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
+        timeout: typing.Mapping[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
@@ -481,6 +497,6 @@ async def test_redirect_cookie_behavior():
 @pytest.mark.usefixtures("async_environment")
 async def test_redirect_custom_scheme():
     client = AsyncClient(transport=AsyncMockTransport())
-    with pytest.raises(InvalidURL) as e:
+    with pytest.raises(UnsupportedProtocol) as e:
         await client.post("https://example.org/redirect_custom_scheme")
-    assert str(e.value) == 'Scheme "market" not supported.'
+    assert str(e.value) == "Scheme b'market' not supported."

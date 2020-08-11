@@ -15,12 +15,15 @@ Our exception hierarchy:
         · WriteError
         · CloseError
       - ProtocolError
+        · LocalProtocolError
+        · RemoteProtocolError
       - ProxyError
+      - UnsupportedProtocol
     + DecodingError
     + TooManyRedirects
     + RequestBodyUnavailable
-    + InvalidURL
   x HTTPStatusError
+* InvalidURL
 * NotRedirectResponse
 * CookieConflict
 * StreamError
@@ -43,15 +46,17 @@ class HTTPError(Exception):
     Base class for `RequestError` and `HTTPStatusError`.
 
     Useful for `try...except` blocks when issuing a request,
-    and then calling .raise_for_status().
+    and then calling `.raise_for_status()`.
 
     For example:
 
+    ```
     try:
         response = httpx.get("https://www.example.com")
         response.raise_for_status()
     except httpx.HTTPError as exc:
         print(f"HTTP Exception for {exc.request.url} - {exc.message}")
+    ```
     """
 
     def __init__(self, message: str, *, request: "Request") -> None:
@@ -70,7 +75,9 @@ class RequestError(HTTPError):
 
 class TransportError(RequestError):
     """
-    Base class for all exceptions that are mapped from the httpcore API.
+    Base class for all exceptions that occur at the level of the Transport API.
+
+    All of these exceptions also have an equivelent mapping in `httpcore`.
     """
 
 
@@ -149,13 +156,39 @@ class CloseError(NetworkError):
 
 class ProxyError(TransportError):
     """
-    An error occurred while proxying a request.
+    An error occurred while establishing a proxy connection.
+    """
+
+
+class UnsupportedProtocol(TransportError):
+    """
+    Attempted to make a request to an unsupported protocol.
+
+    For example issuing a request to `ftp://www.example.com`.
     """
 
 
 class ProtocolError(TransportError):
     """
-    A protocol was violated by the server.
+    The protocol was violated.
+    """
+
+
+class LocalProtocolError(ProtocolError):
+    """
+    A protocol was violated by the client.
+
+    For example if the user instantiated a `Request` instance explicitly,
+    failed to include the mandatory `Host:` header, and then issued it directly
+    using `client.send()`.
+    """
+
+
+class RemoteProtocolError(ProtocolError):
+    """
+    The protocol was violated by the server.
+
+    For exaample, returning malformed HTTP.
     """
 
 
@@ -164,7 +197,7 @@ class ProtocolError(TransportError):
 
 class DecodingError(RequestError):
     """
-    Decoding of the response failed.
+    Decoding of the response failed, due to a malformed encoding.
     """
 
 
@@ -181,18 +214,12 @@ class RequestBodyUnavailable(RequestError):
     """
 
 
-class InvalidURL(RequestError):
-    """
-    URL was missing a hostname, or was not one of HTTP/HTTPS.
-    """
-
-
 # Client errors
 
 
 class HTTPStatusError(HTTPError):
     """
-    Response sent an error HTTP status.
+    The response had an error HTTP status of 4xx or 5xx.
 
     May be raised when calling `response.raise_for_status()`
     """
@@ -202,6 +229,15 @@ class HTTPStatusError(HTTPError):
     ) -> None:
         super().__init__(message, request=request)
         self.response = response
+
+
+class InvalidURL(Exception):
+    """
+    URL is improperly formed or cannot be parsed.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
 
 class NotRedirectResponse(Exception):
@@ -335,5 +371,8 @@ HTTPCORE_EXC_MAP = {
     httpcore.WriteError: WriteError,
     httpcore.CloseError: CloseError,
     httpcore.ProxyError: ProxyError,
+    httpcore.UnsupportedProtocol: UnsupportedProtocol,
     httpcore.ProtocolError: ProtocolError,
+    httpcore.LocalProtocolError: LocalProtocolError,
+    httpcore.RemoteProtocolError: RemoteProtocolError,
 }

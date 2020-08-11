@@ -1,5 +1,5 @@
 import socket
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Iterator, List, Mapping, Optional, Tuple
 
 import httpcore
 
@@ -45,7 +45,7 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.SyncByteStream = None,
-        timeout: Dict[str, Optional[float]] = None,
+        timeout: Mapping[str, Optional[float]] = None,
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.SyncByteStream]:
         headers = [] if headers is None else headers
         stream = ByteStream(b"") if stream is None else stream

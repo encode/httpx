@@ -40,7 +40,7 @@ class MockTransport:
         url: typing.Tuple[bytes, bytes, int, bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
         stream: ContentStream,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
+        timeout: typing.Mapping[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:
@@ -90,7 +90,7 @@ class MockDigestAuthTransport(httpcore.AsyncHTTPTransport):
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: httpcore.AsyncByteStream = None,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
+        timeout: typing.Mapping[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:

@@ -14,11 +14,10 @@ from time import perf_counter
 from types import TracebackType
 from urllib.request import getproxies
 
-from ._exceptions import InvalidURL
 from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._models import URL, Request
+    from ._models import URL
 
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
@@ -265,23 +264,6 @@ def get_logger(name: str) -> Logger:
     return typing.cast(Logger, logger)
 
 
-def enforce_http_url(request: "Request") -> None:
-    """
-    Raise an appropriate InvalidURL for any non-HTTP URLs.
-    """
-    url = request.url
-
-    if not url.scheme:
-        message = "No scheme included in URL."
-        raise InvalidURL(message, request=request)
-    if not url.host:
-        message = "No host included in URL."
-        raise InvalidURL(message, request=request)
-    if url.scheme not in ("http", "https"):
-        message = 'URL scheme must be "http" or "https".'
-        raise InvalidURL(message, request=request)
-
-
 def port_or_default(url: "URL") -> typing.Optional[int]:
     if url.port is not None:
         return url.port
@@ -312,7 +294,9 @@ def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
     for scheme in ("http", "https", "all"):
         if proxy_info.get(scheme):
             hostname = proxy_info[scheme]
-            mounts[scheme] = hostname if "://" in hostname else f"http://{hostname}"
+            mounts[f"{scheme}://"] = (
+                hostname if "://" in hostname else f"http://{hostname}"
+            )
 
     no_proxy_hosts = [host.strip() for host in proxy_info.get("no", "").split(",")]
     for hostname in no_proxy_hosts:
@@ -478,6 +462,11 @@ class URLPattern:
         from ._models import URL
 
         if pattern and ":" not in pattern:
+            warn_deprecated(
+                f"Proxy keys should use proper URL forms rather "
+                f"than plain scheme strings. "
+                f'Instead of "{pattern}", use "{pattern}://"'
+            )
             pattern += "://"
 
         url = URL(pattern)

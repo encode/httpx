@@ -192,12 +192,12 @@ async def test_elapsed_timer():
     ["environment", "proxies"],
     [
         ({}, {}),
-        ({"HTTP_PROXY": "http://127.0.0.1"}, {"http": "http://127.0.0.1"}),
+        ({"HTTP_PROXY": "http://127.0.0.1"}, {"http://": "http://127.0.0.1"}),
         (
             {"https_proxy": "http://127.0.0.1", "HTTP_PROXY": "https://127.0.0.1"},
-            {"https": "http://127.0.0.1", "http": "https://127.0.0.1"},
+            {"https://": "http://127.0.0.1", "http://": "https://127.0.0.1"},
         ),
-        ({"all_proxy": "http://127.0.0.1"}, {"all": "http://127.0.0.1"}),
+        ({"all_proxy": "http://127.0.0.1"}, {"all://": "http://127.0.0.1"}),
         ({"TRAVIS_APT_PROXY": "http://127.0.0.1"}, {}),
     ],
 )
@@ -247,9 +247,7 @@ def test_not_same_origin():
         ("all://example.com", "https://example.com", True,),
         ("http://", "http://example.com", True,),
         ("http://", "https://example.com", False,),
-        ("http", "http://example.com", True,),
-        ("http", "https://example.com", False,),
-        ("all", "https://example.com:123", True,),
+        ("all://", "https://example.com:123", True,),
         ("", "https://example.com:123", True,),
     ],
 )

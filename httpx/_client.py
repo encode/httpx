@@ -20,6 +20,7 @@ from ._content_streams import ContentStream
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
     InvalidURL,
+    RemoteProtocolError,
     RequestBodyUnavailable,
     TooManyRedirects,
     map_exceptions,
@@ -44,7 +45,6 @@ from ._types import (
 from ._utils import (
     NetRCInfo,
     URLPattern,
-    enforce_http_url,
     get_environment_proxies,
     get_logger,
     same_origin,
@@ -66,19 +66,16 @@ class BaseClient:
         cookies: CookieTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        base_url: URLTypes = None,
+        base_url: URLTypes = "",
         trust_env: bool = True,
     ):
-        if base_url is None:
-            self.base_url = URL("")
-        else:
-            self.base_url = URL(base_url)
+        self._base_url = self._enforce_trailing_slash(URL(base_url))
 
         self.auth = auth
         self._params = QueryParams(params)
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
-        self.timeout = Timeout(timeout)
+        self._timeout = Timeout(timeout)
         self.max_redirects = max_redirects
         self._trust_env = trust_env
         self._netrc = NetRCInfo()
@@ -86,6 +83,11 @@ class BaseClient:
     @property
     def trust_env(self) -> bool:
         return self._trust_env
+
+    def _enforce_trailing_slash(self, url: URL) -> URL:
+        if url.path.endswith("/"):
+            return url
+        return url.copy_with(path=url.path + "/")
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool,
@@ -105,7 +107,26 @@ class BaseClient:
             return new_proxies
         else:
             proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
-            return {"all": proxy}
+            return {"all://": proxy}
+
+    @property
+    def timeout(self) -> Timeout:
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, timeout: TimeoutTypes) -> None:
+        self._timeout = Timeout(timeout)
+
+    @property
+    def base_url(self) -> URL:
+        """
+        Base URL to use when sending requests with relative URLs.
+        """
+        return self._base_url
+
+    @base_url.setter
+    def base_url(self, url: URLTypes) -> None:
+        self._base_url = self._enforce_trailing_slash(URL(url))
 
     @property
     def headers(self) -> Headers:
@@ -187,6 +208,14 @@ class BaseClient:
     ) -> Request:
         """
         Build and return a request instance.
+
+        * The `params`, `headers` and `cookies` arguments
+        are merged with any values set on the client.
+        * The `url` argument is merged with any `base_url` set on the client.
+
+        See also: [Request instances][0]
+
+        [0]: /advanced/#request-instances
         """
         url = self._merge_url(url)
         headers = self._merge_headers(headers)
@@ -208,7 +237,13 @@ class BaseClient:
         Merge a URL argument together with any 'base_url' on the client,
         to create the URL used for the outgoing request.
         """
-        return self.base_url.join(relative_url=url)
+        merge_url = URL(url)
+        if merge_url.is_relative_url:
+            # We always ensure the base_url paths include the trailing '/',
+            # and always strip any leading '/' from the merge URL.
+            merge_url = merge_url.copy_with(path=merge_url.path.lstrip("/"))
+            return self.base_url.join(merge_url)
+        return merge_url
 
     def _merge_cookies(
         self, cookies: CookieTypes = None
@@ -317,12 +352,12 @@ class BaseClient:
         """
         location = response.headers["Location"]
 
-        url = URL(location)
-
-        # Check that we can handle the scheme
-        if url.scheme and url.scheme not in ("http", "https"):
-            message = f'Scheme "{url.scheme}" not supported.'
-            raise InvalidURL(message, request=request)
+        try:
+            url = URL(location)
+        except InvalidURL as exc:
+            raise RemoteProtocolError(
+                f"Invalid URL in location header: {exc}.", request=request
+            ) from None
 
         # Handle malformed 'Location' headers that are "absolute" form, have no host.
         # See: https://github.com/encode/httpx/issues/771
@@ -443,7 +478,7 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        base_url: URLTypes = None,
+        base_url: URLTypes = "",
         transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
@@ -458,6 +493,15 @@ class Client(BaseClient):
             base_url=base_url,
             trust_env=trust_env,
         )
+
+        if http2:
+            try:
+                import h2  # noqa
+            except ImportError:  # pragma: nocover
+                raise ImportError(
+                    "Using http2=True, but the 'h2' package is not installed. "
+                    "Make sure to install httpx using `pip install httpx[http2]`."
+                ) from None
 
         if pool_limits is not None:
             warn_deprecated(
@@ -515,8 +559,8 @@ class Client(BaseClient):
 
         return httpcore.SyncConnectionPool(
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
@@ -537,20 +581,17 @@ class Client(BaseClient):
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 
-    def _transport_for_url(self, request: Request) -> httpcore.SyncHTTPTransport:
+    def _transport_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
         """
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        url = request.url
-        enforce_http_url(request)
-
         for pattern, transport in self._proxies.items():
             if pattern.matches(url):
                 return self._transport if transport is None else transport
@@ -572,6 +613,22 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Build and send a request.
+
+        Equivalent to:
+
+        ```python
+        request = client.build_request(...)
+        response = client.send(request, ...)
+        ```
+
+        See `Client.build_request()`, `Client.send()` and
+        [Merging of configuration][0] for how the various parameters
+        are merged with client-level configuration.
+
+        [0]: /advanced/#merging-of-configuration
+        """
         request = self.build_request(
             method=method,
             url=url,
@@ -595,10 +652,19 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
-        if request.url.scheme not in ("http", "https"):
-            message = 'URL scheme must be "http" or "https".'
-            raise InvalidURL(message, request=request)
+        """
+        Send a request.
 
+        The request is sent as-is, unmodified.
+
+        Typically you'll want to build one with `Client.build_request()`
+        so that any client-level configuration is merged into the request,
+        but passing an explicit `httpx.Request()` is supported as well.
+
+        See also: [Request instances][0]
+
+        [0]: /advanced/#request-instances
+        """
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_auth(request, auth)
@@ -689,7 +755,7 @@ class Client(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-        transport = self._transport_for_url(request)
+        transport = self._transport_for_url(request.url)
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (
@@ -732,6 +798,11 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `GET` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "GET",
             url,
@@ -754,6 +825,11 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send an `OPTIONS` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "OPTIONS",
             url,
@@ -776,6 +852,11 @@ class Client(BaseClient):
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `HEAD` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "HEAD",
             url,
@@ -801,6 +882,11 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `POST` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "POST",
             url,
@@ -829,6 +915,11 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `PUT` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "PUT",
             url,
@@ -857,6 +948,11 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `PATCH` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "PATCH",
             url,
@@ -882,6 +978,11 @@ class Client(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `DELETE` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "DELETE",
             url,
@@ -894,6 +995,9 @@ class Client(BaseClient):
         )
 
     def close(self) -> None:
+        """
+        Close transport and proxies.
+        """
         self._transport.close()
         for proxy in self._proxies.values():
             if proxy is not None:
@@ -974,7 +1078,7 @@ class AsyncClient(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        base_url: URLTypes = None,
+        base_url: URLTypes = "",
         transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
@@ -989,6 +1093,15 @@ class AsyncClient(BaseClient):
             base_url=base_url,
             trust_env=trust_env,
         )
+
+        if http2:
+            try:
+                import h2  # noqa
+            except ImportError:  # pragma: nocover
+                raise ImportError(
+                    "Using http2=True, but the 'h2' package is not installed. "
+                    "Make sure to install httpx using `pip install httpx[http2]`."
+                ) from None
 
         if pool_limits is not None:
             warn_deprecated(
@@ -1009,6 +1122,7 @@ class AsyncClient(BaseClient):
             app=app,
             trust_env=trust_env,
         )
+
         self._proxies: typing.Dict[
             URLPattern, typing.Optional[httpcore.AsyncHTTPTransport]
         ] = {
@@ -1046,8 +1160,8 @@ class AsyncClient(BaseClient):
 
         return httpcore.AsyncConnectionPool(
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
@@ -1068,20 +1182,17 @@ class AsyncClient(BaseClient):
             proxy_headers=proxy.headers.raw,
             proxy_mode=proxy.mode,
             ssl_context=ssl_context,
-            max_keepalive=limits.max_keepalive,
             max_connections=limits.max_connections,
+            max_keepalive_connections=limits.max_keepalive_connections,
             keepalive_expiry=KEEPALIVE_EXPIRY,
             http2=http2,
         )
 
-    def _transport_for_url(self, request: Request) -> httpcore.AsyncHTTPTransport:
+    def _transport_for_url(self, url: URL) -> httpcore.AsyncHTTPTransport:
         """
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        url = request.url
-        enforce_http_url(request)
-
         for pattern, transport in self._proxies.items():
             if pattern.matches(url):
                 return self._transport if transport is None else transport
@@ -1103,6 +1214,22 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Build and send a request.
+
+        Equivalent to:
+
+        ```python
+        request = client.build_request(...)
+        response = client.send(request, ...)
+        ```
+
+        See `AsyncClient.build_request()`, `AsyncClient.send()`
+        and [Merging of configuration][0] for how the various parameters
+        are merged with client-level configuration.
+
+        [0]: /advanced/#merging-of-configuration
+        """
         request = self.build_request(
             method=method,
             url=url,
@@ -1127,6 +1254,19 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a request.
+
+        The request is sent as-is, unmodified.
+
+        Typically you'll want to build one with `AsyncClient.build_request()`
+        so that any client-level configuration is merged into the request,
+        but passing an explicit `httpx.Request()` is supported as well.
+
+        See also: [Request instances][0]
+
+        [0]: /advanced/#request-instances
+        """
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_auth(request, auth)
@@ -1219,7 +1359,7 @@ class AsyncClient(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-        transport = self._transport_for_url(request)
+        transport = self._transport_for_url(request.url)
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (
@@ -1262,6 +1402,11 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `GET` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "GET",
             url,
@@ -1284,6 +1429,11 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send an `OPTIONS` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "OPTIONS",
             url,
@@ -1306,6 +1456,11 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `HEAD` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "HEAD",
             url,
@@ -1331,6 +1486,11 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `POST` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "POST",
             url,
@@ -1359,6 +1519,11 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `PUT` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "PUT",
             url,
@@ -1387,6 +1552,11 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `PATCH` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "PATCH",
             url,
@@ -1412,6 +1582,11 @@ class AsyncClient(BaseClient):
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `DELETE` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "DELETE",
             url,
@@ -1424,6 +1599,9 @@ class AsyncClient(BaseClient):
         )
 
     async def aclose(self) -> None:
+        """
+        Close transport and proxies.
+        """
         await self._transport.aclose()
         for proxy in self._proxies.values():
             if proxy is not None:
