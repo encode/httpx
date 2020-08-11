@@ -26,12 +26,12 @@ from ._decoders import (
 from ._exceptions import (
     CookieConflict,
     HTTPStatusError,
+    InvalidURL,
     NotRedirectResponse,
     RequestNotRead,
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
-    InvalidURL,
 )
 from ._status_codes import codes
 from ._types import (
