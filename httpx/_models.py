@@ -11,6 +11,7 @@ from urllib.parse import parse_qsl, urlencode
 
 import chardet
 import rfc3986
+import rfc3986.exceptions
 
 from .__version__ import __version__
 from ._content_streams import ByteStream, ContentStream, encode
@@ -30,6 +31,7 @@ from ._exceptions import (
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
+    InvalidURL,
 )
 from ._status_codes import codes
 from ._types import (
@@ -57,7 +59,11 @@ from ._utils import (
 class URL:
     def __init__(self, url: URLTypes = "", params: QueryParamTypes = None) -> None:
         if isinstance(url, str):
-            self._uri_reference = rfc3986.iri_reference(url).encode()
+            try:
+                self._uri_reference = rfc3986.iri_reference(url).encode()
+            except rfc3986.exceptions.InvalidAuthority as exc:
+                raise InvalidURL(message=str(exc)) from None
+
             if self.is_absolute_url:
                 # We don't want to normalize relative URLs, since doing so
                 # removes any leading `../` portion.

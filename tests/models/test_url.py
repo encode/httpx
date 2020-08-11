@@ -1,6 +1,6 @@
 import pytest
 
-from httpx import URL
+from httpx import URL, InvalidURL
 
 
 @pytest.mark.parametrize(
@@ -185,3 +185,8 @@ def test_url_copywith_for_authority():
     for k, v in copy_with_kwargs.items():
         assert getattr(new, k) == v
     assert str(new) == "https://username:password@example.net:444"
+
+
+def test_url_invalid():
+    with pytest.raises(InvalidURL):
+        URL('http://Á*.com')
