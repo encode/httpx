@@ -208,6 +208,14 @@ class BaseClient:
     ) -> Request:
         """
         Build and return a request instance.
+
+        * The `params`, `headers` and `cookies` arguments
+        are merged with any values set on the client.
+        * The `url` argument is merged with any `base_url` set on the client.
+
+        See also: [Request instances][0]
+
+        [0]: /advanced/#request-instances
         """
         url = self._merge_url(url)
         headers = self._merge_headers(headers)
@@ -276,8 +284,10 @@ class BaseClient:
             return merged_queryparams
         return params
 
-    def _build_auth(self, request: Request, auth: AuthTypes = None) -> Auth:
-        auth = self.auth if auth is None else auth
+    def _build_auth(
+        self, request: Request, auth: typing.Union[AuthTypes, UnsetType] = UNSET
+    ) -> Auth:
+        auth = self.auth if isinstance(auth, UnsetType) else auth
 
         if auth is not None:
             if isinstance(auth, tuple):
@@ -599,10 +609,26 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Build and send a request.
+
+        Equivalent to:
+
+        ```python
+        request = client.build_request(...)
+        response = client.send(request, ...)
+        ```
+
+        See `Client.build_request()`, `Client.send()` and
+        [Merging of configuration][0] for how the various parameters
+        are merged with client-level configuration.
+
+        [0]: /advanced/#merging-of-configuration
+        """
         request = self.build_request(
             method=method,
             url=url,
@@ -622,10 +648,23 @@ class Client(BaseClient):
         request: Request,
         *,
         stream: bool = False,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a request.
+
+        The request is sent as-is, unmodified.
+
+        Typically you'll want to build one with `Client.build_request()`
+        so that any client-level configuration is merged into the request,
+        but passing an explicit `httpx.Request()` is supported as well.
+
+        See also: [Request instances][0]
+
+        [0]: /advanced/#request-instances
+        """
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_auth(request, auth)
@@ -755,10 +794,15 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `GET` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "GET",
             url,
@@ -777,10 +821,15 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send an `OPTIONS` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "OPTIONS",
             url,
@@ -799,10 +848,15 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `HEAD` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "HEAD",
             url,
@@ -824,10 +878,15 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `POST` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "POST",
             url,
@@ -852,10 +911,15 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `PUT` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "PUT",
             url,
@@ -880,10 +944,15 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `PATCH` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "PATCH",
             url,
@@ -905,10 +974,15 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `DELETE` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return self.request(
             "DELETE",
             url,
@@ -921,6 +995,9 @@ class Client(BaseClient):
         )
 
     def close(self) -> None:
+        """
+        Close transport and proxies.
+        """
         self._transport.close()
         for proxy in self._proxies.values():
             if proxy is not None:
@@ -1133,10 +1210,26 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Build and send a request.
+
+        Equivalent to:
+
+        ```python
+        request = client.build_request(...)
+        response = client.send(request, ...)
+        ```
+
+        See `AsyncClient.build_request()`, `AsyncClient.send()`
+        and [Merging of configuration][0] for how the various parameters
+        are merged with client-level configuration.
+
+        [0]: /advanced/#merging-of-configuration
+        """
         request = self.build_request(
             method=method,
             url=url,
@@ -1157,10 +1250,23 @@ class AsyncClient(BaseClient):
         request: Request,
         *,
         stream: bool = False,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a request.
+
+        The request is sent as-is, unmodified.
+
+        Typically you'll want to build one with `AsyncClient.build_request()`
+        so that any client-level configuration is merged into the request,
+        but passing an explicit `httpx.Request()` is supported as well.
+
+        See also: [Request instances][0]
+
+        [0]: /advanced/#request-instances
+        """
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_auth(request, auth)
@@ -1292,10 +1398,15 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `GET` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "GET",
             url,
@@ -1314,10 +1425,15 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send an `OPTIONS` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "OPTIONS",
             url,
@@ -1336,10 +1452,15 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = False,  # NOTE: Differs to usual default.
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `HEAD` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "HEAD",
             url,
@@ -1361,10 +1482,15 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `POST` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "POST",
             url,
@@ -1389,10 +1515,15 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `PUT` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "PUT",
             url,
@@ -1417,10 +1548,15 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `PATCH` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "PATCH",
             url,
@@ -1442,10 +1578,15 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
+        """
+        Send a `DELETE` request.
+
+        **Parameters**: See `httpx.request`.
+        """
         return await self.request(
             "DELETE",
             url,
@@ -1458,6 +1599,9 @@ class AsyncClient(BaseClient):
         )
 
     async def aclose(self) -> None:
+        """
+        Close transport and proxies.
+        """
         await self._transport.aclose()
         for proxy in self._proxies.values():
             if proxy is not None:
