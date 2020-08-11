@@ -607,7 +607,7 @@ class Client(BaseClient):
         """
         Build and send a request.
 
-        Roughly equivalent to:
+        Equivalent to:
 
         ```python
         request = client.build_request(...)
@@ -1208,7 +1208,7 @@ class AsyncClient(BaseClient):
         """
         Build and send a request.
 
-        Roughly equivalent to:
+        Equivalent to:
 
         ```python
         request = client.build_request(...)
