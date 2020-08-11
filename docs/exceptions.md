@@ -76,6 +76,7 @@ except httpx.HTTPStatusError as exc:
         * TooManyRedirects
         * RequestBodyUnavailable
     * HTTPStatusError
+* InvalidURL
 * NotRedirectResponse
 * CookieConflict
 * StreamError
@@ -152,6 +153,9 @@ except httpx.HTTPStatusError as exc:
     :docstring:
 
 ::: httpx.HTTPStatusError
+    :docstring:
+
+::: httpx.InvalidURL
     :docstring:
 
 ::: httpx.NotRedirectResponse
