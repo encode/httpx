@@ -1221,7 +1221,7 @@ class AsyncClient(BaseClient):
 
         ```python
         request = client.build_request(...)
-        response = client.send(request, ...)
+        response = await client.send(request, ...)
         ```
 
         See `AsyncClient.build_request()`, `AsyncClient.send()`
