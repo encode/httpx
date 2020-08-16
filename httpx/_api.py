@@ -214,7 +214,7 @@ def head(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
-    allow_redirects: bool = True,  # Note: Aligns with usual default (except for Requests).
+    allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
