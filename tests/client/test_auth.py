@@ -9,6 +9,7 @@ from httpx import (
     URL,
     AsyncClient,
     Auth,
+    BasicAuth,
     Client,
     DigestAuth,
     ProtocolError,
@@ -310,14 +311,34 @@ async def test_auth_hidden_header() -> None:
 
 
 @pytest.mark.asyncio
-async def test_auth_invalid_type() -> None:
+async def test_auth_property() -> None:
+    client = AsyncClient(transport=AsyncMockTransport())
+    assert client.auth is None
+
+    client.auth = ("tomchristie", "password123")  # type: ignore
+    assert isinstance(client.auth, BasicAuth)
+
     url = "https://example.org/"
-    client = AsyncClient(
-        transport=AsyncMockTransport(),
-        auth="not a tuple, not a callable",  # type: ignore
-    )
+    response = await client.get(url)
+    assert response.status_code == 200
+    assert response.json() == {"auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="}
+
+
+@pytest.mark.asyncio
+async def test_auth_invalid_type() -> None:
     with pytest.raises(TypeError):
-        await client.get(url)
+        client = AsyncClient(
+            transport=AsyncMockTransport(),
+            auth="not a tuple, not a callable",  # type: ignore
+        )
+
+    client = AsyncClient(transport=AsyncMockTransport())
+
+    with pytest.raises(TypeError):
+        await client.get(auth="not a tuple, not a callable")  # type: ignore
+
+    with pytest.raises(TypeError):
+        client.auth = "not a tuple, not a callable"  # type: ignore
 
 
 @pytest.mark.asyncio
