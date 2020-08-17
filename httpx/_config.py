@@ -8,7 +8,14 @@ from pathlib import Path
 import certifi
 
 from ._models import URL, Headers
-from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
+from ._types import (
+    CertTypes,
+    HeaderTypes,
+    RetriesTypes,
+    TimeoutTypes,
+    URLTypes,
+    VerifyTypes,
+)
 from ._utils import get_ca_bundle_from_env, get_logger, warn_deprecated
 
 DEFAULT_CIPHERS = ":".join(
@@ -410,6 +417,27 @@ class Proxy:
         )
 
 
+class Retries:
+    def __init__(self, retries: RetriesTypes, *, backoff_factor: float = 0.2) -> None:
+        if isinstance(retries, Retries):
+            self.max_attempts = retries.max_attempts  # type: int
+            self.backoff_factor = retries.backoff_factor  # type: float
+        else:
+            self.max_attempts = retries
+            self.backoff_factor = backoff_factor
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and self.max_attempts == other.max_attempts
+            and self.backoff_factor == other.backoff_factor
+        )
+
+    def __repr__(self) -> str:
+        return f"Retries({self.max_attempts}, backoff_factor={self.backoff_factor})"
+
+
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
 DEFAULT_LIMITS = Limits(max_connections=100, max_keepalive_connections=20)
 DEFAULT_MAX_REDIRECTS = 20
+DEFAULT_RETRIES = Retries(0)

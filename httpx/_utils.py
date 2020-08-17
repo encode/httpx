@@ -1,5 +1,7 @@
+import asyncio
 import codecs
 import collections
+import itertools
 import logging
 import mimetypes
 import netrc
@@ -13,6 +15,8 @@ from pathlib import Path
 from time import perf_counter
 from types import TracebackType
 from urllib.request import getproxies
+
+import sniffio
 
 from ._types import PrimitiveData
 
@@ -529,3 +533,20 @@ class URLPattern:
 
 def warn_deprecated(message: str) -> None:  # pragma: nocover
     warnings.warn(message, DeprecationWarning, stacklevel=2)
+
+
+async def sleep(seconds: float) -> None:
+    library = sniffio.current_async_library()
+    if library == "trio":
+        import trio
+
+        await trio.sleep(seconds)
+    else:
+        assert library == "asyncio"
+        await asyncio.sleep(seconds)
+
+
+def exponential_backoff(factor: float) -> typing.Iterator[float]:
+    yield 0
+    for n in itertools.count(2):
+        yield factor * (2 ** (n - 2))

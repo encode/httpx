@@ -1,4 +1,5 @@
 import functools
+import time
 import typing
 from types import TracebackType
 
@@ -8,10 +9,12 @@ from ._auth import Auth, BasicAuth, FunctionAuth
 from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
+    DEFAULT_RETRIES,
     DEFAULT_TIMEOUT_CONFIG,
     UNSET,
     Limits,
     Proxy,
+    Retries,
     Timeout,
     UnsetType,
     create_ssl_context,
@@ -19,6 +22,8 @@ from ._config import (
 from ._content_streams import ContentStream
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
+    ConnectError,
+    ConnectTimeout,
     InvalidURL,
     RemoteProtocolError,
     RequestBodyUnavailable,
@@ -38,6 +43,7 @@ from ._types import (
     QueryParamTypes,
     RequestData,
     RequestFiles,
+    RetriesTypes,
     TimeoutTypes,
     URLTypes,
     VerifyTypes,
@@ -45,9 +51,11 @@ from ._types import (
 from ._utils import (
     NetRCInfo,
     URLPattern,
+    exponential_backoff,
     get_environment_proxies,
     get_logger,
     same_origin,
+    sleep,
     warn_deprecated,
 )
 
@@ -66,6 +74,7 @@ class BaseClient:
         cookies: CookieTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        retries: RetriesTypes = DEFAULT_RETRIES,
         base_url: URLTypes = "",
         trust_env: bool = True,
     ):
@@ -77,6 +86,7 @@ class BaseClient:
         self._cookies = Cookies(cookies)
         self._timeout = Timeout(timeout)
         self.max_redirects = max_redirects
+        self._retries = Retries(retries)
         self._trust_env = trust_env
         self._netrc = NetRCInfo()
 
@@ -116,6 +126,14 @@ class BaseClient:
     @timeout.setter
     def timeout(self, timeout: TimeoutTypes) -> None:
         self._timeout = Timeout(timeout)
+
+    @property
+    def retries(self) -> Retries:
+        return self._retries
+
+    @retries.setter
+    def retries(self, retries: RetriesTypes) -> None:
+        self._retries = Retries(retries)
 
     @property
     def base_url(self) -> URL:
@@ -453,6 +471,8 @@ class Client(BaseClient):
     * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
+    * **retries** - *(optional)* The maximum number of retries when trying to
+    establish a connection.
     * **base_url** - *(optional)* A URL to use as the base when building
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
@@ -478,6 +498,7 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        retries: RetriesTypes = DEFAULT_RETRIES,
         base_url: URLTypes = "",
         transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -490,6 +511,7 @@ class Client(BaseClient):
             cookies=cookies,
             timeout=timeout,
             max_redirects=max_redirects,
+            retries=retries,
             base_url=base_url,
             trust_env=trust_env,
         )
@@ -735,7 +757,7 @@ class Client(BaseClient):
         auth_flow = auth.auth_flow(request)
         request = next(auth_flow)
         while True:
-            response = self._send_single_request(request, timeout)
+            response = self._send_handling_retries(request, timeout)
             if auth.requires_response_body:
                 response.read()
             try:
@@ -750,6 +772,22 @@ class Client(BaseClient):
                 response.read()
                 request = next_request
                 history.append(response)
+
+    def _send_handling_retries(self, request: Request, timeout: Timeout) -> Response:
+        attempts = self.retries.max_attempts
+        delays = exponential_backoff(factor=self.retries.backoff_factor)
+
+        while True:
+            try:
+                return self._send_single_request(request, timeout)
+            except (ConnectError, ConnectTimeout):
+                if request.method in ("POST", "PATCH"):
+                    raise
+                if attempts <= 0:
+                    raise
+                attempts -= 1
+                delay = next(delays)
+                time.sleep(delay)
 
     def _send_single_request(self, request: Request, timeout: Timeout) -> Response:
         """
@@ -1053,6 +1091,8 @@ class AsyncClient(BaseClient):
     * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
+    * **retries** - *(optional)* The maximum number of retries when trying to
+    establish a connection.
     * **base_url** - *(optional)* A URL to use as the base when building
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
@@ -1078,6 +1118,7 @@ class AsyncClient(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        retries: RetriesTypes = DEFAULT_RETRIES,
         base_url: URLTypes = "",
         transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -1090,6 +1131,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             timeout=timeout,
             max_redirects=max_redirects,
+            retries=retries,
             base_url=base_url,
             trust_env=trust_env,
         )
@@ -1337,7 +1379,7 @@ class AsyncClient(BaseClient):
         auth_flow = auth.auth_flow(request)
         request = next(auth_flow)
         while True:
-            response = await self._send_single_request(request, timeout)
+            response = await self._send_handling_retries(request, timeout)
             if auth.requires_response_body:
                 await response.aread()
             try:
@@ -1352,6 +1394,24 @@ class AsyncClient(BaseClient):
                 await response.aread()
                 request = next_request
                 history.append(response)
+
+    async def _send_handling_retries(
+        self, request: Request, timeout: Timeout
+    ) -> Response:
+        attempts = self.retries.max_attempts
+        delays = exponential_backoff(factor=self.retries.backoff_factor)
+
+        while True:
+            try:
+                return await self._send_single_request(request, timeout)
+            except (ConnectError, ConnectTimeout):
+                if request.method in ("POST", "PATCH"):
+                    raise
+                if attempts <= 0:
+                    raise
+                attempts -= 1
+                delay = next(delays)
+                await sleep(delay)
 
     async def _send_single_request(
         self, request: Request, timeout: Timeout,
