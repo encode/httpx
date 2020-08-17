@@ -24,6 +24,7 @@ from ._decoders import (
     TextDecoder,
 )
 from ._exceptions import (
+    HTTPCORE_EXC_MAP,
     CookieConflict,
     HTTPStatusError,
     InvalidURL,
@@ -32,6 +33,7 @@ from ._exceptions import (
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
+    map_exceptions,
 )
 from ._status_codes import codes
 from ._types import (
@@ -931,8 +933,9 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
-        for part in self._raw_stream:
-            yield part
+        with map_exceptions(HTTPCORE_EXC_MAP, request=self.request):
+            for part in self._raw_stream:
+                yield part
         self.close()
 
     def next(self) -> "Response":
@@ -1008,8 +1011,9 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
-        async for part in self._raw_stream:
-            yield part
+        with map_exceptions(HTTPCORE_EXC_MAP, request=self.request):
+            async for part in self._raw_stream:
+                yield part
         await self.aclose()
 
     async def anext(self) -> "Response":
