@@ -34,10 +34,10 @@ def test_httpcore_exception_mapping(server) -> None:
         httpx.get("http://doesnotexist")
 
     # Make sure Response.iter_raw() exceptinos are mapped
-    url = server.url.copy_with(path="/slow_stream")
-    timeout = httpx.Timeout(None, read=1e-6)
-    with pytest.raises(httpx.ReadTimeout):
-        with httpx.stream("GET", url, timeout=timeout) as stream:
+    url = server.url.copy_with(path="/slow_stream_response")
+    timeout = httpx.Timeout(None, read=0.1)
+    with httpx.stream("GET", url, timeout=timeout) as stream:
+        with pytest.raises(httpx.ReadTimeout):
             stream.read()
 
     # Make sure it also works with custom transports.

@@ -76,8 +76,8 @@ async def app(scope, receive, send):
     assert scope["type"] == "http"
     if scope["path"].startswith("/slow_response"):
         await slow_response(scope, receive, send)
-    elif scope["path"].startswith("/slow_stream"):
-        await slow_stream(scope, receive, send)
+    elif scope["path"].startswith("/slow_stream_response"):
+        await slow_stream_response(scope, receive, send)
     elif scope["path"].startswith("/status"):
         await status_code(scope, receive, send)
     elif scope["path"].startswith("/echo_body"):
@@ -113,7 +113,7 @@ async def slow_response(scope, receive, send):
     await send({"type": "http.response.body", "body": b"Hello, world!"})
 
 
-async def slow_stream(scope, receive, send):
+async def slow_stream_response(scope, receive, send):
     await send(
         {
             "type": "http.response.start",
