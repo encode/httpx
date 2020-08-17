@@ -1,5 +1,6 @@
 import functools
 import typing
+import warnings
 from types import TracebackType
 
 import httpcore
@@ -1160,6 +1161,7 @@ class AsyncClient(BaseClient):
             for key, proxy in proxy_map.items()
         }
         self._proxies = dict(sorted(self._proxies.items()))
+        self._is_closed = False
 
     def _init_transport(
         self,
@@ -1627,6 +1629,7 @@ class AsyncClient(BaseClient):
         for proxy in self._proxies.values():
             if proxy is not None:
                 await proxy.aclose()
+        self._is_closed = True
 
     async def __aenter__(self) -> "AsyncClient":
         return self
@@ -1638,6 +1641,10 @@ class AsyncClient(BaseClient):
         traceback: TracebackType = None,
     ) -> None:
         await self.aclose()
+
+    def __del__(self) -> None:
+        if not self._is_closed:
+            warnings.warn(f"Unclosed {self!r}", ResourceWarning)
 
 
 class StreamContextManager:

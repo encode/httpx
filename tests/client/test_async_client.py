@@ -166,3 +166,25 @@ async def test_100_continue(server):
 
     assert response.status_code == 200
     assert response.content == data
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_unclosed_client_caused_warning():
+    with pytest.warns(ResourceWarning):
+        client = httpx.AsyncClient()
+        del client
+
+    with pytest.warns(None) as wb:
+
+        async with httpx.AsyncClient() as client:  # noqa: F841
+            pass
+
+        assert len(wb.list) == 0
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_client_is_closed_after_with_block():
+    async with httpx.AsyncClient() as client:
+        pass
+
+    assert client._is_closed
