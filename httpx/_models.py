@@ -956,8 +956,7 @@ class Response:
         if not self.is_closed:
             self.is_closed = True
             self._elapsed = self.request.timer.elapsed
-            if hasattr(self, "_raw_stream"):
-                self._raw_stream.close()
+            self._raw_stream.close()
 
     async def aread(self) -> bytes:
         """
@@ -1032,8 +1031,7 @@ class Response:
         if not self.is_closed:
             self.is_closed = True
             self._elapsed = self.request.timer.elapsed
-            if hasattr(self, "_raw_stream"):
-                await self._raw_stream.aclose()
+            await self._raw_stream.aclose()
 
 
 class Cookies(MutableMapping):

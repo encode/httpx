@@ -829,6 +829,24 @@ low-level API.
 >>> client = httpx.Client(transport=transport)
 ```
 
+Similarly, `httpcore` provides a `uds` option for connecting via a Unix Domain Socket that is only available via this low-level API:
+
+```python
+>>> import httpx, httpcore
+>>> ssl_context = httpx.create_ssl_context()
+>>> transport = httpcore.SyncConnectionPool(
+...     ssl_context=ssl_context,
+...     max_connections=100,
+...     max_keepalive_connections=20,
+...     keepalive_expiry=5.0,
+...     uds="/var/run/docker.sock",
+... )  # Connect to the Docker API via a Unix Socket.
+>>> client = httpx.Client(transport=transport)
+>>> response = client.get("http://docker/info")
+>>> response.json()
+{"ID": "...", "Containers": 4, "Images": 74, ...}
+```
+
 Unlike the `httpx.Client()`, the lower-level `httpcore` transport instances
 do not include any default values for configuring aspects such as the
 connection pooling details, so you'll need to provide more explicit
