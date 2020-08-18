@@ -14,7 +14,7 @@ async client for sending outgoing HTTP requests.
 
 To make asynchronous requests, you'll need an `AsyncClient`.
 
-```python
+```pycon
 >>> async with httpx.AsyncClient() as client:
 >>>     r = await client.get('https://www.example.com/')
 >>> r
@@ -64,7 +64,7 @@ await client.aclose()
 
 The `AsyncClient.stream(method, url, ...)` method is an async context block.
 
-```python
+```pycon
 >>> client = httpx.AsyncClient()
 >>> async with client.stream('GET', 'https://www.example.com/') as response:
 >>>     async for chunk in response.aiter_bytes():
@@ -177,7 +177,7 @@ app = Starlette(routes=[Route("/", hello)])
 
 We can make requests directly against the application, like so:
 
-```python
+```pycon
 >>> import httpx
 >>> async with httpx.AsyncClient(app=app, base_url="http://testserver") as client:
 ...     r = await client.get("/")
