@@ -187,4 +187,33 @@ async def test_that_client_is_closed_after_with_block():
     async with httpx.AsyncClient() as client:
         pass
 
-    assert client._is_closed
+    assert client.is_closed
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_client_is_closed_after_aclose():
+    client = httpx.AsyncClient()
+
+    await client.aclose()
+
+    assert client.is_closed
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_client_cannot_be_closed_after_being_closed():
+    client = httpx.AsyncClient()
+
+    await client.aclose()
+
+    with pytest.raises(RuntimeError):
+        await client.aclose()
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_client_cannot_send_request_after_being_closed():
+    client = httpx.AsyncClient()
+
+    await client.aclose()
+
+    with pytest.raises(RuntimeError):
+        await client.get("http://example.com")

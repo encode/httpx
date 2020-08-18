@@ -1253,6 +1253,9 @@ class AsyncClient(BaseClient):
 
         [0]: /advanced/#merging-of-configuration
         """
+        if self.is_closed:
+            raise RuntimeError("Unable to send request using closed client")
+
         request = self.build_request(
             method=method,
             url=url,
@@ -1625,11 +1628,21 @@ class AsyncClient(BaseClient):
         """
         Close transport and proxies.
         """
+        if self.is_closed:
+            raise RuntimeError("Unable to close already closed client")
+
         await self._transport.aclose()
         for proxy in self._proxies.values():
             if proxy is not None:
                 await proxy.aclose()
         self._is_closed = True
+
+    @property
+    def is_closed(self) -> bool:
+        """
+        Check if the client being closed
+        """
+        return self._is_closed
 
     async def __aenter__(self) -> "AsyncClient":
         return self
