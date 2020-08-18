@@ -160,7 +160,9 @@ class MockTransport:
                 ByteStream(b""),
             )
 
-        return b"HTTP/1.1", 200, b"OK", [], ByteStream(b"Hello, world!")
+        stream = ByteStream(b"Hello, world!") if method != b"HEAD" else ByteStream(b"")
+
+        return b"HTTP/1.1", 200, b"OK", [], stream
 
 
 class AsyncMockTransport(MockTransport, httpcore.AsyncHTTPTransport):
@@ -234,6 +236,20 @@ async def test_disallow_redirects():
     assert response.url == URL("https://example.org/")
     assert response.is_redirect is False
     assert len(response.history) == 1
+
+
+@pytest.mark.asyncio
+async def test_head_redirect():
+    """
+    Contrary to Requests, redirects remain enabled by default for HEAD requests.
+    """
+    client = AsyncClient(transport=AsyncMockTransport())
+    response = await client.head("https://example.org/redirect_302")
+    assert response.status_code == codes.OK
+    assert response.url == URL("https://example.org/")
+    assert response.request.method == "HEAD"
+    assert len(response.history) == 1
+    assert response.text == ""
 
 
 @pytest.mark.usefixtures("async_environment")

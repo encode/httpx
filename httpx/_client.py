@@ -71,7 +71,7 @@ class BaseClient:
     ):
         self._base_url = self._enforce_trailing_slash(URL(base_url))
 
-        self.auth = auth
+        self._auth = self._build_auth(auth)
         self._params = QueryParams(params)
         self._headers = Headers(headers)
         self._cookies = Cookies(cookies)
@@ -116,6 +116,21 @@ class BaseClient:
     @timeout.setter
     def timeout(self, timeout: TimeoutTypes) -> None:
         self._timeout = Timeout(timeout)
+
+    @property
+    def auth(self) -> typing.Optional[Auth]:
+        """
+        Authentication class used when none is passed at the request-level.
+
+        See also [Authentication][0].
+
+        [0]: /quickstart/#authentication
+        """
+        return self._auth
+
+    @auth.setter
+    def auth(self, auth: AuthTypes) -> None:
+        self._auth = self._build_auth(auth)
 
     @property
     def base_url(self) -> URL:
@@ -284,19 +299,25 @@ class BaseClient:
             return merged_queryparams
         return params
 
-    def _build_auth(
+    def _build_auth(self, auth: AuthTypes) -> typing.Optional[Auth]:
+        if auth is None:
+            return None
+        elif isinstance(auth, tuple):
+            return BasicAuth(username=auth[0], password=auth[1])
+        elif isinstance(auth, Auth):
+            return auth
+        elif callable(auth):
+            return FunctionAuth(func=auth)
+        else:
+            raise TypeError('Invalid "auth" argument.')
+
+    def _build_request_auth(
         self, request: Request, auth: typing.Union[AuthTypes, UnsetType] = UNSET
     ) -> Auth:
-        auth = self.auth if isinstance(auth, UnsetType) else auth
+        auth = self._auth if isinstance(auth, UnsetType) else self._build_auth(auth)
 
         if auth is not None:
-            if isinstance(auth, tuple):
-                return BasicAuth(username=auth[0], password=auth[1])
-            elif isinstance(auth, Auth):
-                return auth
-            elif callable(auth):
-                return FunctionAuth(func=auth)
-            raise TypeError('Invalid "auth" argument.')
+            return auth
 
         username, password = request.url.username, request.url.password
         if username or password:
@@ -667,7 +688,7 @@ class Client(BaseClient):
         """
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        auth = self._build_auth(request, auth)
+        auth = self._build_request_auth(request, auth)
 
         response = self._send_handling_redirects(
             request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
@@ -849,7 +870,7 @@ class Client(BaseClient):
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         auth: typing.Union[AuthTypes, UnsetType] = UNSET,
-        allow_redirects: bool = False,  # NOTE: Differs to usual default.
+        allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         """
@@ -1269,7 +1290,7 @@ class AsyncClient(BaseClient):
         """
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
-        auth = self._build_auth(request, auth)
+        auth = self._build_request_auth(request, auth)
 
         response = await self._send_handling_redirects(
             request, auth=auth, timeout=timeout, allow_redirects=allow_redirects,
@@ -1453,7 +1474,7 @@ class AsyncClient(BaseClient):
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         auth: typing.Union[AuthTypes, UnsetType] = UNSET,
-        allow_redirects: bool = False,  # NOTE: Differs to usual default.
+        allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         """
