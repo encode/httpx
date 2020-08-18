@@ -2,13 +2,13 @@
 
 First, start by importing HTTPX:
 
-```python
+```pycon
 >>> import httpx
 ```
 
 Now, let’s try to get a webpage.
 
-```python
+```pycon
 >>> r = httpx.get('https://httpbin.org/get')
 >>> r
 <Response [200 OK]>
@@ -16,13 +16,13 @@ Now, let’s try to get a webpage.
 
 Similarly, to make an HTTP POST request:
 
-```python
+```pycon
 >>> r = httpx.post('https://httpbin.org/post', data={'key': 'value'})
 ```
 
 The PUT, DELETE, HEAD, and OPTIONS requests all follow the same style:
 
-```python
+```pycon
 >>> r = httpx.put('https://httpbin.org/put', data={'key': 'value'})
 >>> r = httpx.delete('https://httpbin.org/delete')
 >>> r = httpx.head('https://httpbin.org/get')
@@ -33,7 +33,7 @@ The PUT, DELETE, HEAD, and OPTIONS requests all follow the same style:
 
 To include URL query parameters in the request, use the `params` keyword:
 
-```python
+```pycon
 >>> params = {'key1': 'value1', 'key2': 'value2'}
 >>> r = httpx.get('https://httpbin.org/get', params=params)
 ```
@@ -41,14 +41,14 @@ To include URL query parameters in the request, use the `params` keyword:
 To see how the values get encoding into the URL string, we can inspect the
 resulting URL that was used to make the request:
 
-```python
+```pycon
 >>> r.url
 URL('https://httpbin.org/get?key2=value2&key1=value1')
 ```
 
 You can also pass a list of items as a value:
 
-```python
+```pycon
 >>> params = {'key1': 'value1', 'key2': ['value2', 'value3']}
 >>> r = httpx.get('https://httpbin.org/get', params=params)
 >>> r.url
@@ -59,7 +59,7 @@ URL('https://httpbin.org/get?key1=value1&key2=value2&key2=value3')
 
 HTTPX will automatically handle decoding the response content into Unicode text.
 
-```python
+```pycon
 >>> r = httpx.get('https://www.example.org/')
 >>> r.text
 '<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
@@ -67,7 +67,7 @@ HTTPX will automatically handle decoding the response content into Unicode text.
 
 You can inspect what encoding has been used to decode the response.
 
-```python
+```pycon
 >>> r.encoding
 'UTF-8'
 ```
@@ -75,7 +75,7 @@ You can inspect what encoding has been used to decode the response.
 If you need to override the standard behavior and explicitly set the encoding to
 use, then you can do that too.
 
-```python
+```pycon
 >>> r.encoding = 'ISO-8859-1'
 ```
 
@@ -83,7 +83,7 @@ use, then you can do that too.
 
 The response content can also be accessed as bytes, for non-text responses:
 
-```python
+```pycon
 >>> r.content
 b'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 ```
@@ -94,7 +94,7 @@ encoding will also be supported.
 
 For example, to create an image from binary data returned by a request, you can use the following code:
 
-```python
+```pycon
 >>> from PIL import Image
 >>> from io import BytesIO
 >>> i = Image.open(BytesIO(r.content))
@@ -104,7 +104,7 @@ For example, to create an image from binary data returned by a request, you can 
 
 Often Web API responses will be encoded as JSON.
 
-```python
+```pycon
 >>> r = httpx.get('https://api.github.com/events')
 >>> r.json()
 [{u'repository': {u'open_issues': 0, u'url': 'https://github.com/...' ...  }}]
@@ -114,7 +114,7 @@ Often Web API responses will be encoded as JSON.
 
 To include additional headers in the outgoing request, use the `headers` keyword argument:
 
-```python
+```pycon
 >>> url = 'http://httpbin.org/headers'
 >>> headers = {'user-agent': 'my-app/0.0.1'}
 >>> r = httpx.get(url, headers=headers)
@@ -126,7 +126,7 @@ Some types of HTTP requests, such as `POST` and `PUT` requests, can include data
 in the request body. One common way of including that is as form-encoded data,
 which is used for HTML forms.
 
-```python
+```pycon
 >>> data = {'key1': 'value1', 'key2': 'value2'}
 >>> r = httpx.post("https://httpbin.org/post", data=data)
 >>> print(r.text)
@@ -142,7 +142,7 @@ which is used for HTML forms.
 
 Form encoded data can also include multiple values from a given key.
 
-```python
+```pycon
 >>> data = {'key1': ['value1', 'value2']}
 >>> r = httpx.post("https://httpbin.org/post", data=data)
 >>> print(r.text)
@@ -162,7 +162,7 @@ Form encoded data can also include multiple values from a given key.
 
 You can also upload files, using HTTP multipart encoding:
 
-```python
+```pycon
 >>> files = {'upload-file': open('report.xls', 'rb')}
 >>> r = httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
@@ -178,7 +178,7 @@ You can also upload files, using HTTP multipart encoding:
 You can also explicitly set the filename and content type, by using a tuple
 of items for the file value:
 
-```python
+```pycon
 >>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
 >>> r = httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
@@ -193,7 +193,7 @@ of items for the file value:
 
 If you need to include non-file data fields in the multipart form, use the `data=...` parameter:
 
-```python
+```pycon
 >>> data = {'message': 'Hello, world!'}
 >>> files = {'file': open('report.xls', 'rb')}
 >>> r = httpx.post("https://httpbin.org/post", data=data, files=files)
@@ -215,7 +215,7 @@ If you need to include non-file data fields in the multipart form, use the `data
 Form encoded data is okay if all you need is a simple key-value data structure.
 For more complicated data structures you'll often want to use JSON encoding instead.
 
-```python
+```pycon
 >>> data = {'integer': 123, 'boolean': True, 'list': ['a', 'b', 'c']}
 >>> r = httpx.post("https://httpbin.org/post", json=data)
 >>> print(r.text)
@@ -246,7 +246,7 @@ binary data.
 
 We can inspect the HTTP status code of the response:
 
-```python
+```pycon
 >>> r = httpx.get('https://httpbin.org/get')
 >>> r.status_code
 200
@@ -254,14 +254,14 @@ We can inspect the HTTP status code of the response:
 
 HTTPX also includes an easy shortcut for accessing status codes by their text phrase.
 
-```python
+```pycon
 >>> r.status_code == httpx.codes.OK
 True
 ```
 
 We can raise an exception for any Client or Server error responses (4xx or 5xx status codes):
 
-```python
+```pycon
 >>> not_found = httpx.get('https://httpbin.org/status/404')
 >>> not_found.status_code
 404
@@ -275,7 +275,7 @@ For more information check: https://httpstatuses.com/404
 
 Any successful response codes will simply return `None` rather than raising an exception.
 
-```python
+```pycon
 >>> r.raise_for_status()
 ```
 
@@ -283,7 +283,7 @@ Any successful response codes will simply return `None` rather than raising an e
 
 The response headers are available as a dictionary-like interface.
 
-```python
+```pycon
 >>> r.headers
 Headers({
     'content-encoding': 'gzip',
@@ -298,7 +298,7 @@ Headers({
 
 The `Headers` data type is case-insensitive, so you can use any capitalization.
 
-```python
+```pycon
 >>> r.headers['Content-Type']
 'application/json'
 
@@ -316,7 +316,7 @@ For large downloads you may want to use streaming responses that do not load the
 
 You can stream the binary content of the response...
 
-```python
+```pycon
 >>> with httpx.stream("GET", "https://www.example.com") as r:
 ...     for data in r.iter_bytes():
 ...         print(data)
@@ -324,7 +324,7 @@ You can stream the binary content of the response...
 
 Or the text of the response...
 
-```python
+```pycon
 >>> with httpx.stream("GET", "https://www.example.com") as r:
 ...     for text in r.iter_text():
 ...         print(text)
@@ -332,7 +332,7 @@ Or the text of the response...
 
 Or stream the text, on a line-by-line basis...
 
-```python
+```pycon
 >>> with httpx.stream("GET", "https://www.example.com") as r:
 ...     for line in r.iter_lines():
 ...         print(line)
@@ -342,7 +342,7 @@ HTTPX will use universal line endings, normalising all cases to `\n`.
 
 In some cases you might want to access the raw bytes on the response without applying any HTTP content decoding. In this case any content encoding that the web server has applied such as `gzip`, `deflate`, or `brotli` will not be automatically decoded.
 
-```python
+```pycon
 >>> with httpx.stream("GET", "https://www.example.com") as r:
 ...     for chunk in r.iter_raw():
 ...         print(chunk)
@@ -350,7 +350,7 @@ In some cases you might want to access the raw bytes on the response without app
 
 If you're using streaming responses in any of these ways then the `response.content` and `response.text` attributes will not be available, and will raise errors if accessed. However you can also use the response streaming functionality to conditionally load the response body:
 
-```python
+```pycon
 >>> with httpx.stream("GET", "https://www.example.com") as r:
 ...     if r.headers['Content-Length'] < TOO_LONG:
 ...         r.read()
@@ -361,7 +361,7 @@ If you're using streaming responses in any of these ways then the `response.cont
 
 Any cookies that are set on the response can be easily accessed:
 
-```python
+```pycon
 >>> r = httpx.get('http://httpbin.org/cookies/set?chocolate=chip', allow_redirects=False)
 >>> r.cookies['chocolate']
 'chip'
@@ -369,7 +369,7 @@ Any cookies that are set on the response can be easily accessed:
 
 To include cookies in an outgoing request, use the `cookies` parameter:
 
-```python
+```pycon
 >>> cookies = {"peanut": "butter"}
 >>> r = httpx.get('http://httpbin.org/cookies', cookies=cookies)
 >>> r.json()
@@ -379,7 +379,7 @@ To include cookies in an outgoing request, use the `cookies` parameter:
 Cookies are returned in a `Cookies` instance, which is a dict-like data structure
 with additional API for accessing cookies by their domain or path.
 
-```python
+```pycon
 >>> cookies = httpx.Cookies()
 >>> cookies.set('cookie_on_domain', 'hello, there!', domain='httpbin.org')
 >>> cookies.set('cookie_off_domain', 'nope.', domain='example.org')
@@ -398,7 +398,7 @@ in which they were made.
 
 For example, GitHub redirects all HTTP requests to HTTPS.
 
-```python
+```pycon
 >>> r = httpx.get('http://github.com/')
 >>> r.url
 URL('https://github.com/')
@@ -410,7 +410,7 @@ URL('https://github.com/')
 
 You can modify the default redirection handling with the allow_redirects parameter:
 
-```python
+```pycon
 >>> r = httpx.get('http://github.com/', allow_redirects=False)
 >>> r.status_code
 301
@@ -420,7 +420,7 @@ You can modify the default redirection handling with the allow_redirects paramet
 
 If you’re making a `HEAD` request, you can use this to enable redirection:
 
-```python
+```pycon
 >>> r = httpx.head('http://github.com/', allow_redirects=True)
 >>> r.url
 'https://github.com/'
@@ -437,13 +437,13 @@ raise an error rather than hanging indefinitely.
 The default timeout for network inactivity is five seconds. You can modify the
 value to be more or less strict:
 
-```python
+```pycon
 >>> httpx.get('https://github.com/', timeout=0.001)
 ```
 
 You can also disable the timeout behavior completely...
 
-```python
+```pycon
 >>> httpx.get('https://github.com/', timeout=None)
 ```
 
@@ -457,7 +457,7 @@ To provide Basic authentication credentials, pass a 2-tuple of
 plaintext `str` or `bytes` objects as the `auth` argument to the request
 functions:
 
-```python
+```pycon
 >>> httpx.get("https://example.com", auth=("my_user", "password123"))
 ```
 
@@ -466,7 +466,7 @@ a `DigestAuth` object with the plaintext username and password as arguments.
 This object can be then passed as the `auth` argument to the request methods
 as above:
 
-```python
+```pycon
 >>> auth = httpx.DigestAuth("my_user", "password123")
 >>> httpx.get("https://example.com", auth=auth)
 <Response [200 OK]>
