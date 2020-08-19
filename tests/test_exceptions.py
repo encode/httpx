@@ -33,7 +33,7 @@ def test_httpcore_exception_mapping(server) -> None:
     with pytest.raises(httpx.ConnectError):
         httpx.get("http://doesnotexist")
 
-    # Make sure Response.iter_raw() exceptinos are mapped
+    # Make sure streaming methods also map exceptions.
     url = server.url.copy_with(path="/slow_stream_response")
     timeout = httpx.Timeout(None, read=0.1)
     with httpx.stream("GET", url, timeout=timeout) as stream:
