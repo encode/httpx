@@ -36,13 +36,13 @@
 
 ::: httpx.Client
     :docstring:
-    :members: headers cookies params request get head options post put patch delete build_request send close
+    :members: headers cookies params auth request get head options post put patch delete build_request send close
 
 ## `AsyncClient`
 
 ::: httpx.AsyncClient
     :docstring:
-    :members: headers cookies params request get head options post put patch delete build_request send aclose
+    :members: headers cookies params auth request get head options post put patch delete build_request send aclose
 
 
 ## `Response`
@@ -88,7 +88,7 @@
 *An HTTP request. Can be constructed explicitly for more control over exactly
 what gets sent over the wire.*
 
-```python
+```pycon
 >>> request = httpx.Request("GET", "https://example.org", headers={'host': 'example.org'})
 >>> response = client.send(request)
 ```
@@ -104,7 +104,7 @@ what gets sent over the wire.*
 
 *A normalized, IDNA supporting URL.*
 
-```python
+```pycon
 >>> url = URL("https://example.org/")
 >>> url.host
 'example.org'
@@ -128,7 +128,7 @@ what gets sent over the wire.*
 
 *A case-insensitive multi-dict.*
 
-```python
+```pycon
 >>> headers = Headers({'Content-Type': 'application/json'})
 >>> headers['content-type']
 'application/json'
@@ -141,7 +141,7 @@ what gets sent over the wire.*
 
 *A dict-like cookie store.*
 
-```python
+```pycon
 >>> cookies = Cookies()
 >>> cookies.set("name", "value", domain="example.org")
 ```

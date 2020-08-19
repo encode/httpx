@@ -23,7 +23,7 @@ release, so that you're able to properly review [API changes between package upd
 
 Let's get started...
 
-```python
+```pycon
 >>> import httpx
 >>> r = httpx.get('https://www.example.org/')
 >>> r
@@ -40,7 +40,7 @@ Or, using the async API...
 
 _Use [IPython](https://ipython.readthedocs.io/en/stable/) or Python 3.8+ with `python -m asyncio` to try this code interactively._
 
-```python
+```pycon
 >>> import httpx
 >>> async with httpx.AsyncClient() as client:
 >>>     r = await client.get('https://www.example.org/')
