@@ -1,10 +1,10 @@
 import collections
 import itertools
-from typing import List, Tuple, Dict, Mapping, Optional
-
-import pytest
+from typing import Dict, List, Mapping, Optional, Tuple
 
 import httpcore
+import pytest
+
 import httpx
 from httpx._utils import exponential_backoff
 
