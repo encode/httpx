@@ -56,7 +56,7 @@ finally:
 
 Once you have a `Client`, you can send requests using `.get()`, `.post()`, etc. For example:
 
-```python
+```pycon
 >>> with httpx.Client() as client:
 ...     r = client.get('https://example.com')
 ...
@@ -68,7 +68,7 @@ These methods accept the same arguments as `httpx.get()`, `httpx.post()`, etc. T
 
 For example, to send a request with custom headers:
 
-```python
+```pycon
 >>> with httpx.Client() as client:
 ...     headers = {'X-Custom': 'value'}
 ...     r = client.get('https://example.com', headers=headers)
@@ -83,7 +83,7 @@ Clients allow you to apply configuration to all outgoing requests by passing par
 
 For example, to apply a set of custom headers _on every request_:
 
-```python
+```pycon
 >>> url = 'http://httpbin.org/headers'
 >>> headers = {'user-agent': 'my-app/0.0.1'}
 >>> with httpx.Client(headers=headers) as client:
@@ -99,7 +99,7 @@ When a configuration option is provided at both the client-level and request-lev
 
 - For headers, query parameters and cookies, the values are combined together. For example:
 
-```python
+```pycon
 >>> headers = {'X-Auth': 'from-client'}
 >>> params = {'client_id': 'client1'}
 >>> with httpx.Client(headers=headers, params=params) as client:
@@ -117,7 +117,7 @@ URL('https://example.com?client_id=client1&request_id=request1')
 
 - For all other parameters, the request-level value takes priority. For example:
 
-```python
+```pycon
 >>> with httpx.Client(auth=('tom', 'mot123')) as client:
 ...     r = client.get('https://example.com', auth=('alice', 'ecila123'))
 ...
@@ -135,7 +135,7 @@ Additionally, `Client` accepts some configuration options that aren't available 
 
 For example, `base_url` allows you to prepend an URL to all outgoing requests:
 
-```python
+```pycon
 >>> with httpx.Client(base_url='http://httpbin.org') as client:
 ...     r = client.get('/headers')
 ...
@@ -232,7 +232,7 @@ not defined, HTTPX tries to add auth into request's header from .netrc file.
     you should create a new client or restart the interpreter.
 
 As default `trust_env` is true. To set false:
-```python
+```pycon
 >>> httpx.get('https://example.org/', trust_env=False)
 ```
 
@@ -240,7 +240,7 @@ If `NETRC` environment is empty, HTTPX tries to use default files.
 (`~/.netrc`, `~/_netrc`)
 
 To change `NETRC` environment:
-```python
+```pycon
 >>> import os
 >>> os.environ["NETRC"] = "my_default_folder/.my_netrc"
 ```
@@ -572,7 +572,7 @@ As mentioned in the [quickstart](/quickstart#sending-multipart-file-uploads)
 multipart file encoding is available by passing a dictionary with the
 name of the payloads as keys and either tuple of elements or a file-like object or a string as values.
 
-```python
+```pycon
 >>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
 >>> r = httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
@@ -597,7 +597,7 @@ on the file name, with unknown file extensions defaulting to "application/octet-
 If the file name is explicitly set to `None` then HTTPX will not include a content-type
 MIME header field.
 
-```python
+```pycon
 >>> files = {'upload-file': (None, 'text content', 'text/plain')}
 >>> r = httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
@@ -620,7 +620,7 @@ You can also send multiple files in one go with a multiple file field form.
 To do that, pass a list of `(field, <file>)` items instead of a dictionary, allowing you to pass multiple items with the same `field`.
 For instance this request sends 2 files, `foo.png` and `bar.png` in one request on the `images` form field:
 
-```python
+```pycon
 >>> files = [('images', ('foo.png', open('foo.png', 'rb'), 'image/png')),
                       ('images', ('bar.png', open('bar.png', 'rb'), 'image/png'))]
 >>> r = httpx.post("https://httpbin.org/post", files=files)
@@ -742,7 +742,7 @@ r = httpx.get("https://example.org", verify="path/to/client.pem")
 
 Alternatively, you can pass a standard library `ssl.SSLContext`.
 
-```python
+```pycon
 >>> import ssl
 >>> import httpx
 >>> context = ssl.create_default_context()
@@ -753,7 +753,7 @@ Alternatively, you can pass a standard library `ssl.SSLContext`.
 
 We also include a helper function for creating properly configured `SSLContext` instances.
 
-```python
+```pycon
 >>> context = httpx.create_ssl_context()
 ```
 
@@ -761,7 +761,7 @@ The `create_ssl_context` function accepts the same set of SSL configuration argu
 (`trust_env`, `verify`, `cert` and `http2` arguments)
 as `httpx.Client` or `httpx.AsyncClient`
 
-```python
+```pycon
 >>> import httpx
 >>> context = httpx.create_ssl_context(verify="/tmp/client.pem")
 >>> httpx.get('https://example.org', verify=context)
@@ -796,7 +796,7 @@ If you do need to make HTTPS connections to a local server, for example to test 
 1. Pass the server key/cert files when starting your local server. (This depends on the particular web server you're using. For example, [Uvicorn](https://www.uvicorn.org) provides the `--ssl-keyfile` and `--ssl-certfile` options.)
 1. Tell HTTPX to use the certificates stored in `client.pem`:
 
-```python
+```pycon
 >>> import httpx
 >>> r = httpx.get("https://localhost:8000", verify="/tmp/client.pem")
 >>> r
@@ -814,7 +814,7 @@ class directly, and pass it to the client instance. The `httpcore` package
 provides a `local_address` configuration that is only available via this
 low-level API.
 
-```python
+```pycon
 >>> import httpx, httpcore
 >>> ssl_context = httpx.create_ssl_context()
 >>> transport = httpcore.SyncConnectionPool(
@@ -854,7 +854,7 @@ HTTPX also currently ships with a transport that uses the excellent
 [`urllib3` library](https://urllib3.readthedocs.io/en/latest/), which can be
 used with the sync `Client`...
 
-```python
+```pycon
 >>> import httpx
 >>> client = httpx.Client(transport=httpx.URLLib3Transport())
 >>> client.get("https://example.org")
@@ -891,7 +891,7 @@ class HelloWorldTransport(httpcore.SyncHTTPTransport):
 
 Which we can use in the same way:
 
-```python
+```pycon
 >>> import httpx
 >>> client = httpx.Client(transport=HelloWorldTransport())
 >>> response = client.get("https://example.org/")
