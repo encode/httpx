@@ -127,6 +127,7 @@ class BaseClient:
     def timeout(self, timeout: TimeoutTypes) -> None:
         self._timeout = Timeout(timeout)
 
+    @property
     def auth(self) -> typing.Optional[Auth]:
         """
         Authentication class used when none is passed at the request-level.
