@@ -42,6 +42,7 @@ This is different to the `requests` usage of `proxies={"http": ..., "https": ...
 
 This change is for better consistency with more complex mappings, that might also include domain names, such as `proxies={"all://": ..., "all://www.example.com": None}` which maps all requests onto a proxy, except for requests to "www.example.com" which have an explicit exclusion.
 
+Also noted that `requests.Session.request()` allows a `proxies=...` parameter, whereas `httpx.Client.request(...)` does not.
 ## SSL configuration
 
 When using a `Client` instance, the `trust_env`, `verify`, and `cert` arguments should always be passed on client instantiation, rather than passed to the request method.
