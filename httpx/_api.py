@@ -114,6 +114,11 @@ def stream(
     cert: CertTypes = None,
     trust_env: bool = True,
 ) -> StreamContextManager:
+    """
+    Streaming response content.
+
+    **Parameters**: See `httpx.request`.
+    """
     client = Client(cert=cert, verify=verify, trust_env=trust_env)
     request = Request(
         method=method,
