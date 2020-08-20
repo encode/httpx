@@ -31,18 +31,21 @@
 
 ::: httpx.delete
     :docstring:
+    
+::: httpx.stream
+    :docstring:
 
 ## `Client`
 
 ::: httpx.Client
     :docstring:
-    :members: headers cookies params auth request get head options post put patch delete build_request send close
+    :members: headers cookies params auth request get head options post put patch delete stream build_request send close
 
 ## `AsyncClient`
 
 ::: httpx.AsyncClient
     :docstring:
-    :members: headers cookies params auth request get head options post put patch delete build_request send aclose
+    :members: headers cookies params auth request get head options post put patch delete stream build_request send aclose
 
 
 ## `Response`

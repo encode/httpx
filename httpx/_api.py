@@ -118,6 +118,16 @@ def stream(
     cert: CertTypes = None,
     trust_env: bool = True,
 ) -> StreamContextManager:
+    """
+    Alternative to `httpx.request()` that streams the response body
+    instead of loading it into memory at once.
+
+    **Parameters**: See `httpx.request`.
+
+    See also: [Streaming Responses][0]
+
+    [0]: /quickstart#streaming-responses
+    """
     client = Client(proxies=proxies, cert=cert, verify=verify, trust_env=trust_env)
     request = Request(
         method=method,
