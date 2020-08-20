@@ -235,9 +235,7 @@ def head(
     **Parameters**: See `httpx.request`.
 
     Note that the `data`, `files`, and `json` parameters are not available on
-    this function, as `HEAD` requests should not include a request body. The
-    `HEAD` method also differs from the other cases in that `allow_redirects`
-    defaults to `False`.
+    this function, as `HEAD` requests should not include a request body.
     """
     return request(
         "HEAD",
