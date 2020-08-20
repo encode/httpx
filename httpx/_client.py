@@ -191,6 +191,16 @@ class BaseClient:
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> "StreamContextManager":
+        """
+        Alternative to `httpx.request()` that streams the response body
+        instead of loading it into memory at once.
+
+        **Parameters**: See `httpx.request`.
+
+        See also: [Streaming Responses][0]
+
+        [0]: /quickstart#streaming-responses
+        """
         request = self.build_request(
             method=method,
             url=url,
