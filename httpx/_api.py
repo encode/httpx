@@ -58,8 +58,7 @@ def request(
     request.
     * **auth** - *(optional)* An authentication class to use when sending the
     request.
-    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
-    URLs.
+    * **proxies** - *(optional)* A dictionary mapping proxy keys to proxy URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     the request.
     * **allow_redirects** - *(optional)* Enables or disables HTTP redirects.
