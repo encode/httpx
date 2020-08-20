@@ -411,7 +411,6 @@ class Headers(typing.MutableMapping[str, str]):
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
         """
         Returns a list of the raw header items, as byte pairs.
-        May be mutated in-place.
         """
         return self._list
 
@@ -649,6 +648,8 @@ class Request:
 
         for item in reversed(auto_headers):
             self.headers.raw.insert(0, item)
+        #
+        # self.headers = Headers(auto_headers + self.headers.raw)
 
     @property
     def content(self) -> bytes:

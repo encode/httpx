@@ -5,7 +5,7 @@ import typing
 import httpcore
 import pytest
 
-from httpx import AsyncClient, Headers, __version__
+from httpx import AsyncClient, Headers, Request, __version__
 from httpx._content_streams import ContentStream, JSONStream
 
 
@@ -181,3 +181,8 @@ async def test_host_with_non_default_port_in_url():
             "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
         }
     }
+
+
+def test_auto_headers():
+    request = Request("GET", "https://google.com")
+    assert "host" in request.headers
