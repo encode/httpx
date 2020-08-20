@@ -356,7 +356,7 @@ def map_exceptions(
             raise
 
         message = str(exc)
-        raise mapped_exc(message, **kwargs) from None  # type: ignore
+        raise mapped_exc(message, **kwargs) from exc  # type: ignore
 
 
 HTTPCORE_EXC_MAP = {
