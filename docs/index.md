@@ -108,11 +108,11 @@ The HTTPX project relies on these excellent libraries:
 
 * `httpcore` - The underlying transport implementation for `httpx`.
   * `h11` - HTTP/1.1 support.
-  * `h2` - HTTP/2 support.
+  * `h2` - HTTP/2 support. *(Optional)*
 * `certifi` - SSL certificates.
 * `chardet` - Fallback auto-detection for response encoding.
-* `idna` - Internationalized domain name support.
 * `rfc3986` - URL parsing & normalization.
+  * `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.
 * `urllib3` - Support for the `httpx.URLLib3Transport` class. *(Optional)*
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
@@ -133,6 +133,12 @@ Or, to include the optional HTTP/2 support, use:
 
 ```shell
 $ pip install httpx[http2]
+```
+
+To include the optional brotli decoder support, use:
+
+```shell
+$ pip install httpx[brotli]
 ```
 
 HTTPX requires Python 3.6+

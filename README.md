@@ -119,8 +119,8 @@ The HTTPX project relies on these excellent libraries:
   * `h2` - HTTP/2 support. *(Optional)*
 * `certifi` - SSL certificates.
 * `chardet` - Fallback auto-detection for response encoding.
-* `idna` - Internationalized domain name support.
 * `rfc3986` - URL parsing & normalization.
+  * `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.
 * `urllib3` - Support for the `httpx.URLLib3Transport` class. *(Optional)*
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
