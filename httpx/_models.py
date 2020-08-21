@@ -1047,6 +1047,10 @@ class Cookies(MutableMapping):
             if isinstance(cookies, dict):
                 for key, value in cookies.items():
                     self.set(key, value)
+        elif isinstance(cookies, list):
+            self.jar = CookieJar()
+            for key, value in cookies:
+                self.set(key, value)
         elif isinstance(cookies, Cookies):
             self.jar = CookieJar()
             for cookie in cookies.jar:
