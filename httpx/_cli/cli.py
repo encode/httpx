@@ -1,4 +1,5 @@
 import json
+import typing
 
 import click
 import pygments.lexers
