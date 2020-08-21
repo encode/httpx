@@ -75,3 +75,13 @@ def test_multiple_set_cookie():
     cookies.extract_cookies(response)
 
     assert len(cookies) == 2
+
+
+def test_cookies_can_be_a_list_of_tuples():
+    cookies_val = [("name1", "val1"), ("name2", "val2")]
+
+    cookies = httpx.Cookies(cookies_val)
+
+    assert len(cookies.items()) == 2
+    for k, v in cookies_val:
+        assert cookies[k] == v
