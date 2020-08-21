@@ -246,5 +246,5 @@ async def test_that_async_client_caused_warning_when_being_deleted():
 
     await async_client.get("http://example.com")
 
-    with pytest.warns(ResourceWarning):
+    with pytest.warns(UserWarning):
         del async_client

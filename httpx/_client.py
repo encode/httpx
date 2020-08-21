@@ -1691,12 +1691,8 @@ class AsyncClient(BaseClient):
         if not self.is_closed:
             warnings.warn(
                 f"Unclosed {self!r}. "
-                "Please call\n"
-                "\t>>> await async_client.aclose()\n"
-                "or use it as a context manager\n"
-                "\t>>> async with httpx.AsyncClient() as client:\n"
-                "\t>>>     ...",
-                ResourceWarning,
+                "See https://www.python-httpx.org/async/#opening-and-closing-clients "
+                "for details."
             )
 
 
