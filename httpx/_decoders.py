@@ -108,12 +108,12 @@ class BrotliDecoder(Decoder):
     """
 
     def __init__(self, request: "Request") -> None:
-        if brotli is None:
+        if brotli is None:  # pragma: nocover
             raise ImportError(
                 "Using 'BrotliDecoder', but the 'brotlipy' or 'brotli' library "
                 "is not installed."
                 "Make sure to install httpx using `pip install httpx[brotli]`."
-            )
+            ) from None
 
         self.request = request
         self.decompressor = brotli.Decompressor()
