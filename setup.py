@@ -58,12 +58,12 @@ setup(
         "certifi",
         "sniffio",
         "chardet==3.*",
-        "idna==2.*",
-        "rfc3986>=1.3,<2",
+        "rfc3986[idna2008]>=1.3,<2",
         "httpcore==0.10.*",
     ],
     extras_require={
         "http2": "h2==3.*",
+        "brotli": "brotlipy==0.7.*",
     },
     classifiers=[
         "Development Status :: 4 - Beta",
