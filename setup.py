@@ -64,6 +64,10 @@ setup(
     extras_require={
         "http2": "h2==3.*",
         "brotli": "brotlipy==0.7.*",
+        "cli": ["click==7.*", "rich==5.*", "pygments==2.*"]
+    },
+    entry_points = {
+        "console_scripts": "httpx=httpx._cli.main:main"
     },
     classifiers=[
         "Development Status :: 4 - Beta",
