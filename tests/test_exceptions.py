@@ -24,7 +24,7 @@ def test_httpcore_all_exceptions_mapped() -> None:
         pytest.fail(f"Unmapped httpcore exceptions: {not_mapped}")
 
 
-def test_httpcore_exception_mapping() -> None:
+def test_httpcore_exception_mapping(server) -> None:
     """
     HTTPCore exception mapping works as expected.
     """
@@ -32,6 +32,13 @@ def test_httpcore_exception_mapping() -> None:
     # Make sure we don't just map to `NetworkError`.
     with pytest.raises(httpx.ConnectError):
         httpx.get("http://doesnotexist")
+
+    # Make sure streaming methods also map exceptions.
+    url = server.url.copy_with(path="/slow_stream_response")
+    timeout = httpx.Timeout(None, read=0.1)
+    with httpx.stream("GET", url, timeout=timeout) as stream:
+        with pytest.raises(httpx.ReadTimeout):
+            stream.read()
 
     # Make sure it also works with custom transports.
     class MockTransport(httpcore.SyncHTTPTransport):

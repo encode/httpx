@@ -191,6 +191,16 @@ class BaseClient:
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> "StreamContextManager":
+        """
+        Alternative to `httpx.request()` that streams the response body
+        instead of loading it into memory at once.
+
+        **Parameters**: See `httpx.request`.
+
+        See also: [Streaming Responses][0]
+
+        [0]: /quickstart#streaming-responses
+        """
         request = self.build_request(
             method=method,
             url=url,
@@ -467,7 +477,7 @@ class Client(BaseClient):
     to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
     file, key file, password).
-    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
+    * **proxies** - *(optional)* A dictionary mapping proxy keys to proxy
     URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
