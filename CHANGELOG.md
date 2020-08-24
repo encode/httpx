@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * Ensure that automatically included headers on a request may be modified. (Pull #1205)
 * Allow explicit `Content-Length` header on streaming requests. (Pull #1170)
 * Handle URL quoted usernames and passwords properly. (Pull #1159)
-* Use more consistent default for `HEAD` requests, setting `redirects=True`. (Pull #1183)
+* Use more consistent default for `HEAD` requests, setting `allow_redirects=True`. (Pull #1183)
 * If a transport error occurs while streaming the response, raise an `httpx` exception, not the underlying `httpcore` exception. (Pull #1190)
 * Include the underlying `httpcore` traceback, when transport exceptions occur. (Pull #1199)
 
