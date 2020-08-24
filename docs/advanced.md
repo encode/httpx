@@ -221,6 +221,54 @@ with httpx.Client(headers=headers) as client:
     ...
 ```
 
+## Event Hooks
+
+HTTPX allows you to register "event hooks" with the client, that are called
+every time a particular type of event takes place.
+
+There are currently two event hooks:
+
+* `request` - Called once a request is about to be sent. Passed the `request` instance.
+* `response` - Called once the response has been returned. Passed the `response` instance.
+
+These allow you to install client-wide functionality such as logging and monitoring.
+
+```python
+def log_request(request):
+    print(request)
+
+def log_response(response):
+    print(response)
+
+client = httpx.Client(event_hooks={'request': log_request, 'response': log_response})
+```
+
+You can also use these hooks to install response processing code, such as this
+example, which creates a client instance that always raises `httpx.HTTPStatusError`
+on 4xx and 5xx responses.
+
+```python
+def raise_on_4xx_5xx(response):
+    response.raise_for_status()
+
+client = httpx.Client(event_hooks={'response': raise_on_4xx_5xx})
+```
+
+You can also register multiple event hooks for each type of event, and can modify
+the event hooks either on client instantiation, or modify and inspect the
+event hooks using the `client.event_hooks` property.
+
+```python
+client = httpx.Client()
+client.event_hooks['request'] = [log_request]
+client.event_hooks['response'] = [log_response, raise_for_status]
+```
+
+!!! note
+    If you are using HTTPX's async support, then you need to be aware that
+    hooks registered with `httpx.AsyncClient` MUST be async functions,
+    rather than plain functions.
+
 ## .netrc Support
 
 HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is
