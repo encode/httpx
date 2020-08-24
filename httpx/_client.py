@@ -121,6 +121,14 @@ class BaseClient:
         self._timeout = Timeout(timeout)
 
     @property
+    def event_hooks(self) -> EventHooks:
+        return self._event_hooks
+
+    @event_hooks.setter
+    def event_hooks(self, event_hooks: dict) -> None:
+        self._event_hooks = EventHooks(event_hooks)
+
+    @property
     def auth(self) -> typing.Optional[Auth]:
         """
         Authentication class used when none is passed at the request-level.
