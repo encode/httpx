@@ -4,6 +4,8 @@ import pytest
 
 import httpx
 
+from .concurrency import sleep
+
 
 async def hello_world(scope, receive, send):
     status = 200
@@ -37,7 +39,8 @@ async def raise_exc_after_response(scope, receive, send):
     headers = [(b"content-type", "text/plain"), (b"content-length", str(len(output)))]
 
     await send({"type": "http.response.start", "status": status, "headers": headers})
-    await send({"type": "http.response.body", "body": output})
+    await send({"type": "http.response.body", "body": output, "more_body": True})
+    await sleep(0.001)  # Let the transport detect that the response has started.
     raise ValueError()
 
 
@@ -109,3 +112,29 @@ async def test_asgi_disconnect_after_response_complete():
     response = await client.post("http://www.example.org/", data=b"example")
     assert response.status_code == 200
     assert disconnect
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_streaming():
+    client = httpx.AsyncClient(app=hello_world)
+    async with client.stream("GET", "http://www.example.org/") as response:
+        assert response.status_code == 200
+        text = "".join([chunk async for chunk in response.aiter_text()])
+        assert text == "Hello, World!"
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_streaming_exc():
+    client = httpx.AsyncClient(app=raise_exc)
+    with pytest.raises(ValueError):
+        async with client.stream("GET", "http://www.example.org/"):
+            pass  # pragma: no cover
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_streaming_exc_after_response():
+    client = httpx.AsyncClient(app=raise_exc_after_response)
+    with pytest.raises(ValueError):
+        async with client.stream("GET", "http://www.example.org/") as response:
+            async for _ in response.aiter_bytes():
+                pass  # pragma: no cover
