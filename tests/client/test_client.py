@@ -208,3 +208,43 @@ def test_pool_limits_deprecated():
 
     with pytest.warns(DeprecationWarning):
         httpx.AsyncClient(pool_limits=limits)
+
+
+def test_event_hooks(server):
+    events = []
+
+    def on_request(request):
+        events.append({"event": "request", "headers": dict(request.headers)})
+
+    def on_response(response):
+        headers = dict(response.headers)
+        headers["date"] = "Mon, 24 Aug 2020 13:18:40 GMT"
+        events.append({"event": "response", "headers": headers})
+
+    event_hooks = {"request": on_request, "response": on_response}
+
+    with httpx.Client(event_hooks=event_hooks) as http:
+        http.get(server.url, auth=("username", "password"))
+
+    assert events == [
+        {
+            "event": "request",
+            "headers": {
+                "host": "127.0.0.1:8000",
+                "user-agent": "python-httpx/0.14.2",
+                "accept": "*/*",
+                "accept-encoding": "gzip, deflate, br",
+                "connection": "keep-alive",
+                "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+            },
+        },
+        {
+            "event": "response",
+            "headers": {
+                "date": "Mon, 24 Aug 2020 13:18:40 GMT",
+                "server": "uvicorn",
+                "content-type": "text/plain",
+                "transfer-encoding": "chunked",
+            },
+        },
+    ]
