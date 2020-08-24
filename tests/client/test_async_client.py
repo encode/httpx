@@ -207,3 +207,18 @@ async def test_event_hooks(server):
             },
         },
     ]
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_event_hooks_raising_exception(server):
+    async def raise_on_4xx_5xx(response):
+        response.raise_for_status()
+
+    event_hooks = {"response": raise_on_4xx_5xx}
+
+    async with httpx.AsyncClient(event_hooks=event_hooks) as http:
+        url = server.url.copy_with(path="/status/400")
+        try:
+            await http.get(url)
+        except httpx.HTTPStatusError as exc:
+            assert exc.response.is_closed

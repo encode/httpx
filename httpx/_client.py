@@ -723,8 +723,12 @@ class Client(BaseClient):
             finally:
                 response.close()
 
-        for hook in self._event_hooks["response"]:
-            hook(response)
+        try:
+            for hook in self._event_hooks["response"]:
+                hook(response)
+        except Exception:
+            response.close()
+            raise
 
         return response
 
@@ -1334,8 +1338,12 @@ class AsyncClient(BaseClient):
             finally:
                 await response.aclose()
 
-        for hook in self._event_hooks["response"]:
-            await hook(response)
+        try:
+            for hook in self._event_hooks["response"]:
+                await hook(response)
+        except Exception:
+            await response.aclose()
+            raise
 
         return response
 
