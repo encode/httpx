@@ -416,8 +416,6 @@ class EventHooks(MutableMapping):
         value = dict(*args, **kwargs)
         self._dict = {
             "request": self._as_list(value.get("request", [])),
-            "auth": self._as_list(value.get("auth", [])),
-            "redirect": self._as_list(value.get("redirect", [])),
             "response": self._as_list(value.get("response", [])),
         }
 
