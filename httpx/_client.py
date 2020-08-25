@@ -1365,15 +1365,15 @@ class AsyncClient(BaseClient):
         if auth.requires_request_body:
             await request.aread()
 
-        auth_flow = auth.auth_flow(request)
-        request = next(auth_flow)
+        auth_flow = auth.async_auth_flow(request)
+        request = await auth_flow.__anext__()
         while True:
             response = await self._send_single_request(request, timeout)
             if auth.requires_response_body:
                 await response.aread()
             try:
-                next_request = auth_flow.send(response)
-            except StopIteration:
+                next_request = await auth_flow.asend(response)
+            except StopAsyncIteration:
                 return response
             except BaseException as exc:
                 await response.aclose()

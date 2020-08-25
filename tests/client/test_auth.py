@@ -1,5 +1,7 @@
+import asyncio
 import hashlib
 import os
+import threading
 import typing
 
 import httpcore
@@ -181,6 +183,29 @@ class ResponseBodyAuth(Auth):
         response = yield request
         data = response.text
         request.headers["Authorization"] = data
+        yield request
+
+
+class SyncOrAsyncAuth(Auth):
+    """
+    A mock authentication scheme that uses a different implementation for the
+    sync and async cases.
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._async_lock = asyncio.Lock()
+
+    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+        with self._lock:
+            request.headers["Authorization"] = "sync-auth"
+        yield request
+
+    async def async_auth_flow(
+        self, request: Request
+    ) -> typing.AsyncGenerator[Request, Response]:
+        async with self._async_lock:
+            request.headers["Authorization"] = "async-auth"
         yield request
 
 
@@ -641,3 +666,23 @@ def test_sync_auth_reads_response_body() -> None:
     response = client.get(url, auth=auth)
     assert response.status_code == 200
     assert response.json() == {"auth": '{"auth": "xyz"}'}
+
+
+@pytest.mark.asyncio
+async def test_sync_async_auth() -> None:
+    """
+    Test that we can use a different auth flow implementation in the async case, to
+    support cases that require performing I/O or using concurrency primitives (such
+    as checking a disk-based cache or fetching a token from a remote auth server).
+    """
+    url = "https://example.org/"
+    auth = SyncOrAsyncAuth()
+
+    client = AsyncClient(transport=AsyncMockTransport())
+    response = await client.get(url, auth=auth)
+    assert response.status_code == 200
+    assert response.json() == {"auth": "async-auth"}
+
+    response = Client(transport=SyncMockTransport()).get(url, auth=auth)
+    assert response.status_code == 200
+    assert response.json() == {"auth": "sync-auth"}

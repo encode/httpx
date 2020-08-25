@@ -17,6 +17,12 @@ class Auth:
 
     To implement a custom authentication scheme, subclass `Auth` and override
     the `.auth_flow()` method.
+
+    If the authentication scheme does I/O, such as disk access or network calls, or uses
+    synchronization primitives such as locks, you should override `.async_auth_flow()`
+    to provide an async-friendly implementation that will be used by the `AsyncClient`.
+    Usage of sync I/O within an async codebase would block the event loop, and could
+    cause performance issues.
     """
 
     requires_request_body = False
@@ -45,6 +51,26 @@ class Auth:
         You can dispatch as many requests as is necessary.
         """
         yield request
+
+    async def async_auth_flow(
+        self, request: Request
+    ) -> typing.AsyncGenerator[Request, Response]:
+        """
+        Execute the authentication flow asynchronously.
+
+        By default, this defers to `.auth_flow()`. You should override this method
+        when the authentication scheme does I/O, such as disk access or network calls,
+        or uses concurrency primitives such as locks.
+        """
+        flow = self.auth_flow(request)
+        request = next(flow)
+
+        while True:
+            response = yield request
+            try:
+                request = flow.send(response)
+            except StopIteration:
+                break
 
 
 class FunctionAuth(Auth):
