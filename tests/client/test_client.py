@@ -223,8 +223,8 @@ def test_context_managed_transport():
             super().__enter__()
             self.events.append("transport.__enter__")
 
-        def __exit__(self):
-            super().__exit__()
+        def __exit__(self, *args):
+            super().__exit__(*args)
             self.events.append("transport.__exit__")
 
     # Note that we're including 'proxies' here to *also* run through the
