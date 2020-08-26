@@ -1621,6 +1621,7 @@ class AsyncClient(BaseClient):
         return await self.request(
             "DELETE",
             url,
+            data=data,
             params=params,
             headers=headers,
             cookies=cookies,
