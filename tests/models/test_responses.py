@@ -20,8 +20,7 @@ async def async_streaming_body():
     yield b"world!"
 
 
-@pytest.mark.asyncio
-async def test_response():
+def test_response():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
 
     assert response.status_code == 200
