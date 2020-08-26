@@ -1035,6 +1035,10 @@ class Client(BaseClient):
                 proxy.close()
 
     def __enter__(self) -> "Client":
+        self._transport.__enter__()
+        for proxy in self._proxies.values():
+            if proxy is not None:
+                proxy.__enter__()
         return self
 
     def __exit__(
@@ -1043,7 +1047,10 @@ class Client(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        self.close()
+        self._transport.__exit__(exc_type, exc_value, traceback)
+        for proxy in self._proxies.values():
+            if proxy is not None:
+                proxy.__exit__(exc_type, exc_value, traceback)
 
 
 class AsyncClient(BaseClient):
@@ -1639,6 +1646,10 @@ class AsyncClient(BaseClient):
                 await proxy.aclose()
 
     async def __aenter__(self) -> "AsyncClient":
+        await self._transport.__aenter__()
+        for proxy in self._proxies.values():
+            if proxy is not None:
+                await proxy.__aenter__()
         return self
 
     async def __aexit__(
@@ -1647,7 +1658,10 @@ class AsyncClient(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self.aclose()
+        await self._transport.__aexit__(exc_type, exc_value, traceback)
+        for proxy in self._proxies.values():
+            if proxy is not None:
+                await proxy.__aexit__(exc_type, exc_value, traceback)
 
 
 class StreamContextManager:
