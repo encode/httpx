@@ -176,6 +176,10 @@ async def test_context_managed_transport():
             self.events = []
 
         async def aclose(self):
+            # The base implementation of httpcore.AsyncHTTPTransport just
+            # calls into `.aclose`, so simple transport cases can just override
+            # this method for any cleanup, where more complex cases
+            # might want to additionally override `__aenter__`/`__aexit__`.
             self.events.append("transport.aclose")
 
         async def __aenter__(self):

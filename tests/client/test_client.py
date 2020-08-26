@@ -217,6 +217,10 @@ def test_context_managed_transport():
             self.events = []
 
         def close(self):
+            # The base implementation of httpcore.SyncHTTPTransport just
+            # calls into `.close`, so simple transport cases can just override
+            # this method for any cleanup, where more complex cases
+            # might want to additionally override `__enter__`/`__exit__`.
             self.events.append("transport.close")
 
         def __enter__(self):
