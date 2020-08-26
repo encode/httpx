@@ -1606,6 +1606,7 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
+        data: RequestData = None,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
