@@ -182,8 +182,8 @@ async def test_context_managed_transport():
             await super().__aenter__()
             self.events.append("transport.__aenter__")
 
-        async def __aexit__(self):
-            await super().__aexit__()
+        async def __aexit__(self, *args):
+            await super().__aexit__(*args)
             self.events.append("transport.__aexit__")
 
     # Note that we're including 'proxies' here to *also* run through the
