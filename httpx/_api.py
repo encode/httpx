@@ -84,7 +84,7 @@ def request(
     ```
     """
     with Client(
-        proxies=proxies, cert=cert, verify=verify, timeout=timeout, trust_env=trust_env,
+        proxies=proxies, cert=cert, verify=verify, timeout=timeout, trust_env=trust_env
     ) as client:
         return client.request(
             method=method,
