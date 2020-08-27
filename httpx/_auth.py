@@ -44,6 +44,17 @@ class Auth:
 
         You can dispatch as many requests as is necessary.
         """
+        raise NotImplementedError(
+            "Override 'auth_flow' to implement a custom auth class."
+        )  # pragma: no cover
+
+
+class NoAuth(Auth):
+    """
+    A 'do nothing' scheme for use when no authentication should be performed.
+    """
+
+    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         yield request
 
 

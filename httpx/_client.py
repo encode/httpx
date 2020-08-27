@@ -4,7 +4,7 @@ from types import TracebackType
 
 import httpcore
 
-from ._auth import Auth, BasicAuth, FunctionAuth
+from ._auth import Auth, BasicAuth, FunctionAuth, NoAuth
 from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
@@ -338,7 +338,7 @@ class BaseClient:
             if credentials is not None:
                 return BasicAuth(username=credentials[0], password=credentials[1])
 
-        return Auth()
+        return NoAuth()
 
     def _build_redirect_request(self, request: Request, response: Response) -> Request:
         """
