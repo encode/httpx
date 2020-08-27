@@ -37,13 +37,13 @@ def url_to_origin(url: str):
     ],
 )
 def test_proxies_parameter(proxies, expected_proxies):
-    client = httpx.AsyncClient(proxies=proxies)
+    client = httpx.Client(proxies=proxies)
 
     for proxy_key, url in expected_proxies:
         pattern = URLPattern(proxy_key)
         assert pattern in client._proxies
         proxy = client._proxies[pattern]
-        assert isinstance(proxy, httpcore.AsyncHTTPProxy)
+        assert isinstance(proxy, httpcore.SyncHTTPProxy)
         assert proxy.proxy_origin == url_to_origin(url)
 
     assert len(expected_proxies) == len(client._proxies)
@@ -110,30 +110,34 @@ PROXY_URL = "http://[::1]"
     ],
 )
 def test_transport_for_request(url, proxies, expected):
-    client = httpx.AsyncClient(proxies=proxies)
+    client = httpx.Client(proxies=proxies)
     transport = client._transport_for_url(httpx.URL(url))
 
     if expected is None:
         assert transport is client._transport
     else:
-        assert isinstance(transport, httpcore.AsyncHTTPProxy)
+        assert isinstance(transport, httpcore.SyncHTTPProxy)
         assert transport.proxy_origin == url_to_origin(expected)
 
 
 @pytest.mark.asyncio
 async def test_async_proxy_close():
-    client = httpx.AsyncClient(proxies={"all://": PROXY_URL})
-    await client.aclose()
+    try:
+        client = httpx.AsyncClient(proxies={"all://": PROXY_URL})
+    finally:
+        await client.aclose()
 
 
 def test_sync_proxy_close():
-    client = httpx.Client(proxies={"all://": PROXY_URL})
-    client.close()
+    try:
+        client = httpx.Client(proxies={"all://": PROXY_URL})
+    finally:
+        client.close()
 
 
 def test_unsupported_proxy_scheme():
     with pytest.raises(ValueError):
-        httpx.AsyncClient(proxies="ftp://127.0.0.1")
+        httpx.Client(proxies="ftp://127.0.0.1")
 
 
 @pytest.mark.parametrize(
@@ -257,7 +261,7 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
 )
 def test_for_deprecated_proxy_params(proxies, expected_scheme):
     with pytest.deprecated_call() as block:
-        httpx.AsyncClient(proxies=proxies)
+        httpx.Client(proxies=proxies)
 
     warning_message = str(block.pop(DeprecationWarning))
 

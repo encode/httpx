@@ -14,7 +14,7 @@ wheel
 
 # Tests & Linting
 autoflake
-black
+black==20.8b1
 cryptography
 flake8
 flake8-bugbear
