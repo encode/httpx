@@ -803,7 +803,7 @@ class Client(BaseClient):
                 timeout=timeout.as_dict(),
             )
         response = Response(
-            status_code,
+            status_code=status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
             stream=stream,  # type: ignore
@@ -1414,7 +1414,7 @@ class AsyncClient(BaseClient):
                 timeout=timeout.as_dict(),
             )
         response = Response(
-            status_code,
+            status_code=status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
             stream=stream,  # type: ignore

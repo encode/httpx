@@ -687,9 +687,9 @@ class Request:
 class Response:
     def __init__(
         self,
-        status_code: int,
         *,
         request: Request,
+        status_code: int = codes.OK,
         http_version: str = None,
         headers: HeaderTypes = None,
         stream: ContentStream = None,

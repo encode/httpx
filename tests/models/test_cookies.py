@@ -69,7 +69,7 @@ def test_multiple_set_cookie():
         ),
     ]
     request = httpx.Request("GET", "https://www.example.org")
-    response = httpx.Response(200, request=request, headers=headers)
+    response = httpx.Response(status_code=200, request=request, headers=headers)
 
     cookies = httpx.Cookies(jar)
     cookies.extract_cookies(response)
