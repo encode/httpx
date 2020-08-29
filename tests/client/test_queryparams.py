@@ -46,6 +46,4 @@ def test_client_queryparams_echo():
     response = client.get(url, params=request_queryparams)
 
     assert response.status_code == 200
-    assert response.url == httpx.URL(
-        "http://example.org/echo_queryparams?first=str&second=dict"
-    )
+    assert response.url == "http://example.org/echo_queryparams?first=str&second=dict"

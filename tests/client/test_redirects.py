@@ -186,7 +186,7 @@ def test_redirect_301():
     client = httpx.Client(transport=SyncMockTransport())
     response = client.post("https://example.org/redirect_301")
     assert response.status_code == httpx.codes.OK
-    assert response.url == httpx.URL("https://example.org/")
+    assert response.url == "https://example.org/"
     assert len(response.history) == 1
 
 
@@ -194,7 +194,7 @@ def test_redirect_302():
     client = httpx.Client(transport=SyncMockTransport())
     response = client.post("https://example.org/redirect_302")
     assert response.status_code == httpx.codes.OK
-    assert response.url == httpx.URL("https://example.org/")
+    assert response.url == "https://example.org/"
     assert len(response.history) == 1
 
 
@@ -202,7 +202,7 @@ def test_redirect_303():
     client = httpx.Client(transport=SyncMockTransport())
     response = client.get("https://example.org/redirect_303")
     assert response.status_code == httpx.codes.OK
-    assert response.url == httpx.URL("https://example.org/")
+    assert response.url == "https://example.org/"
     assert len(response.history) == 1
 
 
@@ -210,13 +210,13 @@ def test_disallow_redirects():
     client = httpx.Client(transport=SyncMockTransport())
     response = client.post("https://example.org/redirect_303", allow_redirects=False)
     assert response.status_code == httpx.codes.SEE_OTHER
-    assert response.url == httpx.URL("https://example.org/redirect_303")
+    assert response.url == "https://example.org/redirect_303"
     assert response.is_redirect is True
     assert len(response.history) == 0
 
     response = response.next()
     assert response.status_code == httpx.codes.OK
-    assert response.url == httpx.URL("https://example.org/")
+    assert response.url == "https://example.org/"
     assert response.is_redirect is False
     assert len(response.history) == 1
 
@@ -228,7 +228,7 @@ def test_head_redirect():
     client = httpx.Client(transport=SyncMockTransport())
     response = client.head("https://example.org/redirect_302")
     assert response.status_code == httpx.codes.OK
-    assert response.url == httpx.URL("https://example.org/")
+    assert response.url == "https://example.org/"
     assert response.request.method == "HEAD"
     assert len(response.history) == 1
     assert response.text == ""
@@ -238,7 +238,7 @@ def test_relative_redirect():
     client = httpx.Client(transport=SyncMockTransport())
     response = client.get("https://example.org/relative_redirect")
     assert response.status_code == httpx.codes.OK
-    assert response.url == httpx.URL("https://example.org/")
+    assert response.url == "https://example.org/"
     assert len(response.history) == 1
 
 
@@ -247,7 +247,7 @@ def test_malformed_redirect():
     client = httpx.Client(transport=SyncMockTransport())
     response = client.get("http://example.org/malformed_redirect")
     assert response.status_code == httpx.codes.OK
-    assert response.url == httpx.URL("https://example.org:443/")
+    assert response.url == "https://example.org:443/"
     assert len(response.history) == 1
 
 
@@ -261,7 +261,7 @@ def test_no_scheme_redirect():
     client = httpx.Client(transport=SyncMockTransport())
     response = client.get("https://example.org/no_scheme_redirect")
     assert response.status_code == httpx.codes.OK
-    assert response.url == httpx.URL("https://example.org/")
+    assert response.url == "https://example.org/"
     assert len(response.history) == 1
 
 
@@ -269,7 +269,7 @@ def test_fragment_redirect():
     client = httpx.Client(transport=SyncMockTransport())
     response = client.get("https://example.org/relative_redirect#fragment")
     assert response.status_code == httpx.codes.OK
-    assert response.url == httpx.URL("https://example.org/#fragment")
+    assert response.url == "https://example.org/#fragment"
     assert len(response.history) == 1
 
 
@@ -277,14 +277,10 @@ def test_multiple_redirects():
     client = httpx.Client(transport=SyncMockTransport())
     response = client.get("https://example.org/multiple_redirects?count=20")
     assert response.status_code == httpx.codes.OK
-    assert response.url == httpx.URL("https://example.org/multiple_redirects")
+    assert response.url == "https://example.org/multiple_redirects"
     assert len(response.history) == 20
-    assert response.history[0].url == httpx.URL(
-        "https://example.org/multiple_redirects?count=20"
-    )
-    assert response.history[1].url == httpx.URL(
-        "https://example.org/multiple_redirects?count=19"
-    )
+    assert response.history[0].url == "https://example.org/multiple_redirects?count=20"
+    assert response.history[1].url == "https://example.org/multiple_redirects?count=19"
     assert len(response.history[0].history) == 0
     assert len(response.history[1].history) == 1
 
@@ -332,7 +328,7 @@ def test_cross_domain_redirect():
     url = "https://example.com/cross_domain"
     headers = {"Authorization": "abc"}
     response = client.get(url, headers=headers)
-    assert response.url == httpx.URL("https://example.org/cross_domain_target")
+    assert response.url == "https://example.org/cross_domain_target"
     assert "authorization" not in response.json()["headers"]
 
 
@@ -341,7 +337,7 @@ def test_same_domain_redirect():
     url = "https://example.org/cross_domain"
     headers = {"Authorization": "abc"}
     response = client.get(url, headers=headers)
-    assert response.url == httpx.URL("https://example.org/cross_domain_target")
+    assert response.url == "https://example.org/cross_domain_target"
     assert response.json()["headers"]["authorization"] == "abc"
 
 
@@ -353,7 +349,7 @@ def test_body_redirect():
     url = "https://example.org/redirect_body"
     data = b"Example request body"
     response = client.post(url, data=data)
-    assert response.url == httpx.URL("https://example.org/redirect_body_target")
+    assert response.url == "https://example.org/redirect_body_target"
     assert response.json()["body"] == "Example request body"
     assert "content-length" in response.json()["headers"]
 
@@ -366,7 +362,7 @@ def test_no_body_redirect():
     url = "https://example.org/redirect_no_body"
     data = b"Example request body"
     response = client.post(url, data=data)
-    assert response.url == httpx.URL("https://example.org/redirect_body_target")
+    assert response.url == "https://example.org/redirect_body_target"
     assert response.json()["body"] == ""
     assert "content-length" not in response.json()["headers"]
 
@@ -395,7 +391,7 @@ def test_cross_subdomain_redirect():
     client = httpx.Client(transport=SyncMockTransport())
     url = "https://example.com/cross_subdomain"
     response = client.get(url)
-    assert response.url == httpx.URL("https://www.example.org/cross_subdomain")
+    assert response.url == "https://www.example.org/cross_subdomain"
 
 
 class MockCookieTransport(httpcore.SyncHTTPTransport):
