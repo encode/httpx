@@ -192,11 +192,13 @@ class SyncOrAsyncAuth(Auth):
     sync and async cases.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._lock = threading.Lock()
         self._async_lock = asyncio.Lock()
 
-    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+    def sync_auth_flow(
+        self, request: Request
+    ) -> typing.Generator[Request, Response, None]:
         with self._lock:
             request.headers["Authorization"] = "sync-auth"
         yield request
@@ -669,20 +671,31 @@ def test_sync_auth_reads_response_body() -> None:
 
 
 @pytest.mark.asyncio
-async def test_sync_async_auth() -> None:
+async def test_async_auth() -> None:
     """
-    Test that we can use a different auth flow implementation in the async case, to
+    Test that we can use an auth implementation specific to the async case, to
     support cases that require performing I/O or using concurrency primitives (such
     as checking a disk-based cache or fetching a token from a remote auth server).
     """
     url = "https://example.org/"
     auth = SyncOrAsyncAuth()
 
-    client = AsyncClient(transport=AsyncMockTransport())
-    response = await client.get(url, auth=auth)
+    async with AsyncClient(transport=AsyncMockTransport()) as client:
+        response = await client.get(url, auth=auth)
+
     assert response.status_code == 200
     assert response.json() == {"auth": "async-auth"}
 
-    response = Client(transport=SyncMockTransport()).get(url, auth=auth)
+
+def test_sync_auth() -> None:
+    """
+    Test that we can use an auth implementation specific to the sync case.
+    """
+    url = "https://example.org/"
+    auth = SyncOrAsyncAuth()
+
+    with Client(transport=SyncMockTransport()) as client:
+        response = client.get(url, auth=auth)
+
     assert response.status_code == 200
     assert response.json() == {"auth": "sync-auth"}
