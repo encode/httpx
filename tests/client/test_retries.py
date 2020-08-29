@@ -29,7 +29,7 @@ class BaseMockTransport:
         self,
         url: Tuple[bytes, bytes, Optional[int], bytes],
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.PlainByteStream]:
-        scheme, host, port, path = url
+        _, _, _, path = url
 
         exc, is_retryable = {
             b"/": (None, False),
