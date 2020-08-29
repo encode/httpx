@@ -21,7 +21,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 
 class Decoder:
-    def __init__(self, request: "Request") -> None:
+    def __init__(self, request: typing.Optional["Request"]) -> None:
         self.request = request
 
     def decode(self, data: bytes) -> bytes:
@@ -50,7 +50,7 @@ class DeflateDecoder(Decoder):
     See: https://stackoverflow.com/questions/1838699
     """
 
-    def __init__(self, request: "Request") -> None:
+    def __init__(self, request: typing.Optional["Request"]) -> None:
         self.request = request
         self.first_attempt = True
         self.decompressor = zlib.decompressobj()
@@ -80,7 +80,7 @@ class GZipDecoder(Decoder):
     See: https://stackoverflow.com/questions/1838699
     """
 
-    def __init__(self, request: "Request") -> None:
+    def __init__(self, request: typing.Optional["Request"]) -> None:
         self.request = request
         self.decompressor = zlib.decompressobj(zlib.MAX_WBITS | 16)
 
@@ -107,7 +107,7 @@ class BrotliDecoder(Decoder):
     name. The top branches are for 'brotlipy' and bottom branches for 'Brotli'
     """
 
-    def __init__(self, request: "Request") -> None:
+    def __init__(self, request: typing.Optional["Request"]) -> None:
         if brotli is None:  # pragma: nocover
             raise ImportError(
                 "Using 'BrotliDecoder', but the 'brotlipy' or 'brotli' library "
@@ -173,7 +173,9 @@ class TextDecoder:
     Handles incrementally decoding bytes into text
     """
 
-    def __init__(self, request: "Request", encoding: typing.Optional[str] = None):
+    def __init__(
+        self, request: typing.Optional["Request"], encoding: typing.Optional[str] = None
+    ):
         self.request = request
         self.decoder: typing.Optional[codecs.IncrementalDecoder] = (
             None if encoding is None else codecs.getincrementaldecoder(encoding)()

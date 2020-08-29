@@ -689,7 +689,7 @@ class Response:
         self,
         status_code: int,
         *,
-        request: Request,
+        request: Request = None,
         http_version: str = None,
         headers: HeaderTypes = None,
         stream: ContentStream = None,
@@ -700,7 +700,8 @@ class Response:
         self.http_version = http_version
         self.headers = Headers(headers)
 
-        self.request = request
+        self._request: typing.Optional[Request] = request
+
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.history = [] if history is None else list(history)
@@ -725,6 +726,19 @@ class Response:
                 "has been read or closed."
             )
         return self._elapsed
+
+    @property
+    def request(self) -> Request:
+        """
+        Returns the request instance associated to the current response.
+        """
+        if self._request is None:
+            raise RuntimeError("'.request' may only be accessed if initialized")
+        return self._request
+
+    @request.setter
+    def request(self, value: Request) -> None:
+        self._request = value
 
     @property
     def reason_phrase(self) -> str:
@@ -811,7 +825,7 @@ class Response:
                 value = value.strip().lower()
                 try:
                     decoder_cls = SUPPORTED_DECODERS[value]
-                    decoders.append(decoder_cls(request=self.request))
+                    decoders.append(decoder_cls(request=self._request))
                 except KeyError:
                     continue
 
@@ -820,7 +834,7 @@ class Response:
             elif len(decoders) > 1:
                 self._decoder = MultiDecoder(children=decoders)
             else:
-                self._decoder = IdentityDecoder(request=self.request)
+                self._decoder = IdentityDecoder(request=self._request)
 
         return self._decoder
 
@@ -843,10 +857,10 @@ class Response:
 
         if codes.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
-            raise HTTPStatusError(message, request=self.request, response=self)
+            raise HTTPStatusError(message, request=self._request, response=self)
         elif codes.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
-            raise HTTPStatusError(message, request=self.request, response=self)
+            raise HTTPStatusError(message, request=self._request, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
@@ -908,7 +922,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(request=self.request, encoding=self.charset_encoding)
+        decoder = TextDecoder(request=self._request, encoding=self.charset_encoding)
         for chunk in self.iter_bytes():
             yield decoder.decode(chunk)
         yield decoder.flush()
@@ -931,7 +945,7 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
-        with map_exceptions(HTTPCORE_EXC_MAP, request=self.request):
+        with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
             for part in self._raw_stream:
                 yield part
         self.close()
@@ -956,7 +970,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            self._elapsed = self.request.timer.elapsed
+            if self._request is not None:
+                self._elapsed = self.request.timer.elapsed
             self._raw_stream.close()
 
     async def aread(self) -> bytes:
@@ -985,7 +1000,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(request=self.request, encoding=self.charset_encoding)
+        decoder = TextDecoder(request=self._request, encoding=self.charset_encoding)
         async for chunk in self.aiter_bytes():
             yield decoder.decode(chunk)
         yield decoder.flush()
@@ -1008,7 +1023,7 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
-        with map_exceptions(HTTPCORE_EXC_MAP, request=self.request):
+        with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
             async for part in self._raw_stream:
                 yield part
         await self.aclose()
@@ -1032,7 +1047,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            self._elapsed = self.request.timer.elapsed
+            if self._request is not None:
+                self._elapsed = self.request.timer.elapsed
             await self._raw_stream.aclose()
 
 

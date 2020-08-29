@@ -395,3 +395,19 @@ def test_json_without_specified_encoding_decode_error():
 def test_link_headers(headers, expected):
     response = httpx.Response(200, content=None, headers=headers, request=REQUEST)
     assert response.links == expected
+
+
+def test_response_with_unset_request():
+    response = httpx.Response(200, content=b"Hello, world!")
+
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+    assert response.text == "Hello, world!"
+    assert not response.is_error
+
+
+def test_cannot_access_unset_request():
+    response = httpx.Response(200, content=b"Hello, world!")
+
+    with pytest.raises(RuntimeError):
+        assert response.request is not None
