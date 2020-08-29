@@ -24,6 +24,7 @@ from ._decoders import (
     TextDecoder,
 )
 from ._exceptions import (
+    HTTPCORE_EXC_MAP,
     CookieConflict,
     HTTPStatusError,
     InvalidURL,
@@ -32,6 +33,7 @@ from ._exceptions import (
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
+    map_exceptions,
 )
 from ._status_codes import codes
 from ._types import (
@@ -409,9 +411,8 @@ class Headers(typing.MutableMapping[str, str]):
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
         """
         Returns a list of the raw header items, as byte pairs.
-        May be mutated in-place.
         """
-        return self._list
+        return list(self._list)
 
     def keys(self) -> typing.KeysView[str]:
         return {key.decode(self.encoding): None for key in self._dict.keys()}.keys()
@@ -645,8 +646,7 @@ class Request:
         if not has_connection:
             auto_headers.append((b"connection", b"keep-alive"))
 
-        for item in reversed(auto_headers):
-            self.headers.raw.insert(0, item)
+        self.headers = Headers(auto_headers + self.headers.raw)
 
     @property
     def content(self) -> bytes:
@@ -931,8 +931,9 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
-        for part in self._raw_stream:
-            yield part
+        with map_exceptions(HTTPCORE_EXC_MAP, request=self.request):
+            for part in self._raw_stream:
+                yield part
         self.close()
 
     def next(self) -> "Response":
@@ -1007,8 +1008,9 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
-        async for part in self._raw_stream:
-            yield part
+        with map_exceptions(HTTPCORE_EXC_MAP, request=self.request):
+            async for part in self._raw_stream:
+                yield part
         await self.aclose()
 
     async def anext(self) -> "Response":
@@ -1045,6 +1047,10 @@ class Cookies(MutableMapping):
             if isinstance(cookies, dict):
                 for key, value in cookies.items():
                     self.set(key, value)
+        elif isinstance(cookies, list):
+            self.jar = CookieJar()
+            for key, value in cookies:
+                self.set(key, value)
         elif isinstance(cookies, Cookies):
             self.jar = CookieJar()
             for cookie in cookies.jar:

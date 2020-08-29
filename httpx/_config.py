@@ -381,7 +381,7 @@ class PoolLimits(Limits):
 
 class Proxy:
     def __init__(
-        self, url: URLTypes, *, headers: HeaderTypes = None, mode: str = "DEFAULT",
+        self, url: URLTypes, *, headers: HeaderTypes = None, mode: str = "DEFAULT"
     ):
         url = URL(url)
         headers = Headers(headers)

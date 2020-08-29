@@ -8,6 +8,7 @@ from ._types import (
     CertTypes,
     CookieTypes,
     HeaderTypes,
+    ProxiesTypes,
     QueryParamTypes,
     RequestData,
     RequestFiles,
@@ -28,6 +29,7 @@ def request(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
+    proxies: ProxiesTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     allow_redirects: bool = True,
     verify: VerifyTypes = True,
@@ -56,6 +58,7 @@ def request(
     request.
     * **auth** - *(optional)* An authentication class to use when sending the
     request.
+    * **proxies** - *(optional)* A dictionary mapping proxy keys to proxy URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     the request.
     * **allow_redirects** - *(optional)* Enables or disables HTTP redirects.
@@ -81,7 +84,7 @@ def request(
     ```
     """
     with Client(
-        cert=cert, verify=verify, timeout=timeout, trust_env=trust_env,
+        proxies=proxies, cert=cert, verify=verify, timeout=timeout, trust_env=trust_env
     ) as client:
         return client.request(
             method=method,
@@ -108,13 +111,24 @@ def stream(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
+    proxies: ProxiesTypes = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     allow_redirects: bool = True,
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     trust_env: bool = True,
 ) -> StreamContextManager:
-    client = Client(cert=cert, verify=verify, trust_env=trust_env)
+    """
+    Alternative to `httpx.request()` that streams the response body
+    instead of loading it into memory at once.
+
+    **Parameters**: See `httpx.request`.
+
+    See also: [Streaming Responses][0]
+
+    [0]: /quickstart#streaming-responses
+    """
+    client = Client(proxies=proxies, cert=cert, verify=verify, trust_env=trust_env)
     request = Request(
         method=method,
         url=url,
@@ -142,6 +156,7 @@ def get(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
+    proxies: ProxiesTypes = None,
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
@@ -163,6 +178,7 @@ def get(
         headers=headers,
         cookies=cookies,
         auth=auth,
+        proxies=proxies,
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
@@ -178,6 +194,7 @@ def options(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
+    proxies: ProxiesTypes = None,
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
@@ -199,6 +216,7 @@ def options(
         headers=headers,
         cookies=cookies,
         auth=auth,
+        proxies=proxies,
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
@@ -214,6 +232,7 @@ def head(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
+    proxies: ProxiesTypes = None,
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
@@ -226,9 +245,7 @@ def head(
     **Parameters**: See `httpx.request`.
 
     Note that the `data`, `files`, and `json` parameters are not available on
-    this function, as `HEAD` requests should not include a request body. The
-    `HEAD` method also differs from the other cases in that `allow_redirects`
-    defaults to `False`.
+    this function, as `HEAD` requests should not include a request body.
     """
     return request(
         "HEAD",
@@ -237,6 +254,7 @@ def head(
         headers=headers,
         cookies=cookies,
         auth=auth,
+        proxies=proxies,
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
@@ -255,6 +273,7 @@ def post(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
+    proxies: ProxiesTypes = None,
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
@@ -276,6 +295,7 @@ def post(
         headers=headers,
         cookies=cookies,
         auth=auth,
+        proxies=proxies,
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
@@ -294,6 +314,7 @@ def put(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
+    proxies: ProxiesTypes = None,
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
@@ -315,6 +336,7 @@ def put(
         headers=headers,
         cookies=cookies,
         auth=auth,
+        proxies=proxies,
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
@@ -333,6 +355,7 @@ def patch(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
+    proxies: ProxiesTypes = None,
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
@@ -354,6 +377,7 @@ def patch(
         headers=headers,
         cookies=cookies,
         auth=auth,
+        proxies=proxies,
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,
@@ -369,6 +393,7 @@ def delete(
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
+    proxies: ProxiesTypes = None,
     allow_redirects: bool = True,
     cert: CertTypes = None,
     verify: VerifyTypes = True,
@@ -390,6 +415,7 @@ def delete(
         headers=headers,
         cookies=cookies,
         auth=auth,
+        proxies=proxies,
         allow_redirects=allow_redirects,
         cert=cert,
         verify=verify,

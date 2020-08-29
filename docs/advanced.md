@@ -262,7 +262,7 @@ client = httpx.Client(trust_env=False)
 
 ## HTTP Proxying
 
-HTTPX supports setting up [HTTP proxies](https://en.wikipedia.org/wiki/Proxy_server#Web_proxy_servers) via the `proxies` parameter to be passed on client initialization.
+HTTPX supports setting up [HTTP proxies](https://en.wikipedia.org/wiki/Proxy_server#Web_proxy_servers) via the `proxies` parameter to be passed on client initialization or top-level API functions like `httpx.get(..., proxies=...)`.
 
 _Note: SOCKS proxies are not supported yet._
 
