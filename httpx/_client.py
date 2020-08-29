@@ -761,7 +761,7 @@ class Client(BaseClient):
         timeout: Timeout,
     ) -> Response:
         auth_flow = auth.sync_auth_flow(request)
-        request = auth_flow.send(None)  # type: ignore
+        request = next(auth_flow)
 
         while True:
             response = self._send_single_request(request, timeout)
@@ -1367,7 +1367,7 @@ class AsyncClient(BaseClient):
         timeout: Timeout,
     ) -> Response:
         auth_flow = auth.async_auth_flow(request)
-        request = await auth_flow.asend(None)  # type: ignore
+        request = await auth_flow.__anext__()
 
         while True:
             response = await self._send_single_request(request, timeout)
