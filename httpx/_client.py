@@ -12,6 +12,7 @@ from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_TIMEOUT_CONFIG,
+    IDEMPOTENT_METHODS,
     UNSET,
     Limits,
     Proxy,
@@ -803,7 +804,7 @@ class Client(BaseClient):
             try:
                 return self._send_single_request(request, timeout)
             except (ConnectError, ConnectTimeout):
-                if request.method in ("POST", "PATCH"):
+                if request.method not in IDEMPOTENT_METHODS:
                     raise
                 if connect_retries_left <= 0:
                     raise
@@ -1434,7 +1435,7 @@ class AsyncClient(BaseClient):
             try:
                 return await self._send_single_request(request, timeout)
             except (ConnectError, ConnectTimeout):
-                if request.method in ("POST", "PATCH"):
+                if request.method not in IDEMPOTENT_METHODS:
                     raise
                 if connect_retries_left <= 0:
                     raise
