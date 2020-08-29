@@ -7,14 +7,14 @@ import httpcore
 
 from ._auth import Auth, BasicAuth, FunctionAuth
 from ._config import (
+    CONNECT_RETRIES_BACKOFF_FACTOR,
+    DEFAULT_CONNECT_RETRIES,
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
-    DEFAULT_RETRIES,
     DEFAULT_TIMEOUT_CONFIG,
     UNSET,
     Limits,
     Proxy,
-    Retries,
     Timeout,
     UnsetType,
     create_ssl_context,
@@ -43,7 +43,6 @@ from ._types import (
     QueryParamTypes,
     RequestData,
     RequestFiles,
-    RetriesTypes,
     TimeoutTypes,
     URLTypes,
     VerifyTypes,
@@ -74,7 +73,7 @@ class BaseClient:
         cookies: CookieTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        retries: RetriesTypes = DEFAULT_RETRIES,
+        connect_retries: int = DEFAULT_CONNECT_RETRIES,
         base_url: URLTypes = "",
         trust_env: bool = True,
     ):
@@ -86,7 +85,7 @@ class BaseClient:
         self._cookies = Cookies(cookies)
         self._timeout = Timeout(timeout)
         self.max_redirects = max_redirects
-        self._retries = Retries(retries)
+        self.connect_retries = connect_retries
         self._trust_env = trust_env
         self._netrc = NetRCInfo()
 
@@ -141,14 +140,6 @@ class BaseClient:
     @auth.setter
     def auth(self, auth: AuthTypes) -> None:
         self._auth = self._build_auth(auth)
-
-    @property
-    def retries(self) -> Retries:
-        return self._retries
-
-    @retries.setter
-    def retries(self, retries: RetriesTypes) -> None:
-        self._retries = Retries(retries)
 
     @property
     def base_url(self) -> URL:
@@ -502,7 +493,7 @@ class Client(BaseClient):
     * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
-    * **retries** - *(optional)* The maximum number of retries when trying to
+    * **connect_retries** - *(optional)* The maximum number of retries when trying to
     establish a connection.
     * **base_url** - *(optional)* A URL to use as the base when building
     request URLs.
@@ -529,7 +520,7 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        retries: RetriesTypes = DEFAULT_RETRIES,
+        connect_retries: int = DEFAULT_CONNECT_RETRIES,
         base_url: URLTypes = "",
         transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -542,7 +533,7 @@ class Client(BaseClient):
             cookies=cookies,
             timeout=timeout,
             max_redirects=max_redirects,
-            retries=retries,
+            connect_retries=connect_retries,
             base_url=base_url,
             trust_env=trust_env,
         )
@@ -805,8 +796,8 @@ class Client(BaseClient):
                 history.append(response)
 
     def _send_handling_retries(self, request: Request, timeout: Timeout) -> Response:
-        attempts = self.retries.max_attempts
-        delays = exponential_backoff(factor=self.retries.backoff_factor)
+        connect_retries_left = self.connect_retries
+        delays = exponential_backoff(factor=CONNECT_RETRIES_BACKOFF_FACTOR)
 
         while True:
             try:
@@ -814,9 +805,9 @@ class Client(BaseClient):
             except (ConnectError, ConnectTimeout):
                 if request.method in ("POST", "PATCH"):
                     raise
-                if attempts <= 0:
+                if connect_retries_left <= 0:
                     raise
-                attempts -= 1
+                connect_retries_left -= 1
                 delay = next(delays)
                 time.sleep(delay)
 
@@ -1129,7 +1120,7 @@ class AsyncClient(BaseClient):
     * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
-    * **retries** - *(optional)* The maximum number of retries when trying to
+    * **connect_retries** - *(optional)* The maximum number of retries when trying to
     establish a connection.
     * **base_url** - *(optional)* A URL to use as the base when building
     request URLs.
@@ -1156,7 +1147,7 @@ class AsyncClient(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        retries: RetriesTypes = DEFAULT_RETRIES,
+        connect_retries: int = DEFAULT_CONNECT_RETRIES,
         base_url: URLTypes = "",
         transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -1169,7 +1160,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             timeout=timeout,
             max_redirects=max_redirects,
-            retries=retries,
+            connect_retries=connect_retries,
             base_url=base_url,
             trust_env=trust_env,
         )
@@ -1436,8 +1427,8 @@ class AsyncClient(BaseClient):
     async def _send_handling_retries(
         self, request: Request, timeout: Timeout
     ) -> Response:
-        attempts = self.retries.max_attempts
-        delays = exponential_backoff(factor=self.retries.backoff_factor)
+        connect_retries_left = self.connect_retries
+        delays = exponential_backoff(factor=CONNECT_RETRIES_BACKOFF_FACTOR)
 
         while True:
             try:
@@ -1445,9 +1436,9 @@ class AsyncClient(BaseClient):
             except (ConnectError, ConnectTimeout):
                 if request.method in ("POST", "PATCH"):
                     raise
-                if attempts <= 0:
+                if connect_retries_left <= 0:
                     raise
-                attempts -= 1
+                connect_retries_left -= 1
                 delay = next(delays)
                 await sleep(delay)
 

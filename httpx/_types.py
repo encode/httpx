@@ -21,7 +21,7 @@ from typing import (
 
 if TYPE_CHECKING:  # pragma: no cover
     from ._auth import Auth  # noqa: F401
-    from ._config import Proxy, Retries, Timeout  # noqa: F401
+    from ._config import Proxy, Timeout  # noqa: F401
     from ._models import URL, Cookies, Headers, QueryParams, Request  # noqa: F401
 
 
@@ -62,8 +62,6 @@ AuthTypes = Union[
     "Auth",
     None,
 ]
-
-RetriesTypes = Union[int, "Retries"]
 
 RequestData = Union[dict, str, bytes, Iterator[bytes], AsyncIterator[bytes]]
 

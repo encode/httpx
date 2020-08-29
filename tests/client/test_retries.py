@@ -11,18 +11,13 @@ from httpx._utils import exponential_backoff
 
 def test_retries_config() -> None:
     client = httpx.AsyncClient()
-    assert client.retries == httpx.Retries(0)
-    assert client.retries.max_attempts == 0
+    assert client.connect_retries == 0
 
-    client = httpx.AsyncClient(retries=3)
-    assert client.retries == httpx.Retries(3)
-    assert client.retries.max_attempts == 3
-    assert client.retries.backoff_factor == 0.2
+    client = httpx.AsyncClient(connect_retries=3)
+    assert client.connect_retries == 3
 
-    client = httpx.AsyncClient(retries=httpx.Retries(3, backoff_factor=0.1))
-    assert client.retries == httpx.Retries(3, backoff_factor=0.1)
-    assert client.retries.max_attempts == 3
-    assert client.retries.backoff_factor == 0.1
+    client.connect_retries = 1
+    assert client.connect_retries == 1
 
 
 class AsyncMockTransport(httpcore.AsyncHTTPTransport):
@@ -65,10 +60,9 @@ class AsyncMockTransport(httpcore.AsyncHTTPTransport):
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_no_retries() -> None:
+async def test_no_connect_retries() -> None:
     """
-    When no retries are configured, the default behavior is to not retry
-    and raise immediately any connection failures.
+    By default, connection failures are not retried on.
     """
     client = httpx.AsyncClient(transport=AsyncMockTransport(num_failures=1))
 
@@ -83,26 +77,25 @@ async def test_no_retries() -> None:
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_retries_enabled() -> None:
+async def test_connect_retries_enabled() -> None:
     """
-    When retries are enabled, connection failures are retried on.
+    When connect retries are enabled, connection failures are retried on with
+    a fixed exponential backoff.
     """
     transport = AsyncMockTransport(num_failures=3)
-    retries = httpx.Retries(
-        3,
-        # Small backoff to speed up this test.
-        backoff_factor=0.01,
-    )
-    client = httpx.AsyncClient(transport=transport, retries=retries)
+    client = httpx.AsyncClient(transport=transport, connect_retries=3)
+    expected_elapsed_time = pytest.approx(0 + 0.5 + 1, rel=0.1)
 
     response = await client.get("https://example.com")
     assert response.status_code == 200
 
     response = await client.get("https://example.com/connect_timeout")
     assert response.status_code == 200
+    assert response.elapsed.total_seconds() == expected_elapsed_time
 
     response = await client.get("https://example.com/connect_error")
     assert response.status_code == 200
+    assert response.elapsed.total_seconds() == expected_elapsed_time
 
     with pytest.raises(httpx.ReadTimeout):
         await client.get("https://example.com/read_timeout")
@@ -112,14 +105,13 @@ async def test_retries_enabled() -> None:
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_retries_exceeded() -> None:
+async def test_connect_retries_exceeded() -> None:
     """
     When retries are enabled and connecting failures more than the configured number
     of retries, connect exceptions are raised.
     """
     transport = AsyncMockTransport(num_failures=2)
-    retries = 1
-    client = httpx.AsyncClient(transport=transport, retries=retries)
+    client = httpx.AsyncClient(transport=transport, connect_retries=1)
 
     with pytest.raises(httpx.ConnectTimeout):
         await client.get("https://example.com/connect_timeout")
@@ -130,25 +122,24 @@ async def test_retries_exceeded() -> None:
 
 @pytest.mark.usefixtures("async_environment")
 @pytest.mark.parametrize("method", ["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"])
-async def test_retries_idempotent_methods(method: str) -> None:
+async def test_connect_retries_idempotent_methods(method: str) -> None:
     """
-    Client makes retries for all idempotent HTTP methods.
+    Client can retry on idempotent HTTP methods.
     """
     transport = AsyncMockTransport(num_failures=1)
-    retries = 1
-    client = httpx.AsyncClient(transport=transport, retries=retries)
+    client = httpx.AsyncClient(transport=transport, connect_retries=1)
     response = await client.request(method, "https://example.com/connect_timeout")
     assert response.status_code == 200
 
 
 @pytest.mark.usefixtures("async_environment")
 @pytest.mark.parametrize("method", ["POST", "PATCH"])
-async def test_retries_disabled_on_non_idempotent_methods(method: str) -> None:
+async def test_connect_retries_disabled_on_non_idempotent_methods(method: str) -> None:
     """
     Client makes no retries for HTTP methods that are not idempotent.
     """
     transport = AsyncMockTransport(num_failures=1)
-    client = httpx.AsyncClient(transport=transport, retries=2)
+    client = httpx.AsyncClient(transport=transport, connect_retries=2)
 
     with pytest.raises(httpx.ConnectTimeout):
         await client.request(method, "https://example.com/connect_timeout")
@@ -168,16 +159,3 @@ def test_exponential_backoff(factor: float, expected: List[int]) -> None:
     """
     delays = list(itertools.islice(exponential_backoff(factor), 5))
     assert delays == expected
-
-
-@pytest.mark.usefixtures("async_environment")
-async def test_retries_backoff() -> None:
-    """
-    Exponential backoff is applied when retrying.
-    """
-    retries = httpx.Retries(3, backoff_factor=0.05)
-    transport = AsyncMockTransport(num_failures=3)
-    client = httpx.AsyncClient(transport=transport, retries=retries)
-    response = await client.get("https://example.com/connect_timeout")
-    assert response.status_code == 200
-    assert response.elapsed.total_seconds() == pytest.approx(0 + 0.05 + 0.1, rel=0.1)
