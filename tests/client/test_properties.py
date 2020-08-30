@@ -5,21 +5,21 @@ def test_client_base_url():
     client = httpx.Client()
     client.base_url = "https://www.example.org/"  # type: ignore
     assert isinstance(client.base_url, httpx.URL)
-    assert client.base_url == httpx.URL("https://www.example.org/")
+    assert client.base_url == "https://www.example.org/"
 
 
 def test_client_base_url_without_trailing_slash():
     client = httpx.Client()
     client.base_url = "https://www.example.org/path"  # type: ignore
     assert isinstance(client.base_url, httpx.URL)
-    assert client.base_url == httpx.URL("https://www.example.org/path/")
+    assert client.base_url == "https://www.example.org/path/"
 
 
 def test_client_base_url_with_trailing_slash():
     client = httpx.Client()
     client.base_url = "https://www.example.org/path/"  # type: ignore
     assert isinstance(client.base_url, httpx.URL)
-    assert client.base_url == httpx.URL("https://www.example.org/path/")
+    assert client.base_url == "https://www.example.org/path/"
 
 
 def test_client_headers():
