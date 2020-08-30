@@ -406,6 +406,14 @@ def test_response_with_unset_request():
     assert not response.is_error
 
 
+def test_set_request_after_init():
+    response = httpx.Response(200, content=b"Hello, world!")
+
+    response.request = REQUEST
+
+    assert response.request == REQUEST
+
+
 def test_cannot_access_unset_request():
     response = httpx.Response(200, content=b"Hello, world!")
 
