@@ -26,6 +26,7 @@ from ._decoders import (
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
     CookieConflict,
+    DecodingError,
     HTTPStatusError,
     InvalidURL,
     NotRedirectResponse,
@@ -825,7 +826,7 @@ class Response:
                 value = value.strip().lower()
                 try:
                     decoder_cls = SUPPORTED_DECODERS[value]
-                    decoders.append(decoder_cls(request=self._request))
+                    decoders.append(decoder_cls())
                 except KeyError:
                     continue
 
@@ -834,7 +835,7 @@ class Response:
             elif len(decoders) > 1:
                 self._decoder = MultiDecoder(children=decoders)
             else:
-                self._decoder = IdentityDecoder(request=self._request)
+                self._decoder = IdentityDecoder()
 
         return self._decoder
 
@@ -857,9 +858,13 @@ class Response:
 
         if codes.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
+            if self._request is None:
+                raise ValueError(message)
             raise HTTPStatusError(message, request=self._request, response=self)
         elif codes.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
+            if self._request is None:
+                raise ValueError(message)
             raise HTTPStatusError(message, request=self._request, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
@@ -912,9 +917,15 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
-            for chunk in self.iter_raw():
-                yield self.decoder.decode(chunk)
-            yield self.decoder.flush()
+            try:
+                for chunk in self.iter_raw():
+                    yield self.decoder.decode(chunk)
+                yield self.decoder.flush()
+            except ValueError as exc:
+                if self._request is None:
+                    raise exc
+                else:
+                    raise DecodingError(message=str(exc), request=self.request) from exc
 
     def iter_text(self) -> typing.Iterator[str]:
         """
@@ -922,18 +933,30 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(request=self._request, encoding=self.charset_encoding)
-        for chunk in self.iter_bytes():
-            yield decoder.decode(chunk)
-        yield decoder.flush()
+        decoder = TextDecoder(encoding=self.charset_encoding)
+        try:
+            for chunk in self.iter_bytes():
+                yield decoder.decode(chunk)
+            yield decoder.flush()
+        except ValueError as exc:
+            if self._request is None:
+                raise exc
+            else:
+                raise DecodingError(message=str(exc), request=self.request) from exc
 
     def iter_lines(self) -> typing.Iterator[str]:
         decoder = LineDecoder()
-        for text in self.iter_text():
-            for line in decoder.decode(text):
+        try:
+            for text in self.iter_text():
+                for line in decoder.decode(text):
+                    yield line
+            for line in decoder.flush():
                 yield line
-        for line in decoder.flush():
-            yield line
+        except ValueError as exc:
+            if self._request is None:
+                raise exc
+            else:
+                raise DecodingError(message=str(exc), request=self.request) from exc
 
     def iter_raw(self) -> typing.Iterator[bytes]:
         """
@@ -990,9 +1013,15 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
-            async for chunk in self.aiter_raw():
-                yield self.decoder.decode(chunk)
-            yield self.decoder.flush()
+            try:
+                async for chunk in self.aiter_raw():
+                    yield self.decoder.decode(chunk)
+                yield self.decoder.flush()
+            except ValueError as exc:
+                if self._request is None:
+                    raise exc
+                else:
+                    raise DecodingError(message=str(exc), request=self.request) from exc
 
     async def aiter_text(self) -> typing.AsyncIterator[str]:
         """
@@ -1000,18 +1029,30 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(request=self._request, encoding=self.charset_encoding)
-        async for chunk in self.aiter_bytes():
-            yield decoder.decode(chunk)
-        yield decoder.flush()
+        decoder = TextDecoder(encoding=self.charset_encoding)
+        try:
+            async for chunk in self.aiter_bytes():
+                yield decoder.decode(chunk)
+            yield decoder.flush()
+        except ValueError as exc:
+            if self._request is None:
+                raise exc
+            else:
+                raise DecodingError(message=str(exc), request=self.request) from exc
 
     async def aiter_lines(self) -> typing.AsyncIterator[str]:
         decoder = LineDecoder()
-        async for text in self.aiter_text():
-            for line in decoder.decode(text):
+        try:
+            async for text in self.aiter_text():
+                for line in decoder.decode(text):
+                    yield line
+            for line in decoder.flush():
                 yield line
-        for line in decoder.flush():
-            yield line
+        except ValueError as exc:
+            if self._request is None:
+                raise exc
+            else:
+                raise DecodingError(message=str(exc), request=self.request) from exc
 
     async def aiter_raw(self) -> typing.AsyncIterator[bytes]:
         """

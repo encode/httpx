@@ -59,7 +59,7 @@ class HTTPError(Exception):
     ```
     """
 
-    def __init__(self, message: str, *, request: typing.Optional["Request"]) -> None:
+    def __init__(self, message: str, *, request: "Request") -> None:
         super().__init__(message)
         self.request = request
 
@@ -69,7 +69,7 @@ class RequestError(HTTPError):
     Base class for all exceptions that may occur when issuing a `.request()`.
     """
 
-    def __init__(self, message: str, *, request: typing.Optional["Request"]) -> None:
+    def __init__(self, message: str, *, request: "Request") -> None:
         super().__init__(message, request=request)
 
 
@@ -225,7 +225,7 @@ class HTTPStatusError(HTTPError):
     """
 
     def __init__(
-        self, message: str, *, request: typing.Optional["Request"], response: "Response"
+        self, message: str, *, request: "Request", response: "Response"
     ) -> None:
         super().__init__(message, request=request)
         self.response = response

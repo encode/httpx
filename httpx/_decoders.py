@@ -9,21 +9,13 @@ import zlib
 
 import chardet
 
-from ._exceptions import DecodingError
-
 try:
     import brotli
 except ImportError:  # pragma: nocover
     brotli = None
 
-if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._models import Request
-
 
 class Decoder:
-    def __init__(self, request: typing.Optional["Request"]) -> None:
-        self.request = request
-
     def decode(self, data: bytes) -> bytes:
         raise NotImplementedError()  # pragma: nocover
 
@@ -50,8 +42,7 @@ class DeflateDecoder(Decoder):
     See: https://stackoverflow.com/questions/1838699
     """
 
-    def __init__(self, request: typing.Optional["Request"]) -> None:
-        self.request = request
+    def __init__(self) -> None:
         self.first_attempt = True
         self.decompressor = zlib.decompressobj()
 
@@ -64,13 +55,13 @@ class DeflateDecoder(Decoder):
             if was_first_attempt:
                 self.decompressor = zlib.decompressobj(-zlib.MAX_WBITS)
                 return self.decode(data)
-            raise DecodingError(message=str(exc), request=self.request)
+            raise ValueError(str(exc))
 
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
         except zlib.error as exc:  # pragma: nocover
-            raise DecodingError(message=str(exc), request=self.request)
+            raise ValueError(str(exc))
 
 
 class GZipDecoder(Decoder):
@@ -80,21 +71,20 @@ class GZipDecoder(Decoder):
     See: https://stackoverflow.com/questions/1838699
     """
 
-    def __init__(self, request: typing.Optional["Request"]) -> None:
-        self.request = request
+    def __init__(self) -> None:
         self.decompressor = zlib.decompressobj(zlib.MAX_WBITS | 16)
 
     def decode(self, data: bytes) -> bytes:
         try:
             return self.decompressor.decompress(data)
         except zlib.error as exc:
-            raise DecodingError(message=str(exc), request=self.request)
+            raise ValueError(str(exc))
 
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
         except zlib.error as exc:  # pragma: nocover
-            raise DecodingError(message=str(exc), request=self.request)
+            raise ValueError(str(exc))
 
 
 class BrotliDecoder(Decoder):
@@ -107,7 +97,7 @@ class BrotliDecoder(Decoder):
     name. The top branches are for 'brotlipy' and bottom branches for 'Brotli'
     """
 
-    def __init__(self, request: typing.Optional["Request"]) -> None:
+    def __init__(self) -> None:
         if brotli is None:  # pragma: nocover
             raise ImportError(
                 "Using 'BrotliDecoder', but the 'brotlipy' or 'brotli' library "
@@ -115,7 +105,6 @@ class BrotliDecoder(Decoder):
                 "Make sure to install httpx using `pip install httpx[brotli]`."
             ) from None
 
-        self.request = request
         self.decompressor = brotli.Decompressor()
         self.seen_data = False
         if hasattr(self.decompressor, "decompress"):
@@ -130,7 +119,7 @@ class BrotliDecoder(Decoder):
         try:
             return self._decompress(data)
         except brotli.error as exc:
-            raise DecodingError(message=str(exc), request=self.request)
+            raise ValueError(str(exc))
 
     def flush(self) -> bytes:
         if not self.seen_data:
@@ -140,7 +129,7 @@ class BrotliDecoder(Decoder):
                 self.decompressor.finish()
             return b""
         except brotli.error as exc:  # pragma: nocover
-            raise DecodingError(message=str(exc), request=self.request)
+            raise ValueError(str(exc))
 
 
 class MultiDecoder(Decoder):
@@ -173,10 +162,7 @@ class TextDecoder:
     Handles incrementally decoding bytes into text
     """
 
-    def __init__(
-        self, request: typing.Optional["Request"], encoding: typing.Optional[str] = None
-    ):
-        self.request = request
+    def __init__(self, encoding: typing.Optional[str] = None):
         self.decoder: typing.Optional[codecs.IncrementalDecoder] = (
             None if encoding is None else codecs.getincrementaldecoder(encoding)()
         )
@@ -211,7 +197,7 @@ class TextDecoder:
 
             return text
         except UnicodeDecodeError as exc:  # pragma: nocover
-            raise DecodingError(message=str(exc), request=self.request)
+            raise ValueError(str(exc))
 
     def flush(self) -> str:
         try:
@@ -224,14 +210,13 @@ class TextDecoder:
 
             return self.decoder.decode(b"", True)
         except UnicodeDecodeError as exc:  # pragma: nocover
-            raise DecodingError(message=str(exc), request=self.request)
+            raise ValueError(str(exc))
 
     def _detector_result(self) -> str:
         self.detector.close()
         result = self.detector.result["encoding"]
         if not result:  # pragma: nocover
-            message = "Unable to determine encoding of content"
-            raise DecodingError(message, request=self.request)
+            raise ValueError("Unable to determine encoding of content")
 
         return result
 
