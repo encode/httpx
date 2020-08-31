@@ -354,6 +354,21 @@ async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> 
     assert len(response.history) == 0
 
 
+def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
+    url = "https://example.org/"
+    auth = DigestAuth(username="tomchristie", password="password123")
+    auth_header = b"Token ..."
+
+    client = Client(
+        transport=SyncMockTransport(auth_header=auth_header, status_code=401)
+    )
+    response = client.get(url, auth=auth)
+
+    assert response.status_code == 401
+    assert response.json() == {"auth": None}
+    assert len(response.history) == 0
+
+
 @pytest.mark.asyncio
 async def test_digest_auth_200_response_including_digest_auth_header() -> None:
     url = "https://example.org/"
@@ -509,9 +524,6 @@ async def test_digest_auth_incorrect_credentials() -> None:
     "auth_header",
     [
         b'Digest realm="httpx@example.org", qop="auth"',  # missing fields
-        b'realm="httpx@example.org", qop="auth"',  # not starting with Digest
-        b'DigestZ realm="httpx@example.org", qop="auth"'
-        b'qop="auth,auth-int",nonce="abc",opaque="xyz"',
         b'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
     ],
 )
@@ -533,9 +545,6 @@ async def test_async_digest_auth_raises_protocol_error_on_malformed_header(
     "auth_header",
     [
         b'Digest realm="httpx@example.org", qop="auth"',  # missing fields
-        b'realm="httpx@example.org", qop="auth"',  # not starting with Digest
-        b'DigestZ realm="httpx@example.org", qop="auth"'
-        b'qop="auth,auth-int",nonce="abc",opaque="xyz"',
         b'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
     ],
 )
