@@ -1062,10 +1062,13 @@ class Client(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        self._transport.__exit__(exc_type, exc_value, traceback)
-        for proxy in self._proxies.values():
-            if proxy is not None:
-                proxy.__exit__(exc_type, exc_value, traceback)
+        if not self.is_closed:
+            self._is_closed = True
+
+            self._transport.__exit__(exc_type, exc_value, traceback)
+            for proxy in self._proxies.values():
+                if proxy is not None:
+                    proxy.__exit__(exc_type, exc_value, traceback)
 
     def __del__(self) -> None:
         self.close()
@@ -1682,10 +1685,12 @@ class AsyncClient(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self._transport.__aexit__(exc_type, exc_value, traceback)
-        for proxy in self._proxies.values():
-            if proxy is not None:
-                await proxy.__aexit__(exc_type, exc_value, traceback)
+        if not self.is_closed:
+            self._is_closed = True
+            await self._transport.__aexit__(exc_type, exc_value, traceback)
+            for proxy in self._proxies.values():
+                if proxy is not None:
+                    await proxy.__aexit__(exc_type, exc_value, traceback)
 
     def __del__(self) -> None:
         if not self.is_closed:
