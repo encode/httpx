@@ -1,4 +1,5 @@
 import cgi
+import contextlib
 import datetime
 import email.message
 import json as jsonlib
@@ -734,7 +735,9 @@ class Response:
         Returns the request instance associated to the current response.
         """
         if self._request is None:
-            raise RuntimeError("The request instance has not been set on this response.")
+            raise RuntimeError(
+                "The request instance has not been set on this response."
+            )
         return self._request
 
     @request.setter
@@ -856,16 +859,19 @@ class Response:
             "For more information check: https://httpstatuses.com/{0.status_code}"
         )
 
+        request = self._request
+        if request is None:
+            raise RuntimeError(
+                "Cannot call `raise_for_status` as the request "
+                "instance has not been set on this response."
+            )
+
         if codes.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
-            if self._request is None:
-                raise ValueError(message)
-            raise HTTPStatusError(message, request=self._request, response=self)
+            raise HTTPStatusError(message, request=request, response=self)
         elif codes.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
-            if self._request is None:
-                raise ValueError(message)
-            raise HTTPStatusError(message, request=self._request, response=self)
+            raise HTTPStatusError(message, request=request, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
@@ -901,6 +907,17 @@ class Response:
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
+    @contextlib.contextmanager
+    def _wrap_decoder_errors(self) -> typing.Iterator[None]:
+        # If the response has an associated request instance, we want decoding
+        # errors to be raised as proper `httpx.DecodingError` exceptions.
+        try:
+            yield
+        except ValueError as exc:
+            if self._request is None:
+                raise exc
+            raise DecodingError(message=str(exc), request=self.request) from exc
+
     def read(self) -> bytes:
         """
         Read and return the response content.
@@ -917,15 +934,10 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
-            try:
+            with self._wrap_decoder_errors():
                 for chunk in self.iter_raw():
                     yield self.decoder.decode(chunk)
                 yield self.decoder.flush()
-            except ValueError as exc:
-                if self._request is None:
-                    raise exc
-                else:
-                    raise DecodingError(message=str(exc), request=self.request) from exc
 
     def iter_text(self) -> typing.Iterator[str]:
         """
@@ -934,29 +946,19 @@ class Response:
         string encoding.
         """
         decoder = TextDecoder(encoding=self.charset_encoding)
-        try:
+        with self._wrap_decoder_errors():
             for chunk in self.iter_bytes():
                 yield decoder.decode(chunk)
             yield decoder.flush()
-        except ValueError as exc:
-            if self._request is None:
-                raise exc
-            else:
-                raise DecodingError(message=str(exc), request=self.request) from exc
 
     def iter_lines(self) -> typing.Iterator[str]:
         decoder = LineDecoder()
-        try:
+        with self._wrap_decoder_errors():
             for text in self.iter_text():
                 for line in decoder.decode(text):
                     yield line
             for line in decoder.flush():
                 yield line
-        except ValueError as exc:
-            if self._request is None:
-                raise exc
-            else:
-                raise DecodingError(message=str(exc), request=self.request) from exc
 
     def iter_raw(self) -> typing.Iterator[bytes]:
         """
@@ -1013,15 +1015,10 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
-            try:
+            with self._wrap_decoder_errors():
                 async for chunk in self.aiter_raw():
                     yield self.decoder.decode(chunk)
                 yield self.decoder.flush()
-            except ValueError as exc:
-                if self._request is None:
-                    raise exc
-                else:
-                    raise DecodingError(message=str(exc), request=self.request) from exc
 
     async def aiter_text(self) -> typing.AsyncIterator[str]:
         """
@@ -1030,29 +1027,19 @@ class Response:
         string encoding.
         """
         decoder = TextDecoder(encoding=self.charset_encoding)
-        try:
+        with self._wrap_decoder_errors():
             async for chunk in self.aiter_bytes():
                 yield decoder.decode(chunk)
             yield decoder.flush()
-        except ValueError as exc:
-            if self._request is None:
-                raise exc
-            else:
-                raise DecodingError(message=str(exc), request=self.request) from exc
 
     async def aiter_lines(self) -> typing.AsyncIterator[str]:
         decoder = LineDecoder()
-        try:
+        with self._wrap_decoder_errors():
             async for text in self.aiter_text():
                 for line in decoder.decode(text):
                     yield line
             for line in decoder.flush():
                 yield line
-        except ValueError as exc:
-            if self._request is None:
-                raise exc
-            else:
-                raise DecodingError(message=str(exc), request=self.request) from exc
 
     async def aiter_raw(self) -> typing.AsyncIterator[bytes]:
         """
