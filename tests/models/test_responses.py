@@ -32,6 +32,27 @@ def test_response():
     assert not response.is_error
 
 
+def test_raise_for_status():
+    # 2xx status codes are not an error.
+    response = httpx.Response(200, request=REQUEST)
+    response.raise_for_status()
+
+    # 4xx status codes are a client error.
+    response = httpx.Response(403, request=REQUEST)
+    with pytest.raises(httpx.HTTPStatusError):
+        response.raise_for_status()
+
+    # 5xx status codes are a server error.
+    response = httpx.Response(500, request=REQUEST)
+    with pytest.raises(httpx.HTTPStatusError):
+        response.raise_for_status()
+
+    # Calling .raise_for_status without setting a request instance is
+    # not valid. Should raise a runtime error.
+    response = httpx.Response(200)
+    with pytest.raises(RuntimeError):
+        response.raise_for_status()
+
 def test_response_repr():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
     assert repr(response) == "<Response [200 OK]>"
