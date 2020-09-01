@@ -703,7 +703,7 @@ async def test_async_auth() -> None:
     url = "https://example.org/"
     auth = SyncOrAsyncAuth()
 
-    async with AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -717,7 +717,7 @@ def test_sync_auth() -> None:
     url = "https://example.org/"
     auth = SyncOrAsyncAuth()
 
-    with Client(transport=SyncMockTransport()) as client:
+    with httpx.Client(transport=SyncMockTransport()) as client:
         response = client.get(url, auth=auth)
 
     assert response.status_code == 200
