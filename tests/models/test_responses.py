@@ -2,6 +2,7 @@ import datetime
 import json
 from unittest import mock
 
+import brotli
 import pytest
 
 import httpx
@@ -29,6 +30,28 @@ def test_response():
     assert response.request is REQUEST
     assert response.elapsed >= datetime.timedelta(0)
     assert not response.is_error
+
+
+def test_raise_for_status():
+    # 2xx status codes are not an error.
+    response = httpx.Response(200, request=REQUEST)
+    response.raise_for_status()
+
+    # 4xx status codes are a client error.
+    response = httpx.Response(403, request=REQUEST)
+    with pytest.raises(httpx.HTTPStatusError):
+        response.raise_for_status()
+
+    # 5xx status codes are a server error.
+    response = httpx.Response(500, request=REQUEST)
+    with pytest.raises(httpx.HTTPStatusError):
+        response.raise_for_status()
+
+    # Calling .raise_for_status without setting a request instance is
+    # not valid. Should raise a runtime error.
+    response = httpx.Response(200)
+    with pytest.raises(RuntimeError):
+        response.raise_for_status()
 
 
 def test_response_repr():
@@ -372,7 +395,18 @@ def test_json_without_specified_encoding_decode_error():
         response = httpx.Response(
             200, content=content, headers=headers, request=REQUEST
         )
-        with pytest.raises(json.JSONDecodeError):
+        with pytest.raises(json.decoder.JSONDecodeError):
+            response.json()
+
+
+def test_json_without_specified_encoding_value_error():
+    data = {"greeting": "hello", "recipient": "world"}
+    content = json.dumps(data).encode("utf-32-be")
+    headers = {"Content-Type": "application/json"}
+    # force incorrect guess from `guess_json_utf` to trigger error
+    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32"):
+        response = httpx.Response(200, content=content, headers=headers)
+        with pytest.raises(ValueError):
             response.json()
 
 
@@ -395,3 +429,45 @@ def test_json_without_specified_encoding_decode_error():
 def test_link_headers(headers, expected):
     response = httpx.Response(200, content=None, headers=headers, request=REQUEST)
     assert response.links == expected
+
+
+@pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
+def test_decode_error_with_request(header_value):
+    headers = [(b"Content-Encoding", header_value)]
+    body = b"test 123"
+    compressed_body = brotli.compress(body)[3:]
+    with pytest.raises(httpx.DecodingError):
+        httpx.Response(200, headers=headers, content=compressed_body, request=REQUEST)
+
+
+@pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
+def test_value_error_without_request(header_value):
+    headers = [(b"Content-Encoding", header_value)]
+    body = b"test 123"
+    compressed_body = brotli.compress(body)[3:]
+    with pytest.raises(ValueError):
+        httpx.Response(200, headers=headers, content=compressed_body)
+
+
+def test_response_with_unset_request():
+    response = httpx.Response(200, content=b"Hello, world!")
+
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+    assert response.text == "Hello, world!"
+    assert not response.is_error
+
+
+def test_set_request_after_init():
+    response = httpx.Response(200, content=b"Hello, world!")
+
+    response.request = REQUEST
+
+    assert response.request == REQUEST
+
+
+def test_cannot_access_unset_request():
+    response = httpx.Response(200, content=b"Hello, world!")
+
+    with pytest.raises(RuntimeError):
+        assert response.request is not None

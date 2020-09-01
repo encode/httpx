@@ -8,39 +8,38 @@ import httpcore
 import pytest
 
 import httpx
-from httpx._content_streams import AsyncIteratorStream, MultipartStream, encode
+from httpx._content_streams import MultipartStream, encode
 from httpx._utils import format_form_param
 
 
-class MockTransport(httpcore.AsyncHTTPTransport):
-    async def request(
+class MockTransport(httpcore.SyncHTTPTransport):
+    def request(
         self,
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]] = None,
-        stream: httpcore.AsyncByteStream = None,
+        stream: httpcore.SyncByteStream = None,
         timeout: typing.Mapping[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
         bytes,
         int,
         bytes,
         typing.List[typing.Tuple[bytes, bytes]],
-        httpcore.AsyncByteStream,
+        httpcore.SyncByteStream,
     ]:
         assert stream is not None
-        content = AsyncIteratorStream(aiterator=(part async for part in stream))
+        content = httpcore.IteratorByteStream(iterator=(part for part in stream))
         return b"HTTP/1.1", 200, b"OK", [], content
 
 
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
-@pytest.mark.asyncio
-async def test_multipart(value, output):
-    client = httpx.AsyncClient(transport=MockTransport())
+def test_multipart(value, output):
+    client = httpx.Client(transport=MockTransport())
 
     # Test with a single-value 'data' argument, and a plain file 'files' argument.
     data = {"text": value}
     files = {"file": io.BytesIO(b"<file content>")}
-    response = await client.post("http://127.0.0.1:8000/", data=data, files=files)
+    response = client.post("http://127.0.0.1:8000/", data=data, files=files)
     assert response.status_code == 200
 
     # We're using the cgi module to verify the behavior here, which is a
@@ -60,35 +59,39 @@ async def test_multipart(value, output):
 
 
 @pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))
-@pytest.mark.asyncio
-async def test_multipart_invalid_key(key):
-    client = httpx.AsyncClient(transport=MockTransport())
+def test_multipart_invalid_key(key):
+    client = httpx.Client(transport=MockTransport())
+
     data = {key: "abc"}
     files = {"file": io.BytesIO(b"<file content>")}
     with pytest.raises(TypeError) as e:
-        await client.post("http://127.0.0.1:8000/", data=data, files=files)
+        client.post(
+            "http://127.0.0.1:8000/",
+            data=data,
+            files=files,
+        )
     assert "Invalid type for name" in str(e.value)
 
 
 @pytest.mark.parametrize(("value"), (1, 2.3, None, [None, "abc"], {None: "abc"}))
-@pytest.mark.asyncio
-async def test_multipart_invalid_value(value):
-    client = httpx.AsyncClient(transport=MockTransport())
+def test_multipart_invalid_value(value):
+    client = httpx.Client(transport=MockTransport())
+
     data = {"text": value}
     files = {"file": io.BytesIO(b"<file content>")}
     with pytest.raises(TypeError) as e:
-        await client.post("http://127.0.0.1:8000/", data=data, files=files)
+        client.post("http://127.0.0.1:8000/", data=data, files=files)
     assert "Invalid type for value" in str(e.value)
 
 
-@pytest.mark.asyncio
-async def test_multipart_file_tuple():
-    client = httpx.AsyncClient(transport=MockTransport())
+def test_multipart_file_tuple():
+    client = httpx.Client(transport=MockTransport())
 
-    # Test with a list of values 'data' argument, and a tuple style 'files' argument.
+    # Test with a list of values 'data' argument,
+    #     and a tuple style 'files' argument.
     data = {"text": ["abc"]}
     files = {"file": ("name.txt", io.BytesIO(b"<file content>"))}
-    response = await client.post("http://127.0.0.1:8000/", data=data, files=files)
+    response = client.post("http://127.0.0.1:8000/", data=data, files=files)
     assert response.status_code == 200
 
     # We're using the cgi module to verify the behavior here, which is a
