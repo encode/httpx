@@ -361,7 +361,7 @@ def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
     auth = DigestAuth(username="tomchristie", password="password123")
     auth_header = b"Token ..."
 
-    client = Client(
+    client = httpx.Client(
         transport=SyncMockTransport(auth_header=auth_header, status_code=401)
     )
     response = client.get(url, auth=auth)
