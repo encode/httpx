@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+import httpcore
 import pytest
 
 import httpx
@@ -177,7 +178,7 @@ def test_base_url(server):
 def test_merge_absolute_url():
     client = httpx.Client(base_url="https://www.example.com/")
     request = client.build_request("GET", "http://www.example.com/")
-    assert request.url == httpx.URL("http://www.example.com/")
+    assert request.url == "http://www.example.com/"
     with pytest.warns(DeprecationWarning):
         assert not request.url.is_ssl
 
@@ -185,19 +186,19 @@ def test_merge_absolute_url():
 def test_merge_relative_url():
     client = httpx.Client(base_url="https://www.example.com/")
     request = client.build_request("GET", "/testing/123")
-    assert request.url == httpx.URL("https://www.example.com/testing/123")
+    assert request.url == "https://www.example.com/testing/123"
 
 
 def test_merge_relative_url_with_path():
     client = httpx.Client(base_url="https://www.example.com/some/path")
     request = client.build_request("GET", "/testing/123")
-    assert request.url == httpx.URL("https://www.example.com/some/path/testing/123")
+    assert request.url == "https://www.example.com/some/path/testing/123"
 
 
 def test_merge_relative_url_with_dotted_path():
     client = httpx.Client(base_url="https://www.example.com/some/path")
     request = client.build_request("GET", "../testing/123")
-    assert request.url == httpx.URL("https://www.example.com/some/testing/123")
+    assert request.url == "https://www.example.com/some/testing/123"
 
 
 def test_pool_limits_deprecated():
@@ -208,3 +209,41 @@ def test_pool_limits_deprecated():
 
     with pytest.warns(DeprecationWarning):
         httpx.AsyncClient(pool_limits=limits)
+
+
+def test_context_managed_transport():
+    class Transport(httpcore.SyncHTTPTransport):
+        def __init__(self):
+            self.events = []
+
+        def close(self):
+            # The base implementation of httpcore.SyncHTTPTransport just
+            # calls into `.close`, so simple transport cases can just override
+            # this method for any cleanup, where more complex cases
+            # might want to additionally override `__enter__`/`__exit__`.
+            self.events.append("transport.close")
+
+        def __enter__(self):
+            super().__enter__()
+            self.events.append("transport.__enter__")
+
+        def __exit__(self, *args):
+            super().__exit__(*args)
+            self.events.append("transport.__exit__")
+
+    # Note that we're including 'proxies' here to *also* run through the
+    # proxy context management, although we can't easily test that at the
+    # moment, since we can't add proxies as transport instances.
+    #
+    # Once we have a more generalised Mount API we'll be able to remove this
+    # in favour of ensuring all mounts are context managed, which will
+    # also neccessarily include proxies.
+    transport = Transport()
+    with httpx.Client(transport=transport, proxies="http://www.example.com"):
+        pass
+
+    assert transport.events == [
+        "transport.__enter__",
+        "transport.close",
+        "transport.__exit__",
+    ]

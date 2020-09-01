@@ -20,8 +20,7 @@ async def async_streaming_body():
     yield b"world!"
 
 
-@pytest.mark.asyncio
-async def test_response():
+def test_response():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
 
     assert response.status_code == 200
@@ -106,7 +105,7 @@ def test_response_set_explicit_encoding():
         "Content-Type": "text-plain; charset=utf-8"
     }  # Deliberately incorrect charset
     response = httpx.Response(
-        200, content="Latin 1: ÿ".encode("latin-1"), headers=headers, request=REQUEST,
+        200, content="Latin 1: ÿ".encode("latin-1"), headers=headers, request=REQUEST
     )
     response.encoding = "latin-1"
     assert response.text == "Latin 1: ÿ"

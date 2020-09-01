@@ -43,39 +43,41 @@ async def raise_exc_after_response(scope, receive, send):
 
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi():
-    client = httpx.AsyncClient(app=hello_world)
-    response = await client.get("http://www.example.org/")
+    async with httpx.AsyncClient(app=hello_world) as client:
+        response = await client.get("http://www.example.org/")
+
     assert response.status_code == 200
     assert response.text == "Hello, World!"
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_upload():
-    client = httpx.AsyncClient(app=echo_body)
-    response = await client.post("http://www.example.org/", data=b"example")
+    async with httpx.AsyncClient(app=echo_body) as client:
+        response = await client.post("http://www.example.org/", data=b"example")
+
     assert response.status_code == 200
     assert response.text == "example"
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_exc():
-    client = httpx.AsyncClient(app=raise_exc)
-    with pytest.raises(ValueError):
-        await client.get("http://www.example.org/")
+    async with httpx.AsyncClient(app=raise_exc) as client:
+        with pytest.raises(ValueError):
+            await client.get("http://www.example.org/")
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_http_error():
-    client = httpx.AsyncClient(app=partial(raise_exc, exc=RuntimeError))
-    with pytest.raises(RuntimeError):
-        await client.get("http://www.example.org/")
+    async with httpx.AsyncClient(app=partial(raise_exc, exc=RuntimeError)) as client:
+        with pytest.raises(RuntimeError):
+            await client.get("http://www.example.org/")
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_exc_after_response():
-    client = httpx.AsyncClient(app=raise_exc_after_response)
-    with pytest.raises(ValueError):
-        await client.get("http://www.example.org/")
+    async with httpx.AsyncClient(app=raise_exc_after_response) as client:
+        with pytest.raises(ValueError):
+            await client.get("http://www.example.org/")
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -105,7 +107,8 @@ async def test_asgi_disconnect_after_response_complete():
         message = await receive()
         disconnect = message.get("type") == "http.disconnect"
 
-    client = httpx.AsyncClient(app=read_body)
-    response = await client.post("http://www.example.org/", data=b"example")
+    async with httpx.AsyncClient(app=read_body) as client:
+        response = await client.post("http://www.example.org/", data=b"example")
+
     assert response.status_code == 200
     assert disconnect
