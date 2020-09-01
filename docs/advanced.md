@@ -626,6 +626,24 @@ For instance this request sends 2 files, `foo.png` and `bar.png` in one request 
 >>> r = httpx.post("https://httpbin.org/post", files=files)
 ```
 
+## Retries
+
+Client instances can retry on errors that occur while establishing new connections.
+
+Retries are disabled by default. They can be enabled by passing the maximum number of retries as `Client(retries=<int>)`. For example...
+
+```pycon
+>>> with httpx.Client(retries=3) as client:
+...     # If a connect error occurs, we will retry up to 3 times before failing.
+...     response = client.get("https://unstableserver.com/")
+```
+
+Note that:
+
+* HTTPX issues a first retry without waiting (transient errors are often resolved immediately), then issues retries at exponentially increasing time intervals (0.5s, 1s, 2s, 4s, etc).
+* Retries are always disabled for non-idempotent methods, such as `POST` or `PATCH`.
+* The built-in retry functionality only applies to failures _while establishing new connections_ (effectively `ConnectError` and `ConnectTimeout` exceptions). In particular, errors while interacting with existing connections (such as unexpected server-side connection closures, or read/write timeouts) will not be retried on.
+
 ## Customizing authentication
 
 When issuing requests or instantiating a client, the `auth` argument can be used to pass an authentication scheme to use. The `auth` argument may be one of the following...
