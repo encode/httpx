@@ -734,7 +734,7 @@ class Response:
         Returns the request instance associated to the current response.
         """
         if self._request is None:
-            raise RuntimeError("'.request' may only be accessed if initialized")
+            raise RuntimeError("The request instance has not been set on this response.")
         return self._request
 
     @request.setter
