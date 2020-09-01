@@ -35,76 +35,79 @@ class MockTransport(httpcore.AsyncHTTPTransport):
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
 @pytest.mark.asyncio
 async def test_multipart(value, output):
-    client = httpx.AsyncClient(transport=MockTransport())
+    async with httpx.AsyncClient(transport=MockTransport()) as client:
+        # Test with a single-value 'data' argument, and a plain file 'files' argument.
+        data = {"text": value}
+        files = {"file": io.BytesIO(b"<file content>")}
+        response = await client.post("http://127.0.0.1:8000/", data=data, files=files)
+        assert response.status_code == 200
 
-    # Test with a single-value 'data' argument, and a plain file 'files' argument.
-    data = {"text": value}
-    files = {"file": io.BytesIO(b"<file content>")}
-    response = await client.post("http://127.0.0.1:8000/", data=data, files=files)
-    assert response.status_code == 200
+        # We're using the cgi module to verify the behavior here, which is a
+        # bit grungy, but sufficient just for our testing purposes.
+        boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
+        content_length = response.request.headers["Content-Length"]
+        pdict: dict = {
+            "boundary": boundary.encode("ascii"),
+            "CONTENT-LENGTH": content_length,
+        }
+        multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
 
-    # We're using the cgi module to verify the behavior here, which is a
-    # bit grungy, but sufficient just for our testing purposes.
-    boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
-    content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
-        "boundary": boundary.encode("ascii"),
-        "CONTENT-LENGTH": content_length,
-    }
-    multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
-
-    # Note that the expected return type for text fields
-    # appears to differs from 3.6 to 3.7+
-    assert multipart["text"] == [output.decode()] or multipart["text"] == [output]
-    assert multipart["file"] == [b"<file content>"]
+        # Note that the expected return type for text fields
+        # appears to differs from 3.6 to 3.7+
+        assert multipart["text"] == [output.decode()] or multipart["text"] == [output]
+        assert multipart["file"] == [b"<file content>"]
 
 
 @pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))
 @pytest.mark.asyncio
 async def test_multipart_invalid_key(key):
-    client = httpx.AsyncClient(transport=MockTransport())
-    data = {key: "abc"}
-    files = {"file": io.BytesIO(b"<file content>")}
-    with pytest.raises(TypeError) as e:
-        await client.post("http://127.0.0.1:8000/", data=data, files=files)
-    assert "Invalid type for name" in str(e.value)
+    async with httpx.AsyncClient(transport=MockTransport()) as client:
+        data = {key: "abc"}
+        files = {"file": io.BytesIO(b"<file content>")}
+        with pytest.raises(TypeError) as e:
+            await client.post(
+                "http://127.0.0.1:8000/",
+                data=data,
+                files=files,
+            )
+        assert "Invalid type for name" in str(e.value)
 
 
 @pytest.mark.parametrize(("value"), (1, 2.3, None, [None, "abc"], {None: "abc"}))
 @pytest.mark.asyncio
 async def test_multipart_invalid_value(value):
-    client = httpx.AsyncClient(transport=MockTransport())
-    data = {"text": value}
-    files = {"file": io.BytesIO(b"<file content>")}
-    with pytest.raises(TypeError) as e:
-        await client.post("http://127.0.0.1:8000/", data=data, files=files)
-    assert "Invalid type for value" in str(e.value)
+    async with httpx.AsyncClient(transport=MockTransport()) as client:
+        data = {"text": value}
+        files = {"file": io.BytesIO(b"<file content>")}
+        with pytest.raises(TypeError) as e:
+            await client.post("http://127.0.0.1:8000/", data=data, files=files)
+        assert "Invalid type for value" in str(e.value)
 
 
 @pytest.mark.asyncio
 async def test_multipart_file_tuple():
-    client = httpx.AsyncClient(transport=MockTransport())
+    async with httpx.AsyncClient(transport=MockTransport()) as client:
+        # Test with a list of values 'data' argument,
+        #     and a tuple style 'files' argument.
+        data = {"text": ["abc"]}
+        files = {"file": ("name.txt", io.BytesIO(b"<file content>"))}
+        response = await client.post("http://127.0.0.1:8000/", data=data, files=files)
+        assert response.status_code == 200
 
-    # Test with a list of values 'data' argument, and a tuple style 'files' argument.
-    data = {"text": ["abc"]}
-    files = {"file": ("name.txt", io.BytesIO(b"<file content>"))}
-    response = await client.post("http://127.0.0.1:8000/", data=data, files=files)
-    assert response.status_code == 200
+        # We're using the cgi module to verify the behavior here, which is a
+        # bit grungy, but sufficient just for our testing purposes.
+        boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
+        content_length = response.request.headers["Content-Length"]
+        pdict: dict = {
+            "boundary": boundary.encode("ascii"),
+            "CONTENT-LENGTH": content_length,
+        }
+        multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
 
-    # We're using the cgi module to verify the behavior here, which is a
-    # bit grungy, but sufficient just for our testing purposes.
-    boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
-    content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
-        "boundary": boundary.encode("ascii"),
-        "CONTENT-LENGTH": content_length,
-    }
-    multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
-
-    # Note that the expected return type for text fields
-    # appears to differs from 3.6 to 3.7+
-    assert multipart["text"] == ["abc"] or multipart["text"] == [b"abc"]
-    assert multipart["file"] == [b"<file content>"]
+        # Note that the expected return type for text fields
+        # appears to differs from 3.6 to 3.7+
+        assert multipart["text"] == ["abc"] or multipart["text"] == [b"abc"]
+        assert multipart["file"] == [b"<file content>"]
 
 
 def test_multipart_encode(tmp_path: typing.Any) -> None:
