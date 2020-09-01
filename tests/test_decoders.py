@@ -135,9 +135,9 @@ def test_empty_content(header_value):
     "decoder", (BrotliDecoder, DeflateDecoder, GZipDecoder, IdentityDecoder)
 )
 def test_decoders_empty_cases(decoder):
-    request = httpx.Request(method="GET", url="https://www.example.com")
-    instance = decoder(request)
-    assert instance.decode(b"") == b""
+    response = httpx.Response(content=b"", status_code=200)
+    instance = decoder()
+    assert instance.decode(response.content) == b""
     assert instance.flush() == b""
 
 
@@ -207,12 +207,10 @@ async def test_text_decoder_known_encoding():
 
 
 def test_text_decoder_empty_cases():
-    request = httpx.Request(method="GET", url="https://www.example.com")
-
-    decoder = TextDecoder(request=request)
+    decoder = TextDecoder()
     assert decoder.flush() == ""
 
-    decoder = TextDecoder(request=request)
+    decoder = TextDecoder()
     assert decoder.decode(b"") == ""
     assert decoder.flush() == ""
 
