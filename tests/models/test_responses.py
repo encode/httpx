@@ -53,6 +53,7 @@ def test_raise_for_status():
     with pytest.raises(RuntimeError):
         response.raise_for_status()
 
+
 def test_response_repr():
     response = httpx.Response(200, content=b"Hello, world!", request=REQUEST)
     assert repr(response) == "<Response [200 OK]>"
