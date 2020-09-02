@@ -404,5 +404,9 @@ def encode_request_body(
     raise TypeError(f"Unexpected type for 'data', {type(data)!r}")
 
 
-def encode_response_body(content: bytes = None) -> ContentStream:
+def encode_response_body(
+    content: bytes = None, json: typing.Any = None
+) -> ContentStream:
+    if json is not None:
+        return JSONStream(json=json)
     return ByteStream(body=content or b"")

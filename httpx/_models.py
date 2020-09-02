@@ -696,11 +696,12 @@ class Response:
         self,
         status_code: int,
         *,
-        request: Request = None,
         http_version: str = None,
         headers: HeaderTypes = None,
-        stream: ContentStream = None,
         content: bytes = None,
+        json: typing.Any = None,
+        stream: ContentStream = None,
+        request: Request = None,
         history: typing.List["Response"] = None,
     ):
         self.status_code = status_code
@@ -718,7 +719,7 @@ class Response:
         if stream is not None:
             self._raw_stream = stream
         else:
-            self._raw_stream = encode_response_body(content)
+            self._raw_stream = encode_response_body(content=content, json=json)
             for key, value in self._raw_stream.get_headers().items():
                 self.headers.setdefault(key, value)
             self.read()

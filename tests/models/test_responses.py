@@ -36,6 +36,16 @@ def test_response():
     assert not response.is_error
 
 
+def test_json_response():
+    response = httpx.Response(200, json={"Hello": "World!"})
+
+    assert response.status_code == 200
+    assert response.text == '{"Hello": "World!"}'
+    assert response.headers == httpx.Headers(
+        {"Content-Type": "application/json", "Content-Length": "19"}
+    )
+
+
 def test_raise_for_status():
     request = httpx.Request("GET", "https://example.org")
 
