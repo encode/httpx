@@ -402,3 +402,7 @@ def encode_request_body(
         return IteratorStream(iterator=data)
 
     raise TypeError(f"Unexpected type for 'data', {type(data)!r}")
+
+
+def encode_response_body(content: bytes = None) -> ContentStream:
+    return ByteStream(body=content or b"")

@@ -15,7 +15,12 @@ import rfc3986
 import rfc3986.exceptions
 
 from .__version__ import __version__
-from ._content_streams import ByteStream, ContentStream, encode_request_body
+from ._content_streams import (
+    ByteStream,
+    ContentStream,
+    encode_request_body,
+    encode_response_body,
+)
 from ._decoders import (
     SUPPORTED_DECODERS,
     Decoder,
@@ -713,7 +718,7 @@ class Response:
         if stream is not None:
             self._raw_stream = stream
         else:
-            self._raw_stream = ByteStream(body=content or b"")
+            self._raw_stream = encode_response_body(content)
             self.read()
 
     @property
