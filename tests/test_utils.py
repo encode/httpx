@@ -237,66 +237,18 @@ def test_not_same_origin():
 @pytest.mark.parametrize(
     ["pattern", "url", "expected"],
     [
-        (
-            "http://example.com",
-            "http://example.com",
-            True,
-        ),
-        (
-            "http://example.com",
-            "https://example.com",
-            False,
-        ),
-        (
-            "http://example.com",
-            "http://other.com",
-            False,
-        ),
-        (
-            "http://example.com:123",
-            "http://example.com:123",
-            True,
-        ),
-        (
-            "http://example.com:123",
-            "http://example.com:456",
-            False,
-        ),
-        (
-            "http://example.com:123",
-            "http://example.com",
-            False,
-        ),
-        (
-            "all://example.com",
-            "http://example.com",
-            True,
-        ),
-        (
-            "all://example.com",
-            "https://example.com",
-            True,
-        ),
-        (
-            "http://",
-            "http://example.com",
-            True,
-        ),
-        (
-            "http://",
-            "https://example.com",
-            False,
-        ),
-        (
-            "all://",
-            "https://example.com:123",
-            True,
-        ),
-        (
-            "",
-            "https://example.com:123",
-            True,
-        ),
+        ("http://example.com", "http://example.com", True),
+        ("http://example.com", "https://example.com", False),
+        ("http://example.com", "http://other.com", False),
+        ("http://example.com:123", "http://example.com:123", True),
+        ("http://example.com:123", "http://example.com:456", False),
+        ("http://example.com:123", "http://example.com", False),
+        ("all://example.com", "http://example.com", True),
+        ("all://example.com", "https://example.com", True),
+        ("http://", "http://example.com", True),
+        ("http://", "https://example.com", False),
+        ("all://", "https://example.com:123", True),
+        ("", "https://example.com:123", True),
     ],
 )
 def test_url_matches(pattern, url, expected):
