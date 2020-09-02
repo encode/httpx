@@ -719,6 +719,8 @@ class Response:
             self._raw_stream = stream
         else:
             self._raw_stream = encode_response_body(content)
+            for key, value in self._raw_stream.get_headers().items():
+                self.headers.setdefault(key, value)
             self.read()
 
     @property

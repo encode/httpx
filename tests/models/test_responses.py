@@ -32,6 +32,7 @@ def test_response():
     assert response.request.method == "GET"
     assert response.request.url == "https://example.org"
     assert response.elapsed >= datetime.timedelta(0)
+    assert response.headers == httpx.Headers({"Content-Length": "13"})
     assert not response.is_error
 
 
