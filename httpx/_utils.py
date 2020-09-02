@@ -1,6 +1,5 @@
 import codecs
 import collections
-import datetime
 import logging
 import mimetypes
 import netrc
@@ -415,13 +414,13 @@ class Timer:
     async def async_start(self) -> None:
         self.started = await self._get_time()
 
-    def sync_elapsed(self) -> datetime.timedelta:
+    def sync_elapsed(self) -> float:
         now = time.perf_counter()
-        return datetime.timedelta(seconds=now - self.started)
+        return now - self.started
 
-    async def async_elapsed(self) -> datetime.timedelta:
+    async def async_elapsed(self) -> float:
         now = await self._get_time()
-        return datetime.timedelta(seconds=now - self.started)
+        return now - self.started
 
 
 class URLPattern:

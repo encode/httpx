@@ -727,7 +727,7 @@ class Response:
                 "'.elapsed' may only be accessed after the response "
                 "has been read or closed."
             )
-        return self._elapsed
+        return datetime.timedelta(seconds=self._elapsed)
 
     @property
     def request(self) -> Request:
