@@ -1,5 +1,3 @@
-from functools import partial
-
 import pytest
 
 import httpx
@@ -27,8 +25,8 @@ async def echo_body(scope, receive, send):
         await send({"type": "http.response.body", "body": body, "more_body": more_body})
 
 
-async def raise_exc(scope, receive, send, exc=ValueError):
-    raise exc()
+async def raise_exc(scope, receive, send):
+    raise RuntimeError()
 
 
 async def raise_exc_after_response(scope, receive, send):
@@ -38,7 +36,7 @@ async def raise_exc_after_response(scope, receive, send):
 
     await send({"type": "http.response.start", "status": status, "headers": headers})
     await send({"type": "http.response.body", "body": output})
-    raise ValueError()
+    raise RuntimeError()
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -62,13 +60,6 @@ async def test_asgi_upload():
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_exc():
     async with httpx.AsyncClient(app=raise_exc) as client:
-        with pytest.raises(ValueError):
-            await client.get("http://www.example.org/")
-
-
-@pytest.mark.usefixtures("async_environment")
-async def test_asgi_http_error():
-    async with httpx.AsyncClient(app=partial(raise_exc, exc=RuntimeError)) as client:
         with pytest.raises(RuntimeError):
             await client.get("http://www.example.org/")
 
@@ -76,7 +67,7 @@ async def test_asgi_http_error():
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_exc_after_response():
     async with httpx.AsyncClient(app=raise_exc_after_response) as client:
-        with pytest.raises(ValueError):
+        with pytest.raises(RuntimeError):
             await client.get("http://www.example.org/")
 
 
