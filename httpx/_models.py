@@ -48,7 +48,6 @@ from ._types import (
     URLTypes,
 )
 from ._utils import (
-    ElapsedTimer,
     flatten_queryparams,
     guess_json_utf,
     is_known_encoding,
@@ -611,7 +610,6 @@ class Request:
         else:
             self.stream = encode(data, files, json)
 
-        self.timer = ElapsedTimer()
         self.prepare()
 
     def prepare(self) -> None:
@@ -697,6 +695,7 @@ class Response:
         stream: ContentStream = None,
         content: bytes = None,
         history: typing.List["Response"] = None,
+        get_elapsed_time: typing.Callable = None,
     ):
         self.status_code = status_code
         self.http_version = http_version
@@ -707,6 +706,7 @@ class Response:
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.history = [] if history is None else list(history)
+        self._get_elapsed_time = get_elapsed_time
 
         self.is_closed = False
         self.is_stream_consumed = False
@@ -995,8 +995,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self._request is not None:
-                self._elapsed = self.request.timer.elapsed
+            if self._get_elapsed_time is not None:
+                self._elapsed = self._get_elapsed_time()
             self._raw_stream.close()
 
     async def aread(self) -> bytes:
@@ -1075,8 +1075,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self._request is not None:
-                self._elapsed = self.request.timer.elapsed
+            if self._get_elapsed_time is not None:
+                self._elapsed = await self._get_elapsed_time()
             await self._raw_stream.aclose()
 
 
