@@ -104,7 +104,9 @@ class MockDigestAuthTransport(httpcore.AsyncHTTPTransport):
         return b"HTTP/1.1", 200, b"", [], body
 
     def challenge_send(
-        self, method: bytes, headers: typing.List[typing.Tuple[bytes, bytes]],
+        self,
+        method: bytes,
+        headers: typing.List[typing.Tuple[bytes, bytes]],
     ) -> typing.Tuple[
         bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
     ]:

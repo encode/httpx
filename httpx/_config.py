@@ -3,7 +3,6 @@ import ssl
 import typing
 import warnings
 from base64 import b64encode
-from collections.abc import MutableMapping
 from pathlib import Path
 
 import certifi
@@ -375,7 +374,11 @@ class PoolLimits(Limits):
 
 class Proxy:
     def __init__(
-        self, url: URLTypes, *, headers: HeaderTypes = None, mode: str = "DEFAULT",
+        self,
+        url: URLTypes,
+        *,
+        headers: HeaderTypes = None,
+        mode: str = "DEFAULT",
     ):
         url = URL(url)
         headers = Headers(headers)
@@ -409,48 +412,6 @@ class Proxy:
             f"headers={dict(self.headers)!r}, "
             f"mode={self.mode!r})"
         )
-
-
-class EventHooks(MutableMapping):
-    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
-        value = dict(*args, **kwargs)
-        self._dict = {
-            "request": self._as_list(value.get("request", [])),
-            "response": self._as_list(value.get("response", [])),
-        }
-
-    def _as_list(self, value: typing.Any) -> list:
-        if not isinstance(value, (list, tuple)):
-            return [value]
-        return list(value)
-
-    def __getitem__(self, key: typing.Any) -> typing.List[typing.Callable]:
-        return self._dict[key]
-
-    def __setitem__(
-        self,
-        key: str,
-        value: typing.Union[typing.Callable, typing.List[typing.Callable]],
-    ) -> None:
-        if key in self._dict:
-            self._dict[key] = self._as_list(value)
-
-    def __delitem__(self, key: str) -> None:
-        if key in self._dict:
-            self._dict[key] = []
-
-    def __iter__(self) -> typing.Iterator[str]:
-        return iter(self._dict.keys())
-
-    def __len__(self) -> int:
-        return len(self._dict)
-
-    def __str__(self) -> str:
-        return str(self._dict)
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return f"{class_name}({self._dict!r})"
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)

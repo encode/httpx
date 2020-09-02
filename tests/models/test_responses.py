@@ -106,7 +106,10 @@ def test_response_set_explicit_encoding():
         "Content-Type": "text-plain; charset=utf-8"
     }  # Deliberately incorrect charset
     response = httpx.Response(
-        200, content="Latin 1: ÿ".encode("latin-1"), headers=headers, request=REQUEST,
+        200,
+        content="Latin 1: ÿ".encode("latin-1"),
+        headers=headers,
+        request=REQUEST,
     )
     response.encoding = "latin-1"
     assert response.text == "Latin 1: ÿ"

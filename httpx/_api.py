@@ -35,7 +35,6 @@ def request(
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     trust_env: bool = True,
-    event_hooks: dict = None,
 ) -> Response:
     """
     Sends an HTTP request.
@@ -90,7 +89,6 @@ def request(
         verify=verify,
         timeout=timeout,
         trust_env=trust_env,
-        event_hooks=event_hooks,
     ) as client:
         return client.request(
             method=method,
@@ -123,7 +121,6 @@ def stream(
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     trust_env: bool = True,
-    event_hooks: dict = None,
 ) -> StreamContextManager:
     """
     Alternative to `httpx.request()` that streams the response body
@@ -140,7 +137,6 @@ def stream(
         cert=cert,
         verify=verify,
         trust_env=trust_env,
-        event_hooks=event_hooks,
     )
     request = Request(
         method=method,
@@ -175,7 +171,6 @@ def get(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
-    event_hooks: dict = None,
 ) -> Response:
     """
     Sends a `GET` request.
@@ -198,7 +193,6 @@ def get(
         verify=verify,
         timeout=timeout,
         trust_env=trust_env,
-        event_hooks=event_hooks,
     )
 
 
@@ -215,7 +209,6 @@ def options(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
-    event_hooks: dict = None,
 ) -> Response:
     """
     Sends an `OPTIONS` request.
@@ -238,7 +231,6 @@ def options(
         verify=verify,
         timeout=timeout,
         trust_env=trust_env,
-        event_hooks=event_hooks,
     )
 
 
@@ -255,7 +247,6 @@ def head(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
-    event_hooks: dict = None,
 ) -> Response:
     """
     Sends a `HEAD` request.
@@ -278,7 +269,6 @@ def head(
         verify=verify,
         timeout=timeout,
         trust_env=trust_env,
-        event_hooks=event_hooks,
     )
 
 
@@ -298,7 +288,6 @@ def post(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
-    event_hooks: dict = None,
 ) -> Response:
     """
     Sends a `POST` request.
@@ -321,7 +310,6 @@ def post(
         verify=verify,
         timeout=timeout,
         trust_env=trust_env,
-        event_hooks=event_hooks,
     )
 
 
@@ -341,7 +329,6 @@ def put(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
-    event_hooks: dict = None,
 ) -> Response:
     """
     Sends a `PUT` request.
@@ -364,7 +351,6 @@ def put(
         verify=verify,
         timeout=timeout,
         trust_env=trust_env,
-        event_hooks=event_hooks,
     )
 
 
@@ -384,7 +370,6 @@ def patch(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
-    event_hooks: dict = None,
 ) -> Response:
     """
     Sends a `PATCH` request.
@@ -407,7 +392,6 @@ def patch(
         verify=verify,
         timeout=timeout,
         trust_env=trust_env,
-        event_hooks=event_hooks,
     )
 
 
@@ -424,7 +408,6 @@ def delete(
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
-    event_hooks: dict = None,
 ) -> Response:
     """
     Sends a `DELETE` request.
@@ -447,5 +430,4 @@ def delete(
         verify=verify,
         timeout=timeout,
         trust_env=trust_env,
-        event_hooks=event_hooks,
     )

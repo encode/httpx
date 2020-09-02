@@ -240,7 +240,7 @@ def log_request(request):
 def log_response(response):
     print(response)
 
-client = httpx.Client(event_hooks={'request': log_request, 'response': log_response})
+client = httpx.Client(event_hooks={'request': [log_request], 'response': [log_response]})
 ```
 
 You can also use these hooks to install response processing code, such as this
@@ -251,12 +251,15 @@ on 4xx and 5xx responses.
 def raise_on_4xx_5xx(response):
     response.raise_for_status()
 
-client = httpx.Client(event_hooks={'response': raise_on_4xx_5xx})
+client = httpx.Client(event_hooks={'response': [raise_on_4xx_5xx]})
 ```
 
-You can also register multiple event hooks for each type of event, and can modify
-the event hooks either on client instantiation, or modify and inspect the
-event hooks using the `client.event_hooks` property.
+Event hooks must always be set as a **list of callables**, and you may register
+multiple event hooks for each type of event.
+
+As well as being able to set event hooks on instantiating the client, there
+is also an `.event_hooks` property, that allows you to inspect and modify
+the installed hooks.
 
 ```python
 client = httpx.Client()

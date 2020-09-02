@@ -56,5 +56,5 @@ def test_client_event_hooks():
         pass  # pragma: nocover
 
     client = Client()
-    client.event_hooks = {"request": on_request}  # type: ignore
-    assert client.event_hooks["request"] == [on_request]
+    client.event_hooks = {"request": [on_request]}
+    assert client.event_hooks == {"request": [on_request], "response": []}
