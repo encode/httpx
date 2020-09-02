@@ -72,11 +72,8 @@ class IteratorStream(ContentStream):
     Request content encoded as plain bytes, using an byte iterator.
     """
 
-    def __init__(
-        self, iterator: typing.Iterator[bytes], close_func: typing.Callable = None
-    ) -> None:
+    def __init__(self, iterator: typing.Iterator[bytes]) -> None:
         self.iterator = iterator
-        self.close_func = close_func
         self.is_stream_consumed = False
 
     def can_replay(self) -> bool:
@@ -95,21 +92,14 @@ class IteratorStream(ContentStream):
     def __aiter__(self) -> typing.AsyncIterator[bytes]:
         raise RuntimeError("Attempted to call a async iterator on an sync stream.")
 
-    def close(self) -> None:
-        if self.close_func is not None:
-            self.close_func()
-
 
 class AsyncIteratorStream(ContentStream):
     """
     Request content encoded as plain bytes, using an async byte iterator.
     """
 
-    def __init__(
-        self, aiterator: typing.AsyncIterator[bytes], close_func: typing.Callable = None
-    ) -> None:
+    def __init__(self, aiterator: typing.AsyncIterator[bytes]) -> None:
         self.aiterator = aiterator
-        self.close_func = close_func
         self.is_stream_consumed = False
 
     def can_replay(self) -> bool:
@@ -127,10 +117,6 @@ class AsyncIteratorStream(ContentStream):
         self.is_stream_consumed = True
         async for part in self.aiterator:
             yield part
-
-    async def aclose(self) -> None:
-        if self.close_func is not None:
-            await self.close_func()
 
 
 class JSONStream(ContentStream):

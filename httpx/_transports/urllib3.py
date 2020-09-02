@@ -4,7 +4,7 @@ from typing import Iterator, List, Mapping, Optional, Tuple
 import httpcore
 
 from .._config import create_ssl_context
-from .._content_streams import ByteStream, IteratorStream
+from .._content_streams import ByteStream
 from .._exceptions import NetworkError, map_exceptions
 from .._types import CertTypes, VerifyTypes
 
@@ -13,6 +13,21 @@ try:
     from urllib3.exceptions import MaxRetryError, SSLError
 except ImportError:  # pragma: nocover
     urllib3 = None
+
+
+class URLLib3ByteStream(httpcore.SyncByteStream):
+    def __init__(self, conn: urllib3.HTTPResponse) -> None:
+        self._conn = conn
+
+    def __iter__(self) -> Iterator[bytes]:
+        try:
+            for chunk in self._conn.stream(4096, decode_content=False):
+                yield chunk
+        except socket.error as exc:
+            raise httpcore.NetworkError(exc) from exc
+
+    def close(self) -> None:
+        self._conn.release_conn()
 
 
 class URLLib3Transport(httpcore.SyncHTTPTransport):
@@ -104,16 +119,9 @@ class URLLib3Transport(httpcore.SyncHTTPTransport):
                 pool_timeout=timeout.get("pool"),
             )
 
-        def response_bytes() -> Iterator[bytes]:
-            with map_exceptions({socket.error: NetworkError}):
-                for chunk in conn.stream(4096, decode_content=False):
-                    yield chunk
-
         status_code = conn.status
         headers = list(conn.headers.items())
-        response_stream = IteratorStream(
-            iterator=response_bytes(), close_func=conn.release_conn
-        )
+        response_stream = URLLib3ByteStream(conn=conn)
         return (b"HTTP/1.1", status_code, conn.reason, headers, response_stream)
 
     def close(self) -> None:

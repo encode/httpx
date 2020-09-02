@@ -3,7 +3,7 @@ import typing
 import httpcore
 
 import httpx
-from httpx._content_streams import ContentStream, JSONStream
+from httpx._content_streams import JSONStream
 
 
 class MockTransport(httpcore.SyncHTTPTransport):
@@ -15,7 +15,11 @@ class MockTransport(httpcore.SyncHTTPTransport):
         stream: httpcore.SyncByteStream = None,
         timeout: typing.Mapping[str, typing.Optional[float]] = None,
     ) -> typing.Tuple[
-        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
+        bytes,
+        int,
+        bytes,
+        typing.List[typing.Tuple[bytes, bytes]],
+        httpcore.SyncByteStream,
     ]:
         body = JSONStream({"ok": "ok"})
         return b"HTTP/1.1", 200, b"OK", [], body
