@@ -14,8 +14,6 @@ from httpx._decoders import (
     TextDecoder,
 )
 
-REQUEST = httpx.Request("GET", "https://example.org")
-
 
 def test_deflate():
     """
@@ -29,7 +27,9 @@ def test_deflate():
 
     headers = [(b"Content-Encoding", b"deflate")]
     response = httpx.Response(
-        status_code=200, headers=headers, content=compressed_body, request=REQUEST
+        status_code=200,
+        headers=headers,
+        content=compressed_body,
     )
     assert response.content == body
 
@@ -45,7 +45,9 @@ def test_zlib():
 
     headers = [(b"Content-Encoding", b"deflate")]
     response = httpx.Response(
-        status_code=200, headers=headers, content=compressed_body, request=REQUEST
+        status_code=200,
+        headers=headers,
+        content=compressed_body,
     )
     assert response.content == body
 
@@ -57,7 +59,9 @@ def test_gzip():
 
     headers = [(b"Content-Encoding", b"gzip")]
     response = httpx.Response(
-        status_code=200, headers=headers, content=compressed_body, request=REQUEST
+        status_code=200,
+        headers=headers,
+        content=compressed_body,
     )
     assert response.content == body
 
@@ -68,7 +72,9 @@ def test_brotli():
 
     headers = [(b"Content-Encoding", b"br")]
     response = httpx.Response(
-        status_code=200, headers=headers, content=compressed_body, request=REQUEST
+        status_code=200,
+        headers=headers,
+        content=compressed_body,
     )
     assert response.content == body
 
@@ -86,7 +92,9 @@ def test_multi():
 
     headers = [(b"Content-Encoding", b"deflate, gzip")]
     response = httpx.Response(
-        status_code=200, headers=headers, content=compressed_body, request=REQUEST
+        status_code=200,
+        headers=headers,
+        content=compressed_body,
     )
     assert response.content == body
 
@@ -97,13 +105,17 @@ def test_multi_with_identity():
 
     headers = [(b"Content-Encoding", b"br, identity")]
     response = httpx.Response(
-        status_code=200, headers=headers, content=compressed_body, request=REQUEST
+        status_code=200,
+        headers=headers,
+        content=compressed_body,
     )
     assert response.content == body
 
     headers = [(b"Content-Encoding", b"identity, br")]
     response = httpx.Response(
-        status_code=200, headers=headers, content=compressed_body, request=REQUEST
+        status_code=200,
+        headers=headers,
+        content=compressed_body,
     )
     assert response.content == body
 
@@ -120,7 +132,9 @@ async def test_streaming():
     headers = [(b"Content-Encoding", b"gzip")]
     stream = AsyncIteratorStream(aiterator=compress(body))
     response = httpx.Response(
-        status_code=200, headers=headers, stream=stream, request=REQUEST
+        status_code=200,
+        headers=headers,
+        stream=stream,
     )
     assert not hasattr(response, "body")
     assert await response.aread() == body
@@ -130,7 +144,9 @@ async def test_streaming():
 def test_empty_content(header_value):
     headers = [(b"Content-Encoding", header_value)]
     response = httpx.Response(
-        status_code=200, headers=headers, content=b"", request=REQUEST
+        status_code=200,
+        headers=headers,
+        content=b"",
     )
     assert response.content == b""
 
@@ -139,9 +155,9 @@ def test_empty_content(header_value):
     "decoder", (BrotliDecoder, DeflateDecoder, GZipDecoder, IdentityDecoder)
 )
 def test_decoders_empty_cases(decoder):
-    request = httpx.Request(method="GET", url="https://www.example.com")
-    instance = decoder(request)
-    assert instance.decode(b"") == b""
+    response = httpx.Response(content=b"", status_code=200)
+    instance = decoder()
+    assert instance.decode(response.content) == b""
     assert instance.flush() == b""
 
 
@@ -151,9 +167,13 @@ def test_decoding_errors(header_value):
     body = b"test 123"
     compressed_body = brotli.compress(body)[3:]
     with pytest.raises(httpx.DecodingError):
+        request = httpx.Request("GET", "https://example.org")
         httpx.Response(
-            status_code=200, headers=headers, content=compressed_body, request=REQUEST
+            status_code=200, headers=headers, content=compressed_body, request=request
         )
+
+    with pytest.raises(ValueError):
+        httpx.Response(status_code=200, headers=headers, content=compressed_body)
 
 
 @pytest.mark.parametrize(
@@ -182,13 +202,19 @@ async def test_text_decoder(data, encoding):
 
     # Accessing `.text` on a read response.
     stream = AsyncIteratorStream(aiterator=iterator())
-    response = httpx.Response(status_code=200, stream=stream, request=REQUEST)
+    response = httpx.Response(
+        status_code=200,
+        stream=stream,
+    )
     await response.aread()
     assert response.text == (b"".join(data)).decode(encoding)
 
     # Streaming `.aiter_text` iteratively.
     stream = AsyncIteratorStream(aiterator=iterator())
-    response = httpx.Response(status_code=200, stream=stream, request=REQUEST)
+    response = httpx.Response(
+        status_code=200,
+        stream=stream,
+    )
     text = "".join([part async for part in response.aiter_text()])
     assert text == (b"".join(data)).decode(encoding)
 
@@ -205,7 +231,6 @@ async def test_text_decoder_known_encoding():
         status_code=200,
         headers=[(b"Content-Type", b"text/html; charset=shift-jis")],
         stream=stream,
-        request=REQUEST,
     )
 
     await response.aread()
@@ -213,12 +238,10 @@ async def test_text_decoder_known_encoding():
 
 
 def test_text_decoder_empty_cases():
-    request = httpx.Request(method="GET", url="https://www.example.com")
-
-    decoder = TextDecoder(request=request)
+    decoder = TextDecoder()
     assert decoder.flush() == ""
 
-    decoder = TextDecoder(request=request)
+    decoder = TextDecoder()
     assert decoder.decode(b"") == ""
     assert decoder.flush() == ""
 
@@ -297,6 +320,8 @@ def test_invalid_content_encoding_header():
     body = b"test 123"
 
     response = httpx.Response(
-        status_code=200, headers=headers, content=body, request=REQUEST
+        status_code=200,
+        headers=headers,
+        content=body,
     )
     assert response.content == body
