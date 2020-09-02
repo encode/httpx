@@ -4,7 +4,9 @@ from enum import IntEnum
 
 class codes(IntEnum):
     """HTTP status codes and reason phrases
+
     Status codes from the following RFCs are all observed:
+
         * RFC 7231: Hypertext Transfer Protocol (HTTP/1.1), obsoletes 2616
         * RFC 6585: Additional HTTP Status Codes
         * RFC 3229: Delta encoding in HTTP
@@ -16,6 +18,8 @@ class codes(IntEnum):
         * RFC 7540: Hypertext Transfer Protocol Version 2 (HTTP/2)
         * RFC 2324: Hyper Text Coffee Pot Control Protocol (HTCPCP/1.0)
         * RFC 7725: An HTTP Status Code to Report Legal Obstacles
+        * RFC 8297: An HTTP Status Code for Indicating Hints
+        * RFC 8470: Using Early Data in HTTP
     """
 
     def __new__(cls, value: int, phrase: str = "") -> "codes":
@@ -66,6 +70,7 @@ class codes(IntEnum):
     CONTINUE = 100, "Continue"
     SWITCHING_PROTOCOLS = 101, "Switching Protocols"
     PROCESSING = 102, "Processing"
+    EARLY_HINTS = 103, "Early Hints"
 
     # success
     OK = 200, "OK"
@@ -113,6 +118,7 @@ class codes(IntEnum):
     UNPROCESSABLE_ENTITY = 422, "Unprocessable Entity"
     LOCKED = 423, "Locked"
     FAILED_DEPENDENCY = 424, "Failed Dependency"
+    TOO_EARLY = 425, "Too Early"
     UPGRADE_REQUIRED = 426, "Upgrade Required"
     PRECONDITION_REQUIRED = 428, "Precondition Required"
     TOO_MANY_REQUESTS = 429, "Too Many Requests"
