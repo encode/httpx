@@ -97,9 +97,7 @@ class BaseClient:
         return url.copy_with(path=url.path + "/")
 
     def _get_proxy_map(
-        self,
-        proxies: typing.Optional[ProxiesTypes],
-        allow_env_proxies: bool,
+        self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool
     ) -> typing.Dict[str, typing.Optional[Proxy]]:
         if proxies is None:
             if allow_env_proxies:
@@ -695,10 +693,7 @@ class Client(BaseClient):
             cookies=cookies,
         )
         return self.send(
-            request,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
+            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout
         )
 
     def send(
@@ -728,10 +723,7 @@ class Client(BaseClient):
         auth = self._build_request_auth(request, auth)
 
         response = self._send_handling_redirects(
-            request,
-            auth=auth,
-            timeout=timeout,
-            allow_redirects=allow_redirects,
+            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects
         )
 
         if not stream:
@@ -1076,6 +1068,10 @@ class Client(BaseClient):
                 proxy.close()
 
     def __enter__(self) -> "Client":
+        self._transport.__enter__()
+        for proxy in self._proxies.values():
+            if proxy is not None:
+                proxy.__enter__()
         return self
 
     def __exit__(
@@ -1084,7 +1080,10 @@ class Client(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        self.close()
+        self._transport.__exit__(exc_type, exc_value, traceback)
+        for proxy in self._proxies.values():
+            if proxy is not None:
+                proxy.__exit__(exc_type, exc_value, traceback)
 
 
 class AsyncClient(BaseClient):
@@ -1315,10 +1314,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
         )
         response = await self.send(
-            request,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
+            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout
         )
         return response
 
@@ -1349,10 +1345,7 @@ class AsyncClient(BaseClient):
         auth = self._build_request_auth(request, auth)
 
         response = await self._send_handling_redirects(
-            request,
-            auth=auth,
-            timeout=timeout,
-            allow_redirects=allow_redirects,
+            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects
         )
 
         if not stream:
@@ -1445,9 +1438,7 @@ class AsyncClient(BaseClient):
                 history.append(response)
 
     async def _send_single_request(
-        self,
-        request: Request,
-        timeout: Timeout,
+        self, request: Request, timeout: Timeout
     ) -> Response:
         """
         Sends a single request, without handling any redirections.
@@ -1701,6 +1692,10 @@ class AsyncClient(BaseClient):
                 await proxy.aclose()
 
     async def __aenter__(self) -> "AsyncClient":
+        await self._transport.__aenter__()
+        for proxy in self._proxies.values():
+            if proxy is not None:
+                await proxy.__aenter__()
         return self
 
     async def __aexit__(
@@ -1709,7 +1704,10 @@ class AsyncClient(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self.aclose()
+        await self._transport.__aexit__(exc_type, exc_value, traceback)
+        for proxy in self._proxies.values():
+            if proxy is not None:
+                await proxy.__aexit__(exc_type, exc_value, traceback)
 
 
 class StreamContextManager:
