@@ -3,7 +3,11 @@ import io
 import pytest
 
 from httpx import StreamConsumed
-from httpx._content_streams import ContentStream, encode_request_body
+from httpx._content_streams import (
+    ContentStream,
+    encode_request_body,
+    encode_response_body,
+)
 
 
 @pytest.mark.asyncio
@@ -251,3 +255,33 @@ async def test_multipart_multiple_files_single_input_content():
             b"--+++--\r\n",
         ]
     )
+
+
+@pytest.mark.asyncio
+async def test_text_content():
+    stream = encode_response_body(text="Hello, world!")
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert stream.can_replay()
+    assert stream.get_headers() == {
+        "Content-Length": "13",
+        "Content-Type": "text/plain; charset=utf-8",
+    }
+    assert sync_content == b"Hello, world!"
+    assert async_content == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_html_content():
+    stream = encode_response_body(html="<html><h1>Hello, world!</h1></html>")
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert stream.can_replay()
+    assert stream.get_headers() == {
+        "Content-Length": "35",
+        "Content-Type": "text/html; charset=utf-8",
+    }
+    assert sync_content == b"<html><h1>Hello, world!</h1></html>"
+    assert async_content == b"<html><h1>Hello, world!</h1></html>"

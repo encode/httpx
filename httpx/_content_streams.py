@@ -370,6 +370,46 @@ class MultipartStream(ContentStream):
             yield chunk
 
 
+class TextStream(ContentStream):
+    """
+    Response content as plain text.
+    """
+
+    def __init__(self, text: str) -> None:
+        self.body = text.encode("utf-8")
+
+    def get_headers(self) -> typing.Dict[str, str]:
+        content_length = str(len(self.body))
+        content_type = "text/plain; charset=utf-8"
+        return {"Content-Length": content_length, "Content-Type": content_type}
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield self.body
+
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        yield self.body
+
+
+class HTMLStream(ContentStream):
+    """
+    Response content as HTML.
+    """
+
+    def __init__(self, html: str) -> None:
+        self.body = html.encode("utf-8")
+
+    def get_headers(self) -> typing.Dict[str, str]:
+        content_length = str(len(self.body))
+        content_type = "text/html; charset=utf-8"
+        return {"Content-Length": content_length, "Content-Type": content_type}
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield self.body
+
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        yield self.body
+
+
 def encode_request_body(
     data: RequestData = None,
     files: RequestFiles = None,
@@ -405,8 +445,12 @@ def encode_request_body(
 
 
 def encode_response_body(
-    content: bytes = None, json: typing.Any = None
+    content: bytes = None, text: str = None, html: str = None, json: typing.Any = None
 ) -> ContentStream:
-    if json is not None:
+    if text is not None:
+        return TextStream(text=text)
+    elif html is not None:
+        return HTMLStream(html=html)
+    elif json is not None:
         return JSONStream(json=json)
     return ByteStream(body=content or b"")

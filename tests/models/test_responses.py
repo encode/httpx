@@ -36,6 +36,26 @@ def test_response():
     assert not response.is_error
 
 
+def test_text_response():
+    response = httpx.Response(200, text="Hello, world!")
+
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+    assert response.headers == httpx.Headers(
+        {"Content-Type": "text/plain; charset=utf-8", "Content-Length": "13"}
+    )
+
+
+def test_html_response():
+    response = httpx.Response(200, html="<html><h1>Hello, world!</h1></html>")
+
+    assert response.status_code == 200
+    assert response.text == "<html><h1>Hello, world!</h1></html>"
+    assert response.headers == httpx.Headers(
+        {"Content-Type": "text/html; charset=utf-8", "Content-Length": "35"}
+    )
+
+
 def test_json_response():
     response = httpx.Response(200, json={"Hello": "World!"})
 

@@ -699,6 +699,8 @@ class Response:
         http_version: str = None,
         headers: HeaderTypes = None,
         content: bytes = None,
+        text: str = None,
+        html: str = None,
         json: typing.Any = None,
         stream: ContentStream = None,
         request: Request = None,
@@ -719,7 +721,9 @@ class Response:
         if stream is not None:
             self._raw_stream = stream
         else:
-            self._raw_stream = encode_response_body(content=content, json=json)
+            self._raw_stream = encode_response_body(
+                content=content, text=text, html=html, json=json
+            )
             for key, value in self._raw_stream.get_headers().items():
                 self.headers.setdefault(key, value)
             self.read()
