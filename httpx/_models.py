@@ -50,6 +50,7 @@ from ._types import (
     QueryParamTypes,
     RequestData,
     RequestFiles,
+    ResponseContent,
     URLTypes,
 )
 from ._utils import (
@@ -698,7 +699,7 @@ class Response:
         *,
         http_version: str = None,
         headers: HeaderTypes = None,
-        content: bytes = None,
+        content: ResponseContent = None,
         text: str = None,
         html: str = None,
         json: typing.Any = None,
@@ -726,7 +727,10 @@ class Response:
             )
             for key, value in self._raw_stream.get_headers().items():
                 self.headers.setdefault(key, value)
-            self.read()
+
+            if content is None or isinstance(content, bytes):
+                # Load the response body, except for streaming content.
+                self.read()
 
     @property
     def elapsed(self) -> datetime.timedelta:

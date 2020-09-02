@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 import httpcore
 
 from ._exceptions import StreamConsumed
-from ._types import FileContent, FileTypes, RequestData, RequestFiles
+from ._types import FileContent, FileTypes, RequestData, RequestFiles, ResponseContent
 from ._utils import (
     format_form_param,
     guess_content_type,
@@ -420,13 +420,12 @@ def encode_request_body(
     Handles encoding the given `data`, `files`, and `json`, returning
     a `ContentStream` implementation.
     """
-    if not data:
+    if data is None:
         if json is not None:
             return JSONStream(json=json)
         elif files:
             return MultipartStream(data={}, files=files, boundary=boundary)
-        else:
-            return ByteStream(body=b"")
+        return ByteStream(body=b"")
     elif isinstance(data, dict):
         if files:
             return MultipartStream(data=data, files=files, boundary=boundary)
@@ -445,12 +444,29 @@ def encode_request_body(
 
 
 def encode_response_body(
-    content: bytes = None, text: str = None, html: str = None, json: typing.Any = None
+    content: ResponseContent = None,
+    text: str = None,
+    html: str = None,
+    json: typing.Any = None,
 ) -> ContentStream:
-    if text is not None:
-        return TextStream(text=text)
-    elif html is not None:
-        return HTMLStream(html=html)
-    elif json is not None:
-        return JSONStream(json=json)
-    return ByteStream(body=content or b"")
+    if content is None:
+        if text is not None:
+            return TextStream(text=text)
+        elif html is not None:
+            return HTMLStream(html=html)
+        elif json is not None:
+            return JSONStream(json=json)
+        return ByteStream(b"")
+    elif isinstance(content, bytes):
+        return ByteStream(body=content)
+    elif hasattr(content, "__aiter__"):
+        content = typing.cast(typing.AsyncIterator[bytes], content)
+        return AsyncIteratorStream(aiterator=content)
+    elif hasattr(content, "__iter__"):
+        content = typing.cast(typing.Iterator[bytes], content)
+        return IteratorStream(iterator=content)
+
+    raise TypeError(
+        f"Unexpected type for 'content', should be bytes or "
+        f"byte iterator {type(content)!r}"
+    )
