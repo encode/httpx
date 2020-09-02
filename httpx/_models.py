@@ -15,7 +15,7 @@ import rfc3986
 import rfc3986.exceptions
 
 from .__version__ import __version__
-from ._content_streams import ByteStream, ContentStream, encode
+from ._content_streams import ByteStream, ContentStream, encode_request_body
 from ._decoders import (
     SUPPORTED_DECODERS,
     Decoder,
@@ -609,7 +609,7 @@ class Request:
         if stream is not None:
             self.stream = stream
         else:
-            self.stream = encode(data, files, json)
+            self.stream = encode_request_body(data, files, json)
 
         self.timer = ElapsedTimer()
         self.prepare()

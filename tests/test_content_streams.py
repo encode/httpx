@@ -3,7 +3,7 @@ import io
 import pytest
 
 from httpx import StreamConsumed
-from httpx._content_streams import ContentStream, encode
+from httpx._content_streams import ContentStream, encode_request_body
 
 
 @pytest.mark.asyncio
@@ -20,7 +20,7 @@ async def test_base_content():
 
 @pytest.mark.asyncio
 async def test_empty_content():
-    stream = encode()
+    stream = encode_request_body()
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
@@ -32,7 +32,7 @@ async def test_empty_content():
 
 @pytest.mark.asyncio
 async def test_bytes_content():
-    stream = encode(data=b"Hello, world!")
+    stream = encode_request_body(data=b"Hello, world!")
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
@@ -48,7 +48,7 @@ async def test_iterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    stream = encode(data=hello_world())
+    stream = encode_request_body(data=hello_world())
     content = b"".join([part for part in stream])
 
     assert not stream.can_replay()
@@ -68,7 +68,7 @@ async def test_aiterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    stream = encode(data=hello_world())
+    stream = encode_request_body(data=hello_world())
     content = b"".join([part async for part in stream])
 
     assert not stream.can_replay()
@@ -84,7 +84,7 @@ async def test_aiterator_content():
 
 @pytest.mark.asyncio
 async def test_json_content():
-    stream = encode(json={"Hello": "world!"})
+    stream = encode_request_body(json={"Hello": "world!"})
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
@@ -99,7 +99,7 @@ async def test_json_content():
 
 @pytest.mark.asyncio
 async def test_urlencoded_content():
-    stream = encode(data={"Hello": "world!"})
+    stream = encode_request_body(data={"Hello": "world!"})
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
@@ -115,7 +115,7 @@ async def test_urlencoded_content():
 @pytest.mark.asyncio
 async def test_multipart_files_content():
     files = {"file": io.BytesIO(b"<file content>")}
-    stream = encode(files=files, boundary=b"+++")
+    stream = encode_request_body(files=files, boundary=b"+++")
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
@@ -150,7 +150,7 @@ async def test_multipart_files_content():
 async def test_multipart_data_and_files_content():
     data = {"message": "Hello, world!"}
     files = {"file": io.BytesIO(b"<file content>")}
-    stream = encode(data=data, files=files, boundary=b"+++")
+    stream = encode_request_body(data=data, files=files, boundary=b"+++")
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
@@ -191,7 +191,7 @@ async def test_multipart_data_and_files_content():
 
 @pytest.mark.asyncio
 async def test_empty_request():
-    stream = encode(data={}, files={})
+    stream = encode_request_body(data={}, files={})
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
@@ -203,7 +203,7 @@ async def test_empty_request():
 
 def test_invalid_argument():
     with pytest.raises(TypeError):
-        encode(123)  # type: ignore
+        encode_request_body(123)  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -212,7 +212,7 @@ async def test_multipart_multiple_files_single_input_content():
         ("file", io.BytesIO(b"<file content 1>")),
         ("file", io.BytesIO(b"<file content 2>")),
     ]
-    stream = encode(files=files, boundary=b"+++")
+    stream = encode_request_body(files=files, boundary=b"+++")
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
