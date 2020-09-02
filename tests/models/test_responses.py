@@ -36,19 +36,19 @@ def test_response():
 
 
 def test_raise_for_status():
-    REQUEST = httpx.Request("GET", "https://example.org")
+    request = httpx.Request("GET", "https://example.org")
 
     # 2xx status codes are not an error.
-    response = httpx.Response(200, request=REQUEST)
+    response = httpx.Response(200, request=request)
     response.raise_for_status()
 
     # 4xx status codes are a client error.
-    response = httpx.Response(403, request=REQUEST)
+    response = httpx.Response(403, request=request)
     with pytest.raises(httpx.HTTPStatusError):
         response.raise_for_status()
 
     # 5xx status codes are a server error.
-    response = httpx.Response(500, request=REQUEST)
+    response = httpx.Response(500, request=request)
     with pytest.raises(httpx.HTTPStatusError):
         response.raise_for_status()
 
