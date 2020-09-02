@@ -1,5 +1,6 @@
 import functools
 import typing
+import warnings
 from types import TracebackType
 
 import httpcore
@@ -79,6 +80,14 @@ class BaseClient:
         self.max_redirects = max_redirects
         self._trust_env = trust_env
         self._netrc = NetRCInfo()
+        self._is_closed = True
+
+    @property
+    def is_closed(self) -> bool:
+        """
+        Check if the client being closed
+        """
+        return self._is_closed
 
     @property
     def trust_env(self) -> bool:
@@ -696,6 +705,8 @@ class Client(BaseClient):
 
         [0]: /advanced/#request-instances
         """
+        self._is_closed = False
+
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_request_auth(request, auth)
@@ -1029,16 +1040,20 @@ class Client(BaseClient):
         """
         Close transport and proxies.
         """
-        self._transport.close()
-        for proxy in self._proxies.values():
-            if proxy is not None:
-                proxy.close()
+        if not self.is_closed:
+            self._is_closed = True
+
+            self._transport.close()
+            for proxy in self._proxies.values():
+                if proxy is not None:
+                    proxy.close()
 
     def __enter__(self) -> "Client":
         self._transport.__enter__()
         for proxy in self._proxies.values():
             if proxy is not None:
                 proxy.__enter__()
+        self._is_closed = False
         return self
 
     def __exit__(
@@ -1047,10 +1062,16 @@ class Client(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        self._transport.__exit__(exc_type, exc_value, traceback)
-        for proxy in self._proxies.values():
-            if proxy is not None:
-                proxy.__exit__(exc_type, exc_value, traceback)
+        if not self.is_closed:
+            self._is_closed = True
+
+            self._transport.__exit__(exc_type, exc_value, traceback)
+            for proxy in self._proxies.values():
+                if proxy is not None:
+                    proxy.__exit__(exc_type, exc_value, traceback)
+
+    def __del__(self) -> None:
+        self.close()
 
 
 class AsyncClient(BaseClient):
@@ -1305,6 +1326,8 @@ class AsyncClient(BaseClient):
 
         [0]: /advanced/#request-instances
         """
+        self._is_closed = False
+
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_request_auth(request, auth)
@@ -1640,16 +1663,20 @@ class AsyncClient(BaseClient):
         """
         Close transport and proxies.
         """
-        await self._transport.aclose()
-        for proxy in self._proxies.values():
-            if proxy is not None:
-                await proxy.aclose()
+        if not self.is_closed:
+            self._is_closed = True
+
+            await self._transport.aclose()
+            for proxy in self._proxies.values():
+                if proxy is not None:
+                    await proxy.aclose()
 
     async def __aenter__(self) -> "AsyncClient":
         await self._transport.__aenter__()
         for proxy in self._proxies.values():
             if proxy is not None:
                 await proxy.__aenter__()
+        self._is_closed = False
         return self
 
     async def __aexit__(
@@ -1658,10 +1685,20 @@ class AsyncClient(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self._transport.__aexit__(exc_type, exc_value, traceback)
-        for proxy in self._proxies.values():
-            if proxy is not None:
-                await proxy.__aexit__(exc_type, exc_value, traceback)
+        if not self.is_closed:
+            self._is_closed = True
+            await self._transport.__aexit__(exc_type, exc_value, traceback)
+            for proxy in self._proxies.values():
+                if proxy is not None:
+                    await proxy.__aexit__(exc_type, exc_value, traceback)
+
+    def __del__(self) -> None:
+        if not self.is_closed:
+            warnings.warn(
+                f"Unclosed {self!r}. "
+                "See https://www.python-httpx.org/async/#opening-and-closing-clients "
+                "for details."
+            )
 
 
 class StreamContextManager:
