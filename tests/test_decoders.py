@@ -169,11 +169,18 @@ def test_decoding_errors(header_value):
     with pytest.raises(httpx.DecodingError):
         request = httpx.Request("GET", "https://example.org")
         httpx.Response(
-            status_code=200, headers=headers, content=compressed_body, request=request
+            status_code=200,
+            headers=headers,
+            content=compressed_body,
+            request=request,
         )
 
     with pytest.raises(ValueError):
-        httpx.Response(status_code=200, headers=headers, content=compressed_body)
+        httpx.Response(
+            status_code=200,
+            headers=headers,
+            content=compressed_body,
+        )
 
 
 @pytest.mark.parametrize(
