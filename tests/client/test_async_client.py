@@ -206,3 +206,45 @@ async def test_context_managed_transport():
         "transport.aclose",
         "transport.__aexit__",
     ]
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_async_client_is_closed_by_default():
+    client = httpx.AsyncClient()
+
+    assert client.is_closed
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_send_cause_async_client_to_be_not_closed():
+    client = httpx.AsyncClient()
+
+    await client.get("http://example.com")
+
+    assert not client.is_closed
+
+    await client.aclose()
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_async_client_is_not_closed_in_with_block():
+    async with httpx.AsyncClient() as client:
+        assert not client.is_closed
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_async_client_is_closed_after_with_block():
+    async with httpx.AsyncClient() as client:
+        pass
+
+    assert client.is_closed
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_async_client_caused_warning_when_being_deleted():
+    async_client = httpx.AsyncClient()
+
+    await async_client.get("http://example.com")
+
+    with pytest.warns(UserWarning):
+        del async_client
