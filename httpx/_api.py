@@ -128,12 +128,7 @@ def stream(
 
     [0]: /quickstart#streaming-responses
     """
-    client = Client(
-        proxies=proxies,
-        cert=cert,
-        verify=verify,
-        trust_env=trust_env,
-    )
+    client = Client(proxies=proxies, cert=cert, verify=verify, trust_env=trust_env)
     request = Request(
         method=method,
         url=url,
