@@ -34,6 +34,18 @@ def test_json_encoded_data():
     assert request.content == b'{"test": 123}'
 
 
+def test_headers():
+    request = httpx.Request("POST", "http://example.org", json={"test": 123})
+
+    assert request.headers == httpx.Headers(
+        {
+            "Host": "example.org",
+            "Content-Type": "application/json",
+            "Content-Length": "13",
+        }
+    )
+
+
 def test_read_and_stream_data():
     # Ensure a request may still be streamed if it has been read.
     # Needed for cases such as authentication classes that read the request body.
