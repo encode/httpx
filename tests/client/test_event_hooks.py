@@ -11,7 +11,7 @@ def test_event_hooks(server):
 
     def on_response(response):
         headers = dict(response.headers)
-        headers["date"] = "Mon, 24 Aug 2020 13:18:40 GMT"
+        headers["date"] = "Mon, 1 Jan 2020 12:34:56 GMT"
         events.append({"event": "response", "headers": headers})
 
     event_hooks = {"request": [on_request], "response": [on_response]}
@@ -24,7 +24,7 @@ def test_event_hooks(server):
             "event": "request",
             "headers": {
                 "host": "127.0.0.1:8000",
-                "user-agent": "python-httpx/0.14.2",
+                "user-agent": f"python-httpx/{httpx.__version__}",
                 "accept": "*/*",
                 "accept-encoding": "gzip, deflate, br",
                 "connection": "keep-alive",
@@ -34,7 +34,7 @@ def test_event_hooks(server):
         {
             "event": "response",
             "headers": {
-                "date": "Mon, 24 Aug 2020 13:18:40 GMT",
+                "date": "Mon, 1 Jan 2020 12:34:56 GMT",
                 "server": "uvicorn",
                 "content-type": "text/plain",
                 "transfer-encoding": "chunked",
@@ -66,7 +66,7 @@ async def test_async_event_hooks(server):
 
     async def on_response(response):
         headers = dict(response.headers)
-        headers["date"] = "Mon, 24 Aug 2020 13:18:40 GMT"
+        headers["date"] = "Mon, 1 Jan 2020 12:34:56 GMT"
         events.append({"event": "response", "headers": headers})
 
     event_hooks = {"request": [on_request], "response": [on_response]}
@@ -79,7 +79,7 @@ async def test_async_event_hooks(server):
             "event": "request",
             "headers": {
                 "host": "127.0.0.1:8000",
-                "user-agent": "python-httpx/0.14.2",
+                "user-agent": f"python-httpx/{httpx.__version__}",
                 "accept": "*/*",
                 "accept-encoding": "gzip, deflate, br",
                 "connection": "keep-alive",
@@ -89,7 +89,7 @@ async def test_async_event_hooks(server):
         {
             "event": "response",
             "headers": {
-                "date": "Mon, 24 Aug 2020 13:18:40 GMT",
+                "date": "Mon, 1 Jan 2020 12:34:56 GMT",
                 "server": "uvicorn",
                 "content-type": "text/plain",
                 "transfer-encoding": "chunked",
