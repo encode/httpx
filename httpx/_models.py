@@ -14,7 +14,6 @@ import chardet
 import rfc3986
 import rfc3986.exceptions
 
-from .__version__ import __version__
 from ._content_streams import ByteStream, ContentStream, encode
 from ._decoders import (
     SUPPORTED_DECODERS,
@@ -102,13 +101,11 @@ class URL:
 
     @property
     def username(self) -> str:
-        userinfo = self._uri_reference.userinfo or ""
-        return unquote(userinfo.partition(":")[0])
+        return unquote(self.userinfo.partition(":")[0])
 
     @property
     def password(self) -> str:
-        userinfo = self._uri_reference.userinfo or ""
-        return unquote(userinfo.partition(":")[2])
+        return unquote(self.userinfo.partition(":")[2])
 
     @property
     def host(self) -> str:
@@ -579,12 +576,6 @@ class Headers(typing.MutableMapping[str, str]):
         return self.get_list(key, split_commas=split_commas)
 
 
-USER_AGENT = f"python-httpx/{__version__}"
-ACCEPT_ENCODING = ", ".join(
-    [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
-)
-
-
 class Request:
     def __init__(
         self,
@@ -625,26 +616,12 @@ class Request:
         has_content_length = (
             "content-length" in self.headers or "transfer-encoding" in self.headers
         )
-        has_user_agent = "user-agent" in self.headers
-        has_accept = "accept" in self.headers
-        has_accept_encoding = "accept-encoding" in self.headers
-        has_connection = "connection" in self.headers
 
-        if not has_host:
-            url = self.url
-            if url.userinfo:
-                url = url.copy_with(username=None, password=None)
-            auto_headers.append((b"host", url.authority.encode("ascii")))
+        if not has_host and self.url.authority:
+            host = self.url.copy_with(username=None, password=None).authority
+            auto_headers.append((b"host", host.encode("ascii")))
         if not has_content_length and self.method in ("POST", "PUT", "PATCH"):
             auto_headers.append((b"content-length", b"0"))
-        if not has_user_agent:
-            auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
-        if not has_accept:
-            auto_headers.append((b"accept", b"*/*"))
-        if not has_accept_encoding:
-            auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
-        if not has_connection:
-            auto_headers.append((b"connection", b"keep-alive"))
 
         self.headers = Headers(auto_headers + self.headers.raw)
 
