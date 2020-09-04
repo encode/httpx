@@ -124,6 +124,28 @@ def test_header_update():
     }
 
 
+def test_remove_default_header():
+    """
+    Remove a default header from the Client.
+    """
+    url = "http://example.org/echo_headers"
+
+    client = httpx.Client(transport=MockTransport())
+    del client.headers["User-Agent"]
+
+    response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br",
+            "connection": "keep-alive",
+            "host": "example.org",
+        }
+    }
+
+
 def test_header_does_not_exist():
     headers = httpx.Headers({"foo": "bar"})
     with pytest.raises(KeyError):
