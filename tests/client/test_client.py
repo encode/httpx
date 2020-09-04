@@ -247,3 +247,29 @@ def test_context_managed_transport():
         "transport.close",
         "transport.__exit__",
     ]
+
+
+def test_that_client_is_closed_by_default():
+    client = httpx.Client()
+
+    assert client.is_closed
+
+
+def test_that_send_cause_client_to_be_not_closed():
+    client = httpx.Client()
+
+    client.get("http://example.com")
+
+    assert not client.is_closed
+
+
+def test_that_client_is_not_closed_in_with_block():
+    with httpx.Client() as client:
+        assert not client.is_closed
+
+
+def test_that_client_is_closed_after_with_block():
+    with httpx.Client() as client:
+        pass
+
+    assert client.is_closed

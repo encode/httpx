@@ -122,7 +122,6 @@ The HTTPX project relies on these excellent libraries:
 * `rfc3986` - URL parsing & normalization.
   * `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.
-* `urllib3` - Support for the `httpx.URLLib3Transport` class. *(Optional)*
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
 
 A huge amount of credit is due to `requests` for the API layout that

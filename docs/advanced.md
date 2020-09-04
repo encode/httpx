@@ -809,6 +809,8 @@ HTTPX's `Client` also accepts a `transport` argument. This argument allows you
 to provide a custom Transport object that will be used to perform the actual
 sending of the requests.
 
+### Usage
+
 For some advanced configuration you might need to instantiate a transport
 class directly, and pass it to the client instance. The `httpcore` package
 provides a `local_address` configuration that is only available via this
@@ -850,18 +852,19 @@ do not include any default values for configuring aspects such as the
 connection pooling details, so you'll need to provide more explicit
 configuration when using this API.
 
-HTTPX also currently ships with a transport that uses the excellent
-[`urllib3` library](https://urllib3.readthedocs.io/en/latest/), which can be
-used with the sync `Client`...
+### urllib3 transport
+
+This [public gist](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165da388e546e) provides a transport that uses the excellent [`urllib3` library](https://urllib3.readthedocs.io/en/latest/), and can be used with the sync `Client`...
 
 ```pycon
 >>> import httpx
->>> client = httpx.Client(transport=httpx.URLLib3Transport())
+>>> from urllib3_transport import URLLib3Transport
+>>> client = httpx.Client(transport=URLLib3Transport())
 >>> client.get("https://example.org")
 <Response [200 OK]>
 ```
 
-Note that you'll need to install the `urllib3` package to use `URLLib3Transport`.
+### Writing custom transports
 
 A transport instance must implement the Transport API defined by
 [`httpcore`](https://www.encode.io/httpcore/api/). You

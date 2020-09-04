@@ -204,3 +204,11 @@ def test_url_copywith_for_userinfo():
 def test_url_invalid():
     with pytest.raises(httpx.InvalidURL):
         httpx.URL("https://😇/")
+
+
+def test_url_invalid_type():
+    class ExternalURLClass:  # representing external URL class
+        pass
+
+    with pytest.raises(TypeError):
+        httpx.URL(ExternalURLClass())  # type: ignore
