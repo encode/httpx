@@ -1,12 +1,10 @@
 import collections
-import itertools
 from typing import Dict, List, Mapping, Optional, Tuple
 
 import httpcore
 import pytest
 
 import httpx
-from httpx._utils import exponential_backoff
 
 
 def test_retries_config() -> None:
@@ -173,19 +171,3 @@ def test_retries_methods(method: str) -> None:
     client = httpx.Client(transport=transport, retries=1)
     response = client.request(method, "https://example.com/connect_timeout")
     assert response.status_code == 200
-
-
-@pytest.mark.parametrize(
-    "factor, expected",
-    [
-        (0.1, [0, 0.1, 0.2, 0.4, 0.8]),
-        (0.2, [0, 0.2, 0.4, 0.8, 1.6]),
-        (0.5, [0, 0.5, 1.0, 2.0, 4.0]),
-    ],
-)
-def test_exponential_backoff(factor: float, expected: List[int]) -> None:
-    """
-    Exponential backoff helper works as expected.
-    """
-    delays = list(itertools.islice(exponential_backoff(factor), 5))
-    assert delays == expected
