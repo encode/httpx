@@ -641,7 +641,6 @@ Retries are disabled by default. They can be enabled by passing the maximum numb
 Note that:
 
 * HTTPX issues a first retry without waiting (transient errors are often resolved immediately), then issues retries at exponentially increasing time intervals (0.5s, 1s, 2s, 4s, etc).
-* Retries are always disabled for non-idempotent methods, such as `POST` or `PATCH`.
 * The built-in retry functionality only applies to failures _while establishing new connections_ (effectively `ConnectError` and `ConnectTimeout` exceptions). In particular, errors while interacting with existing connections (such as unexpected server-side connection closures, or read/write timeouts) will not be retried on.
 
 ## Customizing authentication

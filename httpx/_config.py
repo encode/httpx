@@ -30,8 +30,6 @@ DEFAULT_CIPHERS = ":".join(
     ]
 )
 
-IDEMPOTENT_METHODS = {"GET", "HEAD", "PUT", "DELETE", "OPTIONS", "TRACE"}
-
 logger = get_logger(__name__)
 
 

@@ -146,10 +146,6 @@ async def test_retries_enabled_async() -> None:
     with pytest.raises(httpx.ReadTimeout):
         await client.get("https://example.com/read_timeout")
 
-    # Non-idempotent methods are not retried on.
-    with pytest.raises(httpx.ConnectTimeout):
-        await client.post("https://example.com/connect_timeout")
-
 
 def test_retries_exceeded() -> None:
     """
@@ -166,27 +162,17 @@ def test_retries_exceeded() -> None:
         client.get("https://example.com/connect_error")
 
 
-@pytest.mark.parametrize("method", ["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"])
-def test_retries_idempotent_methods(method: str) -> None:
+@pytest.mark.parametrize(
+    "method", ["HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"]
+)
+def test_retries_methods(method: str) -> None:
     """
-    Client can retry on idempotent HTTP methods.
+    Client retries on all HTTP methods.
     """
     transport = MockTransport(num_failures=1)
     client = httpx.Client(transport=transport, retries=1)
     response = client.request(method, "https://example.com/connect_timeout")
     assert response.status_code == 200
-
-
-@pytest.mark.parametrize("method", ["POST", "PATCH"])
-def test_retries_disabled_on_non_idempotent_methods(method: str) -> None:
-    """
-    Client makes no retries for HTTP methods that are not idempotent.
-    """
-    transport = MockTransport(num_failures=1)
-    client = httpx.Client(transport=transport, retries=2)
-
-    with pytest.raises(httpx.ConnectTimeout):
-        client.request(method, "https://example.com/connect_timeout")
 
 
 @pytest.mark.parametrize(
