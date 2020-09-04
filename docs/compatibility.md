@@ -83,3 +83,9 @@ Besides, `httpx.Request()` does not support the `auth`, `timeout`, `allow_redire
 ## Mocking
 
 If you need to mock HTTPX the same way that test utilities like `responses` and `requests-mock` does for `requests`, see [RESPX](https://github.com/lundberg/respx).
+
+## Networking layer
+
+`requests` defers most of its HTTP networking code to the excellent [`urllib3` library](https://urllib3.readthedocs.io/en/latest/).
+
+On the other hand, HTTPX uses [HTTPCore](https://github.com/encode/httpcore) as its core HTTP networking layer, which is a different project than `urllib3`.

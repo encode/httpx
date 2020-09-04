@@ -38,7 +38,6 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import StatusCode, codes
 from ._transports.asgi import ASGITransport
-from ._transports.urllib3 import URLLib3ProxyTransport, URLLib3Transport
 from ._transports.wsgi import WSGITransport
 
 __all__ = [
@@ -101,8 +100,6 @@ __all__ = [
     "TransportError",
     "UnsupportedProtocol",
     "URL",
-    "URLLib3ProxyTransport",
-    "URLLib3Transport",
     "WriteError",
     "WriteTimeout",
     "WSGITransport",
