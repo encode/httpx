@@ -74,7 +74,9 @@ class URL:
         elif isinstance(url, URL):
             self._uri_reference = url._uri_reference
         else:
-            raise TypeError("Invalid type for url.  Expected str or httpx.URL")
+            raise TypeError(
+                f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}"
+            )
 
         # Add any query parameters, merging with any in the URL if needed.
         if params:
