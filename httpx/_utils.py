@@ -541,6 +541,10 @@ async def sleep(seconds: float) -> None:
         import trio
 
         await trio.sleep(seconds)
+    elif library == "curio":  # pragma: no cover
+        import curio
+
+        await curio.sleep(seconds)
     else:
         assert library == "asyncio"
         await asyncio.sleep(seconds)
