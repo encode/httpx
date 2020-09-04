@@ -71,8 +71,10 @@ class URL:
                 # We don't want to normalize relative URLs, since doing so
                 # removes any leading `../` portion.
                 self._uri_reference = self._uri_reference.normalize()
-        else:
+        elif isinstance(url, URL):
             self._uri_reference = url._uri_reference
+        else:
+            raise TypeError("Invalid type for url.  Expected str or httpx.URL")
 
         # Add any query parameters, merging with any in the URL if needed.
         if params:
