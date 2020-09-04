@@ -1,6 +1,6 @@
 # Requests Compatibility Guide
 
-HTTPX aims to be compatible with the `requests` API wherever possible.
+HTTPX aims to be compatible with the `requests` API where we feel it makes sense.
 
 This documentation outlines places where the API differs...
 
@@ -89,3 +89,7 @@ If you need to mock HTTPX the same way that test utilities like `responses` and 
 `requests` defers most of its HTTP networking code to the excellent [`urllib3` library](https://urllib3.readthedocs.io/en/latest/).
 
 On the other hand, HTTPX uses [HTTPCore](https://github.com/encode/httpcore) as its core HTTP networking layer, which is a different project than `urllib3`.
+
+## Query Parameters
+
+`requests` omits `params` whose values are `None` (e.g. `requests.get(..., params={"foo": None})`). HTTPX will include a query parameter without a value instead. 
