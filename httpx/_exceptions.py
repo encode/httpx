@@ -239,6 +239,7 @@ class InvalidURL(Exception):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+        self.message = message
 
 
 class NotRedirectResponse(Exception):
@@ -251,6 +252,7 @@ class NotRedirectResponse(Exception):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+        self.message = message
 
 
 class CookieConflict(Exception):
@@ -262,6 +264,7 @@ class CookieConflict(Exception):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+        self.message = message
 
 
 # Stream exceptions...
@@ -280,6 +283,7 @@ class StreamError(Exception):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+        self.message = message
 
 
 class StreamConsumed(StreamError):
