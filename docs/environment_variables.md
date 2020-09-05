@@ -155,7 +155,7 @@ export NO_PROXY=http://127.0.0.1,python-httpx.org
 # This request will be sent through the proxy
 python -c "import httpx; httpx.get('http://example.com')"
 
-# This request will be sent directly, bypassing the proxy
+# These requests will be sent directly, bypassing the proxy
 python -c "import httpx; httpx.get('http://127.0.0.1:5000/my-api')"
 python -c "import httpx; httpx.get('https://www.python-httpx.org')"
 
@@ -165,5 +165,7 @@ python -c "import httpx; httpx.get('http://example.com', trust_env=False)"
 
 For more information on using proxies in HTTPX, see [HTTP Proxying](/advanced/#http-proxying).
 
-The other tools compatible with these variables convention: [cURL](https://github.com/curl/curl/blob/master/docs/MANUAL.md#environment-variables),
-[requests](https://github.com/psf/requests/blob/master/docs/user/advanced.rst#proxies).
+These environment variables are used as a convention by various HTTP tooling, including:
+
+* [cURL](https://github.com/curl/curl/blob/master/docs/MANUAL.md#environment-variables)
+* [requests](https://github.com/psf/requests/blob/master/docs/user/advanced.rst#proxies)
