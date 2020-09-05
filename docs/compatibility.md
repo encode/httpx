@@ -1,6 +1,6 @@
 # Requests Compatibility Guide
 
-HTTPX aims to be compatible with the `requests` API where we feel it makes sense.
+HTTPX aims to be broadly compatible with the `requests` API.
 
 This documentation outlines places where the API differs...
 
