@@ -1,5 +1,4 @@
-Environment Variables
-=====================
+# Environment Variables
 
 The HTTPX library can be configured via environment variables.
 Environment variables are used by default. To ignore environment variables, `trust_env` has to be set `False`. There are two ways to set `trust_env` to disable environment variables:
@@ -9,8 +8,7 @@ Environment variables are used by default. To ignore environment variables, `tru
 
 Here is a list of environment variables that HTTPX recognizes and what function they serve:
 
-`HTTPX_LOG_LEVEL`
------------------
+## `HTTPX_LOG_LEVEL`
 
 Valid values: `debug`, `trace` (case-insensitive)
 
@@ -74,8 +72,7 @@ TRACE [2019-11-06 19:18:56] httpx._dispatch.connection_pool - release_connection
 TRACE [2019-11-06 19:18:56] httpx._dispatch.connection - close_connection
 ```
 
-`SSLKEYLOGFILE`
------------
+## `SSLKEYLOGFILE`
 
 Valid values: a filename
 
@@ -109,8 +106,7 @@ CLIENT_HANDSHAKE_TRAFFIC_SECRET XXXX
 CLIENT_TRAFFIC_SECRET_0 XXXX
 ```
 
-`SSL_CERT_FILE`
------------
+## `SSL_CERT_FILE`
 
 Valid values: a filename
 
@@ -124,8 +120,7 @@ Example:
 SSL_CERT_FILE=/path/to/ca-certs/ca-bundle.crt python -c "import httpx; httpx.get('https://example.com')"
 ```
 
-`SSL_CERT_DIR`
------------
+## `SSL_CERT_DIR`
 
 Valid values: a directory
 
@@ -139,8 +134,7 @@ Example:
 SSL_CERT_DIR=/path/to/ca-certs/ python -c "import httpx; httpx.get('https://example.com')"
 ```
 
-`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`
-----------------------------------------
+## `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`
 
 Valid values: A URL to a proxy
 
