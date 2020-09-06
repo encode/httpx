@@ -155,7 +155,7 @@ export HTTP_PROXY=http://my-external-proxy.com:1234
 # This request will be sent through the proxy
 python -c "import httpx; httpx.get('http://example.com')"
 
-# This request will be sent directly, as we set `trus_env=False`
+# This request will be sent directly, as we set `trust_env=False`
 python -c "import httpx; httpx.get('http://example.com', trust_env=False)"
 
 ```
@@ -177,4 +177,3 @@ python -c "import httpx; httpx.get('http://example.com')"
 python -c "import httpx; httpx.get('http://127.0.0.1:5000/my-api')"
 python -c "import httpx; httpx.get('https://www.python-httpx.org')"
 ```
-
