@@ -134,17 +134,46 @@ Example:
 SSL_CERT_DIR=/path/to/ca-certs/ python -c "import httpx; httpx.get('https://example.com')"
 ```
 
-## `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`
+## Proxies
+
+The environment variables documented below are used as a convention by various HTTP tooling, including:
+
+* [cURL](https://github.com/curl/curl/blob/master/docs/MANUAL.md#environment-variables)
+* [requests](https://github.com/psf/requests/blob/master/docs/user/advanced.rst#proxies)
+
+For more information on using proxies in HTTPX, see [HTTP Proxying](/advanced/#http-proxying).
+
+### `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`
 
 Valid values: A URL to a proxy
 
-Sets the proxy to be used for `http`, `https`, or all requests respectively.
+`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` set the proxy to be used for `http`, `https`, or all requests respectively.
 
 ```bash
-export HTTP_PROXY=http://127.0.0.1:3080
+export HTTP_PROXY=http://my-external-proxy.com:1234
 
 # This request will be sent through the proxy
 python -c "import httpx; httpx.get('http://example.com')"
+
+# This request will be sent directly, as we set `trust_env=False`
+python -c "import httpx; httpx.get('http://example.com', trust_env=False)"
+
 ```
 
-For more information on using proxies in HTTPX, see [HTTP Proxying](/advanced/#http-proxying).
+### `NO_PROXY`
+
+Valid values: a comma-separated list of hostnames/urls
+
+`NO_PROXY` disables the proxy for specific urls
+
+```bash
+export HTTP_PROXY=http://my-external-proxy.com:1234
+export NO_PROXY=http://127.0.0.1,python-httpx.org
+
+# As in the previous example, this request will be sent through the proxy
+python -c "import httpx; httpx.get('http://example.com')"
+
+# These requests will be sent directly, bypassing the proxy
+python -c "import httpx; httpx.get('http://127.0.0.1:5000/my-api')"
+python -c "import httpx; httpx.get('https://www.python-httpx.org')"
+```
