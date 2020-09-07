@@ -1,4 +1,3 @@
-import datetime
 import json
 from unittest import mock
 
@@ -31,7 +30,6 @@ def test_response():
     assert response.text == "Hello, world!"
     assert response.request.method == "GET"
     assert response.request.url == "https://example.org"
-    assert response.elapsed >= datetime.timedelta(0)
     assert not response.is_error
 
 

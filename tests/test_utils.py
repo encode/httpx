@@ -1,4 +1,3 @@
-import asyncio
 import os
 import random
 
@@ -6,7 +5,6 @@ import pytest
 
 import httpx
 from httpx._utils import (
-    ElapsedTimer,
     NetRCInfo,
     URLPattern,
     get_ca_bundle_from_env,
@@ -175,17 +173,6 @@ def test_get_ssl_cert_file():
     os.environ["SSL_CERT_DIR"] = "wrongpath"
     # Two environments is set but both are not correct.
     assert get_ca_bundle_from_env() is None
-
-
-@pytest.mark.asyncio
-async def test_elapsed_timer():
-    with ElapsedTimer() as timer:
-        assert timer.elapsed.total_seconds() == pytest.approx(0, abs=0.05)
-        await asyncio.sleep(0.1)
-    await asyncio.sleep(
-        0.1
-    )  # test to ensure time spent after timer exits isn't accounted for.
-    assert timer.elapsed.total_seconds() == pytest.approx(0.1, abs=0.05)
 
 
 @pytest.mark.parametrize(
