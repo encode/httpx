@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 import httpcore
 
 from ._exceptions import StreamConsumed
-from ._types import FileContent, FileTypes, RequestData, RequestFiles
+from ._types import FileContent, FileTypes, RequestData, RequestFiles, ResponseContent
 from ._utils import (
     format_form_param,
     guess_content_type,
@@ -72,11 +72,8 @@ class IteratorStream(ContentStream):
     Request content encoded as plain bytes, using an byte iterator.
     """
 
-    def __init__(
-        self, iterator: typing.Iterator[bytes], close_func: typing.Callable = None
-    ) -> None:
+    def __init__(self, iterator: typing.Iterator[bytes]) -> None:
         self.iterator = iterator
-        self.close_func = close_func
         self.is_stream_consumed = False
 
     def can_replay(self) -> bool:
@@ -95,21 +92,14 @@ class IteratorStream(ContentStream):
     def __aiter__(self) -> typing.AsyncIterator[bytes]:
         raise RuntimeError("Attempted to call a async iterator on an sync stream.")
 
-    def close(self) -> None:
-        if self.close_func is not None:
-            self.close_func()
-
 
 class AsyncIteratorStream(ContentStream):
     """
     Request content encoded as plain bytes, using an async byte iterator.
     """
 
-    def __init__(
-        self, aiterator: typing.AsyncIterator[bytes], close_func: typing.Callable = None
-    ) -> None:
+    def __init__(self, aiterator: typing.AsyncIterator[bytes]) -> None:
         self.aiterator = aiterator
-        self.close_func = close_func
         self.is_stream_consumed = False
 
     def can_replay(self) -> bool:
@@ -127,10 +117,6 @@ class AsyncIteratorStream(ContentStream):
         self.is_stream_consumed = True
         async for part in self.aiterator:
             yield part
-
-    async def aclose(self) -> None:
-        if self.close_func is not None:
-            await self.close_func()
 
 
 class JSONStream(ContentStream):
@@ -402,3 +388,18 @@ def encode(
         return IteratorStream(iterator=data)
 
     raise TypeError(f"Unexpected type for 'data', {type(data)!r}")
+
+
+def encode_response(content: ResponseContent = None) -> ContentStream:
+    if content is None:
+        return ByteStream(b"")
+    elif isinstance(content, bytes):
+        return ByteStream(body=content)
+    elif hasattr(content, "__aiter__"):
+        content = typing.cast(typing.AsyncIterator[bytes], content)
+        return AsyncIteratorStream(aiterator=content)
+    elif hasattr(content, "__iter__"):
+        content = typing.cast(typing.Iterator[bytes], content)
+        return IteratorStream(iterator=content)
+
+    raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
