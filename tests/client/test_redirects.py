@@ -347,8 +347,8 @@ def test_body_redirect():
     """
     client = httpx.Client(transport=SyncMockTransport())
     url = "https://example.org/redirect_body"
-    data = b"Example request body"
-    response = client.post(url, data=data)
+    content = b"Example request body"
+    response = client.post(url, content=content)
     assert response.url == "https://example.org/redirect_body_target"
     assert response.json()["body"] == "Example request body"
     assert "content-length" in response.json()["headers"]
@@ -360,8 +360,8 @@ def test_no_body_redirect():
     """
     client = httpx.Client(transport=SyncMockTransport())
     url = "https://example.org/redirect_no_body"
-    data = b"Example request body"
-    response = client.post(url, data=data)
+    content = b"Example request body"
+    response = client.post(url, content=content)
     assert response.url == "https://example.org/redirect_body_target"
     assert response.json()["body"] == ""
     assert "content-length" not in response.json()["headers"]
@@ -384,7 +384,7 @@ def test_cannot_redirect_streaming_body():
         yield b"Example request body"  # pragma: nocover
 
     with pytest.raises(httpx.RequestBodyUnavailable):
-        client.post(url, data=streaming_body())
+        client.post(url, content=streaming_body())
 
 
 def test_cross_subdomain_redirect():

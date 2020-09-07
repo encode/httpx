@@ -42,6 +42,7 @@ from ._types import (
     HeaderTypes,
     PrimitiveData,
     QueryParamTypes,
+    RequestContent,
     RequestData,
     RequestFiles,
     URLTypes,
@@ -589,6 +590,7 @@ class Request:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -603,7 +605,7 @@ class Request:
         if stream is not None:
             self.stream = stream
         else:
-            self.stream = encode(data, files, json)
+            self.stream = encode(content, data, files, json)
 
         self.prepare()
 

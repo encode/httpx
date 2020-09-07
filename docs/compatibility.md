@@ -9,6 +9,28 @@ This documentation outlines places where the API differs...
 Accessing `response.url` will return a `URL` instance, rather than a string.
 Use `str(response.url)` if you need a string instance.
 
+## Request Content
+
+For uploading raw text or binary content we prefer to use a `content` parameter,
+in order to better separate this usage from the case of uploading form data.
+
+For example, using `content=...` to upload raw content:
+
+```python
+# Uploading text, bytes, or a bytes iterator.
+httpx.post(..., content=b"Hello, world")
+```
+
+And using `data=...` to send form data:
+
+```python
+# Uploading form data.
+httpx.post(..., data={"message": "Hello, world"})
+```
+
+However, for compatibility reasons, we also support using `data=...` for raw
+binary and text contents.
+
 ## Status Codes
 
 In our documentation we prefer the uppercased versions, such as `codes.NOT_FOUND`, but also provide lower-cased versions for API compatibility with `requests`.
