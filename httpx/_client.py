@@ -835,7 +835,7 @@ class Client(BaseClient):
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
-            get_elapsed_time=timer.sync_elapsed,
+            elapsed_func=timer.sync_elapsed,
         )
 
         self.cookies.extract_cookies(response)
@@ -1461,7 +1461,7 @@ class AsyncClient(BaseClient):
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
-            get_elapsed_time=timer.async_elapsed,
+            elapsed_func=timer.async_elapsed,
         )
 
         self.cookies.extract_cookies(response)

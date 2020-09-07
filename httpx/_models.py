@@ -676,7 +676,7 @@ class Response:
         stream: ContentStream = None,
         content: bytes = None,
         history: typing.List["Response"] = None,
-        get_elapsed_time: typing.Callable = None,
+        elapsed_func: typing.Callable = None,
     ):
         self.status_code = status_code
         self.http_version = http_version
@@ -687,7 +687,7 @@ class Response:
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.history = [] if history is None else list(history)
-        self._get_elapsed_time = get_elapsed_time
+        self._elapsed_func = elapsed_func
 
         self.is_closed = False
         self.is_stream_consumed = False
@@ -976,8 +976,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self._get_elapsed_time is not None:
-                self._elapsed = self._get_elapsed_time()
+            if self._elapsed_func is not None:
+                self._elapsed = self._elapsed_func()
             self._raw_stream.close()
 
     async def aread(self) -> bytes:
@@ -1056,8 +1056,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self._get_elapsed_time is not None:
-                self._elapsed = await self._get_elapsed_time()
+            if self._elapsed_func is not None:
+                self._elapsed = await self._elapsed_func()
             await self._raw_stream.aclose()
 
 
