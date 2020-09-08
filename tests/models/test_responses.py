@@ -227,6 +227,18 @@ def test_iter_raw():
     assert raw == b"Hello, world!"
 
 
+def test_iter_raw_increments_updates_counter():
+    stream = IteratorStream(iterator=streaming_body())
+
+    response = httpx.Response(
+        200,
+        stream=stream,
+    )
+
+    for part in response.iter_raw():
+        assert len(part) == response.last_raw_chunk_size
+
+
 @pytest.mark.asyncio
 async def test_aiter_raw():
     stream = AsyncIteratorStream(aiterator=async_streaming_body())
@@ -239,6 +251,19 @@ async def test_aiter_raw():
     async for part in response.aiter_raw():
         raw += part
     assert raw == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_aiter_raw_increments_updates_counter():
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+
+    response = httpx.Response(
+        200,
+        stream=stream,
+    )
+
+    async for part in response.aiter_raw():
+        assert len(part) == response.last_raw_chunk_size
 
 
 def test_iter_bytes():
