@@ -10,7 +10,6 @@ from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, quote, unquote, urlencode
 
-import chardet
 import rfc3986
 import rfc3986.exceptions
 
@@ -749,19 +748,18 @@ class Response:
             if not content:
                 self._text = ""
             else:
-                encoding = self.encoding
-                self._text = content.decode(encoding, errors="replace")
+                decoder = TextDecoder(encoding=self.encoding)
+                self._text = "".join([decoder.decode(content), decoder.flush()])
         return self._text
 
     @property
-    def encoding(self) -> str:
+    def encoding(self) -> typing.Optional[str]:
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
-                encoding = self.apparent_encoding
-                if encoding is None or not is_known_encoding(encoding):
-                    encoding = "utf-8"
-            self._encoding = encoding
+                self._encoding = None
+            else:
+                self._encoding = encoding
         return self._encoding
 
     @encoding.setter
@@ -795,7 +793,7 @@ class Response:
         """
         Return the encoding, as it appears to autodetection.
         """
-        return chardet.detect(self.content)["encoding"]
+        return None
 
     @property
     def decoder(self) -> Decoder:
