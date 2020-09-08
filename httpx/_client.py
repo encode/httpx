@@ -47,6 +47,7 @@ from ._types import (
 )
 from ._utils import (
     NetRCInfo,
+    Timer,
     URLPattern,
     get_environment_proxies,
     get_logger,
@@ -808,6 +809,8 @@ class Client(BaseClient):
         Sends a single request, without handling any redirections.
         """
         transport = self._transport_for_url(request.url)
+        timer = Timer()
+        timer.sync_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (
@@ -829,6 +832,7 @@ class Client(BaseClient):
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
+            elapsed_func=timer.sync_elapsed,
         )
 
         self.cookies.extract_cookies(response)
@@ -1428,6 +1432,8 @@ class AsyncClient(BaseClient):
         Sends a single request, without handling any redirections.
         """
         transport = self._transport_for_url(request.url)
+        timer = Timer()
+        await timer.async_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (
@@ -1449,6 +1455,7 @@ class AsyncClient(BaseClient):
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
+            elapsed_func=timer.async_elapsed,
         )
 
         self.cookies.extract_cookies(response)
