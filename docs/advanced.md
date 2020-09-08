@@ -221,6 +221,28 @@ with httpx.Client(headers=headers) as client:
     ...
 ```
 
+## Monitoring download progress
+
+If you need to monitor download progress, you can stream with using `response.last_raw_chunk_size` property.
+
+For example, you can build a nice progress bar using the `tqdm` library:
+
+```python
+import tempfile
+
+import httpx
+from tqdm import tqdm
+
+with tempfile.NamedTemporaryFile() as download_file:
+    data = b"@" * 1000000
+    with httpx.stream("POST", "https://httpbin.org/anything", data=data) as response:
+        content_length = int(response.headers["Content-Length"])
+        with tqdm(total=content_length) as progress:
+            for chunk in response.iter_bytes():
+                download_file.write(chunk)
+                progress.update(response.last_raw_chunk_size)
+```
+
 ## .netrc Support
 
 HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is
