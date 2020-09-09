@@ -915,12 +915,17 @@ class Response:
             self._content = b"".join(self.iter_bytes())
         return self._content
 
-    def iter_bytes(self, chunk_size: int = 512) -> typing.Iterator[bytes]:
+    def iter_bytes(
+        self, chunk_size: typing.Optional[int] = 512
+    ) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
         """
-        yield from drain_by_chunks(self.__iter_bytes(), chunk_size)
+        if chunk_size is None:
+            yield from self.__iter_bytes()
+        else:
+            yield from drain_by_chunks(self.__iter_bytes(), chunk_size)
 
     def __iter_bytes(self) -> typing.Iterator[bytes]:
         if hasattr(self, "_content"):
@@ -1001,12 +1006,19 @@ class Response:
             self._content = b"".join([part async for part in self.aiter_bytes()])
         return self._content
 
-    async def aiter_bytes(self, chunk_size: int = 512) -> typing.AsyncIterator[bytes]:
+    async def aiter_bytes(
+        self, chunk_size: typing.Optional[int] = 512
+    ) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
         """
-        async for chunk in async_drain_by_chunks(self.__aiter_bytes(), chunk_size):
+        if chunk_size is None:
+            aiterator = self.__aiter_bytes()
+        else:
+            aiterator = async_drain_by_chunks(self.__aiter_bytes(), chunk_size)
+
+        async for chunk in aiterator:
             yield chunk
 
     async def __aiter_bytes(self) -> typing.AsyncIterator[bytes]:

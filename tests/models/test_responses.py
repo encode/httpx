@@ -270,27 +270,29 @@ async def test_aiter_raw_increments_updates_counter():
         num_downloaded = response.num_bytes_downloaded
 
 
-def test_iter_bytes():
+@pytest.mark.parametrize("chunk_size", [2, 20, None])
+def test_iter_bytes(chunk_size):
     response = httpx.Response(
         200,
         content=b"Hello, world!",
     )
 
     content = b""
-    for part in response.iter_bytes():
+    for part in response.iter_bytes(chunk_size):
         content += part
     assert content == b"Hello, world!"
 
 
 @pytest.mark.asyncio
-async def test_aiter_bytes():
+@pytest.mark.parametrize("chunk_size", [2, 20, None])
+async def test_aiter_bytes(chunk_size):
     response = httpx.Response(
         200,
         content=b"Hello, world!",
     )
 
     content = b""
-    async for part in response.aiter_bytes():
+    async for part in response.aiter_bytes(chunk_size):
         content += part
     assert content == b"Hello, world!"
 
