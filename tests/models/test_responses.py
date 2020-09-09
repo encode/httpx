@@ -235,8 +235,10 @@ def test_iter_raw_increments_updates_counter():
         stream=stream,
     )
 
+    num_downloaded = response.num_bytes_downloaded
     for part in response.iter_raw():
-        assert len(part) == response.last_raw_chunk_size
+        assert len(part) == (response.num_bytes_downloaded - num_downloaded)
+        num_downloaded = response.num_bytes_downloaded
 
 
 @pytest.mark.asyncio
@@ -262,8 +264,10 @@ async def test_aiter_raw_increments_updates_counter():
         stream=stream,
     )
 
+    num_downloaded = response.num_bytes_downloaded
     async for part in response.aiter_raw():
-        assert len(part) == response.last_raw_chunk_size
+        assert len(part) == (response.num_bytes_downloaded - num_downloaded)
+        num_downloaded = response.num_bytes_downloaded
 
 
 def test_iter_bytes():

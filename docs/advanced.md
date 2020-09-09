@@ -234,13 +234,20 @@ import httpx
 from tqdm import tqdm
 
 with tempfile.NamedTemporaryFile() as download_file:
-    data = b"@" * 1000000
-    with httpx.stream("POST", "https://httpbin.org/anything", data=data) as response:
-        content_length = int(response.headers["Content-Length"])
-        with tqdm(total=content_length) as progress:
+    url = "https://speed.hetzner.de/100MB.bin"
+    with httpx.stream("GET", url) as response:
+        if "Content-Length" in response.headers:
+            total = int(response.headers["Content-Length"])
+        else:
+            total = None
+
+        with tqdm(total=total, unit_scale=True, unit_divisor=1024, unit="B") as progress:
+            num_bytes_downloaded = response.num_bytes_downloaded
             for chunk in response.iter_bytes():
                 download_file.write(chunk)
-                progress.update(response.last_raw_chunk_size)
+                progress.update(response.num_bytes_downloaded - num_bytes_downloaded)
+                num_bytes_downloaded = response.num_bytes_downloaded
+        print(f"The total download size is {response.num_bytes_downloaded} bytes")
 ```
 
 ## .netrc Support
