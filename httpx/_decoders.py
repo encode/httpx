@@ -178,7 +178,7 @@ class TextDecoder:
         should be a pretty robust strategy for cases where a charset has
         not been explicitly included.
 
-        Useful stats on the prevelance of different charsets in the wild...
+        Useful stats on the prevalence of different charsets in the wild...
 
         * https://w3techs.com/technologies/overview/character_encoding
         * https://w3techs.com/technologies/history_overview/character_encoding
