@@ -180,16 +180,7 @@ def test_decoding_errors(header_value):
         ((b"Hello,", b" world!"), "ascii"),
         ((b"\xe3\x83", b"\x88\xe3\x83\xa9", b"\xe3", b"\x83\x99\xe3\x83\xab"), "utf-8"),
         ((b"Euro character: \x88!", b""), "cp1252"),
-        # ((b"\x83g\x83\x89\x83x\x83\x8b",) * 64, "shift-jis"),
-        # ((b"\x83g\x83\x89\x83x\x83\x8b",) * 600, "shift-jis"),
-        # (
-        #     (b"\xcb\xee\xf0\xe5\xec \xe8\xef\xf1\xf3\xec \xe4\xee\xeb\xee\xf0",) * 64,
-        #     "MacCyrillic",
-        # ),
-        # (
-        #     (b"\xa5\xa6\xa5\xa7\xa5\xd6\xa4\xce\xb9\xf1\xba\xdd\xb2\xbd",) * 512,
-        #     "euc-jp",
-        # ),
+        ((b"Accented: \xd6sterreich", b""), "iso-8859-1"),
     ],
 )
 @pytest.mark.asyncio
