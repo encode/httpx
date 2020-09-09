@@ -725,12 +725,8 @@ class Client(BaseClient):
 
         auth = self._build_request_auth(request, auth)
 
-        response = self._send_handling_auth(
-            request,
-            auth=auth,
-            timeout=timeout,
-            allow_redirects=allow_redirects,
-            history=[],
+        response = self._send_handling_redirects(
+            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects
         )
 
         if not stream:
@@ -744,17 +740,23 @@ class Client(BaseClient):
     def _send_handling_redirects(
         self,
         request: Request,
+        auth: Auth,
         timeout: Timeout,
-        allow_redirects: bool,
-        history: typing.List[Response],
+        allow_redirects: bool = True,
+        history: typing.List[Response] = None,
     ) -> Response:
+        if history is None:
+            history = []
+
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects(
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
-            response = self._send_single_request(request, timeout)
+            response = self._send_handling_auth(
+                request, auth=auth, timeout=timeout, history=history
+            )
             response.history = list(history)
 
             if not response.is_redirect:
@@ -769,6 +771,7 @@ class Client(BaseClient):
                 response.call_next = functools.partial(
                     self._send_handling_redirects,
                     request=request,
+                    auth=auth,
                     timeout=timeout,
                     allow_redirects=False,
                     history=history,
@@ -778,10 +781,9 @@ class Client(BaseClient):
     def _send_handling_auth(
         self,
         request: Request,
+        history: typing.List[Response],
         auth: Auth,
         timeout: Timeout,
-        allow_redirects: bool,
-        history: typing.List[Response],
     ) -> Response:
         if auth.requires_request_body:
             request.read()
@@ -789,12 +791,7 @@ class Client(BaseClient):
         auth_flow = auth.auth_flow(request)
         request = next(auth_flow)
         while True:
-            response = self._send_handling_redirects(
-                request,
-                timeout=timeout,
-                allow_redirects=allow_redirects,
-                history=history,
-            )
+            response = self._send_single_request(request, timeout)
             if auth.requires_response_body:
                 response.read()
             try:
@@ -1352,12 +1349,8 @@ class AsyncClient(BaseClient):
 
         auth = self._build_request_auth(request, auth)
 
-        response = await self._send_handling_auth(
-            request,
-            auth=auth,
-            timeout=timeout,
-            allow_redirects=allow_redirects,
-            history=[],
+        response = await self._send_handling_redirects(
+            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects
         )
 
         if not stream:
@@ -1371,17 +1364,23 @@ class AsyncClient(BaseClient):
     async def _send_handling_redirects(
         self,
         request: Request,
+        auth: Auth,
         timeout: Timeout,
-        allow_redirects: bool,
-        history: typing.List[Response],
+        allow_redirects: bool = True,
+        history: typing.List[Response] = None,
     ) -> Response:
+        if history is None:
+            history = []
+
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects(
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
-            response = await self._send_single_request(request, timeout)
+            response = await self._send_handling_auth(
+                request, auth=auth, timeout=timeout, history=history
+            )
             response.history = list(history)
 
             if not response.is_redirect:
@@ -1396,6 +1395,7 @@ class AsyncClient(BaseClient):
                 response.call_next = functools.partial(
                     self._send_handling_redirects,
                     request=request,
+                    auth=auth,
                     timeout=timeout,
                     allow_redirects=False,
                     history=history,
@@ -1405,10 +1405,9 @@ class AsyncClient(BaseClient):
     async def _send_handling_auth(
         self,
         request: Request,
+        history: typing.List[Response],
         auth: Auth,
         timeout: Timeout,
-        allow_redirects: bool,
-        history: typing.List[Response],
     ) -> Response:
         if auth.requires_request_body:
             await request.aread()
@@ -1416,12 +1415,7 @@ class AsyncClient(BaseClient):
         auth_flow = auth.auth_flow(request)
         request = next(auth_flow)
         while True:
-            response = await self._send_handling_redirects(
-                request,
-                timeout=timeout,
-                allow_redirects=allow_redirects,
-                history=history,
-            )
+            response = await self._send_single_request(request, timeout)
             if auth.requires_response_body:
                 await response.aread()
             try:
