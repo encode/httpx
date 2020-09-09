@@ -167,12 +167,13 @@ class TextDecoder:
 
     def decode(self, data: bytes) -> str:
         if self.decoder is None:
-            self.decoder = codecs.getincrementaldecoder("utf-8")(errors="strict")
+            attempt_utf_8 = codecs.getincrementaldecoder("utf-8")(errors="strict")
             try:
-                return self.decoder.decode(data)
+                attempt_utf_8.decode(data)
             except UnicodeDecodeError:
-                self.decoder = codecs.getincrementaldecoder("cp1251")(errors="ignore")
-                return self.decoder.decode(data)
+                self.decoder = codecs.getincrementaldecoder("cp1252")(errors="replace")
+            else:
+                self.decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
 
         return self.decoder.decode(data)
 

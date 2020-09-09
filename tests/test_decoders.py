@@ -179,7 +179,7 @@ def test_decoding_errors(header_value):
     [
         ((b"Hello,", b" world!"), "ascii"),
         ((b"\xe3\x83", b"\x88\xe3\x83\xa9", b"\xe3", b"\x83\x99\xe3\x83\xab"), "utf-8"),
-        ((b"Euro character: \x88!", b""), "cp1251"),
+        ((b"Euro character: \x88!", b""), "cp1252"),
         # ((b"\x83g\x83\x89\x83x\x83\x8b",) * 64, "shift-jis"),
         # ((b"\x83g\x83\x89\x83x\x83\x8b",) * 600, "shift-jis"),
         # (

@@ -748,8 +748,7 @@ class Response:
             if not content:
                 self._text = ""
             else:
-                decoder = TextDecoder(encoding=self.encoding)
-                self._text = "".join([decoder.decode(content), decoder.flush()])
+                self._text = "".join([chunk for chunk in self.iter_text()])
         return self._text
 
     @property
@@ -775,18 +774,11 @@ class Response:
         if content_type is None:
             return None
 
-        parsed = cgi.parse_header(content_type)
-        media_type, params = parsed[0], parsed[-1]
-        if "charset" in params:
-            return params["charset"].strip("'\"")
+        _, params = cgi.parse_header(content_type)
+        if "charset" not in params:
+            return None
 
-        # RFC 2616 specifies that 'iso-8859-1' should be used as the default
-        # for 'text/*' media types, if no charset is provided.
-        # See: https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.7.1
-        if media_type.startswith("text/"):
-            return "iso-8859-1"
-
-        return None
+        return params["charset"].strip("'\"")
 
     @property
     def apparent_encoding(self) -> typing.Optional[str]:
@@ -924,7 +916,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.charset_encoding)
+        decoder = TextDecoder(encoding=self.encoding)
         with self._wrap_decoder_errors():
             for chunk in self.iter_bytes():
                 yield decoder.decode(chunk)
@@ -1005,7 +997,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.charset_encoding)
+        decoder = TextDecoder(encoding=self.encoding)
         with self._wrap_decoder_errors():
             async for chunk in self.aiter_bytes():
                 yield decoder.decode(chunk)
