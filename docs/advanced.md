@@ -223,7 +223,7 @@ with httpx.Client(headers=headers) as client:
 
 ## Monitoring download progress
 
-If you need to monitor download progress of large responses, you can use stream and the `response.last_raw_chunk_size` property.
+If you need to monitor download progress of large responses, you can use stream and the `response.num_bytes_downloaded` property.
 
 For example, showing a progress bar using the [`tqdm`](https://github.com/tqdm/tqdm) library while a response is being downloaded could be done like this…
 
