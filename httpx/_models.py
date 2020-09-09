@@ -47,6 +47,8 @@ from ._types import (
     URLTypes,
 )
 from ._utils import (
+    async_drain_by_chunks,
+    drain_by_chunks,
     flatten_queryparams,
     guess_json_utf,
     is_known_encoding,
@@ -913,11 +915,14 @@ class Response:
             self._content = b"".join(self.iter_bytes())
         return self._content
 
-    def iter_bytes(self) -> typing.Iterator[bytes]:
+    def iter_bytes(self, chunk_size: int = 512) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
         """
+        yield from drain_by_chunks(self.__iter_bytes(), chunk_size)
+
+    def __iter_bytes(self) -> typing.Iterator[bytes]:
         if hasattr(self, "_content"):
             yield self._content
         else:
@@ -996,11 +1001,15 @@ class Response:
             self._content = b"".join([part async for part in self.aiter_bytes()])
         return self._content
 
-    async def aiter_bytes(self) -> typing.AsyncIterator[bytes]:
+    async def aiter_bytes(self, chunk_size: int = 512) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
         """
+        async for chunk in async_drain_by_chunks(self.__aiter_bytes(), chunk_size):
+            yield chunk
+
+    async def __aiter_bytes(self) -> typing.AsyncIterator[bytes]:
         if hasattr(self, "_content"):
             yield self._content
         else:

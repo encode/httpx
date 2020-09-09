@@ -536,3 +536,75 @@ class URLPattern:
 
 def warn_deprecated(message: str) -> None:  # pragma: nocover
     warnings.warn(message, DeprecationWarning, stacklevel=2)
+
+
+def drain_by_chunks(
+    stream: typing.Iterator[bytes], chunk_size: int = 512
+) -> typing.Iterator[bytes]:
+    buffer, buffer_size = [], 0
+
+    try:
+        chunk = next(stream)
+
+        while True:
+            last_chunk_size = len(chunk)
+
+            if buffer_size + last_chunk_size < chunk_size:
+                buffer.append(chunk)
+                buffer_size += last_chunk_size
+            elif buffer_size + last_chunk_size == chunk_size:
+                buffer.append(chunk)
+                yield b"".join(buffer)
+                buffer, buffer_size = [], 0
+            else:
+                head, tail = (
+                    chunk[: (chunk_size - buffer_size)],
+                    chunk[(chunk_size - buffer_size) :],
+                )
+
+                buffer.append(head)
+                yield b"".join(buffer)
+                buffer, buffer_size = [], 0
+                chunk = tail
+                continue
+
+            chunk = next(stream)
+    except StopIteration:
+        if buffer:
+            yield b"".join(buffer)
+
+
+async def async_drain_by_chunks(
+    stream: typing.AsyncIterator[bytes], chunk_size: int = 512
+) -> typing.AsyncIterator[bytes]:
+    buffer, buffer_size = [], 0
+
+    try:
+        chunk = await stream.__anext__()
+
+        while True:
+            last_chunk_size = len(chunk)
+
+            if buffer_size + last_chunk_size < chunk_size:
+                buffer.append(chunk)
+                buffer_size += last_chunk_size
+            elif buffer_size + last_chunk_size == chunk_size:
+                buffer.append(chunk)
+                yield b"".join(buffer)
+                buffer, buffer_size = [], 0
+            else:
+                head, tail = (
+                    chunk[: (chunk_size - buffer_size)],
+                    chunk[(chunk_size - buffer_size) :],
+                )
+
+                buffer.append(head)
+                yield b"".join(buffer)
+                buffer, buffer_size = [], 0
+                chunk = tail
+                continue
+
+            chunk = await stream.__anext__()
+    except StopAsyncIteration:
+        if buffer:
+            yield b"".join(buffer)

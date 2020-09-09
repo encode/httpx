@@ -1,5 +1,6 @@
 import os
 import random
+import typing
 
 import pytest
 
@@ -7,6 +8,8 @@ import httpx
 from httpx._utils import (
     NetRCInfo,
     URLPattern,
+    async_drain_by_chunks,
+    drain_by_chunks,
     get_ca_bundle_from_env,
     get_environment_proxies,
     guess_json_utf,
@@ -257,3 +260,61 @@ def test_pattern_priority():
         URLPattern("http://"),
         URLPattern("all://"),
     ]
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        [b"1", b"2", b"3"],
+        [b"1", b"abcdefghijklmnop", b"2"],
+        [b"123456", b"3"],
+        [b"1", b"23", b"456", b"7890", b"abcde", b"fghijk"],
+        [b""],
+    ],
+)
+@pytest.mark.parametrize(
+    "chunk_size",
+    [1, 2, 3, 5, 10, 11],
+)
+def test_drain_by_chunks(data, chunk_size):
+    iterator = iter(data)
+    chunk_sizes = []
+    for chunk in drain_by_chunks(iterator, chunk_size):
+        chunk_sizes.append(len(chunk))
+
+    *head, tail = chunk_sizes
+
+    assert tail <= chunk_size
+    assert [chunk_size] * len(head) == head
+
+
+async def _async_iter(data: typing.List) -> typing.AsyncIterator:
+    for chunk in data:
+        yield chunk
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "data",
+    [
+        [b"1", b"2", b"3"],
+        [b"1", b"abcdefghijklmnop", b"2"],
+        [b"123456", b"3"],
+        [b"1", b"23", b"456", b"7890", b"abcde", b"fghijk"],
+        [b""],
+    ],
+)
+@pytest.mark.parametrize(
+    "chunk_size",
+    [1, 2, 3, 5, 10, 11],
+)
+async def test_async_drain_by_chunks(data, chunk_size):
+    async_iterator = _async_iter(data)
+    chunk_sizes = []
+    async for chunk in async_drain_by_chunks(async_iterator, chunk_size):
+        chunk_sizes.append(len(chunk))
+
+    *head, tail = chunk_sizes
+
+    assert tail <= chunk_size
+    assert [chunk_size] * len(head) == head
