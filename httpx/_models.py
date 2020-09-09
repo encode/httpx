@@ -748,11 +748,16 @@ class Response:
             if not content:
                 self._text = ""
             else:
-                self._text = "".join([chunk for chunk in self.iter_text()])
+                decoder = TextDecoder(encoding=self.encoding)
+                self._text = "".join([decoder.decode(self.content), decoder.flush()])
         return self._text
 
     @property
     def encoding(self) -> typing.Optional[str]:
+        """
+        Return the encoding, which may have been set explicitly, or may have
+        been specified by the Content-Type header.
+        """
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
@@ -779,13 +784,6 @@ class Response:
             return None
 
         return params["charset"].strip("'\"")
-
-    @property
-    def apparent_encoding(self) -> typing.Optional[str]:
-        """
-        Return the encoding, as it appears to autodetection.
-        """
-        return None
 
     @property
     def decoder(self) -> Decoder:
