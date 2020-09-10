@@ -92,4 +92,4 @@ On the other hand, HTTPX uses [HTTPCore](https://github.com/encode/httpcore) as 
 
 ## Query Parameters
 
-`requests` omits `params` whose values are `None` (e.g. `requests.get(..., params={"foo": None})`). HTTPX will include a query parameter without a value instead. 
+`requests` omits `params` whose values are `None` (e.g. `requests.get(..., params={"foo": None})`). This is not supported by HTTPX.
