@@ -15,7 +15,7 @@ except ImportError:  # pragma: nocover
     brotli = None
 
 
-class Decoder:
+class ContentDecoder:
     def decode(self, data: bytes) -> bytes:
         raise NotImplementedError()  # pragma: nocover
 
@@ -23,7 +23,7 @@ class Decoder:
         raise NotImplementedError()  # pragma: nocover
 
 
-class IdentityDecoder(Decoder):
+class IdentityDecoder(ContentDecoder):
     """
     Handle unencoded data.
     """
@@ -35,7 +35,7 @@ class IdentityDecoder(Decoder):
         return b""
 
 
-class DeflateDecoder(Decoder):
+class DeflateDecoder(ContentDecoder):
     """
     Handle 'deflate' decoding.
 
@@ -64,7 +64,7 @@ class DeflateDecoder(Decoder):
             raise ValueError(str(exc))
 
 
-class GZipDecoder(Decoder):
+class GZipDecoder(ContentDecoder):
     """
     Handle 'gzip' decoding.
 
@@ -87,7 +87,7 @@ class GZipDecoder(Decoder):
             raise ValueError(str(exc))
 
 
-class BrotliDecoder(Decoder):
+class BrotliDecoder(ContentDecoder):
     """
     Handle 'brotli' decoding.
 
@@ -132,12 +132,12 @@ class BrotliDecoder(Decoder):
             raise ValueError(str(exc))
 
 
-class MultiDecoder(Decoder):
+class MultiDecoder(ContentDecoder):
     """
     Handle the case where multiple encodings have been applied.
     """
 
-    def __init__(self, children: typing.Sequence[Decoder]) -> None:
+    def __init__(self, children: typing.Sequence[ContentDecoder]) -> None:
         """
         'children' should be a sequence of decoders in the order in which
         each was applied.

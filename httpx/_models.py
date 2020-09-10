@@ -17,7 +17,7 @@ import rfc3986.exceptions
 from ._content_streams import ByteStream, ContentStream, encode
 from ._decoders import (
     SUPPORTED_DECODERS,
-    Decoder,
+    ContentDecoder,
     IdentityDecoder,
     LineDecoder,
     MultiDecoder,
@@ -799,14 +799,13 @@ class Response:
         """
         return chardet.detect(self.content)["encoding"]
 
-    @property
-    def decoder(self) -> Decoder:
+    def _get_content_decoder(self) -> ContentDecoder:
         """
         Returns a decoder instance which can be used to decode the raw byte
         content, depending on the Content-Encoding used in the response.
         """
         if not hasattr(self, "_decoder"):
-            decoders: typing.List[Decoder] = []
+            decoders: typing.List[ContentDecoder] = []
             values = self.headers.get_list("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
@@ -921,10 +920,11 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
+            decoder = self._get_content_decoder()
             with self._wrap_decoder_errors():
                 for chunk in self.iter_raw():
-                    yield self.decoder.decode(chunk)
-                yield self.decoder.flush()
+                    yield decoder.decode(chunk)
+                yield decoder.flush()
 
     def iter_text(self) -> typing.Iterator[str]:
         """
@@ -1004,10 +1004,11 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
+            decoder = self._get_content_decoder()
             with self._wrap_decoder_errors():
                 async for chunk in self.aiter_raw():
-                    yield self.decoder.decode(chunk)
-                yield self.decoder.flush()
+                    yield decoder.decode(chunk)
+                yield decoder.flush()
 
     async def aiter_text(self) -> typing.AsyncIterator[str]:
         """
