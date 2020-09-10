@@ -47,6 +47,7 @@ from ._types import (
 )
 from ._utils import (
     NetRCInfo,
+    Timer,
     URLPattern,
     get_environment_proxies,
     get_logger,
@@ -724,8 +725,12 @@ class Client(BaseClient):
 
         auth = self._build_request_auth(request, auth)
 
-        response = self._send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects
+        response = self._send_handling_auth(
+            request,
+            auth=auth,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
+            history=[],
         )
 
         if not stream:
@@ -736,26 +741,51 @@ class Client(BaseClient):
 
         return response
 
-    def _send_handling_redirects(
+    def _send_handling_auth(
         self,
         request: Request,
         auth: Auth,
         timeout: Timeout,
-        allow_redirects: bool = True,
-        history: typing.List[Response] = None,
+        allow_redirects: bool,
+        history: typing.List[Response],
     ) -> Response:
-        if history is None:
-            history = []
+        auth_flow = auth.sync_auth_flow(request)
+        request = next(auth_flow)
 
+        while True:
+            response = self._send_handling_redirects(
+                request,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+                history=history,
+            )
+            try:
+                next_request = auth_flow.send(response)
+            except StopIteration:
+                return response
+            except BaseException as exc:
+                response.close()
+                raise exc from None
+            else:
+                response.history = list(history)
+                response.read()
+                request = next_request
+                history.append(response)
+
+    def _send_handling_redirects(
+        self,
+        request: Request,
+        timeout: Timeout,
+        allow_redirects: bool,
+        history: typing.List[Response],
+    ) -> Response:
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects(
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
-            response = self._send_handling_auth(
-                request, auth=auth, timeout=timeout, history=history
-            )
+            response = self._send_single_request(request, timeout)
             response.history = list(history)
 
             if not response.is_redirect:
@@ -770,47 +800,19 @@ class Client(BaseClient):
                 response.call_next = functools.partial(
                     self._send_handling_redirects,
                     request=request,
-                    auth=auth,
                     timeout=timeout,
                     allow_redirects=False,
                     history=history,
                 )
                 return response
 
-    def _send_handling_auth(
-        self,
-        request: Request,
-        history: typing.List[Response],
-        auth: Auth,
-        timeout: Timeout,
-    ) -> Response:
-        if auth.requires_request_body:
-            request.read()
-
-        auth_flow = auth.auth_flow(request)
-        request = next(auth_flow)
-        while True:
-            response = self._send_single_request(request, timeout)
-            if auth.requires_response_body:
-                response.read()
-            try:
-                next_request = auth_flow.send(response)
-            except StopIteration:
-                return response
-            except BaseException as exc:
-                response.close()
-                raise exc from None
-            else:
-                response.history = list(history)
-                response.read()
-                request = next_request
-                history.append(response)
-
     def _send_single_request(self, request: Request, timeout: Timeout) -> Response:
         """
         Sends a single request, without handling any redirections.
         """
         transport = self._transport_for_url(request.url)
+        timer = Timer()
+        timer.sync_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (
@@ -832,6 +834,7 @@ class Client(BaseClient):
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
+            elapsed_func=timer.sync_elapsed,
         )
 
         self.cookies.extract_cookies(response)
@@ -1345,8 +1348,12 @@ class AsyncClient(BaseClient):
 
         auth = self._build_request_auth(request, auth)
 
-        response = await self._send_handling_redirects(
-            request, auth=auth, timeout=timeout, allow_redirects=allow_redirects
+        response = await self._send_handling_auth(
+            request,
+            auth=auth,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
+            history=[],
         )
 
         if not stream:
@@ -1357,26 +1364,51 @@ class AsyncClient(BaseClient):
 
         return response
 
-    async def _send_handling_redirects(
+    async def _send_handling_auth(
         self,
         request: Request,
         auth: Auth,
         timeout: Timeout,
-        allow_redirects: bool = True,
-        history: typing.List[Response] = None,
+        allow_redirects: bool,
+        history: typing.List[Response],
     ) -> Response:
-        if history is None:
-            history = []
+        auth_flow = auth.async_auth_flow(request)
+        request = await auth_flow.__anext__()
 
+        while True:
+            response = await self._send_handling_redirects(
+                request,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+                history=history,
+            )
+            try:
+                next_request = await auth_flow.asend(response)
+            except StopAsyncIteration:
+                return response
+            except BaseException as exc:
+                await response.aclose()
+                raise exc from None
+            else:
+                response.history = list(history)
+                await response.aread()
+                request = next_request
+                history.append(response)
+
+    async def _send_handling_redirects(
+        self,
+        request: Request,
+        timeout: Timeout,
+        allow_redirects: bool,
+        history: typing.List[Response],
+    ) -> Response:
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects(
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
-            response = await self._send_handling_auth(
-                request, auth=auth, timeout=timeout, history=history
-            )
+            response = await self._send_single_request(request, timeout)
             response.history = list(history)
 
             if not response.is_redirect:
@@ -1391,41 +1423,11 @@ class AsyncClient(BaseClient):
                 response.call_next = functools.partial(
                     self._send_handling_redirects,
                     request=request,
-                    auth=auth,
                     timeout=timeout,
                     allow_redirects=False,
                     history=history,
                 )
                 return response
-
-    async def _send_handling_auth(
-        self,
-        request: Request,
-        history: typing.List[Response],
-        auth: Auth,
-        timeout: Timeout,
-    ) -> Response:
-        if auth.requires_request_body:
-            await request.aread()
-
-        auth_flow = auth.auth_flow(request)
-        request = next(auth_flow)
-        while True:
-            response = await self._send_single_request(request, timeout)
-            if auth.requires_response_body:
-                await response.aread()
-            try:
-                next_request = auth_flow.send(response)
-            except StopIteration:
-                return response
-            except BaseException as exc:
-                await response.aclose()
-                raise exc from None
-            else:
-                response.history = list(history)
-                await response.aread()
-                request = next_request
-                history.append(response)
 
     async def _send_single_request(
         self, request: Request, timeout: Timeout
@@ -1434,6 +1436,8 @@ class AsyncClient(BaseClient):
         Sends a single request, without handling any redirections.
         """
         transport = self._transport_for_url(request.url)
+        timer = Timer()
+        await timer.async_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (
@@ -1455,6 +1459,7 @@ class AsyncClient(BaseClient):
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
+            elapsed_func=timer.async_elapsed,
         )
 
         self.cookies.extract_cookies(response)

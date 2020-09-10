@@ -6,13 +6,13 @@ import netrc
 import os
 import re
 import sys
+import time
 import typing
 import warnings
-from datetime import timedelta
 from pathlib import Path
-from time import perf_counter
-from types import TracebackType
 from urllib.request import getproxies
+
+import sniffio
 
 from ._types import PrimitiveData
 
@@ -392,28 +392,35 @@ def flatten_queryparams(
     return items
 
 
-class ElapsedTimer:
-    def __init__(self) -> None:
-        self.start: float = perf_counter()
-        self.end: typing.Optional[float] = None
+class Timer:
+    async def _get_time(self) -> float:
+        library = sniffio.current_async_library()
+        if library == "trio":
+            import trio
 
-    def __enter__(self) -> "ElapsedTimer":
-        self.start = perf_counter()
-        return self
+            return trio.current_time()
+        elif library == "curio":  # pragma: nocover
+            import curio
 
-    def __exit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        self.end = perf_counter()
+            return await curio.clock()
 
-    @property
-    def elapsed(self) -> timedelta:
-        if self.end is None:
-            return timedelta(seconds=perf_counter() - self.start)
-        return timedelta(seconds=self.end - self.start)
+        import asyncio
+
+        return asyncio.get_event_loop().time()
+
+    def sync_start(self) -> None:
+        self.started = time.perf_counter()
+
+    async def async_start(self) -> None:
+        self.started = await self._get_time()
+
+    def sync_elapsed(self) -> float:
+        now = time.perf_counter()
+        return now - self.started
+
+    async def async_elapsed(self) -> float:
+        now = await self._get_time()
+        return now - self.started
 
 
 class URLPattern:

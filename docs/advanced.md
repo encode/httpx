@@ -221,6 +221,61 @@ with httpx.Client(headers=headers) as client:
     ...
 ```
 
+## Monitoring download progress
+
+If you need to monitor download progress of large responses, you can use response streaming and inspect the `response.num_bytes_downloaded` property.
+
+This interface is required for properly determining download progress, because the total number of bytes returned by `response.content` or `response.iter_content()` will not always correspond with the raw content length of the response if HTTP response compression is being used.
+
+For example, showing a progress bar using the [`tqdm`](https://github.com/tqdm/tqdm) library while a response is being downloaded could be done like this…
+
+```python
+import tempfile
+
+import httpx
+from tqdm import tqdm
+
+with tempfile.NamedTemporaryFile() as download_file:
+    url = "https://speed.hetzner.de/100MB.bin"
+    with httpx.stream("GET", url) as response:
+        total = int(response.headers["Content-Length"])
+
+        with tqdm(total=total, unit_scale=True, unit_divisor=1024, unit="B") as progress:
+            num_bytes_downloaded = response.num_bytes_downloaded
+            for chunk in response.iter_bytes():
+                download_file.write(chunk)
+                progress.update(response.num_bytes_downloaded - num_bytes_downloaded)
+                num_bytes_downloaded = response.num_bytes_downloaded
+```
+
+![tqdm progress bar](img/tqdm-progress.gif)
+
+Or an alternate example, this time using the [`rich`](https://github.com/willmcgugan/rich) library…
+
+```python
+import tempfile
+import httpx
+import rich.progress
+
+with tempfile.NamedTemporaryFile() as download_file:
+    url = "https://speed.hetzner.de/100MB.bin"
+    with httpx.stream("GET", url) as response:
+        total = int(response.headers["Content-Length"])
+
+        with rich.progress.Progress(
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            rich.progress.BarColumn(bar_width=None),
+            rich.progress.DownloadColumn(),
+            rich.progress.TransferSpeedColumn(),
+        ) as progress:
+            download_task = progress.add_task("Download", total=total)
+            for chunk in response.iter_bytes():
+                download_file.write(chunk)
+                progress.update(download_task, completed=response.num_bytes_downloaded)
+```
+
+![rich progress bar](img/rich-progress.gif)
+
 ## .netrc Support
 
 HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is
@@ -722,6 +777,55 @@ class MyCustomAuth(httpx.Auth):
         # based on a refresh response.
         data = response.json()
         ...
+```
+
+If you _do_ need to perform I/O other than HTTP requests, such as accessing a disk-based cache, or you need to use concurrency primitives, such as locks, then you should override `.sync_auth_flow()` and `.async_auth_flow()` (instead of `.auth_flow()`). The former will be used by `httpx.Client`, while the latter will be used by `httpx.AsyncClient`.
+
+```python
+import asyncio
+import threading
+import httpx
+
+
+class MyCustomAuth(httpx.Auth):
+    def __init__(self):
+        self._sync_lock = threading.RLock()
+        self._async_lock = asyncio.Lock()
+
+    def sync_get_token(self):
+        with self._sync_lock:
+            ...
+
+    def sync_auth_flow(self, request):
+        token = self.sync_get_token()
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+
+    async def async_get_token(self):
+        async with self._async_lock:
+            ...
+
+    async def async_auth_flow(self, request):
+        token = await self.async_get_token()
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+```
+
+If you only want to support one of the two methods, then you should still override it, but raise an explicit `RuntimeError`.
+
+```python
+import httpx
+import sync_only_library
+
+
+class MyCustomAuth(httpx.Auth):
+    def sync_auth_flow(self, request):
+        token = sync_only_library.get_token(...)
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+
+    async def async_auth_flow(self, request):
+        raise RuntimeError("Cannot use a sync authentication class with httpx.AsyncClient")
 ```
 
 ## SSL certificates
