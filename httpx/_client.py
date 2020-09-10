@@ -741,6 +741,37 @@ class Client(BaseClient):
 
         return response
 
+    def _send_handling_auth(
+        self,
+        request: Request,
+        auth: Auth,
+        timeout: Timeout,
+        allow_redirects: bool,
+        history: typing.List[Response],
+    ) -> Response:
+        auth_flow = auth.sync_auth_flow(request)
+        request = next(auth_flow)
+
+        while True:
+            response = self._send_handling_redirects(
+                request,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+                history=history,
+            )
+            try:
+                next_request = auth_flow.send(response)
+            except StopIteration:
+                return response
+            except BaseException as exc:
+                response.close()
+                raise exc from None
+            else:
+                response.history = list(history)
+                response.read()
+                request = next_request
+                history.append(response)
+
     def _send_handling_redirects(
         self,
         request: Request,
@@ -774,37 +805,6 @@ class Client(BaseClient):
                     history=history,
                 )
                 return response
-
-    def _send_handling_auth(
-        self,
-        request: Request,
-        auth: Auth,
-        timeout: Timeout,
-        allow_redirects: bool,
-        history: typing.List[Response],
-    ) -> Response:
-        auth_flow = auth.sync_auth_flow(request)
-        request = next(auth_flow)
-
-        while True:
-            response = self._send_handling_redirects(
-                request,
-                timeout=timeout,
-                allow_redirects=allow_redirects,
-                history=history,
-            )
-            try:
-                next_request = auth_flow.send(response)
-            except StopIteration:
-                return response
-            except BaseException as exc:
-                response.close()
-                raise exc from None
-            else:
-                response.history = list(history)
-                response.read()
-                request = next_request
-                history.append(response)
 
     def _send_single_request(self, request: Request, timeout: Timeout) -> Response:
         """
@@ -1364,6 +1364,37 @@ class AsyncClient(BaseClient):
 
         return response
 
+    async def _send_handling_auth(
+        self,
+        request: Request,
+        auth: Auth,
+        timeout: Timeout,
+        allow_redirects: bool,
+        history: typing.List[Response],
+    ) -> Response:
+        auth_flow = auth.async_auth_flow(request)
+        request = await auth_flow.__anext__()
+
+        while True:
+            response = await self._send_handling_redirects(
+                request,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+                history=history,
+            )
+            try:
+                next_request = await auth_flow.asend(response)
+            except StopAsyncIteration:
+                return response
+            except BaseException as exc:
+                await response.aclose()
+                raise exc from None
+            else:
+                response.history = list(history)
+                await response.aread()
+                request = next_request
+                history.append(response)
+
     async def _send_handling_redirects(
         self,
         request: Request,
@@ -1397,37 +1428,6 @@ class AsyncClient(BaseClient):
                     history=history,
                 )
                 return response
-
-    async def _send_handling_auth(
-        self,
-        request: Request,
-        auth: Auth,
-        timeout: Timeout,
-        allow_redirects: bool,
-        history: typing.List[Response],
-    ) -> Response:
-        auth_flow = auth.async_auth_flow(request)
-        request = await auth_flow.__anext__()
-
-        while True:
-            response = await self._send_handling_redirects(
-                request,
-                timeout=timeout,
-                allow_redirects=allow_redirects,
-                history=history,
-            )
-            try:
-                next_request = await auth_flow.asend(response)
-            except StopAsyncIteration:
-                return response
-            except BaseException as exc:
-                await response.aclose()
-                raise exc from None
-            else:
-                response.history = list(history)
-                await response.aread()
-                request = next_request
-                history.append(response)
 
     async def _send_single_request(
         self, request: Request, timeout: Timeout
