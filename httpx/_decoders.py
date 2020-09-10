@@ -137,7 +137,7 @@ class MultiDecoder(ContentDecoder):
     Handle the case where multiple encodings have been applied.
     """
 
-    def __init__(self, children: typing.Sequence[Decoder]) -> None:
+    def __init__(self, children: typing.Sequence[ContentDecoder]) -> None:
         """
         'children' should be a sequence of decoders in the order in which
         each was applied.
