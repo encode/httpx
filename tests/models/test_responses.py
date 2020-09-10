@@ -227,6 +227,26 @@ def test_iter_raw():
     assert raw == b"Hello, world!"
 
 
+def test_iter_raw_with_chunksize():
+    stream = IteratorStream(iterator=streaming_body())
+    response = httpx.Response(200, stream=stream)
+
+    parts = [part for part in response.iter_raw(chunk_size=5)]
+    assert parts == [b"Hello", b", wor", b"ld!"]
+
+    stream = IteratorStream(iterator=streaming_body())
+    response = httpx.Response(200, stream=stream)
+
+    parts = [part for part in response.iter_raw(chunk_size=13)]
+    assert parts == [b"Hello, world!"]
+
+    stream = IteratorStream(iterator=streaming_body())
+    response = httpx.Response(200, stream=stream)
+
+    parts = [part for part in response.iter_raw(chunk_size=20)]
+    assert parts == [b"Hello, world!"]
+
+
 def test_iter_raw_increments_updates_counter():
     stream = IteratorStream(iterator=streaming_body())
 
@@ -253,6 +273,27 @@ async def test_aiter_raw():
     async for part in response.aiter_raw():
         raw += part
     assert raw == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_aiter_raw_with_chunksize():
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream)
+
+    parts = [part async for part in response.aiter_raw(chunk_size=5)]
+    assert parts == [b"Hello", b", wor", b"ld!"]
+
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream)
+
+    parts = [part async for part in response.aiter_raw(chunk_size=13)]
+    assert parts == [b"Hello, world!"]
+
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream)
+
+    parts = [part async for part in response.aiter_raw(chunk_size=20)]
+    assert parts == [b"Hello, world!"]
 
 
 @pytest.mark.asyncio
