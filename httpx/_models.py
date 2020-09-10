@@ -22,6 +22,7 @@ from ._decoders import (
     IdentityDecoder,
     LineDecoder,
     MultiDecoder,
+    TextChunker,
     TextDecoder,
 )
 from ._exceptions import (
@@ -936,17 +937,24 @@ class Response:
                 for chunk in chunker.flush():
                     yield chunk
 
-    def iter_text(self) -> typing.Iterator[str]:
+    def iter_text(self, chunk_size: int = None) -> typing.Iterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
         decoder = TextDecoder(encoding=self.charset_encoding)
+        chunker = TextChunker(chunk_size=chunk_size)
         with self._wrap_decoder_errors():
-            for chunk in self.iter_bytes():
-                yield decoder.decode(chunk)
-            yield decoder.flush()
+            for byte_content in self.iter_bytes():
+                text_content = decoder.decode(byte_content)
+                for chunk in chunker.decode(text_content):
+                    yield chunk
+            text_content = decoder.flush()
+            for chunk in chunker.decode(text_content):
+                yield chunk
+            for chunk in chunker.flush():
+                yield chunk
 
     def iter_lines(self) -> typing.Iterator[str]:
         decoder = LineDecoder()
@@ -1036,17 +1044,24 @@ class Response:
                 for chunk in chunker.flush():
                     yield chunk
 
-    async def aiter_text(self) -> typing.AsyncIterator[str]:
+    async def aiter_text(self, chunk_size: int = None) -> typing.AsyncIterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
         decoder = TextDecoder(encoding=self.charset_encoding)
+        chunker = TextChunker(chunk_size=chunk_size)
         with self._wrap_decoder_errors():
-            async for chunk in self.aiter_bytes():
-                yield decoder.decode(chunk)
-            yield decoder.flush()
+            async for byte_content in self.aiter_bytes():
+                text_content = decoder.decode(byte_content)
+                for chunk in chunker.decode(text_content):
+                    yield chunk
+            text_content = decoder.flush()
+            for chunk in chunker.decode(text_content):
+                yield chunk
+            for chunk in chunker.flush():
+                yield chunk
 
     async def aiter_lines(self) -> typing.AsyncIterator[str]:
         decoder = LineDecoder()
