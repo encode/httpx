@@ -17,7 +17,7 @@ import rfc3986.exceptions
 from ._content_streams import ByteStream, ContentStream, encode
 from ._decoders import (
     SUPPORTED_DECODERS,
-    Decoder,
+    ContentDecoder,
     IdentityDecoder,
     LineDecoder,
     MultiDecoder,
@@ -799,13 +799,13 @@ class Response:
         """
         return chardet.detect(self.content)["encoding"]
 
-    def _get_content_decoder(self) -> Decoder:
+    def _get_content_decoder(self) -> ContentDecoder:
         """
         Returns a decoder instance which can be used to decode the raw byte
         content, depending on the Content-Encoding used in the response.
         """
         if not hasattr(self, "_decoder"):
-            decoders: typing.List[Decoder] = []
+            decoders: typing.List[ContentDecoder] = []
             values = self.headers.get_list("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
