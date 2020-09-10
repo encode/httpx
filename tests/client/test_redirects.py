@@ -323,11 +323,19 @@ def test_redirect_loop():
         client.get("https://example.org/redirect_loop")
 
 
-def test_cross_domain_redirect():
+def test_cross_domain_redirect_with_auth_header():
     client = httpx.Client(transport=SyncMockTransport())
     url = "https://example.com/cross_domain"
     headers = {"Authorization": "abc"}
     response = client.get(url, headers=headers)
+    assert response.url == "https://example.org/cross_domain_target"
+    assert "authorization" not in response.json()["headers"]
+
+
+def test_cross_domain_redirect_with_auth():
+    client = httpx.Client(transport=SyncMockTransport())
+    url = "https://example.com/cross_domain"
+    response = client.get(url, auth=("user", "pass"))
     assert response.url == "https://example.org/cross_domain_target"
     assert "authorization" not in response.json()["headers"]
 

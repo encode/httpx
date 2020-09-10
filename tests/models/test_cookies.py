@@ -57,7 +57,7 @@ def test_multiple_set_cookie():
     headers = [
         (
             b"Set-Cookie",
-            b"1P_JAR=2020-08-09-18; expires=Tue, 08-Sep-2020 18:33:35 GMT; "
+            b"1P_JAR=2020-08-09-18; expires=Tue, 08-Sep-2099 18:33:35 GMT; "
             b"path=/; domain=.example.org; Secure",
         ),
         (
@@ -65,7 +65,7 @@ def test_multiple_set_cookie():
             b"NID=204=KWdXOuypc86YvRfBSiWoW1dEXfSl_5qI7sxZY4umlk4J35yNTeNEkw15"
             b"MRaujK6uYCwkrtjihTTXZPp285z_xDOUzrdHt4dj0Z5C0VOpbvdLwRdHatHAzQs7"
             b"7TsaiWY78a3qU9r7KP_RbSLvLl2hlhnWFR2Hp5nWKPsAcOhQgSg; expires=Mon, "
-            b"08-Feb-2021 18:33:35 GMT; path=/; domain=.example.org; HttpOnly",
+            b"08-Feb-2099 18:33:35 GMT; path=/; domain=.example.org; HttpOnly",
         ),
     ]
     request = httpx.Request("GET", "https://www.example.org")

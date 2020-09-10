@@ -17,7 +17,7 @@ import rfc3986.exceptions
 from ._content_streams import ByteStream, ContentStream, encode
 from ._decoders import (
     SUPPORTED_DECODERS,
-    Decoder,
+    ContentDecoder,
     IdentityDecoder,
     LineDecoder,
     MultiDecoder,
@@ -699,6 +699,8 @@ class Response:
             self._raw_stream = ByteStream(body=content or b"")
             self.read()
 
+        self._num_bytes_downloaded = 0
+
     @property
     def elapsed(self) -> datetime.timedelta:
         """
@@ -799,14 +801,13 @@ class Response:
         """
         return chardet.detect(self.content)["encoding"]
 
-    @property
-    def decoder(self) -> Decoder:
+    def _get_content_decoder(self) -> ContentDecoder:
         """
         Returns a decoder instance which can be used to decode the raw byte
         content, depending on the Content-Encoding used in the response.
         """
         if not hasattr(self, "_decoder"):
-            decoders: typing.List[Decoder] = []
+            decoders: typing.List[ContentDecoder] = []
             values = self.headers.get_list("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
@@ -887,6 +888,10 @@ class Response:
                 ldict[key] = link
         return ldict
 
+    @property
+    def num_bytes_downloaded(self) -> int:
+        return self._num_bytes_downloaded
+
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
@@ -917,10 +922,11 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
+            decoder = self._get_content_decoder()
             with self._wrap_decoder_errors():
                 for chunk in self.iter_raw():
-                    yield self.decoder.decode(chunk)
-                yield self.decoder.flush()
+                    yield decoder.decode(chunk)
+                yield decoder.flush()
 
     def iter_text(self) -> typing.Iterator[str]:
         """
@@ -953,8 +959,10 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
+        self._num_bytes_downloaded = 0
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
             for part in self._raw_stream:
+                self._num_bytes_downloaded += len(part)
                 yield part
         self.close()
 
@@ -998,10 +1006,11 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
+            decoder = self._get_content_decoder()
             with self._wrap_decoder_errors():
                 async for chunk in self.aiter_raw():
-                    yield self.decoder.decode(chunk)
-                yield self.decoder.flush()
+                    yield decoder.decode(chunk)
+                yield decoder.flush()
 
     async def aiter_text(self) -> typing.AsyncIterator[str]:
         """
@@ -1034,8 +1043,10 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
+        self._num_bytes_downloaded = 0
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
             async for part in self._raw_stream:
+                self._num_bytes_downloaded += len(part)
                 yield part
         await self.aclose()
 
