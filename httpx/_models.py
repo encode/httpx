@@ -697,6 +697,8 @@ class Response:
             self._raw_stream = ByteStream(body=content or b"")
             self.read()
 
+        self._num_bytes_downloaded = 0
+
     @property
     def elapsed(self) -> datetime.timedelta:
         """
@@ -885,6 +887,10 @@ class Response:
                 ldict[key] = link
         return ldict
 
+    @property
+    def num_bytes_downloaded(self) -> int:
+        return self._num_bytes_downloaded
+
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
@@ -951,8 +957,10 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
+        self._num_bytes_downloaded = 0
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
             for part in self._raw_stream:
+                self._num_bytes_downloaded += len(part)
                 yield part
         self.close()
 
@@ -1032,8 +1040,10 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
+        self._num_bytes_downloaded = 0
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
             async for part in self._raw_stream:
+                self._num_bytes_downloaded += len(part)
                 yield part
         await self.aclose()
 

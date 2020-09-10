@@ -221,6 +221,34 @@ with httpx.Client(headers=headers) as client:
     ...
 ```
 
+## Monitoring download progress
+
+If you need to monitor download progress of large responses, you can use response streaming and inspect the `response.num_bytes_downloaded` property.
+
+This interface is required for properly determining download progress, because the total number of bytes returned by `response.content` or `response.iter_content()` will not always correspond with the raw content length of the response if HTTP response compression is being used.
+
+For example, showing a progress bar using the [`tqdm`](https://github.com/tqdm/tqdm) library while a response is being downloaded could be done like this…
+
+```python
+import tempfile
+
+import httpx
+from tqdm import tqdm
+
+with tempfile.NamedTemporaryFile() as download_file:
+    url = "https://speed.hetzner.de/100MB.bin"
+    with httpx.stream("GET", url) as response:
+        total = int(response.headers["Content-Length"])
+
+        with tqdm(total=total, unit_scale=True, unit_divisor=1024, unit="B") as progress:
+            num_bytes_downloaded = response.num_bytes_downloaded
+            for chunk in response.iter_bytes():
+                download_file.write(chunk)
+                progress.update(response.num_bytes_downloaded - num_bytes_downloaded)
+                num_bytes_downloaded = response.num_bytes_downloaded
+        print(f"The total download size is {response.num_bytes_downloaded} bytes")
+```
+
 ## .netrc Support
 
 HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is
