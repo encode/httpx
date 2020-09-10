@@ -72,7 +72,7 @@ You can inspect what encoding will be used to decode the response.
 'UTF-8'
 ```
 
-In some cases the response may not an explicit encoding, in which case HTTPX
+In some cases the response may not contain an explicit encoding, in which case HTTPX
 will attempt to automatically determine an encoding to use. This defaults to
 UTF-8, but also includes robust fallback behaviour for handling ascii,
 iso-8859-1 and windows 1252 encodings.
