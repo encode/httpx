@@ -775,6 +775,55 @@ class MyCustomAuth(httpx.Auth):
         ...
 ```
 
+If you _do_ need to perform I/O other than HTTP requests, such as accessing a disk-based cache, or you need to use concurrency primitives, such as locks, then you should override `.sync_auth_flow()` and `.async_auth_flow()` (instead of `.auth_flow()`). The former will be used by `httpx.Client`, while the latter will be used by `httpx.AsyncClient`.
+
+```python
+import asyncio
+import threading
+import httpx
+
+
+class MyCustomAuth(httpx.Auth):
+    def __init__(self):
+        self._sync_lock = threading.RLock()
+        self._async_lock = asyncio.Lock()
+
+    def sync_get_token(self):
+        with self._sync_lock:
+            ...
+
+    def sync_auth_flow(self, request):
+        token = self.sync_get_token()
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+
+    async def async_get_token(self):
+        async with self._async_lock:
+            ...
+
+    async def async_auth_flow(self, request):
+        token = await self.async_get_token()
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+```
+
+If you only want to support one of the two methods, then you should still override it, but raise an explicit `RuntimeError`.
+
+```python
+import httpx
+import sync_only_library
+
+
+class MyCustomAuth(httpx.Auth):
+    def sync_auth_flow(self, request):
+        token = sync_only_library.get_token(...)
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+
+    async def async_auth_flow(self, request):
+        raise RuntimeError("Cannot use a sync authentication class with httpx.AsyncClient")
+```
+
 ## SSL certificates
 
 When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
@@ -860,6 +909,8 @@ HTTPX's `Client` also accepts a `transport` argument. This argument allows you
 to provide a custom Transport object that will be used to perform the actual
 sending of the requests.
 
+### Usage
+
 For some advanced configuration you might need to instantiate a transport
 class directly, and pass it to the client instance. The `httpcore` package
 provides a `local_address` configuration that is only available via this
@@ -901,18 +952,19 @@ do not include any default values for configuring aspects such as the
 connection pooling details, so you'll need to provide more explicit
 configuration when using this API.
 
-HTTPX also currently ships with a transport that uses the excellent
-[`urllib3` library](https://urllib3.readthedocs.io/en/latest/), which can be
-used with the sync `Client`...
+### urllib3 transport
+
+This [public gist](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165da388e546e) provides a transport that uses the excellent [`urllib3` library](https://urllib3.readthedocs.io/en/latest/), and can be used with the sync `Client`...
 
 ```pycon
 >>> import httpx
->>> client = httpx.Client(transport=httpx.URLLib3Transport())
+>>> from urllib3_transport import URLLib3Transport
+>>> client = httpx.Client(transport=URLLib3Transport())
 >>> client.get("https://example.org")
 <Response [200 OK]>
 ```
 
-Note that you'll need to install the `urllib3` package to use `URLLib3Transport`.
+### Writing custom transports
 
 A transport instance must implement the Transport API defined by
 [`httpcore`](https://www.encode.io/httpcore/api/). You

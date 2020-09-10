@@ -209,3 +209,43 @@ def test_event_hooks_with_redirect():
             "headers": {"server": "testserver"},
         },
     ]
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_async_event_hooks_with_redirect():
+    """
+    A redirect request should not trigger a second 'request' event hook.
+    """
+
+    events = []
+
+    async def on_request(request):
+        events.append({"event": "request", "headers": dict(request.headers)})
+
+    async def on_response(response):
+        events.append({"event": "response", "headers": dict(response.headers)})
+
+    event_hooks = {"request": [on_request], "response": [on_response]}
+
+    async with httpx.AsyncClient(
+        event_hooks=event_hooks, transport=AsyncMockTransport()
+    ) as http:
+        await http.get("http://127.0.0.1:8000/redirect", auth=("username", "password"))
+
+    assert events == [
+        {
+            "event": "request",
+            "headers": {
+                "host": "127.0.0.1:8000",
+                "user-agent": f"python-httpx/{httpx.__version__}",
+                "accept": "*/*",
+                "accept-encoding": "gzip, deflate, br",
+                "connection": "keep-alive",
+                "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+            },
+        },
+        {
+            "event": "response",
+            "headers": {"server": "testserver"},
+        },
+    ]

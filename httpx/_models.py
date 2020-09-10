@@ -47,7 +47,6 @@ from ._types import (
     URLTypes,
 )
 from ._utils import (
-    ElapsedTimer,
     flatten_queryparams,
     guess_json_utf,
     is_known_encoding,
@@ -71,8 +70,12 @@ class URL:
                 # We don't want to normalize relative URLs, since doing so
                 # removes any leading `../` portion.
                 self._uri_reference = self._uri_reference.normalize()
-        else:
+        elif isinstance(url, URL):
             self._uri_reference = url._uri_reference
+        else:
+            raise TypeError(
+                f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}"
+            )
 
         # Add any query parameters, merging with any in the URL if needed.
         if params:
@@ -602,7 +605,6 @@ class Request:
         else:
             self.stream = encode(data, files, json)
 
-        self.timer = ElapsedTimer()
         self.prepare()
 
     def prepare(self) -> None:
@@ -674,6 +676,7 @@ class Response:
         stream: ContentStream = None,
         content: bytes = None,
         history: typing.List["Response"] = None,
+        elapsed_func: typing.Callable = None,
     ):
         self.status_code = status_code
         self.http_version = http_version
@@ -684,6 +687,7 @@ class Response:
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.history = [] if history is None else list(history)
+        self._elapsed_func = elapsed_func
 
         self.is_closed = False
         self.is_stream_consumed = False
@@ -704,7 +708,7 @@ class Response:
                 "'.elapsed' may only be accessed after the response "
                 "has been read or closed."
             )
-        return self._elapsed
+        return datetime.timedelta(seconds=self._elapsed)
 
     @property
     def request(self) -> Request:
@@ -972,8 +976,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self._request is not None:
-                self._elapsed = self.request.timer.elapsed
+            if self._elapsed_func is not None:
+                self._elapsed = self._elapsed_func()
             self._raw_stream.close()
 
     async def aread(self) -> bytes:
@@ -1052,8 +1056,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self._request is not None:
-                self._elapsed = self.request.timer.elapsed
+            if self._elapsed_func is not None:
+                self._elapsed = await self._elapsed_func()
             await self._raw_stream.aclose()
 
 
