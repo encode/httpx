@@ -261,6 +261,7 @@ with tempfile.NamedTemporaryFile() as download_file:
     url = "https://speed.hetzner.de/100MB.bin"
     with httpx.stream("GET", url) as response:
         total = int(response.headers["Content-Length"])
+
         with rich.progress.Progress(
             "[progress.percentage]{task.percentage:>3.0f}%",
             rich.progress.BarColumn(bar_width=None),
