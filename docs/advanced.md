@@ -225,6 +225,8 @@ with httpx.Client(headers=headers) as client:
 
 If you need to monitor download progress of large responses, you can use response streaming and inspect the `response.num_bytes_downloaded` property.
 
+This interface is required for properly determining download progress, because the total number of bytes returned by `response.content` or `response.iter_content()` will not always correspond with the raw content length of the response if HTTP response compression is being used.
+
 For example, showing a progress bar using the [`tqdm`](https://github.com/tqdm/tqdm) library while a response is being downloaded could be done like this…
 
 ```python
