@@ -12,6 +12,7 @@ from httpx._decoders import (
     GZipDecoder,
     IdentityDecoder,
     LineDecoder,
+    TextChunker,
     TextDecoder,
 )
 
@@ -334,6 +335,28 @@ def test_byte_chunker():
     assert decoder.decode(b"123456") == [b"123", b"456"]
     assert decoder.decode(b"78") == []
     assert decoder.flush() == [b"78"]
+
+
+def test_text_chunker():
+    decoder = TextChunker()
+    assert decoder.decode("1234567") == ["1234567"]
+    assert decoder.decode("89") == ["89"]
+    assert decoder.flush() == []
+
+    decoder = TextChunker(chunk_size=3)
+    assert decoder.decode("1234567") == ["123", "456"]
+    assert decoder.decode("89") == ["789"]
+    assert decoder.flush() == []
+
+    decoder = TextChunker(chunk_size=3)
+    assert decoder.decode("123456") == ["123", "456"]
+    assert decoder.decode("789") == ["789"]
+    assert decoder.flush() == []
+
+    decoder = TextChunker(chunk_size=3)
+    assert decoder.decode("123456") == ["123", "456"]
+    assert decoder.decode("78") == []
+    assert decoder.flush() == ["78"]
 
 
 def test_invalid_content_encoding_header():
