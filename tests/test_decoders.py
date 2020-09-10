@@ -7,6 +7,7 @@ import httpx
 from httpx._content_streams import AsyncIteratorStream
 from httpx._decoders import (
     BrotliDecoder,
+    ByteChunker,
     DeflateDecoder,
     GZipDecoder,
     IdentityDecoder,
@@ -311,6 +312,28 @@ def test_line_decoder_crnl():
     assert decoder.decode("bar ") == []
     assert decoder.decode("baz\r\n") == ["foo bar baz\n"]
     assert decoder.flush() == []
+
+
+def test_byte_chunker():
+    decoder = ByteChunker()
+    assert decoder.decode(b"1234567") == [b"1234567"]
+    assert decoder.decode(b"89") == [b"89"]
+    assert decoder.flush() == []
+
+    decoder = ByteChunker(chunk_size=3)
+    assert decoder.decode(b"1234567") == [b"123", b"456"]
+    assert decoder.decode(b"89") == [b"789"]
+    assert decoder.flush() == []
+
+    decoder = ByteChunker(chunk_size=3)
+    assert decoder.decode(b"123456") == [b"123", b"456"]
+    assert decoder.decode(b"789") == [b"789"]
+    assert decoder.flush() == []
+
+    decoder = ByteChunker(chunk_size=3)
+    assert decoder.decode(b"123456") == [b"123", b"456"]
+    assert decoder.decode(b"78") == []
+    assert decoder.flush() == [b"78"]
 
 
 def test_invalid_content_encoding_header():
