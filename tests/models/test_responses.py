@@ -226,12 +226,7 @@ def test_iter_raw():
 
 
 def test_iter_raw_increments_updates_counter():
-    stream = IteratorStream(iterator=streaming_body())
-
-    response = httpx.Response(
-        200,
-        stream=stream,
-    )
+    response = httpx.Response(200, content=streaming_body())
 
     num_downloaded = response.num_bytes_downloaded
     for part in response.iter_raw():
@@ -241,10 +236,7 @@ def test_iter_raw_increments_updates_counter():
 
 @pytest.mark.asyncio
 async def test_aiter_raw():
-    response = httpx.Response(
-        200,
-        content=async_streaming_body(),
-    )
+    response = httpx.Response(200, content=async_streaming_body())
 
     raw = b""
     async for part in response.aiter_raw():
@@ -254,12 +246,7 @@ async def test_aiter_raw():
 
 @pytest.mark.asyncio
 async def test_aiter_raw_increments_updates_counter():
-    stream = AsyncIteratorStream(aiterator=async_streaming_body())
-
-    response = httpx.Response(
-        200,
-        stream=stream,
-    )
+    response = httpx.Response(200, content=async_streaming_body())
 
     num_downloaded = response.num_bytes_downloaded
     async for part in response.aiter_raw():
