@@ -312,15 +312,29 @@ async def test_aiter_raw_increments_updates_counter():
 
 
 def test_iter_bytes():
-    response = httpx.Response(
-        200,
-        content=b"Hello, world!",
-    )
+    response = httpx.Response(200, content=b"Hello, world!")
 
     content = b""
     for part in response.iter_bytes():
         content += part
     assert content == b"Hello, world!"
+
+
+def test_iter_bytes_with_chunk_size():
+    stream = IteratorStream(iterator=streaming_body())
+    response = httpx.Response(200, stream=stream)
+    parts = [part for part in response.iter_bytes(chunk_size=5)]
+    assert parts == [b"Hello", b", wor", b"ld!"]
+
+    stream = IteratorStream(iterator=streaming_body())
+    response = httpx.Response(200, stream=stream)
+    parts = [part for part in response.iter_bytes(chunk_size=13)]
+    assert parts == [b"Hello, world!"]
+
+    stream = IteratorStream(iterator=streaming_body())
+    response = httpx.Response(200, stream=stream)
+    parts = [part for part in response.iter_bytes(chunk_size=20)]
+    assert parts == [b"Hello, world!"]
 
 
 @pytest.mark.asyncio
@@ -334,6 +348,24 @@ async def test_aiter_bytes():
     async for part in response.aiter_bytes():
         content += part
     assert content == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_aiter_bytes_with_chunk_size():
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream)
+    parts = [part async for part in response.aiter_bytes(chunk_size=5)]
+    assert parts == [b"Hello", b", wor", b"ld!"]
+
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream)
+    parts = [part async for part in response.aiter_bytes(chunk_size=13)]
+    assert parts == [b"Hello, world!"]
+
+    stream = AsyncIteratorStream(aiterator=async_streaming_body())
+    response = httpx.Response(200, stream=stream)
+    parts = [part async for part in response.aiter_bytes(chunk_size=20)]
+    assert parts == [b"Hello, world!"]
 
 
 def test_iter_text():
