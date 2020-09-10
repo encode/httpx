@@ -236,10 +236,7 @@ from tqdm import tqdm
 with tempfile.NamedTemporaryFile() as download_file:
     url = "https://speed.hetzner.de/100MB.bin"
     with httpx.stream("GET", url) as response:
-        if "Content-Length" in response.headers:
-            total = int(response.headers["Content-Length"])
-        else:
-            total = None
+        total = int(response.headers["Content-Length"])
 
         with tqdm(total=total, unit_scale=True, unit_divisor=1024, unit="B") as progress:
             num_bytes_downloaded = response.num_bytes_downloaded
