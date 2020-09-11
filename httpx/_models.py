@@ -242,7 +242,8 @@ class QueryParams(typing.Mapping[str, str]):
         value = args[0] if args else kwargs
 
         items: typing.Sequence[typing.Tuple[str, PrimitiveData]]
-        if value is None or isinstance(value, str):
+        if value is None or isinstance(value, (str, bytes)):
+            value = value.decode("ascii") if isinstance(value, bytes) else value
             items = parse_qsl(value)
         elif isinstance(value, QueryParams):
             items = value.multi_items()
