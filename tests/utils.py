@@ -70,3 +70,42 @@ class MockTransport(httpcore.SyncHTTPTransport):
             response.headers.raw,
             response._raw_stream,
         )
+
+
+class AsyncMockTransport(httpcore.AsyncHTTPTransport):
+    def __init__(self, handler: Callable) -> None:
+        self.impl = MockTransport(handler)
+
+    async def request(
+        self,
+        method: bytes,
+        url: Tuple[bytes, bytes, Optional[int], bytes],
+        headers: List[Tuple[bytes, bytes]] = None,
+        stream: httpcore.AsyncByteStream = None,
+        timeout: Mapping[str, Optional[float]] = None,
+    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
+        content = (
+            httpcore.PlainByteStream(b"".join([part async for part in stream]))
+            if stream
+            else httpcore.PlainByteStream(b"")
+        )
+
+        (
+            http_version,
+            status_code,
+            reason_phrase,
+            headers,
+            response_stream,
+        ) = self.impl.request(
+            method, url, headers=headers, stream=content, timeout=timeout
+        )
+
+        content = httpcore.PlainByteStream(b"".join([part for part in response_stream]))
+
+        return (
+            http_version,
+            status_code,
+            reason_phrase,
+            headers,
+            content,
+        )
