@@ -5,7 +5,6 @@ import brotli
 import pytest
 
 import httpx
-from httpx._content_streams import AsyncIteratorStream, IteratorStream
 
 
 def streaming_body():
@@ -215,10 +214,9 @@ async def test_aread():
 
 
 def test_iter_raw():
-    stream = IteratorStream(iterator=streaming_body())
     response = httpx.Response(
         200,
-        stream=stream,
+        content=streaming_body(),
     )
 
     raw = b""
@@ -228,12 +226,7 @@ def test_iter_raw():
 
 
 def test_iter_raw_increments_updates_counter():
-    stream = IteratorStream(iterator=streaming_body())
-
-    response = httpx.Response(
-        200,
-        stream=stream,
-    )
+    response = httpx.Response(200, content=streaming_body())
 
     num_downloaded = response.num_bytes_downloaded
     for part in response.iter_raw():
@@ -243,11 +236,7 @@ def test_iter_raw_increments_updates_counter():
 
 @pytest.mark.asyncio
 async def test_aiter_raw():
-    stream = AsyncIteratorStream(aiterator=async_streaming_body())
-    response = httpx.Response(
-        200,
-        stream=stream,
-    )
+    response = httpx.Response(200, content=async_streaming_body())
 
     raw = b""
     async for part in response.aiter_raw():
@@ -257,12 +246,7 @@ async def test_aiter_raw():
 
 @pytest.mark.asyncio
 async def test_aiter_raw_increments_updates_counter():
-    stream = AsyncIteratorStream(aiterator=async_streaming_body())
-
-    response = httpx.Response(
-        200,
-        stream=stream,
-    )
+    response = httpx.Response(200, content=async_streaming_body())
 
     num_downloaded = response.num_bytes_downloaded
     async for part in response.aiter_raw():
@@ -346,10 +330,9 @@ async def test_aiter_lines():
 
 
 def test_sync_streaming_response():
-    stream = IteratorStream(iterator=streaming_body())
     response = httpx.Response(
         200,
-        stream=stream,
+        content=streaming_body(),
     )
 
     assert response.status_code == 200
@@ -364,10 +347,9 @@ def test_sync_streaming_response():
 
 @pytest.mark.asyncio
 async def test_async_streaming_response():
-    stream = AsyncIteratorStream(aiterator=async_streaming_body())
     response = httpx.Response(
         200,
-        stream=stream,
+        content=async_streaming_body(),
     )
 
     assert response.status_code == 200
@@ -381,10 +363,9 @@ async def test_async_streaming_response():
 
 
 def test_cannot_read_after_stream_consumed():
-    stream = IteratorStream(iterator=streaming_body())
     response = httpx.Response(
         200,
-        stream=stream,
+        content=streaming_body(),
     )
 
     content = b""
@@ -397,10 +378,9 @@ def test_cannot_read_after_stream_consumed():
 
 @pytest.mark.asyncio
 async def test_cannot_aread_after_stream_consumed():
-    stream = AsyncIteratorStream(aiterator=async_streaming_body())
     response = httpx.Response(
         200,
-        stream=stream,
+        content=async_streaming_body(),
     )
 
     content = b""
@@ -412,54 +392,33 @@ async def test_cannot_aread_after_stream_consumed():
 
 
 def test_cannot_read_after_response_closed():
-    is_closed = False
-
-    def close_func():
-        nonlocal is_closed
-        is_closed = True
-
-    stream = IteratorStream(iterator=streaming_body(), close_func=close_func)
     response = httpx.Response(
         200,
-        stream=stream,
+        content=streaming_body(),
     )
 
     response.close()
-    assert is_closed
-
     with pytest.raises(httpx.ResponseClosed):
         response.read()
 
 
 @pytest.mark.asyncio
 async def test_cannot_aread_after_response_closed():
-    is_closed = False
-
-    async def close_func():
-        nonlocal is_closed
-        is_closed = True
-
-    stream = AsyncIteratorStream(
-        aiterator=async_streaming_body(), close_func=close_func
-    )
     response = httpx.Response(
         200,
-        stream=stream,
+        content=async_streaming_body(),
     )
 
     await response.aclose()
-    assert is_closed
-
     with pytest.raises(httpx.ResponseClosed):
         await response.aread()
 
 
 @pytest.mark.asyncio
 async def test_elapsed_not_available_until_closed():
-    stream = AsyncIteratorStream(aiterator=async_streaming_body())
     response = httpx.Response(
         200,
-        stream=stream,
+        content=async_streaming_body(),
     )
 
     with pytest.raises(RuntimeError):

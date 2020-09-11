@@ -14,7 +14,7 @@ import chardet
 import rfc3986
 import rfc3986.exceptions
 
-from ._content_streams import ByteStream, ContentStream, encode
+from ._content_streams import ByteStream, ContentStream, encode, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
     ContentDecoder,
@@ -44,6 +44,7 @@ from ._types import (
     QueryParamTypes,
     RequestData,
     RequestFiles,
+    ResponseContent,
     URLTypes,
 )
 from ._utils import (
@@ -674,7 +675,7 @@ class Response:
         http_version: str = None,
         headers: HeaderTypes = None,
         stream: ContentStream = None,
-        content: bytes = None,
+        content: ResponseContent = None,
         history: typing.List["Response"] = None,
         elapsed_func: typing.Callable = None,
     ):
@@ -694,8 +695,10 @@ class Response:
         if stream is not None:
             self._raw_stream = stream
         else:
-            self._raw_stream = ByteStream(body=content or b"")
-            self.read()
+            self._raw_stream = encode_response(content)
+            if content is None or isinstance(content, bytes):
+                # Load the response body, except for streaming content.
+                self.read()
 
         self._num_bytes_downloaded = 0
 
