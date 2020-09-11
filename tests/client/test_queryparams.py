@@ -2,6 +2,10 @@ import httpx
 from tests.utils import MockTransport
 
 
+def hello_world(request: httpx.Request) -> httpx.Response:
+    return httpx.Response(200, content=b"Hello, world")
+
+
 def test_client_queryparams():
     client = httpx.Client(params={"a": "b"})
     assert isinstance(client.params, httpx.QueryParams)
@@ -20,9 +24,6 @@ def test_client_queryparams_string():
 
 
 def test_client_queryparams_echo():
-    def hello_world(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, content=b"Hello, world")
-
     url = "http://example.org/echo_queryparams"
     client_queryparams = "first=str"
     request_queryparams = {"second": "dict"}
