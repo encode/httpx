@@ -606,9 +606,9 @@ class Request:
         else:
             self.stream = encode(data, files, json)
 
-        self.prepare()
+        self._prepare()
 
-    def prepare(self) -> None:
+    def _prepare(self) -> None:
         for key, value in self.stream.get_headers().items():
             # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
             if key.lower() == "transfer-encoding" and "content-length" in self.headers:
