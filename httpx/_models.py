@@ -605,6 +605,7 @@ class Request:
             self.stream = stream
         else:
             self.stream = encode(data, files, json)
+
         self.prepare()
 
     def prepare(self) -> None:
