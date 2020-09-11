@@ -67,7 +67,7 @@ def test_url():
     assert url.port == 123
     assert url.authority == "example.org:123"
     assert url.path == "/path/to/somewhere"
-    assert url.query == "abc=123"
+    assert url.query == b"abc=123"
     assert url.fragment == "anchor"
     assert (
         repr(url) == "URL('https://example.org:123/path/to/somewhere?abc=123#anchor')"

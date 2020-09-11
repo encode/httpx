@@ -101,16 +101,19 @@ class URL:
         return self._uri_reference.authority or ""
 
     @property
-    def userinfo(self) -> str:
-        return self._uri_reference.userinfo or ""
+    def userinfo(self) -> bytes:
+        userinfo_str = self._uri_reference.userinfo
+        return userinfo_str.encode("ascii") if userinfo_str else b""
 
     @property
     def username(self) -> str:
-        return unquote(self.userinfo.partition(":")[0])
+        userinfo, *_ = self.userinfo.partition(b":")
+        return unquote(userinfo.decode())
 
     @property
     def password(self) -> str:
-        return unquote(self.userinfo.partition(":")[2])
+        *_, password = self.userinfo.partition(b":")
+        return unquote(password.decode())
 
     @property
     def host(self) -> str:
@@ -123,18 +126,24 @@ class URL:
 
     @property
     def path(self) -> str:
-        return self._uri_reference.path or "/"
+        return unquote(self._uri_reference.path or "/")
 
     @property
-    def query(self) -> str:
-        return self._uri_reference.query or ""
+    def raw_path(self) -> bytes:
+        path_str = self._uri_reference.path
+        result = path_str.encode("ascii") if path_str else b"/"
+        query = self.query
+        if query:
+            result += b"?" + query
+        return result
 
     @property
-    def full_path(self) -> str:
-        path = self.path
-        if self.query:
-            path += "?" + self.query
-        return path
+    def query(self) -> bytes:
+        return (
+            self._uri_reference.query.encode("ascii")
+            if self._uri_reference.query
+            else b""
+        )
 
     @property
     def fragment(self) -> str:
@@ -146,7 +155,7 @@ class URL:
             self.scheme.encode("ascii"),
             self.host.encode("ascii"),
             self.port,
-            self.full_path.encode("ascii"),
+            self.raw_path,
         )
 
     @property
