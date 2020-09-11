@@ -356,31 +356,25 @@ def cookie_sessions(request: httpx.Request) -> httpx.Response:
 
     elif request.url.path == "/login":
         status_code = httpx.codes.SEE_OTHER
-        headers = [
-            (b"location", b"/"),
-            (
-                b"set-cookie",
-                (
-                    b"session=eyJ1c2VybmFtZSI6ICJ0b21; path=/; Max-Age=1209600; "
-                    b"httponly; samesite=lax"
-                ),
+        headers = {
+            "location": "/",
+            "set-cookie": (
+                "session=eyJ1c2VybmFtZSI6ICJ0b21; path=/; Max-Age=1209600; "
+                "httponly; samesite=lax"
             ),
-        ]
+        }
         return httpx.Response(status_code, headers=headers)
 
     else:
         assert request.url.path == "/logout"
         status_code = httpx.codes.SEE_OTHER
-        headers = [
-            (b"location", b"/"),
-            (
-                b"set-cookie",
-                (
-                    b"session=null; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; "
-                    b"httponly; samesite=lax"
-                ),
+        headers = {
+            "location": "/",
+            "set-cookie": (
+                "session=null; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; "
+                "httponly; samesite=lax"
             ),
-        ]
+        }
         return httpx.Response(status_code, headers=headers)
 
 
