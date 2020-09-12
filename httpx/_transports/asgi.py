@@ -145,7 +145,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
 
         try:
             await self.app(scope, receive, send)
-        except Exception:
+        except Exception:  # noqa: PIE786
             if self.raise_app_exceptions or not response_complete.is_set():
                 raise
 

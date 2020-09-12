@@ -340,7 +340,7 @@ def map_exceptions(
 ) -> typing.Iterator[None]:
     try:
         yield
-    except Exception as exc:
+    except Exception as exc:  # noqa: PIE786
         mapped_exc = None
 
         for from_exc, to_exc in mapping.items():

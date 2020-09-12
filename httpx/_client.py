@@ -763,7 +763,7 @@ class Client(BaseClient):
                 next_request = auth_flow.send(response)
             except StopIteration:
                 return response
-            except Exception as exc:
+            except Exception as exc:  # noqa: PIE786
                 response.close()
                 raise exc from None
             else:
@@ -1386,7 +1386,7 @@ class AsyncClient(BaseClient):
                 next_request = await auth_flow.asend(response)
             except StopAsyncIteration:
                 return response
-            except Exception as exc:
+            except Exception as exc:  # noqa: PIE786
                 await response.aclose()
                 raise exc from None
             else:
