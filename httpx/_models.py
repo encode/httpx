@@ -101,16 +101,18 @@ class URL:
         return self._uri_reference.authority or ""
 
     @property
-    def userinfo(self) -> str:
-        return self._uri_reference.userinfo or ""
+    def userinfo(self) -> bytes:
+        return self._uri_reference.userinfo.encode("ascii") or b""
 
     @property
     def username(self) -> str:
-        return unquote(self.userinfo.partition(":")[0])
+        userinfo = self._uri_reference.userinfo or ""
+        return unquote(userinfo.partition(":")[0])
 
     @property
     def password(self) -> str:
-        return unquote(self.userinfo.partition(":")[2])
+        userinfo = self._uri_reference.userinfo or ""
+        return unquote(userinfo.partition(":")[2])
 
     @property
     def host(self) -> str:

@@ -199,6 +199,7 @@ def test_url_copywith_for_userinfo():
     assert str(new) == "https://tom%40example.org:abc123%40%20%25@example.org"
     assert new.username == "tom@example.org"
     assert new.password == "abc123@ %"
+    assert new.userinfo == b"tom%40example.org:abc123%40%20%25"
 
 
 def test_url_invalid():
