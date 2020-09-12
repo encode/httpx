@@ -224,7 +224,7 @@ class DigestAuth(Auth):
 
         A1 = b":".join((self._username, challenge.realm, self._password))
 
-        path = request.url.full_path.encode("utf-8")
+        path = request.url.raw_path
         A2 = b":".join((request.method.encode(), path))
         # TODO: implement auth-int
         HA2 = digest(A2)
