@@ -380,11 +380,9 @@ def encode(
             return URLEncodedStream(data=data)
     elif isinstance(data, (str, bytes)):
         return ByteStream(body=data)
-    elif hasattr(data, "__aiter__"):
-        data = typing.cast(typing.AsyncIterator[bytes], data)
+    elif isinstance(data, typing.AsyncIterator):
         return AsyncIteratorStream(aiterator=data)
-    elif hasattr(data, "__iter__"):
-        data = typing.cast(typing.Iterator[bytes], data)
+    elif isinstance(data, typing.Iterator):
         return IteratorStream(iterator=data)
 
     raise TypeError(f"Unexpected type for 'data', {type(data)!r}")
@@ -395,11 +393,9 @@ def encode_response(content: ResponseContent = None) -> ContentStream:
         return ByteStream(b"")
     elif isinstance(content, bytes):
         return ByteStream(body=content)
-    elif hasattr(content, "__aiter__"):
-        content = typing.cast(typing.AsyncIterator[bytes], content)
+    elif isinstance(content, typing.AsyncIterator):
         return AsyncIteratorStream(aiterator=content)
-    elif hasattr(content, "__iter__"):
-        content = typing.cast(typing.Iterator[bytes], content)
+    elif isinstance(content, typing.Iterator):
         return IteratorStream(iterator=content)
 
     raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
