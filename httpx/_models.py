@@ -102,7 +102,8 @@ class URL:
 
     @property
     def userinfo(self) -> bytes:
-        return self._uri_reference.userinfo.encode("ascii") or b""
+        userinfo = self._uri_reference.userinfo or ""
+        return userinfo.encode("ascii")
 
     @property
     def username(self) -> str:
@@ -174,26 +175,18 @@ class URL:
         return not self.is_absolute_url
 
     def copy_with(self, **kwargs: typing.Any) -> "URL":
-        if (
-            "username" in kwargs
-            or "password" in kwargs
-            or "host" in kwargs
-            or "port" in kwargs
-        ):
-            host = kwargs.pop("host", self.host)
-            port = kwargs.pop("port", self.port)
+        if "username" in kwargs or "password" in kwargs:
             username = quote(kwargs.pop("username", self.username) or "")
             password = quote(kwargs.pop("password", self.password) or "")
+            userinfo = f"{username}:{password}" if password else username
+            kwargs["userinfo"] = userinfo.encode("ascii")
 
-            authority = host
-            if port is not None:
-                authority += f":{port}"
-            if username:
-                userpass = username
-                if password:
-                    userpass += f":{password}"
-                authority = f"{userpass}@{authority}"
-
+        if "userinfo" in kwargs or "host" in kwargs or "port" in kwargs:
+            userinfo = kwargs.pop("userinfo", self.userinfo).decode("ascii")
+            host = kwargs.pop("host", self.host)
+            port = kwargs.pop("port", self.port)
+            host_and_port = f"{host}:{port}" if port is not None else host
+            authority = f"{userinfo}@{host_and_port}" if userinfo else host_and_port
             kwargs["authority"] = authority
 
         return URL(self._uri_reference.copy_with(**kwargs).unsplit())
