@@ -10,7 +10,6 @@ import os
 import threading
 import typing
 
-import httpcore
 import pytest
 
 import httpx
@@ -24,18 +23,9 @@ from httpx import (
     RequestBodyUnavailable,
     Response,
 )
-from httpx._content_streams import ContentStream, JSONStream
 from tests.utils import AsyncMockTransport, MockTransport
 
 from ..common import FIXTURES_DIR
-
-
-def get_header_value(headers, key, default=None):
-    lookup = key.encode("ascii").lower()
-    for header_key, header_value in headers:
-        if header_key.lower() == lookup:
-            return header_value.decode("ascii")
-    return default  # pragma: nocover
 
 
 class App:
@@ -50,7 +40,7 @@ class App:
         return httpx.Response(self.status_code, headers=headers, content=content)
 
 
-class MockDigestAuthTransport(httpcore.AsyncHTTPTransport):
+class DigestApp:
     def __init__(
         self,
         algorithm: str = "SHA-256",
@@ -64,29 +54,15 @@ class MockDigestAuthTransport(httpcore.AsyncHTTPTransport):
         self._regenerate_nonce = regenerate_nonce
         self._response_count = 0
 
-    async def request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
-        stream: httpcore.AsyncByteStream = None,
-        timeout: typing.Mapping[str, typing.Optional[float]] = None,
-    ) -> typing.Tuple[
-        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
-    ]:
+    def __call__(self, request: httpx.Request) -> httpx.Response:
         if self._response_count < self.send_response_after_attempt:
-            assert headers is not None
-            return self.challenge_send(method, headers)
+            return self.challenge_send(request)
 
-        authorization = get_header_value(headers, "Authorization")
-        body = JSONStream({"auth": authorization})
-        return b"HTTP/1.1", 200, b"", [], body
+        data = {"auth": request.headers.get("Authorization")}
+        content = json.dumps(data).encode("utf-8")
+        return httpx.Response(200, content=content)
 
-    def challenge_send(
-        self, method: bytes, headers: typing.List[typing.Tuple[bytes, bytes]]
-    ) -> typing.Tuple[
-        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
-    ]:
+    def challenge_send(self, request: httpx.Request) -> httpx.Response:
         self._response_count += 1
         nonce = (
             hashlib.sha256(os.urandom(8)).hexdigest()
@@ -108,13 +84,10 @@ class MockDigestAuthTransport(httpcore.AsyncHTTPTransport):
             if value
         )
 
-        headers = [
-            (
-                b"www-authenticate",
-                b'Digest realm="httpx@example.org", ' + challenge_str.encode("ascii"),
-            )
-        ]
-        return b"HTTP/1.1", 401, b"", headers, ContentStream()
+        headers = {
+            "www-authenticate": f'Digest realm="httpx@example.org", {challenge_str}',
+        }
+        return Response(401, headers=headers)
 
 
 class RepeatAuth(Auth):
@@ -441,10 +414,9 @@ async def test_digest_auth(
 ) -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
+    app = DigestApp(algorithm=algorithm)
 
-    async with httpx.AsyncClient(
-        transport=MockDigestAuthTransport(algorithm=algorithm)
-    ) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -473,8 +445,9 @@ async def test_digest_auth(
 async def test_digest_auth_no_specified_qop() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
+    app = DigestApp(qop="")
 
-    async with httpx.AsyncClient(transport=MockDigestAuthTransport(qop="")) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -504,8 +477,9 @@ async def test_digest_auth_no_specified_qop() -> None:
 async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
+    app = DigestApp(qop=qop)
 
-    async with httpx.AsyncClient(transport=MockDigestAuthTransport(qop=qop)) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -516,10 +490,9 @@ async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) 
 async def test_digest_auth_qop_auth_int_not_implemented() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
+    app = DigestApp(qop="auth-int")
 
-    async with httpx.AsyncClient(
-        transport=MockDigestAuthTransport(qop="auth-int")
-    ) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         with pytest.raises(NotImplementedError):
             await client.get(url, auth=auth)
 
@@ -528,10 +501,9 @@ async def test_digest_auth_qop_auth_int_not_implemented() -> None:
 async def test_digest_auth_qop_must_be_auth_or_auth_int() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
+    app = DigestApp(qop="not-auth")
 
-    async with httpx.AsyncClient(
-        transport=MockDigestAuthTransport(qop="not-auth")
-    ) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         with pytest.raises(ProtocolError):
             await client.get(url, auth=auth)
 
@@ -540,10 +512,9 @@ async def test_digest_auth_qop_must_be_auth_or_auth_int() -> None:
 async def test_digest_auth_incorrect_credentials() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
+    app = DigestApp(send_response_after_attempt=2)
 
-    async with httpx.AsyncClient(
-        transport=MockDigestAuthTransport(send_response_after_attempt=2)
-    ) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 401
