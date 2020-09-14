@@ -221,7 +221,6 @@ with httpx.Client(headers=headers) as client:
     ...
 ```
 
-<<<<<<< HEAD
 ## Event Hooks
 
 HTTPX allows you to register "event hooks" with the client, that are called
