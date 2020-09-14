@@ -1,79 +1,17 @@
-import typing
-
-import httpcore
 import pytest
 
 import httpx
+from tests.utils import AsyncMockTransport, MockTransport
 
 
-class MockTransport(httpcore.SyncHTTPTransport):
-    def request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
-        stream: httpcore.SyncByteStream = None,
-        timeout: typing.Mapping[str, typing.Optional[float]] = None,
-    ) -> typing.Tuple[
-        bytes,
-        int,
-        bytes,
-        typing.List[typing.Tuple[bytes, bytes]],
-        httpcore.SyncByteStream,
-    ]:
-        scheme, host, port, path = url
-        if path == b"/redirect":
-            status_code = 303
-            headers = [(b"server", b"testserver"), (b"location", b"/")]
-        elif path.startswith(b"/status/"):
-            status_code = int(path[-3:].decode("ascii"))
-            headers = [(b"server", b"testserver")]
-        else:
-            status_code = 200
-            headers = [(b"server", b"testserver")]
+def app(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/redirect":
+        return httpx.Response(303, headers={"server": "testserver", "location": "/"})
+    elif request.url.path.startswith("/status/"):
+        status_code = int(request.url.path[-3:])
+        return httpx.Response(status_code, headers={"server": "testserver"})
 
-        return (
-            b"HTTP/1.1",
-            status_code,
-            b"",
-            headers,
-            httpcore.PlainByteStream(b""),
-        )
-
-
-class AsyncMockTransport(httpcore.AsyncHTTPTransport):
-    async def request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
-        stream: httpcore.AsyncByteStream = None,
-        timeout: typing.Mapping[str, typing.Optional[float]] = None,
-    ) -> typing.Tuple[
-        bytes,
-        int,
-        bytes,
-        typing.List[typing.Tuple[bytes, bytes]],
-        httpcore.AsyncByteStream,
-    ]:
-        scheme, host, port, path = url
-        if path == b"/redirect":
-            status_code = 303
-            headers = [(b"server", b"testserver"), (b"location", b"/")]
-        elif path.startswith(b"/status/"):
-            status_code = int(path[-3:].decode("ascii"))
-            headers = [(b"server", b"testserver")]
-        else:
-            status_code = 200
-            headers = [(b"server", b"testserver")]
-
-        return (
-            b"HTTP/1.1",
-            status_code,
-            b"",
-            headers,
-            httpcore.PlainByteStream(b""),
-        )
+    return httpx.Response(200, headers={"server": "testserver"})
 
 
 def test_event_hooks():
@@ -87,7 +25,7 @@ def test_event_hooks():
 
     event_hooks = {"request": [on_request], "response": [on_response]}
 
-    with httpx.Client(event_hooks=event_hooks, transport=MockTransport()) as http:
+    with httpx.Client(event_hooks=event_hooks, transport=MockTransport(app)) as http:
         http.get("http://127.0.0.1:8000/", auth=("username", "password"))
 
     assert events == [
@@ -115,7 +53,7 @@ def test_event_hooks_raising_exception(server):
 
     event_hooks = {"response": [raise_on_4xx_5xx]}
 
-    with httpx.Client(event_hooks=event_hooks, transport=MockTransport()) as http:
+    with httpx.Client(event_hooks=event_hooks, transport=MockTransport(app)) as http:
         try:
             http.get("http://127.0.0.1:8000/status/400")
         except httpx.HTTPStatusError as exc:
@@ -135,7 +73,7 @@ async def test_async_event_hooks():
     event_hooks = {"request": [on_request], "response": [on_response]}
 
     async with httpx.AsyncClient(
-        event_hooks=event_hooks, transport=AsyncMockTransport()
+        event_hooks=event_hooks, transport=AsyncMockTransport(app)
     ) as http:
         await http.get("http://127.0.0.1:8000/", auth=("username", "password"))
 
@@ -166,7 +104,7 @@ async def test_async_event_hooks_raising_exception():
     event_hooks = {"response": [raise_on_4xx_5xx]}
 
     async with httpx.AsyncClient(
-        event_hooks=event_hooks, transport=AsyncMockTransport()
+        event_hooks=event_hooks, transport=AsyncMockTransport(app)
     ) as http:
         try:
             await http.get("http://127.0.0.1:8000/status/400")
@@ -189,7 +127,7 @@ def test_event_hooks_with_redirect():
 
     event_hooks = {"request": [on_request], "response": [on_response]}
 
-    with httpx.Client(event_hooks=event_hooks, transport=MockTransport()) as http:
+    with httpx.Client(event_hooks=event_hooks, transport=MockTransport(app)) as http:
         http.get("http://127.0.0.1:8000/redirect", auth=("username", "password"))
 
     assert events == [
@@ -228,7 +166,7 @@ async def test_async_event_hooks_with_redirect():
     event_hooks = {"request": [on_request], "response": [on_response]}
 
     async with httpx.AsyncClient(
-        event_hooks=event_hooks, transport=AsyncMockTransport()
+        event_hooks=event_hooks, transport=AsyncMockTransport(app)
     ) as http:
         await http.get("http://127.0.0.1:8000/redirect", auth=("username", "password"))
 
