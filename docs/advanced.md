@@ -236,10 +236,11 @@ These allow you to install client-wide functionality such as logging and monitor
 
 ```python
 def log_request(request):
-    print(request)
+    print(f"Request event hook: {request.method} {request.url} - Waiting for response")
 
 def log_response(response):
-    print(response)
+    request = response.request
+    print(f"Response event hook: {request.method} {request.url} - Status {response.status_code}")
 
 client = httpx.Client(event_hooks={'request': [log_request], 'response': [log_response]})
 ```
