@@ -5,6 +5,7 @@ Unit tests for auth classes also exist in tests/test_auth.py
 """
 import asyncio
 import hashlib
+import json
 import os
 import threading
 import typing
@@ -24,6 +25,7 @@ from httpx import (
     Response,
 )
 from httpx._content_streams import ContentStream, JSONStream
+from tests.utils import AsyncMockTransport, MockTransport
 
 from ..common import FIXTURES_DIR
 
@@ -33,48 +35,19 @@ def get_header_value(headers, key, default=None):
     for header_key, header_value in headers:
         if header_key.lower() == lookup:
             return header_value.decode("ascii")
-    return default
+    return default  # pragma: nocover
 
 
-class MockTransport:
-    def __init__(self, auth_header: bytes = b"", status_code: int = 200) -> None:
+class App:
+    def __init__(self, auth_header: str = "", status_code: int = 200) -> None:
         self.auth_header = auth_header
         self.status_code = status_code
 
-    def _request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, int, bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: ContentStream,
-        timeout: typing.Mapping[str, typing.Optional[float]] = None,
-    ) -> typing.Tuple[
-        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
-    ]:
-        authorization = get_header_value(headers, "Authorization")
-        response_headers = (
-            [(b"www-authenticate", self.auth_header)] if self.auth_header else []
-        )
-        response_stream = JSONStream({"auth": authorization})
-        return b"HTTP/1.1", self.status_code, b"", response_headers, response_stream
-
-
-class AsyncMockTransport(MockTransport, httpcore.AsyncHTTPTransport):
-    async def request(
-        self, *args, **kwargs
-    ) -> typing.Tuple[
-        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
-    ]:
-        return self._request(*args, **kwargs)
-
-
-class SyncMockTransport(MockTransport, httpcore.SyncHTTPTransport):
-    def request(
-        self, *args, **kwargs
-    ) -> typing.Tuple[
-        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
-    ]:
-        return self._request(*args, **kwargs)
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        headers = {"www-authenticate": self.auth_header} if self.auth_header else {}
+        data = {"auth": request.headers.get("Authorization")}
+        content = json.dumps(data).encode("utf-8")
+        return httpx.Response(self.status_code, headers=headers, content=content)
 
 
 class MockDigestAuthTransport(httpcore.AsyncHTTPTransport):
@@ -219,8 +192,9 @@ class SyncOrAsyncAuth(Auth):
 async def test_basic_auth() -> None:
     url = "https://example.org/"
     auth = ("tomchristie", "password123")
+    app = App()
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -230,8 +204,9 @@ async def test_basic_auth() -> None:
 @pytest.mark.asyncio
 async def test_basic_auth_in_url() -> None:
     url = "https://tomchristie:password123@example.org/"
+    app = App()
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url)
 
     assert response.status_code == 200
@@ -242,8 +217,11 @@ async def test_basic_auth_in_url() -> None:
 async def test_basic_auth_on_session() -> None:
     url = "https://example.org/"
     auth = ("tomchristie", "password123")
+    app = App()
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport(), auth=auth) as client:
+    async with httpx.AsyncClient(
+        transport=AsyncMockTransport(app), auth=auth
+    ) as client:
         response = await client.get(url)
 
     assert response.status_code == 200
@@ -253,12 +231,13 @@ async def test_basic_auth_on_session() -> None:
 @pytest.mark.asyncio
 async def test_custom_auth() -> None:
     url = "https://example.org/"
+    app = App()
 
     def auth(request: Request) -> Request:
         request.headers["Authorization"] = "Token 123"
         return request
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -269,8 +248,9 @@ async def test_custom_auth() -> None:
 async def test_netrc_auth() -> None:
     os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
     url = "http://netrcexample.org"
+    app = App()
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url)
 
     assert response.status_code == 200
@@ -283,8 +263,9 @@ async def test_netrc_auth() -> None:
 async def test_auth_header_has_priority_over_netrc() -> None:
     os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
     url = "http://netrcexample.org"
+    app = App()
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, headers={"Authorization": "Override"})
 
     assert response.status_code == 200
@@ -295,9 +276,10 @@ async def test_auth_header_has_priority_over_netrc() -> None:
 async def test_trust_env_auth() -> None:
     os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
     url = "http://netrcexample.org"
+    app = App()
 
     async with httpx.AsyncClient(
-        transport=AsyncMockTransport(), trust_env=False
+        transport=AsyncMockTransport(app), trust_env=False
     ) as client:
         response = await client.get(url)
 
@@ -305,7 +287,7 @@ async def test_trust_env_auth() -> None:
     assert response.json() == {"auth": None}
 
     async with httpx.AsyncClient(
-        transport=AsyncMockTransport(), trust_env=True
+        transport=AsyncMockTransport(app), trust_env=True
     ) as client:
         response = await client.get(url)
 
@@ -319,8 +301,11 @@ async def test_trust_env_auth() -> None:
 async def test_auth_disable_per_request() -> None:
     url = "https://example.org/"
     auth = ("tomchristie", "password123")
+    app = App()
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport(), auth=auth) as client:
+    async with httpx.AsyncClient(
+        transport=AsyncMockTransport(app), auth=auth
+    ) as client:
         response = await client.get(url, auth=None)
 
     assert response.status_code == 200
@@ -338,8 +323,9 @@ def test_auth_hidden_url() -> None:
 async def test_auth_hidden_header() -> None:
     url = "https://example.org/"
     auth = ("example-username", "example-password")
+    app = App()
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert "'authorization': '[secure]'" in str(response.request.headers)
@@ -347,7 +333,9 @@ async def test_auth_hidden_header() -> None:
 
 @pytest.mark.asyncio
 async def test_auth_property() -> None:
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    app = App()
+
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         assert client.auth is None
 
         client.auth = ("tomchristie", "password123")  # type: ignore
@@ -361,13 +349,15 @@ async def test_auth_property() -> None:
 
 @pytest.mark.asyncio
 async def test_auth_invalid_type() -> None:
+    app = App()
+
     with pytest.raises(TypeError):
         client = httpx.AsyncClient(
-            transport=AsyncMockTransport(),
+            transport=AsyncMockTransport(app),
             auth="not a tuple, not a callable",  # type: ignore
         )
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         with pytest.raises(TypeError):
             await client.get(auth="not a tuple, not a callable")  # type: ignore
 
@@ -379,8 +369,9 @@ async def test_auth_invalid_type() -> None:
 async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
+    app = App()
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -391,11 +382,10 @@ async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> 
 def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
-    auth_header = b"Token ..."
+    auth_header = "Token ..."
+    app = App(auth_header=auth_header, status_code=401)
 
-    client = httpx.Client(
-        transport=SyncMockTransport(auth_header=auth_header, status_code=401)
-    )
+    client = httpx.Client(transport=MockTransport(app))
     response = client.get(url, auth=auth)
 
     assert response.status_code == 401
@@ -407,11 +397,10 @@ def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
 async def test_digest_auth_200_response_including_digest_auth_header() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
-    auth_header = b'Digest realm="realm@host.com",qop="auth",nonce="abc",opaque="xyz"'
+    auth_header = 'Digest realm="realm@host.com",qop="auth",nonce="abc",opaque="xyz"'
+    app = App(auth_header=auth_header, status_code=200)
 
-    async with httpx.AsyncClient(
-        transport=AsyncMockTransport(auth_header=auth_header, status_code=200)
-    ) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -423,10 +412,9 @@ async def test_digest_auth_200_response_including_digest_auth_header() -> None:
 async def test_digest_auth_401_response_without_digest_auth_header() -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
+    app = App(auth_header="", status_code=401)
 
-    async with httpx.AsyncClient(
-        transport=AsyncMockTransport(auth_header=b"", status_code=401)
-    ) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 401
@@ -565,19 +553,19 @@ async def test_digest_auth_incorrect_credentials() -> None:
 @pytest.mark.parametrize(
     "auth_header",
     [
-        b'Digest realm="httpx@example.org", qop="auth"',  # missing fields
-        b'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
+        'Digest realm="httpx@example.org", qop="auth"',  # missing fields
+        'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
     ],
 )
 @pytest.mark.asyncio
 async def test_async_digest_auth_raises_protocol_error_on_malformed_header(
-    auth_header: bytes,
+    auth_header: str,
 ) -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
-    async with httpx.AsyncClient(
-        transport=AsyncMockTransport(auth_header=auth_header, status_code=401)
-    ) as client:
+    app = App(auth_header=auth_header, status_code=401)
+
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         with pytest.raises(ProtocolError):
             await client.get(url, auth=auth)
 
@@ -585,19 +573,18 @@ async def test_async_digest_auth_raises_protocol_error_on_malformed_header(
 @pytest.mark.parametrize(
     "auth_header",
     [
-        b'Digest realm="httpx@example.org", qop="auth"',  # missing fields
-        b'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
+        'Digest realm="httpx@example.org", qop="auth"',  # missing fields
+        'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
     ],
 )
 def test_sync_digest_auth_raises_protocol_error_on_malformed_header(
-    auth_header: bytes,
+    auth_header: str,
 ) -> None:
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
+    app = App(auth_header=auth_header, status_code=401)
 
-    with httpx.Client(
-        transport=SyncMockTransport(auth_header=auth_header, status_code=401)
-    ) as client:
+    with httpx.Client(transport=MockTransport(app)) as client:
         with pytest.raises(ProtocolError):
             client.get(url, auth=auth)
 
@@ -610,10 +597,9 @@ async def test_async_auth_history() -> None:
     """
     url = "https://example.org/"
     auth = RepeatAuth(repeat=2)
+    app = App(auth_header="abc")
 
-    async with httpx.AsyncClient(
-        transport=AsyncMockTransport(auth_header=b"abc")
-    ) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -637,8 +623,9 @@ def test_sync_auth_history() -> None:
     """
     url = "https://example.org/"
     auth = RepeatAuth(repeat=2)
+    app = App(auth_header="abc")
 
-    with httpx.Client(transport=SyncMockTransport(auth_header=b"abc")) as client:
+    with httpx.Client(transport=MockTransport(app)) as client:
         response = client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -659,11 +646,12 @@ def test_sync_auth_history() -> None:
 async def test_digest_auth_unavailable_streaming_body():
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
+    app = App()
 
     async def streaming_body():
         yield b"Example request body"  # pragma: nocover
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         with pytest.raises(RequestBodyUnavailable):
             await client.post(url, data=streaming_body(), auth=auth)
 
@@ -676,7 +664,9 @@ async def test_async_auth_reads_response_body() -> None:
     """
     url = "https://example.org/"
     auth = ResponseBodyAuth("xyz")
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    app = App()
+
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -690,8 +680,9 @@ def test_sync_auth_reads_response_body() -> None:
     """
     url = "https://example.org/"
     auth = ResponseBodyAuth("xyz")
+    app = App()
 
-    with httpx.Client(transport=SyncMockTransport()) as client:
+    with httpx.Client(transport=MockTransport(app)) as client:
         response = client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -707,8 +698,9 @@ async def test_async_auth() -> None:
     """
     url = "https://example.org/"
     auth = SyncOrAsyncAuth()
+    app = App()
 
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
@@ -721,8 +713,9 @@ def test_sync_auth() -> None:
     """
     url = "https://example.org/"
     auth = SyncOrAsyncAuth()
+    app = App()
 
-    with httpx.Client(transport=SyncMockTransport()) as client:
+    with httpx.Client(transport=MockTransport(app)) as client:
         response = client.get(url, auth=auth)
 
     assert response.status_code == 200
