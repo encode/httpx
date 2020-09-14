@@ -781,6 +781,9 @@ class Client(BaseClient):
         auth_flow = auth.sync_auth_flow(request)
         request = next(auth_flow)
 
+        for hook in self._event_hooks["request"]:
+            hook(request)
+
         while True:
             response = self._send_handling_redirects(
                 request,
@@ -808,9 +811,6 @@ class Client(BaseClient):
         allow_redirects: bool,
         history: typing.List[Response],
     ) -> Response:
-        for hook in self._event_hooks["request"]:
-            hook(request)
-
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects(
@@ -1416,6 +1416,9 @@ class AsyncClient(BaseClient):
         auth_flow = auth.async_auth_flow(request)
         request = await auth_flow.__anext__()
 
+        for hook in self._event_hooks["request"]:
+            await hook(request)
+
         while True:
             response = await self._send_handling_redirects(
                 request,
@@ -1443,9 +1446,6 @@ class AsyncClient(BaseClient):
         allow_redirects: bool,
         history: typing.List[Response],
     ) -> Response:
-        for hook in self._event_hooks["request"]:
-            await hook(request)
-
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects(
