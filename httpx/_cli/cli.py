@@ -38,9 +38,7 @@ def get_lexer_for_response(response: httpx.Response) -> str:
 def get_response_headers(response: httpx.Response) -> str:
     lines = [
         f"{response.http_version} {response.status_code} {response.reason_phrase}"
-    ] + [
-        f"{name}: {value}" for name, value in response.headers.items()
-    ]
+    ] + [f"{name}: {value}" for name, value in response.headers.items()]
     return "\n".join(lines)
 
 
