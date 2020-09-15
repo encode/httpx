@@ -28,8 +28,8 @@ And using `data=...` to send form data:
 httpx.post(..., data={"message": "Hello, world"})
 ```
 
-However, for compatibility reasons, we also support using `data=...` for raw
-binary and text contents.
+If you're using a type checking tool such as `mypy`, you'll see warnings issues if using test/byte content with the `data` argument.
+However, for compatibility reasons with `requests`, we do still handle the case where `data=...` is used with raw binary and text contents.
 
 ## Status Codes
 
