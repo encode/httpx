@@ -1,4 +1,4 @@
--e .[http2]
+-e .[cli,http2]
 
 # Optional
 brotlipy==0.7.*
