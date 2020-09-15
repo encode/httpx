@@ -1,10 +1,9 @@
 import sys
 
 
-def main() -> None:
+def main() -> None:  # pragma: nocover
     try:
         import click  # noqa
-        import pygments  # noqa
         import rich  # noqa
     except ImportError:
         sys.exit(
@@ -14,4 +13,4 @@ def main() -> None:
 
     from httpx._cli.cli import httpx_cli
 
-    httpx_cli()
+    httpx_cli(["--help"])
