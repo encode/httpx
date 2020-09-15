@@ -60,6 +60,7 @@ def get_response_headers(response: httpx.Response) -> str:
 @click.option("--verify/--no-verify", "verify", default=True)
 @click.option("--cert", "cert", type=click.Path(exists=True), default=None)
 @click.option("--trust-env/--no-trust-env", "trust_env", default=True)
+@click.option("--http2", "http2", type=bool, is_flag=True, default=False)
 def httpx_cli(
     url: str,
     method: str,
@@ -76,6 +77,7 @@ def httpx_cli(
     verify: bool,
     cert: typing.Optional[click.Path],
     trust_env: bool,
+    http2: bool
 ) -> None:
     client = httpx.Client(
         proxies=proxies,
@@ -83,6 +85,7 @@ def httpx_cli(
         verify=verify,
         cert=None if cert is None else str(cert),
         trust_env=trust_env,
+        http2=http2
     )
     response = client.request(
         method,
