@@ -265,7 +265,7 @@ the installed hooks.
 ```python
 client = httpx.Client()
 client.event_hooks['request'] = [log_request]
-client.event_hooks['response'] = [log_response, raise_for_status]
+client.event_hooks['response'] = [log_response, raise_on_4xx_5xx]
 ```
 
 !!! note
