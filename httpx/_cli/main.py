@@ -13,4 +13,4 @@ def main() -> None:  # pragma: nocover
 
     from httpx._cli.cli import httpx_cli
 
-    httpx_cli(["--help"])
+    httpx_cli()
