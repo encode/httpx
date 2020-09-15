@@ -75,9 +75,12 @@ class BaseClient:
         cookies: CookieTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         trust_env: bool = True,
     ):
+        event_hooks = {} if event_hooks is None else event_hooks
+
         self._base_url = self._enforce_trailing_slash(URL(base_url))
 
         self._auth = self._build_auth(auth)
@@ -86,6 +89,10 @@ class BaseClient:
         self._cookies = Cookies(cookies)
         self._timeout = Timeout(timeout)
         self.max_redirects = max_redirects
+        self._event_hooks = {
+            "request": list(event_hooks.get("request", [])),
+            "response": list(event_hooks.get("response", [])),
+        }
         self._trust_env = trust_env
         self._netrc = NetRCInfo()
         self._is_closed = True
@@ -133,6 +140,19 @@ class BaseClient:
     @timeout.setter
     def timeout(self, timeout: TimeoutTypes) -> None:
         self._timeout = Timeout(timeout)
+
+    @property
+    def event_hooks(self) -> typing.Dict[str, typing.List[typing.Callable]]:
+        return self._event_hooks
+
+    @event_hooks.setter
+    def event_hooks(
+        self, event_hooks: typing.Dict[str, typing.List[typing.Callable]]
+    ) -> None:
+        self._event_hooks = {
+            "request": list(event_hooks.get("request", [])),
+            "response": list(event_hooks.get("response", [])),
+        }
 
     @property
     def auth(self) -> typing.Optional[Auth]:
@@ -537,6 +557,7 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -549,6 +570,7 @@ class Client(BaseClient):
             cookies=cookies,
             timeout=timeout,
             max_redirects=max_redirects,
+            event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
         )
@@ -746,6 +768,13 @@ class Client(BaseClient):
             finally:
                 response.close()
 
+        try:
+            for hook in self._event_hooks["response"]:
+                hook(response)
+        except Exception:
+            response.close()
+            raise
+
         return response
 
     def _send_handling_auth(
@@ -758,6 +787,9 @@ class Client(BaseClient):
     ) -> Response:
         auth_flow = auth.sync_auth_flow(request)
         request = next(auth_flow)
+
+        for hook in self._event_hooks["request"]:
+            hook(request)
 
         while True:
             response = self._send_handling_redirects(
@@ -1166,6 +1198,7 @@ class AsyncClient(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -1178,6 +1211,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             timeout=timeout,
             max_redirects=max_redirects,
+            event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
         )
@@ -1377,6 +1411,13 @@ class AsyncClient(BaseClient):
             finally:
                 await response.aclose()
 
+        try:
+            for hook in self._event_hooks["response"]:
+                await hook(response)
+        except Exception:
+            await response.aclose()
+            raise
+
         return response
 
     async def _send_handling_auth(
@@ -1389,6 +1430,9 @@ class AsyncClient(BaseClient):
     ) -> Response:
         auth_flow = auth.async_auth_flow(request)
         request = await auth_flow.__anext__()
+
+        for hook in self._event_hooks["request"]:
+            await hook(request)
 
         while True:
             response = await self._send_handling_redirects(

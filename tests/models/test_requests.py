@@ -14,7 +14,7 @@ def test_no_content():
 
 
 def test_content_length_header():
-    request = httpx.Request("POST", "http://example.org", data=b"test 123")
+    request = httpx.Request("POST", "http://example.org", content=b"test 123")
     assert request.headers["Content-Length"] == "8"
 
 

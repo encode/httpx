@@ -10,11 +10,10 @@ from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, quote, unquote, urlencode
 
-import chardet
 import rfc3986
 import rfc3986.exceptions
 
-from ._content_streams import ByteStream, ContentStream, encode
+from ._content_streams import ByteStream, ContentStream, encode, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
     ContentDecoder,
@@ -45,6 +44,7 @@ from ._types import (
     RequestContent,
     RequestData,
     RequestFiles,
+    ResponseContent,
     URLTypes,
 )
 from ._utils import (
@@ -242,7 +242,8 @@ class QueryParams(typing.Mapping[str, str]):
         value = args[0] if args else kwargs
 
         items: typing.Sequence[typing.Tuple[str, PrimitiveData]]
-        if value is None or isinstance(value, str):
+        if value is None or isinstance(value, (str, bytes)):
+            value = value.decode("ascii") if isinstance(value, bytes) else value
             items = parse_qsl(value)
         elif isinstance(value, QueryParams):
             items = value.multi_items()
@@ -607,9 +608,9 @@ class Request:
         else:
             self.stream = encode(content, data, files, json)
 
-        self.prepare()
+        self._prepare()
 
-    def prepare(self) -> None:
+    def _prepare(self) -> None:
         for key, value in self.stream.get_headers().items():
             # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
             if key.lower() == "transfer-encoding" and "content-length" in self.headers:
@@ -676,7 +677,7 @@ class Response:
         http_version: str = None,
         headers: HeaderTypes = None,
         stream: ContentStream = None,
-        content: bytes = None,
+        content: ResponseContent = None,
         history: typing.List["Response"] = None,
         elapsed_func: typing.Callable = None,
     ):
@@ -696,8 +697,10 @@ class Response:
         if stream is not None:
             self._raw_stream = stream
         else:
-            self._raw_stream = ByteStream(body=content or b"")
-            self.read()
+            self._raw_stream = encode_response(content)
+            if content is None or isinstance(content, bytes):
+                # Load the response body, except for streaming content.
+                self.read()
 
         self._num_bytes_downloaded = 0
 
@@ -753,19 +756,22 @@ class Response:
             if not content:
                 self._text = ""
             else:
-                encoding = self.encoding
-                self._text = content.decode(encoding, errors="replace")
+                decoder = TextDecoder(encoding=self.encoding)
+                self._text = "".join([decoder.decode(self.content), decoder.flush()])
         return self._text
 
     @property
-    def encoding(self) -> str:
+    def encoding(self) -> typing.Optional[str]:
+        """
+        Return the encoding, which may have been set explicitly, or may have
+        been specified by the Content-Type header.
+        """
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
-                encoding = self.apparent_encoding
-                if encoding is None or not is_known_encoding(encoding):
-                    encoding = "utf-8"
-            self._encoding = encoding
+                self._encoding = None
+            else:
+                self._encoding = encoding
         return self._encoding
 
     @encoding.setter
@@ -781,25 +787,11 @@ class Response:
         if content_type is None:
             return None
 
-        parsed = cgi.parse_header(content_type)
-        media_type, params = parsed[0], parsed[-1]
-        if "charset" in params:
-            return params["charset"].strip("'\"")
+        _, params = cgi.parse_header(content_type)
+        if "charset" not in params:
+            return None
 
-        # RFC 2616 specifies that 'iso-8859-1' should be used as the default
-        # for 'text/*' media types, if no charset is provided.
-        # See: https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.7.1
-        if media_type.startswith("text/"):
-            return "iso-8859-1"
-
-        return None
-
-    @property
-    def apparent_encoding(self) -> typing.Optional[str]:
-        """
-        Return the encoding, as it appears to autodetection.
-        """
-        return chardet.detect(self.content)["encoding"]
+        return params["charset"].strip("'\"")
 
     def _get_content_decoder(self) -> ContentDecoder:
         """
@@ -934,7 +926,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.charset_encoding)
+        decoder = TextDecoder(encoding=self.encoding)
         with self._wrap_decoder_errors():
             for chunk in self.iter_bytes():
                 yield decoder.decode(chunk)
@@ -1018,7 +1010,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.charset_encoding)
+        decoder = TextDecoder(encoding=self.encoding)
         with self._wrap_decoder_errors():
             async for chunk in self.aiter_bytes():
                 yield decoder.decode(chunk)

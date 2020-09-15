@@ -1,180 +1,123 @@
 import json
-import typing
-from urllib.parse import parse_qs
 
 import httpcore
 import pytest
 
 import httpx
-from httpx._content_streams import ByteStream, ContentStream, IteratorStream
+from tests.utils import AsyncMockTransport, MockTransport
 
 
-def get_header_value(headers, key, default=None):
-    lookup = key.encode("ascii").lower()
-    for header_key, header_value in headers:
-        if header_key.lower() == lookup:
-            return header_value.decode("ascii")
-    return default
+def redirects(request: httpx.Request) -> httpx.Response:
+    if request.url.scheme not in ("http", "https"):
+        raise httpcore.UnsupportedProtocol(
+            f"Scheme {request.url.scheme!r} not supported."
+        )
 
+    if request.url.path == "/no_redirect":
+        return httpx.Response(200)
 
-class MockTransport:
-    def _request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, int, bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: ContentStream,
-        timeout: typing.Mapping[str, typing.Optional[float]] = None,
-    ) -> typing.Tuple[
-        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
-    ]:
-        scheme, host, port, path = url
-        if scheme not in (b"http", b"https"):
-            raise httpcore.UnsupportedProtocol(f"Scheme {scheme!r} not supported.")
+    elif request.url.path == "/redirect_301":
+        status_code = httpx.codes.MOVED_PERMANENTLY
+        content = b"<a href='https://example.org/'>here</a>"
+        headers = {"location": "https://example.org/"}
+        return httpx.Response(status_code, headers=headers, content=content)
 
-        path, _, query = path.partition(b"?")
-        if path == b"/no_redirect":
-            return b"HTTP/1.1", httpx.codes.OK, b"OK", [], ByteStream(b"")
+    elif request.url.path == "/redirect_302":
+        status_code = httpx.codes.FOUND
+        headers = {"location": "https://example.org/"}
+        return httpx.Response(status_code, headers=headers)
 
-        elif path == b"/redirect_301":
+    elif request.url.path == "/redirect_303":
+        status_code = httpx.codes.SEE_OTHER
+        headers = {"location": "https://example.org/"}
+        return httpx.Response(status_code, headers=headers)
 
-            def body():
-                yield b"<a href='https://example.org/'>here</a>"
+    elif request.url.path == "/relative_redirect":
+        status_code = httpx.codes.SEE_OTHER
+        headers = {"location": "/"}
+        return httpx.Response(status_code, headers=headers)
 
-            status_code = httpx.codes.MOVED_PERMANENTLY
-            headers = [(b"location", b"https://example.org/")]
-            stream = IteratorStream(iterator=body())
-            return b"HTTP/1.1", status_code, b"Moved Permanently", headers, stream
+    elif request.url.path == "/malformed_redirect":
+        status_code = httpx.codes.SEE_OTHER
+        headers = {"location": "https://:443/"}
+        return httpx.Response(status_code, headers=headers)
 
-        elif path == b"/redirect_302":
-            status_code = httpx.codes.FOUND
-            headers = [(b"location", b"https://example.org/")]
-            return b"HTTP/1.1", status_code, b"Found", headers, ByteStream(b"")
+    elif request.url.path == "/invalid_redirect":
+        status_code = httpx.codes.SEE_OTHER
+        raw_headers = [(b"location", "https://😇/".encode("utf-8"))]
+        return httpx.Response(status_code, headers=raw_headers)
 
-        elif path == b"/redirect_303":
-            status_code = httpx.codes.SEE_OTHER
-            headers = [(b"location", b"https://example.org/")]
-            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
+    elif request.url.path == "/no_scheme_redirect":
+        status_code = httpx.codes.SEE_OTHER
+        headers = {"location": "//example.org/"}
+        return httpx.Response(status_code, headers=headers)
 
-        elif path == b"/relative_redirect":
-            status_code = httpx.codes.SEE_OTHER
-            headers = [(b"location", b"/")]
-            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
-
-        elif path == b"/malformed_redirect":
-            status_code = httpx.codes.SEE_OTHER
-            headers = [(b"location", b"https://:443/")]
-            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
-
-        elif path == b"/invalid_redirect":
-            status_code = httpx.codes.SEE_OTHER
-            headers = [(b"location", "https://😇/".encode("utf-8"))]
-            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
-
-        elif path == b"/no_scheme_redirect":
-            status_code = httpx.codes.SEE_OTHER
-            headers = [(b"location", b"//example.org/")]
-            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
-
-        elif path == b"/multiple_redirects":
-            params = parse_qs(query.decode("ascii"))
-            count = int(params.get("count", "0")[0])
-            redirect_count = count - 1
-            code = httpx.codes.SEE_OTHER if count else httpx.codes.OK
-            phrase = b"See Other" if count else b"OK"
-            location = b"/multiple_redirects"
+    elif request.url.path == "/multiple_redirects":
+        params = httpx.QueryParams(request.url.query)
+        count = int(params.get("count", "0"))
+        redirect_count = count - 1
+        status_code = httpx.codes.SEE_OTHER if count else httpx.codes.OK
+        if count:
+            location = "/multiple_redirects"
             if redirect_count:
-                location += b"?count=" + str(redirect_count).encode("ascii")
-            headers = [(b"location", location)] if count else []
-            return b"HTTP/1.1", code, phrase, headers, ByteStream(b"")
+                location += f"?count={redirect_count}"
+            headers = {"location": location}
+        else:
+            headers = {}
+        return httpx.Response(status_code, headers=headers)
 
-        if path == b"/redirect_loop":
-            code = httpx.codes.SEE_OTHER
-            headers = [(b"location", b"/redirect_loop")]
-            return b"HTTP/1.1", code, b"See Other", headers, ByteStream(b"")
+    if request.url.path == "/redirect_loop":
+        status_code = httpx.codes.SEE_OTHER
+        headers = {"location": "/redirect_loop"}
+        return httpx.Response(status_code, headers=headers)
 
-        elif path == b"/cross_domain":
-            code = httpx.codes.SEE_OTHER
-            headers = [(b"location", b"https://example.org/cross_domain_target")]
-            return b"HTTP/1.1", code, b"See Other", headers, ByteStream(b"")
+    elif request.url.path == "/cross_domain":
+        status_code = httpx.codes.SEE_OTHER
+        headers = {"location": "https://example.org/cross_domain_target"}
+        return httpx.Response(status_code, headers=headers)
 
-        elif path == b"/cross_domain_target":
-            headers_dict = {
-                key.decode("ascii"): value.decode("ascii") for key, value in headers
-            }
-            stream = ByteStream(json.dumps({"headers": headers_dict}).encode())
-            return b"HTTP/1.1", 200, b"OK", [], stream
+    elif request.url.path == "/cross_domain_target":
+        status_code = httpx.codes.OK
+        content = json.dumps({"headers": dict(request.headers)}).encode("utf-8")
+        return httpx.Response(status_code, content=content)
 
-        elif path == b"/redirect_body":
-            code = httpx.codes.PERMANENT_REDIRECT
-            headers = [(b"location", b"/redirect_body_target")]
-            return b"HTTP/1.1", code, b"Permanent Redirect", headers, ByteStream(b"")
+    elif request.url.path == "/redirect_body":
+        status_code = httpx.codes.PERMANENT_REDIRECT
+        headers = {"location": "/redirect_body_target"}
+        return httpx.Response(status_code, headers=headers)
 
-        elif path == b"/redirect_no_body":
-            code = httpx.codes.SEE_OTHER
-            headers = [(b"location", b"/redirect_body_target")]
-            return b"HTTP/1.1", code, b"See Other", headers, ByteStream(b"")
+    elif request.url.path == "/redirect_no_body":
+        status_code = httpx.codes.SEE_OTHER
+        headers = {"location": "/redirect_body_target"}
+        return httpx.Response(status_code, headers=headers)
 
-        elif path == b"/redirect_body_target":
-            content = b"".join(stream)
-            headers_dict = {
-                key.decode("ascii"): value.decode("ascii") for key, value in headers
-            }
-            stream = ByteStream(
-                json.dumps({"body": content.decode(), "headers": headers_dict}).encode()
-            )
-            return b"HTTP/1.1", 200, b"OK", [], stream
+    elif request.url.path == "/redirect_body_target":
+        content = json.dumps(
+            {"body": request.content.decode("ascii"), "headers": dict(request.headers)}
+        ).encode("utf-8")
+        return httpx.Response(200, content=content)
 
-        elif path == b"/cross_subdomain":
-            host = get_header_value(headers, "host")
-            if host != "www.example.org":
-                headers = [(b"location", b"https://www.example.org/cross_subdomain")]
-                return (
-                    b"HTTP/1.1",
-                    httpx.codes.PERMANENT_REDIRECT,
-                    b"Permanent Redirect",
-                    headers,
-                    ByteStream(b""),
-                )
-            else:
-                return b"HTTP/1.1", 200, b"OK", [], ByteStream(b"Hello, world!")
+    elif request.url.path == "/cross_subdomain":
+        if request.headers["Host"] != "www.example.org":
+            status_code = httpx.codes.PERMANENT_REDIRECT
+            headers = {"location": "https://www.example.org/cross_subdomain"}
+            return httpx.Response(status_code, headers=headers)
+        else:
+            return httpx.Response(200, content=b"Hello, world!")
 
-        elif path == b"/redirect_custom_scheme":
-            status_code = httpx.codes.MOVED_PERMANENTLY
-            headers = [(b"location", b"market://details?id=42")]
-            return (
-                b"HTTP/1.1",
-                status_code,
-                b"Moved Permanently",
-                headers,
-                ByteStream(b""),
-            )
+    elif request.url.path == "/redirect_custom_scheme":
+        status_code = httpx.codes.MOVED_PERMANENTLY
+        headers = {"location": "market://details?id=42"}
+        return httpx.Response(status_code, headers=headers)
 
-        stream = ByteStream(b"Hello, world!") if method != b"HEAD" else ByteStream(b"")
+    if request.method == "HEAD":
+        return httpx.Response(200)
 
-        return b"HTTP/1.1", 200, b"OK", [], stream
-
-
-class AsyncMockTransport(MockTransport, httpcore.AsyncHTTPTransport):
-    async def request(
-        self, *args, **kwargs
-    ) -> typing.Tuple[
-        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
-    ]:
-        return self._request(*args, **kwargs)
-
-
-class SyncMockTransport(MockTransport, httpcore.SyncHTTPTransport):
-    def request(
-        self, *args, **kwargs
-    ) -> typing.Tuple[
-        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
-    ]:
-        return self._request(*args, **kwargs)
+    return httpx.Response(200, content=b"Hello, world!")
 
 
 def test_no_redirect():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     url = "https://example.com/no_redirect"
     response = client.get(url)
     assert response.status_code == 200
@@ -183,7 +126,7 @@ def test_no_redirect():
 
 
 def test_redirect_301():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     response = client.post("https://example.org/redirect_301")
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
@@ -191,7 +134,7 @@ def test_redirect_301():
 
 
 def test_redirect_302():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     response = client.post("https://example.org/redirect_302")
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
@@ -199,7 +142,7 @@ def test_redirect_302():
 
 
 def test_redirect_303():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     response = client.get("https://example.org/redirect_303")
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
@@ -207,7 +150,7 @@ def test_redirect_303():
 
 
 def test_disallow_redirects():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     response = client.post("https://example.org/redirect_303", allow_redirects=False)
     assert response.status_code == httpx.codes.SEE_OTHER
     assert response.url == "https://example.org/redirect_303"
@@ -225,7 +168,7 @@ def test_head_redirect():
     """
     Contrary to Requests, redirects remain enabled by default for HEAD requests.
     """
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     response = client.head("https://example.org/redirect_302")
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
@@ -235,7 +178,7 @@ def test_head_redirect():
 
 
 def test_relative_redirect():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     response = client.get("https://example.org/relative_redirect")
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
@@ -244,7 +187,7 @@ def test_relative_redirect():
 
 def test_malformed_redirect():
     # https://github.com/encode/httpx/issues/771
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     response = client.get("http://example.org/malformed_redirect")
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org:443/"
@@ -252,13 +195,13 @@ def test_malformed_redirect():
 
 
 def test_invalid_redirect():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     with pytest.raises(httpx.RemoteProtocolError):
         client.get("http://example.org/invalid_redirect")
 
 
 def test_no_scheme_redirect():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     response = client.get("https://example.org/no_scheme_redirect")
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
@@ -266,7 +209,7 @@ def test_no_scheme_redirect():
 
 
 def test_fragment_redirect():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     response = client.get("https://example.org/relative_redirect#fragment")
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/#fragment"
@@ -274,7 +217,7 @@ def test_fragment_redirect():
 
 
 def test_multiple_redirects():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     response = client.get("https://example.org/multiple_redirects?count=20")
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/multiple_redirects"
@@ -287,14 +230,14 @@ def test_multiple_redirects():
 
 @pytest.mark.usefixtures("async_environment")
 async def test_async_too_many_redirects():
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(redirects)) as client:
         with pytest.raises(httpx.TooManyRedirects):
             await client.get("https://example.org/multiple_redirects?count=21")
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_async_too_many_redirects_calling_next():
-    async with httpx.AsyncClient(transport=AsyncMockTransport()) as client:
+    async with httpx.AsyncClient(transport=AsyncMockTransport(redirects)) as client:
         url = "https://example.org/multiple_redirects?count=21"
         response = await client.get(url, allow_redirects=False)
         with pytest.raises(httpx.TooManyRedirects):
@@ -303,13 +246,13 @@ async def test_async_too_many_redirects_calling_next():
 
 
 def test_sync_too_many_redirects():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     with pytest.raises(httpx.TooManyRedirects):
         client.get("https://example.org/multiple_redirects?count=21")
 
 
 def test_sync_too_many_redirects_calling_next():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     url = "https://example.org/multiple_redirects?count=21"
     response = client.get(url, allow_redirects=False)
     with pytest.raises(httpx.TooManyRedirects):
@@ -318,13 +261,13 @@ def test_sync_too_many_redirects_calling_next():
 
 
 def test_redirect_loop():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     with pytest.raises(httpx.TooManyRedirects):
         client.get("https://example.org/redirect_loop")
 
 
 def test_cross_domain_redirect_with_auth_header():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     url = "https://example.com/cross_domain"
     headers = {"Authorization": "abc"}
     response = client.get(url, headers=headers)
@@ -333,7 +276,7 @@ def test_cross_domain_redirect_with_auth_header():
 
 
 def test_cross_domain_redirect_with_auth():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     url = "https://example.com/cross_domain"
     response = client.get(url, auth=("user", "pass"))
     assert response.url == "https://example.org/cross_domain_target"
@@ -341,7 +284,7 @@ def test_cross_domain_redirect_with_auth():
 
 
 def test_same_domain_redirect():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     url = "https://example.org/cross_domain"
     headers = {"Authorization": "abc"}
     response = client.get(url, headers=headers)
@@ -353,7 +296,7 @@ def test_body_redirect():
     """
     A 308 redirect should preserve the request body.
     """
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     url = "https://example.org/redirect_body"
     content = b"Example request body"
     response = client.post(url, content=content)
@@ -366,7 +309,7 @@ def test_no_body_redirect():
     """
     A 303 redirect should remove the request body.
     """
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     url = "https://example.org/redirect_no_body"
     content = b"Example request body"
     response = client.post(url, content=content)
@@ -376,7 +319,7 @@ def test_no_body_redirect():
 
 
 def test_can_stream_if_no_redirect():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     url = "https://example.org/redirect_301"
     with client.stream("GET", url, allow_redirects=False) as response:
         assert not response.is_closed
@@ -385,7 +328,7 @@ def test_can_stream_if_no_redirect():
 
 
 def test_cannot_redirect_streaming_body():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     url = "https://example.org/redirect_body"
 
     def streaming_body():
@@ -396,64 +339,47 @@ def test_cannot_redirect_streaming_body():
 
 
 def test_cross_subdomain_redirect():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     url = "https://example.com/cross_subdomain"
     response = client.get(url)
     assert response.url == "https://www.example.org/cross_subdomain"
 
 
-class MockCookieTransport(httpcore.SyncHTTPTransport):
-    def request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
-        stream: httpcore.SyncByteStream = None,
-        timeout: typing.Mapping[str, typing.Optional[float]] = None,
-    ) -> typing.Tuple[
-        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
-    ]:
-        scheme, host, port, path = url
-        if path == b"/":
-            cookie = get_header_value(headers, "Cookie")
-            if cookie is not None:
-                content = b"Logged in"
-            else:
-                content = b"Not logged in"
-            return b"HTTP/1.1", 200, b"OK", [], ByteStream(content)
-
-        elif path == b"/login":
-            status_code = httpx.codes.SEE_OTHER
-            headers = [
-                (b"location", b"/"),
-                (
-                    b"set-cookie",
-                    (
-                        b"session=eyJ1c2VybmFtZSI6ICJ0b21; path=/; Max-Age=1209600; "
-                        b"httponly; samesite=lax"
-                    ),
-                ),
-            ]
-            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
-
+def cookie_sessions(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/":
+        cookie = request.headers.get("Cookie")
+        if cookie is not None:
+            content = b"Logged in"
         else:
-            assert path == b"/logout"
-            status_code = httpx.codes.SEE_OTHER
-            headers = [
-                (b"location", b"/"),
-                (
-                    b"set-cookie",
-                    (
-                        b"session=null; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; "
-                        b"httponly; samesite=lax"
-                    ),
-                ),
-            ]
-            return b"HTTP/1.1", status_code, b"See Other", headers, ByteStream(b"")
+            content = b"Not logged in"
+        return httpx.Response(200, content=content)
+
+    elif request.url.path == "/login":
+        status_code = httpx.codes.SEE_OTHER
+        headers = {
+            "location": "/",
+            "set-cookie": (
+                "session=eyJ1c2VybmFtZSI6ICJ0b21; path=/; Max-Age=1209600; "
+                "httponly; samesite=lax"
+            ),
+        }
+        return httpx.Response(status_code, headers=headers)
+
+    else:
+        assert request.url.path == "/logout"
+        status_code = httpx.codes.SEE_OTHER
+        headers = {
+            "location": "/",
+            "set-cookie": (
+                "session=null; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; "
+                "httponly; samesite=lax"
+            ),
+        }
+        return httpx.Response(status_code, headers=headers)
 
 
 def test_redirect_cookie_behavior():
-    client = httpx.Client(transport=MockCookieTransport())
+    client = httpx.Client(transport=MockTransport(cookie_sessions))
 
     # The client is not logged in.
     response = client.get("https://example.com/")
@@ -482,7 +408,7 @@ def test_redirect_cookie_behavior():
 
 
 def test_redirect_custom_scheme():
-    client = httpx.Client(transport=SyncMockTransport())
+    client = httpx.Client(transport=MockTransport(redirects))
     with pytest.raises(httpx.UnsupportedProtocol) as e:
         client.post("https://example.org/redirect_custom_scheme")
-    assert str(e.value) == "Scheme b'market' not supported."
+    assert str(e.value) == "Scheme 'market' not supported."

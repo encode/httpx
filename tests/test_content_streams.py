@@ -3,7 +3,7 @@ import io
 import pytest
 
 from httpx import StreamConsumed
-from httpx._content_streams import ContentStream, encode
+from httpx._content_streams import ContentStream, encode, encode_response
 
 
 @pytest.mark.asyncio
@@ -32,7 +32,17 @@ async def test_empty_content():
 
 @pytest.mark.asyncio
 async def test_bytes_content():
-    stream = encode(data=b"Hello, world!")
+    stream = encode(content=b"Hello, world!")
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert stream.can_replay()
+    assert stream.get_headers() == {"Content-Length": "13"}
+    assert sync_content == b"Hello, world!"
+    assert async_content == b"Hello, world!"
+
+    # Support 'data' for compat with requests.
+    stream = encode(data=b"Hello, world!")  # type: ignore
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
@@ -48,7 +58,7 @@ async def test_iterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    stream = encode(data=hello_world())
+    stream = encode(content=hello_world())
     content = b"".join([part for part in stream])
 
     assert not stream.can_replay()
@@ -61,6 +71,14 @@ async def test_iterator_content():
     with pytest.raises(StreamConsumed):
         [part for part in stream]
 
+    # Support 'data' for compat with requests.
+    stream = encode(data=hello_world())  # type: ignore
+    content = b"".join([part for part in stream])
+
+    assert not stream.can_replay()
+    assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
+    assert content == b"Hello, world!"
+
 
 @pytest.mark.asyncio
 async def test_aiterator_content():
@@ -68,7 +86,7 @@ async def test_aiterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    stream = encode(data=hello_world())
+    stream = encode(content=hello_world())
     content = b"".join([part async for part in stream])
 
     assert not stream.can_replay()
@@ -80,6 +98,14 @@ async def test_aiterator_content():
 
     with pytest.raises(StreamConsumed):
         [part async for part in stream]
+
+    # Support 'data' for compat with requests.
+    stream = encode(data=hello_world())  # type: ignore
+    content = b"".join([part async for part in stream])
+
+    assert not stream.can_replay()
+    assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
+    assert content == b"Hello, world!"
 
 
 @pytest.mark.asyncio
@@ -251,3 +277,72 @@ async def test_multipart_multiple_files_single_input_content():
             b"--+++--\r\n",
         ]
     )
+
+
+@pytest.mark.asyncio
+async def test_response_empty_content():
+    stream = encode_response()
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert stream.can_replay()
+    assert stream.get_headers() == {}
+    assert sync_content == b""
+    assert async_content == b""
+
+
+@pytest.mark.asyncio
+async def test_response_bytes_content():
+    stream = encode_response(content=b"Hello, world!")
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert stream.can_replay()
+    assert stream.get_headers() == {"Content-Length": "13"}
+    assert sync_content == b"Hello, world!"
+    assert async_content == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_response_iterator_content():
+    def hello_world():
+        yield b"Hello, "
+        yield b"world!"
+
+    stream = encode_response(content=hello_world())
+    content = b"".join([part for part in stream])
+
+    assert not stream.can_replay()
+    assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
+    assert content == b"Hello, world!"
+
+    with pytest.raises(RuntimeError):
+        [part async for part in stream]
+
+    with pytest.raises(StreamConsumed):
+        [part for part in stream]
+
+
+@pytest.mark.asyncio
+async def test_response_aiterator_content():
+    async def hello_world():
+        yield b"Hello, "
+        yield b"world!"
+
+    stream = encode_response(content=hello_world())
+    content = b"".join([part async for part in stream])
+
+    assert not stream.can_replay()
+    assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
+    assert content == b"Hello, world!"
+
+    with pytest.raises(RuntimeError):
+        [part for part in stream]
+
+    with pytest.raises(StreamConsumed):
+        [part async for part in stream]
+
+
+def test_response_invalid_argument():
+    with pytest.raises(TypeError):
+        encode_response(123)  # type: ignore

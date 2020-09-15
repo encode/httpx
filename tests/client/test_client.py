@@ -15,7 +15,7 @@ def test_get(server):
     assert response.content == b"Hello, world!"
     assert response.text == "Hello, world!"
     assert response.http_version == "HTTP/1.1"
-    assert response.encoding == "iso-8859-1"
+    assert response.encoding is None
     assert response.request.url == url
     assert response.headers
     assert response.is_redirect is False
