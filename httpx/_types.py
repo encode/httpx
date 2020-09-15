@@ -64,9 +64,10 @@ AuthTypes = Union[
     None,
 ]
 
+RequestContent = Union[str, bytes, Iterator[bytes], AsyncIterator[bytes]]
 ResponseContent = Union[bytes, Iterator[bytes], AsyncIterator[bytes]]
 
-RequestData = Union[dict, str, bytes, Iterator[bytes], AsyncIterator[bytes]]
+RequestData = dict
 
 FileContent = Union[IO[str], IO[bytes], str, bytes]
 FileTypes = Union[

@@ -73,7 +73,7 @@ def test_build_post_request(server):
 
 def test_post(server):
     with httpx.Client() as client:
-        response = client.post(server.url, data=b"Hello, world!")
+        response = client.post(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
@@ -148,14 +148,14 @@ def test_head(server):
 
 def test_put(server):
     with httpx.Client() as client:
-        response = client.put(server.url, data=b"Hello, world!")
+        response = client.put(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 def test_patch(server):
     with httpx.Client() as client:
-        response = client.patch(server.url, data=b"Hello, world!")
+        response = client.patch(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 

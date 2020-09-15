@@ -43,7 +43,7 @@ class MockTransport(httpcore.SyncHTTPTransport):
         path = raw_path.decode("ascii")
 
         request_headers = httpx.Headers(headers)
-        data = (
+        content = (
             (item for item in stream)
             if stream
             and (
@@ -57,7 +57,7 @@ class MockTransport(httpcore.SyncHTTPTransport):
             method=method.decode("ascii"),
             url=f"{scheme}://{host}{port_str}{path}",
             headers=request_headers,
-            data=data,
+            content=content,
         )
         request.read()
         response = self.handler(request)

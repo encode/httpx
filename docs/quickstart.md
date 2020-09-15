@@ -249,13 +249,18 @@ For more complicated data structures you'll often want to use JSON encoding inst
 
 ## Sending Binary Request Data
 
-For other encodings, you should use either a `bytes` type or a generator
-that yields `bytes`.
+For other encodings, you should use the `content=...` parameter, passing
+either a `bytes` type or a generator that yields `bytes`.
 
-You'll probably also want to set a custom `Content-Type` header when uploading
+```pycon
+>>> content = b'Hello, world'
+>>> r = httpx.post("https://httpbin.org/post", content=content)
+```
+
+You may also want to set a custom `Content-Type` header when uploading
 binary data.
 
-## Response Status Codes
+## Response Status Codes
 
 We can inspect the HTTP status code of the response:
 
