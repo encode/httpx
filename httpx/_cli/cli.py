@@ -77,7 +77,7 @@ def httpx_cli(
     verify: bool,
     cert: typing.Optional[click.Path],
     trust_env: bool,
-    http2: bool
+    http2: bool,
 ) -> None:
     client = httpx.Client(
         proxies=proxies,
@@ -85,7 +85,7 @@ def httpx_cli(
         verify=verify,
         cert=None if cert is None else str(cert),
         trust_env=trust_env,
-        http2=http2
+        http2=http2,
     )
     response = client.request(
         method,
