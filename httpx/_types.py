@@ -34,6 +34,7 @@ QueryParamTypes = Union[
     Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
     List[Tuple[str, PrimitiveData]],
     str,
+    bytes,
     None,
 ]
 
@@ -45,7 +46,7 @@ HeaderTypes = Union[
     Sequence[Tuple[bytes, bytes]],
 ]
 
-CookieTypes = Union["Cookies", CookieJar, Dict[str, str]]
+CookieTypes = Union["Cookies", CookieJar, Dict[str, str], List[Tuple[str, str]]]
 
 CertTypes = Union[str, Tuple[str, str], Tuple[str, str, str]]
 VerifyTypes = Union[str, bool, ssl.SSLContext]
@@ -63,7 +64,10 @@ AuthTypes = Union[
     None,
 ]
 
-RequestData = Union[dict, str, bytes, Iterator[bytes], AsyncIterator[bytes]]
+RequestContent = Union[str, bytes, Iterator[bytes], AsyncIterator[bytes]]
+ResponseContent = Union[bytes, Iterator[bytes], AsyncIterator[bytes]]
+
+RequestData = dict
 
 FileContent = Union[IO[str], IO[bytes], str, bytes]
 FileTypes = Union[

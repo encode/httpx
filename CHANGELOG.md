@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.14.3 (September 2nd, 2020)
+
+### Added
+
+* `http.Response()` may now be instantiated without a `request=...` parameter. Useful for some unit testing cases. (Pull #1238)
+* Add `103 Early Hints` and `425 Too Early` status codes. (Pull #1244)
+
+### Fixed
+
+* `DigestAuth` now handles responses that include multiple 'WWW-Authenticate' headers. (Pull #1240)
+* Call into transport `__enter__`/`__exit__` or `__aenter__`/`__aexit__` when client is used in a context manager style. (Pull #1218)
+
+## 0.14.2 (August 24th, 2020)
+
+### Added
+
+* Support `client.get(..., auth=None)` to bypass the default authentication on a clients. (Pull #1115)
+* Support `client.auth = ...` property setter. (Pull #1185)
+* Support `httpx.get(..., proxies=...)` on top-level request functions. (Pull #1198)
+* Display instances with nicer import styles. (Eg. <httpx.ReadTimeout ...>) (Pull #1155)
+* Support `cookies=[(key, value)]` list-of-two-tuples style usage. (Pull #1211)
+
+### Fixed
+
+* Ensure that automatically included headers on a request may be modified. (Pull #1205)
+* Allow explicit `Content-Length` header on streaming requests. (Pull #1170)
+* Handle URL quoted usernames and passwords properly. (Pull #1159)
+* Use more consistent default for `HEAD` requests, setting `allow_redirects=True`. (Pull #1183)
+* If a transport error occurs while streaming the response, raise an `httpx` exception, not the underlying `httpcore` exception. (Pull #1190)
+* Include the underlying `httpcore` traceback, when transport exceptions occur. (Pull #1199)
+
 ## 0.14.1 (August 11th, 2020)
 
 ### Added

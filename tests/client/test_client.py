@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+import httpcore
 import pytest
 
 import httpx
@@ -14,7 +15,7 @@ def test_get(server):
     assert response.content == b"Hello, world!"
     assert response.text == "Hello, world!"
     assert response.http_version == "HTTP/1.1"
-    assert response.encoding == "iso-8859-1"
+    assert response.encoding is None
     assert response.request.url == url
     assert response.headers
     assert response.is_redirect is False
@@ -72,7 +73,7 @@ def test_build_post_request(server):
 
 def test_post(server):
     with httpx.Client() as client:
-        response = client.post(server.url, data=b"Hello, world!")
+        response = client.post(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
@@ -147,14 +148,14 @@ def test_head(server):
 
 def test_put(server):
     with httpx.Client() as client:
-        response = client.put(server.url, data=b"Hello, world!")
+        response = client.put(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 def test_patch(server):
     with httpx.Client() as client:
-        response = client.patch(server.url, data=b"Hello, world!")
+        response = client.patch(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
@@ -177,7 +178,7 @@ def test_base_url(server):
 def test_merge_absolute_url():
     client = httpx.Client(base_url="https://www.example.com/")
     request = client.build_request("GET", "http://www.example.com/")
-    assert request.url == httpx.URL("http://www.example.com/")
+    assert request.url == "http://www.example.com/"
     with pytest.warns(DeprecationWarning):
         assert not request.url.is_ssl
 
@@ -185,19 +186,19 @@ def test_merge_absolute_url():
 def test_merge_relative_url():
     client = httpx.Client(base_url="https://www.example.com/")
     request = client.build_request("GET", "/testing/123")
-    assert request.url == httpx.URL("https://www.example.com/testing/123")
+    assert request.url == "https://www.example.com/testing/123"
 
 
 def test_merge_relative_url_with_path():
     client = httpx.Client(base_url="https://www.example.com/some/path")
     request = client.build_request("GET", "/testing/123")
-    assert request.url == httpx.URL("https://www.example.com/some/path/testing/123")
+    assert request.url == "https://www.example.com/some/path/testing/123"
 
 
 def test_merge_relative_url_with_dotted_path():
     client = httpx.Client(base_url="https://www.example.com/some/path")
     request = client.build_request("GET", "../testing/123")
-    assert request.url == httpx.URL("https://www.example.com/some/testing/123")
+    assert request.url == "https://www.example.com/some/testing/123"
 
 
 def test_pool_limits_deprecated():
@@ -208,3 +209,67 @@ def test_pool_limits_deprecated():
 
     with pytest.warns(DeprecationWarning):
         httpx.AsyncClient(pool_limits=limits)
+
+
+def test_context_managed_transport():
+    class Transport(httpcore.SyncHTTPTransport):
+        def __init__(self):
+            self.events = []
+
+        def close(self):
+            # The base implementation of httpcore.SyncHTTPTransport just
+            # calls into `.close`, so simple transport cases can just override
+            # this method for any cleanup, where more complex cases
+            # might want to additionally override `__enter__`/`__exit__`.
+            self.events.append("transport.close")
+
+        def __enter__(self):
+            super().__enter__()
+            self.events.append("transport.__enter__")
+
+        def __exit__(self, *args):
+            super().__exit__(*args)
+            self.events.append("transport.__exit__")
+
+    # Note that we're including 'proxies' here to *also* run through the
+    # proxy context management, although we can't easily test that at the
+    # moment, since we can't add proxies as transport instances.
+    #
+    # Once we have a more generalised Mount API we'll be able to remove this
+    # in favour of ensuring all mounts are context managed, which will
+    # also neccessarily include proxies.
+    transport = Transport()
+    with httpx.Client(transport=transport, proxies="http://www.example.com"):
+        pass
+
+    assert transport.events == [
+        "transport.__enter__",
+        "transport.close",
+        "transport.__exit__",
+    ]
+
+
+def test_that_client_is_closed_by_default():
+    client = httpx.Client()
+
+    assert client.is_closed
+
+
+def test_that_send_cause_client_to_be_not_closed():
+    client = httpx.Client()
+
+    client.get("http://example.com")
+
+    assert not client.is_closed
+
+
+def test_that_client_is_not_closed_in_with_block():
+    with httpx.Client() as client:
+        assert not client.is_closed
+
+
+def test_that_client_is_closed_after_with_block():
+    with httpx.Client() as client:
+        pass
+
+    assert client.is_closed

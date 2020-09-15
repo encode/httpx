@@ -8,7 +8,14 @@ from urllib.parse import urlencode
 import httpcore
 
 from ._exceptions import StreamConsumed
-from ._types import FileContent, FileTypes, RequestData, RequestFiles
+from ._types import (
+    FileContent,
+    FileTypes,
+    RequestContent,
+    RequestData,
+    RequestFiles,
+    ResponseContent,
+)
 from ._utils import (
     format_form_param,
     guess_content_type,
@@ -72,11 +79,8 @@ class IteratorStream(ContentStream):
     Request content encoded as plain bytes, using an byte iterator.
     """
 
-    def __init__(
-        self, iterator: typing.Iterator[bytes], close_func: typing.Callable = None
-    ) -> None:
+    def __init__(self, iterator: typing.Iterator[bytes]) -> None:
         self.iterator = iterator
-        self.close_func = close_func
         self.is_stream_consumed = False
 
     def can_replay(self) -> bool:
@@ -95,21 +99,14 @@ class IteratorStream(ContentStream):
     def __aiter__(self) -> typing.AsyncIterator[bytes]:
         raise RuntimeError("Attempted to call a async iterator on an sync stream.")
 
-    def close(self) -> None:
-        if self.close_func is not None:
-            self.close_func()
-
 
 class AsyncIteratorStream(ContentStream):
     """
     Request content encoded as plain bytes, using an async byte iterator.
     """
 
-    def __init__(
-        self, aiterator: typing.AsyncIterator[bytes], close_func: typing.Callable = None
-    ) -> None:
+    def __init__(self, aiterator: typing.AsyncIterator[bytes]) -> None:
         self.aiterator = aiterator
-        self.close_func = close_func
         self.is_stream_consumed = False
 
     def can_replay(self) -> bool:
@@ -127,10 +124,6 @@ class AsyncIteratorStream(ContentStream):
         self.is_stream_consumed = True
         async for part in self.aiterator:
             yield part
-
-    async def aclose(self) -> None:
-        if self.close_func is not None:
-            await self.close_func()
 
 
 class JSONStream(ContentStream):
@@ -371,34 +364,62 @@ class MultipartStream(ContentStream):
 
 
 def encode(
+    content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
     json: typing.Any = None,
     boundary: bytes = None,
 ) -> ContentStream:
     """
-    Handles encoding the given `data`, `files`, and `json`, returning
-    a `ContentStream` implementation.
+    Handles encoding the given `content`, `data`, `files`, and `json`,
+    returning a `ContentStream` implementation.
     """
-    if not data:
-        if json is not None:
-            return JSONStream(json=json)
-        elif files:
-            return MultipartStream(data={}, files=files, boundary=boundary)
+    if data is not None and not isinstance(data, dict):
+        # We prefer to seperate `content=<bytes|byte iterator|bytes aiterator>`
+        # for raw request content, and `data=<form data>` for url encoded or
+        # multipart form content.
+        #
+        # However for compat with requests, we *do* still support
+        # `data=<bytes...>` usages. We deal with that case here, treating it
+        # as if `content=<...>` had been supplied instead.
+        content = data
+        data = None
+
+    if content is not None:
+        if isinstance(content, (str, bytes)):
+            return ByteStream(body=content)
+        elif hasattr(content, "__aiter__"):
+            content = typing.cast(typing.AsyncIterator[bytes], content)
+            return AsyncIteratorStream(aiterator=content)
+        elif hasattr(content, "__iter__"):
+            content = typing.cast(typing.Iterator[bytes], content)
+            return IteratorStream(iterator=content)
         else:
-            return ByteStream(body=b"")
-    elif isinstance(data, dict):
+            raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
+
+    elif data:
         if files:
             return MultipartStream(data=data, files=files, boundary=boundary)
         else:
             return URLEncodedStream(data=data)
-    elif isinstance(data, (str, bytes)):
-        return ByteStream(body=data)
-    elif hasattr(data, "__aiter__"):
-        data = typing.cast(typing.AsyncIterator[bytes], data)
-        return AsyncIteratorStream(aiterator=data)
-    elif hasattr(data, "__iter__"):
-        data = typing.cast(typing.Iterator[bytes], data)
-        return IteratorStream(iterator=data)
 
-    raise TypeError(f"Unexpected type for 'data', {type(data)!r}")
+    elif files:
+        return MultipartStream(data={}, files=files, boundary=boundary)
+
+    elif json is not None:
+        return JSONStream(json=json)
+
+    return ByteStream(body=b"")
+
+
+def encode_response(content: ResponseContent = None) -> ContentStream:
+    if content is None:
+        return ByteStream(b"")
+    elif isinstance(content, bytes):
+        return ByteStream(body=content)
+    elif isinstance(content, typing.AsyncIterator):
+        return AsyncIteratorStream(aiterator=content)
+    elif isinstance(content, typing.Iterator):
+        return IteratorStream(iterator=content)
+
+    raise TypeError(f"Unexpected type for 'content', {type(content)!r}")

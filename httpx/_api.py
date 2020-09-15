@@ -10,6 +10,7 @@ from ._types import (
     HeaderTypes,
     ProxiesTypes,
     QueryParamTypes,
+    RequestContent,
     RequestData,
     RequestFiles,
     TimeoutTypes,
@@ -23,6 +24,7 @@ def request(
     url: URLTypes,
     *,
     params: QueryParamTypes = None,
+    content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
     json: typing.Any = None,
@@ -46,8 +48,10 @@ def request(
     * **url** - URL for the new `Request` object.
     * **params** - *(optional)* Query parameters to include in the URL, as a
     string, dictionary, or list of two-tuples.
-    * **data** - *(optional)* Data to include in the body of the request, as a
-    dictionary
+    * **content** - *(optional)* Binary content to include in the body of the
+    request, as bytes or a byte iterator.
+    * **data** - *(optional)* Form data to include in the body of the request,
+    as a dictionary.
     * **files** - *(optional)* A dictionary of upload files to include in the
     body of the request.
     * **json** - *(optional)* A JSON serializable object to include in the body
@@ -84,11 +88,12 @@ def request(
     ```
     """
     with Client(
-        proxies=proxies, cert=cert, verify=verify, timeout=timeout, trust_env=trust_env,
+        proxies=proxies, cert=cert, verify=verify, timeout=timeout, trust_env=trust_env
     ) as client:
         return client.request(
             method=method,
             url=url,
+            content=content,
             data=data,
             files=files,
             json=json,
@@ -105,6 +110,7 @@ def stream(
     url: URLTypes,
     *,
     params: QueryParamTypes = None,
+    content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
     json: typing.Any = None,
@@ -133,6 +139,7 @@ def stream(
         method=method,
         url=url,
         params=params,
+        content=content,
         data=data,
         files=files,
         json=json,
@@ -266,6 +273,7 @@ def head(
 def post(
     url: URLTypes,
     *,
+    content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
     json: typing.Any = None,
@@ -288,6 +296,7 @@ def post(
     return request(
         "POST",
         url,
+        content=content,
         data=data,
         files=files,
         json=json,
@@ -307,6 +316,7 @@ def post(
 def put(
     url: URLTypes,
     *,
+    content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
     json: typing.Any = None,
@@ -329,6 +339,7 @@ def put(
     return request(
         "PUT",
         url,
+        content=content,
         data=data,
         files=files,
         json=json,
@@ -348,6 +359,7 @@ def put(
 def patch(
     url: URLTypes,
     *,
+    content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
     json: typing.Any = None,
@@ -370,6 +382,7 @@ def patch(
     return request(
         "PATCH",
         url,
+        content=content,
         data=data,
         files=files,
         json=json,

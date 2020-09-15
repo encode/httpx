@@ -57,7 +57,6 @@ setup(
     install_requires=[
         "certifi",
         "sniffio",
-        "chardet==3.*",
         "rfc3986[idna2008]>=1.3,<2",
         "httpcore==0.10.*",
     ],

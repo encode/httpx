@@ -1,6 +1,6 @@
 import pytest
 
-from httpx import URL, InvalidURL
+import httpx
 
 
 @pytest.mark.parametrize(
@@ -53,15 +53,15 @@ from httpx import URL, InvalidURL
     ],
 )
 def test_idna_url(given, idna, host, scheme, port):
-    url = URL(given)
-    assert url == URL(idna)
+    url = httpx.URL(given)
+    assert url == httpx.URL(idna)
     assert url.host == host
     assert url.scheme == scheme
     assert url.port == port
 
 
 def test_url():
-    url = URL("https://example.org:123/path/to/somewhere?abc=123#anchor")
+    url = httpx.URL("https://example.org:123/path/to/somewhere?abc=123#anchor")
     assert url.scheme == "https"
     assert url.host == "example.org"
     assert url.port == 123
@@ -74,21 +74,23 @@ def test_url():
     )
 
     new = url.copy_with(scheme="http", port=None)
-    assert new == URL("http://example.org/path/to/somewhere?abc=123#anchor")
+    assert new == httpx.URL("http://example.org/path/to/somewhere?abc=123#anchor")
     assert new.scheme == "http"
 
 
 def test_url_eq_str():
-    url = URL("https://example.org:123/path/to/somewhere?abc=123#anchor")
+    url = httpx.URL("https://example.org:123/path/to/somewhere?abc=123#anchor")
     assert url == "https://example.org:123/path/to/somewhere?abc=123#anchor"
     assert str(url) == url
 
 
 def test_url_params():
-    url = URL("https://example.org:123/path/to/somewhere", params={"a": "123"})
+    url = httpx.URL("https://example.org:123/path/to/somewhere", params={"a": "123"})
     assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
 
-    url = URL("https://example.org:123/path/to/somewhere?b=456", params={"a": "123"})
+    url = httpx.URL(
+        "https://example.org:123/path/to/somewhere?b=456", params={"a": "123"}
+    )
     assert str(url) == "https://example.org:123/path/to/somewhere?b=456&a=123"
 
 
@@ -96,7 +98,7 @@ def test_url_join():
     """
     Some basic URL joining tests.
     """
-    url = URL("https://example.org:123/path/to/somewhere")
+    url = httpx.URL("https://example.org:123/path/to/somewhere")
     assert url.join("/somewhere-else") == "https://example.org:123/somewhere-else"
     assert (
         url.join("somewhere-else") == "https://example.org:123/path/to/somewhere-else"
@@ -114,7 +116,7 @@ def test_url_join_rfc3986():
     https://tools.ietf.org/html/rfc3986#section-5.4
     """
 
-    url = URL("http://example.com/b/c/d;p?q")
+    url = httpx.URL("http://example.com/b/c/d;p?q")
 
     assert url.join("g") == "http://example.com/b/c/g"
     assert url.join("./g") == "http://example.com/b/c/g"
@@ -164,8 +166,8 @@ def test_url_join_rfc3986():
 
 def test_url_set():
     urls = (
-        URL("http://example.org:123/path/to/somewhere"),
-        URL("http://example.org:123/path/to/somewhere/else"),
+        httpx.URL("http://example.org:123/path/to/somewhere"),
+        httpx.URL("http://example.org:123/path/to/somewhere/else"),
     )
 
     url_set = set(urls)
@@ -180,7 +182,7 @@ def test_url_copywith_for_authority():
         "port": 444,
         "host": "example.net",
     }
-    url = URL("https://example.org")
+    url = httpx.URL("https://example.org")
     new = url.copy_with(**copy_with_kwargs)
     for k, v in copy_with_kwargs.items():
         assert getattr(new, k) == v
@@ -192,7 +194,7 @@ def test_url_copywith_for_userinfo():
         "username": "tom@example.org",
         "password": "abc123@ %",
     }
-    url = URL("https://example.org")
+    url = httpx.URL("https://example.org")
     new = url.copy_with(**copy_with_kwargs)
     assert str(new) == "https://tom%40example.org:abc123%40%20%25@example.org"
     assert new.username == "tom@example.org"
@@ -200,5 +202,13 @@ def test_url_copywith_for_userinfo():
 
 
 def test_url_invalid():
-    with pytest.raises(InvalidURL):
-        URL("https://😇/")
+    with pytest.raises(httpx.InvalidURL):
+        httpx.URL("https://😇/")
+
+
+def test_url_invalid_type():
+    class ExternalURLClass:  # representing external URL class
+        pass
+
+    with pytest.raises(TypeError):
+        httpx.URL(ExternalURLClass())  # type: ignore

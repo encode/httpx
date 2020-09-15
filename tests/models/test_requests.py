@@ -14,7 +14,7 @@ def test_no_content():
 
 
 def test_content_length_header():
-    request = httpx.Request("POST", "http://example.org", data=b"test 123")
+    request = httpx.Request("POST", "http://example.org", content=b"test 123")
     assert request.headers["Content-Length"] == "8"
 
 
@@ -32,6 +32,18 @@ def test_json_encoded_data():
 
     assert request.headers["Content-Type"] == "application/json"
     assert request.content == b'{"test": 123}'
+
+
+def test_headers():
+    request = httpx.Request("POST", "http://example.org", json={"test": 123})
+
+    assert request.headers == httpx.Headers(
+        {
+            "Host": "example.org",
+            "Content-Type": "application/json",
+            "Content-Length": "13",
+        }
+    )
 
 
 def test_read_and_stream_data():

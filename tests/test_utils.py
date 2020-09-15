@@ -1,4 +1,3 @@
-import asyncio
 import os
 import random
 
@@ -6,7 +5,6 @@ import pytest
 
 import httpx
 from httpx._utils import (
-    ElapsedTimer,
     NetRCInfo,
     URLPattern,
     get_ca_bundle_from_env,
@@ -177,17 +175,6 @@ def test_get_ssl_cert_file():
     assert get_ca_bundle_from_env() is None
 
 
-@pytest.mark.asyncio
-async def test_elapsed_timer():
-    with ElapsedTimer() as timer:
-        assert timer.elapsed.total_seconds() == pytest.approx(0, abs=0.05)
-        await asyncio.sleep(0.1)
-    await asyncio.sleep(
-        0.1
-    )  # test to ensure time spent after timer exits isn't accounted for.
-    assert timer.elapsed.total_seconds() == pytest.approx(0.1, abs=0.05)
-
-
 @pytest.mark.parametrize(
     ["environment", "proxies"],
     [
@@ -237,18 +224,18 @@ def test_not_same_origin():
 @pytest.mark.parametrize(
     ["pattern", "url", "expected"],
     [
-        ("http://example.com", "http://example.com", True,),
-        ("http://example.com", "https://example.com", False,),
-        ("http://example.com", "http://other.com", False,),
-        ("http://example.com:123", "http://example.com:123", True,),
-        ("http://example.com:123", "http://example.com:456", False,),
-        ("http://example.com:123", "http://example.com", False,),
-        ("all://example.com", "http://example.com", True,),
-        ("all://example.com", "https://example.com", True,),
-        ("http://", "http://example.com", True,),
-        ("http://", "https://example.com", False,),
-        ("all://", "https://example.com:123", True,),
-        ("", "https://example.com:123", True,),
+        ("http://example.com", "http://example.com", True),
+        ("http://example.com", "https://example.com", False),
+        ("http://example.com", "http://other.com", False),
+        ("http://example.com:123", "http://example.com:123", True),
+        ("http://example.com:123", "http://example.com:456", False),
+        ("http://example.com:123", "http://example.com", False),
+        ("all://example.com", "http://example.com", True),
+        ("all://example.com", "https://example.com", True),
+        ("http://", "http://example.com", True),
+        ("http://", "https://example.com", False),
+        ("all://", "https://example.com:123", True),
+        ("", "https://example.com:123", True),
     ],
 )
 def test_url_matches(pattern, url, expected):

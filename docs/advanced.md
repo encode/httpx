@@ -221,6 +221,113 @@ with httpx.Client(headers=headers) as client:
     ...
 ```
 
+## Event Hooks
+
+HTTPX allows you to register "event hooks" with the client, that are called
+every time a particular type of event takes place.
+
+There are currently two event hooks:
+
+* `request` - Called once a request is about to be sent. Passed the `request` instance.
+* `response` - Called once the response has been returned. Passed the `response` instance.
+
+These allow you to install client-wide functionality such as logging and monitoring.
+
+```python
+def log_request(request):
+    print(f"Request event hook: {request.method} {request.url} - Waiting for response")
+
+def log_response(response):
+    request = response.request
+    print(f"Response event hook: {request.method} {request.url} - Status {response.status_code}")
+
+client = httpx.Client(event_hooks={'request': [log_request], 'response': [log_response]})
+```
+
+You can also use these hooks to install response processing code, such as this
+example, which creates a client instance that always raises `httpx.HTTPStatusError`
+on 4xx and 5xx responses.
+
+```python
+def raise_on_4xx_5xx(response):
+    response.raise_for_status()
+
+client = httpx.Client(event_hooks={'response': [raise_on_4xx_5xx]})
+```
+
+Event hooks must always be set as a **list of callables**, and you may register
+multiple event hooks for each type of event.
+
+As well as being able to set event hooks on instantiating the client, there
+is also an `.event_hooks` property, that allows you to inspect and modify
+the installed hooks.
+
+```python
+client = httpx.Client()
+client.event_hooks['request'] = [log_request]
+client.event_hooks['response'] = [log_response, raise_for_status]
+```
+
+!!! note
+    If you are using HTTPX's async support, then you need to be aware that
+    hooks registered with `httpx.AsyncClient` MUST be async functions,
+    rather than plain functions.
+
+## Monitoring download progress
+
+If you need to monitor download progress of large responses, you can use response streaming and inspect the `response.num_bytes_downloaded` property.
+
+This interface is required for properly determining download progress, because the total number of bytes returned by `response.content` or `response.iter_content()` will not always correspond with the raw content length of the response if HTTP response compression is being used.
+
+For example, showing a progress bar using the [`tqdm`](https://github.com/tqdm/tqdm) library while a response is being downloaded could be done like this…
+
+```python
+import tempfile
+
+import httpx
+from tqdm import tqdm
+
+with tempfile.NamedTemporaryFile() as download_file:
+    url = "https://speed.hetzner.de/100MB.bin"
+    with httpx.stream("GET", url) as response:
+        total = int(response.headers["Content-Length"])
+
+        with tqdm(total=total, unit_scale=True, unit_divisor=1024, unit="B") as progress:
+            num_bytes_downloaded = response.num_bytes_downloaded
+            for chunk in response.iter_bytes():
+                download_file.write(chunk)
+                progress.update(response.num_bytes_downloaded - num_bytes_downloaded)
+                num_bytes_downloaded = response.num_bytes_downloaded
+```
+
+![tqdm progress bar](img/tqdm-progress.gif)
+
+Or an alternate example, this time using the [`rich`](https://github.com/willmcgugan/rich) library…
+
+```python
+import tempfile
+import httpx
+import rich.progress
+
+with tempfile.NamedTemporaryFile() as download_file:
+    url = "https://speed.hetzner.de/100MB.bin"
+    with httpx.stream("GET", url) as response:
+        total = int(response.headers["Content-Length"])
+
+        with rich.progress.Progress(
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            rich.progress.BarColumn(bar_width=None),
+            rich.progress.DownloadColumn(),
+            rich.progress.TransferSpeedColumn(),
+        ) as progress:
+            download_task = progress.add_task("Download", total=total)
+            for chunk in response.iter_bytes():
+                download_file.write(chunk)
+                progress.update(download_task, completed=response.num_bytes_downloaded)
+```
+
+![rich progress bar](img/rich-progress.gif)
+
 ## .netrc Support
 
 HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is
@@ -724,6 +831,55 @@ class MyCustomAuth(httpx.Auth):
         ...
 ```
 
+If you _do_ need to perform I/O other than HTTP requests, such as accessing a disk-based cache, or you need to use concurrency primitives, such as locks, then you should override `.sync_auth_flow()` and `.async_auth_flow()` (instead of `.auth_flow()`). The former will be used by `httpx.Client`, while the latter will be used by `httpx.AsyncClient`.
+
+```python
+import asyncio
+import threading
+import httpx
+
+
+class MyCustomAuth(httpx.Auth):
+    def __init__(self):
+        self._sync_lock = threading.RLock()
+        self._async_lock = asyncio.Lock()
+
+    def sync_get_token(self):
+        with self._sync_lock:
+            ...
+
+    def sync_auth_flow(self, request):
+        token = self.sync_get_token()
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+
+    async def async_get_token(self):
+        async with self._async_lock:
+            ...
+
+    async def async_auth_flow(self, request):
+        token = await self.async_get_token()
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+```
+
+If you only want to support one of the two methods, then you should still override it, but raise an explicit `RuntimeError`.
+
+```python
+import httpx
+import sync_only_library
+
+
+class MyCustomAuth(httpx.Auth):
+    def sync_auth_flow(self, request):
+        token = sync_only_library.get_token(...)
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+
+    async def async_auth_flow(self, request):
+        raise RuntimeError("Cannot use a sync authentication class with httpx.AsyncClient")
+```
+
 ## SSL certificates
 
 When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
@@ -809,6 +965,8 @@ HTTPX's `Client` also accepts a `transport` argument. This argument allows you
 to provide a custom Transport object that will be used to perform the actual
 sending of the requests.
 
+### Usage
+
 For some advanced configuration you might need to instantiate a transport
 class directly, and pass it to the client instance. The `httpcore` package
 provides a `local_address` configuration that is only available via this
@@ -850,18 +1008,19 @@ do not include any default values for configuring aspects such as the
 connection pooling details, so you'll need to provide more explicit
 configuration when using this API.
 
-HTTPX also currently ships with a transport that uses the excellent
-[`urllib3` library](https://urllib3.readthedocs.io/en/latest/), which can be
-used with the sync `Client`...
+### urllib3 transport
+
+This [public gist](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165da388e546e) provides a transport that uses the excellent [`urllib3` library](https://urllib3.readthedocs.io/en/latest/), and can be used with the sync `Client`...
 
 ```pycon
 >>> import httpx
->>> client = httpx.Client(transport=httpx.URLLib3Transport())
+>>> from urllib3_transport import URLLib3Transport
+>>> client = httpx.Client(transport=URLLib3Transport())
 >>> client.get("https://example.org")
 <Response [200 OK]>
 ```
 
-Note that you'll need to install the `urllib3` package to use `URLLib3Transport`.
+### Writing custom transports
 
 A transport instance must implement the Transport API defined by
 [`httpcore`](https://www.encode.io/httpcore/api/). You

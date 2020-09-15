@@ -1,4 +1,5 @@
 import cgi
+import contextlib
 import datetime
 import email.message
 import json as jsonlib
@@ -9,15 +10,13 @@ from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, quote, unquote, urlencode
 
-import chardet
 import rfc3986
 import rfc3986.exceptions
 
-from .__version__ import __version__
-from ._content_streams import ByteStream, ContentStream, encode
+from ._content_streams import ByteStream, ContentStream, encode, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
-    Decoder,
+    ContentDecoder,
     IdentityDecoder,
     LineDecoder,
     MultiDecoder,
@@ -26,6 +25,7 @@ from ._decoders import (
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
     CookieConflict,
+    DecodingError,
     HTTPStatusError,
     InvalidURL,
     NotRedirectResponse,
@@ -41,12 +41,13 @@ from ._types import (
     HeaderTypes,
     PrimitiveData,
     QueryParamTypes,
+    RequestContent,
     RequestData,
     RequestFiles,
+    ResponseContent,
     URLTypes,
 )
 from ._utils import (
-    ElapsedTimer,
     flatten_queryparams,
     guess_json_utf,
     is_known_encoding,
@@ -70,8 +71,12 @@ class URL:
                 # We don't want to normalize relative URLs, since doing so
                 # removes any leading `../` portion.
                 self._uri_reference = self._uri_reference.normalize()
-        else:
+        elif isinstance(url, URL):
             self._uri_reference = url._uri_reference
+        else:
+            raise TypeError(
+                f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}"
+            )
 
         # Add any query parameters, merging with any in the URL if needed.
         if params:
@@ -101,13 +106,11 @@ class URL:
 
     @property
     def username(self) -> str:
-        userinfo = self._uri_reference.userinfo or ""
-        return unquote(userinfo.partition(":")[0])
+        return unquote(self.userinfo.partition(":")[0])
 
     @property
     def password(self) -> str:
-        userinfo = self._uri_reference.userinfo or ""
-        return unquote(userinfo.partition(":")[2])
+        return unquote(self.userinfo.partition(":")[2])
 
     @property
     def host(self) -> str:
@@ -239,7 +242,8 @@ class QueryParams(typing.Mapping[str, str]):
         value = args[0] if args else kwargs
 
         items: typing.Sequence[typing.Tuple[str, PrimitiveData]]
-        if value is None or isinstance(value, str):
+        if value is None or isinstance(value, (str, bytes)):
+            value = value.decode("ascii") if isinstance(value, bytes) else value
             items = parse_qsl(value)
         elif isinstance(value, QueryParams):
             items = value.multi_items()
@@ -578,12 +582,6 @@ class Headers(typing.MutableMapping[str, str]):
         return self.get_list(key, split_commas=split_commas)
 
 
-USER_AGENT = f"python-httpx/{__version__}"
-ACCEPT_ENCODING = ", ".join(
-    [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
-)
-
-
 class Request:
     def __init__(
         self,
@@ -593,6 +591,7 @@ class Request:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -607,12 +606,11 @@ class Request:
         if stream is not None:
             self.stream = stream
         else:
-            self.stream = encode(data, files, json)
+            self.stream = encode(content, data, files, json)
 
-        self.timer = ElapsedTimer()
-        self.prepare()
+        self._prepare()
 
-    def prepare(self) -> None:
+    def _prepare(self) -> None:
         for key, value in self.stream.get_headers().items():
             # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
             if key.lower() == "transfer-encoding" and "content-length" in self.headers:
@@ -625,26 +623,12 @@ class Request:
         has_content_length = (
             "content-length" in self.headers or "transfer-encoding" in self.headers
         )
-        has_user_agent = "user-agent" in self.headers
-        has_accept = "accept" in self.headers
-        has_accept_encoding = "accept-encoding" in self.headers
-        has_connection = "connection" in self.headers
 
-        if not has_host:
-            url = self.url
-            if url.userinfo:
-                url = url.copy_with(username=None, password=None)
-            auto_headers.append((b"host", url.authority.encode("ascii")))
+        if not has_host and self.url.authority:
+            host = self.url.copy_with(username=None, password=None).authority
+            auto_headers.append((b"host", host.encode("ascii")))
         if not has_content_length and self.method in ("POST", "PUT", "PATCH"):
             auto_headers.append((b"content-length", b"0"))
-        if not has_user_agent:
-            auto_headers.append((b"user-agent", USER_AGENT.encode("ascii")))
-        if not has_accept:
-            auto_headers.append((b"accept", b"*/*"))
-        if not has_accept_encoding:
-            auto_headers.append((b"accept-encoding", ACCEPT_ENCODING.encode()))
-        if not has_connection:
-            auto_headers.append((b"connection", b"keep-alive"))
 
         self.headers = Headers(auto_headers + self.headers.raw)
 
@@ -689,29 +673,36 @@ class Response:
         self,
         status_code: int,
         *,
-        request: Request,
+        request: Request = None,
         http_version: str = None,
         headers: HeaderTypes = None,
         stream: ContentStream = None,
-        content: bytes = None,
+        content: ResponseContent = None,
         history: typing.List["Response"] = None,
+        elapsed_func: typing.Callable = None,
     ):
         self.status_code = status_code
         self.http_version = http_version
         self.headers = Headers(headers)
 
-        self.request = request
+        self._request: typing.Optional[Request] = request
+
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.history = [] if history is None else list(history)
+        self._elapsed_func = elapsed_func
 
         self.is_closed = False
         self.is_stream_consumed = False
         if stream is not None:
             self._raw_stream = stream
         else:
-            self._raw_stream = ByteStream(body=content or b"")
-            self.read()
+            self._raw_stream = encode_response(content)
+            if content is None or isinstance(content, bytes):
+                # Load the response body, except for streaming content.
+                self.read()
+
+        self._num_bytes_downloaded = 0
 
     @property
     def elapsed(self) -> datetime.timedelta:
@@ -724,7 +715,22 @@ class Response:
                 "'.elapsed' may only be accessed after the response "
                 "has been read or closed."
             )
-        return self._elapsed
+        return datetime.timedelta(seconds=self._elapsed)
+
+    @property
+    def request(self) -> Request:
+        """
+        Returns the request instance associated to the current response.
+        """
+        if self._request is None:
+            raise RuntimeError(
+                "The request instance has not been set on this response."
+            )
+        return self._request
+
+    @request.setter
+    def request(self, value: Request) -> None:
+        self._request = value
 
     @property
     def reason_phrase(self) -> str:
@@ -750,19 +756,22 @@ class Response:
             if not content:
                 self._text = ""
             else:
-                encoding = self.encoding
-                self._text = content.decode(encoding, errors="replace")
+                decoder = TextDecoder(encoding=self.encoding)
+                self._text = "".join([decoder.decode(self.content), decoder.flush()])
         return self._text
 
     @property
-    def encoding(self) -> str:
+    def encoding(self) -> typing.Optional[str]:
+        """
+        Return the encoding, which may have been set explicitly, or may have
+        been specified by the Content-Type header.
+        """
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
-                encoding = self.apparent_encoding
-                if encoding is None or not is_known_encoding(encoding):
-                    encoding = "utf-8"
-            self._encoding = encoding
+                self._encoding = None
+            else:
+                self._encoding = encoding
         return self._encoding
 
     @encoding.setter
@@ -778,40 +787,25 @@ class Response:
         if content_type is None:
             return None
 
-        parsed = cgi.parse_header(content_type)
-        media_type, params = parsed[0], parsed[-1]
-        if "charset" in params:
-            return params["charset"].strip("'\"")
+        _, params = cgi.parse_header(content_type)
+        if "charset" not in params:
+            return None
 
-        # RFC 2616 specifies that 'iso-8859-1' should be used as the default
-        # for 'text/*' media types, if no charset is provided.
-        # See: https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.7.1
-        if media_type.startswith("text/"):
-            return "iso-8859-1"
+        return params["charset"].strip("'\"")
 
-        return None
-
-    @property
-    def apparent_encoding(self) -> typing.Optional[str]:
-        """
-        Return the encoding, as it appears to autodetection.
-        """
-        return chardet.detect(self.content)["encoding"]
-
-    @property
-    def decoder(self) -> Decoder:
+    def _get_content_decoder(self) -> ContentDecoder:
         """
         Returns a decoder instance which can be used to decode the raw byte
         content, depending on the Content-Encoding used in the response.
         """
         if not hasattr(self, "_decoder"):
-            decoders: typing.List[Decoder] = []
+            decoders: typing.List[ContentDecoder] = []
             values = self.headers.get_list("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
                 try:
                     decoder_cls = SUPPORTED_DECODERS[value]
-                    decoders.append(decoder_cls(request=self.request))
+                    decoders.append(decoder_cls())
                 except KeyError:
                     continue
 
@@ -820,7 +814,7 @@ class Response:
             elif len(decoders) > 1:
                 self._decoder = MultiDecoder(children=decoders)
             else:
-                self._decoder = IdentityDecoder(request=self.request)
+                self._decoder = IdentityDecoder()
 
         return self._decoder
 
@@ -841,12 +835,19 @@ class Response:
             "For more information check: https://httpstatuses.com/{0.status_code}"
         )
 
+        request = self._request
+        if request is None:
+            raise RuntimeError(
+                "Cannot call `raise_for_status` as the request "
+                "instance has not been set on this response."
+            )
+
         if codes.is_client_error(self.status_code):
             message = message.format(self, error_type="Client Error")
-            raise HTTPStatusError(message, request=self.request, response=self)
+            raise HTTPStatusError(message, request=request, response=self)
         elif codes.is_server_error(self.status_code):
             message = message.format(self, error_type="Server Error")
-            raise HTTPStatusError(message, request=self.request, response=self)
+            raise HTTPStatusError(message, request=request, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
@@ -879,8 +880,23 @@ class Response:
                 ldict[key] = link
         return ldict
 
+    @property
+    def num_bytes_downloaded(self) -> int:
+        return self._num_bytes_downloaded
+
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
+
+    @contextlib.contextmanager
+    def _wrap_decoder_errors(self) -> typing.Iterator[None]:
+        # If the response has an associated request instance, we want decoding
+        # errors to be raised as proper `httpx.DecodingError` exceptions.
+        try:
+            yield
+        except ValueError as exc:
+            if self._request is None:
+                raise exc
+            raise DecodingError(message=str(exc), request=self.request) from exc
 
     def read(self) -> bytes:
         """
@@ -898,9 +914,11 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
-            for chunk in self.iter_raw():
-                yield self.decoder.decode(chunk)
-            yield self.decoder.flush()
+            decoder = self._get_content_decoder()
+            with self._wrap_decoder_errors():
+                for chunk in self.iter_raw():
+                    yield decoder.decode(chunk)
+                yield decoder.flush()
 
     def iter_text(self) -> typing.Iterator[str]:
         """
@@ -908,18 +926,20 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(request=self.request, encoding=self.charset_encoding)
-        for chunk in self.iter_bytes():
-            yield decoder.decode(chunk)
-        yield decoder.flush()
+        decoder = TextDecoder(encoding=self.encoding)
+        with self._wrap_decoder_errors():
+            for chunk in self.iter_bytes():
+                yield decoder.decode(chunk)
+            yield decoder.flush()
 
     def iter_lines(self) -> typing.Iterator[str]:
         decoder = LineDecoder()
-        for text in self.iter_text():
-            for line in decoder.decode(text):
+        with self._wrap_decoder_errors():
+            for text in self.iter_text():
+                for line in decoder.decode(text):
+                    yield line
+            for line in decoder.flush():
                 yield line
-        for line in decoder.flush():
-            yield line
 
     def iter_raw(self) -> typing.Iterator[bytes]:
         """
@@ -931,8 +951,10 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
-        with map_exceptions(HTTPCORE_EXC_MAP, request=self.request):
+        self._num_bytes_downloaded = 0
+        with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
             for part in self._raw_stream:
+                self._num_bytes_downloaded += len(part)
                 yield part
         self.close()
 
@@ -956,7 +978,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            self._elapsed = self.request.timer.elapsed
+            if self._elapsed_func is not None:
+                self._elapsed = self._elapsed_func()
             self._raw_stream.close()
 
     async def aread(self) -> bytes:
@@ -975,9 +998,11 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
-            async for chunk in self.aiter_raw():
-                yield self.decoder.decode(chunk)
-            yield self.decoder.flush()
+            decoder = self._get_content_decoder()
+            with self._wrap_decoder_errors():
+                async for chunk in self.aiter_raw():
+                    yield decoder.decode(chunk)
+                yield decoder.flush()
 
     async def aiter_text(self) -> typing.AsyncIterator[str]:
         """
@@ -985,18 +1010,20 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(request=self.request, encoding=self.charset_encoding)
-        async for chunk in self.aiter_bytes():
-            yield decoder.decode(chunk)
-        yield decoder.flush()
+        decoder = TextDecoder(encoding=self.encoding)
+        with self._wrap_decoder_errors():
+            async for chunk in self.aiter_bytes():
+                yield decoder.decode(chunk)
+            yield decoder.flush()
 
     async def aiter_lines(self) -> typing.AsyncIterator[str]:
         decoder = LineDecoder()
-        async for text in self.aiter_text():
-            for line in decoder.decode(text):
+        with self._wrap_decoder_errors():
+            async for text in self.aiter_text():
+                for line in decoder.decode(text):
+                    yield line
+            for line in decoder.flush():
                 yield line
-        for line in decoder.flush():
-            yield line
 
     async def aiter_raw(self) -> typing.AsyncIterator[bytes]:
         """
@@ -1008,8 +1035,10 @@ class Response:
             raise ResponseClosed()
 
         self.is_stream_consumed = True
-        with map_exceptions(HTTPCORE_EXC_MAP, request=self.request):
+        self._num_bytes_downloaded = 0
+        with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
             async for part in self._raw_stream:
+                self._num_bytes_downloaded += len(part)
                 yield part
         await self.aclose()
 
@@ -1032,7 +1061,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            self._elapsed = self.request.timer.elapsed
+            if self._elapsed_func is not None:
+                self._elapsed = await self._elapsed_func()
             await self._raw_stream.aclose()
 
 
@@ -1047,6 +1077,10 @@ class Cookies(MutableMapping):
             if isinstance(cookies, dict):
                 for key, value in cookies.items():
                     self.set(key, value)
+        elif isinstance(cookies, list):
+            self.jar = CookieJar()
+            for key, value in cookies:
+                self.set(key, value)
         elif isinstance(cookies, Cookies):
             self.jar = CookieJar()
             for cookie in cookies.jar:

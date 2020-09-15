@@ -17,6 +17,11 @@ class Auth:
 
     To implement a custom authentication scheme, subclass `Auth` and override
     the `.auth_flow()` method.
+
+    If the authentication scheme does I/O such as disk access or network calls, or uses
+    synchronization primitives such as locks, you should override `.sync_auth_flow()`
+    and/or `.async_auth_flow()` instead of `.auth_flow()` to provide specialized
+    implementations that will be used by `Client` and `AsyncClient` respectively.
     """
 
     requires_request_body = False
@@ -45,6 +50,56 @@ class Auth:
         You can dispatch as many requests as is necessary.
         """
         yield request
+
+    def sync_auth_flow(
+        self, request: Request
+    ) -> typing.Generator[Request, Response, None]:
+        """
+        Execute the authentication flow synchronously.
+
+        By default, this defers to `.auth_flow()`. You should override this method
+        when the authentication scheme does I/O and/or uses concurrency primitives.
+        """
+        if self.requires_request_body:
+            request.read()
+
+        flow = self.auth_flow(request)
+        request = next(flow)
+
+        while True:
+            response = yield request
+            if self.requires_response_body:
+                response.read()
+
+            try:
+                request = flow.send(response)
+            except StopIteration:
+                break
+
+    async def async_auth_flow(
+        self, request: Request
+    ) -> typing.AsyncGenerator[Request, Response]:
+        """
+        Execute the authentication flow asynchronously.
+
+        By default, this defers to `.auth_flow()`. You should override this method
+        when the authentication scheme does I/O and/or uses concurrency primitives.
+        """
+        if self.requires_request_body:
+            await request.aread()
+
+        flow = self.auth_flow(request)
+        request = next(flow)
+
+        while True:
+            response = yield request
+            if self.requires_response_body:
+                await response.aread()
+
+            try:
+                request = flow.send(response)
+            except StopIteration:
+                break
 
 
 class FunctionAuth(Auth):
@@ -112,28 +167,34 @@ class DigestAuth(Auth):
         response = yield request
 
         if response.status_code != 401 or "www-authenticate" not in response.headers:
-            # If the response is not a 401 WWW-Authenticate, then we don't
+            # If the response is not a 401 then we don't
             # need to build an authenticated request.
             return
 
-        challenge = self._parse_challenge(request, response)
+        for auth_header in response.headers.get_list("www-authenticate"):
+            if auth_header.lower().startswith("digest "):
+                break
+        else:
+            # If the response does not include a 'WWW-Authenticate: Digest ...'
+            # header, then we don't need to build an authenticated request.
+            return
+
+        challenge = self._parse_challenge(request, response, auth_header)
         request.headers["Authorization"] = self._build_auth_header(request, challenge)
         yield request
 
     def _parse_challenge(
-        self, request: Request, response: Response
+        self, request: Request, response: Response, auth_header: str
     ) -> "_DigestAuthChallenge":
         """
         Returns a challenge from a Digest WWW-Authenticate header.
         These take the form of:
         `Digest realm="realm@host.com",qop="auth,auth-int",nonce="abc",opaque="xyz"`
         """
-        header = response.headers["www-authenticate"]
+        scheme, _, fields = auth_header.partition(" ")
 
-        scheme, _, fields = header.partition(" ")
-        if scheme.lower() != "digest":
-            message = "Header does not start with 'Digest'"
-            raise ProtocolError(message, request=request)
+        # This method should only ever have been called with a Digest auth header.
+        assert scheme.lower() == "digest"
 
         header_dict: typing.Dict[str, str] = {}
         for field in parse_http_list(fields):
