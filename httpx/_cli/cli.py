@@ -35,6 +35,15 @@ def get_lexer_for_response(response: httpx.Response) -> str:
     return ""  # pragma: nocover
 
 
+def get_response_headers(response: httpx.Response) -> str:
+    lines = [
+        f"{response.http_version} {response.status_code} {response.reason_phrase}"
+    ] + [
+        f"{name}: {value}" for name, value in response.headers.items()
+    ]
+    return "\n".join(lines)
+
+
 @click.command()
 @click.argument("url", type=str)
 @click.option("--method", "-m", "method", type=str, default="GET")
@@ -70,9 +79,14 @@ def httpx_cli(
     cert: typing.Optional[click.Path],
     trust_env: bool,
 ) -> None:
-    console = rich.console.Console()
-
-    response = httpx.request(
+    client = httpx.Client(
+        proxies=proxies,
+        timeout=timeout,
+        verify=verify,
+        cert=None if cert is None else str(cert),
+        trust_env=trust_env,
+    )
+    response = client.request(
         method,
         url,
         params=list(params),
@@ -81,16 +95,21 @@ def httpx_cli(
         json=json,
         headers=headers,
         cookies=dict(cookies),
-        proxies=proxies,
-        timeout=timeout,
         allow_redirects=allow_redirects,
-        verify=verify,
-        cert=None if cert is None else str(cert),
-        trust_env=trust_env,
     )
 
-    lexer_name = get_lexer_for_response(response)
+    console = rich.console.Console()
 
+    http_text = get_response_headers(response)
+    syntax = rich.syntax.Syntax(http_text, "http")
+    syntax._background_color = "default"
+    syntax._pygments_style_class.background_color = "default"
+    console.print(syntax)
+
+    syntax = rich.syntax.Syntax("", "http")
+    console.print(syntax)
+
+    lexer_name = get_lexer_for_response(response)
     if lexer_name:
         syntax = rich.syntax.Syntax(response.text, lexer_name)
         console.print(syntax)
