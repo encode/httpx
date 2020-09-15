@@ -4,7 +4,6 @@ import brotli
 import pytest
 
 import httpx
-from httpx._content_streams import AsyncIteratorStream
 from httpx._decoders import (
     BrotliDecoder,
     DeflateDecoder,
@@ -130,11 +129,10 @@ async def test_streaming():
         yield compressor.flush()
 
     headers = [(b"Content-Encoding", b"gzip")]
-    stream = AsyncIteratorStream(aiterator=compress(body))
     response = httpx.Response(
         200,
         headers=headers,
-        stream=stream,
+        content=compress(body),
     )
     assert not hasattr(response, "body")
     assert await response.aread() == body
@@ -191,19 +189,17 @@ async def test_text_decoder(data, encoding):
             yield chunk
 
     # Accessing `.text` on a read response.
-    stream = AsyncIteratorStream(aiterator=iterator())
     response = httpx.Response(
         200,
-        stream=stream,
+        content=iterator(),
     )
     await response.aread()
     assert response.text == (b"".join(data)).decode(encoding)
 
     # Streaming `.aiter_text` iteratively.
-    stream = AsyncIteratorStream(aiterator=iterator())
     response = httpx.Response(
         200,
-        stream=stream,
+        content=iterator(),
     )
     text = "".join([part async for part in response.aiter_text()])
     assert text == (b"".join(data)).decode(encoding)
@@ -216,11 +212,10 @@ async def test_text_decoder_known_encoding():
         yield b"\x83"
         yield b"\x89\x83x\x83\x8b"
 
-    stream = AsyncIteratorStream(aiterator=iterator())
     response = httpx.Response(
         200,
         headers=[(b"Content-Type", b"text/html; charset=shift-jis")],
-        stream=stream,
+        content=iterator(),
     )
 
     await response.aread()

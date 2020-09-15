@@ -34,6 +34,7 @@ QueryParamTypes = Union[
     Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
     List[Tuple[str, PrimitiveData]],
     str,
+    bytes,
     None,
 ]
 
@@ -62,6 +63,8 @@ AuthTypes = Union[
     "Auth",
     None,
 ]
+
+ResponseContent = Union[bytes, Iterator[bytes], AsyncIterator[bytes]]
 
 RequestData = Union[dict, str, bytes, Iterator[bytes], AsyncIterator[bytes]]
 

@@ -13,10 +13,10 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode
 import rfc3986
 import rfc3986.exceptions
 
-from ._content_streams import ByteStream, ContentStream, encode
+from ._content_streams import ByteStream, ContentStream, encode, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
-    Decoder,
+    ContentDecoder,
     IdentityDecoder,
     LineDecoder,
     MultiDecoder,
@@ -43,6 +43,7 @@ from ._types import (
     QueryParamTypes,
     RequestData,
     RequestFiles,
+    ResponseContent,
     URLTypes,
 )
 from ._utils import (
@@ -240,7 +241,8 @@ class QueryParams(typing.Mapping[str, str]):
         value = args[0] if args else kwargs
 
         items: typing.Sequence[typing.Tuple[str, PrimitiveData]]
-        if value is None or isinstance(value, str):
+        if value is None or isinstance(value, (str, bytes)):
+            value = value.decode("ascii") if isinstance(value, bytes) else value
             items = parse_qsl(value)
         elif isinstance(value, QueryParams):
             items = value.multi_items()
@@ -604,9 +606,9 @@ class Request:
         else:
             self.stream = encode(data, files, json)
 
-        self.prepare()
+        self._prepare()
 
-    def prepare(self) -> None:
+    def _prepare(self) -> None:
         for key, value in self.stream.get_headers().items():
             # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
             if key.lower() == "transfer-encoding" and "content-length" in self.headers:
@@ -673,7 +675,7 @@ class Response:
         http_version: str = None,
         headers: HeaderTypes = None,
         stream: ContentStream = None,
-        content: bytes = None,
+        content: ResponseContent = None,
         history: typing.List["Response"] = None,
         elapsed_func: typing.Callable = None,
     ):
@@ -693,8 +695,10 @@ class Response:
         if stream is not None:
             self._raw_stream = stream
         else:
-            self._raw_stream = ByteStream(body=content or b"")
-            self.read()
+            self._raw_stream = encode_response(content)
+            if content is None or isinstance(content, bytes):
+                # Load the response body, except for streaming content.
+                self.read()
 
         self._num_bytes_downloaded = 0
 
@@ -787,14 +791,13 @@ class Response:
 
         return params["charset"].strip("'\"")
 
-    @property
-    def decoder(self) -> Decoder:
+    def _get_content_decoder(self) -> ContentDecoder:
         """
         Returns a decoder instance which can be used to decode the raw byte
         content, depending on the Content-Encoding used in the response.
         """
         if not hasattr(self, "_decoder"):
-            decoders: typing.List[Decoder] = []
+            decoders: typing.List[ContentDecoder] = []
             values = self.headers.get_list("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
@@ -909,10 +912,11 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
+            decoder = self._get_content_decoder()
             with self._wrap_decoder_errors():
                 for chunk in self.iter_raw():
-                    yield self.decoder.decode(chunk)
-                yield self.decoder.flush()
+                    yield decoder.decode(chunk)
+                yield decoder.flush()
 
     def iter_text(self) -> typing.Iterator[str]:
         """
@@ -992,10 +996,11 @@ class Response:
         if hasattr(self, "_content"):
             yield self._content
         else:
+            decoder = self._get_content_decoder()
             with self._wrap_decoder_errors():
                 async for chunk in self.aiter_raw():
-                    yield self.decoder.decode(chunk)
-                yield self.decoder.flush()
+                    yield decoder.decode(chunk)
+                yield decoder.flush()
 
     async def aiter_text(self) -> typing.AsyncIterator[str]:
         """
