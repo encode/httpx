@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from click.testing import CliRunner
 
@@ -92,6 +94,16 @@ def test_auth(server):
         "",
         "Hello, world!",
     ]
+
+
+def test_download(server):
+    url = str(server.url)
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        runner.invoke(httpx_cli, [url, "--download"])
+        assert os.path.exists("index.txt")
+        with open("index.txt", "r") as input_file:
+            assert input_file.read() == "Hello, world!"
 
 
 def test_errors(server):
