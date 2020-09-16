@@ -105,6 +105,11 @@ def test_download(server):
         with open("index.txt", "r") as input_file:
             assert input_file.read() == "Hello, world!"
 
+        runner.invoke(httpx_cli, [url, "--download"])
+        assert os.path.exists("index.txt")
+        with open("index-1.txt", "r") as input_file:
+            assert input_file.read() == "Hello, world!"
+
 
 def test_errors(server):
     url = str(server.url)
