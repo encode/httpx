@@ -78,7 +78,7 @@ def filename_from_url(response: httpx.Response) -> str:
     return filename
 
 
-def trim_filename(filename: str, max_len: int=255) -> str:
+def trim_filename(filename: str, max_len: int = 255) -> str:
     if len(filename) > max_len:
         trim_by = len(filename) - max_len
         name, ext = os.path.splitext(filename)
@@ -93,7 +93,7 @@ def get_unique_filename(filename: str) -> str:
     attempt = 0
     while True:
         suffix = f"-{attempt}" if attempt > 0 else ""
-        try_filename = trim_filename(filename, max_len=255-len(suffix))
+        try_filename = trim_filename(filename, max_len=255 - len(suffix))
         name, ext = os.path.splitext(filename)
         try_filename = f"{name}{suffix}{ext}"
         if not os.path.exists(try_filename):

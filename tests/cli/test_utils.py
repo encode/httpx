@@ -1,5 +1,9 @@
 import httpx
-from httpx._cli.utils import filename_from_content_disposition, filename_from_url, trim_filename
+from httpx._cli.utils import (
+    filename_from_content_disposition,
+    filename_from_url,
+    trim_filename,
+)
 
 
 def test_filename_from_content_disposition():
@@ -32,9 +36,7 @@ def test_filename_from_url():
     assert filename_from_url(response) == "test.json"
 
     request = httpx.Request("GET", "http://www.example.com/test.json")
-    response = httpx.Response(
-        200, headers={}, request=request
-    )
+    response = httpx.Response(200, headers={}, request=request)
     assert filename_from_url(response) == "test.json"
 
     request = httpx.Request("GET", "http://www.example.com/")
