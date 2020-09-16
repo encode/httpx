@@ -49,6 +49,20 @@ def validate_json(
         raise click.BadParameter("Not valid JSON")
 
 
+def validate_auth(
+    ctx: click.Context,
+    param: typing.Union[click.Option, click.Parameter],
+    value: typing.Any,
+) -> typing.Any:
+    if value == (None, None):
+        return None
+
+    username, password = value
+    if password == "-":  # pragma: nocover
+        password = click.prompt("Password", hide_input=True)
+    return (username, password)
+
+
 @click.command()
 @click.argument("url", type=str)
 @click.option(
@@ -117,8 +131,21 @@ def validate_json(
     help="Cookies to include in the request.",
 )
 @click.option(
+    "--auth",
+    "-a",
+    "auth",
+    type=(str, str),
+    default=(None, None),
+    callback=validate_auth,
+    help=(
+        "Username and password to include in the request. "
+        "Specify '-' for the password to use a password prompt. "
+        "Note that using --verbose/-v will expose the Authorization header, "
+        "including the password encoding in a trivially reverisible format."
+    ),
+)
+@click.option(
     "--proxies",
-    "-p",
     "proxies",
     type=str,
     default=None,
@@ -175,6 +202,7 @@ def httpx_cli(
     json: str,
     headers: typing.List[typing.Tuple[str, str]],
     cookies: typing.List[typing.Tuple[str, str]],
+    auth: typing.Optional[typing.Tuple[str, str]],
     proxies: str,
     timeout: float,
     allow_redirects: bool,
@@ -215,6 +243,7 @@ def httpx_cli(
             json=json,
             headers=headers,
             cookies=dict(cookies),
+            auth=auth,
             allow_redirects=allow_redirects,
         ) as response:
             response.read()

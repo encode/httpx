@@ -71,6 +71,29 @@ def test_verbose(server):
     ]
 
 
+def test_auth(server):
+    url = str(server.url)
+    runner = CliRunner()
+    result = runner.invoke(httpx_cli, [url, "-v", "-a", "username", "password"])
+    assert result.exit_code == 0
+    assert remove_date_header(splitlines(result.output)) == [
+        "GET / HTTP/1.1",
+        f"host: {server.url.host}:{server.url.port}",
+        "accept: */*",
+        "accept-encoding: gzip, deflate, br",
+        "connection: keep-alive",
+        f"user-agent: python-httpx/{httpx.__version__}",
+        "authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+        "",
+        "HTTP/1.1 200 OK",
+        "server: uvicorn",
+        "content-type: text/plain",
+        "transfer-encoding: chunked",
+        "",
+        "Hello, world!",
+    ]
+
+
 def test_errors(server):
     url = str(server.url)
     runner = CliRunner()
