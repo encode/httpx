@@ -68,8 +68,9 @@ def filename_from_url(response: httpx.Response) -> str:
         else:
             ext = mimetypes.guess_extension(content_type) or ""
 
-        if ext == ".htm":  # Python 3
-            ext = ".html"
+        if ext == ".htm":
+            # Python 3.0-3.6
+            ext = ".html"  # pragma: nocover
 
         if ext:
             filename += ext
