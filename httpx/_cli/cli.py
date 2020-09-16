@@ -4,6 +4,7 @@ import typing
 
 import click
 import rich.console
+import rich.progress
 import rich.syntax
 
 import httpx
@@ -11,28 +12,63 @@ import httpx
 from .utils import (
     format_request_headers,
     format_response_headers,
+    get_download_filename,
     get_lexer_for_response,
 )
 
 
-def show_request_headers(request: httpx.Request) -> None:
+def print_request_headers(request: httpx.Request) -> None:
     console = rich.console.Console()
     http_text = format_request_headers(request)
     syntax = rich.syntax.Syntax(http_text, "http")
     console.print(syntax)
 
 
-def show_response_headers(response: httpx.Response) -> None:
+def print_response_headers(response: httpx.Response) -> None:
     console = rich.console.Console()
     http_text = format_response_headers(response)
     syntax = rich.syntax.Syntax(http_text, "http")
     console.print(syntax)
 
 
-def print_delimiter(*args: typing.Any) -> None:
+def print_delimiter() -> None:
     console = rich.console.Console()
     syntax = rich.syntax.Syntax("", "http")
     console.print(syntax)
+
+
+def print_response(response: httpx.Response) -> None:
+    console = rich.console.Console()
+    lexer_name = get_lexer_for_response(response)
+    if lexer_name:
+        syntax = rich.syntax.Syntax(response.text, lexer_name)
+        console.print(syntax)
+    else:  # pragma: nocover
+        console.print(response.text)
+
+
+def download_response(response: httpx.Response) -> None:
+    console = rich.console.Console()
+    syntax = rich.syntax.Syntax("", "http")
+    console.print(syntax)
+
+    filename = get_download_filename(response)
+    content_length = response.headers.get("Content-Length")
+    total = int(content_length) if content_length else None
+    with open(filename, mode="bw") as download_file:
+        with rich.progress.Progress(
+            "[progress.description]{task.description}",
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            rich.progress.BarColumn(bar_width=None),
+            rich.progress.DownloadColumn(),
+            rich.progress.TransferSpeedColumn(),
+        ) as progress:
+            download_task = progress.add_task(
+                f"Downloading [bold]{filename}", total=total
+            )
+            for chunk in response.iter_bytes():
+                download_file.write(chunk)
+                progress.update(download_task, completed=response.num_bytes_downloaded)
 
 
 def validate_json(
@@ -185,6 +221,13 @@ def validate_auth(
     help="Send the request using HTTP/2, if the remote server supports it.",
 )
 @click.option(
+    "--download",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Save the response content as a file, rather than displaying it.",
+)
+@click.option(
     "--verbose",
     "-v",
     type=bool,
@@ -208,6 +251,7 @@ def httpx_cli(
     allow_redirects: bool,
     verify: bool,
     http2: bool,
+    download: bool,
     verbose: bool,
 ) -> None:
     """
@@ -215,16 +259,9 @@ def httpx_cli(
 
     Sends a request and displays the response.
     """
-    console = rich.console.Console()
-    syntax = rich.syntax.Syntax("", "http")
-
+    event_hooks: typing.Dict[str, typing.List[typing.Callable]] = {}
     if verbose:
-        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = {
-            "request": [show_request_headers],
-            "response": [print_delimiter, show_response_headers],
-        }
-    else:
-        event_hooks = {"request": [], "response": [show_response_headers]}
+        event_hooks = {"request": [print_request_headers]}
 
     try:
         client = httpx.Client(
@@ -246,16 +283,19 @@ def httpx_cli(
             auth=auth,
             allow_redirects=allow_redirects,
         ) as response:
-            response.read()
-            syntax = rich.syntax.Syntax("", "http")
-            console.print(syntax)
+            if verbose:
+                # We've printed the request, so let's have a delimiter.
+                print_delimiter()
+            print_response_headers(response)
 
-            lexer_name = get_lexer_for_response(response)
-            if lexer_name:
-                syntax = rich.syntax.Syntax(response.text, lexer_name)
-                console.print(syntax)
-            else:  # pragma: nocover
-                console.print(response.text)
+            if download:
+                download_response(response)
+            else:
+                response.read()
+                print_delimiter()
+                print_response(response)
+
     except httpx.RequestError as exc:
+        console = rich.console.Console()
         console.print(f"{type(exc).__name__}: {exc}")
         sys.exit(1)
