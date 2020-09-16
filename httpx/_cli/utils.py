@@ -127,5 +127,4 @@ def get_download_filename(response: httpx.Response) -> str:
     filename = filename_from_content_disposition(response)
     if not filename:
         filename = filename_from_url(response)
-    filename = get_unique_filename(filename)
-    return filename
+    return get_unique_filename(filename)
