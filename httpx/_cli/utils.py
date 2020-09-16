@@ -67,7 +67,7 @@ def filename_from_url(response: httpx.Response) -> str:
             # mimetypes returns '.ksh' or '.bat'
             ext = ".txt"
         else:
-            ext = mimetypes.guess_extension(content_type)
+            ext = mimetypes.guess_extension(content_type) or ""
 
         if ext == ".htm":  # Python 3
             ext = ".html"
@@ -104,21 +104,21 @@ def get_filename_max_length(directory: str) -> int:
     return max_len
 
 
-def trim_filename_if_needed(filename: str, directory=".", extra=0) -> str:
+def trim_filename_if_needed(filename: str, directory: str = ".", extra: int = 0) -> str:
     max_len = get_filename_max_length(directory) - extra
     if len(filename) > max_len:
         filename = trim_filename(filename, max_len)
     return filename
 
 
-def get_unique_filename(filename: str, exists=os.path.exists) -> str:
+def get_unique_filename(filename: str) -> str:
     attempt = 0
     while True:
         suffix = f"-{attempt}" if attempt > 0 else ""
         try_filename = trim_filename_if_needed(filename, extra=len(suffix))
         name, ext = os.path.splitext(filename)
         try_filename = f"{name}{suffix}{ext}"
-        if not exists(try_filename):
+        if not os.path.exists(try_filename):
             return try_filename
         attempt += 1
 

@@ -54,7 +54,7 @@ def download_response(response: httpx.Response) -> None:
 
     filename = get_download_filename(response)
     content_length = response.headers.get("Content-Length")
-    total = int(content_length) if content_length else None
+    kwargs = {"total": int(content_length)} if content_length else {}
     with open(filename, mode="bw") as download_file:
         with rich.progress.Progress(
             "[progress.description]{task.description}",
@@ -63,9 +63,8 @@ def download_response(response: httpx.Response) -> None:
             rich.progress.DownloadColumn(),
             rich.progress.TransferSpeedColumn(),
         ) as progress:
-            download_task = progress.add_task(
-                f"Downloading [bold]{filename}", total=total
-            )
+            description = f"Downloading [bold]{filename}"
+            download_task = progress.add_task(description, **kwargs)  # type: ignore
             for chunk in response.iter_bytes():
                 download_file.write(chunk)
                 progress.update(download_task, completed=response.num_bytes_downloaded)
