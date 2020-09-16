@@ -1,4 +1,5 @@
 import json
+import sys
 import typing
 
 import click
@@ -228,3 +229,4 @@ def httpx_cli(
                 console.print(response.text)
     except httpx.RequestError as exc:
         console.print(f"{type(exc).__name__}: {exc}")
+        sys.exit(1)

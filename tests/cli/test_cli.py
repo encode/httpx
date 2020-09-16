@@ -69,3 +69,13 @@ def test_verbose(server):
         "",
         "Hello, world!",
     ]
+
+
+def test_errors(server):
+    url = str(server.url)
+    runner = CliRunner()
+    result = runner.invoke(httpx_cli, [url, "-h", "host", " "])
+    assert result.exit_code == 1
+    assert splitlines(result.output) == [
+        "LocalProtocolError: Illegal header value b' '",
+    ]
