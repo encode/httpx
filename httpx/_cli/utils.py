@@ -1,4 +1,3 @@
-import errno
 import mailbox
 import mimetypes
 import os

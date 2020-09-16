@@ -12,7 +12,7 @@ def test_filename_from_content_disposition():
     )
     assert filename_from_content_disposition(response) == "example.tar.gz"
 
-    response = httpx.Response(200, headers={})
+    response = httpx.Response(200)
     assert filename_from_content_disposition(response) == ""
 
 
@@ -36,11 +36,11 @@ def test_filename_from_url():
     assert filename_from_url(response) == "test.json"
 
     request = httpx.Request("GET", "http://www.example.com/test.json")
-    response = httpx.Response(200, headers={}, request=request)
+    response = httpx.Response(200, request=request)
     assert filename_from_url(response) == "test.json"
 
     request = httpx.Request("GET", "http://www.example.com/")
-    response = httpx.Response(200, headers={}, request=request)
+    response = httpx.Response(200, request=request)
     assert filename_from_url(response) == "index"
 
 
