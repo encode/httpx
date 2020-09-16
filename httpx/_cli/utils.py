@@ -78,7 +78,7 @@ def filename_from_url(response: httpx.Response) -> str:
     return filename
 
 
-def trim_filename(filename: str, max_len: int) -> str:
+def trim_filename(filename: str, max_len: int=255) -> str:
     if len(filename) > max_len:
         trim_by = len(filename) - max_len
         name, ext = os.path.splitext(filename)
@@ -89,33 +89,11 @@ def trim_filename(filename: str, max_len: int) -> str:
     return filename
 
 
-def get_filename_max_length(directory: str) -> int:
-    max_len = 255
-    try:
-        pathconf = os.pathconf
-    except AttributeError:
-        pass  # non-posix
-    else:
-        try:
-            max_len = pathconf(directory, "PC_NAME_MAX")
-        except OSError as e:
-            if e.errno != errno.EINVAL:
-                raise
-    return max_len
-
-
-def trim_filename_if_needed(filename: str, directory: str = ".", extra: int = 0) -> str:
-    max_len = get_filename_max_length(directory) - extra
-    if len(filename) > max_len:
-        filename = trim_filename(filename, max_len)
-    return filename
-
-
 def get_unique_filename(filename: str) -> str:
     attempt = 0
     while True:
         suffix = f"-{attempt}" if attempt > 0 else ""
-        try_filename = trim_filename_if_needed(filename, extra=len(suffix))
+        try_filename = trim_filename(filename, max_len=255-len(suffix))
         name, ext = os.path.splitext(filename)
         try_filename = f"{name}{suffix}{ext}"
         if not os.path.exists(try_filename):
