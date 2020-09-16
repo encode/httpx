@@ -1,6 +1,7 @@
 import pytest
 from click.testing import CliRunner
 
+import httpx
 from httpx._cli.cli import httpx_cli
 from httpx._cli.main import main
 
@@ -45,4 +46,26 @@ def test_post(server):
         "transfer-encoding: chunked",
         "",
         '{"hello": "world"}',
+    ]
+
+
+def test_verbose(server):
+    url = str(server.url)
+    runner = CliRunner()
+    result = runner.invoke(httpx_cli, [url, "-v"])
+    assert result.exit_code == 0
+    assert remove_date_header(splitlines(result.output)) == [
+        "GET / HTTP/1.1",
+        f"host: {server.url.host}:{server.url.port}",
+        "accept: */*",
+        "accept-encoding: gzip, deflate, br",
+        "connection: keep-alive",
+        f"user-agent: python-httpx/{httpx.__version__}",
+        "",
+        "HTTP/1.1 200 OK",
+        "server: uvicorn",
+        "content-type: text/plain",
+        "transfer-encoding: chunked",
+        "",
+        "Hello, world!",
     ]

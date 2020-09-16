@@ -13,22 +13,23 @@ from .utils import (
     get_lexer_for_response,
 )
 
-console = rich.console.Console()
-
 
 def show_request_headers(request: httpx.Request) -> None:
+    console = rich.console.Console()
     http_text = format_request_headers(request)
     syntax = rich.syntax.Syntax(http_text, "http")
     console.print(syntax)
 
 
 def show_response_headers(response: httpx.Response) -> None:
+    console = rich.console.Console()
     http_text = format_response_headers(response)
     syntax = rich.syntax.Syntax(http_text, "http")
     console.print(syntax)
 
 
 def print_delimiter(*args: typing.Any) -> None:
+    console = rich.console.Console()
     syntax = rich.syntax.Syntax("", "http")
     console.print(syntax)
 
@@ -185,9 +186,8 @@ def httpx_cli(
 
     Sends a request and displays the response.
     """
+    console = rich.console.Console()
     syntax = rich.syntax.Syntax("", "http")
-    syntax._background_color = None
-    syntax._pygments_style_class.background_color = None
 
     if verbose:
         event_hooks: typing.Dict[str, typing.List[typing.Callable]] = {
