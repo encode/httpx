@@ -1,3 +1,5 @@
+import typing
+
 import pytest
 
 import httpx
@@ -52,6 +54,7 @@ def test_read_and_stream_data():
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
     request.read()
     assert request.stream is not None
+    assert isinstance(request.stream, typing.Iterable)
     content = b"".join([part for part in request.stream])
     assert content == request.content
 
@@ -63,6 +66,7 @@ async def test_aread_and_stream_data():
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
     await request.aread()
     assert request.stream is not None
+    assert isinstance(request.stream, typing.AsyncIterable)
     content = b"".join([part async for part in request.stream])
     assert content == request.content
 

@@ -261,6 +261,16 @@ def test_iter_raw():
     assert raw == b"Hello, world!"
 
 
+def test_iter_raw_on_async():
+    response = httpx.Response(
+        200,
+        content=async_streaming_body(),
+    )
+
+    with pytest.raises(RuntimeError):
+        [part for part in response.iter_raw()]
+
+
 def test_iter_raw_increments_updates_counter():
     response = httpx.Response(200, content=streaming_body())
 
@@ -278,6 +288,17 @@ async def test_aiter_raw():
     async for part in response.aiter_raw():
         raw += part
     assert raw == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_aiter_raw_on_sync():
+    response = httpx.Response(
+        200,
+        content=streaming_body(),
+    )
+
+    with pytest.raises(RuntimeError):
+        [part async for part in response.aiter_raw()]
 
 
 @pytest.mark.asyncio

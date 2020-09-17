@@ -19,7 +19,6 @@ from ._config import (
     UnsetType,
     create_ssl_context,
 )
-from ._content_streams import ContentStream
 from ._decoders import SUPPORTED_DECODERS
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
@@ -480,7 +479,7 @@ class BaseClient:
 
     def _redirect_content(
         self, request: Request, method: str
-    ) -> typing.Optional[ContentStream]:
+    ) -> typing.Union[None, typing.Iterable[bytes], typing.AsyncIterable[bytes]]:
         """
         Return the body that should be used for the redirect request.
         """

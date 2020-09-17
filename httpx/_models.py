@@ -13,7 +13,7 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode
 import rfc3986
 import rfc3986.exceptions
 
-from ._content_streams import ByteStream, ContentStream, encode_request, encode_response
+from ._content_streams import ByteStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
     ContentDecoder,
@@ -602,7 +602,7 @@ class Request:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        content: typing.Union[RequestContent, ContentStream] = None,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -617,7 +617,9 @@ class Request:
             Cookies(cookies).set_cookie_header(self)
 
         if content is None and data is None and files is None and json is None:
-            self.stream: typing.Optional[ContentStream] = None
+            self.stream: typing.Union[
+                None, typing.Iterable[bytes], typing.AsyncIterable[bytes]
+            ] = None
             self._prepare({})
         else:
             headers, stream = encode_request(content, data, files, json)
@@ -660,6 +662,7 @@ class Request:
             if self.stream is None:
                 self._content = b""
             else:
+                assert isinstance(self.stream, typing.Iterable)
                 self._content = b"".join(self.stream)
                 # If a streaming request has been read entirely into memory, then
                 # we can replace the stream with a raw bytes implementation,
@@ -675,6 +678,7 @@ class Request:
             if self.stream is None:
                 self._content = b""
             else:
+                assert isinstance(self.stream, typing.AsyncIterable)
                 self._content = b"".join([part async for part in self.stream])
                 # If a streaming request has been read entirely into memory, then
                 # we can replace the stream with a raw bytes implementation,
@@ -696,8 +700,8 @@ class Response:
         request: Request = None,
         http_version: str = None,
         headers: HeaderTypes = None,
-        stream: ContentStream = None,
         content: ResponseContent = None,
+        stream: typing.Union[typing.Iterable, typing.AsyncIterable] = None,
         history: typing.List["Response"] = None,
         on_close: typing.Callable = None,
     ):
@@ -974,6 +978,8 @@ class Response:
             raise StreamConsumed()
         if self.is_closed:
             raise ResponseClosed()
+        if not isinstance(self._raw_stream, typing.Iterable):
+            raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
@@ -1057,6 +1063,8 @@ class Response:
             raise StreamConsumed()
         if self.is_closed:
             raise ResponseClosed()
+        if not isinstance(self._raw_stream, typing.AsyncIterable):
+            raise RuntimeError("Attempted to call a async iterator on a sync stream.")
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0

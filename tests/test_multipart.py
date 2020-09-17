@@ -220,6 +220,7 @@ def test_multipart_encode_non_seekable_filelike() -> None:
     fileobj: typing.Any = IteratorIO(data())
     files = {"file": fileobj}
     headers, stream = encode_request(files=files, boundary=b"+++")
+    assert isinstance(stream, typing.Iterable)
 
     content = (
         b"--+++\r\n"

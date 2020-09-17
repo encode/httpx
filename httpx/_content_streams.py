@@ -23,15 +23,7 @@ from ._utils import (
 )
 
 
-class ContentStream:
-    def __iter__(self) -> typing.Iterator[bytes]:
-        yield b""
-
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        yield b""
-
-
-class ByteStream(ContentStream):
+class ByteStream:
     """
     Request content encoded as plain bytes.
     """
@@ -52,12 +44,12 @@ class ByteStream(ContentStream):
         yield self.body
 
 
-class IteratorStream(ContentStream):
+class IteratorStream:
     """
     Request content encoded as plain bytes, using an byte iterator.
     """
 
-    def __init__(self, iterator: typing.Iterator[bytes]) -> None:
+    def __init__(self, iterator: typing.Iterable[bytes]) -> None:
         self.iterator = iterator
         self.is_stream_consumed = False
         self._can_replay = not inspect.isgenerator(iterator)
@@ -72,25 +64,19 @@ class IteratorStream(ContentStream):
         for part in self.iterator:
             yield part
 
-    def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        raise RuntimeError("Attempted to call a async iterator on an sync stream.")
 
-
-class AsyncIteratorStream(ContentStream):
+class AsyncIteratorStream:
     """
     Request content encoded as plain bytes, using an async byte iterator.
     """
 
-    def __init__(self, aiterator: typing.AsyncIterator[bytes]) -> None:
+    def __init__(self, aiterator: typing.AsyncIterable[bytes]) -> None:
         self.aiterator = aiterator
         self.is_stream_consumed = False
         self._can_replay = not inspect.isasyncgen(aiterator)
 
     def get_headers(self) -> typing.Dict[str, str]:
         return {"Transfer-Encoding": "chunked"}
-
-    def __iter__(self) -> typing.Iterator[bytes]:
-        raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         if self.is_stream_consumed and not self._can_replay:
@@ -100,7 +86,7 @@ class AsyncIteratorStream(ContentStream):
             yield part
 
 
-class JSONStream(ContentStream):
+class JSONStream:
     """
     Request content encoded as JSON.
     """
@@ -120,7 +106,7 @@ class JSONStream(ContentStream):
         yield self.body
 
 
-class URLEncodedStream(ContentStream):
+class URLEncodedStream:
     """
     Request content as URL encoded form data.
     """
@@ -140,7 +126,7 @@ class URLEncodedStream(ContentStream):
         yield self.body
 
 
-class MultipartStream(ContentStream):
+class MultipartStream:
     """
     Request content as streaming multipart encoded form data.
     """
@@ -329,15 +315,18 @@ class MultipartStream(ContentStream):
 
 
 def encode_request(
-    content: typing.Union[RequestContent, ContentStream] = None,
+    content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
     json: typing.Any = None,
     boundary: bytes = None,
-) -> typing.Tuple[typing.Dict[str, str], ContentStream]:
+) -> typing.Tuple[
+    typing.Dict[str, str],
+    typing.Union[typing.Iterable[bytes], typing.AsyncIterable[bytes]],
+]:
     """
     Handles encoding the given `content`, `data`, `files`, and `json`,
-    returning a `ContentStream` implementation.
+    returning a two-tuple of (<headers>, <stream>).
     """
     if data is not None and not isinstance(data, dict):
         # We prefer to seperate `content=<bytes|byte iterator|bytes aiterator>`
@@ -355,14 +344,16 @@ def encode_request(
             byte_stream = ByteStream(body=content)
             headers = byte_stream.get_headers()
             return headers, byte_stream
-        elif isinstance(content, ContentStream):
-            return {}, content
-        elif isinstance(content, typing.AsyncIterator):
+        elif isinstance(content, typing.AsyncIterable) and isinstance(
+            content, typing.Iterable
+        ):
+            return {"Transfer-Encoding": "chunked"}, content
+        elif isinstance(content, typing.AsyncIterable):
             aiterator_stream = AsyncIteratorStream(aiterator=content)
             headers = aiterator_stream.get_headers()
             return headers, aiterator_stream
-        elif isinstance(content, typing.Iterator):
-            iterator_stream = IteratorStream(iterator=content)
+        elif isinstance(content, typing.Iterable):
+            iterator_stream = IteratorStream(iterator=content)  # type: ignore
             headers = iterator_stream.get_headers()
             return headers, iterator_stream
         else:
@@ -397,7 +388,10 @@ def encode_request(
 
 def encode_response(
     content: ResponseContent = None,
-) -> typing.Tuple[typing.Dict[str, str], ContentStream]:
+) -> typing.Tuple[
+    typing.Dict[str, str],
+    typing.Union[typing.Iterable[bytes], typing.AsyncIterable[bytes]],
+]:
     if content is None:
         byte_stream = ByteStream(b"")
         headers = byte_stream.get_headers()
@@ -406,12 +400,16 @@ def encode_response(
         byte_stream = ByteStream(body=content)
         headers = byte_stream.get_headers()
         return headers, byte_stream
-    elif isinstance(content, typing.AsyncIterator):
+    elif isinstance(content, typing.AsyncIterable) and isinstance(
+        content, typing.Iterable
+    ):
+        return {"Transfer-Encoding": "chunked"}, content
+    elif isinstance(content, typing.AsyncIterable):
         aiterator_stream = AsyncIteratorStream(aiterator=content)
         headers = aiterator_stream.get_headers()
         return headers, aiterator_stream
-    elif isinstance(content, typing.Iterator):
-        iterator_stream = IteratorStream(iterator=content)
+    elif isinstance(content, typing.Iterable):
+        iterator_stream = IteratorStream(iterator=content)  # type: ignore
         headers = iterator_stream.get_headers()
         return headers, iterator_stream
 

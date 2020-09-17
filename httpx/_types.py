@@ -7,10 +7,10 @@ from http.cookiejar import CookieJar
 from typing import (
     IO,
     TYPE_CHECKING,
-    AsyncIterator,
+    AsyncIterable,
     Callable,
     Dict,
-    Iterator,
+    Iterable,
     List,
     Mapping,
     Optional,
@@ -66,8 +66,8 @@ AuthTypes = Union[
     None,
 ]
 
-RequestContent = Union[str, bytes, Iterator[bytes], AsyncIterator[bytes]]
-ResponseContent = Union[bytes, Iterator[bytes], AsyncIterator[bytes]]
+RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+ResponseContent = Union[bytes, Iterable[bytes], AsyncIterable[bytes]]
 
 RequestData = dict
 
