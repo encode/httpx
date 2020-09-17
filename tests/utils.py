@@ -36,12 +36,6 @@ class MockTransport(httpcore.SyncHTTPTransport):
         stream: httpcore.SyncByteStream = None,
         timeout: Mapping[str, Optional[float]] = None,
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.SyncByteStream]:
-        raw_scheme, raw_host, port, raw_path = url
-        scheme = raw_scheme.decode("ascii")
-        host = raw_host.decode("ascii")
-        port_str = "" if port is None else f":{port}"
-        path = raw_path.decode("ascii")
-
         request_headers = httpx.Headers(headers)
         content = (
             (item for item in stream)
@@ -54,17 +48,15 @@ class MockTransport(httpcore.SyncHTTPTransport):
         )
 
         request = httpx.Request(
-            method=method.decode("ascii"),
-            url=f"{scheme}://{host}{port_str}{path}",
+            method=method,
+            url=url,
             headers=request_headers,
             content=content,
         )
         request.read()
         response = self.handler(request)
         return (
-            response.http_version.encode("ascii")
-            if response.http_version
-            else b"HTTP/1.1",
+            response.http_version.encode("ascii"),
             response.status_code,
             response.reason_phrase.encode("ascii"),
             response.headers.raw,
