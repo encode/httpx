@@ -857,13 +857,14 @@ class Client(BaseClient):
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
-                stream=request.stream,
+                stream=request.stream,  # type: ignore
                 timeout=timeout.as_dict(),
             )
 
         def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(timer.sync_elapsed())
-            stream.close()
+            if hasattr(stream, "close"):
+                stream.close()
 
         response = Response(
             status_code,
@@ -1507,13 +1508,14 @@ class AsyncClient(BaseClient):
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
-                stream=request.stream,
+                stream=request.stream,  # type: ignore
                 timeout=timeout.as_dict(),
             )
 
         async def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(await timer.async_elapsed())
-            await stream.aclose()
+            if hasattr(stream, "close"):
+                await stream.aclose()
 
         response = Response(
             status_code,
