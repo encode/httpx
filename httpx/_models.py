@@ -693,7 +693,7 @@ class Response:
         stream: ContentStream = None,
         content: ResponseContent = None,
         history: typing.List["Response"] = None,
-        elapsed_func: typing.Callable = None,
+        on_close: typing.Callable = None,
     ):
         self.status_code = status_code
         self.http_version = http_version
@@ -704,7 +704,7 @@ class Response:
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.history = [] if history is None else list(history)
-        self._elapsed_func = elapsed_func
+        self._on_close = on_close
 
         self.is_closed = False
         self.is_stream_consumed = False
@@ -729,7 +729,11 @@ class Response:
                 "'.elapsed' may only be accessed after the response "
                 "has been read or closed."
             )
-        return datetime.timedelta(seconds=self._elapsed)
+        return self._elapsed
+
+    @elapsed.setter
+    def elapsed(self, elapsed: datetime.timedelta) -> None:
+        self._elapsed = elapsed
 
     @property
     def request(self) -> Request:
@@ -992,9 +996,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self._elapsed_func is not None:
-                self._elapsed = self._elapsed_func()
-            self._raw_stream.close()
+            if self._on_close is not None:
+                self._on_close(self)
 
     async def aread(self) -> bytes:
         """
@@ -1075,9 +1078,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self._elapsed_func is not None:
-                self._elapsed = await self._elapsed_func()
-            await self._raw_stream.aclose()
+            if self._on_close is not None:
+                await self._on_close(self)
 
 
 class Cookies(MutableMapping):

@@ -35,14 +35,8 @@ class ContentStream(httpcore.AsyncByteStream, httpcore.SyncByteStream):
     def __iter__(self) -> typing.Iterator[bytes]:
         yield b""
 
-    def close(self) -> None:
-        pass
-
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         yield b""
-
-    async def aclose(self) -> None:
-        pass
 
 
 class ByteStream(ContentStream):

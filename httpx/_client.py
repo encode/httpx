@@ -1,3 +1,4 @@
+import datetime
 import functools
 import typing
 import warnings
@@ -859,13 +860,18 @@ class Client(BaseClient):
                 stream=request.stream,
                 timeout=timeout.as_dict(),
             )
+
+        def on_close(response: Response) -> None:
+            response.elapsed = datetime.timedelta(timer.sync_elapsed())
+            stream.close()
+
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
-            elapsed_func=timer.sync_elapsed,
+            on_close=on_close,
         )
 
         self.cookies.extract_cookies(response)
@@ -1504,13 +1510,18 @@ class AsyncClient(BaseClient):
                 stream=request.stream,
                 timeout=timeout.as_dict(),
             )
+
+        async def on_close(response: Response) -> None:
+            response.elapsed = datetime.timedelta(await timer.async_elapsed())
+            await stream.aclose()
+
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
-            elapsed_func=timer.async_elapsed,
+            on_close=on_close,
         )
 
         self.cookies.extract_cookies(response)
