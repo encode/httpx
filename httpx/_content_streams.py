@@ -1,4 +1,5 @@
 import binascii
+import inspect
 import os
 import typing
 from json import dumps as json_dumps
@@ -30,15 +31,6 @@ class ContentStream(httpcore.AsyncByteStream, httpcore.SyncByteStream):
         Return a dictionary of headers that are implied by the encoding.
         """
         return {}
-
-    def can_replay(self) -> bool:
-        """
-        Return `True` if `__aiter__` can be called multiple times.
-
-        We need this in cases such determining if we can re-issue a request
-        body when we receive a redirect response.
-        """
-        return True
 
     def __iter__(self) -> typing.Iterator[bytes]:
         yield b""
@@ -82,15 +74,13 @@ class IteratorStream(ContentStream):
     def __init__(self, iterator: typing.Iterator[bytes]) -> None:
         self.iterator = iterator
         self.is_stream_consumed = False
-
-    def can_replay(self) -> bool:
-        return False
+        self._can_replay = not inspect.isgenerator(iterator)
 
     def get_headers(self) -> typing.Dict[str, str]:
         return {"Transfer-Encoding": "chunked"}
 
     def __iter__(self) -> typing.Iterator[bytes]:
-        if self.is_stream_consumed:
+        if self.is_stream_consumed and not self._can_replay:
             raise StreamConsumed()
         self.is_stream_consumed = True
         for part in self.iterator:
@@ -108,9 +98,7 @@ class AsyncIteratorStream(ContentStream):
     def __init__(self, aiterator: typing.AsyncIterator[bytes]) -> None:
         self.aiterator = aiterator
         self.is_stream_consumed = False
-
-    def can_replay(self) -> bool:
-        return False
+        self._can_replay = not inspect.isasyncgen(aiterator)
 
     def get_headers(self) -> typing.Dict[str, str]:
         return {"Transfer-Encoding": "chunked"}
@@ -119,7 +107,7 @@ class AsyncIteratorStream(ContentStream):
         raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        if self.is_stream_consumed:
+        if self.is_stream_consumed and not self._can_replay:
             raise StreamConsumed()
         self.is_stream_consumed = True
         async for part in self.aiterator:
@@ -208,9 +196,6 @@ class MultipartStream(ContentStream):
             data = self.render_data()
             return len(headers) + len(data)
 
-        def can_replay(self) -> bool:
-            return True
-
         def render(self) -> typing.Iterator[bytes]:
             yield self.render_headers()
             yield self.render_data()
@@ -239,6 +224,7 @@ class MultipartStream(ContentStream):
             self.filename = filename
             self.file = fileobj
             self.content_type = content_type
+            self._consumed = False
 
         def get_length(self) -> int:
             headers = self.render_headers()
@@ -284,16 +270,12 @@ class MultipartStream(ContentStream):
                 yield self._data
                 return
 
+            if self._consumed:
+                self.file.seek(0)
+            self._consumed = True
+
             for chunk in self.file:
                 yield to_bytes(chunk)
-
-            # Get ready for the next replay, if possible.
-            if self.can_replay():
-                assert self.file.seekable()
-                self.file.seek(0)
-
-        def can_replay(self) -> bool:
-            return True if isinstance(self.file, (str, bytes)) else self.file.seekable()
 
         def render(self) -> typing.Iterator[bytes]:
             yield self.render_headers()
@@ -345,9 +327,6 @@ class MultipartStream(ContentStream):
         return sum(self.iter_chunks_lengths())
 
     # Content stream interface.
-
-    def can_replay(self) -> bool:
-        return all(field.can_replay() for field in self.fields)
 
     def get_headers(self) -> typing.Dict[str, str]:
         content_length = str(self.get_content_length())

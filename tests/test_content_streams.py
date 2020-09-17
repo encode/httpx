@@ -12,7 +12,6 @@ async def test_base_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {}
     assert sync_content == b""
     assert async_content == b""
@@ -24,7 +23,6 @@ async def test_empty_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {}
     assert sync_content == b""
     assert async_content == b""
@@ -36,7 +34,6 @@ async def test_bytes_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {"Content-Length": "13"}
     assert sync_content == b"Hello, world!"
     assert async_content == b"Hello, world!"
@@ -46,7 +43,6 @@ async def test_bytes_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {"Content-Length": "13"}
     assert sync_content == b"Hello, world!"
     assert async_content == b"Hello, world!"
@@ -61,7 +57,6 @@ async def test_iterator_content():
     stream = encode_request(content=hello_world())
     content = b"".join([part for part in stream])
 
-    assert not stream.can_replay()
     assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
@@ -75,7 +70,6 @@ async def test_iterator_content():
     stream = encode_request(data=hello_world())  # type: ignore
     content = b"".join([part for part in stream])
 
-    assert not stream.can_replay()
     assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
@@ -89,7 +83,6 @@ async def test_aiterator_content():
     stream = encode_request(content=hello_world())
     content = b"".join([part async for part in stream])
 
-    assert not stream.can_replay()
     assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
@@ -103,7 +96,6 @@ async def test_aiterator_content():
     stream = encode_request(data=hello_world())  # type: ignore
     content = b"".join([part async for part in stream])
 
-    assert not stream.can_replay()
     assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
@@ -114,7 +106,6 @@ async def test_json_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {
         "Content-Length": "19",
         "Content-Type": "application/json",
@@ -129,7 +120,6 @@ async def test_urlencoded_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {
         "Content-Length": "14",
         "Content-Type": "application/x-www-form-urlencoded",
@@ -145,7 +135,6 @@ async def test_multipart_files_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {
         "Content-Length": "138",
         "Content-Type": "multipart/form-data; boundary=+++",
@@ -180,7 +169,6 @@ async def test_multipart_data_and_files_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {
         "Content-Length": "210",
         "Content-Type": "multipart/form-data; boundary=+++",
@@ -221,7 +209,6 @@ async def test_empty_request():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {}
     assert sync_content == b""
     assert async_content == b""
@@ -242,7 +229,6 @@ async def test_multipart_multiple_files_single_input_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {
         "Content-Length": "271",
         "Content-Type": "multipart/form-data; boundary=+++",
@@ -285,7 +271,6 @@ async def test_response_empty_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {}
     assert sync_content == b""
     assert async_content == b""
@@ -297,7 +282,6 @@ async def test_response_bytes_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.can_replay()
     assert stream.get_headers() == {"Content-Length": "13"}
     assert sync_content == b"Hello, world!"
     assert async_content == b"Hello, world!"
@@ -312,7 +296,6 @@ async def test_response_iterator_content():
     stream = encode_response(content=hello_world())
     content = b"".join([part for part in stream])
 
-    assert not stream.can_replay()
     assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
@@ -332,7 +315,6 @@ async def test_response_aiterator_content():
     stream = encode_response(content=hello_world())
     content = b"".join([part async for part in stream])
 
-    assert not stream.can_replay()
     assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 

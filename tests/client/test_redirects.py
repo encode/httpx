@@ -334,7 +334,7 @@ def test_cannot_redirect_streaming_body():
     def streaming_body():
         yield b"Example request body"  # pragma: nocover
 
-    with pytest.raises(httpx.RequestBodyUnavailable):
+    with pytest.raises(httpx.StreamConsumed):
         client.post(url, content=streaming_body())
 
 

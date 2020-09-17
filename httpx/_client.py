@@ -24,7 +24,6 @@ from ._exceptions import (
     HTTPCORE_EXC_MAP,
     InvalidURL,
     RemoteProtocolError,
-    RequestBodyUnavailable,
     TooManyRedirects,
     map_exceptions,
 )
@@ -486,13 +485,6 @@ class BaseClient:
         """
         if method != request.method and method == "GET":
             return None
-
-        if not request.stream.can_replay():
-            raise RequestBodyUnavailable(
-                "Got a redirect response, but the request body was streaming "
-                "and is no longer available.",
-                request=request,
-            )
 
         return request.stream
 
