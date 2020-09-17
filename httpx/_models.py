@@ -618,10 +618,11 @@ class Request:
 
         if content is None and data is None and files is None and json is None:
             self.stream: typing.Optional[ContentStream] = None
-            self._prepare(default_headers={})
+            self._prepare({})
         else:
-            self.stream = encode_request(content, data, files, json)
-            self._prepare(default_headers=self.stream.get_headers())
+            headers, stream = encode_request(content, data, files, json)
+            self._prepare(headers)
+            self.stream = stream
 
     def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
         for key, value in default_headers.items():
@@ -716,7 +717,8 @@ class Response:
         if stream is not None:
             self._raw_stream = stream
         else:
-            self._raw_stream = encode_response(content)
+            _, stream = encode_response(content)
+            self._raw_stream = stream
             if content is None or isinstance(content, bytes):
                 # Load the response body, except for streaming content.
                 self.read()

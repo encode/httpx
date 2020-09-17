@@ -340,7 +340,7 @@ def encode_request(
     files: RequestFiles = None,
     json: typing.Any = None,
     boundary: bytes = None,
-) -> ContentStream:
+) -> typing.Tuple[typing.Dict[str, str], ContentStream]:
     """
     Handles encoding the given `content`, `data`, `files`, and `json`,
     returning a `ContentStream` implementation.
@@ -358,41 +358,69 @@ def encode_request(
 
     if content is not None:
         if isinstance(content, (str, bytes)):
-            return ByteStream(body=content)
+            byte_stream = ByteStream(body=content)
+            headers = byte_stream.get_headers()
+            return headers, byte_stream
         elif isinstance(content, ContentStream):
-            return content
+            return {}, content
         elif hasattr(content, "__aiter__"):
             content = typing.cast(typing.AsyncIterator[bytes], content)
-            return AsyncIteratorStream(aiterator=content)
+            aiterator_stream = AsyncIteratorStream(aiterator=content)
+            headers = aiterator_stream.get_headers()
+            return headers, aiterator_stream
         elif hasattr(content, "__iter__"):
             content = typing.cast(typing.Iterator[bytes], content)
-            return IteratorStream(iterator=content)
+            iterator_stream = IteratorStream(iterator=content)
+            headers = iterator_stream.get_headers()
+            return headers, iterator_stream
         else:
             raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
 
     elif data:
         if files:
-            return MultipartStream(data=data, files=files, boundary=boundary)
+            multipart_stream = MultipartStream(
+                data=data, files=files, boundary=boundary
+            )
+            headers = multipart_stream.get_headers()
+            return headers, multipart_stream
         else:
-            return URLEncodedStream(data=data)
+            urlencoded_stream = URLEncodedStream(data=data)
+            headers = urlencoded_stream.get_headers()
+            return headers, urlencoded_stream
 
     elif files:
-        return MultipartStream(data={}, files=files, boundary=boundary)
+        multipart_stream = MultipartStream(data={}, files=files, boundary=boundary)
+        headers = multipart_stream.get_headers()
+        return headers, multipart_stream
 
     elif json is not None:
-        return JSONStream(json=json)
+        json_stream = JSONStream(json=json)
+        headers = json_stream.get_headers()
+        return headers, json_stream
 
-    return ByteStream(body=b"")
+    byte_stream = ByteStream(body=b"")
+    headers = byte_stream.get_headers()
+    return headers, byte_stream
 
 
-def encode_response(content: ResponseContent = None) -> ContentStream:
+def encode_response(
+    content: ResponseContent = None,
+) -> typing.Tuple[typing.Dict[str, str], ContentStream]:
     if content is None:
-        return ByteStream(b"")
+        byte_stream = ByteStream(b"")
+        headers = byte_stream.get_headers()
+        return headers, byte_stream
     elif isinstance(content, bytes):
-        return ByteStream(body=content)
+        byte_stream = ByteStream(body=content)
+        headers = byte_stream.get_headers()
+        return headers, byte_stream
     elif isinstance(content, typing.AsyncIterator):
-        return AsyncIteratorStream(aiterator=content)
+        aiterator_stream = AsyncIteratorStream(aiterator=content)
+        headers = aiterator_stream.get_headers()
+        return headers, aiterator_stream
     elif isinstance(content, typing.Iterator):
-        return IteratorStream(iterator=content)
+        iterator_stream = IteratorStream(iterator=content)
+        headers = iterator_stream.get_headers()
+        return headers, iterator_stream
 
     raise TypeError(f"Unexpected type for 'content', {type(content)!r}")

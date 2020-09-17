@@ -12,38 +12,37 @@ async def test_base_content():
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {}
     assert sync_content == b""
     assert async_content == b""
 
 
 @pytest.mark.asyncio
 async def test_empty_content():
-    stream = encode_request()
+    headers, stream = encode_request()
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {}
+    assert headers == {}
     assert sync_content == b""
     assert async_content == b""
 
 
 @pytest.mark.asyncio
 async def test_bytes_content():
-    stream = encode_request(content=b"Hello, world!")
+    headers, stream = encode_request(content=b"Hello, world!")
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {"Content-Length": "13"}
+    assert headers == {"Content-Length": "13"}
     assert sync_content == b"Hello, world!"
     assert async_content == b"Hello, world!"
 
     # Support 'data' for compat with requests.
-    stream = encode_request(data=b"Hello, world!")  # type: ignore
+    headers, stream = encode_request(data=b"Hello, world!")  # type: ignore
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {"Content-Length": "13"}
+    assert headers == {"Content-Length": "13"}
     assert sync_content == b"Hello, world!"
     assert async_content == b"Hello, world!"
 
@@ -54,10 +53,10 @@ async def test_iterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    stream = encode_request(content=hello_world())
+    headers, stream = encode_request(content=hello_world())
     content = b"".join([part for part in stream])
 
-    assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
+    assert headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
     with pytest.raises(RuntimeError):
@@ -67,10 +66,10 @@ async def test_iterator_content():
         [part for part in stream]
 
     # Support 'data' for compat with requests.
-    stream = encode_request(data=hello_world())  # type: ignore
+    headers, stream = encode_request(data=hello_world())  # type: ignore
     content = b"".join([part for part in stream])
 
-    assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
+    assert headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
 
@@ -80,10 +79,10 @@ async def test_aiterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    stream = encode_request(content=hello_world())
+    headers, stream = encode_request(content=hello_world())
     content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
+    assert headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
     with pytest.raises(RuntimeError):
@@ -93,20 +92,20 @@ async def test_aiterator_content():
         [part async for part in stream]
 
     # Support 'data' for compat with requests.
-    stream = encode_request(data=hello_world())  # type: ignore
+    headers, stream = encode_request(data=hello_world())  # type: ignore
     content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
+    assert headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
 
 @pytest.mark.asyncio
 async def test_json_content():
-    stream = encode_request(json={"Hello": "world!"})
+    headers, stream = encode_request(json={"Hello": "world!"})
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {
+    assert headers == {
         "Content-Length": "19",
         "Content-Type": "application/json",
     }
@@ -116,11 +115,11 @@ async def test_json_content():
 
 @pytest.mark.asyncio
 async def test_urlencoded_content():
-    stream = encode_request(data={"Hello": "world!"})
+    headers, stream = encode_request(data={"Hello": "world!"})
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {
+    assert headers == {
         "Content-Length": "14",
         "Content-Type": "application/x-www-form-urlencoded",
     }
@@ -131,11 +130,11 @@ async def test_urlencoded_content():
 @pytest.mark.asyncio
 async def test_multipart_files_content():
     files = {"file": io.BytesIO(b"<file content>")}
-    stream = encode_request(files=files, boundary=b"+++")
+    headers, stream = encode_request(files=files, boundary=b"+++")
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {
+    assert headers == {
         "Content-Length": "138",
         "Content-Type": "multipart/form-data; boundary=+++",
     }
@@ -165,11 +164,11 @@ async def test_multipart_files_content():
 async def test_multipart_data_and_files_content():
     data = {"message": "Hello, world!"}
     files = {"file": io.BytesIO(b"<file content>")}
-    stream = encode_request(data=data, files=files, boundary=b"+++")
+    headers, stream = encode_request(data=data, files=files, boundary=b"+++")
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {
+    assert headers == {
         "Content-Length": "210",
         "Content-Type": "multipart/form-data; boundary=+++",
     }
@@ -205,11 +204,11 @@ async def test_multipart_data_and_files_content():
 
 @pytest.mark.asyncio
 async def test_empty_request():
-    stream = encode_request(data={}, files={})
+    headers, stream = encode_request(data={}, files={})
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {}
+    assert headers == {}
     assert sync_content == b""
     assert async_content == b""
 
@@ -225,11 +224,11 @@ async def test_multipart_multiple_files_single_input_content():
         ("file", io.BytesIO(b"<file content 1>")),
         ("file", io.BytesIO(b"<file content 2>")),
     ]
-    stream = encode_request(files=files, boundary=b"+++")
+    headers, stream = encode_request(files=files, boundary=b"+++")
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {
+    assert headers == {
         "Content-Length": "271",
         "Content-Type": "multipart/form-data; boundary=+++",
     }
@@ -267,22 +266,22 @@ async def test_multipart_multiple_files_single_input_content():
 
 @pytest.mark.asyncio
 async def test_response_empty_content():
-    stream = encode_response()
+    headers, stream = encode_response()
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {}
+    assert headers == {}
     assert sync_content == b""
     assert async_content == b""
 
 
 @pytest.mark.asyncio
 async def test_response_bytes_content():
-    stream = encode_response(content=b"Hello, world!")
+    headers, stream = encode_response(content=b"Hello, world!")
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {"Content-Length": "13"}
+    assert headers == {"Content-Length": "13"}
     assert sync_content == b"Hello, world!"
     assert async_content == b"Hello, world!"
 
@@ -293,10 +292,10 @@ async def test_response_iterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    stream = encode_response(content=hello_world())
+    headers, stream = encode_response(content=hello_world())
     content = b"".join([part for part in stream])
 
-    assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
+    assert headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
     with pytest.raises(RuntimeError):
@@ -312,10 +311,10 @@ async def test_response_aiterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    stream = encode_response(content=hello_world())
+    headers, stream = encode_response(content=hello_world())
     content = b"".join([part async for part in stream])
 
-    assert stream.get_headers() == {"Transfer-Encoding": "chunked"}
+    assert headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
     with pytest.raises(RuntimeError):
