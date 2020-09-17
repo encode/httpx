@@ -701,7 +701,6 @@ class Response:
         http_version: str = None,
         headers: HeaderTypes = None,
         content: ResponseContent = None,
-        stream: typing.Union[typing.Iterable, typing.AsyncIterable] = None,
         history: typing.List["Response"] = None,
         on_close: typing.Callable = None,
     ):
@@ -718,14 +717,12 @@ class Response:
 
         self.is_closed = False
         self.is_stream_consumed = False
-        if stream is not None:
-            self._raw_stream = stream
-        else:
-            _, stream = encode_response(content)
-            self._raw_stream = stream
-            if content is None or isinstance(content, bytes):
-                # Load the response body, except for streaming content.
-                self.read()
+
+        _, stream = encode_response(content)
+        self.stream = stream
+        if content is None or isinstance(content, bytes):
+            # Load the response body, except for streaming content.
+            self.read()
 
         self._num_bytes_downloaded = 0
 
@@ -978,13 +975,13 @@ class Response:
             raise StreamConsumed()
         if self.is_closed:
             raise ResponseClosed()
-        if not isinstance(self._raw_stream, typing.Iterable):
+        if not isinstance(self.stream, typing.Iterable):
             raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
-            for part in self._raw_stream:
+            for part in self.stream:
                 self._num_bytes_downloaded += len(part)
                 yield part
         self.close()
@@ -1063,13 +1060,13 @@ class Response:
             raise StreamConsumed()
         if self.is_closed:
             raise ResponseClosed()
-        if not isinstance(self._raw_stream, typing.AsyncIterable):
+        if not isinstance(self.stream, typing.AsyncIterable):
             raise RuntimeError("Attempted to call a async iterator on a sync stream.")
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
-            async for part in self._raw_stream:
+            async for part in self.stream:
                 self._num_bytes_downloaded += len(part)
                 yield part
         await self.aclose()

@@ -869,7 +869,7 @@ class Client(BaseClient):
             status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
-            stream=stream,  # type: ignore
+            content=stream,  # type: ignore
             request=request,
             on_close=on_close,
         )
@@ -1520,7 +1520,7 @@ class AsyncClient(BaseClient):
             status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
-            stream=stream,  # type: ignore
+            content=stream,  # type: ignore
             request=request,
             on_close=on_close,
         )
