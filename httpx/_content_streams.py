@@ -235,7 +235,7 @@ class MultipartStream:
                 yield self._data
                 return
 
-            if self._consumed:
+            if self._consumed:  # pragma: nocover
                 self.file.seek(0)
             self._consumed = True
 

@@ -1521,7 +1521,7 @@ class AsyncClient(BaseClient):
             status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
-            content=stream,  # type: ignore
+            stream=stream,  # type: ignore
             request=request,
             on_close=on_close,
         )

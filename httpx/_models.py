@@ -619,6 +619,19 @@ class Request:
             Cookies(cookies).set_cookie_header(self)
 
         if stream is not None:
+            # There's an important distinction between `Request(content=...)`,
+            # and `Request(stream=...)`.
+            #
+            # Using `content=...` implies automatically populated content headers,
+            # of either `Content-Length: ...` or `Transfer-Encoding: chunked`.
+            #
+            # Using `stream=...` will not automatically include any content headers.
+            #
+            # As an end-user you don't really need `stream=...`. It's only
+            # useful when:
+            #
+            # * Preserving the request stream when copying requests, eg for redirects.
+            # * Creating request instances on the *server-side* of the transport API.
             self.stream = stream
             self._prepare({})
         else:
@@ -714,15 +727,34 @@ class Response:
         self.is_stream_consumed = False
 
         if stream is not None:
+            # There's an important distinction between `Response(content=...)`,
+            # and `Response(stream=...)`.
+            #
+            # Using `content=...` implies automatically populated content headers,
+            # of either `Content-Length: ...` or `Transfer-Encoding: chunked`.
+            #
+            # Using `stream=...` will not automatically include any content headers.
+            #
+            # As an end-user you don't really need `stream=...`. It's only
+            # useful when creating response instances having received a stream
+            # from the transport API.
             self.stream = stream
         else:
-            _, stream = encode_response(content)
+            headers, stream = encode_response(content)
+            self._prepare(headers)
             self.stream = stream
             if content is None or isinstance(content, bytes):
                 # Load the response body, except for streaming content.
                 self.read()
 
         self._num_bytes_downloaded = 0
+
+    def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
+        for key, value in default_headers.items():
+            # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
+            if key.lower() == "transfer-encoding" and "content-length" in self.headers:
+                continue
+            self.headers.setdefault(key, value)
 
     @property
     def elapsed(self) -> datetime.timedelta:

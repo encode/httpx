@@ -20,6 +20,40 @@ def test_content_length_header():
     assert request.headers["Content-Length"] == "8"
 
 
+def test_iterable_content():
+    class Content:
+        def __iter__(self):
+            yield b"test 123"  # pragma: nocover
+
+    request = httpx.Request("POST", "http://example.org", content=Content())
+    assert request.headers == httpx.Headers(
+        {"Host": "example.org", "Transfer-Encoding": "chunked"}
+    )
+
+
+def test_generator_with_transfer_encoding_header():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    request = httpx.Request("POST", "http://example.org", content=content())
+    assert request.headers == httpx.Headers(
+        {"Host": "example.org", "Transfer-Encoding": "chunked"}
+    )
+
+
+def test_generator_with_content_length_header():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    headers = {"Content-Length": "8"}
+    request = httpx.Request(
+        "POST", "http://example.org", content=content(), headers=headers
+    )
+    assert request.headers == httpx.Headers(
+        {"Host": "example.org", "Content-Length": "8"}
+    )
+
+
 def test_url_encoded_data():
     request = httpx.Request("POST", "http://example.org", data={"test": "123"})
     request.read()

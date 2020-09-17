@@ -69,7 +69,7 @@ class AsyncMockTransport(httpcore.AsyncHTTPTransport):
             method=method,
             url=url,
             headers=headers,
-            content=stream,
+            stream=stream,
         )
         await request.aread()
         response = self.handler(request)

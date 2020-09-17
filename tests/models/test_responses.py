@@ -680,3 +680,20 @@ def test_cannot_access_unset_request():
 
     with pytest.raises(RuntimeError):
         response.request
+
+
+def test_generator_with_transfer_encoding_header():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    response = httpx.Response(200, content=content())
+    assert response.headers == httpx.Headers({"Transfer-Encoding": "chunked"})
+
+
+def test_generator_with_content_length_header():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    headers = {"Content-Length": "8"}
+    response = httpx.Response(200, content=content(), headers=headers)
+    assert response.headers == httpx.Headers({"Content-Length": "8"})
