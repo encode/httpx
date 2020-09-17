@@ -7,6 +7,12 @@ import pytest
 import httpx
 
 
+class StreamingBody:
+    def __iter__(self):
+        yield b"Hello, "
+        yield b"world!"
+
+
 def streaming_body():
     yield b"Hello, "
     yield b"world!"
@@ -253,6 +259,18 @@ def test_iter_raw():
     response = httpx.Response(
         200,
         content=streaming_body(),
+    )
+
+    raw = b""
+    for part in response.iter_raw():
+        raw += part
+    assert raw == b"Hello, world!"
+
+
+def test_iter_raw_on_iterable():
+    response = httpx.Response(
+        200,
+        content=StreamingBody(),
     )
 
     raw = b""

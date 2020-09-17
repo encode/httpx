@@ -36,22 +36,11 @@ class MockTransport(httpcore.SyncHTTPTransport):
         stream: httpcore.SyncByteStream = None,
         timeout: Mapping[str, Optional[float]] = None,
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.SyncByteStream]:
-        request_headers = httpx.Headers(headers)
-        content = (
-            (item for item in stream)
-            if stream
-            and (
-                "Content-Length" in request_headers
-                or "Transfer-Encoding" in request_headers
-            )
-            else None
-        )
-
         request = httpx.Request(
             method=method,
             url=url,
-            headers=request_headers,
-            content=content,
+            headers=headers,
+            content=stream,
         )
         request.read()
         response = self.handler(request)

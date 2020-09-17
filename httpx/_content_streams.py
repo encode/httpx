@@ -44,45 +44,37 @@ class ByteStream:
         yield self.body
 
 
-class IteratorStream:
+class GeneratorStream:
     """
-    Request content encoded as plain bytes, using an byte iterator.
+    Request content encoded as plain bytes, using an byte generator.
     """
 
-    def __init__(self, iterator: typing.Iterable[bytes]) -> None:
-        self.iterator = iterator
-        self.is_stream_consumed = False
-        self._can_replay = not inspect.isgenerator(iterator)
-
-    def get_headers(self) -> typing.Dict[str, str]:
-        return {"Transfer-Encoding": "chunked"}
+    def __init__(self, generator: typing.Iterable[bytes]) -> None:
+        self._generator = generator
+        self._is_stream_consumed = False
 
     def __iter__(self) -> typing.Iterator[bytes]:
-        if self.is_stream_consumed and not self._can_replay:
+        if self._is_stream_consumed:
             raise StreamConsumed()
-        self.is_stream_consumed = True
-        for part in self.iterator:
+        self._is_stream_consumed = True
+        for part in self._generator:
             yield part
 
 
-class AsyncIteratorStream:
+class AsyncGeneratorStream:
     """
     Request content encoded as plain bytes, using an async byte iterator.
     """
 
-    def __init__(self, aiterator: typing.AsyncIterable[bytes]) -> None:
-        self.aiterator = aiterator
-        self.is_stream_consumed = False
-        self._can_replay = not inspect.isasyncgen(aiterator)
-
-    def get_headers(self) -> typing.Dict[str, str]:
-        return {"Transfer-Encoding": "chunked"}
+    def __init__(self, agenerator: typing.AsyncIterable[bytes]) -> None:
+        self._agenerator = agenerator
+        self._is_stream_consumed = False
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        if self.is_stream_consumed and not self._can_replay:
+        if self._is_stream_consumed:
             raise StreamConsumed()
-        self.is_stream_consumed = True
-        async for part in self.aiterator:
+        self._is_stream_consumed = True
+        async for part in self._agenerator:
             yield part
 
 
@@ -344,18 +336,14 @@ def encode_request(
             byte_stream = ByteStream(body=content)
             headers = byte_stream.get_headers()
             return headers, byte_stream
-        elif isinstance(content, typing.AsyncIterable) and isinstance(
-            content, typing.Iterable
-        ):
-            return {"Transfer-Encoding": "chunked"}, content
-        elif isinstance(content, typing.AsyncIterable):
-            aiterator_stream = AsyncIteratorStream(aiterator=content)
-            headers = aiterator_stream.get_headers()
-            return headers, aiterator_stream
-        elif isinstance(content, typing.Iterable):
-            iterator_stream = IteratorStream(iterator=content)  # type: ignore
-            headers = iterator_stream.get_headers()
-            return headers, iterator_stream
+        elif isinstance(content, (typing.Iterable, typing.AsyncIterable)):
+            if inspect.isgenerator(content):
+                generator_stream = GeneratorStream(content)  # type: ignore
+                return {"Transfer-Encoding": "chunked"}, generator_stream
+            if inspect.isasyncgen(content):
+                agenerator_stream = AsyncGeneratorStream(content)  # type: ignore
+                return {"Transfer-Encoding": "chunked"}, agenerator_stream
+            return {"Transfer-Encoding": "chunked"}, content  # type: ignore
         else:
             raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
 
@@ -400,17 +388,13 @@ def encode_response(
         byte_stream = ByteStream(body=content)
         headers = byte_stream.get_headers()
         return headers, byte_stream
-    elif isinstance(content, typing.AsyncIterable) and isinstance(
-        content, typing.Iterable
-    ):
-        return {"Transfer-Encoding": "chunked"}, content
-    elif isinstance(content, typing.AsyncIterable):
-        aiterator_stream = AsyncIteratorStream(aiterator=content)
-        headers = aiterator_stream.get_headers()
-        return headers, aiterator_stream
-    elif isinstance(content, typing.Iterable):
-        iterator_stream = IteratorStream(iterator=content)  # type: ignore
-        headers = iterator_stream.get_headers()
-        return headers, iterator_stream
+    elif isinstance(content, (typing.Iterable, typing.AsyncIterable)):
+        if inspect.isgenerator(content):
+            generator_stream = GeneratorStream(content)  # type: ignore
+            return {"Transfer-Encoding": "chunked"}, generator_stream
+        elif inspect.isasyncgen(content):
+            agenerator_stream = AsyncGeneratorStream(content)  # type: ignore
+            return {"Transfer-Encoding": "chunked"}, agenerator_stream
+        return {"Transfer-Encoding": "chunked"}, content  # type: ignore
 
     raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
