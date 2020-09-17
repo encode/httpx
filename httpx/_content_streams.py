@@ -363,7 +363,7 @@ class MultipartStream(ContentStream):
             yield chunk
 
 
-def encode(
+def encode_request(
     content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,

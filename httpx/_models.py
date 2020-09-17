@@ -13,7 +13,7 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode
 import rfc3986
 import rfc3986.exceptions
 
-from ._content_streams import ByteStream, ContentStream, encode, encode_response
+from ._content_streams import ByteStream, ContentStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
     ContentDecoder,
@@ -606,7 +606,7 @@ class Request:
         if stream is not None:
             self.stream = stream
         else:
-            self.stream = encode(content, data, files, json)
+            self.stream = encode_request(content, data, files, json)
 
         self._prepare()
 

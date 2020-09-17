@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 
 import httpx
-from httpx._content_streams import MultipartStream, encode
+from httpx._content_streams import MultipartStream, encode_request
 from httpx._utils import format_form_param
 from tests.utils import MockTransport
 
@@ -110,7 +110,7 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode(data=data, files=files)
+        stream = encode_request(data=data, files=files)
         assert isinstance(stream, MultipartStream)
         assert stream.can_replay()
 
@@ -137,7 +137,7 @@ def test_multipart_encode_files_allows_filenames_as_none() -> None:
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode(data={}, files=files)
+        stream = encode_request(data={}, files=files)
         assert isinstance(stream, MultipartStream)
         assert stream.can_replay()
 
@@ -164,7 +164,7 @@ def test_multipart_encode_files_guesses_correct_content_type(
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode(data={}, files=files)
+        stream = encode_request(data={}, files=files)
         assert isinstance(stream, MultipartStream)
         assert stream.can_replay()
 
@@ -188,7 +188,7 @@ def test_multipart_encode_files_allows_bytes_or_str_content(
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode(data={}, files=files)
+        stream = encode_request(data={}, files=files)
         assert isinstance(stream, MultipartStream)
         assert stream.can_replay()
 
@@ -226,7 +226,7 @@ def test_multipart_encode_non_seekable_filelike() -> None:
 
     fileobj: typing.Any = IteratorIO(data())
     files = {"file": fileobj}
-    stream = encode(files=files, boundary=b"+++")
+    stream = encode_request(files=files, boundary=b"+++")
     assert not stream.can_replay()
 
     content = (
