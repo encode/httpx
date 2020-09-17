@@ -602,11 +602,10 @@ class Request:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        content: RequestContent = None,
+        content: typing.Union[RequestContent, ContentStream] = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
-        stream: ContentStream = None,
     ):
         if isinstance(method, bytes):
             self.method = method.decode("ascii").upper()
@@ -617,15 +616,15 @@ class Request:
         if cookies:
             Cookies(cookies).set_cookie_header(self)
 
-        if stream is not None:
-            self.stream = stream
+        if content is None and data is None and files is None and json is None:
+            self.stream: typing.Optional[ContentStream] = None
+            self._prepare(default_headers={})
         else:
             self.stream = encode_request(content, data, files, json)
+            self._prepare(default_headers=self.stream.get_headers())
 
-        self._prepare()
-
-    def _prepare(self) -> None:
-        for key, value in self.stream.get_headers().items():
+    def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
+        for key, value in default_headers.items():
             # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
             if key.lower() == "transfer-encoding" and "content-length" in self.headers:
                 continue
@@ -657,11 +656,14 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join(self.stream)
-            # If a streaming request has been read entirely into memory, then
-            # we can replace the stream with a raw bytes implementation,
-            # to ensure that any non-replayable streams can still be used.
-            self.stream = ByteStream(self._content)
+            if self.stream is None:
+                self._content = b""
+            else:
+                self._content = b"".join(self.stream)
+                # If a streaming request has been read entirely into memory, then
+                # we can replace the stream with a raw bytes implementation,
+                # to ensure that any non-replayable streams can still be used.
+                self.stream = ByteStream(self._content)
         return self._content
 
     async def aread(self) -> bytes:
@@ -669,11 +671,14 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part async for part in self.stream])
-            # If a streaming request has been read entirely into memory, then
-            # we can replace the stream with a raw bytes implementation,
-            # to ensure that any non-replayable streams can still be used.
-            self.stream = ByteStream(self._content)
+            if self.stream is None:
+                self._content = b""
+            else:
+                self._content = b"".join([part async for part in self.stream])
+                # If a streaming request has been read entirely into memory, then
+                # we can replace the stream with a raw bytes implementation,
+                # to ensure that any non-replayable streams can still be used.
+                self.stream = ByteStream(self._content)
         return self._content
 
     def __repr__(self) -> str:

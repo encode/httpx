@@ -335,7 +335,7 @@ class MultipartStream(ContentStream):
 
 
 def encode_request(
-    content: RequestContent = None,
+    content: typing.Union[RequestContent, ContentStream] = None,
     data: RequestData = None,
     files: RequestFiles = None,
     json: typing.Any = None,
@@ -359,6 +359,8 @@ def encode_request(
     if content is not None:
         if isinstance(content, (str, bytes)):
             return ByteStream(body=content)
+        elif isinstance(content, ContentStream):
+            return content
         elif hasattr(content, "__aiter__"):
             content = typing.cast(typing.AsyncIterator[bytes], content)
             return AsyncIteratorStream(aiterator=content)

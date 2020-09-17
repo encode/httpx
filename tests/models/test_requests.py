@@ -51,6 +51,7 @@ def test_read_and_stream_data():
     # Needed for cases such as authentication classes that read the request body.
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
     request.read()
+    assert request.stream is not None
     content = b"".join([part for part in request.stream])
     assert content == request.content
 
@@ -61,6 +62,7 @@ async def test_aread_and_stream_data():
     # Needed for cases such as authentication classes that read the request body.
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
     await request.aread()
+    assert request.stream is not None
     content = b"".join([part async for part in request.stream])
     assert content == request.content
 
@@ -68,7 +70,7 @@ async def test_aread_and_stream_data():
 @pytest.mark.asyncio
 async def test_cannot_access_content_without_read():
     # Ensure a request may still be streamed if it has been read.
-    #  Needed for cases such as authentication classes that read the request body.
+    # Needed for cases such as authentication classes that read the request body.
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
     with pytest.raises(httpx.RequestNotRead):
         request.content

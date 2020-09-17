@@ -396,10 +396,10 @@ class BaseClient:
         method = self._redirect_method(request, response)
         url = self._redirect_url(request, response)
         headers = self._redirect_headers(request, url, method)
-        stream = self._redirect_stream(request, method)
+        content = self._redirect_content(request, method)
         cookies = Cookies(self.cookies)
         return Request(
-            method=method, url=url, headers=headers, cookies=cookies, stream=stream
+            method=method, url=url, headers=headers, cookies=cookies, content=content
         )
 
     def _redirect_method(self, request: Request, response: Response) -> str:
@@ -478,7 +478,7 @@ class BaseClient:
 
         return headers
 
-    def _redirect_stream(
+    def _redirect_content(
         self, request: Request, method: str
     ) -> typing.Optional[ContentStream]:
         """
