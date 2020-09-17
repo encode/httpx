@@ -24,12 +24,6 @@ from ._utils import (
 
 
 class ContentStream:
-    def get_headers(self) -> typing.Dict[str, str]:
-        """
-        Return a dictionary of headers that are implied by the encoding.
-        """
-        return {}
-
     def __iter__(self) -> typing.Iterator[bytes]:
         yield b""
 
@@ -363,13 +357,11 @@ def encode_request(
             return headers, byte_stream
         elif isinstance(content, ContentStream):
             return {}, content
-        elif hasattr(content, "__aiter__"):
-            content = typing.cast(typing.AsyncIterator[bytes], content)
+        elif isinstance(content, typing.AsyncIterator):
             aiterator_stream = AsyncIteratorStream(aiterator=content)
             headers = aiterator_stream.get_headers()
             return headers, aiterator_stream
-        elif hasattr(content, "__iter__"):
-            content = typing.cast(typing.Iterator[bytes], content)
+        elif isinstance(content, typing.Iterator):
             iterator_stream = IteratorStream(iterator=content)
             headers = iterator_stream.get_headers()
             return headers, iterator_stream
