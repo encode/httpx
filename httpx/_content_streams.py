@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 from ._exceptions import StreamConsumed
 from ._types import (
+    ByteStream,
     FileContent,
     FileTypes,
     RequestContent,
@@ -23,7 +24,7 @@ from ._utils import (
 )
 
 
-class ByteStream:
+class PlainByteStream:
     """
     Request content encoded as plain bytes.
     """
@@ -312,10 +313,7 @@ def encode_request(
     files: RequestFiles = None,
     json: typing.Any = None,
     boundary: bytes = None,
-) -> typing.Tuple[
-    typing.Dict[str, str],
-    typing.Union[typing.Iterable[bytes], typing.AsyncIterable[bytes]],
-]:
+) -> typing.Tuple[typing.Dict[str, str], ByteStream]:
     """
     Handles encoding the given `content`, `data`, `files`, and `json`,
     returning a two-tuple of (<headers>, <stream>).
@@ -333,7 +331,7 @@ def encode_request(
 
     if content is not None:
         if isinstance(content, (str, bytes)):
-            byte_stream = ByteStream(body=content)
+            byte_stream = PlainByteStream(body=content)
             headers = byte_stream.get_headers()
             return headers, byte_stream
         elif isinstance(content, (typing.Iterable, typing.AsyncIterable)):
@@ -369,23 +367,20 @@ def encode_request(
         headers = json_stream.get_headers()
         return headers, json_stream
 
-    byte_stream = ByteStream(body=b"")
+    byte_stream = PlainByteStream(body=b"")
     headers = byte_stream.get_headers()
     return headers, byte_stream
 
 
 def encode_response(
     content: ResponseContent = None,
-) -> typing.Tuple[
-    typing.Dict[str, str],
-    typing.Union[typing.Iterable[bytes], typing.AsyncIterable[bytes]],
-]:
+) -> typing.Tuple[typing.Dict[str, str], ByteStream]:
     if content is None:
-        byte_stream = ByteStream(b"")
+        byte_stream = PlainByteStream(b"")
         headers = byte_stream.get_headers()
         return headers, byte_stream
     elif isinstance(content, bytes):
-        byte_stream = ByteStream(body=content)
+        byte_stream = PlainByteStream(body=content)
         headers = byte_stream.get_headers()
         return headers, byte_stream
     elif isinstance(content, (typing.Iterable, typing.AsyncIterable)):

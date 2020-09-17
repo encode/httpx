@@ -13,7 +13,7 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode
 import rfc3986
 import rfc3986.exceptions
 
-from ._content_streams import ByteStream, encode_request, encode_response
+from ._content_streams import PlainByteStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
     ContentDecoder,
@@ -37,6 +37,7 @@ from ._exceptions import (
 )
 from ._status_codes import codes
 from ._types import (
+    ByteStream,
     CookieTypes,
     HeaderTypes,
     PrimitiveData,
@@ -606,6 +607,7 @@ class Request:
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
+        stream: ByteStream = None,
     ):
         if isinstance(method, bytes):
             self.method = method.decode("ascii").upper()
@@ -616,10 +618,8 @@ class Request:
         if cookies:
             Cookies(cookies).set_cookie_header(self)
 
-        if content is None and data is None and files is None and json is None:
-            self.stream: typing.Union[
-                None, typing.Iterable[bytes], typing.AsyncIterable[bytes]
-            ] = None
+        if stream is not None:
+            self.stream = stream
             self._prepare({})
         else:
             headers, stream = encode_request(content, data, files, json)
@@ -659,15 +659,12 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
-            if self.stream is None:
-                self._content = b""
-            else:
-                assert isinstance(self.stream, typing.Iterable)
-                self._content = b"".join(self.stream)
-                # If a streaming request has been read entirely into memory, then
-                # we can replace the stream with a raw bytes implementation,
-                # to ensure that any non-replayable streams can still be used.
-                self.stream = ByteStream(self._content)
+            assert isinstance(self.stream, typing.Iterable)
+            self._content = b"".join(self.stream)
+            # If a streaming request has been read entirely into memory, then
+            # we can replace the stream with a raw bytes implementation,
+            # to ensure that any non-replayable streams can still be used.
+            self.stream = PlainByteStream(self._content)
         return self._content
 
     async def aread(self) -> bytes:
@@ -675,15 +672,12 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
-            if self.stream is None:
-                self._content = b""
-            else:
-                assert isinstance(self.stream, typing.AsyncIterable)
-                self._content = b"".join([part async for part in self.stream])
-                # If a streaming request has been read entirely into memory, then
-                # we can replace the stream with a raw bytes implementation,
-                # to ensure that any non-replayable streams can still be used.
-                self.stream = ByteStream(self._content)
+            assert isinstance(self.stream, typing.AsyncIterable)
+            self._content = b"".join([part async for part in self.stream])
+            # If a streaming request has been read entirely into memory, then
+            # we can replace the stream with a raw bytes implementation,
+            # to ensure that any non-replayable streams can still be used.
+            self.stream = PlainByteStream(self._content)
         return self._content
 
     def __repr__(self) -> str:
@@ -701,6 +695,7 @@ class Response:
         http_version: str = None,
         headers: HeaderTypes = None,
         content: ResponseContent = None,
+        stream: ByteStream = None,
         history: typing.List["Response"] = None,
         on_close: typing.Callable = None,
     ):
@@ -718,11 +713,14 @@ class Response:
         self.is_closed = False
         self.is_stream_consumed = False
 
-        _, stream = encode_response(content)
-        self.stream = stream
-        if content is None or isinstance(content, bytes):
-            # Load the response body, except for streaming content.
-            self.read()
+        if stream is not None:
+            self.stream = stream
+        else:
+            _, stream = encode_response(content)
+            self.stream = stream
+            if content is None or isinstance(content, bytes):
+                # Load the response body, except for streaming content.
+                self.read()
 
         self._num_bytes_downloaded = 0
 

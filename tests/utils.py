@@ -40,7 +40,7 @@ class MockTransport(httpcore.SyncHTTPTransport):
             method=method,
             url=url,
             headers=headers,
-            content=stream,
+            stream=stream,
         )
         request.read()
         response = self.handler(request)

@@ -33,6 +33,7 @@ from ._transports.asgi import ASGITransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
     AuthTypes,
+    ByteStream,
     CertTypes,
     CookieTypes,
     HeaderTypes,
@@ -395,10 +396,10 @@ class BaseClient:
         method = self._redirect_method(request, response)
         url = self._redirect_url(request, response)
         headers = self._redirect_headers(request, url, method)
-        content = self._redirect_content(request, method)
+        stream = self._redirect_stream(request, method)
         cookies = Cookies(self.cookies)
         return Request(
-            method=method, url=url, headers=headers, cookies=cookies, content=content
+            method=method, url=url, headers=headers, cookies=cookies, stream=stream
         )
 
     def _redirect_method(self, request: Request, response: Response) -> str:
@@ -477,9 +478,9 @@ class BaseClient:
 
         return headers
 
-    def _redirect_content(
+    def _redirect_stream(
         self, request: Request, method: str
-    ) -> typing.Union[None, typing.Iterable[bytes], typing.AsyncIterable[bytes]]:
+    ) -> typing.Optional[ByteStream]:
         """
         Return the body that should be used for the redirect request.
         """
@@ -869,7 +870,7 @@ class Client(BaseClient):
             status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
-            content=stream,  # type: ignore
+            stream=stream,  # type: ignore
             request=request,
             on_close=on_close,
         )

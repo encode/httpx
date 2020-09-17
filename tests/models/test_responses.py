@@ -236,6 +236,21 @@ def test_read():
     assert response.is_closed
 
 
+def test_empty_read():
+    response = httpx.Response(200)
+
+    assert response.status_code == 200
+    assert response.text == ""
+    assert response.encoding is None
+    assert response.is_closed
+
+    content = response.read()
+
+    assert content == b""
+    assert response.content == b""
+    assert response.is_closed
+
+
 @pytest.mark.asyncio
 async def test_aread():
     response = httpx.Response(
@@ -252,6 +267,22 @@ async def test_aread():
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
+    assert response.is_closed
+
+
+@pytest.mark.asyncio
+async def test_empty_aread():
+    response = httpx.Response(200)
+
+    assert response.status_code == 200
+    assert response.text == ""
+    assert response.encoding is None
+    assert response.is_closed
+
+    content = await response.aread()
+
+    assert content == b""
+    assert response.content == b""
     assert response.is_closed
 
 
