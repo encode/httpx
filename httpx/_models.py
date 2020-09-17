@@ -41,6 +41,7 @@ from ._types import (
     HeaderTypes,
     PrimitiveData,
     QueryParamTypes,
+    RawURL,
     RequestContent,
     RequestData,
     RequestFiles,
@@ -60,8 +61,18 @@ from ._utils import (
 
 
 class URL:
-    def __init__(self, url: URLTypes = "", params: QueryParamTypes = None) -> None:
-        if isinstance(url, str):
+    def __init__(
+        self, url: typing.Union["URL", str, RawURL] = "", params: QueryParamTypes = None
+    ) -> None:
+        if isinstance(url, (str, tuple)):
+            if isinstance(url, tuple):
+                raw_scheme, raw_host, port, raw_path = url
+                scheme = raw_scheme.decode("ascii")
+                host = raw_host.decode("ascii")
+                port_str = "" if port is None else f":{port}"
+                path = raw_path.decode("ascii")
+                url = f"{scheme}://{host}{port_str}{path}"
+
             try:
                 self._uri_reference = rfc3986.iri_reference(url).encode()
             except rfc3986.exceptions.InvalidAuthority as exc:
@@ -141,7 +152,7 @@ class URL:
         return self._uri_reference.fragment or ""
 
     @property
-    def raw(self) -> typing.Tuple[bytes, bytes, typing.Optional[int], bytes]:
+    def raw(self) -> RawURL:
         return (
             self.scheme.encode("ascii"),
             self.host.encode("ascii"),
@@ -585,8 +596,8 @@ class Headers(typing.MutableMapping[str, str]):
 class Request:
     def __init__(
         self,
-        method: str,
-        url: typing.Union[str, URL],
+        method: typing.Union[str, bytes],
+        url: typing.Union["URL", str, RawURL],
         *,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -597,7 +608,10 @@ class Request:
         json: typing.Any = None,
         stream: ContentStream = None,
     ):
-        self.method = method.upper()
+        if isinstance(method, bytes):
+            self.method = method.decode("ascii").upper()
+        else:
+            self.method = method.upper()
         self.url = URL(url, params=params)
         self.headers = Headers(headers)
         if cookies:
