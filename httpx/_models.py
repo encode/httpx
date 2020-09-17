@@ -688,7 +688,7 @@ class Response:
         status_code: int,
         *,
         request: Request = None,
-        http_version: str = "HTTP/1.1",
+        http_version: str = None,
         headers: HeaderTypes = None,
         stream: ContentStream = None,
         content: ResponseContent = None,

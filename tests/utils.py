@@ -56,7 +56,7 @@ class MockTransport(httpcore.SyncHTTPTransport):
         request.read()
         response = self.handler(request)
         return (
-            response.http_version.encode("ascii"),
+            (response.http_version or "HTTP/1.1").encode("ascii"),
             response.status_code,
             response.reason_phrase.encode("ascii"),
             response.headers.raw,
