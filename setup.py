@@ -63,7 +63,7 @@ setup(
     extras_require={
         "http2": "h2==3.*",
         "brotli": "brotlipy==0.7.*",
-        "cli": ["click==7.*", "rich==5.*"]
+        "cli": ["click==7.*", "rich==7.*"]
     },
     entry_points = {
         "console_scripts": "httpx=httpx._cli.main:main"
