@@ -382,7 +382,7 @@ class BaseClient:
             return BasicAuth(username=username, password=password)
 
         if self.trust_env and "Authorization" not in request.headers:
-            credentials = self._netrc.get_credentials(request.url.authority)
+            credentials = self._netrc.get_credentials(request.url.host)
             if credentials is not None:
                 return BasicAuth(username=credentials[0], password=credentials[1])
 
@@ -464,7 +464,10 @@ class BaseClient:
             # Strip Authorization headers when responses are redirected away from
             # the origin.
             headers.pop("Authorization", None)
-            headers["Host"] = url.authority
+
+            # Remove the Host header, so that a new one with be auto-populated on
+            # the request instance.
+            headers.pop("Host", None)
 
         if method != request.method and method == "GET":
             # If we've switch to a 'GET' request, then strip any headers which
