@@ -51,7 +51,7 @@ async def test_asgi():
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_upload():
     async with httpx.AsyncClient(app=echo_body) as client:
-        response = await client.post("http://www.example.org/", data=b"example")
+        response = await client.post("http://www.example.org/", content=b"example")
 
     assert response.status_code == 200
     assert response.text == "example"
@@ -99,7 +99,7 @@ async def test_asgi_disconnect_after_response_complete():
         disconnect = message.get("type") == "http.disconnect"
 
     async with httpx.AsyncClient(app=read_body) as client:
-        response = await client.post("http://www.example.org/", data=b"example")
+        response = await client.post("http://www.example.org/", content=b"example")
 
     assert response.status_code == 200
     assert disconnect

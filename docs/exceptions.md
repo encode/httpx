@@ -74,7 +74,6 @@ except httpx.HTTPStatusError as exc:
             * UnsupportedProtocol
         * DecodingError
         * TooManyRedirects
-        * RequestBodyUnavailable
     * HTTPStatusError
 * InvalidURL
 * NotRedirectResponse
@@ -147,9 +146,6 @@ except httpx.HTTPStatusError as exc:
     :docstring:
 
 ::: httpx.TooManyRedirects
-    :docstring:
-
-::: httpx.RequestBodyUnavailable
     :docstring:
 
 ::: httpx.HTTPStatusError

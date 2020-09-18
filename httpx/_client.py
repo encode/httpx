@@ -1,3 +1,4 @@
+import datetime
 import functools
 import typing
 import warnings
@@ -18,13 +19,11 @@ from ._config import (
     UnsetType,
     create_ssl_context,
 )
-from ._content_streams import ContentStream
 from ._decoders import SUPPORTED_DECODERS
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
     InvalidURL,
     RemoteProtocolError,
-    RequestBodyUnavailable,
     TooManyRedirects,
     map_exceptions,
 )
@@ -34,11 +33,13 @@ from ._transports.asgi import ASGITransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
     AuthTypes,
+    ByteStream,
     CertTypes,
     CookieTypes,
     HeaderTypes,
     ProxiesTypes,
     QueryParamTypes,
+    RequestContent,
     RequestData,
     RequestFiles,
     TimeoutTypes,
@@ -74,9 +75,12 @@ class BaseClient:
         cookies: CookieTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         trust_env: bool = True,
     ):
+        event_hooks = {} if event_hooks is None else event_hooks
+
         self._base_url = self._enforce_trailing_slash(URL(base_url))
 
         self._auth = self._build_auth(auth)
@@ -85,6 +89,10 @@ class BaseClient:
         self._cookies = Cookies(cookies)
         self._timeout = Timeout(timeout)
         self.max_redirects = max_redirects
+        self._event_hooks = {
+            "request": list(event_hooks.get("request", [])),
+            "response": list(event_hooks.get("response", [])),
+        }
         self._trust_env = trust_env
         self._netrc = NetRCInfo()
         self._is_closed = True
@@ -132,6 +140,19 @@ class BaseClient:
     @timeout.setter
     def timeout(self, timeout: TimeoutTypes) -> None:
         self._timeout = Timeout(timeout)
+
+    @property
+    def event_hooks(self) -> typing.Dict[str, typing.List[typing.Callable]]:
+        return self._event_hooks
+
+    @event_hooks.setter
+    def event_hooks(
+        self, event_hooks: typing.Dict[str, typing.List[typing.Callable]]
+    ) -> None:
+        self._event_hooks = {
+            "request": list(event_hooks.get("request", [])),
+            "response": list(event_hooks.get("response", [])),
+        }
 
     @property
     def auth(self) -> typing.Optional[Auth]:
@@ -206,6 +227,7 @@ class BaseClient:
         method: str,
         url: URLTypes,
         *,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -229,6 +251,7 @@ class BaseClient:
         request = self.build_request(
             method=method,
             url=url,
+            content=content,
             data=data,
             files=files,
             json=json,
@@ -249,6 +272,7 @@ class BaseClient:
         method: str,
         url: URLTypes,
         *,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -274,6 +298,7 @@ class BaseClient:
         return Request(
             method,
             url,
+            content=content,
             data=data,
             files=files,
             json=json,
@@ -455,19 +480,12 @@ class BaseClient:
 
     def _redirect_stream(
         self, request: Request, method: str
-    ) -> typing.Optional[ContentStream]:
+    ) -> typing.Optional[ByteStream]:
         """
         Return the body that should be used for the redirect request.
         """
         if method != request.method and method == "GET":
             return None
-
-        if not request.stream.can_replay():
-            raise RequestBodyUnavailable(
-                "Got a redirect response, but the request body was streaming "
-                "and is no longer available.",
-                request=request,
-            )
 
         return request.stream
 
@@ -532,6 +550,7 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -544,6 +563,7 @@ class Client(BaseClient):
             cookies=cookies,
             timeout=timeout,
             max_redirects=max_redirects,
+            event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
         )
@@ -657,6 +677,7 @@ class Client(BaseClient):
         method: str,
         url: URLTypes,
         *,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -686,6 +707,7 @@ class Client(BaseClient):
         request = self.build_request(
             method=method,
             url=url,
+            content=content,
             data=data,
             files=files,
             json=json,
@@ -739,6 +761,13 @@ class Client(BaseClient):
             finally:
                 response.close()
 
+        try:
+            for hook in self._event_hooks["response"]:
+                hook(response)
+        except Exception:
+            response.close()
+            raise
+
         return response
 
     def _send_handling_auth(
@@ -751,6 +780,9 @@ class Client(BaseClient):
     ) -> Response:
         auth_flow = auth.sync_auth_flow(request)
         request = next(auth_flow)
+
+        for hook in self._event_hooks["request"]:
+            hook(request)
 
         while True:
             response = self._send_handling_redirects(
@@ -825,16 +857,22 @@ class Client(BaseClient):
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
-                stream=request.stream,
+                stream=request.stream,  # type: ignore
                 timeout=timeout.as_dict(),
             )
+
+        def on_close(response: Response) -> None:
+            response.elapsed = datetime.timedelta(timer.sync_elapsed())
+            if hasattr(stream, "close"):
+                stream.close()
+
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
-            elapsed_func=timer.sync_elapsed,
+            on_close=on_close,
         )
 
         self.cookies.extract_cookies(response)
@@ -930,6 +968,7 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -948,6 +987,7 @@ class Client(BaseClient):
         return self.request(
             "POST",
             url,
+            content=content,
             data=data,
             files=files,
             json=json,
@@ -963,6 +1003,7 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -981,6 +1022,7 @@ class Client(BaseClient):
         return self.request(
             "PUT",
             url,
+            content=content,
             data=data,
             files=files,
             json=json,
@@ -996,6 +1038,7 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -1014,6 +1057,7 @@ class Client(BaseClient):
         return self.request(
             "PATCH",
             url,
+            content=content,
             data=data,
             files=files,
             json=json,
@@ -1153,6 +1197,7 @@ class AsyncClient(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -1165,6 +1210,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             timeout=timeout,
             max_redirects=max_redirects,
+            event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
         )
@@ -1279,6 +1325,7 @@ class AsyncClient(BaseClient):
         method: str,
         url: URLTypes,
         *,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -1308,6 +1355,7 @@ class AsyncClient(BaseClient):
         request = self.build_request(
             method=method,
             url=url,
+            content=content,
             data=data,
             files=files,
             json=json,
@@ -1362,6 +1410,13 @@ class AsyncClient(BaseClient):
             finally:
                 await response.aclose()
 
+        try:
+            for hook in self._event_hooks["response"]:
+                await hook(response)
+        except Exception:
+            await response.aclose()
+            raise
+
         return response
 
     async def _send_handling_auth(
@@ -1374,6 +1429,9 @@ class AsyncClient(BaseClient):
     ) -> Response:
         auth_flow = auth.async_auth_flow(request)
         request = await auth_flow.__anext__()
+
+        for hook in self._event_hooks["request"]:
+            await hook(request)
 
         while True:
             response = await self._send_handling_redirects(
@@ -1450,16 +1508,22 @@ class AsyncClient(BaseClient):
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
-                stream=request.stream,
+                stream=request.stream,  # type: ignore
                 timeout=timeout.as_dict(),
             )
+
+        async def on_close(response: Response) -> None:
+            response.elapsed = datetime.timedelta(await timer.async_elapsed())
+            if hasattr(stream, "close"):
+                await stream.aclose()
+
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
-            elapsed_func=timer.async_elapsed,
+            on_close=on_close,
         )
 
         self.cookies.extract_cookies(response)
@@ -1555,6 +1619,7 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -1573,6 +1638,7 @@ class AsyncClient(BaseClient):
         return await self.request(
             "POST",
             url,
+            content=content,
             data=data,
             files=files,
             json=json,
@@ -1588,6 +1654,7 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -1606,6 +1673,7 @@ class AsyncClient(BaseClient):
         return await self.request(
             "PUT",
             url,
+            content=content,
             data=data,
             files=files,
             json=json,
@@ -1621,6 +1689,7 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
+        content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
@@ -1639,6 +1708,7 @@ class AsyncClient(BaseClient):
         return await self.request(
             "PATCH",
             url,
+            content=content,
             data=data,
             files=files,
             json=json,

@@ -6,7 +6,7 @@ import typing
 from base64 import b64encode
 from urllib.request import parse_http_list
 
-from ._exceptions import ProtocolError, RequestBodyUnavailable
+from ._exceptions import ProtocolError
 from ._models import Request, Response
 from ._utils import to_bytes, to_str, unquote
 
@@ -157,13 +157,6 @@ class DigestAuth(Auth):
         self._password = to_bytes(password)
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
-        if not request.stream.can_replay():
-            raise RequestBodyUnavailable(
-                "Cannot use digest auth with streaming requests that are unable "
-                "to replay the request body if a second request is required.",
-                request=request,
-            )
-
         response = yield request
 
         if response.status_code != 401 or "www-authenticate" not in response.headers:

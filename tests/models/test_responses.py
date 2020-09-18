@@ -7,6 +7,12 @@ import pytest
 import httpx
 
 
+class StreamingBody:
+    def __iter__(self):
+        yield b"Hello, "
+        yield b"world!"
+
+
 def streaming_body():
     yield b"Hello, "
     yield b"world!"
@@ -81,15 +87,15 @@ def test_response_content_type_encoding():
 
 def test_response_autodetect_encoding():
     """
-    Autodetect encoding if there is no charset info in a Content-Type header.
+    Autodetect encoding if there is no Content-Type header.
     """
-    content = "おはようございます。".encode("EUC-JP")
+    content = "おはようございます。".encode("utf-8")
     response = httpx.Response(
         200,
         content=content,
     )
     assert response.text == "おはようございます。"
-    assert response.encoding == "EUC-JP"
+    assert response.encoding is None
 
 
 def test_response_fallback_to_autodetect():
@@ -97,20 +103,20 @@ def test_response_fallback_to_autodetect():
     Fallback to autodetection if we get an invalid charset in the Content-Type header.
     """
     headers = {"Content-Type": "text-plain; charset=invalid-codec-name"}
-    content = "おはようございます。".encode("EUC-JP")
+    content = "おはようございます。".encode("utf-8")
     response = httpx.Response(
         200,
         content=content,
         headers=headers,
     )
     assert response.text == "おはようございます。"
-    assert response.encoding == "EUC-JP"
+    assert response.encoding is None
 
 
-def test_response_default_text_encoding():
+def test_response_no_charset_with_ascii_content():
     """
-    A media type of 'text/*' with no charset should default to ISO-8859-1.
-    See: https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.7.1
+    A response with ascii encoded content should decode correctly,
+    even with no charset specified.
     """
     content = b"Hello, world!"
     headers = {"Content-Type": "text/plain"}
@@ -120,20 +126,56 @@ def test_response_default_text_encoding():
         headers=headers,
     )
     assert response.status_code == 200
-    assert response.encoding == "iso-8859-1"
+    assert response.encoding is None
     assert response.text == "Hello, world!"
 
 
-def test_response_default_encoding():
+def test_response_no_charset_with_utf8_content():
     """
-    Default to utf-8 if all else fails.
+    A response with UTF-8 encoded content should decode correctly,
+    even with no charset specified.
     """
+    content = "Unicode Snowman: ☃".encode("utf-8")
+    headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
         200,
-        content=b"",
+        content=content,
+        headers=headers,
     )
-    assert response.text == ""
-    assert response.encoding == "utf-8"
+    assert response.text == "Unicode Snowman: ☃"
+    assert response.encoding is None
+
+
+def test_response_no_charset_with_iso_8859_1_content():
+    """
+    A response with ISO 8859-1 encoded content should decode correctly,
+    even with no charset specified.
+    """
+    content = "Accented: Österreich".encode("iso-8859-1")
+    headers = {"Content-Type": "text/plain"}
+    response = httpx.Response(
+        200,
+        content=content,
+        headers=headers,
+    )
+    assert response.text == "Accented: Österreich"
+    assert response.encoding is None
+
+
+def test_response_no_charset_with_cp_1252_content():
+    """
+    A response with Windows 1252 encoded content should decode correctly,
+    even with no charset specified.
+    """
+    content = "Euro Currency: €".encode("cp1252")
+    headers = {"Content-Type": "text/plain"}
+    response = httpx.Response(
+        200,
+        content=content,
+        headers=headers,
+    )
+    assert response.text == "Euro Currency: €"
+    assert response.encoding is None
 
 
 def test_response_non_text_encoding():
@@ -147,7 +189,7 @@ def test_response_non_text_encoding():
         headers=headers,
     )
     assert response.text == "xyz"
-    assert response.encoding == "ascii"
+    assert response.encoding is None
 
 
 def test_response_set_explicit_encoding():
@@ -184,13 +226,28 @@ def test_read():
 
     assert response.status_code == 200
     assert response.text == "Hello, world!"
-    assert response.encoding == "ascii"
+    assert response.encoding is None
     assert response.is_closed
 
     content = response.read()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
+    assert response.is_closed
+
+
+def test_empty_read():
+    response = httpx.Response(200)
+
+    assert response.status_code == 200
+    assert response.text == ""
+    assert response.encoding is None
+    assert response.is_closed
+
+    content = response.read()
+
+    assert content == b""
+    assert response.content == b""
     assert response.is_closed
 
 
@@ -203,13 +260,29 @@ async def test_aread():
 
     assert response.status_code == 200
     assert response.text == "Hello, world!"
-    assert response.encoding == "ascii"
+    assert response.encoding is None
     assert response.is_closed
 
     content = await response.aread()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
+    assert response.is_closed
+
+
+@pytest.mark.asyncio
+async def test_empty_aread():
+    response = httpx.Response(200)
+
+    assert response.status_code == 200
+    assert response.text == ""
+    assert response.encoding is None
+    assert response.is_closed
+
+    content = await response.aread()
+
+    assert content == b""
+    assert response.content == b""
     assert response.is_closed
 
 
@@ -223,6 +296,28 @@ def test_iter_raw():
     for part in response.iter_raw():
         raw += part
     assert raw == b"Hello, world!"
+
+
+def test_iter_raw_on_iterable():
+    response = httpx.Response(
+        200,
+        content=StreamingBody(),
+    )
+
+    raw = b""
+    for part in response.iter_raw():
+        raw += part
+    assert raw == b"Hello, world!"
+
+
+def test_iter_raw_on_async():
+    response = httpx.Response(
+        200,
+        content=async_streaming_body(),
+    )
+
+    with pytest.raises(RuntimeError):
+        [part for part in response.iter_raw()]
 
 
 def test_iter_raw_increments_updates_counter():
@@ -242,6 +337,17 @@ async def test_aiter_raw():
     async for part in response.aiter_raw():
         raw += part
     assert raw == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_aiter_raw_on_sync():
+    response = httpx.Response(
+        200,
+        content=streaming_body(),
+    )
+
+    with pytest.raises(RuntimeError):
+        [part async for part in response.aiter_raw()]
 
 
 @pytest.mark.asyncio
@@ -574,3 +680,20 @@ def test_cannot_access_unset_request():
 
     with pytest.raises(RuntimeError):
         response.request
+
+
+def test_generator_with_transfer_encoding_header():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    response = httpx.Response(200, content=content())
+    assert response.headers == httpx.Headers({"Transfer-Encoding": "chunked"})
+
+
+def test_generator_with_content_length_header():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    headers = {"Content-Length": "8"}
+    response = httpx.Response(200, content=content(), headers=headers)
+    assert response.headers == httpx.Headers({"Content-Length": "8"})

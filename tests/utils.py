@@ -36,45 +36,26 @@ class MockTransport(httpcore.SyncHTTPTransport):
         stream: httpcore.SyncByteStream = None,
         timeout: Mapping[str, Optional[float]] = None,
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.SyncByteStream]:
-        raw_scheme, raw_host, port, raw_path = url
-        scheme = raw_scheme.decode("ascii")
-        host = raw_host.decode("ascii")
-        port_str = "" if port is None else f":{port}"
-        path = raw_path.decode("ascii")
-
-        request_headers = httpx.Headers(headers)
-        data = (
-            (item for item in stream)
-            if stream
-            and (
-                "Content-Length" in request_headers
-                or "Transfer-Encoding" in request_headers
-            )
-            else None
-        )
-
         request = httpx.Request(
-            method=method.decode("ascii"),
-            url=f"{scheme}://{host}{port_str}{path}",
-            headers=request_headers,
-            data=data,
+            method=method,
+            url=url,
+            headers=headers,
+            stream=stream,
         )
         request.read()
         response = self.handler(request)
         return (
-            response.http_version.encode("ascii")
-            if response.http_version
-            else b"HTTP/1.1",
+            (response.http_version or "HTTP/1.1").encode("ascii"),
             response.status_code,
             response.reason_phrase.encode("ascii"),
             response.headers.raw,
-            response._raw_stream,
+            response.stream,
         )
 
 
 class AsyncMockTransport(httpcore.AsyncHTTPTransport):
     def __init__(self, handler: Callable) -> None:
-        self.impl = MockTransport(handler)
+        self.handler = handler
 
     async def request(
         self,
@@ -84,28 +65,18 @@ class AsyncMockTransport(httpcore.AsyncHTTPTransport):
         stream: httpcore.AsyncByteStream = None,
         timeout: Mapping[str, Optional[float]] = None,
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
-        content = (
-            httpcore.PlainByteStream(b"".join([part async for part in stream]))
-            if stream
-            else httpcore.PlainByteStream(b"")
+        request = httpx.Request(
+            method=method,
+            url=url,
+            headers=headers,
+            stream=stream,
         )
-
-        (
-            http_version,
-            status_code,
-            reason_phrase,
-            headers,
-            response_stream,
-        ) = self.impl.request(
-            method, url, headers=headers, stream=content, timeout=timeout
-        )
-
-        content = httpcore.PlainByteStream(b"".join([part for part in response_stream]))
-
+        await request.aread()
+        response = self.handler(request)
         return (
-            http_version,
-            status_code,
-            reason_phrase,
-            headers,
-            content,
+            (response.http_version or "HTTP/1.1").encode("ascii"),
+            response.status_code,
+            response.reason_phrase.encode("ascii"),
+            response.headers.raw,
+            response.stream,
         )

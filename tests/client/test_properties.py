@@ -49,3 +49,12 @@ def test_client_timeout():
     assert client.timeout.read == expected_timeout
     assert client.timeout.write == expected_timeout
     assert client.timeout.pool == expected_timeout
+
+
+def test_client_event_hooks():
+    def on_request(request):
+        pass  # pragma: nocover
+
+    client = httpx.Client()
+    client.event_hooks = {"request": [on_request]}
+    assert client.event_hooks == {"request": [on_request], "response": []}
