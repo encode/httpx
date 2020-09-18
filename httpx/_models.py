@@ -91,7 +91,7 @@ class URL:
        url = httpx.URL("http://中国.icom.museum")
        assert url.host == "xn--fiqs8s.icom.museum"
 
-    * `url.userinfo` is raw bytes, without URL escaping. Usually you'll wantto work with
+    * `url.userinfo` is raw bytes, without URL escaping. Usually you'll want to work with
       `url.username` and `url.password` instead, which handle the URL escaping.
 
     * `url.raw_path` is raw bytes of both the path and query, without URL escaping.
@@ -142,50 +142,108 @@ class URL:
 
     @property
     def scheme(self) -> str:
+        """
+        The URL scheme, such as "http", "https".
+        Always normalised to lowercase.
+        """
         return self._uri_reference.scheme or ""
 
     @property
     def userinfo(self) -> bytes:
+        """
+        The URL userinfo as a raw bytestring.
+        For example: b"jo%40email.com:a%20secret".
+        """
         userinfo = self._uri_reference.userinfo or ""
         return userinfo.encode("ascii")
 
     @property
     def username(self) -> str:
+        """
+        The URL username as a string, with URL decoding applied.
+        For example: "jo@email.com"
+        """
         userinfo = self._uri_reference.userinfo or ""
         return unquote(userinfo.partition(":")[0])
 
     @property
     def password(self) -> str:
+        """
+        The URL password as a string, with URL decoding applied.
+        For example: "a secret"
+        """
         userinfo = self._uri_reference.userinfo or ""
         return unquote(userinfo.partition(":")[2])
 
     @property
     def host(self) -> str:
+        """
+        The URL host as a string.
+        Always normlized to lowercase, and IDNA encoded.
+
+        Examples:
+
+        url = httpx.URL("http://www.EXAMPLE.org")
+        assert url.host == "www.example.org"
+
+        url = httpx.URL("http://中国.icom.museum")
+        assert url.host == "xn--fiqs8s.icom.museum"
+        """
         return self._uri_reference.host or ""
 
     @property
     def port(self) -> typing.Optional[int]:
+        """
+        The URL port as an integer.
+        """
         port = self._uri_reference.port
         return int(port) if port else None
 
     @property
     def netloc(self) -> str:
+        """
+        Either `<host>` or `<host>:<port>` as a string.
+        Always normlized to lowercase, and IDNA encoded.
+        """
         host = self._uri_reference.host or ""
         port = self._uri_reference.port
         return host if port is None else f"{host}:{port}"
 
     @property
     def path(self) -> str:
+        """
+        The URL path as a string. Excluding the query string, and URL decoded.
+
+        For example:
+
+        url = httpx.URL("https://example.com/pa%20th")
+        assert url.path == "/pa th"
+        """
         path = self._uri_reference.path or "/"
         return unquote(path)
 
     @property
     def query(self) -> bytes:
+        """
+        The URL query string, as raw bytes, excluding the leading b"?".
+        Note that URL decoding can only be applied on URL query strings
+        at the point of decoding the individual parameter names/values.
+        """
         query = self._uri_reference.query or ""
         return query.encode("ascii")
 
     @property
     def raw_path(self) -> bytes:
+        """
+        The complete URL path and query string as raw bytes.
+        Used as the target when constructing HTTP requests.
+
+        For example:
+
+        GET /users?search=some%20text HTTP/1.1
+        Host: www.example.org
+        Connection: close
+        """
         path = self._uri_reference.path or "/"
         if self._uri_reference.query is not None:
             path += "?" + self._uri_reference.query
@@ -193,10 +251,20 @@ class URL:
 
     @property
     def fragment(self) -> str:
+        """
+        The URL fragments, as used in HTML anchors.
+        As a string, without the leading '#'.
+        """
         return self._uri_reference.fragment or ""
 
     @property
     def raw(self) -> RawURL:
+        """
+        The URL in the raw representation used by the low level
+        transport API. For example, see `httpcore`.
+
+        Provides the (scheme, host, port, target) for the outgoing request.
+        """
         return (
             self.scheme.encode("ascii"),
             self.host.encode("ascii"),
@@ -224,9 +292,23 @@ class URL:
 
     @property
     def is_relative_url(self) -> bool:
+        """
+        Return `False` for absolute URLs such as 'http://example.com/path',
+        and `True` for relative URLs such as '/path'.
+        """
         return not self.is_absolute_url
 
     def copy_with(self, **kwargs: typing.Any) -> "URL":
+        """
+        Copy this URL, returning a new URL with some components altered.
+        Accepts the same set of parameters as the components that are made
+        available via properties on the `URL` class.
+
+        For example:
+
+        url = httpx.URL("https://www.example.com").copy_with(username="jo@gmail.com", password="a secret")
+        assert url == "https://jo%40email.com:a%20secret@www.example.com"
+        """
         allowed = {
             "scheme": str,
             "username": str,
@@ -260,19 +342,19 @@ class URL:
 
         if "host" in kwargs or "port" in kwargs:
             # Consolidate host and port into  netloc.
-            host = kwargs.pop("host", self.host)
+            host = kwargs.pop("host", self.host) or ""
             port = kwargs.pop("port", self.port)
             kwargs["netloc"] = f"{host}:{port}" if port is not None else host
 
         if "userinfo" in kwargs or "netloc" in kwargs:
             # Consolidate userinfo and netloc into authority.
-            userinfo = kwargs.pop("userinfo", self.userinfo).decode("ascii")
-            netloc = kwargs.pop("netloc", self.netloc)
+            userinfo = (kwargs.pop("userinfo", self.userinfo) or b"").decode("ascii")
+            netloc = kwargs.pop("netloc", self.netloc) or ""
             authority = f"{userinfo}@{netloc}" if userinfo else netloc
             kwargs["authority"] = authority
 
-        if kwargs.get("raw_path") is not None:
-            raw_path = kwargs.pop("raw_path")
+        if "raw_path" in kwargs:
+            raw_path = kwargs.pop("raw_path") or b""
             path, has_query, query = raw_path.decode("ascii").partition("?")
             kwargs["path"] = path
             kwargs["query"] = query if has_query else None
@@ -291,6 +373,12 @@ class URL:
     def join(self, url: URLTypes) -> "URL":
         """
         Return an absolute URL, using this URL as the base.
+
+        Eg.
+
+        url = httpx.URL("https://www.example.com/test")
+        url = url.join("/new/path")
+        assert url == "https://www.example.com/test/new/path"
         """
         if self.is_relative_url:
             return URL(url)
@@ -314,9 +402,10 @@ class URL:
         class_name = self.__class__.__name__
         url_str = str(self)
         if self._uri_reference.userinfo:
+            username = quote(self.username)
             url_str = (
                 rfc3986.urlparse(url_str)
-                .copy_with(userinfo=f"{self.username}:[secure]")
+                .copy_with(userinfo=f"{username}:[secure]")
                 .unsplit()
             )
         return f"{class_name}({url_str!r})"
