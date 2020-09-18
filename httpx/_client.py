@@ -464,7 +464,10 @@ class BaseClient:
             # Strip Authorization headers when responses are redirected away from
             # the origin.
             headers.pop("Authorization", None)
-            headers["Host"] = url.authority
+
+            # Remove the Host header, so that a new one with be auto-populated on
+            # the request instance.
+            headers.pop("Host", None)
 
         if method != request.method and method == "GET":
             # If we've switch to a 'GET' request, then strip any headers which
