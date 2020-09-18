@@ -465,7 +465,7 @@ class BaseClient:
             # the origin.
             headers.pop("Authorization", None)
 
-            # Remove the Host header, so that a new one with be auto-populated on
+            # Remove the Host header, so that a new one will be auto-populated on
             # the request instance.
             headers.pop("Host", None)
 
