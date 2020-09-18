@@ -13,16 +13,7 @@ import typing
 import pytest
 
 import httpx
-from httpx import (
-    URL,
-    Auth,
-    BasicAuth,
-    DigestAuth,
-    ProtocolError,
-    Request,
-    RequestBodyUnavailable,
-    Response,
-)
+from httpx import URL, Auth, BasicAuth, DigestAuth, ProtocolError, Request, Response
 from tests.utils import AsyncMockTransport, MockTransport
 
 from ..common import FIXTURES_DIR
@@ -617,13 +608,13 @@ def test_sync_auth_history() -> None:
 async def test_digest_auth_unavailable_streaming_body():
     url = "https://example.org/"
     auth = DigestAuth(username="tomchristie", password="password123")
-    app = App()
+    app = DigestApp()
 
     async def streaming_body():
         yield b"Example request body"  # pragma: nocover
 
     async with httpx.AsyncClient(transport=AsyncMockTransport(app)) as client:
-        with pytest.raises(RequestBodyUnavailable):
+        with pytest.raises(httpx.StreamConsumed):
             await client.post(url, data=streaming_body(), auth=auth)
 
 

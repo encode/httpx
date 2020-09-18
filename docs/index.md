@@ -71,7 +71,7 @@ well-established usability of `requests`, and gives you:
 * Ability to make requests directly to [WSGI applications](advanced.md#calling-into-python-web-apps) or [ASGI applications](async.md#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
-* 99% test coverage.
+* 100% test coverage.
 
 Plus all the standard features of `requests`...
 

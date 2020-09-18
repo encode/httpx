@@ -13,7 +13,7 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode
 import rfc3986
 import rfc3986.exceptions
 
-from ._content_streams import ByteStream, ContentStream, encode, encode_response
+from ._content import PlainByteStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
     ContentDecoder,
@@ -37,10 +37,12 @@ from ._exceptions import (
 )
 from ._status_codes import codes
 from ._types import (
+    ByteStream,
     CookieTypes,
     HeaderTypes,
     PrimitiveData,
     QueryParamTypes,
+    RawURL,
     RequestContent,
     RequestData,
     RequestFiles,
@@ -60,8 +62,18 @@ from ._utils import (
 
 
 class URL:
-    def __init__(self, url: URLTypes = "", params: QueryParamTypes = None) -> None:
-        if isinstance(url, str):
+    def __init__(
+        self, url: typing.Union["URL", str, RawURL] = "", params: QueryParamTypes = None
+    ) -> None:
+        if isinstance(url, (str, tuple)):
+            if isinstance(url, tuple):
+                raw_scheme, raw_host, port, raw_path = url
+                scheme = raw_scheme.decode("ascii")
+                host = raw_host.decode("ascii")
+                port_str = "" if port is None else f":{port}"
+                path = raw_path.decode("ascii")
+                url = f"{scheme}://{host}{port_str}{path}"
+
             try:
                 self._uri_reference = rfc3986.iri_reference(url).encode()
             except rfc3986.exceptions.InvalidAuthority as exc:
@@ -141,7 +153,7 @@ class URL:
         return self._uri_reference.fragment or ""
 
     @property
-    def raw(self) -> typing.Tuple[bytes, bytes, typing.Optional[int], bytes]:
+    def raw(self) -> RawURL:
         return (
             self.scheme.encode("ascii"),
             self.host.encode("ascii"),
@@ -585,8 +597,8 @@ class Headers(typing.MutableMapping[str, str]):
 class Request:
     def __init__(
         self,
-        method: str,
-        url: typing.Union[str, URL],
+        method: typing.Union[str, bytes],
+        url: typing.Union["URL", str, RawURL],
         *,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -595,23 +607,40 @@ class Request:
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
-        stream: ContentStream = None,
+        stream: ByteStream = None,
     ):
-        self.method = method.upper()
+        if isinstance(method, bytes):
+            self.method = method.decode("ascii").upper()
+        else:
+            self.method = method.upper()
         self.url = URL(url, params=params)
         self.headers = Headers(headers)
         if cookies:
             Cookies(cookies).set_cookie_header(self)
 
         if stream is not None:
+            # There's an important distinction between `Request(content=...)`,
+            # and `Request(stream=...)`.
+            #
+            # Using `content=...` implies automatically populated content headers,
+            # of either `Content-Length: ...` or `Transfer-Encoding: chunked`.
+            #
+            # Using `stream=...` will not automatically include any content headers.
+            #
+            # As an end-user you don't really need `stream=...`. It's only
+            # useful when:
+            #
+            # * Preserving the request stream when copying requests, eg for redirects.
+            # * Creating request instances on the *server-side* of the transport API.
             self.stream = stream
+            self._prepare({})
         else:
-            self.stream = encode(content, data, files, json)
+            headers, stream = encode_request(content, data, files, json)
+            self._prepare(headers)
+            self.stream = stream
 
-        self._prepare()
-
-    def _prepare(self) -> None:
-        for key, value in self.stream.get_headers().items():
+    def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
+        for key, value in default_headers.items():
             # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
             if key.lower() == "transfer-encoding" and "content-length" in self.headers:
                 continue
@@ -643,11 +672,12 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
+            assert isinstance(self.stream, typing.Iterable)
             self._content = b"".join(self.stream)
             # If a streaming request has been read entirely into memory, then
             # we can replace the stream with a raw bytes implementation,
             # to ensure that any non-replayable streams can still be used.
-            self.stream = ByteStream(self._content)
+            self.stream = PlainByteStream(self._content)
         return self._content
 
     async def aread(self) -> bytes:
@@ -655,11 +685,12 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
+            assert isinstance(self.stream, typing.AsyncIterable)
             self._content = b"".join([part async for part in self.stream])
             # If a streaming request has been read entirely into memory, then
             # we can replace the stream with a raw bytes implementation,
             # to ensure that any non-replayable streams can still be used.
-            self.stream = ByteStream(self._content)
+            self.stream = PlainByteStream(self._content)
         return self._content
 
     def __repr__(self) -> str:
@@ -676,10 +707,10 @@ class Response:
         request: Request = None,
         http_version: str = None,
         headers: HeaderTypes = None,
-        stream: ContentStream = None,
         content: ResponseContent = None,
+        stream: ByteStream = None,
         history: typing.List["Response"] = None,
-        elapsed_func: typing.Callable = None,
+        on_close: typing.Callable = None,
     ):
         self.status_code = status_code
         self.http_version = http_version
@@ -690,19 +721,40 @@ class Response:
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.history = [] if history is None else list(history)
-        self._elapsed_func = elapsed_func
+        self._on_close = on_close
 
         self.is_closed = False
         self.is_stream_consumed = False
+
         if stream is not None:
-            self._raw_stream = stream
+            # There's an important distinction between `Response(content=...)`,
+            # and `Response(stream=...)`.
+            #
+            # Using `content=...` implies automatically populated content headers,
+            # of either `Content-Length: ...` or `Transfer-Encoding: chunked`.
+            #
+            # Using `stream=...` will not automatically include any content headers.
+            #
+            # As an end-user you don't really need `stream=...`. It's only
+            # useful when creating response instances having received a stream
+            # from the transport API.
+            self.stream = stream
         else:
-            self._raw_stream = encode_response(content)
+            headers, stream = encode_response(content)
+            self._prepare(headers)
+            self.stream = stream
             if content is None or isinstance(content, bytes):
                 # Load the response body, except for streaming content.
                 self.read()
 
         self._num_bytes_downloaded = 0
+
+    def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
+        for key, value in default_headers.items():
+            # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
+            if key.lower() == "transfer-encoding" and "content-length" in self.headers:
+                continue
+            self.headers.setdefault(key, value)
 
     @property
     def elapsed(self) -> datetime.timedelta:
@@ -715,7 +767,11 @@ class Response:
                 "'.elapsed' may only be accessed after the response "
                 "has been read or closed."
             )
-        return datetime.timedelta(seconds=self._elapsed)
+        return self._elapsed
+
+    @elapsed.setter
+    def elapsed(self, elapsed: datetime.timedelta) -> None:
+        self._elapsed = elapsed
 
     @property
     def request(self) -> Request:
@@ -949,11 +1005,13 @@ class Response:
             raise StreamConsumed()
         if self.is_closed:
             raise ResponseClosed()
+        if not isinstance(self.stream, typing.Iterable):
+            raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
-            for part in self._raw_stream:
+            for part in self.stream:
                 self._num_bytes_downloaded += len(part)
                 yield part
         self.close()
@@ -978,9 +1036,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self._elapsed_func is not None:
-                self._elapsed = self._elapsed_func()
-            self._raw_stream.close()
+            if self._on_close is not None:
+                self._on_close(self)
 
     async def aread(self) -> bytes:
         """
@@ -1033,11 +1090,13 @@ class Response:
             raise StreamConsumed()
         if self.is_closed:
             raise ResponseClosed()
+        if not isinstance(self.stream, typing.AsyncIterable):
+            raise RuntimeError("Attempted to call a async iterator on a sync stream.")
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
-            async for part in self._raw_stream:
+            async for part in self.stream:
                 self._num_bytes_downloaded += len(part)
                 yield part
         await self.aclose()
@@ -1061,9 +1120,8 @@ class Response:
         """
         if not self.is_closed:
             self.is_closed = True
-            if self._elapsed_func is not None:
-                self._elapsed = await self._elapsed_func()
-            await self._raw_stream.aclose()
+            if self._on_close is not None:
+                await self._on_close(self)
 
 
 class Cookies(MutableMapping):

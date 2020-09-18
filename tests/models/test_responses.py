@@ -7,6 +7,12 @@ import pytest
 import httpx
 
 
+class StreamingBody:
+    def __iter__(self):
+        yield b"Hello, "
+        yield b"world!"
+
+
 def streaming_body():
     yield b"Hello, "
     yield b"world!"
@@ -230,6 +236,21 @@ def test_read():
     assert response.is_closed
 
 
+def test_empty_read():
+    response = httpx.Response(200)
+
+    assert response.status_code == 200
+    assert response.text == ""
+    assert response.encoding is None
+    assert response.is_closed
+
+    content = response.read()
+
+    assert content == b""
+    assert response.content == b""
+    assert response.is_closed
+
+
 @pytest.mark.asyncio
 async def test_aread():
     response = httpx.Response(
@@ -249,6 +270,22 @@ async def test_aread():
     assert response.is_closed
 
 
+@pytest.mark.asyncio
+async def test_empty_aread():
+    response = httpx.Response(200)
+
+    assert response.status_code == 200
+    assert response.text == ""
+    assert response.encoding is None
+    assert response.is_closed
+
+    content = await response.aread()
+
+    assert content == b""
+    assert response.content == b""
+    assert response.is_closed
+
+
 def test_iter_raw():
     response = httpx.Response(
         200,
@@ -259,6 +296,28 @@ def test_iter_raw():
     for part in response.iter_raw():
         raw += part
     assert raw == b"Hello, world!"
+
+
+def test_iter_raw_on_iterable():
+    response = httpx.Response(
+        200,
+        content=StreamingBody(),
+    )
+
+    raw = b""
+    for part in response.iter_raw():
+        raw += part
+    assert raw == b"Hello, world!"
+
+
+def test_iter_raw_on_async():
+    response = httpx.Response(
+        200,
+        content=async_streaming_body(),
+    )
+
+    with pytest.raises(RuntimeError):
+        [part for part in response.iter_raw()]
 
 
 def test_iter_raw_increments_updates_counter():
@@ -278,6 +337,17 @@ async def test_aiter_raw():
     async for part in response.aiter_raw():
         raw += part
     assert raw == b"Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_aiter_raw_on_sync():
+    response = httpx.Response(
+        200,
+        content=streaming_body(),
+    )
+
+    with pytest.raises(RuntimeError):
+        [part async for part in response.aiter_raw()]
 
 
 @pytest.mark.asyncio
@@ -610,3 +680,20 @@ def test_cannot_access_unset_request():
 
     with pytest.raises(RuntimeError):
         response.request
+
+
+def test_generator_with_transfer_encoding_header():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    response = httpx.Response(200, content=content())
+    assert response.headers == httpx.Headers({"Transfer-Encoding": "chunked"})
+
+
+def test_generator_with_content_length_header():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    headers = {"Content-Length": "8"}
+    response = httpx.Response(200, content=content(), headers=headers)
+    assert response.headers == httpx.Headers({"Content-Length": "8"})

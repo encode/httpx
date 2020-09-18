@@ -1,3 +1,5 @@
+import typing
+
 import pytest
 
 import httpx
@@ -16,6 +18,40 @@ def test_no_content():
 def test_content_length_header():
     request = httpx.Request("POST", "http://example.org", content=b"test 123")
     assert request.headers["Content-Length"] == "8"
+
+
+def test_iterable_content():
+    class Content:
+        def __iter__(self):
+            yield b"test 123"  # pragma: nocover
+
+    request = httpx.Request("POST", "http://example.org", content=Content())
+    assert request.headers == httpx.Headers(
+        {"Host": "example.org", "Transfer-Encoding": "chunked"}
+    )
+
+
+def test_generator_with_transfer_encoding_header():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    request = httpx.Request("POST", "http://example.org", content=content())
+    assert request.headers == httpx.Headers(
+        {"Host": "example.org", "Transfer-Encoding": "chunked"}
+    )
+
+
+def test_generator_with_content_length_header():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    headers = {"Content-Length": "8"}
+    request = httpx.Request(
+        "POST", "http://example.org", content=content(), headers=headers
+    )
+    assert request.headers == httpx.Headers(
+        {"Host": "example.org", "Content-Length": "8"}
+    )
 
 
 def test_url_encoded_data():
@@ -51,6 +87,8 @@ def test_read_and_stream_data():
     # Needed for cases such as authentication classes that read the request body.
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
     request.read()
+    assert request.stream is not None
+    assert isinstance(request.stream, typing.Iterable)
     content = b"".join([part for part in request.stream])
     assert content == request.content
 
@@ -61,6 +99,8 @@ async def test_aread_and_stream_data():
     # Needed for cases such as authentication classes that read the request body.
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
     await request.aread()
+    assert request.stream is not None
+    assert isinstance(request.stream, typing.AsyncIterable)
     content = b"".join([part async for part in request.stream])
     assert content == request.content
 
@@ -68,7 +108,7 @@ async def test_aread_and_stream_data():
 @pytest.mark.asyncio
 async def test_cannot_access_content_without_read():
     # Ensure a request may still be streamed if it has been read.
-    #  Needed for cases such as authentication classes that read the request body.
+    # Needed for cases such as authentication classes that read the request body.
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
     with pytest.raises(httpx.RequestNotRead):
         request.content
