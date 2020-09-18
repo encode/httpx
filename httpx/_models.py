@@ -13,7 +13,7 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode
 import rfc3986
 import rfc3986.exceptions
 
-from ._content_streams import PlainByteStream, encode_request, encode_response
+from ._content import PlainByteStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
     ContentDecoder,

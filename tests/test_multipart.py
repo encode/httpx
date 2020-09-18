@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 
 import httpx
-from httpx._content_streams import MultipartStream, encode_request
+from httpx._content import encode_request
 from httpx._utils import format_form_param
 from tests.utils import MockTransport
 
@@ -111,9 +111,8 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
         boundary = os.urandom(16).hex()
 
         headers, stream = encode_request(data=data, files=files)
-        assert isinstance(stream, MultipartStream)
+        assert isinstance(stream, typing.Iterable)
 
-        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
         content = (
             '--{0}\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="b"\r\n\r\nC\r\n'
@@ -127,8 +126,11 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
             "--{0}--\r\n"
             "".format(boundary).encode("ascii")
         )
-        assert headers["Content-Length"] == str(len(content))
-        assert b"".join(stream) == content
+        assert headers == {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(content)),
+        }
+        assert content == b"".join(stream)
 
 
 def test_multipart_encode_files_allows_filenames_as_none() -> None:
@@ -137,14 +139,18 @@ def test_multipart_encode_files_allows_filenames_as_none() -> None:
         boundary = os.urandom(16).hex()
 
         headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, MultipartStream)
+        assert isinstance(stream, typing.Iterable)
 
-        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
-        assert b"".join(stream) == (
+        content = (
             '--{0}\r\nContent-Disposition: form-data; name="file"\r\n\r\n'
             "<file content>\r\n--{0}--\r\n"
             "".format(boundary).encode("ascii")
         )
+        assert headers == {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(content)),
+        }
+        assert content == b"".join(stream)
 
 
 @pytest.mark.parametrize(
@@ -163,15 +169,19 @@ def test_multipart_encode_files_guesses_correct_content_type(
         boundary = os.urandom(16).hex()
 
         headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, MultipartStream)
+        assert isinstance(stream, typing.Iterable)
 
-        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
-        assert b"".join(stream) == (
+        content = (
             f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
             f'filename="{file_name}"\r\nContent-Type: '
             f"{expected_content_type}\r\n\r\n<file content>\r\n--{boundary}--\r\n"
             "".encode("ascii")
         )
+        assert headers == {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(content)),
+        }
+        assert content == b"".join(stream)
 
 
 @pytest.mark.parametrize(
@@ -186,9 +196,8 @@ def test_multipart_encode_files_allows_bytes_or_str_content(
         boundary = os.urandom(16).hex()
 
         headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, MultipartStream)
+        assert isinstance(stream, typing.Iterable)
 
-        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
         content = (
             '--{0}\r\nContent-Disposition: form-data; name="file"; '
             'filename="test.txt"\r\n'
@@ -196,8 +205,11 @@ def test_multipart_encode_files_allows_bytes_or_str_content(
             "--{0}--\r\n"
             "".format(boundary, output).encode("ascii")
         )
-        assert headers["Content-Length"] == str(len(content))
-        assert b"".join(stream) == content
+        assert headers == {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(content)),
+        }
+        assert content == b"".join(stream)
 
 
 def test_multipart_encode_non_seekable_filelike() -> None:
@@ -234,7 +246,7 @@ def test_multipart_encode_non_seekable_filelike() -> None:
         "Content-Type": "multipart/form-data; boundary=+++",
         "Content-Length": str(len(content)),
     }
-    assert b"".join(stream) == content
+    assert content == b"".join(stream)
 
 
 class TestHeaderParamHTML5Formatting:

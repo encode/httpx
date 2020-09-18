@@ -66,9 +66,9 @@ AuthTypes = Union[
     None,
 ]
 
-RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
-ResponseContent = Union[bytes, Iterable[bytes], AsyncIterable[bytes]]
 ByteStream = Union[Iterable[bytes], AsyncIterable[bytes]]
+RequestContent = Union[str, bytes, ByteStream]
+ResponseContent = Union[str, bytes, ByteStream]
 
 RequestData = dict
 
