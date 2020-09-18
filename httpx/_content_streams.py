@@ -1,14 +1,14 @@
 import binascii
+import inspect
 import os
 import typing
 from json import dumps as json_dumps
 from pathlib import Path
 from urllib.parse import urlencode
 
-import httpcore
-
 from ._exceptions import StreamConsumed
 from ._types import (
+    ByteStream,
     FileContent,
     FileTypes,
     RequestContent,
@@ -24,36 +24,7 @@ from ._utils import (
 )
 
 
-class ContentStream(httpcore.AsyncByteStream, httpcore.SyncByteStream):
-    def get_headers(self) -> typing.Dict[str, str]:
-        """
-        Return a dictionary of headers that are implied by the encoding.
-        """
-        return {}
-
-    def can_replay(self) -> bool:
-        """
-        Return `True` if `__aiter__` can be called multiple times.
-
-        We need this in cases such determining if we can re-issue a request
-        body when we receive a redirect response.
-        """
-        return True
-
-    def __iter__(self) -> typing.Iterator[bytes]:
-        yield b""
-
-    def close(self) -> None:
-        pass
-
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        yield b""
-
-    async def aclose(self) -> None:
-        pass
-
-
-class ByteStream(ContentStream):
+class PlainByteStream:
     """
     Request content encoded as plain bytes.
     """
@@ -74,59 +45,41 @@ class ByteStream(ContentStream):
         yield self.body
 
 
-class IteratorStream(ContentStream):
+class GeneratorStream:
     """
-    Request content encoded as plain bytes, using an byte iterator.
+    Request content encoded as plain bytes, using an byte generator.
     """
 
-    def __init__(self, iterator: typing.Iterator[bytes]) -> None:
-        self.iterator = iterator
-        self.is_stream_consumed = False
-
-    def can_replay(self) -> bool:
-        return False
-
-    def get_headers(self) -> typing.Dict[str, str]:
-        return {"Transfer-Encoding": "chunked"}
+    def __init__(self, generator: typing.Iterable[bytes]) -> None:
+        self._generator = generator
+        self._is_stream_consumed = False
 
     def __iter__(self) -> typing.Iterator[bytes]:
-        if self.is_stream_consumed:
+        if self._is_stream_consumed:
             raise StreamConsumed()
-        self.is_stream_consumed = True
-        for part in self.iterator:
+        self._is_stream_consumed = True
+        for part in self._generator:
             yield part
 
-    def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        raise RuntimeError("Attempted to call a async iterator on an sync stream.")
 
-
-class AsyncIteratorStream(ContentStream):
+class AsyncGeneratorStream:
     """
     Request content encoded as plain bytes, using an async byte iterator.
     """
 
-    def __init__(self, aiterator: typing.AsyncIterator[bytes]) -> None:
-        self.aiterator = aiterator
-        self.is_stream_consumed = False
-
-    def can_replay(self) -> bool:
-        return False
-
-    def get_headers(self) -> typing.Dict[str, str]:
-        return {"Transfer-Encoding": "chunked"}
-
-    def __iter__(self) -> typing.Iterator[bytes]:
-        raise RuntimeError("Attempted to call a sync iterator on an async stream.")
+    def __init__(self, agenerator: typing.AsyncIterable[bytes]) -> None:
+        self._agenerator = agenerator
+        self._is_stream_consumed = False
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        if self.is_stream_consumed:
+        if self._is_stream_consumed:
             raise StreamConsumed()
-        self.is_stream_consumed = True
-        async for part in self.aiterator:
+        self._is_stream_consumed = True
+        async for part in self._agenerator:
             yield part
 
 
-class JSONStream(ContentStream):
+class JSONStream:
     """
     Request content encoded as JSON.
     """
@@ -146,7 +99,7 @@ class JSONStream(ContentStream):
         yield self.body
 
 
-class URLEncodedStream(ContentStream):
+class URLEncodedStream:
     """
     Request content as URL encoded form data.
     """
@@ -166,7 +119,7 @@ class URLEncodedStream(ContentStream):
         yield self.body
 
 
-class MultipartStream(ContentStream):
+class MultipartStream:
     """
     Request content as streaming multipart encoded form data.
     """
@@ -208,9 +161,6 @@ class MultipartStream(ContentStream):
             data = self.render_data()
             return len(headers) + len(data)
 
-        def can_replay(self) -> bool:
-            return True
-
         def render(self) -> typing.Iterator[bytes]:
             yield self.render_headers()
             yield self.render_data()
@@ -239,6 +189,7 @@ class MultipartStream(ContentStream):
             self.filename = filename
             self.file = fileobj
             self.content_type = content_type
+            self._consumed = False
 
         def get_length(self) -> int:
             headers = self.render_headers()
@@ -284,16 +235,12 @@ class MultipartStream(ContentStream):
                 yield self._data
                 return
 
+            if self._consumed:  # pragma: nocover
+                self.file.seek(0)
+            self._consumed = True
+
             for chunk in self.file:
                 yield to_bytes(chunk)
-
-            # Get ready for the next replay, if possible.
-            if self.can_replay():
-                assert self.file.seekable()
-                self.file.seek(0)
-
-        def can_replay(self) -> bool:
-            return True if isinstance(self.file, (str, bytes)) else self.file.seekable()
 
         def render(self) -> typing.Iterator[bytes]:
             yield self.render_headers()
@@ -346,9 +293,6 @@ class MultipartStream(ContentStream):
 
     # Content stream interface.
 
-    def can_replay(self) -> bool:
-        return all(field.can_replay() for field in self.fields)
-
     def get_headers(self) -> typing.Dict[str, str]:
         content_length = str(self.get_content_length())
         content_type = self.content_type
@@ -369,10 +313,10 @@ def encode_request(
     files: RequestFiles = None,
     json: typing.Any = None,
     boundary: bytes = None,
-) -> ContentStream:
+) -> typing.Tuple[typing.Dict[str, str], ByteStream]:
     """
     Handles encoding the given `content`, `data`, `files`, and `json`,
-    returning a `ContentStream` implementation.
+    returning a two-tuple of (<headers>, <stream>).
     """
     if data is not None and not isinstance(data, dict):
         # We prefer to seperate `content=<bytes|byte iterator|bytes aiterator>`
@@ -387,39 +331,65 @@ def encode_request(
 
     if content is not None:
         if isinstance(content, (str, bytes)):
-            return ByteStream(body=content)
-        elif hasattr(content, "__aiter__"):
-            content = typing.cast(typing.AsyncIterator[bytes], content)
-            return AsyncIteratorStream(aiterator=content)
-        elif hasattr(content, "__iter__"):
-            content = typing.cast(typing.Iterator[bytes], content)
-            return IteratorStream(iterator=content)
+            byte_stream = PlainByteStream(body=content)
+            headers = byte_stream.get_headers()
+            return headers, byte_stream
+        elif isinstance(content, (typing.Iterable, typing.AsyncIterable)):
+            if inspect.isgenerator(content):
+                generator_stream = GeneratorStream(content)  # type: ignore
+                return {"Transfer-Encoding": "chunked"}, generator_stream
+            if inspect.isasyncgen(content):
+                agenerator_stream = AsyncGeneratorStream(content)  # type: ignore
+                return {"Transfer-Encoding": "chunked"}, agenerator_stream
+            return {"Transfer-Encoding": "chunked"}, content  # type: ignore
         else:
             raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
 
     elif data:
         if files:
-            return MultipartStream(data=data, files=files, boundary=boundary)
+            multipart_stream = MultipartStream(
+                data=data, files=files, boundary=boundary
+            )
+            headers = multipart_stream.get_headers()
+            return headers, multipart_stream
         else:
-            return URLEncodedStream(data=data)
+            urlencoded_stream = URLEncodedStream(data=data)
+            headers = urlencoded_stream.get_headers()
+            return headers, urlencoded_stream
 
     elif files:
-        return MultipartStream(data={}, files=files, boundary=boundary)
+        multipart_stream = MultipartStream(data={}, files=files, boundary=boundary)
+        headers = multipart_stream.get_headers()
+        return headers, multipart_stream
 
     elif json is not None:
-        return JSONStream(json=json)
+        json_stream = JSONStream(json=json)
+        headers = json_stream.get_headers()
+        return headers, json_stream
 
-    return ByteStream(body=b"")
+    byte_stream = PlainByteStream(body=b"")
+    headers = byte_stream.get_headers()
+    return headers, byte_stream
 
 
-def encode_response(content: ResponseContent = None) -> ContentStream:
+def encode_response(
+    content: ResponseContent = None,
+) -> typing.Tuple[typing.Dict[str, str], ByteStream]:
     if content is None:
-        return ByteStream(b"")
+        byte_stream = PlainByteStream(b"")
+        headers = byte_stream.get_headers()
+        return headers, byte_stream
     elif isinstance(content, bytes):
-        return ByteStream(body=content)
-    elif isinstance(content, typing.AsyncIterator):
-        return AsyncIteratorStream(aiterator=content)
-    elif isinstance(content, typing.Iterator):
-        return IteratorStream(iterator=content)
+        byte_stream = PlainByteStream(body=content)
+        headers = byte_stream.get_headers()
+        return headers, byte_stream
+    elif isinstance(content, (typing.Iterable, typing.AsyncIterable)):
+        if inspect.isgenerator(content):
+            generator_stream = GeneratorStream(content)  # type: ignore
+            return {"Transfer-Encoding": "chunked"}, generator_stream
+        elif inspect.isasyncgen(content):
+            agenerator_stream = AsyncGeneratorStream(content)  # type: ignore
+            return {"Transfer-Encoding": "chunked"}, agenerator_stream
+        return {"Transfer-Encoding": "chunked"}, content  # type: ignore
 
     raise TypeError(f"Unexpected type for 'content', {type(content)!r}")

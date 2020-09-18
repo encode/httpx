@@ -110,9 +110,8 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode_request(data=data, files=files)
+        headers, stream = encode_request(data=data, files=files)
         assert isinstance(stream, MultipartStream)
-        assert stream.can_replay()
 
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
         content = (
@@ -128,7 +127,7 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
             "--{0}--\r\n"
             "".format(boundary).encode("ascii")
         )
-        assert stream.get_headers()["Content-Length"] == str(len(content))
+        assert headers["Content-Length"] == str(len(content))
         assert b"".join(stream) == content
 
 
@@ -137,9 +136,8 @@ def test_multipart_encode_files_allows_filenames_as_none() -> None:
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode_request(data={}, files=files)
+        headers, stream = encode_request(data={}, files=files)
         assert isinstance(stream, MultipartStream)
-        assert stream.can_replay()
 
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
         assert b"".join(stream) == (
@@ -164,9 +162,8 @@ def test_multipart_encode_files_guesses_correct_content_type(
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode_request(data={}, files=files)
+        headers, stream = encode_request(data={}, files=files)
         assert isinstance(stream, MultipartStream)
-        assert stream.can_replay()
 
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
         assert b"".join(stream) == (
@@ -188,9 +185,8 @@ def test_multipart_encode_files_allows_bytes_or_str_content(
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode_request(data={}, files=files)
+        headers, stream = encode_request(data={}, files=files)
         assert isinstance(stream, MultipartStream)
-        assert stream.can_replay()
 
         assert stream.content_type == f"multipart/form-data; boundary={boundary}"
         content = (
@@ -200,7 +196,7 @@ def test_multipart_encode_files_allows_bytes_or_str_content(
             "--{0}--\r\n"
             "".format(boundary, output).encode("ascii")
         )
-        assert stream.get_headers()["Content-Length"] == str(len(content))
+        assert headers["Content-Length"] == str(len(content))
         assert b"".join(stream) == content
 
 
@@ -214,9 +210,6 @@ def test_multipart_encode_non_seekable_filelike() -> None:
         def __init__(self, iterator: typing.Iterator[bytes]) -> None:
             self._iterator = iterator
 
-        def seekable(self) -> bool:
-            return False
-
         def read(self, *args: typing.Any) -> bytes:
             return b"".join(self._iterator)
 
@@ -226,8 +219,8 @@ def test_multipart_encode_non_seekable_filelike() -> None:
 
     fileobj: typing.Any = IteratorIO(data())
     files = {"file": fileobj}
-    stream = encode_request(files=files, boundary=b"+++")
-    assert not stream.can_replay()
+    headers, stream = encode_request(files=files, boundary=b"+++")
+    assert isinstance(stream, typing.Iterable)
 
     content = (
         b"--+++\r\n"
@@ -237,7 +230,7 @@ def test_multipart_encode_non_seekable_filelike() -> None:
         b"HelloWorld\r\n"
         b"--+++--\r\n"
     )
-    assert stream.get_headers() == {
+    assert headers == {
         "Content-Type": "multipart/form-data; boundary=+++",
         "Content-Length": str(len(content)),
     }

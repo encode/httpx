@@ -36,22 +36,11 @@ class MockTransport(httpcore.SyncHTTPTransport):
         stream: httpcore.SyncByteStream = None,
         timeout: Mapping[str, Optional[float]] = None,
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.SyncByteStream]:
-        request_headers = httpx.Headers(headers)
-        content = (
-            (item for item in stream)
-            if stream
-            and (
-                "Content-Length" in request_headers
-                or "Transfer-Encoding" in request_headers
-            )
-            else None
-        )
-
         request = httpx.Request(
             method=method,
             url=url,
-            headers=request_headers,
-            content=content,
+            headers=headers,
+            stream=stream,
         )
         request.read()
         response = self.handler(request)
@@ -60,13 +49,13 @@ class MockTransport(httpcore.SyncHTTPTransport):
             response.status_code,
             response.reason_phrase.encode("ascii"),
             response.headers.raw,
-            response._raw_stream,
+            response.stream,
         )
 
 
 class AsyncMockTransport(httpcore.AsyncHTTPTransport):
     def __init__(self, handler: Callable) -> None:
-        self.impl = MockTransport(handler)
+        self.handler = handler
 
     async def request(
         self,
@@ -76,28 +65,18 @@ class AsyncMockTransport(httpcore.AsyncHTTPTransport):
         stream: httpcore.AsyncByteStream = None,
         timeout: Mapping[str, Optional[float]] = None,
     ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
-        content = (
-            httpcore.PlainByteStream(b"".join([part async for part in stream]))
-            if stream
-            else httpcore.PlainByteStream(b"")
+        request = httpx.Request(
+            method=method,
+            url=url,
+            headers=headers,
+            stream=stream,
         )
-
-        (
-            http_version,
-            status_code,
-            reason_phrase,
-            headers,
-            response_stream,
-        ) = self.impl.request(
-            method, url, headers=headers, stream=content, timeout=timeout
-        )
-
-        content = httpcore.PlainByteStream(b"".join([part for part in response_stream]))
-
+        await request.aread()
+        response = self.handler(request)
         return (
-            http_version,
-            status_code,
-            reason_phrase,
-            headers,
-            content,
+            (response.http_version or "HTTP/1.1").encode("ascii"),
+            response.status_code,
+            response.reason_phrase.encode("ascii"),
+            response.headers.raw,
+            response.stream,
         )

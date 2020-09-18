@@ -1,3 +1,4 @@
+import datetime
 import functools
 import typing
 import warnings
@@ -18,13 +19,11 @@ from ._config import (
     UnsetType,
     create_ssl_context,
 )
-from ._content_streams import ContentStream
 from ._decoders import SUPPORTED_DECODERS
 from ._exceptions import (
     HTTPCORE_EXC_MAP,
     InvalidURL,
     RemoteProtocolError,
-    RequestBodyUnavailable,
     TooManyRedirects,
     map_exceptions,
 )
@@ -34,6 +33,7 @@ from ._transports.asgi import ASGITransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
     AuthTypes,
+    ByteStream,
     CertTypes,
     CookieTypes,
     HeaderTypes,
@@ -480,19 +480,12 @@ class BaseClient:
 
     def _redirect_stream(
         self, request: Request, method: str
-    ) -> typing.Optional[ContentStream]:
+    ) -> typing.Optional[ByteStream]:
         """
         Return the body that should be used for the redirect request.
         """
         if method != request.method and method == "GET":
             return None
-
-        if not request.stream.can_replay():
-            raise RequestBodyUnavailable(
-                "Got a redirect response, but the request body was streaming "
-                "and is no longer available.",
-                request=request,
-            )
 
         return request.stream
 
@@ -864,16 +857,22 @@ class Client(BaseClient):
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
-                stream=request.stream,
+                stream=request.stream,  # type: ignore
                 timeout=timeout.as_dict(),
             )
+
+        def on_close(response: Response) -> None:
+            response.elapsed = datetime.timedelta(timer.sync_elapsed())
+            if hasattr(stream, "close"):
+                stream.close()
+
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
-            elapsed_func=timer.sync_elapsed,
+            on_close=on_close,
         )
 
         self.cookies.extract_cookies(response)
@@ -1509,16 +1508,22 @@ class AsyncClient(BaseClient):
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
-                stream=request.stream,
+                stream=request.stream,  # type: ignore
                 timeout=timeout.as_dict(),
             )
+
+        async def on_close(response: Response) -> None:
+            response.elapsed = datetime.timedelta(await timer.async_elapsed())
+            if hasattr(stream, "close"):
+                await stream.aclose()
+
         response = Response(
             status_code,
             http_version=http_version.decode("ascii"),
             headers=headers,
             stream=stream,  # type: ignore
             request=request,
-            elapsed_func=timer.async_elapsed,
+            on_close=on_close,
         )
 
         self.cookies.extract_cookies(response)
