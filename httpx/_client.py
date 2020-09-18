@@ -382,7 +382,7 @@ class BaseClient:
             return BasicAuth(username=username, password=password)
 
         if self.trust_env and "Authorization" not in request.headers:
-            credentials = self._netrc.get_credentials(request.url.authority)
+            credentials = self._netrc.get_credentials(request.url.host)
             if credentials is not None:
                 return BasicAuth(username=credentials[0], password=credentials[1])
 
