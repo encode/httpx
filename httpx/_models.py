@@ -63,14 +63,15 @@ from ._utils import (
 
 class URL:
     """
-    url = httpx.URL("HTTPS://jo%40email.com:a%20secret@example.com:123456/pa%20th?search=ab#anchorlink")
+    url = httpx.URL("HTTPS://jo%40email.com:a%20secret@example.com:1234/pa%20th?search=ab#anchorlink")
 
     assert url.scheme == "https"
     assert url.username == "jo@email.com"
     assert url.password == "a secret"
     assert url.userinfo == b"jo%40email.com:a%20secret"
     assert url.host == "example.com"
-    assert url.port == 123456
+    assert url.port == 1234
+    assert url.netloc == "example.com:1234"
     assert url.path == "/pa th"
     assert url.query == b"?search=ab"
     assert url.raw_path == b"/pa%20th?search=ab"
@@ -78,9 +79,9 @@ class URL:
 
     The components of a URL are broken down like this:
 
-    https://jo%40email.com:a%20secret@example.com:123456/pa%20th?search=ab#anchorlink
-    [sch]   [  username  ] [password] [   host  ] [port][ path ] [ query ] [fragment]
-            [       userinfo        ]                   [    raw path    ]
+    https://jo%40email.com:a%20secret@example.com:1234/pa%20th?search=ab#anchorlink
+    [sch]   [  username  ] [password] [   host  ] [po][ path ] [ query ] [fragment]
+            [       userinfo        ] [     netloc    ][    raw_path    ]
 
     Note that:
 
@@ -168,6 +169,12 @@ class URL:
         return int(port) if port else None
 
     @property
+    def netloc(self) -> str:
+        host = self._uri_reference.host or ""
+        port = self._uri_reference.port
+        return host if port is None else f"{host}:{port}"
+
+    @property
     def path(self) -> str:
         path = self._uri_reference.path or "/"
         return unquote(path)
@@ -227,8 +234,10 @@ class URL:
             "userinfo": bytes,
             "host": str,
             "port": int,
+            "netloc": str,
             "path": str,
             "query": bytes,
+            "raw_path": bytes,
             "fragment": str,
         }
         for key, value in kwargs.items():
@@ -241,28 +250,41 @@ class URL:
                 message = f"Argument {key!r} must be {expected} but got {seen}"
                 raise TypeError(message)
 
-        # Replace username, password, userinfo, host, port with "authority" for rfc3986
+        # Replace username, password, userinfo, host, port, netloc with "authority" for rfc3986
         if "username" in kwargs or "password" in kwargs:
+            # Consolidate username and password into userinfo.
             username = quote(kwargs.pop("username", self.username) or "")
             password = quote(kwargs.pop("password", self.password) or "")
             userinfo = f"{username}:{password}" if password else username
             kwargs["userinfo"] = userinfo.encode("ascii")
 
-        if "userinfo" in kwargs or "host" in kwargs or "port" in kwargs:
-            userinfo = kwargs.pop("userinfo", self.userinfo).decode("ascii")
+        if "host" in kwargs or "port" in kwargs:
+            # Consolidate host and port into  netloc.
             host = kwargs.pop("host", self.host)
             port = kwargs.pop("port", self.port)
-            host_and_port = f"{host}:{port}" if port is not None else host
-            authority = f"{userinfo}@{host_and_port}" if userinfo else host_and_port
+            kwargs["netloc"] = f"{host}:{port}" if port is not None else host
+
+        if "userinfo" in kwargs or "netloc" in kwargs:
+            # Consolidate userinfo and netloc into authority.
+            userinfo = kwargs.pop("userinfo", self.userinfo).decode("ascii")
+            netloc = kwargs.pop("netloc", self.netloc)
+            authority = f"{userinfo}@{netloc}" if userinfo else netloc
             kwargs["authority"] = authority
 
-        # Ensure path=<url quoted str> for rfc3986
-        if kwargs.get("path") is not None:
-            kwargs["path"] = quote(kwargs["path"])
+        if kwargs.get("raw_path") is not None:
+            raw_path = kwargs.pop("raw_path")
+            path, has_query, query = raw_path.decode("ascii").partition("?")
+            kwargs["path"] = path
+            kwargs["query"] = query if has_query else None
 
-        # Ensure query=<str> for rfc3986
-        if kwargs.get("query") is not None:
-            kwargs["query"] = kwargs["query"].decode("ascii")
+        else:
+            # Ensure path=<url quoted str> for rfc3986
+            if kwargs.get("path") is not None:
+                kwargs["path"] = quote(kwargs["path"])
+
+            # Ensure query=<str> for rfc3986
+            if kwargs.get("query") is not None:
+                kwargs["query"] = kwargs["query"].decode("ascii")
 
         return URL(self._uri_reference.copy_with(**kwargs).unsplit())
 
@@ -716,7 +738,7 @@ class Request:
             if self.url.port is None or self.url.port == default_port:
                 host_header = self.url.host.encode("ascii")
             else:
-                host_header = f"{self.url.host}:{self.url.port}".encode("ascii")
+                host_header = self.url.netloc.encode("ascii")
             auto_headers.append((b"host", host_header))
         if not has_content_length and self.method in ("POST", "PUT", "PATCH"):
             auto_headers.append((b"content-length", b"0"))

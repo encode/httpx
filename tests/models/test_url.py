@@ -184,9 +184,16 @@ def test_url_copywith_authority_subcomponents():
     }
     url = httpx.URL("https://example.org")
     new = url.copy_with(**copy_with_kwargs)
-    for k, v in copy_with_kwargs.items():
-        assert getattr(new, k) == v
     assert str(new) == "https://username:password@example.net:444"
+
+
+def test_url_copywith_netloc():
+    copy_with_kwargs = {
+        "netloc": "example.net:444",
+    }
+    url = httpx.URL("https://example.org")
+    new = url.copy_with(**copy_with_kwargs)
+    assert str(new) == "https://example.net:444"
 
 
 def test_url_copywith_userinfo_subcomponents():
@@ -224,6 +231,26 @@ def test_url_copywith_query():
     assert url.path == "/"
     assert url.query == b"a=123"
     assert url.raw_path == b"/?a=123"
+
+
+def test_url_copywith_raw_path():
+    url = httpx.URL("https://example.org")
+    url = url.copy_with(raw_path=b"/some/path")
+    assert url.path == "/some/path"
+    assert url.query == b""
+    assert url.raw_path == b"/some/path"
+
+    url = httpx.URL("https://example.org")
+    url = url.copy_with(raw_path=b"/some/path?")
+    assert url.path == "/some/path"
+    assert url.query == b""
+    assert url.raw_path == b"/some/path?"
+
+    url = httpx.URL("https://example.org")
+    url = url.copy_with(raw_path=b"/some/path?a=123")
+    assert url.path == "/some/path"
+    assert url.query == b"a=123"
+    assert url.raw_path == b"/some/path?a=123"
 
 
 def test_url_invalid():
