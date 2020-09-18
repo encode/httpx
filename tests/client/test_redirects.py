@@ -1,5 +1,3 @@
-import json
-
 import httpcore
 import pytest
 
@@ -78,8 +76,11 @@ def redirects(request: httpx.Request) -> httpx.Response:
 
     elif request.url.path == "/cross_domain_target":
         status_code = httpx.codes.OK
-        content = json.dumps({"headers": dict(request.headers)}).encode("utf-8")
-        return httpx.Response(status_code, content=content)
+        data = {
+            "body": request.content.decode("ascii"),
+            "headers": dict(request.headers),
+        }
+        return httpx.Response(status_code, json=data)
 
     elif request.url.path == "/redirect_body":
         status_code = httpx.codes.PERMANENT_REDIRECT
@@ -92,10 +93,11 @@ def redirects(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code, headers=headers)
 
     elif request.url.path == "/redirect_body_target":
-        content = json.dumps(
-            {"body": request.content.decode("ascii"), "headers": dict(request.headers)}
-        ).encode("utf-8")
-        return httpx.Response(200, content=content)
+        data = {
+            "body": request.content.decode("ascii"),
+            "headers": dict(request.headers),
+        }
+        return httpx.Response(200, json=data)
 
     elif request.url.path == "/cross_subdomain":
         if request.headers["Host"] != "www.example.org":
@@ -103,7 +105,7 @@ def redirects(request: httpx.Request) -> httpx.Response:
             headers = {"location": "https://www.example.org/cross_subdomain"}
             return httpx.Response(status_code, headers=headers)
         else:
-            return httpx.Response(200, content=b"Hello, world!")
+            return httpx.Response(200, text="Hello, world!")
 
     elif request.url.path == "/redirect_custom_scheme":
         status_code = httpx.codes.MOVED_PERMANENTLY
@@ -113,7 +115,7 @@ def redirects(request: httpx.Request) -> httpx.Response:
     if request.method == "HEAD":
         return httpx.Response(200)
 
-    return httpx.Response(200, content=b"Hello, world!")
+    return httpx.Response(200, html="<html><body>Hello, world!</body></html>")
 
 
 def test_no_redirect():

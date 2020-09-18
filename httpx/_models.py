@@ -704,11 +704,14 @@ class Response:
         self,
         status_code: int,
         *,
-        request: Request = None,
-        http_version: str = None,
         headers: HeaderTypes = None,
         content: ResponseContent = None,
+        text: str = None,
+        html: str = None,
+        json: typing.Any = None,
         stream: ByteStream = None,
+        http_version: str = None,
+        request: Request = None,
         history: typing.List["Response"] = None,
         on_close: typing.Callable = None,
     ):
@@ -740,7 +743,7 @@ class Response:
             # from the transport API.
             self.stream = stream
         else:
-            headers, stream = encode_response(content)
+            headers, stream = encode_response(content, text, html, json)
             self._prepare(headers)
             self.stream = stream
             if content is None or isinstance(content, bytes):

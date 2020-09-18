@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import json
-
 import pytest
 
 import httpx
@@ -10,8 +8,7 @@ from tests.utils import MockTransport
 
 def echo_headers(request: httpx.Request) -> httpx.Response:
     data = {"headers": dict(request.headers)}
-    content = json.dumps(data).encode("utf-8")
-    return httpx.Response(200, content=content)
+    return httpx.Response(200, json=data)
 
 
 def test_client_header():

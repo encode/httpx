@@ -3,7 +3,7 @@ from tests.utils import MockTransport
 
 
 def hello_world(request: httpx.Request) -> httpx.Response:
-    return httpx.Response(200, content=b"Hello, world")
+    return httpx.Response(200, text="Hello, world")
 
 
 def test_client_queryparams():
