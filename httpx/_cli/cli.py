@@ -58,7 +58,7 @@ def print_response(response: httpx.Response) -> None:
 def download_response(response: httpx.Response) -> None:
     console = rich.console.Console()
     syntax = rich.syntax.Syntax(
-        "", "http", theme="ansi_dark", background_color="default", word_wrap=True
+        "", "http", theme="ansi_dark", word_wrap=True
     )
     console.print(syntax)
 
