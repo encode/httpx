@@ -4,7 +4,7 @@ import typing
 import pytest
 
 from httpx import StreamConsumed
-from httpx._content_streams import encode_request, encode_response
+from httpx._content import encode_request, encode_response
 
 
 @pytest.mark.asyncio
