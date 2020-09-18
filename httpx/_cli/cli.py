@@ -20,20 +20,20 @@ from .utils import (
 def print_request_headers(request: httpx.Request) -> None:
     console = rich.console.Console()
     http_text = format_request_headers(request)
-    syntax = rich.syntax.Syntax(http_text, "http", theme="ansi_dark")
+    syntax = rich.syntax.Syntax(http_text, "http", theme="ansi_dark", word_wrap=True)
     console.print(syntax)
 
 
 def print_response_headers(response: httpx.Response) -> None:
     console = rich.console.Console()
     http_text = format_response_headers(response)
-    syntax = rich.syntax.Syntax(http_text, "http", theme="ansi_dark")
+    syntax = rich.syntax.Syntax(http_text, "http", theme="ansi_dark", word_wrap=True)
     console.print(syntax)
 
 
 def print_delimiter() -> None:
     console = rich.console.Console()
-    syntax = rich.syntax.Syntax("", "http", theme="ansi_dark")
+    syntax = rich.syntax.Syntax("", "http", theme="ansi_dark", word_wrap=True)
     console.print(syntax)
 
 
@@ -41,7 +41,15 @@ def print_response(response: httpx.Response) -> None:
     console = rich.console.Console()
     lexer_name = get_lexer_for_response(response)
     if lexer_name:
-        syntax = rich.syntax.Syntax(response.text, lexer_name, theme="ansi_dark")
+        if lexer_name.lower() == "json":
+            try:
+                data = response.json()
+                text = json.dumps(data, indent=4)
+            except:
+                text = response.text
+        else:
+            text = response.text
+        syntax = rich.syntax.Syntax(text, lexer_name, theme="ansi_dark", word_wrap=True)
         console.print(syntax)
     else:  # pragma: nocover
         console.print(response.text)
@@ -49,7 +57,9 @@ def print_response(response: httpx.Response) -> None:
 
 def download_response(response: httpx.Response) -> None:
     console = rich.console.Console()
-    syntax = rich.syntax.Syntax("", "http", theme="ansi_dark")
+    syntax = rich.syntax.Syntax(
+        "", "http", theme="ansi_dark", background_color="default", word_wrap=True
+    )
     console.print(syntax)
 
     filename = get_download_filename(response)
