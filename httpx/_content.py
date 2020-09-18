@@ -66,9 +66,7 @@ class AsyncGeneratorStream:
 
 
 def encode_content(
-    content: typing.Union[
-        str, bytes, typing.Iterable[bytes], typing.AsyncIterable[bytes]
-    ]
+    content: typing.Union[str, bytes, ByteStream]
 ) -> typing.Tuple[typing.Dict[str, str], ByteStream]:
     if isinstance(content, (str, bytes)):
         body = content.encode("utf-8") if isinstance(content, str) else content
