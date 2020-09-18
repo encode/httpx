@@ -65,7 +65,6 @@ def test_url():
     assert url.scheme == "https"
     assert url.host == "example.org"
     assert url.port == 123
-    assert url.authority == "example.org:123"
     assert url.path == "/path/to/somewhere"
     assert url.query == b"abc=123"
     assert url.raw_path == b"/path/to/somewhere?abc=123"

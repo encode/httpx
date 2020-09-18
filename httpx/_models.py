@@ -62,6 +62,45 @@ from ._utils import (
 
 
 class URL:
+    """
+    url = httpx.URL("HTTPS://jo%40email.com:a%20secret@example.com:123456/pa%20th?search=ab#anchorlink")
+
+    assert url.scheme == "https"
+    assert url.username == "jo@email.com"
+    assert url.password == "a secret"
+    assert url.userinfo == b"jo%40email.com:a%20secret"
+    assert url.host == "example.com"
+    assert url.port == 123456
+    assert url.path == "/pa th"
+    assert url.query == b"?search=ab"
+    assert url.raw_path == b"/pa%20th?search=ab"
+    assert url.fragment == "anchorlink"
+
+    The components of a URL are broken down like this:
+
+    https://jo%40email.com:a%20secret@example.com:123456/pa%20th?search=ab#anchorlink
+    [sch]   [  username  ] [password] [   host  ] [port][ path ] [ query ] [fragment]
+            [       userinfo        ]                   [    raw path    ]
+
+    Note that:
+
+    * `url.scheme` is normalized to always be lowercased.
+
+    * `url.host` is normalized to always be lowercased, and is IDNA encoded. For instance:
+       url = httpx.URL("http://中国.icom.museum")
+       assert url.host == "xn--fiqs8s.icom.museum"
+
+    * `url.userinfo` is raw bytes, without URL escaping. Usually you'll wantto work with
+      `url.username` and `url.password` instead, which handle the URL escaping.
+
+    * `url.raw_path` is raw bytes of both the path and query, without URL escaping.
+      This portion is used as the target when constructing HTTP requests. Usually you'll
+      want to work with `url.path` instead.
+
+    * `url.query` is raw bytes, without URL escaping. A URL query string portion can only
+      be properly URL escaped when decoding the parameter names and values themselves.
+    """
+
     def __init__(
         self, url: typing.Union["URL", str, RawURL] = "", params: QueryParamTypes = None
     ) -> None:
@@ -103,14 +142,6 @@ class URL:
     @property
     def scheme(self) -> str:
         return self._uri_reference.scheme or ""
-
-    @property
-    def authority(self) -> str:
-        port_str = self._uri_reference.port
-        default_port_str = {"https": "443", "http": "80"}.get(self.scheme, "")
-        if port_str is None or port_str == default_port_str:
-            return self._uri_reference.host or ""
-        return self._uri_reference.authority or ""
 
     @property
     def userinfo(self) -> bytes:
@@ -680,9 +711,13 @@ class Request:
             "content-length" in self.headers or "transfer-encoding" in self.headers
         )
 
-        if not has_host and self.url.authority:
-            host = self.url.copy_with(username=None, password=None).authority
-            auto_headers.append((b"host", host.encode("ascii")))
+        if not has_host and self.url.host:
+            default_port = {"http": 80, "https": 443}.get(self.url.scheme)
+            if self.url.port is None or self.url.port == default_port:
+                host_header = self.url.host.encode("ascii")
+            else:
+                host_header = f"{self.url.host}:{self.url.port}".encode("ascii")
+            auto_headers.append((b"host", host_header))
         if not has_content_length and self.method in ("POST", "PUT", "PATCH"):
             auto_headers.append((b"content-length", b"0"))
 
