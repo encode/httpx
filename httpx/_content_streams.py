@@ -29,20 +29,14 @@ class PlainByteStream:
     Request content encoded as plain bytes.
     """
 
-    def __init__(self, body: typing.Union[str, bytes]) -> None:
-        self.body = body.encode("utf-8") if isinstance(body, str) else body
-
-    def get_headers(self) -> typing.Dict[str, str]:
-        if not self.body:
-            return {}
-        content_length = str(len(self.body))
-        return {"Content-Length": content_length}
+    def __init__(self, body: bytes) -> None:
+        self._body = body
 
     def __iter__(self) -> typing.Iterator[bytes]:
-        yield self.body
+        yield self._body
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        yield self.body
+        yield self._body
 
 
 class GeneratorStream:
@@ -57,6 +51,7 @@ class GeneratorStream:
     def __iter__(self) -> typing.Iterator[bytes]:
         if self._is_stream_consumed:
             raise StreamConsumed()
+
         self._is_stream_consumed = True
         for part in self._generator:
             yield part
@@ -74,49 +69,10 @@ class AsyncGeneratorStream:
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         if self._is_stream_consumed:
             raise StreamConsumed()
+
         self._is_stream_consumed = True
         async for part in self._agenerator:
             yield part
-
-
-class JSONStream:
-    """
-    Request content encoded as JSON.
-    """
-
-    def __init__(self, json: typing.Any) -> None:
-        self.body = json_dumps(json).encode("utf-8")
-
-    def get_headers(self) -> typing.Dict[str, str]:
-        content_length = str(len(self.body))
-        content_type = "application/json"
-        return {"Content-Length": content_length, "Content-Type": content_type}
-
-    def __iter__(self) -> typing.Iterator[bytes]:
-        yield self.body
-
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        yield self.body
-
-
-class URLEncodedStream:
-    """
-    Request content as URL encoded form data.
-    """
-
-    def __init__(self, data: dict) -> None:
-        self.body = urlencode(data, doseq=True).encode("utf-8")
-
-    def get_headers(self) -> typing.Dict[str, str]:
-        content_length = str(len(self.body))
-        content_type = "application/x-www-form-urlencoded"
-        return {"Content-Length": content_length, "Content-Type": content_type}
-
-    def __iter__(self) -> typing.Iterator[bytes]:
-        yield self.body
-
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        yield self.body
 
 
 class MultipartStream:
@@ -307,6 +263,63 @@ class MultipartStream:
             yield chunk
 
 
+def encode_content(
+    content: typing.Union[
+        str, bytes, typing.Iterable[bytes], typing.AsyncIterable[bytes]
+    ]
+) -> typing.Tuple[typing.Dict[str, str], ByteStream]:
+    if isinstance(content, (str, bytes)):
+        body = content.encode("utf-8") if isinstance(content, str) else content
+        content_length = str(len(body))
+        headers = {"Content-Length": content_length} if body else {}
+        stream = PlainByteStream(body)
+        return headers, stream
+
+    elif isinstance(content, (typing.Iterable, typing.AsyncIterable)):
+        headers = {"Transfer-Encoding": "chunked"}
+
+        # Generators should be wrapped in GeneratorStream/AsyncGeneratorStream
+        # which will raise `StreamConsumed` if the stream is accessed more
+        # than once. (Eg. Following HTTP 307 or HTTP 308 redirects.)
+        if inspect.isgenerator(content):
+            generator_stream = GeneratorStream(content)  # type: ignore
+            return headers, generator_stream
+        if inspect.isasyncgen(content):
+            agenerator_stream = AsyncGeneratorStream(content)  # type: ignore
+            return headers, agenerator_stream
+
+        # Other iterables may be passed through as-is.
+        return headers, content  # type: ignore
+
+    raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
+
+
+def encode_urlencoded_data(
+    data: dict,
+) -> typing.Tuple[typing.Dict[str, str], ByteStream]:
+    body = urlencode(data, doseq=True).encode("utf-8")
+    content_length = str(len(body))
+    content_type = "application/x-www-form-urlencoded"
+    headers = {"Content-Length": content_length, "Content-Type": content_type}
+    return headers, PlainByteStream(body)
+
+
+def encode_multipart_data(
+    data: dict, files: RequestFiles, boundary: bytes = None
+) -> typing.Tuple[typing.Dict[str, str], ByteStream]:
+    stream = MultipartStream(data=data, files=files, boundary=boundary)
+    headers = stream.get_headers()
+    return headers, stream
+
+
+def encode_json(json: typing.Any) -> typing.Tuple[typing.Dict[str, str], ByteStream]:
+    body = json_dumps(json).encode("utf-8")
+    content_length = str(len(body))
+    content_type = "application/json"
+    headers = {"Content-Length": content_length, "Content-Type": content_type}
+    return headers, PlainByteStream(body)
+
+
 def encode_request(
     content: RequestContent = None,
     data: RequestData = None,
@@ -319,77 +332,35 @@ def encode_request(
     returning a two-tuple of (<headers>, <stream>).
     """
     if data is not None and not isinstance(data, dict):
-        # We prefer to seperate `content=<bytes|byte iterator|bytes aiterator>`
+        # We prefer to seperate `content=<bytes|str|byte iterator|bytes aiterator>`
         # for raw request content, and `data=<form data>` for url encoded or
         # multipart form content.
         #
         # However for compat with requests, we *do* still support
         # `data=<bytes...>` usages. We deal with that case here, treating it
         # as if `content=<...>` had been supplied instead.
-        content = data
-        data = None
+        return encode_content(data)
 
     if content is not None:
-        if isinstance(content, (str, bytes)):
-            byte_stream = PlainByteStream(body=content)
-            headers = byte_stream.get_headers()
-            return headers, byte_stream
-        elif isinstance(content, (typing.Iterable, typing.AsyncIterable)):
-            if inspect.isgenerator(content):
-                generator_stream = GeneratorStream(content)  # type: ignore
-                return {"Transfer-Encoding": "chunked"}, generator_stream
-            if inspect.isasyncgen(content):
-                agenerator_stream = AsyncGeneratorStream(content)  # type: ignore
-                return {"Transfer-Encoding": "chunked"}, agenerator_stream
-            return {"Transfer-Encoding": "chunked"}, content  # type: ignore
-        else:
-            raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
-
-    elif data:
-        if files:
-            multipart_stream = MultipartStream(
-                data=data, files=files, boundary=boundary
-            )
-            headers = multipart_stream.get_headers()
-            return headers, multipart_stream
-        else:
-            urlencoded_stream = URLEncodedStream(data=data)
-            headers = urlencoded_stream.get_headers()
-            return headers, urlencoded_stream
-
+        return encode_content(content)
     elif files:
-        multipart_stream = MultipartStream(data={}, files=files, boundary=boundary)
-        headers = multipart_stream.get_headers()
-        return headers, multipart_stream
-
+        return encode_multipart_data(data or {}, files, boundary)
+    elif data:
+        return encode_urlencoded_data(data)
     elif json is not None:
-        json_stream = JSONStream(json=json)
-        headers = json_stream.get_headers()
-        return headers, json_stream
+        return encode_json(json)
 
-    byte_stream = PlainByteStream(body=b"")
-    headers = byte_stream.get_headers()
-    return headers, byte_stream
+    return {}, PlainByteStream(b"")
 
 
 def encode_response(
     content: ResponseContent = None,
 ) -> typing.Tuple[typing.Dict[str, str], ByteStream]:
-    if content is None:
-        byte_stream = PlainByteStream(b"")
-        headers = byte_stream.get_headers()
-        return headers, byte_stream
-    elif isinstance(content, bytes):
-        byte_stream = PlainByteStream(body=content)
-        headers = byte_stream.get_headers()
-        return headers, byte_stream
-    elif isinstance(content, (typing.Iterable, typing.AsyncIterable)):
-        if inspect.isgenerator(content):
-            generator_stream = GeneratorStream(content)  # type: ignore
-            return {"Transfer-Encoding": "chunked"}, generator_stream
-        elif inspect.isasyncgen(content):
-            agenerator_stream = AsyncGeneratorStream(content)  # type: ignore
-            return {"Transfer-Encoding": "chunked"}, agenerator_stream
-        return {"Transfer-Encoding": "chunked"}, content  # type: ignore
+    """
+    Handles encoding the given `content`, returning a two-tuple of
+    (<headers>, <stream>).
+    """
+    if content is not None:
+        return encode_content(content)
 
-    raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
+    return {}, PlainByteStream(b"")
