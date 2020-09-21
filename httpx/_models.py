@@ -80,8 +80,8 @@ class URL:
     The components of a URL are broken down like this:
 
     https://jo%40email.com:a%20secret@example.com:1234/pa%20th?search=ab#anchorlink
-    [sch]   [  username  ] [password] [   host  ] [po][ path ] [ query ] [fragment]
-            [       userinfo        ] [     netloc    ][    raw_path    ]
+    [scheme][  username  ] [password] [  host  ][port][ path ] [ query ] [fragment]
+            [       userinfo        ] [    netloc    ][    raw_path    ]
 
     Note that:
 
