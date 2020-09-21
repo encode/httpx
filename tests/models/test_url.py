@@ -65,9 +65,9 @@ def test_url():
     assert url.scheme == "https"
     assert url.host == "example.org"
     assert url.port == 123
-    assert url.authority == "example.org:123"
     assert url.path == "/path/to/somewhere"
-    assert url.query == "abc=123"
+    assert url.query == b"abc=123"
+    assert url.raw_path == b"/path/to/somewhere?abc=123"
     assert url.fragment == "anchor"
     assert (
         repr(url) == "URL('https://example.org:123/path/to/somewhere?abc=123#anchor')"
@@ -175,7 +175,7 @@ def test_url_set():
     assert all(url in urls for url in url_set)
 
 
-def test_url_copywith_for_authority():
+def test_url_copywith_authority_subcomponents():
     copy_with_kwargs = {
         "username": "username",
         "password": "password",
@@ -184,12 +184,19 @@ def test_url_copywith_for_authority():
     }
     url = httpx.URL("https://example.org")
     new = url.copy_with(**copy_with_kwargs)
-    for k, v in copy_with_kwargs.items():
-        assert getattr(new, k) == v
     assert str(new) == "https://username:password@example.net:444"
 
 
-def test_url_copywith_for_userinfo():
+def test_url_copywith_netloc():
+    copy_with_kwargs = {
+        "netloc": "example.net:444",
+    }
+    url = httpx.URL("https://example.org")
+    new = url.copy_with(**copy_with_kwargs)
+    assert str(new) == "https://example.net:444"
+
+
+def test_url_copywith_userinfo_subcomponents():
     copy_with_kwargs = {
         "username": "tom@example.org",
         "password": "abc123@ %",
@@ -199,6 +206,51 @@ def test_url_copywith_for_userinfo():
     assert str(new) == "https://tom%40example.org:abc123%40%20%25@example.org"
     assert new.username == "tom@example.org"
     assert new.password == "abc123@ %"
+    assert new.userinfo == b"tom%40example.org:abc123%40%20%25"
+
+
+def test_url_copywith_invalid_component():
+    url = httpx.URL("https://example.org")
+    with pytest.raises(TypeError):
+        url.copy_with(pathh="/incorrect-spelling")
+    with pytest.raises(TypeError):
+        url.copy_with(userinfo="should be bytes")
+
+
+def test_url_copywith_urlencoded_path():
+    url = httpx.URL("https://example.org")
+    url = url.copy_with(path="/path to somewhere")
+    assert url.path == "/path to somewhere"
+    assert url.query == b""
+    assert url.raw_path == b"/path%20to%20somewhere"
+
+
+def test_url_copywith_query():
+    url = httpx.URL("https://example.org")
+    url = url.copy_with(query=b"a=123")
+    assert url.path == "/"
+    assert url.query == b"a=123"
+    assert url.raw_path == b"/?a=123"
+
+
+def test_url_copywith_raw_path():
+    url = httpx.URL("https://example.org")
+    url = url.copy_with(raw_path=b"/some/path")
+    assert url.path == "/some/path"
+    assert url.query == b""
+    assert url.raw_path == b"/some/path"
+
+    url = httpx.URL("https://example.org")
+    url = url.copy_with(raw_path=b"/some/path?")
+    assert url.path == "/some/path"
+    assert url.query == b""
+    assert url.raw_path == b"/some/path?"
+
+    url = httpx.URL("https://example.org")
+    url = url.copy_with(raw_path=b"/some/path?a=123")
+    assert url.path == "/some/path"
+    assert url.query == b"a=123"
+    assert url.raw_path == b"/some/path?a=123"
 
 
 def test_url_invalid():
@@ -212,3 +264,26 @@ def test_url_invalid_type():
 
     with pytest.raises(TypeError):
         httpx.URL(ExternalURLClass())  # type: ignore
+
+
+def test_url_with_empty_query():
+    """
+    URLs with and without a trailing `?` but an empty query component
+    should preserve the information on the raw path.
+    """
+    url = httpx.URL("https://www.example.com/path")
+    assert url.path == "/path"
+    assert url.query == b""
+    assert url.raw_path == b"/path"
+
+    url = httpx.URL("https://www.example.com/path?")
+    assert url.path == "/path"
+    assert url.query == b""
+    assert url.raw_path == b"/path?"
+
+
+def test_url_with_url_encoded_path():
+    url = httpx.URL("https://www.example.com/path%20to%20somewhere")
+    assert url.path == "/path to somewhere"
+    assert url.query == b""
+    assert url.raw_path == b"/path%20to%20somewhere"
