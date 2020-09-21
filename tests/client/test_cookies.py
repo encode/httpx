@@ -1,4 +1,3 @@
-import json
 from http.cookiejar import Cookie, CookieJar
 
 import httpx
@@ -8,8 +7,7 @@ from tests.utils import MockTransport
 def get_and_set_cookies(request: httpx.Request) -> httpx.Response:
     if request.url.path == "/echo_cookies":
         data = {"cookies": request.headers.get("cookie")}
-        content = json.dumps(data).encode("utf-8")
-        return httpx.Response(200, content=content)
+        return httpx.Response(200, json=data)
     elif request.url.path == "/set_cookie":
         return httpx.Response(200, headers={"set-cookie": "example-name=example-value"})
     else:

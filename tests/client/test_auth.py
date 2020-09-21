@@ -5,7 +5,6 @@ Unit tests for auth classes also exist in tests/test_auth.py
 """
 import asyncio
 import hashlib
-import json
 import os
 import threading
 import typing
@@ -27,8 +26,7 @@ class App:
     def __call__(self, request: httpx.Request) -> httpx.Response:
         headers = {"www-authenticate": self.auth_header} if self.auth_header else {}
         data = {"auth": request.headers.get("Authorization")}
-        content = json.dumps(data).encode("utf-8")
-        return httpx.Response(self.status_code, headers=headers, content=content)
+        return httpx.Response(self.status_code, headers=headers, json=data)
 
 
 class DigestApp:
@@ -50,8 +48,7 @@ class DigestApp:
             return self.challenge_send(request)
 
         data = {"auth": request.headers.get("Authorization")}
-        content = json.dumps(data).encode("utf-8")
-        return httpx.Response(200, content=content)
+        return httpx.Response(200, json=data)
 
     def challenge_send(self, request: httpx.Request) -> httpx.Response:
         self._response_count += 1
