@@ -115,11 +115,6 @@ def test_pool_limits_deprecated():
         httpx.PoolLimits()
 
 
-def test_max_keepalive_deprecated():
-    with pytest.warns(DeprecationWarning):
-        httpx.Limits(max_keepalive=50)
-
-
 def test_timeout_eq():
     timeout = httpx.Timeout(timeout=5.0)
     assert timeout == httpx.Timeout(timeout=5.0)
