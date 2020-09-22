@@ -110,11 +110,6 @@ def test_limits_eq():
     assert limits == httpx.Limits(max_connections=100)
 
 
-def test_pool_limits_deprecated():
-    with pytest.warns(DeprecationWarning):
-        httpx.PoolLimits()
-
-
 def test_timeout_eq():
     timeout = httpx.Timeout(timeout=5.0)
     assert timeout == httpx.Timeout(timeout=5.0)
