@@ -64,13 +64,9 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: httpcore.SyncByteStream = None,
-        timeout: typing.Mapping[str, typing.Optional[float]] = None,
+        ext: dict = None,
     ) -> typing.Tuple[
-        bytes,
-        int,
-        bytes,
-        typing.List[typing.Tuple[bytes, bytes]],
-        httpcore.SyncByteStream,
+        int, typing.List[typing.Tuple[bytes, bytes]], httpcore.SyncByteStream, dict
     ]:
         headers = [] if headers is None else headers
         stream = httpcore.PlainByteStream(content=b"") if stream is None else stream
@@ -127,5 +123,6 @@ class WSGITransport(httpcore.SyncHTTPTransport):
             for key, value in seen_response_headers
         ]
         stream = httpcore.IteratorByteStream(iterator=result)
+        ext = {}
 
-        return (b"HTTP/1.1", status_code, b"", headers, stream)
+        return (status_code, headers, stream, ext)

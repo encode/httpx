@@ -5,7 +5,6 @@ import email.message
 import json as jsonlib
 import typing
 import urllib.request
-import warnings
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, quote, unquote, urlencode
@@ -273,12 +272,6 @@ class URL:
         )
 
     @property
-    def is_ssl(self) -> bool:
-        message = 'URL.is_ssl() is pending deprecation. Use url.scheme == "https"'
-        warnings.warn(message, DeprecationWarning)
-        return self.scheme == "https"
-
-    @property
     def is_absolute_url(self) -> bool:
         """
         Return `True` for absolute URLs such as 'http://example.com/path',
@@ -525,13 +518,6 @@ class QueryParams(typing.Mapping[str, str]):
         query_string = str(self)
         return f"{class_name}({query_string!r})"
 
-    def getlist(self, key: typing.Any) -> typing.List[str]:
-        message = (
-            "QueryParams.getlist() is pending deprecation. Use QueryParams.get_list()"
-        )
-        warnings.warn(message, DeprecationWarning)
-        return self.get_list(key)
-
 
 class Headers(typing.MutableMapping[str, str]):
     """
@@ -757,11 +743,6 @@ class Headers(typing.MutableMapping[str, str]):
             return f"{class_name}({as_dict!r}{encoding_str})"
         return f"{class_name}({as_list!r}{encoding_str})"
 
-    def getlist(self, key: str, split_commas: bool = False) -> typing.List[str]:
-        message = "Headers.getlist() is pending deprecation. Use Headers.get_list()"
-        warnings.warn(message, DeprecationWarning)
-        return self.get_list(key, split_commas=split_commas)
-
 
 class Request:
     def __init__(
@@ -883,19 +864,19 @@ class Response:
         html: str = None,
         json: typing.Any = None,
         stream: ByteStream = None,
-        http_version: str = None,
         request: Request = None,
+        ext: dict = None,
         history: typing.List["Response"] = None,
         on_close: typing.Callable = None,
     ):
         self.status_code = status_code
-        self.http_version = http_version
         self.headers = Headers(headers)
 
         self._request: typing.Optional[Request] = request
 
         self.call_next: typing.Optional[typing.Callable] = None
 
+        self.ext = {} if ext is None else ext
         self.history = [] if history is None else list(history)
         self._on_close = on_close
 
@@ -965,8 +946,12 @@ class Response:
         self._request = value
 
     @property
+    def http_version(self) -> str:
+        return self.ext.get("http_version", "HTTP/1.1")
+
+    @property
     def reason_phrase(self) -> str:
-        return codes.get_reason_phrase(self.status_code)
+        return self.ext.get("reason", codes.get_reason_phrase(self.status_code))
 
     @property
     def url(self) -> typing.Optional[URL]:

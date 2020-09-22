@@ -2,7 +2,7 @@ import httpcore
 import pytest
 
 import httpx
-from tests.utils import AsyncMockTransport, MockTransport
+from tests.utils import MockTransport
 
 
 def redirects(request: httpx.Request) -> httpx.Response:
@@ -232,14 +232,14 @@ def test_multiple_redirects():
 
 @pytest.mark.usefixtures("async_environment")
 async def test_async_too_many_redirects():
-    async with httpx.AsyncClient(transport=AsyncMockTransport(redirects)) as client:
+    async with httpx.AsyncClient(transport=MockTransport(redirects)) as client:
         with pytest.raises(httpx.TooManyRedirects):
             await client.get("https://example.org/multiple_redirects?count=21")
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_async_too_many_redirects_calling_next():
-    async with httpx.AsyncClient(transport=AsyncMockTransport(redirects)) as client:
+    async with httpx.AsyncClient(transport=MockTransport(redirects)) as client:
         url = "https://example.org/multiple_redirects?count=21"
         response = await client.get(url, allow_redirects=False)
         with pytest.raises(httpx.TooManyRedirects):

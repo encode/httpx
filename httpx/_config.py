@@ -1,7 +1,6 @@
 import os
 import ssl
 import typing
-import warnings
 from base64 import b64encode
 from pathlib import Path
 
@@ -9,7 +8,7 @@ import certifi
 
 from ._models import URL, Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
-from ._utils import get_ca_bundle_from_env, get_logger, warn_deprecated
+from ._utils import get_ca_bundle_from_env, get_logger
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -212,44 +211,7 @@ class Timeout:
         read: typing.Union[None, float, UnsetType] = UNSET,
         write: typing.Union[None, float, UnsetType] = UNSET,
         pool: typing.Union[None, float, UnsetType] = UNSET,
-        # Deprecated aliases.
-        connect_timeout: typing.Union[None, float, UnsetType] = UNSET,
-        read_timeout: typing.Union[None, float, UnsetType] = UNSET,
-        write_timeout: typing.Union[None, float, UnsetType] = UNSET,
-        pool_timeout: typing.Union[None, float, UnsetType] = UNSET,
     ):
-        if not isinstance(connect_timeout, UnsetType):
-            warn_deprecated(
-                "httpx.Timeout(..., connect_timeout=...) is deprecated and will "
-                "raise errors in a future version. "
-                "Use httpx.Timeout(..., connect=...) instead."
-            )
-            connect = connect_timeout
-
-        if not isinstance(read_timeout, UnsetType):
-            warn_deprecated(
-                "httpx.Timeout(..., read_timeout=...) is deprecated and will "
-                "raise errors in a future version. "
-                "Use httpx.Timeout(..., write=...) instead."
-            )
-            read = read_timeout
-
-        if not isinstance(write_timeout, UnsetType):
-            warn_deprecated(
-                "httpx.Timeout(..., write_timeout=...) is deprecated and will "
-                "raise errors in a future version. "
-                "Use httpx.Timeout(..., write=...) instead."
-            )
-            write = write_timeout
-
-        if not isinstance(pool_timeout, UnsetType):
-            warn_deprecated(
-                "httpx.Timeout(..., pool_timeout=...) is deprecated and will "
-                "raise errors in a future version. "
-                "Use httpx.Timeout(..., pool=...) instead."
-            )
-            pool = pool_timeout
-
         if isinstance(timeout, Timeout):
             # Passed as a single explicit Timeout.
             assert connect is UNSET
@@ -278,13 +240,10 @@ class Timeout:
             self.pool = pool
         else:
             if isinstance(timeout, UnsetType):
-                warnings.warn(
+                raise ValueError(
                     "httpx.Timeout must either include a default, or set all "
-                    "four parameters explicitly. Omitting the default argument "
-                    "is deprecated and will raise errors in a future version.",
-                    DeprecationWarning,
+                    "four parameters explicitly."
                 )
-                timeout = None
             self.connect = timeout if isinstance(connect, UnsetType) else connect
             self.read = timeout if isinstance(read, UnsetType) else read
             self.write = timeout if isinstance(write, UnsetType) else write
@@ -335,16 +294,7 @@ class Limits:
         *,
         max_connections: int = None,
         max_keepalive_connections: int = None,
-        # Deprecated parameter naming, in favour of more explicit version:
-        max_keepalive: int = None,
     ):
-        if max_keepalive is not None:
-            warnings.warn(
-                "'max_keepalive' is deprecated. Use 'max_keepalive_connections'.",
-                DeprecationWarning,
-            )
-            max_keepalive_connections = max_keepalive
-
         self.max_connections = max_connections
         self.max_keepalive_connections = max_keepalive_connections
 
@@ -361,15 +311,6 @@ class Limits:
             f"{class_name}(max_connections={self.max_connections}, "
             f"max_keepalive_connections={self.max_keepalive_connections})"
         )
-
-
-class PoolLimits(Limits):
-    def __init__(self, **kwargs: typing.Any) -> None:
-        warn_deprecated(
-            "httpx.PoolLimits(...) is deprecated and will raise errors in the future. "
-            "Use httpx.Limits(...) instead."
-        )
-        super().__init__(**kwargs)
 
 
 class Proxy:

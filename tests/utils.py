@@ -1,7 +1,7 @@
 import contextlib
 import logging
 import os
-from typing import Callable, List, Mapping, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import httpcore
 
@@ -24,7 +24,7 @@ def override_log_level(log_level: str):
         logging.getLogger("httpx").handlers = []
 
 
-class MockTransport(httpcore.SyncHTTPTransport):
+class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
     def __init__(self, handler: Callable) -> None:
         self.handler = handler
 
@@ -34,8 +34,8 @@ class MockTransport(httpcore.SyncHTTPTransport):
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.SyncByteStream = None,
-        timeout: Mapping[str, Optional[float]] = None,
-    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.SyncByteStream]:
+        ext: dict = None,
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.SyncByteStream, dict]:
         request = httpx.Request(
             method=method,
             url=url,
@@ -45,26 +45,20 @@ class MockTransport(httpcore.SyncHTTPTransport):
         request.read()
         response = self.handler(request)
         return (
-            (response.http_version or "HTTP/1.1").encode("ascii"),
             response.status_code,
-            response.reason_phrase.encode("ascii"),
             response.headers.raw,
             response.stream,
+            response.ext,
         )
 
-
-class AsyncMockTransport(httpcore.AsyncHTTPTransport):
-    def __init__(self, handler: Callable) -> None:
-        self.handler = handler
-
-    async def request(
+    async def arequest(
         self,
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.AsyncByteStream = None,
-        timeout: Mapping[str, Optional[float]] = None,
-    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
+        ext: dict = None,
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]:
         request = httpx.Request(
             method=method,
             url=url,
@@ -74,9 +68,8 @@ class AsyncMockTransport(httpcore.AsyncHTTPTransport):
         await request.aread()
         response = self.handler(request)
         return (
-            (response.http_version or "HTTP/1.1").encode("ascii"),
             response.status_code,
-            response.reason_phrase.encode("ascii"),
             response.headers.raw,
             response.stream,
+            response.ext,
         )
