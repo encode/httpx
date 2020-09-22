@@ -149,9 +149,8 @@ def test_timeout_from_one_value_and_default():
 
 
 def test_timeout_missing_default():
-    with pytest.warns(DeprecationWarning):
-        timeout = httpx.Timeout(pool=60.0)
-        assert timeout == httpx.Timeout(timeout=(None, None, None, 60.0))
+    with pytest.raises(ValueError):
+        httpx.Timeout(pool=60.0)
 
 
 def test_timeout_from_tuple():

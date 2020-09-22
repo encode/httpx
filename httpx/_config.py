@@ -1,7 +1,6 @@
 import os
 import ssl
 import typing
-import warnings
 from base64 import b64encode
 from pathlib import Path
 
@@ -9,7 +8,7 @@ import certifi
 
 from ._models import URL, Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
-from ._utils import get_ca_bundle_from_env, get_logger, warn_deprecated
+from ._utils import get_ca_bundle_from_env, get_logger
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -241,13 +240,10 @@ class Timeout:
             self.pool = pool
         else:
             if isinstance(timeout, UnsetType):
-                warnings.warn(
+                raise ValueError(
                     "httpx.Timeout must either include a default, or set all "
-                    "four parameters explicitly. Omitting the default argument "
-                    "is deprecated and will raise errors in a future version.",
-                    DeprecationWarning,
+                    "four parameters explicitly."
                 )
-                timeout = None
             self.connect = timeout if isinstance(connect, UnsetType) else connect
             self.read = timeout if isinstance(read, UnsetType) else read
             self.write = timeout if isinstance(write, UnsetType) else write
