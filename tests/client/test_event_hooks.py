@@ -1,7 +1,7 @@
 import pytest
 
 import httpx
-from tests.utils import AsyncMockTransport, MockTransport
+from tests.utils import MockTransport
 
 
 def app(request: httpx.Request) -> httpx.Response:
@@ -73,7 +73,7 @@ async def test_async_event_hooks():
     event_hooks = {"request": [on_request], "response": [on_response]}
 
     async with httpx.AsyncClient(
-        event_hooks=event_hooks, transport=AsyncMockTransport(app)
+        event_hooks=event_hooks, transport=MockTransport(app)
     ) as http:
         await http.get("http://127.0.0.1:8000/", auth=("username", "password"))
 
@@ -104,7 +104,7 @@ async def test_async_event_hooks_raising_exception():
     event_hooks = {"response": [raise_on_4xx_5xx]}
 
     async with httpx.AsyncClient(
-        event_hooks=event_hooks, transport=AsyncMockTransport(app)
+        event_hooks=event_hooks, transport=MockTransport(app)
     ) as http:
         try:
             await http.get("http://127.0.0.1:8000/status/400")
@@ -166,7 +166,7 @@ async def test_async_event_hooks_with_redirect():
     event_hooks = {"request": [on_request], "response": [on_response]}
 
     async with httpx.AsyncClient(
-        event_hooks=event_hooks, transport=AsyncMockTransport(app)
+        event_hooks=event_hooks, transport=MockTransport(app)
     ) as http:
         await http.get("http://127.0.0.1:8000/redirect", auth=("username", "password"))
 

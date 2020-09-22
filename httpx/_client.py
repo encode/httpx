@@ -850,18 +850,12 @@ class Client(BaseClient):
         timer.sync_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (
-                http_version,
-                status_code,
-                reason_phrase,
-                headers,
-                stream,
-            ) = transport.request(
+            (status_code, headers, stream, ext) = transport.request(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
                 stream=request.stream,  # type: ignore
-                timeout=timeout.as_dict(),
+                ext={"timeout": timeout.as_dict()},
             )
 
         def on_close(response: Response) -> None:
@@ -871,9 +865,9 @@ class Client(BaseClient):
 
         response = Response(
             status_code,
-            http_version=http_version.decode("ascii"),
             headers=headers,
             stream=stream,  # type: ignore
+            ext=ext,
             request=request,
             on_close=on_close,
         )
@@ -1501,18 +1495,12 @@ class AsyncClient(BaseClient):
         await timer.async_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (
-                http_version,
-                status_code,
-                reason_phrase,
-                headers,
-                stream,
-            ) = await transport.request(
+            (status_code, headers, stream, ext,) = await transport.arequest(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
                 stream=request.stream,  # type: ignore
-                timeout=timeout.as_dict(),
+                ext={"timeout": timeout.as_dict()},
             )
 
         async def on_close(response: Response) -> None:
@@ -1522,9 +1510,9 @@ class AsyncClient(BaseClient):
 
         response = Response(
             status_code,
-            http_version=http_version.decode("ascii"),
             headers=headers,
             stream=stream,  # type: ignore
+            ext=ext,
             request=request,
             on_close=on_close,
         )

@@ -864,19 +864,19 @@ class Response:
         html: str = None,
         json: typing.Any = None,
         stream: ByteStream = None,
-        http_version: str = None,
         request: Request = None,
+        ext: dict = None,
         history: typing.List["Response"] = None,
         on_close: typing.Callable = None,
     ):
         self.status_code = status_code
-        self.http_version = http_version
         self.headers = Headers(headers)
 
         self._request: typing.Optional[Request] = request
 
         self.call_next: typing.Optional[typing.Callable] = None
 
+        self.ext = {} if ext is None else ext
         self.history = [] if history is None else list(history)
         self._on_close = on_close
 
@@ -946,8 +946,12 @@ class Response:
         self._request = value
 
     @property
+    def http_version(self) -> str:
+        return self.ext.get("http_version", "HTTP/1.1")
+
+    @property
     def reason_phrase(self) -> str:
-        return codes.get_reason_phrase(self.status_code)
+        return self.ext.get("reason", codes.get_reason_phrase(self.status_code))
 
     @property
     def url(self) -> typing.Optional[URL]:
