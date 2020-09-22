@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 * Added support for event hooks. (Pull #1246)
 * Added support for authentication flows which require either sync or async I/O. (Pull #1217)
-* Added support for moniotoring download progress with `response.num_bytes_downloaded`. (Pull #1268)
+* Added support for monitoring download progress with `response.num_bytes_downloaded`. (Pull #1268)
 * Added `Request(content=...)` for byte content, instead of overloading `Request(data=...)` (Pull #1266)
 * Added support for all URL components as parameter names when using `url.copy_with(...)`. (Pull #1285)
 * Neater split between automatically populated headers on `Request` instances, vs default `client.headers`. (Pull #1248)
