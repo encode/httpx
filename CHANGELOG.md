@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+* Added support for curio. (Pull https://github.com/encode/httpcore/pull/168)
 * Added support for event hooks. (Pull #1246)
 * Added support for authentication flows which require either sync or async I/O. (Pull #1217)
 * Added support for monitoring download progress with `response.num_bytes_downloaded`. (Pull #1268)
