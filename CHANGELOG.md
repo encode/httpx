@@ -38,6 +38,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * Drop `request.timer` attribute, which was being used internally to set `response.elapsed`. (Pull #1249)
 * Drop `response.decoder` attribute, which was being used internally. (Pull #1276)
 * `Request.prepare()` is now a private method. (Pull #1284)
+* The `Headers.getlist()` method had previously been deprecated in favour of `Headers.get_list()`. It is now fully removed.
+* The `QueryParams.getlist()` method had previously been deprecated in favour of `QueryParams.get_list()`. It is now fully removed.
+* The `URL.is_ssl` property had previously been deprecated in favour of `URL.scheme == "https"`. It is now fully removed.
+* The `httpx.PoolLimits` class had previously been deprecated in favour of `httpx.Limits`. It is now fully removed.
+* The `max_keepalive` setting had previously been deprecated in favour of the more explicit `max_keepalive_connections`. It is now fully removed.
+* The verbose `httpx.Timeout(5.0, connect_timeout=60.0)` style had previously been deprecated in favour of `httpx.Timeout(5.0, connect=60.0)`. It is now fully removed.
+* Support for instantiating a timeout config missing some defaults, such as `httpx.Timeout(connect=60.0)`, had previously been deprecated in favour of enforcing a more explicit style, such as `httpx.Timeout(5.0, connect=60.0)`. This is now strictly enforced.
 
 ## 0.14.3 (September 2nd, 2020)
 
