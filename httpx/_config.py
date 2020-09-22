@@ -212,44 +212,7 @@ class Timeout:
         read: typing.Union[None, float, UnsetType] = UNSET,
         write: typing.Union[None, float, UnsetType] = UNSET,
         pool: typing.Union[None, float, UnsetType] = UNSET,
-        # Deprecated aliases.
-        connect_timeout: typing.Union[None, float, UnsetType] = UNSET,
-        read_timeout: typing.Union[None, float, UnsetType] = UNSET,
-        write_timeout: typing.Union[None, float, UnsetType] = UNSET,
-        pool_timeout: typing.Union[None, float, UnsetType] = UNSET,
     ):
-        if not isinstance(connect_timeout, UnsetType):
-            warn_deprecated(
-                "httpx.Timeout(..., connect_timeout=...) is deprecated and will "
-                "raise errors in a future version. "
-                "Use httpx.Timeout(..., connect=...) instead."
-            )
-            connect = connect_timeout
-
-        if not isinstance(read_timeout, UnsetType):
-            warn_deprecated(
-                "httpx.Timeout(..., read_timeout=...) is deprecated and will "
-                "raise errors in a future version. "
-                "Use httpx.Timeout(..., write=...) instead."
-            )
-            read = read_timeout
-
-        if not isinstance(write_timeout, UnsetType):
-            warn_deprecated(
-                "httpx.Timeout(..., write_timeout=...) is deprecated and will "
-                "raise errors in a future version. "
-                "Use httpx.Timeout(..., write=...) instead."
-            )
-            write = write_timeout
-
-        if not isinstance(pool_timeout, UnsetType):
-            warn_deprecated(
-                "httpx.Timeout(..., pool_timeout=...) is deprecated and will "
-                "raise errors in a future version. "
-                "Use httpx.Timeout(..., pool=...) instead."
-            )
-            pool = pool_timeout
-
         if isinstance(timeout, Timeout):
             # Passed as a single explicit Timeout.
             assert connect is UNSET

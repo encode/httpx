@@ -41,17 +41,3 @@ async def test_pool_timeout(server):
         async with client.stream("GET", server.url):
             with pytest.raises(httpx.PoolTimeout):
                 await client.get("http://localhost:8000/")
-
-
-def test_deprecated_verbose_timeout_params():
-    with pytest.warns(DeprecationWarning):
-        httpx.Timeout(None, read_timeout=1.0)
-
-    with pytest.warns(DeprecationWarning):
-        httpx.Timeout(None, write_timeout=1.0)
-
-    with pytest.warns(DeprecationWarning):
-        httpx.Timeout(None, connect_timeout=1.0)
-
-    with pytest.warns(DeprecationWarning):
-        httpx.Timeout(None, pool_timeout=1.0)
