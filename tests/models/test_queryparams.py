@@ -21,9 +21,6 @@ def test_queryparams(source):
     assert q.get("nope", default=None) is None
     assert q.get_list("a") == ["123", "456"]
 
-    with pytest.warns(DeprecationWarning):
-        assert q.getlist("a") == ["123", "456"]
-
     assert list(q.keys()) == ["a", "b"]
     assert list(q.values()) == ["456", "789"]
     assert list(q.items()) == [("a", "456"), ("b", "789")]
