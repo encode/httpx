@@ -163,6 +163,20 @@ async def test_basic_auth() -> None:
 
 
 @pytest.mark.asyncio
+async def test_basic_auth_with_stream() -> None:
+    url = "https://example.org/"
+    auth = ("tomchristie", "password123")
+    app = App()
+
+    async with httpx.AsyncClient(transport=MockTransport(app), auth=auth) as client:
+        async with client.stream("GET", url) as response:
+            response.read()
+
+    assert response.status_code == 200
+    assert response.json() == {"auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="}
+
+
+@pytest.mark.asyncio
 async def test_basic_auth_in_url() -> None:
     url = "https://tomchristie:password123@example.org/"
     app = App()
