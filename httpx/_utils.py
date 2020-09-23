@@ -404,10 +404,7 @@ class Timer:
 
         import asyncio
 
-        if hasattr(asyncio, "get_running_loop"):
-            return asyncio.get_running_loop().time()
-        else:
-            return asyncio.get_event_loop().time()
+        return asyncio.get_event_loop().time()
 
     def sync_start(self) -> None:
         self.started = time.perf_counter()
