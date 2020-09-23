@@ -78,14 +78,14 @@ def test_wsgi():
 
 def test_wsgi_upload():
     client = httpx.Client(app=echo_body)
-    response = client.post("http://www.example.org/", data=b"example")
+    response = client.post("http://www.example.org/", content=b"example")
     assert response.status_code == 200
     assert response.text == "example"
 
 
 def test_wsgi_upload_with_response_stream():
     client = httpx.Client(app=echo_body_with_response_stream)
-    response = client.post("http://www.example.org/", data=b"example")
+    response = client.post("http://www.example.org/", content=b"example")
     assert response.status_code == 200
     assert response.text == "example"
 
@@ -97,8 +97,8 @@ def test_wsgi_exc():
 
 
 def test_wsgi_http_error():
-    client = httpx.Client(app=partial(raise_exc, exc=httpx.HTTPError))
-    with pytest.raises(httpx.HTTPError):
+    client = httpx.Client(app=partial(raise_exc, exc=RuntimeError))
+    with pytest.raises(RuntimeError):
         client.get("http://www.example.org/")
 
 

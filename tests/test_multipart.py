@@ -4,43 +4,26 @@ import os
 import typing
 from unittest import mock
 
-import httpcore
 import pytest
 
 import httpx
-from httpx._content_streams import AsyncIteratorStream, MultipartStream, encode
+from httpx._content import encode_request
 from httpx._utils import format_form_param
+from tests.utils import MockTransport
 
 
-class MockTransport(httpcore.AsyncHTTPTransport):
-    async def request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
-        stream: httpcore.AsyncByteStream = None,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
-    ) -> typing.Tuple[
-        bytes,
-        int,
-        bytes,
-        typing.List[typing.Tuple[bytes, bytes]],
-        httpcore.AsyncByteStream,
-    ]:
-        assert stream is not None
-        content = AsyncIteratorStream(aiterator=(part async for part in stream))
-        return b"HTTP/1.1", 200, b"OK", [], content
+def echo_request_content(request: httpx.Request) -> httpx.Response:
+    return httpx.Response(200, content=request.content)
 
 
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
-@pytest.mark.asyncio
-async def test_multipart(value, output):
-    client = httpx.AsyncClient(transport=MockTransport())
+def test_multipart(value, output):
+    client = httpx.Client(transport=MockTransport(echo_request_content))
 
     # Test with a single-value 'data' argument, and a plain file 'files' argument.
     data = {"text": value}
     files = {"file": io.BytesIO(b"<file content>")}
-    response = await client.post("http://127.0.0.1:8000/", data=data, files=files)
+    response = client.post("http://127.0.0.1:8000/", data=data, files=files)
     assert response.status_code == 200
 
     # We're using the cgi module to verify the behavior here, which is a
@@ -60,35 +43,39 @@ async def test_multipart(value, output):
 
 
 @pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))
-@pytest.mark.asyncio
-async def test_multipart_invalid_key(key):
-    client = httpx.AsyncClient(transport=MockTransport())
+def test_multipart_invalid_key(key):
+    client = httpx.Client(transport=MockTransport(echo_request_content))
+
     data = {key: "abc"}
     files = {"file": io.BytesIO(b"<file content>")}
     with pytest.raises(TypeError) as e:
-        await client.post("http://127.0.0.1:8000/", data=data, files=files)
+        client.post(
+            "http://127.0.0.1:8000/",
+            data=data,
+            files=files,
+        )
     assert "Invalid type for name" in str(e.value)
 
 
 @pytest.mark.parametrize(("value"), (1, 2.3, None, [None, "abc"], {None: "abc"}))
-@pytest.mark.asyncio
-async def test_multipart_invalid_value(value):
-    client = httpx.AsyncClient(transport=MockTransport())
+def test_multipart_invalid_value(value):
+    client = httpx.Client(transport=MockTransport(echo_request_content))
+
     data = {"text": value}
     files = {"file": io.BytesIO(b"<file content>")}
     with pytest.raises(TypeError) as e:
-        await client.post("http://127.0.0.1:8000/", data=data, files=files)
+        client.post("http://127.0.0.1:8000/", data=data, files=files)
     assert "Invalid type for value" in str(e.value)
 
 
-@pytest.mark.asyncio
-async def test_multipart_file_tuple():
-    client = httpx.AsyncClient(transport=MockTransport())
+def test_multipart_file_tuple():
+    client = httpx.Client(transport=MockTransport(echo_request_content))
 
-    # Test with a list of values 'data' argument, and a tuple style 'files' argument.
+    # Test with a list of values 'data' argument,
+    #     and a tuple style 'files' argument.
     data = {"text": ["abc"]}
     files = {"file": ("name.txt", io.BytesIO(b"<file content>"))}
-    response = await client.post("http://127.0.0.1:8000/", data=data, files=files)
+    response = client.post("http://127.0.0.1:8000/", data=data, files=files)
     assert response.status_code == 200
 
     # We're using the cgi module to verify the behavior here, which is a
@@ -123,11 +110,9 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode(data=data, files=files)
-        assert isinstance(stream, MultipartStream)
-        assert stream.can_replay()
+        headers, stream = encode_request(data=data, files=files)
+        assert isinstance(stream, typing.Iterable)
 
-        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
         content = (
             '--{0}\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="b"\r\n\r\nC\r\n'
@@ -141,8 +126,11 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
             "--{0}--\r\n"
             "".format(boundary).encode("ascii")
         )
-        assert stream.get_headers()["Content-Length"] == str(len(content))
-        assert b"".join(stream) == content
+        assert headers == {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(content)),
+        }
+        assert content == b"".join(stream)
 
 
 def test_multipart_encode_files_allows_filenames_as_none() -> None:
@@ -150,16 +138,19 @@ def test_multipart_encode_files_allows_filenames_as_none() -> None:
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode(data={}, files=files)
-        assert isinstance(stream, MultipartStream)
-        assert stream.can_replay()
+        headers, stream = encode_request(data={}, files=files)
+        assert isinstance(stream, typing.Iterable)
 
-        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
-        assert b"".join(stream) == (
+        content = (
             '--{0}\r\nContent-Disposition: form-data; name="file"\r\n\r\n'
             "<file content>\r\n--{0}--\r\n"
             "".format(boundary).encode("ascii")
         )
+        assert headers == {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(content)),
+        }
+        assert content == b"".join(stream)
 
 
 @pytest.mark.parametrize(
@@ -177,17 +168,20 @@ def test_multipart_encode_files_guesses_correct_content_type(
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode(data={}, files=files)
-        assert isinstance(stream, MultipartStream)
-        assert stream.can_replay()
+        headers, stream = encode_request(data={}, files=files)
+        assert isinstance(stream, typing.Iterable)
 
-        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
-        assert b"".join(stream) == (
+        content = (
             f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
             f'filename="{file_name}"\r\nContent-Type: '
             f"{expected_content_type}\r\n\r\n<file content>\r\n--{boundary}--\r\n"
             "".encode("ascii")
         )
+        assert headers == {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(content)),
+        }
+        assert content == b"".join(stream)
 
 
 @pytest.mark.parametrize(
@@ -201,11 +195,9 @@ def test_multipart_encode_files_allows_bytes_or_str_content(
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
-        stream = encode(data={}, files=files)
-        assert isinstance(stream, MultipartStream)
-        assert stream.can_replay()
+        headers, stream = encode_request(data={}, files=files)
+        assert isinstance(stream, typing.Iterable)
 
-        assert stream.content_type == f"multipart/form-data; boundary={boundary}"
         content = (
             '--{0}\r\nContent-Disposition: form-data; name="file"; '
             'filename="test.txt"\r\n'
@@ -213,8 +205,11 @@ def test_multipart_encode_files_allows_bytes_or_str_content(
             "--{0}--\r\n"
             "".format(boundary, output).encode("ascii")
         )
-        assert stream.get_headers()["Content-Length"] == str(len(content))
-        assert b"".join(stream) == content
+        assert headers == {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(content)),
+        }
+        assert content == b"".join(stream)
 
 
 def test_multipart_encode_non_seekable_filelike() -> None:
@@ -227,9 +222,6 @@ def test_multipart_encode_non_seekable_filelike() -> None:
         def __init__(self, iterator: typing.Iterator[bytes]) -> None:
             self._iterator = iterator
 
-        def seekable(self) -> bool:
-            return False
-
         def read(self, *args: typing.Any) -> bytes:
             return b"".join(self._iterator)
 
@@ -239,8 +231,8 @@ def test_multipart_encode_non_seekable_filelike() -> None:
 
     fileobj: typing.Any = IteratorIO(data())
     files = {"file": fileobj}
-    stream = encode(files=files, boundary=b"+++")
-    assert not stream.can_replay()
+    headers, stream = encode_request(files=files, boundary=b"+++")
+    assert isinstance(stream, typing.Iterable)
 
     content = (
         b"--+++\r\n"
@@ -250,11 +242,11 @@ def test_multipart_encode_non_seekable_filelike() -> None:
         b"HelloWorld\r\n"
         b"--+++--\r\n"
     )
-    assert stream.get_headers() == {
+    assert headers == {
         "Content-Type": "multipart/form-data; boundary=+++",
         "Content-Length": str(len(content)),
     }
-    assert b"".join(stream) == content
+    assert content == b"".join(stream)
 
 
 class TestHeaderParamHTML5Formatting:

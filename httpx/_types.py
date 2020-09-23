@@ -7,10 +7,10 @@ from http.cookiejar import CookieJar
 from typing import (
     IO,
     TYPE_CHECKING,
-    AsyncIterator,
+    AsyncIterable,
     Callable,
     Dict,
-    Iterator,
+    Iterable,
     List,
     Mapping,
     Optional,
@@ -27,6 +27,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
+RawURL = Tuple[bytes, bytes, Optional[int], bytes]
+
 URLTypes = Union["URL", str]
 
 QueryParamTypes = Union[
@@ -34,6 +36,7 @@ QueryParamTypes = Union[
     Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
     List[Tuple[str, PrimitiveData]],
     str,
+    bytes,
     None,
 ]
 
@@ -45,7 +48,7 @@ HeaderTypes = Union[
     Sequence[Tuple[bytes, bytes]],
 ]
 
-CookieTypes = Union["Cookies", CookieJar, Dict[str, str]]
+CookieTypes = Union["Cookies", CookieJar, Dict[str, str], List[Tuple[str, str]]]
 
 CertTypes = Union[str, Tuple[str, str], Tuple[str, str, str]]
 VerifyTypes = Union[str, bool, ssl.SSLContext]
@@ -54,15 +57,20 @@ TimeoutTypes = Union[
     Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
     "Timeout",
 ]
-ProxiesTypes = Union[URLTypes, "Proxy", Dict[URLTypes, Union[URLTypes, "Proxy"]]]
+ProxiesTypes = Union[URLTypes, "Proxy", Dict[URLTypes, Union[None, URLTypes, "Proxy"]]]
 
 AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
     Callable[["Request"], "Request"],
     "Auth",
+    None,
 ]
 
-RequestData = Union[dict, str, bytes, Iterator[bytes], AsyncIterator[bytes]]
+ByteStream = Union[Iterable[bytes], AsyncIterable[bytes]]
+RequestContent = Union[str, bytes, ByteStream]
+ResponseContent = Union[str, bytes, ByteStream]
+
+RequestData = dict
 
 FileContent = Union[IO[str], IO[bytes], str, bytes]
 FileTypes = Union[

@@ -56,13 +56,14 @@ setup(
     zip_safe=False,
     install_requires=[
         "certifi",
-        "hstspreload",
         "sniffio",
-        "chardet==3.*",
-        "idna==2.*",
-        "rfc3986>=1.3,<2",
-        "httpcore==0.9.*",
+        "rfc3986[idna2008]>=1.3,<2",
+        "httpcore==0.11.*",
     ],
+    extras_require={
+        "http2": "h2==3.*",
+        "brotli": "brotlipy==0.7.*",
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Web Environment",

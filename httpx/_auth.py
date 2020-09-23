@@ -6,7 +6,7 @@ import typing
 from base64 import b64encode
 from urllib.request import parse_http_list
 
-from ._exceptions import ProtocolError, RequestBodyUnavailable
+from ._exceptions import ProtocolError
 from ._models import Request, Response
 from ._utils import to_bytes, to_str, unquote
 
@@ -17,6 +17,11 @@ class Auth:
 
     To implement a custom authentication scheme, subclass `Auth` and override
     the `.auth_flow()` method.
+
+    If the authentication scheme does I/O such as disk access or network calls, or uses
+    synchronization primitives such as locks, you should override `.sync_auth_flow()`
+    and/or `.async_auth_flow()` instead of `.auth_flow()` to provide specialized
+    implementations that will be used by `Client` and `AsyncClient` respectively.
     """
 
     requires_request_body = False
@@ -45,6 +50,56 @@ class Auth:
         You can dispatch as many requests as is necessary.
         """
         yield request
+
+    def sync_auth_flow(
+        self, request: Request
+    ) -> typing.Generator[Request, Response, None]:
+        """
+        Execute the authentication flow synchronously.
+
+        By default, this defers to `.auth_flow()`. You should override this method
+        when the authentication scheme does I/O and/or uses concurrency primitives.
+        """
+        if self.requires_request_body:
+            request.read()
+
+        flow = self.auth_flow(request)
+        request = next(flow)
+
+        while True:
+            response = yield request
+            if self.requires_response_body:
+                response.read()
+
+            try:
+                request = flow.send(response)
+            except StopIteration:
+                break
+
+    async def async_auth_flow(
+        self, request: Request
+    ) -> typing.AsyncGenerator[Request, Response]:
+        """
+        Execute the authentication flow asynchronously.
+
+        By default, this defers to `.auth_flow()`. You should override this method
+        when the authentication scheme does I/O and/or uses concurrency primitives.
+        """
+        if self.requires_request_body:
+            await request.aread()
+
+        flow = self.auth_flow(request)
+        request = next(flow)
+
+        while True:
+            response = yield request
+            if self.requires_response_body:
+                await response.aread()
+
+            try:
+                request = flow.send(response)
+            except StopIteration:
+                break
 
 
 class FunctionAuth(Auth):
@@ -102,34 +157,37 @@ class DigestAuth(Auth):
         self._password = to_bytes(password)
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
-        if not request.stream.can_replay():
-            raise RequestBodyUnavailable(
-                "Cannot use digest auth with streaming requests that are unable "
-                "to replay the request body if a second request is required.",
-                request=request,
-            )
-
         response = yield request
 
         if response.status_code != 401 or "www-authenticate" not in response.headers:
-            # If the response is not a 401 WWW-Authenticate, then we don't
+            # If the response is not a 401 then we don't
             # need to build an authenticated request.
             return
 
-        header = response.headers["www-authenticate"]
-        challenge = self._parse_challenge(header)
+        for auth_header in response.headers.get_list("www-authenticate"):
+            if auth_header.lower().startswith("digest "):
+                break
+        else:
+            # If the response does not include a 'WWW-Authenticate: Digest ...'
+            # header, then we don't need to build an authenticated request.
+            return
+
+        challenge = self._parse_challenge(request, response, auth_header)
         request.headers["Authorization"] = self._build_auth_header(request, challenge)
         yield request
 
-    def _parse_challenge(self, header: str) -> "_DigestAuthChallenge":
+    def _parse_challenge(
+        self, request: Request, response: Response, auth_header: str
+    ) -> "_DigestAuthChallenge":
         """
         Returns a challenge from a Digest WWW-Authenticate header.
         These take the form of:
         `Digest realm="realm@host.com",qop="auth,auth-int",nonce="abc",opaque="xyz"`
         """
-        scheme, _, fields = header.partition(" ")
-        if scheme.lower() != "digest":
-            raise ProtocolError("Header does not start with 'Digest'")
+        scheme, _, fields = auth_header.partition(" ")
+
+        # This method should only ever have been called with a Digest auth header.
+        assert scheme.lower() == "digest"
 
         header_dict: typing.Dict[str, str] = {}
         for field in parse_http_list(fields):
@@ -146,7 +204,8 @@ class DigestAuth(Auth):
                 realm=realm, nonce=nonce, qop=qop, opaque=opaque, algorithm=algorithm
             )
         except KeyError as exc:
-            raise ProtocolError("Malformed Digest WWW-Authenticate header") from exc
+            message = "Malformed Digest WWW-Authenticate header"
+            raise ProtocolError(message, request=request) from exc
 
     def _build_auth_header(
         self, request: Request, challenge: "_DigestAuthChallenge"
@@ -158,7 +217,7 @@ class DigestAuth(Auth):
 
         A1 = b":".join((self._username, challenge.realm, self._password))
 
-        path = request.url.full_path.encode("utf-8")
+        path = request.url.raw_path
         A2 = b":".join((request.method.encode(), path))
         # TODO: implement auth-int
         HA2 = digest(A2)
@@ -171,7 +230,7 @@ class DigestAuth(Auth):
         if challenge.algorithm.lower().endswith("-sess"):
             HA1 = digest(b":".join((HA1, challenge.nonce, cnonce)))
 
-        qop = self._resolve_qop(challenge.qop)
+        qop = self._resolve_qop(challenge.qop, request=request)
         if qop is None:
             digest_data = [HA1, challenge.nonce, HA2]
         else:
@@ -221,7 +280,9 @@ class DigestAuth(Auth):
 
         return header_value
 
-    def _resolve_qop(self, qop: typing.Optional[bytes]) -> typing.Optional[bytes]:
+    def _resolve_qop(
+        self, qop: typing.Optional[bytes], request: Request
+    ) -> typing.Optional[bytes]:
         if qop is None:
             return None
         qops = re.split(b", ?", qop)
@@ -231,7 +292,8 @@ class DigestAuth(Auth):
         if qops == [b"auth-int"]:
             raise NotImplementedError("Digest auth-int support is not yet implemented")
 
-        raise ProtocolError(f'Unexpected qop value "{qop!r}" in digest auth')
+        message = f'Unexpected qop value "{qop!r}" in digest auth'
+        raise ProtocolError(message, request=request)
 
 
 class _DigestAuthChallenge:

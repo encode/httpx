@@ -4,8 +4,6 @@ import typing
 
 import httpcore
 
-from .._content_streams import ByteStream, IteratorStream
-
 
 def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
     body = iter(body)
@@ -66,16 +64,12 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: httpcore.SyncByteStream = None,
-        timeout: typing.Dict[str, typing.Optional[float]] = None,
+        ext: dict = None,
     ) -> typing.Tuple[
-        bytes,
-        int,
-        bytes,
-        typing.List[typing.Tuple[bytes, bytes]],
-        httpcore.SyncByteStream,
+        int, typing.List[typing.Tuple[bytes, bytes]], httpcore.SyncByteStream, dict
     ]:
         headers = [] if headers is None else headers
-        stream = ByteStream(b"") if stream is None else stream
+        stream = httpcore.PlainByteStream(content=b"") if stream is None else stream
 
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
@@ -128,6 +122,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
             (key.encode("ascii"), value.encode("ascii"))
             for key, value in seen_response_headers
         ]
-        stream = IteratorStream(chunk for chunk in result)
+        stream = httpcore.IteratorByteStream(iterator=result)
+        ext = {}
 
-        return (b"HTTP/1.1", status_code, b"", headers, stream)
+        return (status_code, headers, stream, ext)

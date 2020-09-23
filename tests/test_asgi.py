@@ -1,4 +1,4 @@
-from functools import partial
+import json
 
 import pytest
 
@@ -8,6 +8,15 @@ import httpx
 async def hello_world(scope, receive, send):
     status = 200
     output = b"Hello, World!"
+    headers = [(b"content-type", "text/plain"), (b"content-length", str(len(output)))]
+
+    await send({"type": "http.response.start", "status": status, "headers": headers})
+    await send({"type": "http.response.body", "body": output})
+
+
+async def echo_path(scope, receive, send):
+    status = 200
+    output = json.dumps({"path": scope["path"]}).encode("utf-8")
     headers = [(b"content-type", "text/plain"), (b"content-length", str(len(output)))]
 
     await send({"type": "http.response.start", "status": status, "headers": headers})
@@ -27,8 +36,8 @@ async def echo_body(scope, receive, send):
         await send({"type": "http.response.body", "body": body, "more_body": more_body})
 
 
-async def raise_exc(scope, receive, send, exc=ValueError):
-    raise exc()
+async def raise_exc(scope, receive, send):
+    raise RuntimeError()
 
 
 async def raise_exc_after_response(scope, receive, send):
@@ -38,44 +47,49 @@ async def raise_exc_after_response(scope, receive, send):
 
     await send({"type": "http.response.start", "status": status, "headers": headers})
     await send({"type": "http.response.body", "body": output})
-    raise ValueError()
+    raise RuntimeError()
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi():
-    client = httpx.AsyncClient(app=hello_world)
-    response = await client.get("http://www.example.org/")
+    async with httpx.AsyncClient(app=hello_world) as client:
+        response = await client.get("http://www.example.org/")
+
     assert response.status_code == 200
     assert response.text == "Hello, World!"
 
 
 @pytest.mark.usefixtures("async_environment")
+async def test_asgi_urlencoded_path():
+    async with httpx.AsyncClient(app=echo_path) as client:
+        url = httpx.URL("http://www.example.org/").copy_with(path="/user@example.org")
+        response = await client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {"path": "/user@example.org"}
+
+
+@pytest.mark.usefixtures("async_environment")
 async def test_asgi_upload():
-    client = httpx.AsyncClient(app=echo_body)
-    response = await client.post("http://www.example.org/", data=b"example")
+    async with httpx.AsyncClient(app=echo_body) as client:
+        response = await client.post("http://www.example.org/", content=b"example")
+
     assert response.status_code == 200
     assert response.text == "example"
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_exc():
-    client = httpx.AsyncClient(app=raise_exc)
-    with pytest.raises(ValueError):
-        await client.get("http://www.example.org/")
-
-
-@pytest.mark.usefixtures("async_environment")
-async def test_asgi_http_error():
-    client = httpx.AsyncClient(app=partial(raise_exc, exc=httpx.HTTPError))
-    with pytest.raises(httpx.HTTPError):
-        await client.get("http://www.example.org/")
+    async with httpx.AsyncClient(app=raise_exc) as client:
+        with pytest.raises(RuntimeError):
+            await client.get("http://www.example.org/")
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_exc_after_response():
-    client = httpx.AsyncClient(app=raise_exc_after_response)
-    with pytest.raises(ValueError):
-        await client.get("http://www.example.org/")
+    async with httpx.AsyncClient(app=raise_exc_after_response) as client:
+        with pytest.raises(RuntimeError):
+            await client.get("http://www.example.org/")
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -105,7 +119,8 @@ async def test_asgi_disconnect_after_response_complete():
         message = await receive()
         disconnect = message.get("type") == "http.disconnect"
 
-    client = httpx.AsyncClient(app=read_body)
-    response = await client.post("http://www.example.org/", data=b"example")
+    async with httpx.AsyncClient(app=read_body) as client:
+        response = await client.post("http://www.example.org/", content=b"example")
+
     assert response.status_code == 200
     assert disconnect

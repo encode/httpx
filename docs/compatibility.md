@@ -1,6 +1,6 @@
 # Requests Compatibility Guide
 
-HTTPX aims to be compatible with the `requests` API wherever possible.
+HTTPX aims to be broadly compatible with the `requests` API.
 
 This documentation outlines places where the API differs...
 
@@ -8,6 +8,28 @@ This documentation outlines places where the API differs...
 
 Accessing `response.url` will return a `URL` instance, rather than a string.
 Use `str(response.url)` if you need a string instance.
+
+## Request Content
+
+For uploading raw text or binary content we prefer to use a `content` parameter,
+in order to better separate this usage from the case of uploading form data.
+
+For example, using `content=...` to upload raw content:
+
+```python
+# Uploading text, bytes, or a bytes iterator.
+httpx.post(..., content=b"Hello, world")
+```
+
+And using `data=...` to send form data:
+
+```python
+# Uploading form data.
+httpx.post(..., data={"message": "Hello, world"})
+```
+
+If you're using a type checking tool such as `mypy`, you'll see warnings issues if using test/byte content with the `data` argument.
+However, for compatibility reasons with `requests`, we do still handle the case where `data=...` is used with raw binary and text contents.
 
 ## Status Codes
 
@@ -33,6 +55,16 @@ Within a `stream()` block request data is made available with:
 * `.iter_lines()` - Corresponding to `response.iter_lines()`
 * `.iter_raw()` - Use this instead of `response.raw`
 * `.read()` - Read the entire response body, making `request.text` and `response.content` available.
+
+## Proxy keys
+
+When using `httpx.Client(proxies={...})` to map to a selection of different proxies, we use full URL schemes, such as `proxies={"http://": ..., "https://": ...}`.
+
+This is different to the `requests` usage of `proxies={"http": ..., "https": ...}`.
+
+This change is for better consistency with more complex mappings, that might also include domain names, such as `proxies={"all://": ..., "all://www.example.com": None}` which maps all requests onto a proxy, except for requests to "www.example.com" which have an explicit exclusion.
+
+Also note that `requests.Session.request(...)` allows a `proxies=...` parameter, whereas `httpx.Client.request(...)` does not.
 
 ## SSL configuration
 
@@ -73,3 +105,13 @@ Besides, `httpx.Request()` does not support the `auth`, `timeout`, `allow_redire
 ## Mocking
 
 If you need to mock HTTPX the same way that test utilities like `responses` and `requests-mock` does for `requests`, see [RESPX](https://github.com/lundberg/respx).
+
+## Networking layer
+
+`requests` defers most of its HTTP networking code to the excellent [`urllib3` library](https://urllib3.readthedocs.io/en/latest/).
+
+On the other hand, HTTPX uses [HTTPCore](https://github.com/encode/httpcore) as its core HTTP networking layer, which is a different project than `urllib3`.
+
+## Query Parameters
+
+`requests` omits `params` whose values are `None` (e.g. `requests.get(..., params={"foo": None})`). This is not supported by HTTPX.

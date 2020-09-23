@@ -1,19 +1,18 @@
-import asyncio
 import os
+import random
 
 import pytest
 
 import httpx
 from httpx._utils import (
-    ElapsedTimer,
     NetRCInfo,
+    URLPattern,
     get_ca_bundle_from_env,
     get_environment_proxies,
     guess_json_utf,
     obfuscate_sensitive_headers,
     parse_header_links,
     same_origin,
-    should_not_be_proxied,
 )
 from tests.utils import override_log_level
 
@@ -180,27 +179,16 @@ def test_get_ssl_cert_file():
     assert get_ca_bundle_from_env() is None
 
 
-@pytest.mark.asyncio
-async def test_elapsed_timer():
-    with ElapsedTimer() as timer:
-        assert timer.elapsed.total_seconds() == pytest.approx(0, abs=0.05)
-        await asyncio.sleep(0.1)
-    await asyncio.sleep(
-        0.1
-    )  # test to ensure time spent after timer exits isn't accounted for.
-    assert timer.elapsed.total_seconds() == pytest.approx(0.1, abs=0.05)
-
-
 @pytest.mark.parametrize(
     ["environment", "proxies"],
     [
         ({}, {}),
-        ({"HTTP_PROXY": "http://127.0.0.1"}, {"http": "http://127.0.0.1"}),
+        ({"HTTP_PROXY": "http://127.0.0.1"}, {"http://": "http://127.0.0.1"}),
         (
             {"https_proxy": "http://127.0.0.1", "HTTP_PROXY": "https://127.0.0.1"},
-            {"https": "http://127.0.0.1", "http": "https://127.0.0.1"},
+            {"https://": "http://127.0.0.1", "http://": "https://127.0.0.1"},
         ),
-        ({"all_proxy": "http://127.0.0.1"}, {"all": "http://127.0.0.1"}),
+        ({"all_proxy": "http://127.0.0.1"}, {"all://": "http://127.0.0.1"}),
         ({"TRAVIS_APT_PROXY": "http://127.0.0.1"}, {}),
     ],
 )
@@ -225,82 +213,6 @@ def test_obfuscate_sensitive_headers(headers, output):
     assert list(obfuscate_sensitive_headers(bytes_headers)) == bytes_output
 
 
-@pytest.mark.parametrize(
-    ["url", "no_proxy", "expected"],
-    [
-        (
-            "http://127.0.0.1",
-            {"NO_PROXY": ""},
-            False,
-        ),  # everything proxied when no_proxy is empty/unset
-        (
-            "http://127.0.0.1",
-            {"NO_PROXY": "127.0.0.1"},
-            True,
-        ),  # no_proxy as ip case is matched
-        (
-            "http://127.0.0.1",
-            {"NO_PROXY": "https://127.0.0.1"},
-            False,
-        ),  # no_proxy with scheme is ignored
-        (
-            "http://127.0.0.1",
-            {"NO_PROXY": "1.1.1.1"},
-            False,
-        ),  # different no_proxy means its proxied
-        (
-            "http://courses.mit.edu",
-            {"NO_PROXY": "mit.edu"},
-            True,
-        ),  # no_proxy for sub-domain matches
-        (
-            "https://mit.edu.info",
-            {"NO_PROXY": "mit.edu"},
-            False,
-        ),  # domain is actually edu.info, so should be proxied
-        (
-            "https://mit.edu.info",
-            {"NO_PROXY": "mit.edu,edu.info"},
-            True,
-        ),  # list in no_proxy, matches second domain
-        (
-            "https://mit.edu.info",
-            {"NO_PROXY": "mit.edu, edu.info"},
-            True,
-        ),  # list with spaces in no_proxy
-        (
-            "https://mit.edu.info",
-            {"NO_PROXY": "mit.edu,mit.info"},
-            False,
-        ),  # list in no_proxy, without any domain matching
-        (
-            "https://foo.example.com",
-            {"NO_PROXY": "www.example.com"},
-            False,
-        ),  # different subdomains foo vs www means we still proxy
-        (
-            "https://www.example1.com",
-            {"NO_PROXY": ".example1.com"},
-            True,
-        ),  # no_proxy starting with dot
-        (
-            "https://www.example2.com",
-            {"NO_PROXY": "ample2.com"},
-            False,
-        ),  # whole-domain matching
-        (
-            "https://www.example3.com",
-            {"NO_PROXY": "*"},
-            True,
-        ),  # wildcard * means nothing proxied
-    ],
-)
-def test_should_not_be_proxied(url, no_proxy, expected):
-    os.environ.update(no_proxy)
-    parsed_url = httpx.URL(url)
-    assert should_not_be_proxied(parsed_url) == expected
-
-
 def test_same_origin():
     origin1 = httpx.URL("https://example.com")
     origin2 = httpx.URL("HTTPS://EXAMPLE.COM:443")
@@ -311,3 +223,41 @@ def test_not_same_origin():
     origin1 = httpx.URL("https://example.com")
     origin2 = httpx.URL("HTTP://EXAMPLE.COM")
     assert not same_origin(origin1, origin2)
+
+
+@pytest.mark.parametrize(
+    ["pattern", "url", "expected"],
+    [
+        ("http://example.com", "http://example.com", True),
+        ("http://example.com", "https://example.com", False),
+        ("http://example.com", "http://other.com", False),
+        ("http://example.com:123", "http://example.com:123", True),
+        ("http://example.com:123", "http://example.com:456", False),
+        ("http://example.com:123", "http://example.com", False),
+        ("all://example.com", "http://example.com", True),
+        ("all://example.com", "https://example.com", True),
+        ("http://", "http://example.com", True),
+        ("http://", "https://example.com", False),
+        ("all://", "https://example.com:123", True),
+        ("", "https://example.com:123", True),
+    ],
+)
+def test_url_matches(pattern, url, expected):
+    pattern = URLPattern(pattern)
+    assert pattern.matches(httpx.URL(url)) == expected
+
+
+def test_pattern_priority():
+    matchers = [
+        URLPattern("all://"),
+        URLPattern("http://"),
+        URLPattern("http://example.com"),
+        URLPattern("http://example.com:123"),
+    ]
+    random.shuffle(matchers)
+    assert sorted(matchers) == [
+        URLPattern("http://example.com:123"),
+        URLPattern("http://example.com"),
+        URLPattern("http://"),
+        URLPattern("all://"),
+    ]

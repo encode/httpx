@@ -7,17 +7,13 @@ import codecs
 import typing
 import zlib
 
-import chardet
-
-from ._exceptions import DecodingError
-
 try:
     import brotli
 except ImportError:  # pragma: nocover
     brotli = None
 
 
-class Decoder:
+class ContentDecoder:
     def decode(self, data: bytes) -> bytes:
         raise NotImplementedError()  # pragma: nocover
 
@@ -25,7 +21,7 @@ class Decoder:
         raise NotImplementedError()  # pragma: nocover
 
 
-class IdentityDecoder(Decoder):
+class IdentityDecoder(ContentDecoder):
     """
     Handle unencoded data.
     """
@@ -37,7 +33,7 @@ class IdentityDecoder(Decoder):
         return b""
 
 
-class DeflateDecoder(Decoder):
+class DeflateDecoder(ContentDecoder):
     """
     Handle 'deflate' decoding.
 
@@ -57,16 +53,16 @@ class DeflateDecoder(Decoder):
             if was_first_attempt:
                 self.decompressor = zlib.decompressobj(-zlib.MAX_WBITS)
                 return self.decode(data)
-            raise DecodingError from exc
+            raise ValueError(str(exc))
 
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
         except zlib.error as exc:  # pragma: nocover
-            raise DecodingError from exc
+            raise ValueError(str(exc))
 
 
-class GZipDecoder(Decoder):
+class GZipDecoder(ContentDecoder):
     """
     Handle 'gzip' decoding.
 
@@ -80,16 +76,16 @@ class GZipDecoder(Decoder):
         try:
             return self.decompressor.decompress(data)
         except zlib.error as exc:
-            raise DecodingError from exc
+            raise ValueError(str(exc))
 
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
         except zlib.error as exc:  # pragma: nocover
-            raise DecodingError from exc
+            raise ValueError(str(exc))
 
 
-class BrotliDecoder(Decoder):
+class BrotliDecoder(ContentDecoder):
     """
     Handle 'brotli' decoding.
 
@@ -100,9 +96,13 @@ class BrotliDecoder(Decoder):
     """
 
     def __init__(self) -> None:
-        assert (
-            brotli is not None
-        ), "The 'brotlipy' or 'brotli' library must be installed to use 'BrotliDecoder'"
+        if brotli is None:  # pragma: nocover
+            raise ImportError(
+                "Using 'BrotliDecoder', but the 'brotlipy' or 'brotli' library "
+                "is not installed."
+                "Make sure to install httpx using `pip install httpx[brotli]`."
+            ) from None
+
         self.decompressor = brotli.Decompressor()
         self.seen_data = False
         if hasattr(self.decompressor, "decompress"):
@@ -117,7 +117,7 @@ class BrotliDecoder(Decoder):
         try:
             return self._decompress(data)
         except brotli.error as exc:
-            raise DecodingError from exc
+            raise ValueError(str(exc))
 
     def flush(self) -> bytes:
         if not self.seen_data:
@@ -127,15 +127,15 @@ class BrotliDecoder(Decoder):
                 self.decompressor.finish()
             return b""
         except brotli.error as exc:  # pragma: nocover
-            raise DecodingError from exc
+            raise ValueError(str(exc))
 
 
-class MultiDecoder(Decoder):
+class MultiDecoder(ContentDecoder):
     """
     Handle the case where multiple encodings have been applied.
     """
 
-    def __init__(self, children: typing.Sequence[Decoder]) -> None:
+    def __init__(self, children: typing.Sequence[ContentDecoder]) -> None:
         """
         'children' should be a sequence of decoders in the order in which
         each was applied.
@@ -161,62 +161,52 @@ class TextDecoder:
     """
 
     def __init__(self, encoding: typing.Optional[str] = None):
-        self.decoder: typing.Optional[codecs.IncrementalDecoder] = (
-            None if encoding is None else codecs.getincrementaldecoder(encoding)()
-        )
-        self.detector = chardet.universaldetector.UniversalDetector()
-
-        # This buffer is only needed if 'decoder' is 'None'
-        # we want to trigger errors if data is getting added to
-        # our internal buffer for some silly reason while
-        # a decoder is discovered.
-        self.buffer: typing.Optional[bytearray] = None if self.decoder else bytearray()
+        self.decoder: typing.Optional[codecs.IncrementalDecoder] = None
+        if encoding is not None:
+            self.decoder = codecs.getincrementaldecoder(encoding)(errors="strict")
 
     def decode(self, data: bytes) -> str:
-        try:
-            if self.decoder is not None:
-                text = self.decoder.decode(data)
+        """
+        If an encoding is explicitly specified, then we use that.
+        Otherwise our strategy is to attempt UTF-8, and fallback to Windows 1252.
+
+        Note that UTF-8 is a strict superset of ascii, and Windows 1252 is a
+        superset of the non-control characters in iso-8859-1, so we essentially
+        end up supporting any of ascii, utf-8, iso-8859-1, cp1252.
+
+        Given that UTF-8 is now by *far* the most widely used encoding, this
+        should be a pretty robust strategy for cases where a charset has
+        not been explicitly included.
+
+        Useful stats on the prevalence of different charsets in the wild...
+
+        * https://w3techs.com/technologies/overview/character_encoding
+        * https://w3techs.com/technologies/history_overview/character_encoding
+
+        The HTML5 spec also has some useful guidelines, suggesting defaults of
+        either UTF-8 or Windows 1252 in most cases...
+
+        * https://dev.w3.org/html5/spec-LC/Overview.html
+        """
+        if self.decoder is None:
+            # If this is the first decode pass then we need to determine which
+            # encoding to use by attempting UTF-8 and raising any decode errors.
+            attempt_utf_8 = codecs.getincrementaldecoder("utf-8")(errors="strict")
+            try:
+                attempt_utf_8.decode(data)
+            except UnicodeDecodeError:
+                # Could not decode as UTF-8. Use Windows 1252.
+                self.decoder = codecs.getincrementaldecoder("cp1252")(errors="replace")
             else:
-                assert self.buffer is not None
-                text = ""
-                self.detector.feed(data)
-                self.buffer += data
+                # Can decode as UTF-8. Use UTF-8 with lenient error settings.
+                self.decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
 
-                # Should be more than enough data to process, we don't
-                # want to buffer too long as chardet will wait until
-                # detector.close() is used to give back common
-                # encodings like 'utf-8'.
-                if len(self.buffer) >= 4096:
-                    self.decoder = codecs.getincrementaldecoder(
-                        self._detector_result()
-                    )()
-                    text = self.decoder.decode(bytes(self.buffer), False)
-                    self.buffer = None
-
-            return text
-        except UnicodeDecodeError:  # pragma: nocover
-            raise DecodingError() from None
+        return self.decoder.decode(data)
 
     def flush(self) -> str:
-        try:
-            if self.decoder is None:
-                # Empty string case as chardet is guaranteed to not have a guess.
-                assert self.buffer is not None
-                if len(self.buffer) == 0:
-                    return ""
-                return bytes(self.buffer).decode(self._detector_result())
-
-            return self.decoder.decode(b"", True)
-        except UnicodeDecodeError:  # pragma: nocover
-            raise DecodingError() from None
-
-    def _detector_result(self) -> str:
-        self.detector.close()
-        result = self.detector.result["encoding"]
-        if not result:  # pragma: nocover
-            raise DecodingError("Unable to determine encoding of content")
-
-        return result
+        if self.decoder is None:
+            return ""
+        return self.decoder.decode(b"", True)
 
 
 class LineDecoder:

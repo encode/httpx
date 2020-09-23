@@ -23,3 +23,13 @@ An asynchronous GitHub API library. Includes [HTTPX support](https://gidgethub.r
 [GitHub](https://github.com/lundberg/respx) - [Documentation](https://lundberg.github.io/respx/)
 
 A utility for mocking out the Python HTTPX library.
+
+## Gists
+
+<!-- NOTE: this list is in alphabetical order. -->
+
+### urllib3-transport
+
+[GitHub](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165da388e546e)
+
+This public gist provides an example implementation for a [custom transport](/advanced#custom-transports) implementation on top of the battle-tested [`urllib3`](https://urllib3.readthedocs.io) library.

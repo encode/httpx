@@ -4,6 +4,176 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.15.1 (September 23nd, 2020)
+
+### Fixed
+
+* ASGITransport now properly applies URL decoding to the `path` component, as-per the ASGI spec. (Pull #1307)
+
+## 0.15.0 (September 22nd, 2020)
+
+### Added
+
+* Added support for curio. (Pull https://github.com/encode/httpcore/pull/168)
+* Added support for event hooks. (Pull #1246)
+* Added support for authentication flows which require either sync or async I/O. (Pull #1217)
+* Added support for monitoring download progress with `response.num_bytes_downloaded`. (Pull #1268)
+* Added `Request(content=...)` for byte content, instead of overloading `Request(data=...)` (Pull #1266)
+* Added support for all URL components as parameter names when using `url.copy_with(...)`. (Pull #1285)
+* Neater split between automatically populated headers on `Request` instances, vs default `client.headers`. (Pull #1248)
+* Unclosed `AsyncClient` instances will now raise warnings if garbage collected. (Pull #1197)
+* Support `Response(content=..., text=..., html=..., json=...)` for creating usable response instances in code. (Pull #1265, #1297)
+* Support instantiating requests from the low-level transport API. (Pull #1293)
+* Raise errors on invalid URL types. (Pull #1259)
+
+### Changed
+
+* Cleaned up expected behaviour for URL escaping. `url.path` is now URL escaped. (Pull #1285)
+* Cleaned up expected behaviour for bytes vs str in URL components. `url.userinfo` and `url.query` are not URL escaped, and so return bytes. (Pull #1285)
+* Drop `url.authority` property in favour of `url.netloc`, since "authority" was semantically incorrect. (Pull #1285)
+* Drop `url.full_path` property in favour of `url.raw_path`, for better consistency with other parts of the API. (Pull #1285)
+* No longer use the `chardet` library for auto-detecting charsets, instead defaulting to a simpler approach when no charset is specified. (#1269)
+
+### Fixed
+
+* Swapped ordering of redirects and authentication flow. (Pull #1267)
+* `.netrc` lookups should use host, not host+port. (Pull #1298)
+
+### Removed
+
+* The `URLLib3Transport` class no longer exists. We've published it instead as an example of [a custom transport class](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165da388e546e). (Pull #1182)
+* Drop `request.timer` attribute, which was being used internally to set `response.elapsed`. (Pull #1249)
+* Drop `response.decoder` attribute, which was being used internally. (Pull #1276)
+* `Request.prepare()` is now a private method. (Pull #1284)
+* The `Headers.getlist()` method had previously been deprecated in favour of `Headers.get_list()`. It is now fully removed.
+* The `QueryParams.getlist()` method had previously been deprecated in favour of `QueryParams.get_list()`. It is now fully removed.
+* The `URL.is_ssl` property had previously been deprecated in favour of `URL.scheme == "https"`. It is now fully removed.
+* The `httpx.PoolLimits` class had previously been deprecated in favour of `httpx.Limits`. It is now fully removed.
+* The `max_keepalive` setting had previously been deprecated in favour of the more explicit `max_keepalive_connections`. It is now fully removed.
+* The verbose `httpx.Timeout(5.0, connect_timeout=60.0)` style had previously been deprecated in favour of `httpx.Timeout(5.0, connect=60.0)`. It is now fully removed.
+* Support for instantiating a timeout config missing some defaults, such as `httpx.Timeout(connect=60.0)`, had previously been deprecated in favour of enforcing a more explicit style, such as `httpx.Timeout(5.0, connect=60.0)`. This is now strictly enforced.
+
+## 0.14.3 (September 2nd, 2020)
+
+### Added
+
+* `http.Response()` may now be instantiated without a `request=...` parameter. Useful for some unit testing cases. (Pull #1238)
+* Add `103 Early Hints` and `425 Too Early` status codes. (Pull #1244)
+
+### Fixed
+
+* `DigestAuth` now handles responses that include multiple 'WWW-Authenticate' headers. (Pull #1240)
+* Call into transport `__enter__`/`__exit__` or `__aenter__`/`__aexit__` when client is used in a context manager style. (Pull #1218)
+
+## 0.14.2 (August 24th, 2020)
+
+### Added
+
+* Support `client.get(..., auth=None)` to bypass the default authentication on a clients. (Pull #1115)
+* Support `client.auth = ...` property setter. (Pull #1185)
+* Support `httpx.get(..., proxies=...)` on top-level request functions. (Pull #1198)
+* Display instances with nicer import styles. (Eg. <httpx.ReadTimeout ...>) (Pull #1155)
+* Support `cookies=[(key, value)]` list-of-two-tuples style usage. (Pull #1211)
+
+### Fixed
+
+* Ensure that automatically included headers on a request may be modified. (Pull #1205)
+* Allow explicit `Content-Length` header on streaming requests. (Pull #1170)
+* Handle URL quoted usernames and passwords properly. (Pull #1159)
+* Use more consistent default for `HEAD` requests, setting `allow_redirects=True`. (Pull #1183)
+* If a transport error occurs while streaming the response, raise an `httpx` exception, not the underlying `httpcore` exception. (Pull #1190)
+* Include the underlying `httpcore` traceback, when transport exceptions occur. (Pull #1199)
+
+## 0.14.1 (August 11th, 2020)
+
+### Added
+
+* The `httpx.URL(...)` class now raises `httpx.InvalidURL` on invalid URLs, rather than exposing the underlying `rfc3986` exception. If a redirect response includes an invalid 'Location' header, then a `RemoteProtocolError` exception is raised, which will be associated with the request that caused it. (Pull #1163)
+
+### Fixed
+
+* Handling multiple `Set-Cookie` headers became broken in the 0.14.0 release, and is now resolved. (Pull #1156)
+
+## 0.14.0 (August 7th, 2020)
+
+The 0.14 release includes a range of improvements to the public API, intended on preparing for our upcoming 1.0 release.
+
+* Our HTTP/2 support is now fully optional. **You now need to use `pip install httpx[http2]` if you want to include the HTTP/2 dependancies.**
+* Our HSTS support has now been removed. Rewriting URLs from `http` to `https` if the host is on the HSTS list can be beneficial in avoiding roundtrips to incorrectly formed URLs, but on balance we've decided to remove this feature, on the principle of least surprise. Most programmatic clients do not include HSTS support, and for now we're opting to remove our support for it.
+* Our exception hierarchy has been overhauled. Most users will want to stick with their existing `httpx.HTTPError` usage, but we've got a clearer overall structure now. See https://www.python-httpx.org/exceptions/ for more details.
+
+When upgrading you should be aware of the following public API changes. Note that deprecated usages will currently continue to function, but will issue warnings.
+
+* You should now use `httpx.codes` consistently instead of `httpx.StatusCodes`.
+* Usage of `httpx.Timeout()` should now always include an explicit default. Eg. `httpx.Timeout(None, pool=5.0)`.
+* When using `httpx.Timeout()`, we now have more concisely named keyword arguments. Eg. `read=5.0`, instead of `read_timeout=5.0`.
+* Use `httpx.Limits()` instead of `httpx.PoolLimits()`, and `limits=...` instead of `pool_limits=...`.
+* The `httpx.Limits(max_keepalive=...)` argument is now deprecated in favour of a more explicit `httpx.Limits(max_keepalive_connections=...)`.
+* Keys used with `Client(proxies={...})` should now be in the style of `{"http://": ...}`, rather than `{"http": ...}`.
+* The multidict methods `Headers.getlist()` and `QueryParams.getlist()` are deprecated in favour of more consistent `.get_list()` variants.
+* The `URL.is_ssl` property is deprecated in favour of `URL.scheme == "https"`.
+* The `URL.join(relative_url=...)` method is now `URL.join(url=...)`. This change does not support warnings for the deprecated usage style.
+
+One notable aspect of the 0.14.0 release is that it tightens up the public API for `httpx`, by ensuring that several internal attributes and methods have now become strictly private.
+
+The following previously had nominally public names on the client, but were all undocumented and intended solely for internal usage. They are all now replaced with underscored names, and should not be relied on or accessed.
+
+These changes should not affect users who have been working from the `httpx` documentation.
+
+* `.merge_url()`, `.merge_headers()`, `.merge_cookies()`, `.merge_queryparams()`
+* `.build_auth()`, `.build_redirect_request()`
+* `.redirect_method()`, `.redirect_url()`, `.redirect_headers()`, `.redirect_stream()`
+* `.send_handling_redirects()`, `.send_handling_auth()`, `.send_single_request()`
+* `.init_transport()`, `.init_proxy_transport()`
+* `.proxies`, `.transport`, `.netrc`, `.get_proxy_map()`
+
+See pull requests #997, #1065, #1071.
+
+Some areas of API which were already on the deprecation path, and were raising warnings or errors in 0.13.x have now been escalated to being fully removed.
+
+* Drop `ASGIDispatch`, `WSGIDispatch`, which have been replaced by `ASGITransport`, `WSGITransport`.
+* Drop `dispatch=...`` on client, which has been replaced by `transport=...``
+* Drop `soft_limit`, `hard_limit`, which have been replaced by `max_keepalive` and `max_connections`.
+* Drop `Response.stream` and` `Response.raw`, which have been replaced by ``.aiter_bytes` and `.aiter_raw`.
+* Drop `proxies=<transport instance>` in favor of `proxies=httpx.Proxy(...)`.
+
+See pull requests #1057, #1058.
+
+### Added
+
+* Added dedicated exception class `httpx.HTTPStatusError` for `.raise_for_status()` exceptions. (Pull #1072)
+* Added `httpx.create_ssl_context()` helper function. (Pull #996)
+* Support for proxy exlcusions like `proxies={"https://www.example.com": None}`. (Pull #1099)
+* Support `QueryParams(None)` and `client.params = None`. (Pull #1060)
+
+### Changed
+
+* Use `httpx.codes` consistently in favour of `httpx.StatusCodes` which is placed into deprecation. (Pull #1088)
+* Usage of `httpx.Timeout()` should now always include an explicit default. Eg. `httpx.Timeout(None, pool=5.0)`. (Pull #1085)
+* Switch to more concise `httpx.Timeout()` keyword arguments. Eg. `read=5.0`, instead of `read_timeout=5.0`. (Pull #1111)
+* Use `httpx.Limits()` instead of `httpx.PoolLimits()`, and `limits=...` instead of `pool_limits=...`. (Pull #1113)
+* Keys used with `Client(proxies={...})` should now be in the style of `{"http://": ...}`, rather than `{"http": ...}`. (Pull #1127)
+* The multidict methods `Headers.getlist` and `QueryParams.getlist` are deprecated in favour of more consistent `.get_list()` variants. (Pull #1089)
+* `URL.port` becomes `Optional[int]`. Now only returns a port if one is explicitly included in the URL string. (Pull #1080)
+* The `URL(..., allow_relative=[bool])` parameter no longer exists. All URL instances may be relative. (Pull #1073)
+* Drop unnecessary `url.full_path = ...` property setter. (Pull #1069)
+* The `URL.join(relative_url=...)` method is now `URL.join(url=...)`. (Pull #1129)
+* The `URL.is_ssl` property is deprecated in favour of `URL.scheme == "https"`. (Pull #1128)
+
+### Fixed
+
+* Add missing `Response.next()` method. (Pull #1055)
+* Ensure all exception classes are exposed as public API. (Pull #1045)
+* Support multiple items with an identical field name in multipart encodings. (Pull #777)
+* Skip HSTS preloading on single-label domains. (Pull #1074)
+* Fixes for `Response.iter_lines()`. (Pull #1033, #1075)
+* Ignore permission errors when accessing `.netrc` files. (Pull #1104)
+* Allow bare hostnames in `HTTP_PROXY` etc... environment variables. (Pull #1120)
+* Settings `app=...` or `transport=...` bypasses any environment based proxy defaults. (Pull #1122)
+* Fix handling of `.base_url` when a path component is included in the base URL. (Pull #1130)
+
+---
+
 ## 0.13.3 (May 29th, 2020)
 
 ### Fixed
@@ -120,6 +290,8 @@ It also means we've had to remove our UDS support, since maintaining that would 
 
 * Dropped support for `Client(uds=...)` (Pull #804)
 
+---
+
 ## 0.12.1 (March 19th, 2020)
 
 ### Fixed
@@ -152,6 +324,8 @@ All imports of `httpx` should import from the top-level package only, such as `f
 * Close proxy dispatches classes on client close. (Pull #826)
 * Support custom `cert` parameters even if `verify=False`. (Pull #796)
 * Don't support invalid dict-of-dicts form data in `data=...`. (Pull #811)
+
+---
 
 ## 0.11.1 (January 17th, 2020)
 
@@ -191,6 +365,8 @@ We believe the API is now pretty much stable, and are aiming for a 1.0 release s
 
 - Redirect loop detection matches against `(method, url)` rather than `url`. (Pull #734)
 
+---
+
 ## 0.10.1 (December 31st, 2019)
 
 ### Fixed
@@ -223,6 +399,8 @@ If following redirects explicitly the `response.next()` method becomes `response
 
 - When using a client instance, the per-request usage of `verify`, `cert`, and `trust_env` have now escalated from raising a warning to raising an error. You should set these arguments on the client instead. (Pull #617)
 - Removed the undocumented `request.read()`, since end users should not require it.
+
+---
 
 ## 0.9.5 (December 20th, 2019)
 
@@ -295,11 +473,15 @@ importing modules within the package.
 - Pool timeouts are now on the timeout configuration, not the pool limits configuration. (Pull #563)
 - The timeout configuration is now named `httpx.Timeout(...)`, not `httpx.TimeoutConfig(...)`. The old version currently remains as a synonym for backwards compatability.  (Pull #591)
 
+---
+
 ## 0.8.0 (November 27, 2019)
 
 ### Removed
 
 - The synchronous API has been removed, in order to allow us to fundamentally change how we approach supporting both sync and async variants. (See #588 for more details.)
+
+---
 
 ## 0.7.8 (November 17, 2019)
 
@@ -422,6 +604,8 @@ importing modules within the package.
 - Add support for Google's `brotli` library. (Pull #156)
 - Remove deprecated TLS versions (TLSv1 and TLSv1.1) from default `SSLConfig`. (Pull #155)
 - Fix `URL.join(...)` to work similarly to RFC 3986 URL joining. (Pull #144)
+
+---
 
 ## 0.6.8 (July 25, 2019)
 

@@ -1,5 +1,4 @@
-Environment Variables
-=====================
+# Environment Variables
 
 The HTTPX library can be configured via environment variables.
 Environment variables are used by default. To ignore environment variables, `trust_env` has to be set `False`. There are two ways to set `trust_env` to disable environment variables:
@@ -9,8 +8,7 @@ Environment variables are used by default. To ignore environment variables, `tru
 
 Here is a list of environment variables that HTTPX recognizes and what function they serve:
 
-`HTTPX_LOG_LEVEL`
------------------
+## `HTTPX_LOG_LEVEL`
 
 Valid values: `debug`, `trace` (case-insensitive)
 
@@ -74,8 +72,7 @@ TRACE [2019-11-06 19:18:56] httpx._dispatch.connection_pool - release_connection
 TRACE [2019-11-06 19:18:56] httpx._dispatch.connection - close_connection
 ```
 
-`SSLKEYLOGFILE`
------------
+## `SSLKEYLOGFILE`
 
 Valid values: a filename
 
@@ -109,8 +106,7 @@ CLIENT_HANDSHAKE_TRAFFIC_SECRET XXXX
 CLIENT_TRAFFIC_SECRET_0 XXXX
 ```
 
-`SSL_CERT_FILE`
------------
+## `SSL_CERT_FILE`
 
 Valid values: a filename
 
@@ -124,8 +120,7 @@ Example:
 SSL_CERT_FILE=/path/to/ca-certs/ca-bundle.crt python -c "import httpx; httpx.get('https://example.com')"
 ```
 
-`SSL_CERT_DIR`
------------
+## `SSL_CERT_DIR`
 
 Valid values: a directory
 
@@ -139,16 +134,46 @@ Example:
 SSL_CERT_DIR=/path/to/ca-certs/ python -c "import httpx; httpx.get('https://example.com')"
 ```
 
-`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`
-----------------------------------------
+## Proxies
+
+The environment variables documented below are used as a convention by various HTTP tooling, including:
+
+* [cURL](https://github.com/curl/curl/blob/master/docs/MANUAL.md#environment-variables)
+* [requests](https://github.com/psf/requests/blob/master/docs/user/advanced.rst#proxies)
+
+For more information on using proxies in HTTPX, see [HTTP Proxying](/advanced/#http-proxying).
+
+### `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`
 
 Valid values: A URL to a proxy
 
-Sets the proxy to be used for `http`, `https`, or all requests respectively.
+`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` set the proxy to be used for `http`, `https`, or all requests respectively.
 
 ```bash
-export HTTP_PROXY=http://127.0.0.1:3080
+export HTTP_PROXY=http://my-external-proxy.com:1234
 
 # This request will be sent through the proxy
 python -c "import httpx; httpx.get('http://example.com')"
+
+# This request will be sent directly, as we set `trust_env=False`
+python -c "import httpx; httpx.get('http://example.com', trust_env=False)"
+
+```
+
+### `NO_PROXY`
+
+Valid values: a comma-separated list of hostnames/urls
+
+`NO_PROXY` disables the proxy for specific urls
+
+```bash
+export HTTP_PROXY=http://my-external-proxy.com:1234
+export NO_PROXY=http://127.0.0.1,python-httpx.org
+
+# As in the previous example, this request will be sent through the proxy
+python -c "import httpx; httpx.get('http://example.com')"
+
+# These requests will be sent directly, bypassing the proxy
+python -c "import httpx; httpx.get('http://127.0.0.1:5000/my-api')"
+python -c "import httpx; httpx.get('https://www.python-httpx.org')"
 ```

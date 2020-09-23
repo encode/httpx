@@ -56,7 +56,7 @@ finally:
 
 Once you have a `Client`, you can send requests using `.get()`, `.post()`, etc. For example:
 
-```python
+```pycon
 >>> with httpx.Client() as client:
 ...     r = client.get('https://example.com')
 ...
@@ -68,7 +68,7 @@ These methods accept the same arguments as `httpx.get()`, `httpx.post()`, etc. T
 
 For example, to send a request with custom headers:
 
-```python
+```pycon
 >>> with httpx.Client() as client:
 ...     headers = {'X-Custom': 'value'}
 ...     r = client.get('https://example.com', headers=headers)
@@ -83,7 +83,7 @@ Clients allow you to apply configuration to all outgoing requests by passing par
 
 For example, to apply a set of custom headers _on every request_:
 
-```python
+```pycon
 >>> url = 'http://httpbin.org/headers'
 >>> headers = {'user-agent': 'my-app/0.0.1'}
 >>> with httpx.Client(headers=headers) as client:
@@ -99,7 +99,7 @@ When a configuration option is provided at both the client-level and request-lev
 
 - For headers, query parameters and cookies, the values are combined together. For example:
 
-```python
+```pycon
 >>> headers = {'X-Auth': 'from-client'}
 >>> params = {'client_id': 'client1'}
 >>> with httpx.Client(headers=headers, params=params) as client:
@@ -117,7 +117,7 @@ URL('https://example.com?client_id=client1&request_id=request1')
 
 - For all other parameters, the request-level value takes priority. For example:
 
-```python
+```pycon
 >>> with httpx.Client(auth=('tom', 'mot123')) as client:
 ...     r = client.get('https://example.com', auth=('alice', 'ecila123'))
 ...
@@ -135,7 +135,7 @@ Additionally, `Client` accepts some configuration options that aren't available 
 
 For example, `base_url` allows you to prepend an URL to all outgoing requests:
 
-```python
+```pycon
 >>> with httpx.Client(base_url='http://httpbin.org') as client:
 ...     r = client.get('/headers')
 ...
@@ -221,6 +221,113 @@ with httpx.Client(headers=headers) as client:
     ...
 ```
 
+## Event Hooks
+
+HTTPX allows you to register "event hooks" with the client, that are called
+every time a particular type of event takes place.
+
+There are currently two event hooks:
+
+* `request` - Called once a request is about to be sent. Passed the `request` instance.
+* `response` - Called once the response has been returned. Passed the `response` instance.
+
+These allow you to install client-wide functionality such as logging and monitoring.
+
+```python
+def log_request(request):
+    print(f"Request event hook: {request.method} {request.url} - Waiting for response")
+
+def log_response(response):
+    request = response.request
+    print(f"Response event hook: {request.method} {request.url} - Status {response.status_code}")
+
+client = httpx.Client(event_hooks={'request': [log_request], 'response': [log_response]})
+```
+
+You can also use these hooks to install response processing code, such as this
+example, which creates a client instance that always raises `httpx.HTTPStatusError`
+on 4xx and 5xx responses.
+
+```python
+def raise_on_4xx_5xx(response):
+    response.raise_for_status()
+
+client = httpx.Client(event_hooks={'response': [raise_on_4xx_5xx]})
+```
+
+Event hooks must always be set as a **list of callables**, and you may register
+multiple event hooks for each type of event.
+
+As well as being able to set event hooks on instantiating the client, there
+is also an `.event_hooks` property, that allows you to inspect and modify
+the installed hooks.
+
+```python
+client = httpx.Client()
+client.event_hooks['request'] = [log_request]
+client.event_hooks['response'] = [log_response, raise_on_4xx_5xx]
+```
+
+!!! note
+    If you are using HTTPX's async support, then you need to be aware that
+    hooks registered with `httpx.AsyncClient` MUST be async functions,
+    rather than plain functions.
+
+## Monitoring download progress
+
+If you need to monitor download progress of large responses, you can use response streaming and inspect the `response.num_bytes_downloaded` property.
+
+This interface is required for properly determining download progress, because the total number of bytes returned by `response.content` or `response.iter_content()` will not always correspond with the raw content length of the response if HTTP response compression is being used.
+
+For example, showing a progress bar using the [`tqdm`](https://github.com/tqdm/tqdm) library while a response is being downloaded could be done like this…
+
+```python
+import tempfile
+
+import httpx
+from tqdm import tqdm
+
+with tempfile.NamedTemporaryFile() as download_file:
+    url = "https://speed.hetzner.de/100MB.bin"
+    with httpx.stream("GET", url) as response:
+        total = int(response.headers["Content-Length"])
+
+        with tqdm(total=total, unit_scale=True, unit_divisor=1024, unit="B") as progress:
+            num_bytes_downloaded = response.num_bytes_downloaded
+            for chunk in response.iter_bytes():
+                download_file.write(chunk)
+                progress.update(response.num_bytes_downloaded - num_bytes_downloaded)
+                num_bytes_downloaded = response.num_bytes_downloaded
+```
+
+![tqdm progress bar](img/tqdm-progress.gif)
+
+Or an alternate example, this time using the [`rich`](https://github.com/willmcgugan/rich) library…
+
+```python
+import tempfile
+import httpx
+import rich.progress
+
+with tempfile.NamedTemporaryFile() as download_file:
+    url = "https://speed.hetzner.de/100MB.bin"
+    with httpx.stream("GET", url) as response:
+        total = int(response.headers["Content-Length"])
+
+        with rich.progress.Progress(
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            rich.progress.BarColumn(bar_width=None),
+            rich.progress.DownloadColumn(),
+            rich.progress.TransferSpeedColumn(),
+        ) as progress:
+            download_task = progress.add_task("Download", total=total)
+            for chunk in response.iter_bytes():
+                download_file.write(chunk)
+                progress.update(download_task, completed=response.num_bytes_downloaded)
+```
+
+![rich progress bar](img/rich-progress.gif)
+
 ## .netrc Support
 
 HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is
@@ -232,7 +339,7 @@ not defined, HTTPX tries to add auth into request's header from .netrc file.
     you should create a new client or restart the interpreter.
 
 As default `trust_env` is true. To set false:
-```python
+```pycon
 >>> httpx.get('https://example.org/', trust_env=False)
 ```
 
@@ -240,7 +347,7 @@ If `NETRC` environment is empty, HTTPX tries to use default files.
 (`~/.netrc`, `~/_netrc`)
 
 To change `NETRC` environment:
-```python
+```pycon
 >>> import os
 >>> os.environ["NETRC"] = "my_default_folder/.my_netrc"
 ```
@@ -262,68 +369,219 @@ client = httpx.Client(trust_env=False)
 
 ## HTTP Proxying
 
-HTTPX supports setting up HTTP proxies the same way that Requests does via the `proxies` parameter.
-For example to forward all HTTP traffic to `http://127.0.0.1:3080` and all HTTPS traffic
-to `http://127.0.0.1:3081` your `proxies` config would look like this:
+HTTPX supports setting up [HTTP proxies](https://en.wikipedia.org/wiki/Proxy_server#Web_proxy_servers) via the `proxies` parameter to be passed on client initialization or top-level API functions like `httpx.get(..., proxies=...)`.
+
+_Note: SOCKS proxies are not supported yet._
+
+<div align="center">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Open_proxy_h2g2bob.svg/480px-Open_proxy_h2g2bob.svg.png"/>
+    <figcaption><em>Diagram of how a proxy works (source: Wikipedia). The left hand side "Internet" blob may be your HTTPX client requesting <code>example.com</code> through a proxy.</em></figcaption>
+</div>
+
+### Example
+
+To route all traffic (HTTP and HTTPS) to a proxy located at `http://localhost:8030`, pass the proxy URL to the client...
 
 ```python
->>> proxies = {
-...     "http": "http://127.0.0.1:3080",
-...     "https": "http://127.0.0.1:3081"
-... }
->>> with httpx.Client(proxies=proxies) as client:
-...     ...
+with httpx.Client(proxies="http://localhost:8030") as client:
+    ...
 ```
 
-Credentials may be passed in as part of the URL in the standard way, i.e.
-`http://username:password@127.0.0.1:3080`.
-
-Proxies can be configured for a specific scheme and host, all schemes of a host,
-all hosts for a scheme, or for all requests. When determining which proxy configuration
-to use for a given request this same order is used.
+For more advanced use cases, pass a proxies `dict`. For example, to route HTTP and HTTPS requests to 2 different proxies, respectively located at `http://localhost:8030`, and `http://localhost:8031`, pass a `dict` of proxy URLs:
 
 ```python
->>> proxies = {
-...     "http://example.com":  "...",  # Host+Scheme
-...     "all://example.com":  "...",  # Host
-...     "http": "...",  # Scheme
-...     "all": "...",  # All
-... }
->>> with httpx.Client(proxies=proxies) as client:
-...     ...
-...
->>> proxy = "..."  # Shortcut for {'all': '...'}
->>> with httpx.Client(proxies=proxy) as client:
-...     ...
+proxies = {
+    "http://": "http://localhost:8030",
+    "https://": "http://localhost:8031",
+}
+
+with httpx.Client(proxies=proxies) as client:
+    ...
 ```
 
-!!! warning
-    To make sure that proxies cannot read your traffic,
-    and even if the proxy_url uses HTTPS, it is recommended to
-    use HTTPS and tunnel requests if possible.
+For detailed information about proxy routing, see the [Routing](#routing) section.
 
-By default `httpx.Proxy` will operate as a forwarding proxy for `http://...` requests
-and will establish a `CONNECT` TCP tunnel for `https://` requests. This doesn't change
-regardless of the proxy `url` being `http` or `https`.
+!!! tip "Gotcha"
+    In most cases, the proxy URL for the `https://` key _should_ use the `http://` scheme (that's not a typo!).
 
-Proxies can be configured to have different behavior such as forwarding or tunneling all requests:
+    This is because HTTP proxying requires initiating a connection with the proxy server. While it's possible that your proxy supports doing it via HTTPS, most proxies only support doing it via HTTP.
+
+    For more information, see [FORWARD vs TUNNEL](#forward-vs-tunnel).
+
+### Authentication
+
+Proxy credentials can be passed as the `userinfo` section of the proxy URL. For example:
 
 ```python
-proxy = httpx.Proxy(
-    url="https://127.0.0.1",
-    mode="TUNNEL_ONLY"  # May be "TUNNEL_ONLY" or "FORWARD_ONLY". Defaults to "DEFAULT".
-)
-with httpx.Client(proxies=proxy) as client:
-    # This request will be tunneled instead of forwarded.
-    r = client.get("http://example.com")
+proxies = {
+    "http://": "http://username:password@localhost:8030",
+    # ...
+}
 ```
+
+### Routing
+
+HTTPX provides fine-grained controls for deciding which requests should go through a proxy, and which shouldn't. This process is known as proxy routing.
+
+The `proxies` dictionary maps URL patterns ("proxy keys") to proxy URLs. HTTPX matches requested URLs against proxy keys to decide which proxy should be used, if any. Matching is done from most specific proxy keys (e.g. `https://<domain>:<port>`) to least specific ones (e.g. `https://`).
+
+HTTPX supports routing proxies based on **scheme**, **domain**, **port**, or a combination of these.
+
+#### Wildcard routing
+
+Route everything through a proxy...
+
+```python
+proxies = {
+    "all://": "http://localhost:8030",
+}
+```
+
+#### Scheme routing
+
+Route HTTP requests through one proxy, and HTTPS requests through another...
+
+```python
+proxies = {
+    "http://": "http://localhost:8030",
+    "https://": "http://localhost:8031",
+}
+```
+
+#### Domain routing
+
+Proxy all requests on domain "example.com", let other requests pass through...
+
+```python
+proxies = {
+    "all://example.com": "http://localhost:8030",
+}
+```
+
+Proxy HTTP requests on domain "example.com", let HTTPS and other requests pass through...
+
+```python
+proxies = {
+    "http://example.com": "http://localhost:8030",
+}
+```
+
+Proxy all requests to "example.com" and its subdomains, let other requests pass through...
+
+```python
+proxies = {
+    "all://*example.com": "http://localhost:8030",
+}
+```
+
+Proxy all requests to strict subdomains of "example.com", let "example.com" and other requests pass through...
+
+```python
+proxies = {
+    "all://*.example.com": "http://localhost:8030",
+}
+```
+
+#### Port routing
+
+Proxy HTTPS requests on port 1234 to "example.com"...
+
+```python
+proxies = {
+    "https://example.com:1234": "http://localhost:8030",
+}
+```
+
+Proxy all requests on port 1234...
+
+```python
+proxies = {
+    "all://*:1234": "http://localhost:8030",
+}
+```
+
+#### No-proxy support
+
+It is also possible to define requests that _shouldn't_ be routed through proxies.
+
+To do so, pass `None` as the proxy URL. For example...
+
+```python
+proxies = {
+    # Route requests through a proxy by default...
+    "all://": "http://localhost:8031",
+    # Except those for "example.com".
+    "all://example.com": None,
+}
+```
+
+#### Complex configuration example
+
+You can combine the routing features outlined above to build complex proxy routing configurations. For example...
+
+```python
+proxies = {
+    # Route all traffic through a proxy by default...
+    "all://": "http://localhost:8030",
+    # But don't use proxies for HTTPS requests to "domain.io"...
+    "https://domain.io": None,
+    # And use another proxy for requests to "example.com" and its subdomains...
+    "all://*example.com": "http://localhost:8031",
+    # And yet another proxy if HTTP is used,
+    # and the "internal" subdomain on port 5550 is requested...
+    "http://internal.example.com:5550": "http://localhost:8032",
+}
+```
+
+#### Environment variables
+
+HTTP proxying can also be configured through environment variables, although with less fine-grained control.
+
+See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](/environment_variables/#http_proxy-https_proxy-all_proxy) for more information.
+
+### Proxy mechanisms
 
 !!! note
+    This section describes **advanced** proxy concepts and functionality.
 
-    To use proxies you must pass the proxy information at `Client` initialization,
-    rather than on the `.get(...)` call or other request methods.
+#### FORWARD vs TUNNEL
 
-SOCKS proxies are *not* supported yet.
+In general, the flow for making an HTTP request through a proxy is as follows:
+
+1. The client connects to the proxy (initial connection request).
+1. The proxy somehow transfers data to the server on your behalf.
+
+How exactly step 2/ is performed depends on which of two proxying mechanisms is used:
+
+* **Forwarding**: the proxy makes the request for you, and sends back the response it obtained from the server.
+* **Tunneling**: the proxy establishes a TCP connection to the server on your behalf, and the client reuses this connection to send the request and receive the response. This is known as an [HTTP Tunnel](https://en.wikipedia.org/wiki/HTTP_tunnel). This mechanism is how you can access websites that use HTTPS from an HTTP proxy (the client "upgrades" the connection to HTTPS by performing the TLS handshake with the server over the TCP connection provided by the proxy).
+
+#### Default behavior
+
+Given the technical definitions above, by default (and regardless of whether you're using an HTTP or HTTPS proxy), HTTPX will:
+
+* Use forwarding for HTTP requests.
+* Use tunneling for HTTPS requests.
+
+This ensures that you can make HTTP and HTTPS requests in all cases (i.e. regardless of which type of proxy you're using).
+
+#### Forcing the proxy mechanism
+
+In most cases, the default behavior should work just fine as well as provide enough security.
+
+But if you know what you're doing and you want to force which mechanism to use, you can do so by passing an `httpx.Proxy()` instance, setting the `mode` to either `FORWARD_ONLY` or `TUNNEL_ONLY`. For example...
+
+```python
+# Route all requests through an HTTPS proxy, using tunneling only.
+proxies = httpx.Proxy(
+    url="https://localhost:8030",
+    mode="TUNNEL_ONLY",
+)
+
+with httpx.Client(proxies=proxies) as client:
+    # This HTTP request will be tunneled instead of forwarded.
+    r = client.get("http://example.com")
+```
 
 ## Timeout Configuration
 
@@ -374,16 +632,16 @@ HTTPX also allows you to specify the timeout behavior in more fine grained detai
 There are four different types of timeouts that may occur. These are **connect**,
 **read**, **write**, and **pool** timeouts.
 
-* The **connect timeout** specifies the maximum amount of time to wait until
+* The **connect** timeout specifies the maximum amount of time to wait until
 a connection to the requested host is established. If HTTPX is unable to connect
 within this time frame, a `ConnectTimeout` exception is raised.
-* The **read timeout** specifies the maximum duration to wait for a chunk of
+* The **read** timeout specifies the maximum duration to wait for a chunk of
 data to be received (for example, a chunk of the response body). If HTTPX is
 unable to receive data within this time frame, a `ReadTimeout` exception is raised.
-* The **write timeout** specifies the maximum duration to wait for a chunk of
+* The **write** timeout specifies the maximum duration to wait for a chunk of
 data to be sent (for example, a chunk of the request body). If HTTPX is unable
 to send data within this time frame, a `WriteTimeout` exception is raised.
-* The **pool timeout** specifies the maximum duration to wait for acquiring
+* The **pool** timeout specifies the maximum duration to wait for acquiring
 a connection from the connection pool. If HTTPX is unable to acquire a connection
 within this time frame, a `PoolTimeout` exception is raised. A related
 configuration here is the maximum number of allowable connections in the
@@ -393,7 +651,7 @@ You can configure the timeout behavior for any of these values...
 
 ```python
 # A client with a 60s timeout for connecting, and a 10s timeout elsewhere.
-timeout = httpx.Timeout(10.0, connect_timeout=60.0)
+timeout = httpx.Timeout(10.0, connect=60.0)
 client = httpx.Client(timeout=timeout)
 
 response = client.get('http://example.com/')
@@ -401,8 +659,8 @@ response = client.get('http://example.com/')
 
 ## Pool limit configuration
 
-You can control the connection pool size using the `pool_limits` keyword
-argument on the client. It takes instances of `httpx.PoolLimits` which define:
+You can control the connection pool size using the `limits` keyword
+argument on the client. It takes instances of `httpx.Limits` which define:
 
 - `max_keepalive`, number of allowable keep-alive connections, or `None` to always
 allow. (Defaults 10)
@@ -411,8 +669,8 @@ allow. (Defaults 10)
 
 
 ```python
-limits = httpx.PoolLimits(max_keepalive=5, max_connections=10)
-client = httpx.Client(pool_limits=limits)
+limits = httpx.Limits(max_keepalive=5, max_connections=10)
+client = httpx.Client(limits=limits)
 ```
 
 ## Multipart file encoding
@@ -421,7 +679,7 @@ As mentioned in the [quickstart](/quickstart#sending-multipart-file-uploads)
 multipart file encoding is available by passing a dictionary with the
 name of the payloads as keys and either tuple of elements or a file-like object or a string as values.
 
-```python
+```pycon
 >>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
 >>> r = httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
@@ -446,7 +704,7 @@ on the file name, with unknown file extensions defaulting to "application/octet-
 If the file name is explicitly set to `None` then HTTPX will not include a content-type
 MIME header field.
 
-```python
+```pycon
 >>> files = {'upload-file': (None, 'text content', 'text/plain')}
 >>> r = httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
@@ -462,14 +720,14 @@ MIME header field.
 
 !!! tip
     It is safe to upload large files this way. File uploads are streaming by default, meaning that only one chunk will be loaded into memory at a time.
- 
+
  Non-file data fields can be included in the multipart form using by passing them to `data=...`.
- 
+
 You can also send multiple files in one go with a multiple file field form.
 To do that, pass a list of `(field, <file>)` items instead of a dictionary, allowing you to pass multiple items with the same `field`.
-For instance this request sends 2 files, `foo.png` and `bar.png` in one request on the `images` form field: 
+For instance this request sends 2 files, `foo.png` and `bar.png` in one request on the `images` form field:
 
-```python
+```pycon
 >>> files = [('images', ('foo.png', open('foo.png', 'rb'), 'image/png')),
                       ('images', ('bar.png', open('bar.png', 'rb'), 'image/png'))]
 >>> r = httpx.post("https://httpbin.org/post", files=files)
@@ -573,6 +831,55 @@ class MyCustomAuth(httpx.Auth):
         ...
 ```
 
+If you _do_ need to perform I/O other than HTTP requests, such as accessing a disk-based cache, or you need to use concurrency primitives, such as locks, then you should override `.sync_auth_flow()` and `.async_auth_flow()` (instead of `.auth_flow()`). The former will be used by `httpx.Client`, while the latter will be used by `httpx.AsyncClient`.
+
+```python
+import asyncio
+import threading
+import httpx
+
+
+class MyCustomAuth(httpx.Auth):
+    def __init__(self):
+        self._sync_lock = threading.RLock()
+        self._async_lock = asyncio.Lock()
+
+    def sync_get_token(self):
+        with self._sync_lock:
+            ...
+
+    def sync_auth_flow(self, request):
+        token = self.sync_get_token()
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+
+    async def async_get_token(self):
+        async with self._async_lock:
+            ...
+
+    async def async_auth_flow(self, request):
+        token = await self.async_get_token()
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+```
+
+If you only want to support one of the two methods, then you should still override it, but raise an explicit `RuntimeError`.
+
+```python
+import httpx
+import sync_only_library
+
+
+class MyCustomAuth(httpx.Auth):
+    def sync_auth_flow(self, request):
+        token = sync_only_library.get_token(...)
+        request.headers["Authorization"] = f"Token {token}"
+        yield request
+
+    async def async_auth_flow(self, request):
+        raise RuntimeError("Cannot use a sync authentication class with httpx.AsyncClient")
+```
+
 ## SSL certificates
 
 When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
@@ -591,7 +898,7 @@ r = httpx.get("https://example.org", verify="path/to/client.pem")
 
 Alternatively, you can pass a standard library `ssl.SSLContext`.
 
-```python
+```pycon
 >>> import ssl
 >>> import httpx
 >>> context = ssl.create_default_context()
@@ -602,15 +909,15 @@ Alternatively, you can pass a standard library `ssl.SSLContext`.
 
 We also include a helper function for creating properly configured `SSLContext` instances.
 
-```python
+```pycon
 >>> context = httpx.create_ssl_context()
 ```
 
-The `create_ssl_context` function accepts the same set of SSL configuration arguments 
-(`trust_env`, `verify`, `cert` and `http2` arguments) 
+The `create_ssl_context` function accepts the same set of SSL configuration arguments
+(`trust_env`, `verify`, `cert` and `http2` arguments)
 as `httpx.Client` or `httpx.AsyncClient`
 
-```python
+```pycon
 >>> import httpx
 >>> context = httpx.create_ssl_context(verify="/tmp/client.pem")
 >>> httpx.get('https://example.org', verify=context)
@@ -645,7 +952,7 @@ If you do need to make HTTPS connections to a local server, for example to test 
 1. Pass the server key/cert files when starting your local server. (This depends on the particular web server you're using. For example, [Uvicorn](https://www.uvicorn.org) provides the `--ssl-keyfile` and `--ssl-certfile` options.)
 1. Tell HTTPX to use the certificates stored in `client.pem`:
 
-```python
+```pycon
 >>> import httpx
 >>> r = httpx.get("https://localhost:8000", verify="/tmp/client.pem")
 >>> r
@@ -658,52 +965,95 @@ HTTPX's `Client` also accepts a `transport` argument. This argument allows you
 to provide a custom Transport object that will be used to perform the actual
 sending of the requests.
 
+### Usage
+
+For some advanced configuration you might need to instantiate a transport
+class directly, and pass it to the client instance. The `httpcore` package
+provides a `local_address` configuration that is only available via this
+low-level API.
+
+```pycon
+>>> import httpx, httpcore
+>>> ssl_context = httpx.create_ssl_context()
+>>> transport = httpcore.SyncConnectionPool(
+...     ssl_context=ssl_context,
+...     max_connections=100,
+...     max_keepalive_connections=20,
+...     keepalive_expiry=5.0,
+...     local_address="0.0.0.0"
+... )  # Use the standard HTTPX defaults, but with an IPv4 only 'local_address'.
+>>> client = httpx.Client(transport=transport)
+```
+
+Similarly, `httpcore` provides a `uds` option for connecting via a Unix Domain Socket that is only available via this low-level API:
+
+```python
+>>> import httpx, httpcore
+>>> ssl_context = httpx.create_ssl_context()
+>>> transport = httpcore.SyncConnectionPool(
+...     ssl_context=ssl_context,
+...     max_connections=100,
+...     max_keepalive_connections=20,
+...     keepalive_expiry=5.0,
+...     uds="/var/run/docker.sock",
+... )  # Connect to the Docker API via a Unix Socket.
+>>> client = httpx.Client(transport=transport)
+>>> response = client.get("http://docker/info")
+>>> response.json()
+{"ID": "...", "Containers": 4, "Images": 74, ...}
+```
+
+Unlike the `httpx.Client()`, the lower-level `httpcore` transport instances
+do not include any default values for configuring aspects such as the
+connection pooling details, so you'll need to provide more explicit
+configuration when using this API.
+
+### urllib3 transport
+
+This [public gist](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165da388e546e) provides a transport that uses the excellent [`urllib3` library](https://urllib3.readthedocs.io/en/latest/), and can be used with the sync `Client`...
+
+```pycon
+>>> import httpx
+>>> from urllib3_transport import URLLib3Transport
+>>> client = httpx.Client(transport=URLLib3Transport())
+>>> client.get("https://example.org")
+<Response [200 OK]>
+```
+
+### Writing custom transports
+
 A transport instance must implement the Transport API defined by
 [`httpcore`](https://www.encode.io/httpcore/api/). You
 should either subclass `httpcore.AsyncHTTPTransport` to implement a transport to
 use with `AsyncClient`, or subclass `httpcore.SyncHTTPTransport` to implement a
 transport to use with `Client`.
 
-For example, HTTPX ships with a transport that uses the excellent
-[`urllib3` library](https://urllib3.readthedocs.io/en/latest/), which can be
-used with the sync `Client`...
-
-```python
->>> import httpx
->>> client = httpx.Client(transport=httpx.URLLib3Transport())
->>> client.get("https://example.org")
-<Response [200 OK]>
-```
-
-Note that you'll need to install the `urllib3` package to use `URLLib3Transport`.
-
 A complete example of a custom transport implementation would be:
 
 ```python
 import json
-
 import httpcore
-import httpx
 
 
-class JSONEchoTransport(httpcore.SyncHTTPTransport):
+class HelloWorldTransport(httpcore.SyncHTTPTransport):
     """
-    A mock transport that returns a JSON response containing the request body.
+    A mock transport that always returns a JSON "Hello, world!" response.
     """
 
     def request(self, method, url, headers=None, stream=None, timeout=None):
-        body = b"".join(stream).decode("utf-8")
-        content = json.dumps({"body": body}).encode("utf-8")
-        stream = httpcore.SyncByteStream([content])
+        message = {"text": "Hello, world!"}
+        content = json.dumps(message).encode("utf-8")
+        stream = httpcore.PlainByteStream(content)
         headers = [(b"content-type", b"application/json")]
         return b"HTTP/1.1", 200, b"OK", headers, stream
 ```
 
 Which we can use in the same way:
 
-```python
->>> client = httpx.Client(transport=JSONEchoTransport())
->>> response = client.post("https://httpbin.org/post", data="Hello, world!")
+```pycon
+>>> import httpx
+>>> client = httpx.Client(transport=HelloWorldTransport())
+>>> response = client.get("https://example.org/")
 >>> response.json()
-{'body': 'Hello, world!'}
+{"text": "Hello, world!"}
 ```

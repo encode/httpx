@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+import httpcore
 import pytest
 
 import httpx
@@ -8,7 +9,7 @@ import httpx
 @pytest.mark.usefixtures("async_environment")
 async def test_get(server):
     url = server.url
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(http2=True) as client:
         response = await client.get(url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
@@ -32,7 +33,7 @@ async def test_get(server):
 @pytest.mark.usefixtures("async_environment")
 async def test_get_invalid_url(server, url):
     async with httpx.AsyncClient() as client:
-        with pytest.raises(httpx.InvalidURL):
+        with pytest.raises((httpx.UnsupportedProtocol, httpx.LocalProtocolError)):
             await client.get(url)
 
 
@@ -55,7 +56,7 @@ async def test_build_request(server):
 async def test_post(server):
     url = server.url
     async with httpx.AsyncClient() as client:
-        response = await client.post(url, data=b"Hello, world!")
+        response = await client.post(url, content=b"Hello, world!")
     assert response.status_code == 200
 
 
@@ -96,7 +97,7 @@ async def test_stream_request(server):
         yield b"world!"
 
     async with httpx.AsyncClient() as client:
-        response = await client.request("POST", server.url, data=hello_world())
+        response = await client.request("POST", server.url, content=hello_world())
     assert response.status_code == 200
 
 
@@ -135,14 +136,14 @@ async def test_head(server):
 @pytest.mark.usefixtures("async_environment")
 async def test_put(server):
     async with httpx.AsyncClient() as client:
-        response = await client.put(server.url, data=b"Hello, world!")
+        response = await client.put(server.url, content=b"Hello, world!")
     assert response.status_code == 200
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_patch(server):
     async with httpx.AsyncClient() as client:
-        response = await client.patch(server.url, data=b"Hello, world!")
+        response = await client.patch(server.url, content=b"Hello, world!")
     assert response.status_code == 200
 
 
@@ -157,12 +158,93 @@ async def test_delete(server):
 @pytest.mark.usefixtures("async_environment")
 async def test_100_continue(server):
     headers = {"Expect": "100-continue"}
-    data = b"Echo request body"
+    content = b"Echo request body"
 
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            server.url.copy_with(path="/echo_body"), headers=headers, data=data
+            server.url.copy_with(path="/echo_body"), headers=headers, content=content
         )
 
     assert response.status_code == 200
-    assert response.content == data
+    assert response.content == content
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_context_managed_transport():
+    class Transport(httpcore.AsyncHTTPTransport):
+        def __init__(self):
+            self.events = []
+
+        async def aclose(self):
+            # The base implementation of httpcore.AsyncHTTPTransport just
+            # calls into `.aclose`, so simple transport cases can just override
+            # this method for any cleanup, where more complex cases
+            # might want to additionally override `__aenter__`/`__aexit__`.
+            self.events.append("transport.aclose")
+
+        async def __aenter__(self):
+            await super().__aenter__()
+            self.events.append("transport.__aenter__")
+
+        async def __aexit__(self, *args):
+            await super().__aexit__(*args)
+            self.events.append("transport.__aexit__")
+
+    # Note that we're including 'proxies' here to *also* run through the
+    # proxy context management, although we can't easily test that at the
+    # moment, since we can't add proxies as transport instances.
+    #
+    # Once we have a more generalised Mount API we'll be able to remove this
+    # in favour of ensuring all mounts are context managed, which will
+    # also neccessarily include proxies.
+    transport = Transport()
+    async with httpx.AsyncClient(transport=transport, proxies="http://www.example.com"):
+        pass
+
+    assert transport.events == [
+        "transport.__aenter__",
+        "transport.aclose",
+        "transport.__aexit__",
+    ]
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_async_client_is_closed_by_default():
+    client = httpx.AsyncClient()
+
+    assert client.is_closed
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_send_cause_async_client_to_be_not_closed():
+    client = httpx.AsyncClient()
+
+    await client.get("http://example.com")
+
+    assert not client.is_closed
+
+    await client.aclose()
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_async_client_is_not_closed_in_with_block():
+    async with httpx.AsyncClient() as client:
+        assert not client.is_closed
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_async_client_is_closed_after_with_block():
+    async with httpx.AsyncClient() as client:
+        pass
+
+    assert client.is_closed
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_that_async_client_caused_warning_when_being_deleted():
+    async_client = httpx.AsyncClient()
+
+    await async_client.get("http://example.com")
+
+    with pytest.warns(UserWarning):
+        del async_client

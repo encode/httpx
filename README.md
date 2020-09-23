@@ -16,14 +16,14 @@
 HTTPX is a fully featured HTTP client for Python 3, which provides sync and async APIs, and support for both HTTP/1.1 and HTTP/2.
 
 **Note**: _HTTPX should be considered in beta. We believe we've got the public API to
-a stable point now, but would strongly recommend pinning your dependencies to the `0.13.*`
-release, so that you're able to properly review [API changes between package updates](https://github.com/encode/httpx/blob/master/CHANGELOG.md). A 1.0 release is expected to be issued sometime around mid-2020._
+a stable point now, but would strongly recommend pinning your dependencies to the `0.15.*`
+release, so that you're able to properly review [API changes between package updates](https://github.com/encode/httpx/blob/master/CHANGELOG.md). A 1.0 release is expected to be issued sometime in late 2020._
 
 ---
 
 Let's get started...
 
-```python
+```pycon
 >>> import httpx
 >>> r = httpx.get('https://www.example.org/')
 >>> r
@@ -40,7 +40,7 @@ Or, using the async API...
 
 _Use [IPython](https://ipython.readthedocs.io/en/stable/) or Python 3.8+ with `python -m asyncio` to try this code interactively._
 
-```python
+```pycon
 >>> import httpx
 >>> async with httpx.AsyncClient() as client:
 >>>     r = await client.get('https://www.example.org/')
@@ -58,7 +58,7 @@ HTTPX builds on the well-established usability of `requests`, and gives you:
 * Ability to make requests directly to [WSGI applications](https://www.python-httpx.org/advanced/#calling-into-python-web-apps) or [ASGI applications](https://www.python-httpx.org/async/#calling-into-python-web-apps).
 * Strict timeouts everywhere.
 * Fully type annotated.
-* 99% test coverage.
+* 100% test coverage.
 
 Plus all the standard features of `requests`...
 
@@ -86,6 +86,12 @@ Install with pip:
 $ pip install httpx
 ```
 
+Or, to include the optional HTTP/2 support, use:
+
+```shell
+$ pip install httpx[http2]
+```
+
 HTTPX requires Python 3.6+.
 
 ## Documentation
@@ -110,14 +116,11 @@ The HTTPX project relies on these excellent libraries:
 
 * `httpcore` - The underlying transport implementation for `httpx`.
   * `h11` - HTTP/1.1 support.
-  * `h2` - HTTP/2 support.
+  * `h2` - HTTP/2 support. *(Optional)*
 * `certifi` - SSL certificates.
-* `chardet` - Fallback auto-detection for response encoding.
-* `hstspreload` - determines whether IDNA-encoded host should be only accessed via HTTPS.
-* `idna` - Internationalized domain name support.
 * `rfc3986` - URL parsing & normalization.
+  * `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.
-* `urllib3` - Support for the `httpx.URLLib3Transport` class. *(Optional)*
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
 
 A huge amount of credit is due to `requests` for the API layout that

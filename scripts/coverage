@@ -8,4 +8,4 @@ export SOURCE_FILES="httpx tests"
 
 set -x
 
-${PREFIX}coverage report --omit=httpx/_transports/urllib3.py --show-missing --skip-covered
+${PREFIX}coverage report --show-missing --skip-covered --fail-under=100

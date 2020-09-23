@@ -13,11 +13,13 @@ def test_headers():
     assert h["a"] == "123, 456"
     assert h.get("a") == "123, 456"
     assert h.get("nope", default=None) is None
-    assert h.getlist("a") == ["123", "456"]
-    assert h.keys() == ["a", "a", "b"]
-    assert h.values() == ["123", "456", "789"]
-    assert h.items() == [("a", "123"), ("a", "456"), ("b", "789")]
-    assert list(h) == ["a", "a", "b"]
+    assert h.get_list("a") == ["123", "456"]
+
+    assert list(h.keys()) == ["a", "b"]
+    assert list(h.values()) == ["123, 456", "789"]
+    assert list(h.items()) == [("a", "123, 456"), ("b", "789")]
+    assert h.multi_items() == [("a", "123"), ("a", "456"), ("b", "789")]
+    assert list(h) == ["a", "b"]
     assert dict(h) == {"a": "123, 456", "b": "789"}
     assert repr(h) == "Headers([('a', '123'), ('a', '456'), ('b', '789')])"
     assert h == httpx.Headers([("a", "123"), ("b", "789"), ("a", "456")])
@@ -153,13 +155,13 @@ def test_headers_decode_explicit_encoding():
 
 def test_multiple_headers():
     """
-    Most headers should split by commas for `getlist`, except 'Set-Cookie'.
+    `Headers.get_list` should support both split_commas=False and split_commas=True.
     """
     h = httpx.Headers([("set-cookie", "a, b"), ("set-cookie", "c")])
-    h.getlist("Set-Cookie") == ["a, b", "b"]
+    assert h.get_list("Set-Cookie") == ["a, b", "c"]
 
     h = httpx.Headers([("vary", "a, b"), ("vary", "c")])
-    h.getlist("Vary") == ["a", "b", "c"]
+    assert h.get_list("Vary", split_commas=True) == ["a", "b", "c"]
 
 
 @pytest.mark.parametrize("header", ["authorization", "proxy-authorization"])
