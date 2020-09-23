@@ -234,7 +234,7 @@ class BaseClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> "StreamContextManager":
@@ -859,7 +859,7 @@ class Client(BaseClient):
             )
 
         def on_close(response: Response) -> None:
-            response.elapsed = datetime.timedelta(timer.sync_elapsed())
+            response.elapsed = datetime.timedelta(seconds=timer.sync_elapsed())
             if hasattr(stream, "close"):
                 stream.close()
 
@@ -1504,7 +1504,7 @@ class AsyncClient(BaseClient):
             )
 
         async def on_close(response: Response) -> None:
-            response.elapsed = datetime.timedelta(await timer.async_elapsed())
+            response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
             if hasattr(stream, "close"):
                 await stream.aclose()
 
@@ -1786,7 +1786,7 @@ class StreamContextManager:
         client: BaseClient,
         request: Request,
         *,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         close_client: bool = False,
