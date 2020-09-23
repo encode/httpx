@@ -859,7 +859,7 @@ class Client(BaseClient):
             )
 
         def on_close(response: Response) -> None:
-            response.elapsed = datetime.timedelta(timer.sync_elapsed())
+            response.elapsed = datetime.timedelta(seconds=timer.sync_elapsed())
             if hasattr(stream, "close"):
                 stream.close()
 
@@ -1504,7 +1504,7 @@ class AsyncClient(BaseClient):
             )
 
         async def on_close(response: Response) -> None:
-            response.elapsed = datetime.timedelta(await timer.async_elapsed())
+            response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
             if hasattr(stream, "close"):
                 await stream.aclose()
 
