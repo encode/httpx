@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
+from urllib.parse import unquote
 
 import httpcore
 import sniffio
@@ -88,7 +89,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
             "method": method.decode(),
             "headers": headers,
             "scheme": scheme.decode("ascii"),
-            "path": path.decode("ascii"),
+            "path": unquote(path.decode("ascii")),
             "query_string": query,
             "server": (host.decode("ascii"), port),
             "client": self.client,
