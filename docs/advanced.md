@@ -669,7 +669,7 @@ allow. (Defaults 10)
 
 
 ```python
-limits = httpx.Limits(max_keepalive=5, max_connections=10)
+limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
 client = httpx.Client(limits=limits)
 ```
 
