@@ -234,7 +234,7 @@ class BaseClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> "StreamContextManager":
@@ -1786,7 +1786,7 @@ class StreamContextManager:
         client: BaseClient,
         request: Request,
         *,
-        auth: AuthTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
         close_client: bool = False,

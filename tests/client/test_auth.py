@@ -164,6 +164,9 @@ async def test_basic_auth() -> None:
 
 @pytest.mark.asyncio
 async def test_basic_auth_with_stream() -> None:
+    """
+    See: https://github.com/encode/httpx/pull/1312
+    """
     url = "https://example.org/"
     auth = ("tomchristie", "password123")
     app = App()
