@@ -16,7 +16,6 @@ async def test_get(server):
     assert response.http_version == "HTTP/1.1"
     assert response.headers
     assert repr(response) == "<Response [200 OK]>"
-    print(response.elapsed)
     assert response.elapsed > timedelta(seconds=0)
 
     with pytest.raises(httpx.NotRedirectResponse):
