@@ -403,8 +403,8 @@ class Timer:
             return await curio.clock()
 
         import asyncio
-
-        return asyncio.get_running_loop().time()
+        print(asyncio.get_event_loop())
+        return asyncio.get_event_loop().time()
 
     def sync_start(self) -> None:
         self.started = time.perf_counter()
