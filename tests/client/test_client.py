@@ -247,10 +247,10 @@ def test_context_managed_transport():
     ]
 
 
-def test_that_client_is_closed_by_default():
+def test_that_client_is_not_closed_by_default():
     client = httpx.Client()
 
-    assert client.is_closed
+    assert not client.is_closed
 
 
 def test_that_send_cause_client_to_be_not_closed():

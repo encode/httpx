@@ -209,10 +209,10 @@ async def test_context_managed_transport():
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_that_async_client_is_closed_by_default():
+async def test_that_async_client_is_not_closed_by_default():
     client = httpx.AsyncClient()
 
-    assert client.is_closed
+    assert not client.is_closed
 
 
 @pytest.mark.usefixtures("async_environment")
