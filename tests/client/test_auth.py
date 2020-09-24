@@ -173,7 +173,7 @@ async def test_basic_auth_with_stream() -> None:
 
     async with httpx.AsyncClient(transport=MockTransport(app), auth=auth) as client:
         async with client.stream("GET", url) as response:
-            response.read()
+            await response.aread()
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="}
