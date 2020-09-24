@@ -1253,6 +1253,7 @@ class AsyncClient(BaseClient):
             for key, proxy in proxy_map.items()
         }
         self._proxies = dict(sorted(self._proxies.items()))
+        self._seen_io = False
 
     def _init_transport(
         self,
@@ -1383,6 +1384,8 @@ class AsyncClient(BaseClient):
 
         [0]: /advanced/#request-instances
         """
+        self._seen_io = True
+
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_request_auth(request, auth)
@@ -1748,6 +1751,7 @@ class AsyncClient(BaseClient):
         for proxy in self._proxies.values():
             if proxy is not None:
                 await proxy.__aenter__()
+        self._seen_io = True
         return self
 
     async def __aexit__(
@@ -1764,7 +1768,7 @@ class AsyncClient(BaseClient):
                 await proxy.__aexit__(exc_type, exc_value, traceback)
 
     def __del__(self) -> None:
-        if not self.is_closed:
+        if self._seen_io and not self.is_closed:
             warnings.warn(
                 f"Unclosed {self!r}. "
                 "See https://www.python-httpx.org/async/#opening-and-closing-clients "
