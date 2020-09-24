@@ -29,6 +29,5 @@ trio
 trio-typing
 trustme
 uvicorn
-seed-isort-config
 
 attrs>=19.3.0  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665
