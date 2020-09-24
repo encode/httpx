@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.15.3 (September 24th, 2020)
+
+### Fixed
+
+* Fixed connection leak in async client due to improper closing of response streams. (Pull #1316)
+
 ## 0.15.2 (September 23nd, 2020)
 
 ### Fixed
