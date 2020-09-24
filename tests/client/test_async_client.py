@@ -169,27 +169,28 @@ async def test_100_continue(server):
     assert response.content == content
 
 
+class TransportMonitoringClosing(httpcore.AsyncHTTPTransport):
+    def __init__(self):
+        self.events = []
+
+    async def aclose(self):
+        # The base implementation of httpcore.AsyncHTTPTransport just
+        # calls into `.aclose`, so simple transport cases can just override
+        # this method for any cleanup, where more complex cases
+        # might want to additionally override `__aenter__`/`__aexit__`.
+        self.events.append("transport.aclose")
+
+    async def __aenter__(self):
+        await super().__aenter__()
+        self.events.append("transport.__aenter__")
+
+    async def __aexit__(self, *args):
+        await super().__aexit__(*args)
+        self.events.append("transport.__aexit__")
+
+
 @pytest.mark.usefixtures("async_environment")
 async def test_context_managed_transport():
-    class Transport(httpcore.AsyncHTTPTransport):
-        def __init__(self):
-            self.events = []
-
-        async def aclose(self):
-            # The base implementation of httpcore.AsyncHTTPTransport just
-            # calls into `.aclose`, so simple transport cases can just override
-            # this method for any cleanup, where more complex cases
-            # might want to additionally override `__aenter__`/`__aexit__`.
-            self.events.append("transport.aclose")
-
-        async def __aenter__(self):
-            await super().__aenter__()
-            self.events.append("transport.__aenter__")
-
-        async def __aexit__(self, *args):
-            await super().__aexit__(*args)
-            self.events.append("transport.__aexit__")
-
     # Note that we're including 'proxies' here to *also* run through the
     # proxy context management, although we can't easily test that at the
     # moment, since we can't add proxies as transport instances.
@@ -197,7 +198,7 @@ async def test_context_managed_transport():
     # Once we have a more generalised Mount API we'll be able to remove this
     # in favour of ensuring all mounts are context managed, which will
     # also neccessarily include proxies.
-    transport = Transport()
+    transport = TransportMonitoringClosing()
     async with httpx.AsyncClient(transport=transport, proxies="http://www.example.com"):
         pass
 
@@ -205,6 +206,17 @@ async def test_context_managed_transport():
         "transport.__aenter__",
         "transport.aclose",
         "transport.__aexit__",
+    ]
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_closed_transport():
+    transport = TransportMonitoringClosing()
+    client = httpx.AsyncClient(transport=transport, proxies="http://www.example.com")
+    await client.aclose()
+
+    assert transport.events == [
+        "transport.aclose",
     ]
 
 

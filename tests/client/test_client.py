@@ -209,26 +209,27 @@ def test_pool_limits_deprecated():
         httpx.AsyncClient(pool_limits=limits)
 
 
+class TransportMonitoringClosing(httpcore.SyncHTTPTransport):
+    def __init__(self):
+        self.events = []
+
+    def close(self):
+        # The base implementation of httpcore.SyncHTTPTransport just
+        # calls into `.close`, so simple transport cases can just override
+        # this method for any cleanup, where more complex cases
+        # might want to additionally override `__enter__`/`__exit__`.
+        self.events.append("transport.close")
+
+    def __enter__(self):
+        super().__enter__()
+        self.events.append("transport.__enter__")
+
+    def __exit__(self, *args):
+        super().__exit__(*args)
+        self.events.append("transport.__exit__")
+
+
 def test_context_managed_transport():
-    class Transport(httpcore.SyncHTTPTransport):
-        def __init__(self):
-            self.events = []
-
-        def close(self):
-            # The base implementation of httpcore.SyncHTTPTransport just
-            # calls into `.close`, so simple transport cases can just override
-            # this method for any cleanup, where more complex cases
-            # might want to additionally override `__enter__`/`__exit__`.
-            self.events.append("transport.close")
-
-        def __enter__(self):
-            super().__enter__()
-            self.events.append("transport.__enter__")
-
-        def __exit__(self, *args):
-            super().__exit__(*args)
-            self.events.append("transport.__exit__")
-
     # Note that we're including 'proxies' here to *also* run through the
     # proxy context management, although we can't easily test that at the
     # moment, since we can't add proxies as transport instances.
@@ -236,7 +237,7 @@ def test_context_managed_transport():
     # Once we have a more generalised Mount API we'll be able to remove this
     # in favour of ensuring all mounts are context managed, which will
     # also neccessarily include proxies.
-    transport = Transport()
+    transport = TransportMonitoringClosing()
     with httpx.Client(transport=transport, proxies="http://www.example.com"):
         pass
 
@@ -244,6 +245,16 @@ def test_context_managed_transport():
         "transport.__enter__",
         "transport.close",
         "transport.__exit__",
+    ]
+
+
+def test_closed_transport():
+    transport = TransportMonitoringClosing()
+    client = httpx.Client(transport=transport, proxies="http://www.example.com")
+    client.close()
+
+    assert transport.events == [
+        "transport.close",
     ]
 
 
