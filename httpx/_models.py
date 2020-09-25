@@ -900,7 +900,7 @@ class Response:
             headers, stream = encode_response(content, text, html, json)
             self._prepare(headers)
             self.stream = stream
-            if content is None or isinstance(content, bytes):
+            if content is None or isinstance(content, (bytes, str)):
                 # Load the response body, except for streaming content.
                 self.read()
 
