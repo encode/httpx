@@ -25,6 +25,7 @@ def test_headers():
     assert h == httpx.Headers([("a", "123"), ("b", "789"), ("a", "456")])
     assert h == [("a", "123"), ("A", "456"), ("b", "789")]
     assert h == {"a": "123", "A": "456", "b": "789"}
+    assert h != "a: 123\nA: 456\nb: 789"
 
     h = httpx.Headers({"a": "123", "b": "789"})
     assert h["A"] == "123"
