@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-* Fix automatic `.read()` when `Response` instances are created with `content=<str>`` (Pull #1324)
+* Fix automatic `.read()` when `Response` instances are created with `content=<str>` (Pull #1324)
 
 ## 0.15.3 (September 24th, 2020)
 
