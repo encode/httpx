@@ -22,7 +22,7 @@ def test_headers():
     assert list(h) == ["a", "b"]
     assert dict(h) == {"a": "123, 456", "b": "789"}
     assert repr(h) == "Headers([('a', '123'), ('a', '456'), ('b', '789')])"
-    assert h == httpx.Headers([("a", "123"), ("b", "789"), ("a", "456")])
+    assert h == [("a", "123"), ("b", "789"), ("a", "456")]
     assert h == [("a", "123"), ("A", "456"), ("b", "789")]
     assert h == {"a": "123", "A": "456", "b": "789"}
     assert h != "a: 123\nA: 456\nb: 789"

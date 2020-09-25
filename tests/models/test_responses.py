@@ -44,12 +44,10 @@ def test_response_text():
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
-    assert response.headers == httpx.Headers(
-        {
-            "Content-Length": "13",
-            "Content-Type": "text/plain; charset=utf-8",
-        }
-    )
+    assert response.headers == {
+        "Content-Length": "13",
+        "Content-Type": "text/plain; charset=utf-8",
+    }
 
 
 def test_response_html():
@@ -58,12 +56,10 @@ def test_response_html():
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
     assert response.text == "<html><body>Hello, world!</html></body>"
-    assert response.headers == httpx.Headers(
-        {
-            "Content-Length": "39",
-            "Content-Type": "text/html; charset=utf-8",
-        }
-    )
+    assert response.headers == {
+        "Content-Length": "39",
+        "Content-Type": "text/html; charset=utf-8",
+    }
 
 
 def test_response_json():
@@ -72,12 +68,10 @@ def test_response_json():
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
     assert response.json() == {"hello": "world"}
-    assert response.headers == httpx.Headers(
-        {
-            "Content-Length": "18",
-            "Content-Type": "application/json",
-        }
-    )
+    assert response.headers == {
+        "Content-Length": "18",
+        "Content-Type": "application/json",
+    }
 
 
 def test_raise_for_status():
@@ -729,7 +723,7 @@ def test_generator_with_transfer_encoding_header():
         yield b"test 123"  # pragma: nocover
 
     response = httpx.Response(200, content=content())
-    assert response.headers == httpx.Headers({"Transfer-Encoding": "chunked"})
+    assert response.headers == {"Transfer-Encoding": "chunked"}
 
 
 def test_generator_with_content_length_header():
@@ -738,4 +732,4 @@ def test_generator_with_content_length_header():
 
     headers = {"Content-Length": "8"}
     response = httpx.Response(200, content=content(), headers=headers)
-    assert response.headers == httpx.Headers({"Content-Length": "8"})
+    assert response.headers == {"Content-Length": "8"}
