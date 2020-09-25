@@ -38,6 +38,19 @@ def test_response():
     assert not response.is_error
 
 
+def test_response_content():
+    response = httpx.Response(200, content="Hello, world!")
+
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+    assert response.text == "Hello, world!"
+    assert response.headers == httpx.Headers(
+        {
+            "Content-Length": "13",
+        }
+    )
+
+
 def test_response_text():
     response = httpx.Response(200, text="Hello, world!")
 
