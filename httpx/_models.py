@@ -724,9 +724,11 @@ class Headers(typing.MutableMapping[str, str]):
         return len(self._list)
 
     def __eq__(self, other: typing.Any) -> bool:
-        if not isinstance(other, Headers):
+        try:
+            other_headers = Headers(other)
+        except ValueError:
             return False
-        return sorted(self._list) == sorted(other._list)
+        return sorted(self._list) == sorted(other_headers._list)
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__

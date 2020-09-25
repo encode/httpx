@@ -26,9 +26,7 @@ def test_iterable_content():
             yield b"test 123"  # pragma: nocover
 
     request = httpx.Request("POST", "http://example.org", content=Content())
-    assert request.headers == httpx.Headers(
-        {"Host": "example.org", "Transfer-Encoding": "chunked"}
-    )
+    assert request.headers == {"Host": "example.org", "Transfer-Encoding": "chunked"}
 
 
 def test_generator_with_transfer_encoding_header():
@@ -36,9 +34,7 @@ def test_generator_with_transfer_encoding_header():
         yield b"test 123"  # pragma: nocover
 
     request = httpx.Request("POST", "http://example.org", content=content())
-    assert request.headers == httpx.Headers(
-        {"Host": "example.org", "Transfer-Encoding": "chunked"}
-    )
+    assert request.headers == {"Host": "example.org", "Transfer-Encoding": "chunked"}
 
 
 def test_generator_with_content_length_header():
@@ -49,9 +45,7 @@ def test_generator_with_content_length_header():
     request = httpx.Request(
         "POST", "http://example.org", content=content(), headers=headers
     )
-    assert request.headers == httpx.Headers(
-        {"Host": "example.org", "Content-Length": "8"}
-    )
+    assert request.headers == {"Host": "example.org", "Content-Length": "8"}
 
 
 def test_url_encoded_data():
@@ -73,13 +67,11 @@ def test_json_encoded_data():
 def test_headers():
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
 
-    assert request.headers == httpx.Headers(
-        {
-            "Host": "example.org",
-            "Content-Type": "application/json",
-            "Content-Length": "13",
-        }
-    )
+    assert request.headers == {
+        "Host": "example.org",
+        "Content-Type": "application/json",
+        "Content-Length": "13",
+    }
 
 
 def test_read_and_stream_data():
