@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-* Support direct comparisons between `Headers` and dicts or lists or two-tuples. Eg. `assert response.headers == {"Content-Length": 24}` (Pull #1326)
+* Support direct comparisons between `Headers` and dicts or lists of two-tuples. Eg. `assert response.headers == {"Content-Length": 24}` (Pull #1326)
 
 ### Fixed
 
