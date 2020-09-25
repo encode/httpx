@@ -44,11 +44,7 @@ def test_response_content():
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
-    assert response.headers == httpx.Headers(
-        {
-            "Content-Length": "13",
-        }
-    )
+    assert response.headers == {"Content-Length": "13"}
 
 
 def test_response_text():
