@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.15.4 (September 25th, 2020)
+
+### Added
+
+* Support direct comparisons between `Headers` and dicts or lists of two-tuples. Eg. `assert response.headers == {"Content-Length": 24}` (Pull #1326)
+
+### Fixed
+
+* Fix automatic `.read()` when `Response` instances are created with `content=<str>` (Pull #1324)
+
 ## 0.15.3 (September 24th, 2020)
 
 ### Fixed
