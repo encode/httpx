@@ -279,6 +279,7 @@ class BaseClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
+        ext: dict = None,
     ) -> Request:
         """
         Build and return a request instance.
@@ -305,6 +306,7 @@ class BaseClient:
             params=params,
             headers=headers,
             cookies=cookies,
+            ext=ext,
         )
 
     def _merge_url(self, url: URLTypes) -> URL:
@@ -687,6 +689,7 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
+        ext: dict = None,
         auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
@@ -717,6 +720,7 @@ class Client(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
+            ext=ext,
         )
         return self.send(
             request, auth=auth, allow_redirects=allow_redirects, timeout=timeout
@@ -1331,6 +1335,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
+        ext: dict = None,
         auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
@@ -1361,6 +1366,7 @@ class AsyncClient(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
+            ext=ext,
         )
         response = await self.send(
             request, auth=auth, allow_redirects=allow_redirects, timeout=timeout
