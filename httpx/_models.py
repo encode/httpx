@@ -760,6 +760,7 @@ class Request:
         files: RequestFiles = None,
         json: typing.Any = None,
         stream: ByteStream = None,
+        ext: dict = None,
     ):
         if isinstance(method, bytes):
             self.method = method.decode("ascii").upper()
@@ -769,6 +770,7 @@ class Request:
         self.headers = Headers(headers)
         if cookies:
             Cookies(cookies).set_cookie_header(self)
+        self.ext = {} if ext is None else ext
 
         if stream is not None:
             # There's an important distinction between `Request(content=...)`,

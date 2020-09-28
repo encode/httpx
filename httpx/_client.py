@@ -849,13 +849,15 @@ class Client(BaseClient):
         timer = Timer()
         timer.sync_start()
 
+        ext = request.ext.copy()
+        ext["timeout"] = timeout.as_dict()
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (status_code, headers, stream, ext) = transport.request(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
                 stream=request.stream,  # type: ignore
-                ext={"timeout": timeout.as_dict()},
+                ext=ext,
             )
 
         def on_close(response: Response) -> None:
@@ -1494,13 +1496,15 @@ class AsyncClient(BaseClient):
         timer = Timer()
         await timer.async_start()
 
+        ext = request.ext.copy()
+        ext["timeout"] = timeout.as_dict()
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
             (status_code, headers, stream, ext,) = await transport.arequest(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
                 stream=request.stream,  # type: ignore
-                ext={"timeout": timeout.as_dict()},
+                ext=ext,
             )
 
         async def on_close(response: Response) -> None:
