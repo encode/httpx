@@ -197,11 +197,11 @@ class DigestAuth(Auth):
         try:
             realm = header_dict["realm"].encode()
             nonce = header_dict["nonce"].encode()
-            qop = header_dict["qop"].encode() if "qop" in header_dict else None
-            opaque = header_dict["opaque"].encode() if "opaque" in header_dict else None
             algorithm = header_dict.get("algorithm", "MD5")
+            opaque = header_dict["opaque"].encode() if "opaque" in header_dict else None
+            qop = header_dict["qop"].encode() if "qop" in header_dict else None
             return _DigestAuthChallenge(
-                realm=realm, nonce=nonce, qop=qop, opaque=opaque, algorithm=algorithm
+                realm=realm, nonce=nonce, algorithm=algorithm, opaque=opaque, qop=qop
             )
         except KeyError as exc:
             message = "Malformed Digest WWW-Authenticate header"
@@ -296,17 +296,9 @@ class DigestAuth(Auth):
         raise ProtocolError(message, request=request)
 
 
-class _DigestAuthChallenge:
-    def __init__(
-        self,
-        realm: bytes,
-        nonce: bytes,
-        algorithm: str,
-        opaque: typing.Optional[bytes] = None,
-        qop: typing.Optional[bytes] = None,
-    ) -> None:
-        self.realm = realm
-        self.nonce = nonce
-        self.algorithm = algorithm
-        self.opaque = opaque
-        self.qop = qop
+class _DigestAuthChallenge(typing.NamedTuple):
+    realm: bytes
+    nonce: bytes
+    algorithm: str
+    opaque: typing.Optional[bytes]
+    qop: typing.Optional[bytes]
