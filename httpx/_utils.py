@@ -19,6 +19,8 @@ from ._types import PrimitiveData
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._models import URL
 
+Self = typing.TypeVar("Self")
+
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
 _HTML5_FORM_ENCODING_REPLACEMENTS.update(

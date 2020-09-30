@@ -493,6 +493,9 @@ class BaseClient:
         return request.stream
 
 
+_Client = typing.TypeVar("_Client", bound="Client")
+
+
 class Client(BaseClient):
     """
     An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.
@@ -1106,7 +1109,7 @@ class Client(BaseClient):
                 if proxy is not None:
                     proxy.close()
 
-    def __enter__(self) -> "Client":
+    def __enter__(self: _Client) -> _Client:
         self._transport.__enter__()
         for proxy in self._proxies.values():
             if proxy is not None:
@@ -1130,6 +1133,9 @@ class Client(BaseClient):
 
     def __del__(self) -> None:
         self.close()
+
+
+_AsyncClient = typing.TypeVar("_AsyncClient", bound="AsyncClient")
 
 
 class AsyncClient(BaseClient):
@@ -1752,7 +1758,7 @@ class AsyncClient(BaseClient):
                 if proxy is not None:
                     await proxy.aclose()
 
-    async def __aenter__(self) -> "AsyncClient":
+    async def __aenter__(self: _AsyncClient) -> _AsyncClient:
         await self._transport.__aenter__()
         for proxy in self._proxies.values():
             if proxy is not None:
@@ -1782,6 +1788,11 @@ class AsyncClient(BaseClient):
             )
 
 
+_StreamContextManager = typing.TypeVar(
+    "_StreamContextManager", bound="StreamContextManager"
+)
+
+
 class StreamContextManager:
     def __init__(
         self,
@@ -1800,7 +1811,7 @@ class StreamContextManager:
         self.timeout = timeout
         self.close_client = close_client
 
-    def __enter__(self) -> "Response":
+    def __enter__(self: _StreamContextManager) -> _StreamContextManager:
         assert isinstance(self.client, Client)
         self.response = self.client.send(
             request=self.request,
@@ -1822,7 +1833,7 @@ class StreamContextManager:
         if self.close_client:
             self.client.close()
 
-    async def __aenter__(self) -> "Response":
+    async def __aenter__(self: _StreamContextManager) -> _StreamContextManager:
         assert isinstance(self.client, AsyncClient)
         self.response = await self.client.send(
             request=self.request,
