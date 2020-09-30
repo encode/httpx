@@ -64,6 +64,8 @@ ACCEPT_ENCODING = ", ".join(
     [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
 )
 
+Self = typing.TypeVar("Self")
+
 
 class BaseClient:
     def __init__(
@@ -1105,7 +1107,7 @@ class Client(BaseClient):
                 if proxy is not None:
                     proxy.close()
 
-    def __enter__(self) -> "Client":
+    def __enter__(self) -> Self:
         self._transport.__enter__()
         for proxy in self._proxies.values():
             if proxy is not None:
@@ -1750,7 +1752,7 @@ class AsyncClient(BaseClient):
                 if proxy is not None:
                     await proxy.aclose()
 
-    async def __aenter__(self) -> "AsyncClient":
+    async def __aenter__(self) -> Self:
         await self._transport.__aenter__()
         for proxy in self._proxies.values():
             if proxy is not None:
@@ -1798,7 +1800,7 @@ class StreamContextManager:
         self.timeout = timeout
         self.close_client = close_client
 
-    def __enter__(self) -> "Response":
+    def __enter__(self) -> Self:
         assert isinstance(self.client, Client)
         self.response = self.client.send(
             request=self.request,
@@ -1820,7 +1822,7 @@ class StreamContextManager:
         if self.close_client:
             self.client.close()
 
-    async def __aenter__(self) -> "Response":
+    async def __aenter__(self) -> Self:
         assert isinstance(self.client, AsyncClient)
         self.response = await self.client.send(
             request=self.request,
