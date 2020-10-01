@@ -9,6 +9,6 @@ export SOURCE_FILES="httpx tests"
 set -x
 
 ${PREFIX}black --check --diff --target-version=py36 $SOURCE_FILES
-# ${PREFIX}flake8 $SOURCE_FILES
+${PREFIX}flake8 $SOURCE_FILES
 ${PREFIX}mypy $SOURCE_FILES
-# ${PREFIX}isort --check --diff --project=httpx $SOURCE_FILES
+${PREFIX}isort --check --diff --project=httpx $SOURCE_FILES
