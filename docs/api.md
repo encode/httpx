@@ -31,7 +31,7 @@
 
 ::: httpx.delete
     :docstring:
-    
+
 ::: httpx.stream
     :docstring:
 
@@ -63,6 +63,7 @@
 * `.encoding` - **str**
 * `.is_redirect` - **bool**
 * `.request` - **Request**
+* `.next_request` - **Optional[Request]**
 * `.cookies` - **Cookies**
 * `.history` - **List[Response]**
 * `.elapsed` - **[timedelta](https://docs.python.org/3/library/datetime.html)**

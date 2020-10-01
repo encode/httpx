@@ -832,6 +832,7 @@ class Client(BaseClient):
             history = history + [response]
 
             if not allow_redirects:
+                response.next_request = request
                 response.call_next = functools.partial(
                     self._send_handling_redirects,
                     request=request,
@@ -1475,6 +1476,7 @@ class AsyncClient(BaseClient):
             history = history + [response]
 
             if not allow_redirects:
+                response.next_request = request
                 response.call_next = functools.partial(
                     self._send_handling_redirects,
                     request=request,
