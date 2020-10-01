@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.15.5 (October 1st, 2020)
+
+### Added
+
+* Add `response.next_request` (Pull ##1334)
+
 ## 0.15.4 (September 25th, 2020)
 
 ### Added
