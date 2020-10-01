@@ -1811,7 +1811,7 @@ class StreamContextManager:
         self.timeout = timeout
         self.close_client = close_client
 
-    def __enter__(self: _StreamContextManager) -> _StreamContextManager:
+    def __enter__(self) -> "Response":
         assert isinstance(self.client, Client)
         self.response = self.client.send(
             request=self.request,
@@ -1833,7 +1833,7 @@ class StreamContextManager:
         if self.close_client:
             self.client.close()
 
-    async def __aenter__(self: _StreamContextManager) -> _StreamContextManager:
+    async def __aenter__(self) -> "Response":
         assert isinstance(self.client, AsyncClient)
         self.response = await self.client.send(
             request=self.request,
