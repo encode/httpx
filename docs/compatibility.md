@@ -115,3 +115,17 @@ On the other hand, HTTPX uses [HTTPCore](https://github.com/encode/httpcore) as 
 ## Query Parameters
 
 `requests` omits `params` whose values are `None` (e.g. `requests.get(..., params={"foo": None})`). This is not supported by HTTPX.
+
+## Determining the next redirect request
+
+When using `allow_redirects=False`, the `requests` library exposes an attribute `response.next`, which can be used to obtain the next redirect request.
+
+In HTTPX, this attribute is instead named `response.next_request`. For example:
+
+```python
+client = httpx.Client()
+request = client.build_request("GET", ...)
+while request is not None:
+    response = client.send(request, allow_redirects=False)
+    request = response.next_request
+```
