@@ -172,17 +172,12 @@ def test_next_request():
     response = client.send(request, allow_redirects=False)
     assert response.status_code == httpx.codes.SEE_OTHER
     assert response.url == "https://example.org/redirect_303"
-    assert response.is_redirect
-    assert len(response.history) == 0
+    assert response.next_request is not None
 
     response = client.send(response.next_request, allow_redirects=False)
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
-    assert not response.is_redirect
-    assert len(response.history) == 0
-
-    with pytest.raises(httpx.NotRedirectResponse):
-        response.next_request
+    assert response.next_request is None
 
 
 def test_head_redirect():
