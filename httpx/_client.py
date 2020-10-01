@@ -493,6 +493,11 @@ class BaseClient:
         return request.stream
 
 
+# The type annotation approach here follows PEP 484. A custom name `_Client` is
+# chosen over the convention `T` is because some documentation tools display
+# type annotations vertatimly. `_Client` indicates more practical meaning than
+# a simple `T`
+# https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
 _Client = typing.TypeVar("_Client", bound="Client")
 
 
