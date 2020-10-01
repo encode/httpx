@@ -876,6 +876,10 @@ class Response:
 
         self._request: typing.Optional[Request] = request
 
+        # When allow_redirects=False and a redirect is received,
+        # the client will set `response.next_request`.
+        self._next_request: typing.Optional[Request] = None
+
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.ext = {} if ext is None else ext
@@ -1191,6 +1195,24 @@ class Response:
             raise NotRedirectResponse(message)
         assert self.call_next is not None
         return self.call_next()
+
+    @property
+    def next_request(self) -> "Request":
+        """
+        Get the next request for a redirect response.
+        """
+        if not self.is_redirect:
+            message = (
+                "Called .next(), but the response was not a redirect. "
+                "Calling code should check `response.is_redirect` first."
+            )
+            raise NotRedirectResponse(message)
+        assert self._next_request is not None
+        return self._next_request
+
+    @next_request.setter
+    def next_request(self, next_request: Request) -> None:
+        self._next_request = next_request
 
     def close(self) -> None:
         """
