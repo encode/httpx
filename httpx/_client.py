@@ -1788,11 +1788,6 @@ class AsyncClient(BaseClient):
             )
 
 
-_StreamContextManager = typing.TypeVar(
-    "_StreamContextManager", bound="StreamContextManager"
-)
-
-
 class StreamContextManager:
     def __init__(
         self,
