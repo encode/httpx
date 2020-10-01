@@ -58,7 +58,8 @@ from ._utils import (
 
 # The type annotation for @classmethod and context managers here follows PEP 484
 # https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
-T = typing.TypeVar("T", covariant=True)
+T = typing.TypeVar("T", bound="Client")
+U = typing.TypeVar("U", bound="AsyncClient")
 
 
 logger = get_logger(__name__)
@@ -1757,7 +1758,7 @@ class AsyncClient(BaseClient):
                 if proxy is not None:
                     await proxy.aclose()
 
-    async def __aenter__(self: T) -> T:
+    async def __aenter__(self: U) -> U:
         await self._transport.__aenter__()
         for proxy in self._proxies.values():
             if proxy is not None:
