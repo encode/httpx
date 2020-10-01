@@ -56,6 +56,11 @@ from ._utils import (
     warn_deprecated,
 )
 
+# The type annotation for @classmethod and context managers here follows PEP 484
+# https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
+T = typing.TypeVar("T", covariant=True)
+
+
 logger = get_logger(__name__)
 
 KEEPALIVE_EXPIRY = 5.0
@@ -491,14 +496,6 @@ class BaseClient:
             return None
 
         return request.stream
-
-
-# The type annotation approach here follows PEP 484. A custom name `_Client` is
-# chosen over the convention `T` is because some documentation tools display
-# type annotations vertatimly. `_Client` indicates more practical meaning than
-# a simple `T`
-# https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
-_Client = typing.TypeVar("_Client", bound="Client")
 
 
 class Client(BaseClient):
@@ -1114,7 +1111,7 @@ class Client(BaseClient):
                 if proxy is not None:
                     proxy.close()
 
-    def __enter__(self: _Client) -> _Client:
+    def __enter__(self: T) -> T:
         self._transport.__enter__()
         for proxy in self._proxies.values():
             if proxy is not None:
@@ -1138,9 +1135,6 @@ class Client(BaseClient):
 
     def __del__(self) -> None:
         self.close()
-
-
-_AsyncClient = typing.TypeVar("_AsyncClient", bound="AsyncClient")
 
 
 class AsyncClient(BaseClient):
@@ -1763,7 +1757,7 @@ class AsyncClient(BaseClient):
                 if proxy is not None:
                     await proxy.aclose()
 
-    async def __aenter__(self: _AsyncClient) -> _AsyncClient:
+    async def __aenter__(self: T) -> T:
         await self._transport.__aenter__()
         for proxy in self._proxies.values():
             if proxy is not None:
