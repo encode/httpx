@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-* Add `response.next_request` (Pull ##1334)
+* Add `response.next_request` (Pull #1334)
 
 ## 0.15.4 (September 25th, 2020)
 
