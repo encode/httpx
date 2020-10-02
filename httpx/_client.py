@@ -55,6 +55,12 @@ from ._utils import (
     warn_deprecated,
 )
 
+# The type annotation for @classmethod and context managers here follows PEP 484
+# https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
+T = typing.TypeVar("T", bound="Client")
+U = typing.TypeVar("U", bound="AsyncClient")
+
+
 logger = get_logger(__name__)
 
 KEEPALIVE_EXPIRY = 5.0
@@ -1098,7 +1104,7 @@ class Client(BaseClient):
                 if proxy is not None:
                     proxy.close()
 
-    def __enter__(self) -> "Client":
+    def __enter__(self: T) -> T:
         self._transport.__enter__()
         for proxy in self._proxies.values():
             if proxy is not None:
@@ -1737,7 +1743,7 @@ class AsyncClient(BaseClient):
                 if proxy is not None:
                     await proxy.aclose()
 
-    async def __aenter__(self) -> "AsyncClient":
+    async def __aenter__(self: U) -> U:
         await self._transport.__aenter__()
         for proxy in self._proxies.values():
             if proxy is not None:
