@@ -4,6 +4,7 @@ import httpcore
 import pytest
 
 import httpx
+from tests.utils import MockTransport
 
 
 def test_get(server):
@@ -271,3 +272,32 @@ def test_that_client_is_closed_after_with_block():
         pass
 
     assert client.is_closed
+
+
+def echo_raw_headers(request: httpx.Request) -> httpx.Response:
+    data = [
+        (name.decode("ascii"), value.decode("ascii"))
+        for name, value in request.headers.raw
+    ]
+    return httpx.Response(200, json=data)
+
+
+def test_raw_client_header():
+    """
+    Set a header in the Client.
+    """
+    url = "http://example.org/echo_headers"
+    headers = {"Example-Header": "example-value"}
+
+    client = httpx.Client(transport=MockTransport(echo_raw_headers), headers=headers)
+    response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == [
+        ["Host", "example.org"],
+        ["Accept", "*/*"],
+        ["Accept-Encoding", "gzip, deflate, br"],
+        ["Connection", "keep-alive"],
+        ["User-Agent", f"python-httpx/{httpx.__version__}"],
+        ["Example-Header", "example-value"],
+    ]
