@@ -11,10 +11,7 @@ def redirects(request: httpx.Request) -> httpx.Response:
             f"Scheme {request.url.scheme!r} not supported."
         )
 
-    if request.url.path == "/no_redirect":
-        return httpx.Response(200)
-
-    elif request.url.path == "/redirect_301":
+    if request.url.path == "/redirect_301":
         status_code = httpx.codes.MOVED_PERMANENTLY
         content = b"<a href='https://example.org/'>here</a>"
         headers = {"location": "https://example.org/"}
@@ -118,15 +115,6 @@ def redirects(request: httpx.Request) -> httpx.Response:
     return httpx.Response(200, html="<html><body>Hello, world!</body></html>")
 
 
-def test_no_redirect():
-    client = httpx.Client(transport=MockTransport(redirects))
-    url = "https://example.com/no_redirect"
-    response = client.get(url)
-    assert response.status_code == 200
-    with pytest.raises(httpx.NotRedirectResponse):
-        response.next()
-
-
 def test_redirect_301():
     client = httpx.Client(transport=MockTransport(redirects))
     response = client.post("https://example.org/redirect_301")
@@ -151,21 +139,6 @@ def test_redirect_303():
     assert len(response.history) == 1
 
 
-def test_disallow_redirects():
-    client = httpx.Client(transport=MockTransport(redirects))
-    response = client.post("https://example.org/redirect_303", allow_redirects=False)
-    assert response.status_code == httpx.codes.SEE_OTHER
-    assert response.url == "https://example.org/redirect_303"
-    assert response.is_redirect is True
-    assert len(response.history) == 0
-
-    response = response.next()
-    assert response.status_code == httpx.codes.OK
-    assert response.url == "https://example.org/"
-    assert response.is_redirect is False
-    assert len(response.history) == 1
-
-
 def test_next_request():
     client = httpx.Client(transport=MockTransport(redirects))
     request = client.build_request("POST", "https://example.org/redirect_303")
@@ -175,6 +148,21 @@ def test_next_request():
     assert response.next_request is not None
 
     response = client.send(response.next_request, allow_redirects=False)
+    assert response.status_code == httpx.codes.OK
+    assert response.url == "https://example.org/"
+    assert response.next_request is None
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_async_next_request():
+    client = httpx.AsyncClient(transport=MockTransport(redirects))
+    request = client.build_request("POST", "https://example.org/redirect_303")
+    response = await client.send(request, allow_redirects=False)
+    assert response.status_code == httpx.codes.SEE_OTHER
+    assert response.url == "https://example.org/redirect_303"
+    assert response.next_request is not None
+
+    response = await client.send(response.next_request, allow_redirects=False)
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
     assert response.next_request is None
@@ -251,29 +239,10 @@ async def test_async_too_many_redirects():
             await client.get("https://example.org/multiple_redirects?count=21")
 
 
-@pytest.mark.usefixtures("async_environment")
-async def test_async_too_many_redirects_calling_next():
-    async with httpx.AsyncClient(transport=MockTransport(redirects)) as client:
-        url = "https://example.org/multiple_redirects?count=21"
-        response = await client.get(url, allow_redirects=False)
-        with pytest.raises(httpx.TooManyRedirects):
-            while response.is_redirect:
-                response = await response.anext()
-
-
 def test_sync_too_many_redirects():
     client = httpx.Client(transport=MockTransport(redirects))
     with pytest.raises(httpx.TooManyRedirects):
         client.get("https://example.org/multiple_redirects?count=21")
-
-
-def test_sync_too_many_redirects_calling_next():
-    client = httpx.Client(transport=MockTransport(redirects))
-    url = "https://example.org/multiple_redirects?count=21"
-    response = client.get(url, allow_redirects=False)
-    with pytest.raises(httpx.TooManyRedirects):
-        while response.is_redirect:
-            response = response.next()
 
 
 def test_redirect_loop():

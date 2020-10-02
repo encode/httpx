@@ -1,5 +1,4 @@
 import datetime
-import functools
 import typing
 import warnings
 from types import TracebackType
@@ -833,13 +832,6 @@ class Client(BaseClient):
 
             if not allow_redirects:
                 response.next_request = request
-                response.call_next = functools.partial(
-                    self._send_handling_redirects,
-                    request=request,
-                    timeout=timeout,
-                    allow_redirects=False,
-                    history=history,
-                )
                 return response
 
     def _send_single_request(self, request: Request, timeout: Timeout) -> Response:
@@ -1477,13 +1469,6 @@ class AsyncClient(BaseClient):
 
             if not allow_redirects:
                 response.next_request = request
-                response.call_next = functools.partial(
-                    self._send_handling_redirects,
-                    request=request,
-                    timeout=timeout,
-                    allow_redirects=False,
-                    history=history,
-                )
                 return response
 
     async def _send_single_request(

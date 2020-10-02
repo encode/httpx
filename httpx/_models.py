@@ -27,7 +27,6 @@ from ._exceptions import (
     DecodingError,
     HTTPStatusError,
     InvalidURL,
-    NotRedirectResponse,
     RequestNotRead,
     ResponseClosed,
     ResponseNotRead,
@@ -1183,19 +1182,6 @@ class Response:
                 yield part
         self.close()
 
-    def next(self) -> "Response":
-        """
-        Get the next response from a redirect response.
-        """
-        if not self.is_redirect:
-            message = (
-                "Called .next(), but the response was not a redirect. "
-                "Calling code should check `response.is_redirect` first."
-            )
-            raise NotRedirectResponse(message)
-        assert self.call_next is not None
-        return self.call_next()
-
     def close(self) -> None:
         """
         Close the response and release the connection.
@@ -1267,18 +1253,6 @@ class Response:
                 self._num_bytes_downloaded += len(part)
                 yield part
         await self.aclose()
-
-    async def anext(self) -> "Response":
-        """
-        Get the next response from a redirect response.
-        """
-        if not self.is_redirect:
-            raise NotRedirectResponse(
-                "Called .anext(), but the response was not a redirect. "
-                "Calling code should check `response.is_redirect` first."
-            )
-        assert self.call_next is not None
-        return await self.call_next()
 
     async def aclose(self) -> None:
         """
