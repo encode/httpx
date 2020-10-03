@@ -1,6 +1,7 @@
 import io
 import itertools
 import typing
+from contextlib import contextmanager
 
 import httpcore
 
@@ -58,6 +59,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         self.script_name = script_name
         self.remote_addr = remote_addr
 
+    @contextmanager
     def request(
         self,
         method: bytes,
@@ -65,8 +67,10 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: httpcore.SyncByteStream = None,
         ext: dict = None,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], httpcore.SyncByteStream, dict
+    ) -> typing.Iterator[
+        typing.Tuple[
+            int, typing.List[typing.Tuple[bytes, bytes]], httpcore.SyncByteStream, dict
+        ]
     ]:
         headers = [] if headers is None else headers
         stream = httpcore.PlainByteStream(content=b"") if stream is None else stream
@@ -125,4 +129,4 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         stream = httpcore.IteratorByteStream(iterator=result)
         ext = {}
 
-        return (status_code, headers, stream, ext)
+        yield (status_code, headers, stream, ext)

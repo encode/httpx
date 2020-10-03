@@ -58,7 +58,7 @@ setup(
         "certifi",
         "sniffio",
         "rfc3986[idna2008]>=1.3,<2",
-        "httpcore==0.11.*",
+        "httpcore @ git+https://github.com/encode/httpcore@fm/request-context-manager#egg=httpcore",  # noqa
     ],
     extras_require={
         "http2": "h2==3.*",

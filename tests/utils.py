@@ -1,12 +1,13 @@
 import contextlib
 import logging
 import os
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Iterator, AsyncIterator, List, Optional, Tuple
 
 import httpcore
 
 import httpx
 from httpx import _utils
+from httpx._compat import asynccontextmanager
 
 
 @contextlib.contextmanager
@@ -28,6 +29,7 @@ class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
     def __init__(self, handler: Callable) -> None:
         self.handler = handler
 
+    @contextlib.contextmanager
     def request(
         self,
         method: bytes,
@@ -35,7 +37,7 @@ class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.SyncByteStream = None,
         ext: dict = None,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.SyncByteStream, dict]:
+    ) -> Iterator[Tuple[int, List[Tuple[bytes, bytes]], httpcore.SyncByteStream, dict]]:
         request = httpx.Request(
             method=method,
             url=url,
@@ -44,13 +46,14 @@ class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
         )
         request.read()
         response = self.handler(request)
-        return (
+        yield (
             response.status_code,
             response.headers.raw,
             response.stream,
             response.ext,
         )
 
+    @asynccontextmanager
     async def arequest(
         self,
         method: bytes,
@@ -58,7 +61,9 @@ class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.AsyncByteStream = None,
         ext: dict = None,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]:
+    ) -> AsyncIterator[
+        Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]
+    ]:
         request = httpx.Request(
             method=method,
             url=url,
@@ -67,7 +72,7 @@ class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
         )
         await request.aread()
         response = self.handler(request)
-        return (
+        yield (
             response.status_code,
             response.headers.raw,
             response.stream,

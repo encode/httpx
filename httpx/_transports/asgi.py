@@ -1,8 +1,9 @@
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, AsyncIterator, Callable, List, Optional, Tuple, Union
 from urllib.parse import unquote
 
 import httpcore
 import sniffio
+from .._compat import asynccontextmanager
 
 if TYPE_CHECKING:  # pragma: no cover
     import asyncio
@@ -68,6 +69,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         self.root_path = root_path
         self.client = client
 
+    @asynccontextmanager
     async def arequest(
         self,
         method: bytes,
@@ -75,7 +77,9 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.AsyncByteStream = None,
         ext: dict = None,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]:
+    ) -> AsyncIterator[
+        Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]
+    ]:
         headers = [] if headers is None else headers
         stream = httpcore.PlainByteStream(content=b"") if stream is None else stream
 
@@ -157,4 +161,4 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         stream = httpcore.PlainByteStream(content=b"".join(body_parts))
         ext = {}
 
-        return (status_code, response_headers, stream, ext)
+        yield (status_code, response_headers, stream, ext)
