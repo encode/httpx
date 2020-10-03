@@ -871,7 +871,7 @@ class Client(BaseClient):
 
             # Allow context manager responses, to enable compatibility with the updated
             # transport API.
-            if isinstance(raw_response, typing.ContextManager):
+            if isinstance(raw_response, typing.ContextManager):  # pragma: no cover
                 raw_response = exit_stack.enter_context(raw_response)
                 (status_code, headers, stream, ext) = raw_response
             else:
@@ -1528,7 +1528,7 @@ class AsyncClient(BaseClient):
 
             # Allow context manager responses, to enable compatibility with the updated
             # transport API.
-            if isinstance(raw_response, typing.AsyncContextManager):
+            if isinstance(raw_response, typing.AsyncContextManager):  # pragma: no cover
                 (
                     status_code,
                     headers,
