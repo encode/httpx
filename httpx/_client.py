@@ -2,12 +2,14 @@ import datetime
 import functools
 import typing
 import warnings
+from contextlib import ExitStack
 from types import TracebackType
 
 import httpcore
 
 from .__version__ import __version__
 from ._auth import Auth, BasicAuth, FunctionAuth
+from ._compat import AsyncExitStack
 from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
@@ -856,8 +858,10 @@ class Client(BaseClient):
         timer = Timer()
         timer.sync_start()
 
+        exit_stack = ExitStack()
+
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (status_code, headers, stream, ext) = transport.request(
+            raw_response = transport.request(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
@@ -865,10 +869,19 @@ class Client(BaseClient):
                 ext={"timeout": timeout.as_dict()},
             )
 
+            # Allow context manager responses, to enable compatibility with the updated
+            # transport API.
+            if isinstance(raw_response, typing.ContextManager):
+                raw_response = exit_stack.enter_context(raw_response)
+                (status_code, headers, stream, ext) = raw_response
+            else:
+                (status_code, headers, stream, ext) = raw_response
+                if hasattr(stream, "close"):
+                    exit_stack.callback(stream.close)
+
         def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(seconds=timer.sync_elapsed())
-            if hasattr(stream, "close"):
-                stream.close()
+            exit_stack.close()
 
         response = Response(
             status_code,
@@ -1502,8 +1515,10 @@ class AsyncClient(BaseClient):
         timer = Timer()
         await timer.async_start()
 
+        exit_stack = AsyncExitStack()
+
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (status_code, headers, stream, ext,) = await transport.arequest(
+            raw_response = transport.arequest(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
@@ -1511,10 +1526,23 @@ class AsyncClient(BaseClient):
                 ext={"timeout": timeout.as_dict()},
             )
 
+            # Allow context manager responses, to enable compatibility with the updated
+            # transport API.
+            if isinstance(raw_response, typing.AsyncContextManager):
+                (
+                    status_code,
+                    headers,
+                    stream,
+                    ext,
+                ) = await exit_stack.enter_async_context(raw_response)
+            else:
+                (status_code, headers, stream, ext) = await raw_response
+                if hasattr(stream, "aclose"):
+                    exit_stack.push_async_callback(stream.aclose)
+
         async def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
-            if hasattr(stream, "aclose"):
-                await stream.aclose()
+            await exit_stack.aclose()
 
         response = Response(
             status_code,
