@@ -20,4 +20,4 @@ loads = json.loads
 dumps = json.dumps
 
 
-__all__ = ['loads', 'dumps']
+__all__ = ["loads", "dumps"]

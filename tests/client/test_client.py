@@ -280,8 +280,7 @@ def test_post_json_overriden_decoder(server):
     default_loads = jsonlib.loads
 
     def _my_loads(s, **kwargs):
-        return json \
-            .loads(s, parse_float=lambda v: Decimal(v), **kwargs)
+        return json.loads(s, parse_float=lambda v: Decimal(v), **kwargs)
 
     jsonlib.loads = _my_loads
 
@@ -291,7 +290,7 @@ def test_post_json_overriden_decoder(server):
     with httpx.Client() as client:
         response = client.post(
             url.copy_with(path="/echo_body"),
-            json={"text": "Hello, world!", "decimal": 0.12345}
+            json={"text": "Hello, world!", "decimal": 0.12345},
         )
     assert response.status_code == 200
     data = response.json()

@@ -366,9 +366,9 @@ async def test_json_content_overriden_encoder():
     default_dumps = jsonlib.dumps
 
     def _my_dumps(obj, **kwargs):
-        return json \
-            .dumps(obj, ensure_ascii=False, sort_keys=True, **kwargs) \
-            .encode("utf-8")
+        return json.dumps(obj, ensure_ascii=False, sort_keys=True, **kwargs).encode(
+            "utf-8"
+        )
 
     jsonlib.dumps = _my_dumps
 
