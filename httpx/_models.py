@@ -1073,6 +1073,9 @@ class Response:
             raise HTTPStatusError(message, request=request, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
+        """
+        For available `kwargs` see `httpx.jsonlib.loads` definition.
+        """
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
