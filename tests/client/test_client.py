@@ -1,9 +1,12 @@
+from decimal import Decimal
 from datetime import timedelta
+import json
 
 import httpcore
 import pytest
 
 import httpx
+from httpx import jsonlib
 
 
 def test_get(server):
@@ -271,3 +274,28 @@ def test_that_client_is_closed_after_with_block():
         pass
 
     assert client.is_closed
+
+
+def test_post_json_overriden_decoder(server):
+    default_loads = jsonlib.loads
+
+    def _my_loads(s, **kwargs):
+        return json \
+            .loads(s, parse_float=lambda v: Decimal(v), **kwargs)
+
+    jsonlib.loads = _my_loads
+
+    assert jsonlib.loads is _my_loads
+
+    url = server.url
+    with httpx.Client() as client:
+        response = client.post(
+            url.copy_with(path="/echo_body"),
+            json={"text": "Hello, world!", "decimal": 0.12345}
+        )
+    assert response.status_code == 200
+    data = response.json()
+
+    assert isinstance(data["decimal"], Decimal)
+
+    jsonlib.loads = default_loads
