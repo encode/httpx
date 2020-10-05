@@ -1,5 +1,4 @@
 import inspect
-from json import dumps as json_dumps
 from typing import (
     Any,
     AsyncIterable,
@@ -12,6 +11,7 @@ from typing import (
 )
 from urllib.parse import urlencode
 
+from .jsonlib import dumps as json_dumps
 from ._exceptions import StreamConsumed
 from ._multipart import MultipartStream
 from ._types import (

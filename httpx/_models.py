@@ -2,7 +2,6 @@ import cgi
 import contextlib
 import datetime
 import email.message
-import json as jsonlib
 import typing
 import urllib.request
 from collections.abc import MutableMapping
@@ -12,6 +11,7 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode
 import rfc3986
 import rfc3986.exceptions
 
+from . import jsonlib
 from ._content import PlainByteStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
