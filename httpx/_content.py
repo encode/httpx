@@ -11,7 +11,7 @@ from typing import (
 )
 from urllib.parse import urlencode
 
-from .jsonlib import dumps as json_dumps
+from . import jsonlib
 from ._exceptions import StreamConsumed
 from ._multipart import MultipartStream
 from ._types import (
@@ -138,7 +138,7 @@ def encode_html(html: str) -> Tuple[Dict[str, str], ByteStream]:
 
 
 def encode_json(json: Any) -> Tuple[Dict[str, str], ByteStream]:
-    body = json_dumps(json)
+    body = jsonlib.dumps(json)
     if isinstance(body, str):
         body = body.encode("utf-8")
     content_length = str(len(body))
