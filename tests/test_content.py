@@ -4,8 +4,7 @@ import typing
 
 import pytest
 
-from httpx import StreamConsumed
-from httpx import jsonlib
+from httpx import StreamConsumed, jsonlib
 from httpx._content import encode_request, encode_response
 
 

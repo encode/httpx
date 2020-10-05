@@ -138,7 +138,7 @@ def encode_html(html: str) -> Tuple[Dict[str, str], ByteStream]:
 
 
 def encode_json(json: Any) -> Tuple[Dict[str, str], ByteStream]:
-    body = jsonlib.dumps(json)
+    body: Union[bytes, str] = jsonlib.dumps(json)
     if isinstance(body, str):
         body = body.encode("utf-8")
     content_length = str(len(body))
