@@ -1057,3 +1057,36 @@ Which we can use in the same way:
 >>> response.json()
 {"text": "Hello, world!"}
 ```
+
+
+## Custom JSON library support
+
+By default `httpx` uses built-in python library `json` to decode and encode
+JSON data.
+It is possible to replace it with some other, higher performance library or add
+some custom encoder options.
+
+You can make `dumps` return pretty-printed JSON by default.
+```python
+import json
+import httpx.jsonlib
+
+def _my_dumps(obj, *, **kwargs):
+    return json.dumps(obj,
+        ensure_ascii=kwargs.pop('ensure_ascii', False),
+        indent=kwargs.pop('indent', 4),
+        sort_keys=kwargs.pop('sort_keys', True),
+        **kwargs
+    )
+
+https.jsonlib.dumps = _my_dumps
+```
+
+Or use another library for JSON support.
+```python
+import httpx.jsonlib
+import orjson
+
+https.jsonlib.dumps = orjson.dumps
+https.jsonlib.loads = orjson.loads
+```
