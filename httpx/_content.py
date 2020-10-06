@@ -1,4 +1,6 @@
 import inspect
+import json
+import typing
 from typing import (
     Any,
     AsyncIterable,
@@ -11,7 +13,6 @@ from typing import (
 )
 from urllib.parse import urlencode
 
-from . import jsonlib
 from ._exceptions import StreamConsumed
 from ._multipart import MultipartStream
 from ._types import (
@@ -137,8 +138,10 @@ def encode_html(html: str) -> Tuple[Dict[str, str], ByteStream]:
     return headers, PlainByteStream(body)
 
 
-def encode_json(json: Any) -> Tuple[Dict[str, str], ByteStream]:
-    body: Union[bytes, str] = jsonlib.dumps(json)
+def encode_json(
+    json: Any, encoder: typing.Callable = json.dumps
+) -> Tuple[Dict[str, str], ByteStream]:
+    body: Union[bytes, str] = encoder(json)
     if isinstance(body, str):
         body = body.encode("utf-8")
     content_length = str(len(body))
@@ -153,6 +156,7 @@ def encode_request(
     files: RequestFiles = None,
     json: Any = None,
     boundary: bytes = None,
+    json_encoder: typing.Callable = json.dumps,
 ) -> Tuple[Dict[str, str], ByteStream]:
     """
     Handles encoding the given `content`, `data`, `files`, and `json`,
@@ -175,7 +179,7 @@ def encode_request(
     elif data:
         return encode_urlencoded_data(data)
     elif json is not None:
-        return encode_json(json)
+        return encode_json(json, encoder=json_encoder)
 
     return {}, PlainByteStream(b"")
 
@@ -185,6 +189,7 @@ def encode_response(
     text: str = None,
     html: str = None,
     json: Any = None,
+    json_encoder: typing.Callable = json.dumps,
 ) -> Tuple[Dict[str, str], ByteStream]:
     """
     Handles encoding the given `content`, returning a two-tuple of
@@ -197,6 +202,6 @@ def encode_response(
     elif html is not None:
         return encode_html(html)
     elif json is not None:
-        return encode_json(json)
+        return encode_json(json, encoder=json_encoder)
 
     return {}, PlainByteStream(b"")

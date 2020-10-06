@@ -1,5 +1,6 @@
 import datetime
 import functools
+import json
 import typing
 import warnings
 from types import TracebackType
@@ -84,6 +85,8 @@ class BaseClient:
         event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         trust_env: bool = True,
+        json_encoder: typing.Callable = json.dumps,
+        json_decoder: typing.Callable = json.loads,
     ):
         event_hooks = {} if event_hooks is None else event_hooks
 
@@ -102,6 +105,8 @@ class BaseClient:
         self._trust_env = trust_env
         self._netrc = NetRCInfo()
         self._is_closed = True
+        self._json_encoder = json_encoder
+        self._json_decoder = json_decoder
 
     @property
     def is_closed(self) -> bool:
@@ -311,6 +316,7 @@ class BaseClient:
             params=params,
             headers=headers,
             cookies=cookies,
+            json_encoder=self._json_encoder,
         )
 
     def _merge_url(self, url: URLTypes) -> URL:
@@ -405,7 +411,12 @@ class BaseClient:
         stream = self._redirect_stream(request, method)
         cookies = Cookies(self.cookies)
         return Request(
-            method=method, url=url, headers=headers, cookies=cookies, stream=stream
+            method=method,
+            url=url,
+            headers=headers,
+            cookies=cookies,
+            stream=stream,
+            json_encoder=self._json_encoder,
         )
 
     def _redirect_method(self, request: Request, response: Response) -> str:
@@ -542,6 +553,8 @@ class Client(BaseClient):
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
+    * **json_encoder** - *(optional)* A custom function to encode request data to JSON.
+    * **json_decoder** - *(optional)* A custom function to decode response data from JSON.
     """
 
     def __init__(
@@ -564,6 +577,8 @@ class Client(BaseClient):
         transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
+        json_encoder: typing.Callable = json.dumps,
+        json_decoder: typing.Callable = json.loads,
     ):
         super().__init__(
             auth=auth,
@@ -575,6 +590,8 @@ class Client(BaseClient):
             event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
+            json_encoder=json_encoder,
+            json_decoder=json_decoder,
         )
 
         if http2:
@@ -877,6 +894,8 @@ class Client(BaseClient):
             ext=ext,
             request=request,
             on_close=on_close,
+            json_encoder=self._json_encoder,
+            json_decoder=self._json_decoder,
         )
 
         self.cookies.extract_cookies(response)
@@ -1184,6 +1203,8 @@ class AsyncClient(BaseClient):
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
+    * **json_encoder** - *(optional)* A custom function to encode request data to JSON.
+    * **json_decoder** - *(optional)* A custom function to decode response data from JSON.
     """
 
     def __init__(
@@ -1206,6 +1227,8 @@ class AsyncClient(BaseClient):
         transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
+        json_encoder: typing.Callable = json.dumps,
+        json_decoder: typing.Callable = json.loads,
     ):
         super().__init__(
             auth=auth,
@@ -1217,6 +1240,8 @@ class AsyncClient(BaseClient):
             event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
+            json_encoder=json_encoder,
+            json_decoder=json_decoder,
         )
 
         if http2:
@@ -1523,6 +1548,8 @@ class AsyncClient(BaseClient):
             ext=ext,
             request=request,
             on_close=on_close,
+            json_encoder=self._json_encoder,
+            json_decoder=self._json_decoder,
         )
 
         self.cookies.extract_cookies(response)

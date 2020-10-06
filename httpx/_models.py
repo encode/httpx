@@ -2,6 +2,7 @@ import cgi
 import contextlib
 import datetime
 import email.message
+import json
 import typing
 import urllib.request
 from collections.abc import MutableMapping
@@ -11,7 +12,6 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode
 import rfc3986
 import rfc3986.exceptions
 
-from . import jsonlib
 from ._content import PlainByteStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
@@ -760,6 +760,7 @@ class Request:
         files: RequestFiles = None,
         json: typing.Any = None,
         stream: ByteStream = None,
+        json_encoder: typing.Callable = json.dumps,
     ):
         if isinstance(method, bytes):
             self.method = method.decode("ascii").upper()
@@ -787,7 +788,9 @@ class Request:
             self.stream = stream
             self._prepare({})
         else:
-            headers, stream = encode_request(content, data, files, json)
+            headers, stream = encode_request(
+                content, data, files, json, json_encoder=json_encoder
+            )
             self._prepare(headers)
             self.stream = stream
 
@@ -870,6 +873,8 @@ class Response:
         ext: dict = None,
         history: typing.List["Response"] = None,
         on_close: typing.Callable = None,
+        json_encoder: typing.Callable = json.dumps,
+        json_decoder: typing.Callable = json.loads,
     ):
         self.status_code = status_code
         self.headers = Headers(headers)
@@ -903,7 +908,9 @@ class Response:
             # from the transport API.
             self.stream = stream
         else:
-            headers, stream = encode_response(content, text, html, json)
+            headers, stream = encode_response(
+                content, text, html, json, json_encoder=json_encoder
+            )
             self._prepare(headers)
             self.stream = stream
             if content is None or isinstance(content, (bytes, str)):
@@ -911,6 +918,7 @@ class Response:
                 self.read()
 
         self._num_bytes_downloaded = 0
+        self._json_decoder = json_decoder
 
     def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
         for key, value in default_headers.items():
@@ -1074,16 +1082,16 @@ class Response:
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
         """
-        For available `kwargs` see `httpx.jsonlib.loads` definition.
+        For available `kwargs` see `json.loads` definition.
         """
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
                 try:
-                    return jsonlib.loads(self.content.decode(encoding), **kwargs)
+                    return self._json_decoder(self.content.decode(encoding), **kwargs)
                 except UnicodeDecodeError:
                     pass
-        return jsonlib.loads(self.text, **kwargs)
+        return self._json_decoder(self.text, **kwargs)
 
     @property
     def cookies(self) -> "Cookies":

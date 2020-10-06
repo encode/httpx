@@ -64,7 +64,6 @@ __all__ = [
     "HTTPError",
     "HTTPStatusError",
     "InvalidURL",
-    "jsonlib",
     "Limits",
     "LocalProtocolError",
     "NetworkError",
