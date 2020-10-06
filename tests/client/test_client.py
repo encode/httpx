@@ -23,9 +23,6 @@ def test_get(server):
     assert repr(response) == "<Response [200 OK]>"
     assert response.elapsed > timedelta(0)
 
-    with pytest.raises(httpx.NotRedirectResponse):
-        response.next()
-
 
 @pytest.mark.parametrize(
     "url",
