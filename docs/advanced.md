@@ -1063,15 +1063,15 @@ Which we can use in the same way:
 
 By default `httpx` uses built-in python library `json` to decode and encode
 JSON data.
-It is possible to replace it with some other, higher performance library or add
-some custom encoder options.
+It is possible to use some other, higher performance library or add some custom
+encoder options.
 
 You can make `dumps` return pretty-printed JSON by default.
 ```python
+import httpx
 import json
-import httpx.jsonlib
 
-def _my_dumps(obj, *, **kwargs):
+def _my_dumps(obj, **kwargs):
     return json.dumps(obj,
         ensure_ascii=kwargs.pop('ensure_ascii', False),
         indent=kwargs.pop('indent', 4),
@@ -1079,14 +1079,17 @@ def _my_dumps(obj, *, **kwargs):
         **kwargs
     )
 
-https.jsonlib.dumps = _my_dumps
+with httpx.Client(json_encoder=_my_dumps) as client:
+    response = client.post('http://httpbin.org/anything', json={'Hello': 'World!', '🙂': '👋'})
+    print(response.json())
 ```
 
 Or use another library for JSON support.
 ```python
-import httpx.jsonlib
+import httpx
 import orjson
 
-https.jsonlib.dumps = orjson.dumps
-https.jsonlib.loads = orjson.loads
+with httpx.Client(json_encoder=orjson.dumps, json_decoder=orjson.loads) as client:
+    response = client.post('http://httpbin.org/anything', json={'Hello': 'World!', '🙂': '👋'})
+    print(response.json())
 ```
