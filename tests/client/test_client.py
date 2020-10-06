@@ -4,6 +4,7 @@ import httpcore
 import pytest
 
 import httpx
+from tests.utils import MockTransport
 
 
 def test_get(server):
@@ -244,27 +245,29 @@ def test_context_managed_transport():
     ]
 
 
-def test_that_client_is_closed_by_default():
-    client = httpx.Client()
-
-    assert client.is_closed
+def hello_world(request):
+    return httpx.Response(200, text="Hello, world!")
 
 
-def test_that_send_cause_client_to_be_not_closed():
-    client = httpx.Client()
+def test_client_closed_state_using_implicit_open():
+    client = httpx.Client(transport=MockTransport(hello_world))
 
+    assert not client.is_closed
     client.get("http://example.com")
 
     assert not client.is_closed
-
-
-def test_that_client_is_not_closed_in_with_block():
-    with httpx.Client() as client:
-        assert not client.is_closed
-
-
-def test_that_client_is_closed_after_with_block():
-    with httpx.Client() as client:
-        pass
+    client.close()
 
     assert client.is_closed
+    with pytest.raises(RuntimeError):
+        client.get("http://example.com")
+
+
+def test_client_closed_state_using_with_block():
+    with httpx.Client(transport=MockTransport(hello_world)) as client:
+        assert not client.is_closed
+        client.get("http://example.com")
+
+    assert client.is_closed
+    with pytest.raises(RuntimeError):
+        client.get("http://example.com")
