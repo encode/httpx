@@ -4,7 +4,7 @@ import typing
 
 import pytest
 
-from httpx import StreamConsumed, jsonlib
+from httpx import StreamConsumed
 from httpx._content import encode_request, encode_response
 
 
@@ -362,14 +362,10 @@ def test_response_invalid_argument():
 
 @pytest.mark.asyncio
 async def test_json_content_overriden_encoder():
-    default_dumps = jsonlib.dumps
-
     def _my_dumps(obj, **kwargs):
         return json.dumps(obj, ensure_ascii=False, sort_keys=True, **kwargs).encode(
             "utf-8"
         )
-
-    jsonlib.dumps = _my_dumps
 
     data = {
         "こんにちは": "世界",
@@ -377,16 +373,13 @@ async def test_json_content_overriden_encoder():
         "Привет": "мир!",
         "Hello": "world!",
     }
-    headers, stream = encode_request(json=data)
+    headers, stream = encode_request(json=data, json_encoder=_my_dumps)
 
     assert isinstance(stream, typing.Iterable)
     assert isinstance(stream, typing.AsyncIterable)
-    assert jsonlib.dumps is _my_dumps
 
     sync_content = b"".join([part for part in stream])
     async_content = b"".join([part async for part in stream])
-
-    jsonlib.dumps = default_dumps
 
     result = _my_dumps(data)
 

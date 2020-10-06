@@ -6,7 +6,6 @@ import httpcore
 import pytest
 
 import httpx
-from httpx import jsonlib
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -255,17 +254,11 @@ async def test_that_async_client_caused_warning_when_being_deleted():
 
 @pytest.mark.usefixtures("async_environment")
 async def test_post_json_overriden_decoder(server):
-    default_loads = jsonlib.loads
-
     def _my_loads(s, **kwargs):
         return json.loads(s, parse_float=lambda v: Decimal(v), **kwargs)
 
-    jsonlib.loads = _my_loads
-
-    assert jsonlib.loads is _my_loads
-
     url = server.url
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(json_decoder=_my_loads) as client:
         response = await client.post(
             url.copy_with(path="/echo_body"),
             json={"text": "Hello, world!", "decimal": 0.12345},
@@ -274,5 +267,3 @@ async def test_post_json_overriden_decoder(server):
     data = response.json()
 
     assert isinstance(data["decimal"], Decimal)
-
-    jsonlib.loads = default_loads
