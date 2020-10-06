@@ -1,4 +1,5 @@
 import datetime
+import enum
 import functools
 import typing
 import warnings
@@ -71,6 +72,12 @@ ACCEPT_ENCODING = ", ".join(
 )
 
 
+class ClientState(enum.Enum):
+    UNOPENED = 1
+    OPENED = 2
+    CLOSED = 3
+
+
 class BaseClient:
     def __init__(
         self,
@@ -101,14 +108,14 @@ class BaseClient:
         }
         self._trust_env = trust_env
         self._netrc = NetRCInfo()
-        self._is_closed = True
+        self._state = ClientState.UNOPENED
 
     @property
     def is_closed(self) -> bool:
         """
         Check if the client being closed
         """
-        return self._is_closed
+        return self._state == ClientState.CLOSED
 
     @property
     def trust_env(self) -> bool:
@@ -750,8 +757,10 @@ class Client(BaseClient):
 
         [0]: /advanced/#request-instances
         """
-        self._is_closed = False
+        if self._state == ClientState.CLOSED:
+            raise RuntimeError("Cannot send a request, as the client has been closed.")
 
+        self._state = ClientState.OPENED
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_request_auth(request, auth)
@@ -1104,8 +1113,8 @@ class Client(BaseClient):
         """
         Close transport and proxies.
         """
-        if not self.is_closed:
-            self._is_closed = True
+        if self._state != ClientState.CLOSED:
+            self._state = ClientState.CLOSED
 
             self._transport.close()
             for proxy in self._proxies.values():
@@ -1113,11 +1122,12 @@ class Client(BaseClient):
                     proxy.close()
 
     def __enter__(self: T) -> T:
+        self._state = ClientState.OPENED
+
         self._transport.__enter__()
         for proxy in self._proxies.values():
             if proxy is not None:
                 proxy.__enter__()
-        self._is_closed = False
         return self
 
     def __exit__(
@@ -1126,13 +1136,12 @@ class Client(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        if not self.is_closed:
-            self._is_closed = True
+        self._state = ClientState.CLOSED
 
-            self._transport.__exit__(exc_type, exc_value, traceback)
-            for proxy in self._proxies.values():
-                if proxy is not None:
-                    proxy.__exit__(exc_type, exc_value, traceback)
+        self._transport.__exit__(exc_type, exc_value, traceback)
+        for proxy in self._proxies.values():
+            if proxy is not None:
+                proxy.__exit__(exc_type, exc_value, traceback)
 
     def __del__(self) -> None:
         self.close()
@@ -1394,8 +1403,10 @@ class AsyncClient(BaseClient):
 
         [0]: /advanced/#request-instances
         """
-        self._is_closed = False
+        if self._state == ClientState.CLOSED:
+            raise RuntimeError("Cannot send a request, as the client has been closed.")
 
+        self._state = ClientState.OPENED
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_request_auth(request, auth)
@@ -1750,8 +1761,8 @@ class AsyncClient(BaseClient):
         """
         Close transport and proxies.
         """
-        if not self.is_closed:
-            self._is_closed = True
+        if self._state != ClientState.CLOSED:
+            self._state = ClientState.CLOSED
 
             await self._transport.aclose()
             for proxy in self._proxies.values():
@@ -1759,11 +1770,12 @@ class AsyncClient(BaseClient):
                     await proxy.aclose()
 
     async def __aenter__(self: U) -> U:
+        self._state = ClientState.OPENED
+
         await self._transport.__aenter__()
         for proxy in self._proxies.values():
             if proxy is not None:
                 await proxy.__aenter__()
-        self._is_closed = False
         return self
 
     async def __aexit__(
@@ -1772,15 +1784,15 @@ class AsyncClient(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        if not self.is_closed:
-            self._is_closed = True
-            await self._transport.__aexit__(exc_type, exc_value, traceback)
-            for proxy in self._proxies.values():
-                if proxy is not None:
-                    await proxy.__aexit__(exc_type, exc_value, traceback)
+        self._state = ClientState.CLOSED
+
+        await self._transport.__aexit__(exc_type, exc_value, traceback)
+        for proxy in self._proxies.values():
+            if proxy is not None:
+                await proxy.__aexit__(exc_type, exc_value, traceback)
 
     def __del__(self) -> None:
-        if not self.is_closed:
+        if self._state == ClientState.OPENED:
             warnings.warn(
                 f"Unclosed {self!r}. "
                 "See https://www.python-httpx.org/async/#opening-and-closing-clients "
