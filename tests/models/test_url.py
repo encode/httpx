@@ -299,7 +299,7 @@ def test_ipv6_url():
 @pytest.mark.parametrize(
     "url_str",
     [
-        "http://192.168.0.1:1234",
+        "http://127.0.0.1:1234",
         "http://example.com:1234",
         "http://[::ffff:192.168.0.2]:1234",
     ],
