@@ -289,12 +289,8 @@ def test_url_with_url_encoded_path():
     assert url.raw_path == b"/path%20to%20somewhere"
 
 
-@pytest.mark.parametrize(
-    "url_str",
-    ["http://[::ffff:192.168.0.1]:5678/"],
-)
-def test_ipv6_ulr(url_str):
-    url = httpx.URL(url_str)
+def test_ipv6_url():
+    url = httpx.URL("http://[::ffff:192.168.0.1]:5678/")
 
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == "[::ffff:192.168.0.1]:5678"
