@@ -287,3 +287,41 @@ def test_url_with_url_encoded_path():
     assert url.path == "/path to somewhere"
     assert url.query == b""
     assert url.raw_path == b"/path%20to%20somewhere"
+
+
+@pytest.mark.parametrize(
+    "url_str",
+    ["http://[::ffff:192.168.0.1]:5678/"],
+)
+def test_ipv6_ulr(url_str):
+    url = httpx.URL(url_str)
+
+    assert url.host == "::ffff:192.168.0.1"
+    assert url.netloc == "[::ffff:192.168.0.1]:5678"
+
+
+@pytest.mark.parametrize(
+    "url_str",
+    [
+        "http://192.168.0.1:1234",
+        "http://example.com:1234",
+        "http://[::ffff:192.168.0.2]:1234",
+    ],
+)
+@pytest.mark.parametrize("new_host", ["[::ffff:192.168.0.1]", "::ffff:192.168.0.1"])
+def test_ipv6_url_copy_with_host(url_str, new_host):
+    url = httpx.URL(url_str).copy_with(host=new_host)
+
+    assert url.host == "::ffff:192.168.0.1"
+    assert url.netloc == "[::ffff:192.168.0.1]:1234"
+    assert str(url) == "http://[::ffff:192.168.0.1]:1234"
+
+
+@pytest.mark.parametrize("host", [b"[::ffff:192.168.0.1]", b"::ffff:192.168.0.1"])
+def test_ipv6_url_from_raw_url(host):
+    raw_url = (b"https", host, 443, b"/")
+    url = httpx.URL(raw_url)
+
+    assert url.host == "::ffff:192.168.0.1"
+    assert url.netloc == "[::ffff:192.168.0.1]:443"
+    assert str(url) == "https://[::ffff:192.168.0.1]:443/"
