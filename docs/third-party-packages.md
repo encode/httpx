@@ -24,6 +24,13 @@ An asynchronous GitHub API library. Includes [HTTPX support](https://gidgethub.r
 
 A utility for mocking out the Python HTTPX library.
 
+### VCR.py
+
+[GitHub](https://github.com/kevin1024/vcrpy) - [Documentation](https://vcrpy.readthedocs.io/)
+
+A utility for record and repeat an http request.
+
+
 ## Gists
 
 <!-- NOTE: this list is in alphabetical order. -->

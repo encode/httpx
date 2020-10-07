@@ -4,6 +4,7 @@ import httpcore
 import pytest
 
 import httpx
+from tests.utils import MockTransport
 
 
 def test_get(server):
@@ -15,15 +16,12 @@ def test_get(server):
     assert response.content == b"Hello, world!"
     assert response.text == "Hello, world!"
     assert response.http_version == "HTTP/1.1"
-    assert response.encoding == "iso-8859-1"
+    assert response.encoding is None
     assert response.request.url == url
     assert response.headers
     assert response.is_redirect is False
     assert repr(response) == "<Response [200 OK]>"
     assert response.elapsed > timedelta(0)
-
-    with pytest.raises(httpx.NotRedirectResponse):
-        response.next()
 
 
 @pytest.mark.parametrize(
@@ -73,7 +71,7 @@ def test_build_post_request(server):
 
 def test_post(server):
     with httpx.Client() as client:
-        response = client.post(server.url, data=b"Hello, world!")
+        response = client.post(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
@@ -148,14 +146,14 @@ def test_head(server):
 
 def test_put(server):
     with httpx.Client() as client:
-        response = client.put(server.url, data=b"Hello, world!")
+        response = client.put(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 def test_patch(server):
     with httpx.Client() as client:
-        response = client.patch(server.url, data=b"Hello, world!")
+        response = client.patch(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
@@ -179,8 +177,6 @@ def test_merge_absolute_url():
     client = httpx.Client(base_url="https://www.example.com/")
     request = client.build_request("GET", "http://www.example.com/")
     assert request.url == "http://www.example.com/"
-    with pytest.warns(DeprecationWarning):
-        assert not request.url.is_ssl
 
 
 def test_merge_relative_url():
@@ -249,27 +245,58 @@ def test_context_managed_transport():
     ]
 
 
-def test_that_client_is_closed_by_default():
-    client = httpx.Client()
-
-    assert client.is_closed
+def hello_world(request):
+    return httpx.Response(200, text="Hello, world!")
 
 
-def test_that_send_cause_client_to_be_not_closed():
-    client = httpx.Client()
+def test_client_closed_state_using_implicit_open():
+    client = httpx.Client(transport=MockTransport(hello_world))
 
+    assert not client.is_closed
     client.get("http://example.com")
 
     assert not client.is_closed
-
-
-def test_that_client_is_not_closed_in_with_block():
-    with httpx.Client() as client:
-        assert not client.is_closed
-
-
-def test_that_client_is_closed_after_with_block():
-    with httpx.Client() as client:
-        pass
+    client.close()
 
     assert client.is_closed
+    with pytest.raises(RuntimeError):
+        client.get("http://example.com")
+
+
+def test_client_closed_state_using_with_block():
+    with httpx.Client(transport=MockTransport(hello_world)) as client:
+        assert not client.is_closed
+        client.get("http://example.com")
+
+    assert client.is_closed
+    with pytest.raises(RuntimeError):
+        client.get("http://example.com")
+
+
+def echo_raw_headers(request: httpx.Request) -> httpx.Response:
+    data = [
+        (name.decode("ascii"), value.decode("ascii"))
+        for name, value in request.headers.raw
+    ]
+    return httpx.Response(200, json=data)
+
+
+def test_raw_client_header():
+    """
+    Set a header in the Client.
+    """
+    url = "http://example.org/echo_headers"
+    headers = {"Example-Header": "example-value"}
+
+    client = httpx.Client(transport=MockTransport(echo_raw_headers), headers=headers)
+    response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == [
+        ["Host", "example.org"],
+        ["Accept", "*/*"],
+        ["Accept-Encoding", "gzip, deflate, br"],
+        ["Connection", "keep-alive"],
+        ["User-Agent", f"python-httpx/{httpx.__version__}"],
+        ["Example-Header", "example-value"],
+    ]

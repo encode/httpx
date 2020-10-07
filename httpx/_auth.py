@@ -6,7 +6,7 @@ import typing
 from base64 import b64encode
 from urllib.request import parse_http_list
 
-from ._exceptions import ProtocolError, RequestBodyUnavailable
+from ._exceptions import ProtocolError
 from ._models import Request, Response
 from ._utils import to_bytes, to_str, unquote
 
@@ -157,13 +157,6 @@ class DigestAuth(Auth):
         self._password = to_bytes(password)
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
-        if not request.stream.can_replay():
-            raise RequestBodyUnavailable(
-                "Cannot use digest auth with streaming requests that are unable "
-                "to replay the request body if a second request is required.",
-                request=request,
-            )
-
         response = yield request
 
         if response.status_code != 401 or "www-authenticate" not in response.headers:
@@ -204,11 +197,11 @@ class DigestAuth(Auth):
         try:
             realm = header_dict["realm"].encode()
             nonce = header_dict["nonce"].encode()
-            qop = header_dict["qop"].encode() if "qop" in header_dict else None
-            opaque = header_dict["opaque"].encode() if "opaque" in header_dict else None
             algorithm = header_dict.get("algorithm", "MD5")
+            opaque = header_dict["opaque"].encode() if "opaque" in header_dict else None
+            qop = header_dict["qop"].encode() if "qop" in header_dict else None
             return _DigestAuthChallenge(
-                realm=realm, nonce=nonce, qop=qop, opaque=opaque, algorithm=algorithm
+                realm=realm, nonce=nonce, algorithm=algorithm, opaque=opaque, qop=qop
             )
         except KeyError as exc:
             message = "Malformed Digest WWW-Authenticate header"
@@ -224,7 +217,7 @@ class DigestAuth(Auth):
 
         A1 = b":".join((self._username, challenge.realm, self._password))
 
-        path = request.url.full_path.encode("utf-8")
+        path = request.url.raw_path
         A2 = b":".join((request.method.encode(), path))
         # TODO: implement auth-int
         HA2 = digest(A2)
@@ -303,17 +296,9 @@ class DigestAuth(Auth):
         raise ProtocolError(message, request=request)
 
 
-class _DigestAuthChallenge:
-    def __init__(
-        self,
-        realm: bytes,
-        nonce: bytes,
-        algorithm: str,
-        opaque: typing.Optional[bytes] = None,
-        qop: typing.Optional[bytes] = None,
-    ) -> None:
-        self.realm = realm
-        self.nonce = nonce
-        self.algorithm = algorithm
-        self.opaque = opaque
-        self.qop = qop
+class _DigestAuthChallenge(typing.NamedTuple):
+    realm: bytes
+    nonce: bytes
+    algorithm: str
+    opaque: typing.Optional[bytes]
+    qop: typing.Optional[bytes]

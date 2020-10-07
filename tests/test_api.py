@@ -12,7 +12,7 @@ def test_get(server):
 
 
 def test_post(server):
-    response = httpx.post(server.url, data=b"Hello, world!")
+    response = httpx.post(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
@@ -23,7 +23,7 @@ def test_post_byte_iterator(server):
         yield b", "
         yield b"world!"
 
-    response = httpx.post(server.url, data=data())
+    response = httpx.post(server.url, content=data())
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
@@ -41,13 +41,13 @@ def test_head(server):
 
 
 def test_put(server):
-    response = httpx.put(server.url, data=b"Hello, world!")
+    response = httpx.put(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 
 
 def test_patch(server):
-    response = httpx.patch(server.url, data=b"Hello, world!")
+    response = httpx.patch(server.url, content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
 

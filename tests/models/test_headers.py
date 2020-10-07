@@ -15,9 +15,6 @@ def test_headers():
     assert h.get("nope", default=None) is None
     assert h.get_list("a") == ["123", "456"]
 
-    with pytest.warns(DeprecationWarning):
-        assert h.getlist("a") == ["123", "456"]
-
     assert list(h.keys()) == ["a", "b"]
     assert list(h.values()) == ["123, 456", "789"]
     assert list(h.items()) == [("a", "123, 456"), ("b", "789")]
@@ -25,8 +22,10 @@ def test_headers():
     assert list(h) == ["a", "b"]
     assert dict(h) == {"a": "123, 456", "b": "789"}
     assert repr(h) == "Headers([('a', '123'), ('a', '456'), ('b', '789')])"
-    assert h == httpx.Headers([("a", "123"), ("b", "789"), ("a", "456")])
-    assert h != [("a", "123"), ("A", "456"), ("b", "789")]
+    assert h == [("a", "123"), ("b", "789"), ("a", "456")]
+    assert h == [("a", "123"), ("A", "456"), ("b", "789")]
+    assert h == {"a": "123", "A": "456", "b": "789"}
+    assert h != "a: 123\nA: 456\nb: 789"
 
     h = httpx.Headers({"a": "123", "b": "789"})
     assert h["A"] == "123"

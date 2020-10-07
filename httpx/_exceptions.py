@@ -24,7 +24,6 @@ Our exception hierarchy:
     + RequestBodyUnavailable
   x HTTPStatusError
 * InvalidURL
-* NotRedirectResponse
 * CookieConflict
 * StreamError
   x StreamConsumed
@@ -207,13 +206,6 @@ class TooManyRedirects(RequestError):
     """
 
 
-class RequestBodyUnavailable(RequestError):
-    """
-    Had to send the request again, but the request body was streaming, and is
-    no longer available.
-    """
-
-
 # Client errors
 
 
@@ -234,18 +226,6 @@ class HTTPStatusError(HTTPError):
 class InvalidURL(Exception):
     """
     URL is improperly formed or cannot be parsed.
-    """
-
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
-
-
-class NotRedirectResponse(Exception):
-    """
-    Response was not a redirect response.
-
-    May be raised if `response.next()` is called without first
-    properly checking `response.is_redirect`.
     """
 
     def __init__(self, message: str) -> None:
@@ -283,14 +263,18 @@ class StreamError(Exception):
 
 class StreamConsumed(StreamError):
     """
-    Attempted to read or stream response content, but the content has already
+    Attempted to read or stream content, but the content has already
     been streamed.
     """
 
     def __init__(self) -> None:
         message = (
-            "Attempted to read or stream response content, but the content has "
-            "already been streamed."
+            "Attempted to read or stream some content, but the content has "
+            "already been streamed. For requests, this could be due to passing "
+            "a generator as request content, and then receiving a redirect "
+            "response or a secondary request as part of an authentication flow."
+            "For responses, this could be due to attempting to stream the response "
+            "content more than once."
         )
         super().__init__(message)
 

@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Callable, List, Mapping, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
+from urllib.parse import unquote
 
 import httpcore
 import sniffio
@@ -67,14 +68,14 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         self.root_path = root_path
         self.client = client
 
-    async def request(
+    async def arequest(
         self,
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: httpcore.AsyncByteStream = None,
-        timeout: Mapping[str, Optional[float]] = None,
-    ) -> Tuple[bytes, int, bytes, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream]:
+        ext: dict = None,
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]:
         headers = [] if headers is None else headers
         stream = httpcore.PlainByteStream(content=b"") if stream is None else stream
 
@@ -88,7 +89,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
             "method": method.decode(),
             "headers": headers,
             "scheme": scheme.decode("ascii"),
-            "path": path.decode("ascii"),
+            "path": unquote(path.decode("ascii")),
             "query_string": query,
             "server": (host.decode("ascii"), port),
             "client": self.client,
@@ -154,5 +155,6 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         assert response_headers is not None
 
         stream = httpcore.PlainByteStream(content=b"".join(body_parts))
+        ext = {}
 
-        return (b"HTTP/1.1", status_code, b"", response_headers, stream)
+        return (status_code, response_headers, stream, ext)

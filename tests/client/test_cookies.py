@@ -1,43 +1,17 @@
-import typing
 from http.cookiejar import Cookie, CookieJar
 
-import httpcore
-
 import httpx
-from httpx._content_streams import ByteStream, ContentStream, JSONStream
+from tests.utils import MockTransport
 
 
-def get_header_value(headers, key, default=None):
-    lookup = key.encode("ascii").lower()
-    for header_key, header_value in headers:
-        if header_key.lower() == lookup:
-            return header_value.decode("ascii")
-    return default
-
-
-class MockTransport(httpcore.SyncHTTPTransport):
-    def request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
-        stream: httpcore.SyncByteStream = None,
-        timeout: typing.Mapping[str, typing.Optional[float]] = None,
-    ) -> typing.Tuple[
-        bytes, int, bytes, typing.List[typing.Tuple[bytes, bytes]], ContentStream
-    ]:
-        host, scheme, port, path = url
-        body: ContentStream
-        if path.startswith(b"/echo_cookies"):
-            cookie = get_header_value(headers, "cookie")
-            body = JSONStream({"cookies": cookie})
-            return b"HTTP/1.1", 200, b"OK", [], body
-        elif path.startswith(b"/set_cookie"):
-            headers = [(b"set-cookie", b"example-name=example-value")]
-            body = ByteStream(b"")
-            return b"HTTP/1.1", 200, b"OK", headers, body
-        else:
-            raise NotImplementedError()  # pragma: no cover
+def get_and_set_cookies(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/echo_cookies":
+        data = {"cookies": request.headers.get("cookie")}
+        return httpx.Response(200, json=data)
+    elif request.url.path == "/set_cookie":
+        return httpx.Response(200, headers={"set-cookie": "example-name=example-value"})
+    else:
+        raise NotImplementedError()  # pragma: no cover
 
 
 def test_set_cookie() -> None:
@@ -47,7 +21,7 @@ def test_set_cookie() -> None:
     url = "http://example.org/echo_cookies"
     cookies = {"example-name": "example-value"}
 
-    client = httpx.Client(transport=MockTransport())
+    client = httpx.Client(transport=MockTransport(get_and_set_cookies))
     response = client.get(url, cookies=cookies)
 
     assert response.status_code == 200
@@ -82,7 +56,7 @@ def test_set_cookie_with_cookiejar() -> None:
     )
     cookies.set_cookie(cookie)
 
-    client = httpx.Client(transport=MockTransport())
+    client = httpx.Client(transport=MockTransport(get_and_set_cookies))
     response = client.get(url, cookies=cookies)
 
     assert response.status_code == 200
@@ -117,7 +91,7 @@ def test_setting_client_cookies_to_cookiejar() -> None:
     )
     cookies.set_cookie(cookie)
 
-    client = httpx.Client(transport=MockTransport())
+    client = httpx.Client(transport=MockTransport(get_and_set_cookies))
     client.cookies = cookies  # type: ignore
     response = client.get(url)
 
@@ -134,7 +108,7 @@ def test_set_cookie_with_cookies_model() -> None:
     cookies = httpx.Cookies()
     cookies["example-name"] = "example-value"
 
-    client = httpx.Client(transport=MockTransport())
+    client = httpx.Client(transport=MockTransport(get_and_set_cookies))
     response = client.get(url, cookies=cookies)
 
     assert response.status_code == 200
@@ -144,7 +118,7 @@ def test_set_cookie_with_cookies_model() -> None:
 def test_get_cookie() -> None:
     url = "http://example.org/set_cookie"
 
-    client = httpx.Client(transport=MockTransport())
+    client = httpx.Client(transport=MockTransport(get_and_set_cookies))
     response = client.get(url)
 
     assert response.status_code == 200
@@ -156,7 +130,7 @@ def test_cookie_persistence() -> None:
     """
     Ensure that Client instances persist cookies between requests.
     """
-    client = httpx.Client(transport=MockTransport())
+    client = httpx.Client(transport=MockTransport(get_and_set_cookies))
 
     response = client.get("http://example.org/echo_cookies")
     assert response.status_code == 200

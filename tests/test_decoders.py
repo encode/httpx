@@ -4,7 +4,6 @@ import brotli
 import pytest
 
 import httpx
-from httpx._content_streams import AsyncIteratorStream
 from httpx._decoders import (
     BrotliDecoder,
     ByteChunker,
@@ -132,11 +131,10 @@ async def test_streaming():
         yield compressor.flush()
 
     headers = [(b"Content-Encoding", b"gzip")]
-    stream = AsyncIteratorStream(aiterator=compress(body))
     response = httpx.Response(
         200,
         headers=headers,
-        stream=stream,
+        content=compress(body),
     )
     assert not hasattr(response, "body")
     assert await response.aread() == body
@@ -181,16 +179,8 @@ def test_decoding_errors(header_value):
     [
         ((b"Hello,", b" world!"), "ascii"),
         ((b"\xe3\x83", b"\x88\xe3\x83\xa9", b"\xe3", b"\x83\x99\xe3\x83\xab"), "utf-8"),
-        ((b"\x83g\x83\x89\x83x\x83\x8b",) * 64, "shift-jis"),
-        ((b"\x83g\x83\x89\x83x\x83\x8b",) * 600, "shift-jis"),
-        (
-            (b"\xcb\xee\xf0\xe5\xec \xe8\xef\xf1\xf3\xec \xe4\xee\xeb\xee\xf0",) * 64,
-            "MacCyrillic",
-        ),
-        (
-            (b"\xa5\xa6\xa5\xa7\xa5\xd6\xa4\xce\xb9\xf1\xba\xdd\xb2\xbd",) * 512,
-            "euc-jp",
-        ),
+        ((b"Euro character: \x88!", b""), "cp1252"),
+        ((b"Accented: \xd6sterreich", b""), "iso-8859-1"),
     ],
 )
 @pytest.mark.asyncio
@@ -201,19 +191,17 @@ async def test_text_decoder(data, encoding):
             yield chunk
 
     # Accessing `.text` on a read response.
-    stream = AsyncIteratorStream(aiterator=iterator())
     response = httpx.Response(
         200,
-        stream=stream,
+        content=iterator(),
     )
     await response.aread()
     assert response.text == (b"".join(data)).decode(encoding)
 
     # Streaming `.aiter_text` iteratively.
-    stream = AsyncIteratorStream(aiterator=iterator())
     response = httpx.Response(
         200,
-        stream=stream,
+        content=iterator(),
     )
     text = "".join([part async for part in response.aiter_text()])
     assert text == (b"".join(data)).decode(encoding)
@@ -226,11 +214,10 @@ async def test_text_decoder_known_encoding():
         yield b"\x83"
         yield b"\x89\x83x\x83\x8b"
 
-    stream = AsyncIteratorStream(aiterator=iterator())
     response = httpx.Response(
         200,
         headers=[(b"Content-Type", b"text/html; charset=shift-jis")],
-        stream=stream,
+        content=iterator(),
     )
 
     await response.aread()

@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 import httpx
@@ -6,6 +8,15 @@ import httpx
 async def hello_world(scope, receive, send):
     status = 200
     output = b"Hello, World!"
+    headers = [(b"content-type", "text/plain"), (b"content-length", str(len(output)))]
+
+    await send({"type": "http.response.start", "status": status, "headers": headers})
+    await send({"type": "http.response.body", "body": output})
+
+
+async def echo_path(scope, receive, send):
+    status = 200
+    output = json.dumps({"path": scope["path"]}).encode("utf-8")
     headers = [(b"content-type", "text/plain"), (b"content-length", str(len(output)))]
 
     await send({"type": "http.response.start", "status": status, "headers": headers})
@@ -49,9 +60,19 @@ async def test_asgi():
 
 
 @pytest.mark.usefixtures("async_environment")
+async def test_asgi_urlencoded_path():
+    async with httpx.AsyncClient(app=echo_path) as client:
+        url = httpx.URL("http://www.example.org/").copy_with(path="/user@example.org")
+        response = await client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {"path": "/user@example.org"}
+
+
+@pytest.mark.usefixtures("async_environment")
 async def test_asgi_upload():
     async with httpx.AsyncClient(app=echo_body) as client:
-        response = await client.post("http://www.example.org/", data=b"example")
+        response = await client.post("http://www.example.org/", content=b"example")
 
     assert response.status_code == 200
     assert response.text == "example"
@@ -99,7 +120,7 @@ async def test_asgi_disconnect_after_response_complete():
         disconnect = message.get("type") == "http.disconnect"
 
     async with httpx.AsyncClient(app=read_body) as client:
-        response = await client.post("http://www.example.org/", data=b"example")
+        response = await client.post("http://www.example.org/", content=b"example")
 
     assert response.status_code == 200
     assert disconnect

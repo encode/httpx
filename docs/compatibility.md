@@ -1,6 +1,6 @@
 # Requests Compatibility Guide
 
-HTTPX aims to be compatible with the `requests` API wherever possible.
+HTTPX aims to be broadly compatible with the `requests` API.
 
 This documentation outlines places where the API differs...
 
@@ -8,6 +8,28 @@ This documentation outlines places where the API differs...
 
 Accessing `response.url` will return a `URL` instance, rather than a string.
 Use `str(response.url)` if you need a string instance.
+
+## Request Content
+
+For uploading raw text or binary content we prefer to use a `content` parameter,
+in order to better separate this usage from the case of uploading form data.
+
+For example, using `content=...` to upload raw content:
+
+```python
+# Uploading text, bytes, or a bytes iterator.
+httpx.post(..., content=b"Hello, world")
+```
+
+And using `data=...` to send form data:
+
+```python
+# Uploading form data.
+httpx.post(..., data={"message": "Hello, world"})
+```
+
+If you're using a type checking tool such as `mypy`, you'll see warnings issues if using test/byte content with the `data` argument.
+However, for compatibility reasons with `requests`, we do still handle the case where `data=...` is used with raw binary and text contents.
 
 ## Status Codes
 
@@ -89,3 +111,21 @@ If you need to mock HTTPX the same way that test utilities like `responses` and 
 `requests` defers most of its HTTP networking code to the excellent [`urllib3` library](https://urllib3.readthedocs.io/en/latest/).
 
 On the other hand, HTTPX uses [HTTPCore](https://github.com/encode/httpcore) as its core HTTP networking layer, which is a different project than `urllib3`.
+
+## Query Parameters
+
+`requests` omits `params` whose values are `None` (e.g. `requests.get(..., params={"foo": None})`). This is not supported by HTTPX.
+
+## Determining the next redirect request
+
+When using `allow_redirects=False`, the `requests` library exposes an attribute `response.next`, which can be used to obtain the next redirect request.
+
+In HTTPX, this attribute is instead named `response.next_request`. For example:
+
+```python
+client = httpx.Client()
+request = client.build_request("GET", ...)
+while request is not None:
+    response = client.send(request, allow_redirects=False)
+    request = response.next_request
+```

@@ -7,10 +7,10 @@ from http.cookiejar import CookieJar
 from typing import (
     IO,
     TYPE_CHECKING,
-    AsyncIterator,
+    AsyncIterable,
     Callable,
     Dict,
-    Iterator,
+    Iterable,
     List,
     Mapping,
     Optional,
@@ -27,6 +27,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
+RawURL = Tuple[bytes, bytes, Optional[int], bytes]
+
 URLTypes = Union["URL", str]
 
 QueryParamTypes = Union[
@@ -34,6 +36,7 @@ QueryParamTypes = Union[
     Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
     List[Tuple[str, PrimitiveData]],
     str,
+    bytes,
     None,
 ]
 
@@ -63,7 +66,11 @@ AuthTypes = Union[
     None,
 ]
 
-RequestData = Union[dict, str, bytes, Iterator[bytes], AsyncIterator[bytes]]
+ByteStream = Union[Iterable[bytes], AsyncIterable[bytes]]
+RequestContent = Union[str, bytes, ByteStream]
+ResponseContent = Union[str, bytes, ByteStream]
+
+RequestData = dict
 
 FileContent = Union[IO[str], IO[bytes], str, bytes]
 FileTypes = Union[

@@ -65,14 +65,27 @@ HTTPX will automatically handle decoding the response content into Unicode text.
 '<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 ```
 
-You can inspect what encoding has been used to decode the response.
+You can inspect what encoding will be used to decode the response.
 
 ```pycon
 >>> r.encoding
 'UTF-8'
 ```
 
-If you need to override the standard behavior and explicitly set the encoding to
+In some cases the response may not contain an explicit encoding, in which case HTTPX
+will attempt to automatically determine an encoding to use. This defaults to
+UTF-8, but also includes robust fallback behaviour for handling ascii,
+iso-8859-1 and windows 1252 encodings.
+
+```pycon
+>>> r.encoding
+None
+>>> r.text
+'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
+```
+
+
+If you need to override the standard behaviour and explicitly set the encoding to
 use, then you can do that too.
 
 ```pycon
@@ -236,13 +249,18 @@ For more complicated data structures you'll often want to use JSON encoding inst
 
 ## Sending Binary Request Data
 
-For other encodings, you should use either a `bytes` type or a generator
-that yields `bytes`.
+For other encodings, you should use the `content=...` parameter, passing
+either a `bytes` type or a generator that yields `bytes`.
 
-You'll probably also want to set a custom `Content-Type` header when uploading
+```pycon
+>>> content = b'Hello, world'
+>>> r = httpx.post("https://httpbin.org/post", content=content)
+```
+
+You may also want to set a custom `Content-Type` header when uploading
 binary data.
 
-## Response Status Codes
+## Response Status Codes
 
 We can inspect the HTTP status code of the response:
 
