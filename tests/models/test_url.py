@@ -301,7 +301,7 @@ def test_ipv6_url():
     [
         "http://127.0.0.1:1234",
         "http://example.com:1234",
-        "http://[::ffff:192.168.0.2]:1234",
+        "http://[::ffff:127.0.0.1]:1234",
     ],
 )
 @pytest.mark.parametrize("new_host", ["[::ffff:192.168.0.1]", "::ffff:192.168.0.1"])
