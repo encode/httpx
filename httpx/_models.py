@@ -1212,7 +1212,7 @@ class Response:
         chunker = ByteChunker(chunk_size=chunk_size)
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
-            for raw_stream_bytes in self._raw_stream:
+            for raw_stream_bytes in self.stream:
                 self._num_bytes_downloaded += len(raw_stream_bytes)
                 for chunk in chunker.decode(raw_stream_bytes):
                     yield chunk
@@ -1307,7 +1307,7 @@ class Response:
         chunker = ByteChunker(chunk_size=chunk_size)
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
-            async for raw_stream_bytes in self._raw_stream:
+            async for raw_stream_bytes in self.stream:
                 self._num_bytes_downloaded += len(raw_stream_bytes)
                 for chunk in chunker.decode(raw_stream_bytes):
                     yield chunk
