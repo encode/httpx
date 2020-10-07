@@ -111,6 +111,7 @@ class URL:
                 if host and ":" in host and host[0] != "[":
                     # it's an IPv6 address, so it should be enclosed in "[" and "]"
                     # ref: https://tools.ietf.org/html/rfc2732#section-2
+                    # ref: https://tools.ietf.org/html/rfc3986#section-3.2.2
                     host = f"[{host}]"
                 port_str = "" if port is None else f":{port}"
                 path = raw_path.decode("ascii")
