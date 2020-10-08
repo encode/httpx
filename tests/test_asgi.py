@@ -36,6 +36,17 @@ async def echo_body(scope, receive, send):
         await send({"type": "http.response.body", "body": body, "more_body": more_body})
 
 
+async def echo_headers(scope, receive, send):
+    status = 200
+    output = json.dumps(
+        {"headers": [[k.decode(), v.decode()] for k, v in scope["headers"]]}
+    ).encode("utf-8")
+    headers = [(b"content-type", "text/plain"), (b"content-length", str(len(output)))]
+
+    await send({"type": "http.response.start", "status": status, "headers": headers})
+    await send({"type": "http.response.body", "body": output})
+
+
 async def raise_exc(scope, receive, send):
     raise RuntimeError()
 
@@ -76,6 +87,23 @@ async def test_asgi_upload():
 
     assert response.status_code == 200
     assert response.text == "example"
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_headers():
+    async with httpx.AsyncClient(app=echo_headers) as client:
+        response = await client.get("http://www.example.org/")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "headers": [
+            ["host", "www.example.org"],
+            ["accept", "*/*"],
+            ["accept-encoding", "gzip, deflate, br"],
+            ["connection", "keep-alive"],
+            ["user-agent", f"python-httpx/{httpx.__version__}"],
+        ]
+    }
 
 
 @pytest.mark.usefixtures("async_environment")
