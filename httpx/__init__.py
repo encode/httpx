@@ -1,3 +1,5 @@
+import json
+
 from .__version__ import __description__, __title__, __version__
 from ._api import delete, get, head, options, patch, post, put, request, stream
 from ._auth import Auth, BasicAuth, DigestAuth
@@ -63,6 +65,7 @@ __all__ = [
     "HTTPError",
     "HTTPStatusError",
     "InvalidURL",
+    "json",
     "Limits",
     "LocalProtocolError",
     "NetworkError",
