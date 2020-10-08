@@ -87,7 +87,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
             "asgi": {"version": "3.0"},
             "http_version": "1.1",
             "method": method.decode(),
-            "headers": headers,
+            "headers": [(k.lower(), v) for (k, v) in headers],
             "scheme": scheme.decode("ascii"),
             "path": unquote(path.decode("ascii")),
             "query_string": query,
