@@ -548,7 +548,7 @@ def warn_deprecated(message: str) -> None:  # pragma: nocover
 def ensure_context_manager(
     value: typing.Union[T, typing.ContextManager[T]]
 ) -> typing.Iterator[T]:
-    if isinstance(value, typing.ContextManager):
+    if isinstance(value, typing.ContextManager):  # pragma: no cover
         with value as val:
             yield val
     else:
@@ -564,10 +564,10 @@ class ensure_async_context_manager(typing.AsyncContextManager[T]):
         self._value = value
 
     async def __aenter__(self) -> T:
-        if isinstance(self._value, typing.AsyncContextManager):
+        if isinstance(self._value, typing.AsyncContextManager):  # pragma: no cover
             return await self._value.__aenter__()
         return await self._value
 
     async def __aexit__(self, *args: typing.Any) -> None:
-        if isinstance(self._value, typing.AsyncContextManager):
+        if isinstance(self._value, typing.AsyncContextManager):  # pragma: no cover
             await self._value.__aexit__(*args)
