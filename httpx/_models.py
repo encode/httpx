@@ -28,7 +28,6 @@ from ._exceptions import (
     HTTPStatusError,
     InvalidURL,
     RequestNotRead,
-    ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
     map_exceptions,
@@ -902,7 +901,6 @@ class Response:
         request: Request = None,
         ext: dict = None,
         history: typing.List["Response"] = None,
-        on_close: typing.Callable = None,
     ):
         self.status_code = status_code
         self.headers = Headers(headers)
@@ -917,9 +915,7 @@ class Response:
 
         self.ext = {} if ext is None else ext
         self.history = [] if history is None else list(history)
-        self._on_close = on_close
 
-        self.is_closed = False
         self.is_stream_consumed = False
 
         if stream is not None:
@@ -1203,8 +1199,6 @@ class Response:
         """
         if self.is_stream_consumed:
             raise StreamConsumed()
-        if self.is_closed:
-            raise ResponseClosed()
         if not isinstance(self.stream, typing.Iterable):
             raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
@@ -1214,17 +1208,6 @@ class Response:
             for part in self.stream:
                 self._num_bytes_downloaded += len(part)
                 yield part
-        self.close()
-
-    def close(self) -> None:
-        """
-        Close the response and release the connection.
-        Automatically called if the response body is read to completion.
-        """
-        if not self.is_closed:
-            self.is_closed = True
-            if self._on_close is not None:
-                self._on_close(self)
 
     async def aread(self) -> bytes:
         """
@@ -1275,8 +1258,6 @@ class Response:
         """
         if self.is_stream_consumed:
             raise StreamConsumed()
-        if self.is_closed:
-            raise ResponseClosed()
         if not isinstance(self.stream, typing.AsyncIterable):
             raise RuntimeError("Attempted to call a async iterator on a sync stream.")
 
@@ -1286,17 +1267,6 @@ class Response:
             async for part in self.stream:
                 self._num_bytes_downloaded += len(part)
                 yield part
-        await self.aclose()
-
-    async def aclose(self) -> None:
-        """
-        Close the response and release the connection.
-        Automatically called if the response body is read to completion.
-        """
-        if not self.is_closed:
-            self.is_closed = True
-            if self._on_close is not None:
-                await self._on_close(self)
 
 
 class Cookies(MutableMapping):

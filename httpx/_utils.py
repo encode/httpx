@@ -9,6 +9,7 @@ import sys
 import time
 import typing
 import warnings
+from contextlib import contextmanager
 from pathlib import Path
 from urllib.request import getproxies
 
@@ -18,6 +19,8 @@ from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._models import URL
+
+T = typing.TypeVar("T")
 
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
@@ -539,3 +542,32 @@ class URLPattern:
 
 def warn_deprecated(message: str) -> None:  # pragma: nocover
     warnings.warn(message, DeprecationWarning, stacklevel=2)
+
+
+@contextmanager
+def ensure_context_manager(
+    value: typing.Union[T, typing.ContextManager[T]]
+) -> typing.Iterator[T]:
+    if isinstance(value, typing.ContextManager):
+        with value as val:
+            yield val
+    else:
+        yield value
+
+
+# mypy isn't able to resolve generics when using @asynccontextmanager here, but we'd
+# *really* like it to resolve generics.
+class ensure_async_context_manager(typing.AsyncContextManager[T]):
+    def __init__(
+        self, value: typing.Union[typing.Awaitable[T], typing.AsyncContextManager[T]]
+    ) -> None:
+        self._value = value
+
+    async def __aenter__(self) -> T:
+        if isinstance(self._value, typing.AsyncContextManager):
+            return await self._value.__aenter__()
+        return await self._value
+
+    async def __aexit__(self, *args: typing.Any) -> None:
+        if isinstance(self._value, typing.AsyncContextManager):
+            await self._value.__aexit__(*args)

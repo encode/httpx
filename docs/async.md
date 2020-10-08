@@ -80,11 +80,12 @@ The async response streaming methods are:
 * `Response.aiter_raw()` - For streaming the raw response bytes, without applying content decoding.
 * `Response.aclose()` - For closing the response. You don't usually need this, since `.stream` block closes the response automatically on exit.
 
-For situations when context block usage is not practical, it is possible to enter "manual mode" by sending a [`Request` instance](./advanced.md#request-instances) using `client.send(..., stream=True)`.
+For situations when context block usage is not practical, it is possible to enter "manual mode" by sending a [`Request` instance](./advanced.md#request-instances) using `client.send(...)`.
 
 Example in the context of forwarding the response to a streaming web endpoint with [Starlette](https://www.starlette.io):
 
 ```python
+import contextlib
 import httpx
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
@@ -93,12 +94,19 @@ client = httpx.AsyncClient()
 
 async def home(request):
     req = client.build_request("GET", "https://www.example.com/")
-    r = await client.send(req, stream=True)
-    return StreamingResponse(r.aiter_text(), background=BackgroundTask(r.aclose))
+    exit_stack = contextlib.AsyncExitStack()
+    r = await exit_stack.enter_async_context(client.send(req))
+    return StreamingResponse(r.aiter_text(), background=BackgroundTask(exit_stack.aclose))
 ```
 
-!!! warning
-    When using this "manual streaming mode", it is your duty as a developer to make sure that `Response.aclose()` is called eventually. Failing to do so would leave connections open, most likely resulting in resource leaks down the line.
+**Note**: When using this "manual streaming mode", it is your duty as a developer to make sure that the response is eventually properly closed. Failing to do so would leave connections open, most likely resulting in resource leaks down the line. In the above example, we use an `AsyncExitStack` to properly enter and then clean up the context manager returned by `client.send()`. This approach is the least error-prone. Alternatively, you could enter the context manually, and call `.aclose()` on the response:
+
+```python
+async def home(request):
+    req = client.build_request("GET", "https://www.example.com/")
+    r = await client.send(req).__aenter__()
+    return StreamingResponse(r.aiter_text(), background=BackgroundTask(r.aclose))
+```
 
 ### Streaming requests
 

@@ -272,13 +272,11 @@ def test_read():
     assert response.status_code == 200
     assert response.text == "Hello, world!"
     assert response.encoding is None
-    assert response.is_closed
 
     content = response.read()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
-    assert response.is_closed
 
 
 def test_empty_read():
@@ -287,13 +285,11 @@ def test_empty_read():
     assert response.status_code == 200
     assert response.text == ""
     assert response.encoding is None
-    assert response.is_closed
 
     content = response.read()
 
     assert content == b""
     assert response.content == b""
-    assert response.is_closed
 
 
 @pytest.mark.asyncio
@@ -306,13 +302,11 @@ async def test_aread():
     assert response.status_code == 200
     assert response.text == "Hello, world!"
     assert response.encoding is None
-    assert response.is_closed
 
     content = await response.aread()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
-    assert response.is_closed
 
 
 @pytest.mark.asyncio
@@ -322,13 +316,11 @@ async def test_empty_aread():
     assert response.status_code == 200
     assert response.text == ""
     assert response.encoding is None
-    assert response.is_closed
 
     content = await response.aread()
 
     assert content == b""
     assert response.content == b""
-    assert response.is_closed
 
 
 def test_iter_raw():
@@ -487,13 +479,11 @@ def test_sync_streaming_response():
     )
 
     assert response.status_code == 200
-    assert not response.is_closed
 
     content = response.read()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
-    assert response.is_closed
 
 
 @pytest.mark.asyncio
@@ -504,13 +494,11 @@ async def test_async_streaming_response():
     )
 
     assert response.status_code == 200
-    assert not response.is_closed
 
     content = await response.aread()
 
     assert content == b"Hello, world!"
     assert response.content == b"Hello, world!"
-    assert response.is_closed
 
 
 def test_cannot_read_after_stream_consumed():
@@ -539,29 +527,6 @@ async def test_cannot_aread_after_stream_consumed():
         content += part
 
     with pytest.raises(httpx.StreamConsumed):
-        await response.aread()
-
-
-def test_cannot_read_after_response_closed():
-    response = httpx.Response(
-        200,
-        content=streaming_body(),
-    )
-
-    response.close()
-    with pytest.raises(httpx.ResponseClosed):
-        response.read()
-
-
-@pytest.mark.asyncio
-async def test_cannot_aread_after_response_closed():
-    response = httpx.Response(
-        200,
-        content=async_streaming_body(),
-    )
-
-    await response.aclose()
-    with pytest.raises(httpx.ResponseClosed):
         await response.aread()
 
 

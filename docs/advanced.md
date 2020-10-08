@@ -200,7 +200,8 @@ To dispatch a `Request` instance across to the network, create a [`Client` insta
 
 ```python
 with httpx.Client() as client:
-    response = client.send(request)
+    with client.send(request) as response:
+        response.read()
     ...
 ```
 

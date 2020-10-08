@@ -2,12 +2,14 @@ import datetime
 import enum
 import typing
 import warnings
+from contextlib import contextmanager
 from types import TracebackType
 
 import httpcore
 
 from .__version__ import __version__
 from ._auth import Auth, BasicAuth, FunctionAuth
+from ._compat import asynccontextmanager
 from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
@@ -50,6 +52,8 @@ from ._utils import (
     NetRCInfo,
     Timer,
     URLPattern,
+    ensure_async_context_manager,
+    ensure_context_manager,
     get_environment_proxies,
     get_logger,
     same_origin,
@@ -233,51 +237,6 @@ class BaseClient:
     @params.setter
     def params(self, params: QueryParamTypes) -> None:
         self._params = QueryParams(params)
-
-    def stream(
-        self,
-        method: str,
-        url: URLTypes,
-        *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
-        allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-    ) -> "StreamContextManager":
-        """
-        Alternative to `httpx.request()` that streams the response body
-        instead of loading it into memory at once.
-
-        **Parameters**: See `httpx.request`.
-
-        See also: [Streaming Responses][0]
-
-        [0]: /quickstart#streaming-responses
-        """
-        request = self.build_request(
-            method=method,
-            url=url,
-            content=content,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-        )
-        return StreamContextManager(
-            client=self,
-            request=request,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
-        )
 
     def build_request(
         self,
@@ -710,7 +669,9 @@ class Client(BaseClient):
 
         ```python
         request = client.build_request(...)
-        response = client.send(request, ...)
+        with client.send(request, ...) as response:
+            response.read()
+        # Use `response`...
         ```
 
         See `Client.build_request()`, `Client.send()` and
@@ -730,19 +691,72 @@ class Client(BaseClient):
             headers=headers,
             cookies=cookies,
         )
-        return self.send(
-            request, auth=auth, allow_redirects=allow_redirects, timeout=timeout
-        )
 
+        with self.send(
+            request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        ) as response:
+            response.read()
+
+        return response
+
+    @contextmanager
+    def stream(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        content: RequestContent = None,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> typing.Iterator[Response]:
+        """
+        Alternative to `httpx.request()` that streams the response body
+        instead of loading it into memory at once.
+
+        **Parameters**: See `httpx.request`.
+
+        See also: [Streaming Responses][0]
+
+        [0]: /quickstart#streaming-responses
+        """
+        request = self.build_request(
+            method=method,
+            url=url,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        with self.send(
+            request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        ) as response:
+            yield response
+
+    @contextmanager
     def send(
         self,
         request: Request,
         *,
-        stream: bool = False,
         auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-    ) -> Response:
+    ) -> typing.Iterator[Response]:
         """
         Send a request.
 
@@ -764,29 +778,18 @@ class Client(BaseClient):
 
         auth = self._build_request_auth(request, auth)
 
-        response = self._send_handling_auth(
+        with self._send_handling_auth(
             request,
             auth=auth,
             timeout=timeout,
             allow_redirects=allow_redirects,
             history=[],
-        )
-
-        if not stream:
-            try:
-                response.read()
-            finally:
-                response.close()
-
-        try:
+        ) as response:
             for hook in self._event_hooks["response"]:
                 hook(response)
-        except Exception:
-            response.close()
-            raise
+            yield response
 
-        return response
-
+    @contextmanager
     def _send_handling_auth(
         self,
         request: Request,
@@ -794,7 +797,7 @@ class Client(BaseClient):
         timeout: Timeout,
         allow_redirects: bool,
         history: typing.List[Response],
-    ) -> Response:
+    ) -> typing.Iterator[Response]:
         auth_flow = auth.sync_auth_flow(request)
         request = next(auth_flow)
 
@@ -802,54 +805,58 @@ class Client(BaseClient):
             hook(request)
 
         while True:
-            response = self._send_handling_redirects(
+            with self._send_handling_redirects(
                 request,
                 timeout=timeout,
                 allow_redirects=allow_redirects,
                 history=history,
-            )
-            try:
-                next_request = auth_flow.send(response)
-            except StopIteration:
-                return response
-            except BaseException as exc:
-                response.close()
-                raise exc from None
-            else:
+            ) as response:
+                try:
+                    next_request = auth_flow.send(response)
+                except StopIteration:
+                    yield response
+                    break
+
                 response.history = list(history)
                 response.read()
                 request = next_request
                 history.append(response)
 
+    @contextmanager
     def _send_handling_redirects(
         self,
         request: Request,
         timeout: Timeout,
         allow_redirects: bool,
         history: typing.List[Response],
-    ) -> Response:
+    ) -> typing.Iterator[Response]:
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects(
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
-            response = self._send_single_request(request, timeout)
-            response.history = list(history)
+            with self._send_single_request(request, timeout) as response:
+                response.history = list(history)
 
-            if not response.is_redirect:
-                return response
+                if not response.is_redirect:
+                    yield response
+                    break
 
-            if allow_redirects:
-                response.read()
-            request = self._build_redirect_request(request, response)
-            history = history + [response]
+                if allow_redirects:
+                    response.read()
+                request = self._build_redirect_request(request, response)
+                history = history + [response]
 
-            if not allow_redirects:
-                response.next_request = request
-                return response
+                if not allow_redirects:
+                    response.next_request = request
+                    yield response
+                    break
 
-    def _send_single_request(self, request: Request, timeout: Timeout) -> Response:
+    @contextmanager
+    def _send_single_request(
+        self, request: Request, timeout: Timeout
+    ) -> typing.Iterator[Response]:
         """
         Sends a single request, without handling any redirections.
         """
@@ -858,35 +865,34 @@ class Client(BaseClient):
         timer.sync_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (status_code, headers, stream, ext) = transport.request(
-                request.method.encode(),
-                request.url.raw,
-                headers=request.headers.raw,
-                stream=request.stream,  # type: ignore
-                ext={"timeout": timeout.as_dict()},
-            )
+            with ensure_context_manager(
+                transport.request(
+                    request.method.encode(),
+                    request.url.raw,
+                    headers=request.headers.raw,
+                    stream=request.stream,  # type: ignore
+                    ext={"timeout": timeout.as_dict()},
+                )
+            ) as (status_code, headers, stream, ext):
+                response = Response(
+                    status_code,
+                    headers=headers,
+                    stream=stream,  # type: ignore
+                    ext=ext,
+                    request=request,
+                )
 
-        def on_close(response: Response) -> None:
-            response.elapsed = datetime.timedelta(seconds=timer.sync_elapsed())
-            if hasattr(stream, "close"):
-                stream.close()
+                self.cookies.extract_cookies(response)
 
-        response = Response(
-            status_code,
-            headers=headers,
-            stream=stream,  # type: ignore
-            ext=ext,
-            request=request,
-            on_close=on_close,
-        )
+                status = f"{response.status_code} {response.reason_phrase}"
+                response_line = f"{response.http_version} {status}"
+                logger.debug(
+                    f'HTTP Request: {request.method} {request.url} "{response_line}"'
+                )
 
-        self.cookies.extract_cookies(response)
+                yield response
 
-        status = f"{response.status_code} {response.reason_phrase}"
-        response_line = f"{response.http_version} {status}"
-        logger.debug(f'HTTP Request: {request.method} {request.url} "{response_line}"')
-
-        return response
+        response.elapsed = datetime.timedelta(seconds=timer.sync_elapsed())
 
     def get(
         self,
@@ -1348,7 +1354,9 @@ class AsyncClient(BaseClient):
 
         ```python
         request = client.build_request(...)
-        response = await client.send(request, ...)
+        async with client.send(request, ...) as response:
+            await response.aread()
+        # Use `response`...
         ```
 
         See `AsyncClient.build_request()`, `AsyncClient.send()`
@@ -1368,20 +1376,67 @@ class AsyncClient(BaseClient):
             headers=headers,
             cookies=cookies,
         )
-        response = await self.send(
+        async with self.send(
             request, auth=auth, allow_redirects=allow_redirects, timeout=timeout
-        )
+        ) as response:
+            await response.aread()
         return response
 
+    @asynccontextmanager
+    async def stream(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        content: RequestContent = None,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> typing.AsyncIterator[Response]:
+        """
+        Alternative to `httpx.request()` that streams the response body
+        instead of loading it into memory at once.
+
+        **Parameters**: See `httpx.request`.
+
+        See also: [Streaming Responses][0]
+
+        [0]: /quickstart#streaming-responses
+        """
+        request = self.build_request(
+            method=method,
+            url=url,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        async with self.send(
+            request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        ) as response:
+            yield response
+
+    @asynccontextmanager
     async def send(
         self,
         request: Request,
         *,
-        stream: bool = False,
         auth: typing.Union[AuthTypes, UnsetType] = UNSET,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-    ) -> Response:
+    ) -> typing.AsyncIterator[Response]:
         """
         Send a request.
 
@@ -1403,29 +1458,18 @@ class AsyncClient(BaseClient):
 
         auth = self._build_request_auth(request, auth)
 
-        response = await self._send_handling_auth(
+        async with self._send_handling_auth(
             request,
             auth=auth,
             timeout=timeout,
             allow_redirects=allow_redirects,
             history=[],
-        )
-
-        if not stream:
-            try:
-                await response.aread()
-            finally:
-                await response.aclose()
-
-        try:
+        ) as response:
             for hook in self._event_hooks["response"]:
                 await hook(response)
-        except Exception:
-            await response.aclose()
-            raise
+            yield response
 
-        return response
-
+    @asynccontextmanager
     async def _send_handling_auth(
         self,
         request: Request,
@@ -1433,7 +1477,7 @@ class AsyncClient(BaseClient):
         timeout: Timeout,
         allow_redirects: bool,
         history: typing.List[Response],
-    ) -> Response:
+    ) -> typing.AsyncIterator[Response]:
         auth_flow = auth.async_auth_flow(request)
         request = await auth_flow.__anext__()
 
@@ -1441,56 +1485,58 @@ class AsyncClient(BaseClient):
             await hook(request)
 
         while True:
-            response = await self._send_handling_redirects(
+            async with self._send_handling_redirects(
                 request,
                 timeout=timeout,
                 allow_redirects=allow_redirects,
                 history=history,
-            )
-            try:
-                next_request = await auth_flow.asend(response)
-            except StopAsyncIteration:
-                return response
-            except BaseException as exc:
-                await response.aclose()
-                raise exc from None
-            else:
+            ) as response:
+                try:
+                    next_request = await auth_flow.asend(response)
+                except StopAsyncIteration:
+                    yield response
+                    break
+
                 response.history = list(history)
                 await response.aread()
                 request = next_request
                 history.append(response)
 
+    @asynccontextmanager
     async def _send_handling_redirects(
         self,
         request: Request,
         timeout: Timeout,
         allow_redirects: bool,
         history: typing.List[Response],
-    ) -> Response:
+    ) -> typing.AsyncIterator[Response]:
         while True:
             if len(history) > self.max_redirects:
                 raise TooManyRedirects(
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
-            response = await self._send_single_request(request, timeout)
-            response.history = list(history)
+            async with self._send_single_request(request, timeout) as response:
+                response.history = list(history)
 
-            if not response.is_redirect:
-                return response
+                if not response.is_redirect:
+                    yield response
+                    break
 
-            if allow_redirects:
-                await response.aread()
-            request = self._build_redirect_request(request, response)
-            history = history + [response]
+                if allow_redirects:
+                    await response.aread()
+                request = self._build_redirect_request(request, response)
+                history = history + [response]
 
-            if not allow_redirects:
-                response.next_request = request
-                return response
+                if not allow_redirects:
+                    response.next_request = request
+                    yield response
+                    break
 
+    @asynccontextmanager
     async def _send_single_request(
         self, request: Request, timeout: Timeout
-    ) -> Response:
+    ) -> typing.AsyncIterator[Response]:
         """
         Sends a single request, without handling any redirections.
         """
@@ -1499,35 +1545,34 @@ class AsyncClient(BaseClient):
         await timer.async_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (status_code, headers, stream, ext,) = await transport.arequest(
-                request.method.encode(),
-                request.url.raw,
-                headers=request.headers.raw,
-                stream=request.stream,  # type: ignore
-                ext={"timeout": timeout.as_dict()},
-            )
+            async with ensure_async_context_manager(
+                transport.arequest(
+                    request.method.encode(),
+                    request.url.raw,
+                    headers=request.headers.raw,
+                    stream=request.stream,  # type: ignore
+                    ext={"timeout": timeout.as_dict()},
+                )
+            ) as (status_code, headers, stream, ext):
+                response = Response(
+                    status_code,
+                    headers=headers,
+                    stream=stream,  # type: ignore
+                    ext=ext,
+                    request=request,
+                )
 
-        async def on_close(response: Response) -> None:
-            response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
-            if hasattr(stream, "aclose"):
-                await stream.aclose()
+                self.cookies.extract_cookies(response)
 
-        response = Response(
-            status_code,
-            headers=headers,
-            stream=stream,  # type: ignore
-            ext=ext,
-            request=request,
-            on_close=on_close,
-        )
+                status = f"{response.status_code} {response.reason_phrase}"
+                response_line = f"{response.http_version} {status}"
+                logger.debug(
+                    f'HTTP Request: {request.method} {request.url} "{response_line}"'
+                )
 
-        self.cookies.extract_cookies(response)
+                yield response
 
-        status = f"{response.status_code} {response.reason_phrase}"
-        response_line = f"{response.http_version} {status}"
-        logger.debug(f'HTTP Request: {request.method} {request.url} "{response_line}"')
-
-        return response
+        response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
 
     async def get(
         self,
@@ -1783,64 +1828,3 @@ class AsyncClient(BaseClient):
                 "See https://www.python-httpx.org/async/#opening-and-closing-clients "
                 "for details."
             )
-
-
-class StreamContextManager:
-    def __init__(
-        self,
-        client: BaseClient,
-        request: Request,
-        *,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
-        allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        close_client: bool = False,
-    ) -> None:
-        self.client = client
-        self.request = request
-        self.auth = auth
-        self.allow_redirects = allow_redirects
-        self.timeout = timeout
-        self.close_client = close_client
-
-    def __enter__(self) -> "Response":
-        assert isinstance(self.client, Client)
-        self.response = self.client.send(
-            request=self.request,
-            auth=self.auth,
-            allow_redirects=self.allow_redirects,
-            timeout=self.timeout,
-            stream=True,
-        )
-        return self.response
-
-    def __exit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        assert isinstance(self.client, Client)
-        self.response.close()
-        if self.close_client:
-            self.client.close()
-
-    async def __aenter__(self) -> "Response":
-        assert isinstance(self.client, AsyncClient)
-        self.response = await self.client.send(
-            request=self.request,
-            auth=self.auth,
-            allow_redirects=self.allow_redirects,
-            timeout=self.timeout,
-            stream=True,
-        )
-        return self.response
-
-    async def __aexit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        assert isinstance(self.client, AsyncClient)
-        await self.response.aclose()

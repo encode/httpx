@@ -94,7 +94,11 @@ what gets sent over the wire.*
 
 ```pycon
 >>> request = httpx.Request("GET", "https://example.org", headers={'host': 'example.org'})
->>> response = client.send(request)
+>>> with client.send(request) as response:
+...     response.read()
+...
+>>> response.status_code
+200
 ```
 
 * `def __init__(method, url, [params], [data], [json], [headers], [cookies])`

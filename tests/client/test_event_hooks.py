@@ -54,10 +54,8 @@ def test_event_hooks_raising_exception(server):
     event_hooks = {"response": [raise_on_4xx_5xx]}
 
     with httpx.Client(event_hooks=event_hooks, transport=MockTransport(app)) as http:
-        try:
+        with pytest.raises(httpx.HTTPStatusError):
             http.get("http://127.0.0.1:8000/status/400")
-        except httpx.HTTPStatusError as exc:
-            assert exc.response.is_closed
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -106,10 +104,8 @@ async def test_async_event_hooks_raising_exception():
     async with httpx.AsyncClient(
         event_hooks=event_hooks, transport=MockTransport(app)
     ) as http:
-        try:
+        with pytest.raises(httpx.HTTPStatusError):
             await http.get("http://127.0.0.1:8000/status/400")
-        except httpx.HTTPStatusError as exc:
-            assert exc.response.is_closed
 
 
 def test_event_hooks_with_redirect():

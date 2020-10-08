@@ -142,12 +142,14 @@ def test_redirect_303():
 def test_next_request():
     client = httpx.Client(transport=MockTransport(redirects))
     request = client.build_request("POST", "https://example.org/redirect_303")
-    response = client.send(request, allow_redirects=False)
+    with client.send(request, allow_redirects=False) as response:
+        response.read()
     assert response.status_code == httpx.codes.SEE_OTHER
     assert response.url == "https://example.org/redirect_303"
     assert response.next_request is not None
 
-    response = client.send(response.next_request, allow_redirects=False)
+    with client.send(response.next_request, allow_redirects=False) as response:
+        response.read()
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
     assert response.next_request is None
@@ -157,12 +159,14 @@ def test_next_request():
 async def test_async_next_request():
     client = httpx.AsyncClient(transport=MockTransport(redirects))
     request = client.build_request("POST", "https://example.org/redirect_303")
-    response = await client.send(request, allow_redirects=False)
+    async with client.send(request, allow_redirects=False) as response:
+        await response.aread()
     assert response.status_code == httpx.codes.SEE_OTHER
     assert response.url == "https://example.org/redirect_303"
     assert response.next_request is not None
 
-    response = await client.send(response.next_request, allow_redirects=False)
+    async with client.send(response.next_request, allow_redirects=False) as response:
+        await response.aread()
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
     assert response.next_request is None
@@ -307,7 +311,7 @@ def test_can_stream_if_no_redirect():
     client = httpx.Client(transport=MockTransport(redirects))
     url = "https://example.org/redirect_301"
     with client.stream("GET", url, allow_redirects=False) as response:
-        assert not response.is_closed
+        pass
     assert response.status_code == httpx.codes.MOVED_PERMANENTLY
     assert response.headers["location"] == "https://example.org/"
 

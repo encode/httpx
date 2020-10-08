@@ -45,7 +45,8 @@ def test_build_request(server):
     with httpx.Client() as client:
         request = client.build_request("GET", url)
         request.headers.update(headers)
-        response = client.send(request)
+        with client.send(request) as response:
+            response.read()
 
     assert response.status_code == 200
     assert response.url == url
@@ -60,7 +61,8 @@ def test_build_post_request(server):
     with httpx.Client() as client:
         request = client.build_request("POST", url)
         request.headers.update(headers)
-        response = client.send(request)
+        with client.send(request) as response:
+            response.read()
 
     assert response.status_code == 200
     assert response.url == url

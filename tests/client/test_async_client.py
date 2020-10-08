@@ -42,7 +42,8 @@ async def test_build_request(server):
     async with httpx.AsyncClient() as client:
         request = client.build_request("GET", url)
         request.headers.update(headers)
-        response = await client.send(request)
+        async with client.send(request) as response:
+            await response.aread()
 
     assert response.status_code == 200
     assert response.url == url
