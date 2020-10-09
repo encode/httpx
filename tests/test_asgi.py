@@ -25,7 +25,7 @@ async def echo_path(scope, receive, send):
 
 async def echo_raw_path(scope, receive, send):
     status = 200
-    output = json.dumps({"raw_path": repr(scope["raw_path"])}).encode("utf-8")
+    output = json.dumps({"raw_path": scope["raw_path"].decode("ascii")}).encode("utf-8")
     headers = [(b"content-type", "text/plain"), (b"content-length", str(len(output)))]
 
     await send({"type": "http.response.start", "status": status, "headers": headers})
@@ -96,7 +96,7 @@ async def test_asgi_raw_path():
         response = await client.get(url)
 
     assert response.status_code == 200
-    assert response.json() == {"raw_path": "b'/user%40example.org'"}
+    assert response.json() == {"raw_path": "/user%40example.org"}
 
 
 @pytest.mark.usefixtures("async_environment")
