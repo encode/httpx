@@ -90,6 +90,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
             "headers": [(k.lower(), v) for (k, v) in headers],
             "scheme": scheme.decode("ascii"),
             "path": unquote(path.decode("ascii")),
+            "raw_path": path,
             "query_string": query,
             "server": (host.decode("ascii"), port),
             "client": self.client,
