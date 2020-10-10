@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.16.1 (October 8th, 2020)
+
+### Fixed
+
+* Support literal IPv6 addresses in URLs. (Pull #1349)
+* Force lowercase headers in ASGI scope dictionaries. (Pull #1351)
+
 ## 0.16.0 (October 6th, 2020)
 
 ### Changed

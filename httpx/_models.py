@@ -110,6 +110,11 @@ class URL:
                 raw_scheme, raw_host, port, raw_path = url
                 scheme = raw_scheme.decode("ascii")
                 host = raw_host.decode("ascii")
+                if host and ":" in host and host[0] != "[":
+                    # it's an IPv6 address, so it should be enclosed in "[" and "]"
+                    # ref: https://tools.ietf.org/html/rfc2732#section-2
+                    # ref: https://tools.ietf.org/html/rfc3986#section-3.2.2
+                    host = f"[{host}]"
                 port_str = "" if port is None else f":{port}"
                 path = raw_path.decode("ascii")
                 url = f"{scheme}://{host}{port_str}{path}"
@@ -188,8 +193,17 @@ class URL:
 
         url = httpx.URL("http://中国.icom.museum")
         assert url.host == "xn--fiqs8s.icom.museum"
+
+        url = httpx.URL("https://[::ffff:192.168.0.1]")
+        assert url.host == "::ffff:192.168.0.1"
         """
-        return self._uri_reference.host or ""
+        host: str = self._uri_reference.host
+
+        if host and ":" in host and host[0] == "[":
+            # it's an IPv6 address
+            host = host.lstrip("[").rstrip("]")
+
+        return host or ""
 
     @property
     def port(self) -> typing.Optional[int]:
@@ -338,6 +352,11 @@ class URL:
             # Consolidate host and port into  netloc.
             host = kwargs.pop("host", self.host) or ""
             port = kwargs.pop("port", self.port)
+
+            if host and ":" in host and host[0] != "[":
+                # it's an IPv6 address, so it should be hidden under bracket
+                host = f"[{host}]"
+
             kwargs["netloc"] = f"{host}:{port}" if port is not None else host
 
         if "userinfo" in kwargs or "netloc" in kwargs:
