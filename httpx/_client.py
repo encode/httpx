@@ -561,6 +561,7 @@ class Client(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         proxies: ProxiesTypes = None,
+        mounts: typing.Dict[str, httpcore.SyncHTTPTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
@@ -611,7 +612,7 @@ class Client(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self._proxies: typing.Dict[
+        self._mounts: typing.Dict[
             URLPattern, typing.Optional[httpcore.SyncHTTPTransport]
         ] = {
             URLPattern(key): None
@@ -626,7 +627,12 @@ class Client(BaseClient):
             )
             for key, proxy in proxy_map.items()
         }
-        self._proxies = dict(sorted(self._proxies.items()))
+        if mounts is not None:
+            self._mounts.update(
+                {URLPattern(key): transport for key, transport in mounts.items()}
+            )
+
+        self._mounts = dict(sorted(self._mounts.items()))
 
     def _init_transport(
         self,
@@ -681,7 +687,7 @@ class Client(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        for pattern, transport in self._proxies.items():
+        for pattern, transport in self._mounts.items():
             if pattern.matches(url):
                 return self._transport if transport is None else transport
 
@@ -1109,7 +1115,7 @@ class Client(BaseClient):
             self._state = ClientState.CLOSED
 
             self._transport.close()
-            for proxy in self._proxies.values():
+            for proxy in self._mounts.values():
                 if proxy is not None:
                     proxy.close()
 
@@ -1117,7 +1123,7 @@ class Client(BaseClient):
         self._state = ClientState.OPENED
 
         self._transport.__enter__()
-        for proxy in self._proxies.values():
+        for proxy in self._mounts.values():
             if proxy is not None:
                 proxy.__enter__()
         return self
@@ -1131,7 +1137,7 @@ class Client(BaseClient):
         self._state = ClientState.CLOSED
 
         self._transport.__exit__(exc_type, exc_value, traceback)
-        for proxy in self._proxies.values():
+        for proxy in self._mounts.values():
             if proxy is not None:
                 proxy.__exit__(exc_type, exc_value, traceback)
 
@@ -1198,6 +1204,7 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         proxies: ProxiesTypes = None,
+        mounts: typing.Dict[str, httpcore.AsyncHTTPTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
@@ -1249,7 +1256,7 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
-        self._proxies: typing.Dict[
+        self._mounts: typing.Dict[
             URLPattern, typing.Optional[httpcore.AsyncHTTPTransport]
         ] = {
             URLPattern(key): None
@@ -1264,7 +1271,11 @@ class AsyncClient(BaseClient):
             )
             for key, proxy in proxy_map.items()
         }
-        self._proxies = dict(sorted(self._proxies.items()))
+        if mounts is not None:
+            self._mounts.update(
+                {URLPattern(key): transport for key, transport in mounts.items()}
+            )
+        self._mounts = dict(sorted(self._mounts.items()))
 
     def _init_transport(
         self,
@@ -1319,7 +1330,7 @@ class AsyncClient(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        for pattern, transport in self._proxies.items():
+        for pattern, transport in self._mounts.items():
             if pattern.matches(url):
                 return self._transport if transport is None else transport
 
@@ -1750,7 +1761,7 @@ class AsyncClient(BaseClient):
             self._state = ClientState.CLOSED
 
             await self._transport.aclose()
-            for proxy in self._proxies.values():
+            for proxy in self._mounts.values():
                 if proxy is not None:
                     await proxy.aclose()
 
@@ -1758,7 +1769,7 @@ class AsyncClient(BaseClient):
         self._state = ClientState.OPENED
 
         await self._transport.__aenter__()
-        for proxy in self._proxies.values():
+        for proxy in self._mounts.values():
             if proxy is not None:
                 await proxy.__aenter__()
         return self
@@ -1772,7 +1783,7 @@ class AsyncClient(BaseClient):
         self._state = ClientState.CLOSED
 
         await self._transport.__aexit__(exc_type, exc_value, traceback)
-        for proxy in self._proxies.values():
+        for proxy in self._mounts.values():
             if proxy is not None:
                 await proxy.__aexit__(exc_type, exc_value, traceback)
 
