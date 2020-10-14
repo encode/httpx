@@ -357,3 +357,13 @@ def test_mounted_transport():
     response = client.get("custom://www.example.com")
     assert response.status_code == 200
     assert response.json() == {"app": "mounted"}
+
+
+def test_all_mounted_transport():
+    mounts = {"all://": MockTransport(mounted)}
+
+    client = httpx.Client(mounts=mounts)
+
+    response = client.get("https://www.example.com")
+    assert response.status_code == 200
+    assert response.json() == {"app": "mounted"}
