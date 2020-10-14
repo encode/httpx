@@ -332,3 +332,28 @@ def test_raw_client_header():
         ["User-Agent", f"python-httpx/{httpx.__version__}"],
         ["Example-Header", "example-value"],
     ]
+
+
+def unmounted(request: httpx.Request) -> httpx.Response:
+    data = {"app": "unmounted"}
+    return httpx.Response(200, json=data)
+
+
+def mounted(request: httpx.Request) -> httpx.Response:
+    data = {"app": "mounted"}
+    return httpx.Response(200, json=data)
+
+
+def test_mounted_transport():
+    transport = MockTransport(unmounted)
+    mounts = {"custom://": MockTransport(mounted)}
+
+    client = httpx.Client(transport=transport, mounts=mounts)
+
+    response = client.get("https://www.example.com")
+    assert response.status_code == 200
+    assert response.json() == {"app": "unmounted"}
+
+    response = client.get("custom://www.example.com")
+    assert response.status_code == 200
+    assert response.json() == {"app": "mounted"}

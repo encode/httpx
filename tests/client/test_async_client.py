@@ -277,3 +277,28 @@ async def test_deleting_unclosed_async_client_causes_warning():
     await client.get("http://example.com")
     with pytest.warns(UserWarning):
         del client
+
+
+def unmounted(request: httpx.Request) -> httpx.Response:
+    data = {"app": "unmounted"}
+    return httpx.Response(200, json=data)
+
+
+def mounted(request: httpx.Request) -> httpx.Response:
+    data = {"app": "mounted"}
+    return httpx.Response(200, json=data)
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_mounted_transport():
+    transport = MockTransport(unmounted)
+    mounts = {"custom://": MockTransport(mounted)}
+
+    async with httpx.AsyncClient(transport=transport, mounts=mounts) as client:
+        response = await client.get("https://www.example.com")
+        assert response.status_code == 200
+        assert response.json() == {"app": "unmounted"}
+
+        response = await client.get("custom://www.example.com")
+        assert response.status_code == 200
+        assert response.json() == {"app": "mounted"}
