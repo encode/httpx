@@ -49,4 +49,4 @@ This public gist provides an example implementation for a [custom transport](/ad
 
 [Github](https://github.com/abersheeran/rpc.py) - [Documentation](https://github.com/abersheeran/rpc.py#rpcpy)
 
-A RPC framework base on ASGI/WSGI. Use HTTPX as the client of the RPC service.
+A RPC framework based on ASGI/WSGI. Use HTTPX as the client of the RPC service.
