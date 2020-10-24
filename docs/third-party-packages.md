@@ -24,6 +24,12 @@ An asynchronous GitHub API library. Includes [HTTPX support](https://gidgethub.r
 
 A utility for mocking out the Python HTTPX library.
 
+### rpc.py
+
+[Github](https://github.com/abersheeran/rpc.py) - [Documentation](https://github.com/abersheeran/rpc.py#rpcpy)
+
+An fast and powerful RPC framework based on ASGI/WSGI. Use HTTPX as the client of the RPC service.
+
 ### VCR.py
 
 [GitHub](https://github.com/kevin1024/vcrpy) - [Documentation](https://vcrpy.readthedocs.io/)
