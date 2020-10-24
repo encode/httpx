@@ -24,6 +24,12 @@ An asynchronous GitHub API library. Includes [HTTPX support](https://gidgethub.r
 
 A utility for mocking out the Python HTTPX library.
 
+### rpc.py
+
+[Github](https://github.com/abersheeran/rpc.py) - [Documentation](https://github.com/abersheeran/rpc.py#rpcpy)
+
+An fast and powerful RPC framework based on ASGI/WSGI. Use HTTPX as the client of the RPC service.
+
 ### VCR.py
 
 [GitHub](https://github.com/kevin1024/vcrpy) - [Documentation](https://vcrpy.readthedocs.io/)
@@ -40,13 +46,3 @@ A utility for record and repeat an http request.
 [GitHub](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165da388e546e)
 
 This public gist provides an example implementation for a [custom transport](/advanced#custom-transports) implementation on top of the battle-tested [`urllib3`](https://urllib3.readthedocs.io) library.
-
-## Projects
-
-<!-- NOTE: this list is in alphabetical order. -->
-
-### rpc.py
-
-[Github](https://github.com/abersheeran/rpc.py) - [Documentation](https://github.com/abersheeran/rpc.py#rpcpy)
-
-A RPC framework based on ASGI/WSGI. Use HTTPX as the client of the RPC service.
