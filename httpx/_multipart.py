@@ -19,11 +19,13 @@ class DataField:
 
     def __init__(self, name: str, value: typing.Union[str, bytes]) -> None:
         if not isinstance(name, str):
-            raise TypeError(f"Invalid type for name. Expected str, "
-                            f"got {type(name).__name__}: {name!r}")
+            raise TypeError(
+                f"Invalid type for name. Expected str, got {type(name)}: {name!r}"
+            )
         if not isinstance(value, (str, bytes)):
-            raise TypeError(f"Invalid type for value. Expected str or bytes, "
-                            f"got {type(value).__name__}: {value!r}")
+            raise TypeError(
+                f"Invalid type for value. Expected str or bytes, got {type(value)}: {value!r}"
+            )
         self.name = name
         self.value = value
 
