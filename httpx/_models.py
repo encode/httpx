@@ -129,7 +129,7 @@ class URL:
             self._uri_reference = url._uri_reference
         else:
             raise TypeError(
-                f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}"
+                f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}: {url!r}"
             )
 
         # Add any query parameters, merging with any in the URL if needed.

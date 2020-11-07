@@ -55,6 +55,7 @@ def test_multipart_invalid_key(key):
             files=files,
         )
     assert "Invalid type for name" in str(e.value)
+    assert repr(key) in str(e.value)
 
 
 @pytest.mark.parametrize(("value"), (1, 2.3, None, [None, "abc"], {None: "abc"}))
