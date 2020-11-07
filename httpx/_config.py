@@ -1,3 +1,4 @@
+import builtins
 import os
 import ssl
 import typing
@@ -32,12 +33,8 @@ DEFAULT_CIPHERS = ":".join(
 
 logger = get_logger(__name__)
 
-
-class UnsetType:
-    pass  # pragma: nocover
-
-
-UNSET = UnsetType()
+UnsetType = builtins.ellipsis
+UNSET = ...
 
 
 def create_ssl_context(
