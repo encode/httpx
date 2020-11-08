@@ -16,7 +16,8 @@ To make asynchronous requests, you'll need an `AsyncClient`.
 
 ```pycon
 >>> async with httpx.AsyncClient() as client:
->>>     r = await client.get('https://www.example.com/')
+...     r = await client.get('https://www.example.com/')
+...
 >>> r
 <Response [200 OK]>
 ```
@@ -67,8 +68,8 @@ The `AsyncClient.stream(method, url, ...)` method is an async context block.
 ```pycon
 >>> client = httpx.AsyncClient()
 >>> async with client.stream('GET', 'https://www.example.com/') as response:
->>>     async for chunk in response.aiter_bytes():
->>>         ...
+...     async for chunk in response.aiter_bytes():
+...         ...
 ```
 
 The async response streaming methods are:
