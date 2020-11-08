@@ -43,7 +43,8 @@ _Use [IPython](https://ipython.readthedocs.io/en/stable/) or Python 3.8+ with `p
 ```pycon
 >>> import httpx
 >>> async with httpx.AsyncClient() as client:
->>>     r = await client.get('https://www.example.org/')
+...     r = await client.get('https://www.example.org/')
+...
 >>> r
 <Response [200 OK]>
 ```
