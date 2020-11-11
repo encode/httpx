@@ -169,7 +169,7 @@ from starlette.responses import HTMLResponse
 from starlette.routing import Route
 
 
-async def hello():
+async def hello(request):
     return HTMLResponse("Hello World!")
 
 
