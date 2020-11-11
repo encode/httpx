@@ -379,7 +379,7 @@ class BaseClient:
         elif callable(auth):
             return FunctionAuth(func=auth)
         else:
-            raise TypeError('Invalid "auth" argument.')
+            raise TypeError(f'Invalid "auth" argument: {auth!r}')
 
     def _build_request_auth(
         self, request: Request, auth: typing.Union[AuthTypes, UnsetType] = UNSET
