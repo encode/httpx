@@ -45,4 +45,4 @@ A utility for record and repeat an http request.
 
 [GitHub](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165da388e546e)
 
-This public gist provides an example implementation for a [custom transport](/advanced#custom-transports) implementation on top of the battle-tested [`urllib3`](https://urllib3.readthedocs.io) library.
+This public gist provides an example implementation for a [custom transport](advanced.md#custom-transports) implementation on top of the battle-tested [`urllib3`](https://urllib3.readthedocs.io) library.
