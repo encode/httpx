@@ -139,7 +139,7 @@ class codes(IntEnum):
     NETWORK_AUTHENTICATION_REQUIRED = 511, "Network Authentication Required"
 
 
-#  Include lower-case styles for `requests` compatibility.
+# Include lower-case styles for `requests` compatibility.
 for code in codes:
     setattr(codes, code._name_.lower(), int(code))
 
