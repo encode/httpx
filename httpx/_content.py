@@ -139,7 +139,14 @@ def encode_html(html: str) -> Tuple[Dict[str, str], ByteStream]:
 def encode_json(json: Any) -> Tuple[Dict[str, str], ByteStream]:
     import httpx
 
-    body = httpx.json.dumps(json).encode("utf-8")
+    # Note that we allow 'json.dumps(...)' returning bytes. This isn't the
+    # stdlib behavior, but we support overriding the default implementation...
+    # eg. `httpx.json = ujson` and `httpx.json = orjson`
+    # And we'd like to gracefully support the case of 'orjson' which returns
+    # bytes directly.
+    body_str = httpx.json.dumps(json)
+    body = body_str if isinstance(body_str, bytes) else body_str.encode("utf-8")
+
     content_length = str(len(body))
     content_type = "application/json"
     headers = {"Content-Length": content_length, "Content-Type": content_type}
