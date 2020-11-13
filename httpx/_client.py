@@ -1115,17 +1115,17 @@ class Client(BaseClient):
             self._state = ClientState.CLOSED
 
             self._transport.close()
-            for proxy in self._mounts.values():
-                if proxy is not None:
-                    proxy.close()
+            for transport in self._mounts.values():
+                if transport is not None:
+                    transport.close()
 
     def __enter__(self: T) -> T:
         self._state = ClientState.OPENED
 
         self._transport.__enter__()
-        for proxy in self._mounts.values():
-            if proxy is not None:
-                proxy.__enter__()
+        for transport in self._mounts.values():
+            if transport is not None:
+                transport.__enter__()
         return self
 
     def __exit__(
@@ -1137,9 +1137,9 @@ class Client(BaseClient):
         self._state = ClientState.CLOSED
 
         self._transport.__exit__(exc_type, exc_value, traceback)
-        for proxy in self._mounts.values():
-            if proxy is not None:
-                proxy.__exit__(exc_type, exc_value, traceback)
+        for transport in self._mounts.values():
+            if transport is not None:
+                transport.__exit__(exc_type, exc_value, traceback)
 
     def __del__(self) -> None:
         self.close()
@@ -1510,7 +1510,7 @@ class AsyncClient(BaseClient):
         await timer.async_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (status_code, headers, stream, ext,) = await transport.arequest(
+            (status_code, headers, stream, ext) = await transport.arequest(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
