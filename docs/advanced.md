@@ -880,6 +880,37 @@ class MyCustomAuth(httpx.Auth):
         raise RuntimeError("Cannot use a sync authentication class with httpx.AsyncClient")
 ```
 
+## Custom JSON libraries
+
+By default, HTTPX uses the standard library `json` module when making requests with `json=...`.
+
+It is possible to patch the JSON library used by HTTPX globally by setting `httpx.json`:
+
+```python
+import httpx
+import orjson
+
+# Globally switch out the JSON implementation used by HTTPX.
+httpx.json = orjson
+```
+
+Any object that exposes `.loads(data: str) -> Any` and `.dumps(obj: Any) -> str` is accepted (for maximum compatibility, `.dumps(obj: Any) -> bytes` is also supported). For full control over the serialization behavior, you can build and provide your own implementation. This also allows overloading each method independently. For example:
+
+```python
+import uson
+import orjson
+
+# A JSON serializer that uses different libraries for encoding vs decoding.
+class HybridJSON:
+    def loads(self, text):
+        return orgjson.loads(text)
+
+    def dumps(self, data):
+        return ujson.dumps(data)
+
+httpx.json = HybridJSON()
+```
+
 ## SSL certificates
 
 When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
