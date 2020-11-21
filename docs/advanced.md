@@ -903,7 +903,7 @@ import orjson
 # A JSON serializer that uses different libraries for encoding vs decoding.
 class HybridJSON:
     def loads(self, text):
-        return orgjson.loads(text)
+        return orjson.loads(text)
 
     def dumps(self, data):
         return ujson.dumps(data)
