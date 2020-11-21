@@ -2,7 +2,6 @@ import cgi
 import contextlib
 import datetime
 import email.message
-import json as jsonlib
 import typing
 import urllib.request
 from collections.abc import MutableMapping
@@ -1106,14 +1105,16 @@ class Response:
             raise HTTPStatusError(message, request=request, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
+        import httpx
+
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
                 try:
-                    return jsonlib.loads(self.content.decode(encoding), **kwargs)
+                    return httpx.json.loads(self.content.decode(encoding), **kwargs)
                 except UnicodeDecodeError:
                     pass
-        return jsonlib.loads(self.text, **kwargs)
+        return httpx.json.loads(self.text, **kwargs)
 
     @property
     def cookies(self) -> "Cookies":

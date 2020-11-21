@@ -300,3 +300,24 @@ def test_raw_client_header():
         ["User-Agent", f"python-httpx/{httpx.__version__}"],
         ["Example-Header", "example-value"],
     ]
+
+
+def test_override_json():
+    class MockJSONLib:
+        def loads(self, *args, **kwargs):
+            return {"hello": "custom json lib"}
+
+        def dumps(self, *args, **kwargs):
+            return '{"hello": "custom json lib"}'
+
+    try:
+        httpx.json = MockJSONLib()  # type: ignore
+
+        client = httpx.Client(transport=MockTransport(hello_world))
+        response = client.post("http://example.org/", json={"example": 123})
+
+        assert response.json() == {"hello": "custom json lib"}
+    finally:
+        import json
+
+        httpx.json = json
