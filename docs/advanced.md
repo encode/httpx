@@ -897,7 +897,7 @@ httpx.json = orjson
 Any object that exposes `.loads(data: str) -> Any` and `.dumps(obj: Any) -> str` is accepted (for maximum compatibility, `.dumps(obj: Any) -> bytes` is also supported). For full control over the serialization behavior, you can build and provide your own implementation. This also allows overloading each method independently. For example:
 
 ```python
-import uson
+import ujson
 import orjson
 
 # A JSON serializer that uses different libraries for encoding vs decoding.
