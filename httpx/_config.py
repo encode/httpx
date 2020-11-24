@@ -294,7 +294,7 @@ class Limits:
         *,
         max_connections: int = None,
         max_keepalive_connections: int = None,
-        keepalive_expiry: float = 5.0,
+        keepalive_expiry: typing.Optional[float] = 5.0,
     ):
         self.max_connections = max_connections
         self.max_keepalive_connections = max_keepalive_connections
