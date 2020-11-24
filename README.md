@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://www.python-httpx.org/"><img width="350" height="208" src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/logo.jpg" alt='HTTPX'></a>
+  <a href="https://www.python-httpx.org/"><img width="350" height="208" src="https://raw.githubusercontent.com/encode/httpx/master/docs/img/butterfly.png" alt='HTTPX'></a>
 </p>
 
 <p align="center"><strong>HTTPX</strong> <em>- A next-generation HTTP client for Python.</em></p>
@@ -43,7 +43,8 @@ _Use [IPython](https://ipython.readthedocs.io/en/stable/) or Python 3.8+ with `p
 ```pycon
 >>> import httpx
 >>> async with httpx.AsyncClient() as client:
->>>     r = await client.get('https://www.example.org/')
+...     r = await client.get('https://www.example.org/')
+...
 >>> r
 <Response [200 OK]>
 ```

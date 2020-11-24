@@ -132,7 +132,7 @@ class URL:
             self._uri_reference = url._uri_reference
         else:
             raise TypeError(
-                f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}"
+                f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}: {url!r}"
             )
 
         # Add any query parameters, merging with any in the URL if needed.
@@ -1521,7 +1521,7 @@ class Cookies(MutableMapping):
         def info(self) -> email.message.Message:
             info = email.message.Message()
             for key, value in self.response.headers.multi_items():
-                #  Note that setting `info[key]` here is an "append" operation,
+                # Note that setting `info[key]` here is an "append" operation,
                 # not a "replace" operation.
                 # https://docs.python.org/3/library/email.compat32-message.html#email.message.Message.__setitem__
                 info[key] = value
