@@ -1040,12 +1040,13 @@ class HelloWorldTransport(httpcore.SyncHTTPTransport):
     A mock transport that always returns a JSON "Hello, world!" response.
     """
 
-    def request(self, method, url, headers=None, stream=None, timeout=None):
+    def request(self, method, url, headers=None, stream=None, ext=None):
         message = {"text": "Hello, world!"}
         content = json.dumps(message).encode("utf-8")
         stream = httpcore.PlainByteStream(content)
         headers = [(b"content-type", b"application/json")]
-        return b"HTTP/1.1", 200, b"OK", headers, stream
+        ext = {"http_version": b"HTTP/1.1"}
+        return 200, headers, stream, ext
 ```
 
 Which we can use in the same way:
@@ -1056,4 +1057,55 @@ Which we can use in the same way:
 >>> response = client.get("https://example.org/")
 >>> response.json()
 {"text": "Hello, world!"}
+```
+
+### Mounting transports
+
+You can also mount transports against given schemes or domains, to control
+which transport an outgoing request should be routed via, with [the same style
+used for specifying proxy routing](#routing).
+
+```python
+import httpcore
+import httpx
+
+class HTTPSRedirectTransport(httpcore.SyncHTTPTransport):
+    """
+    A transport that always redirects to HTTPS.
+    """
+
+    def request(self, method, url, headers=None, stream=None, ext=None):
+        scheme, host, port, path = url
+        if port is None:
+            location = b"https://%s%s" % (host, path)
+        else:
+            location = b"https://%s:%d%s" % (host, port, path)
+        stream = httpcore.PlainByteStream(b"")
+        headers = [(b"location", location)]
+        ext = {"http_version": b"HTTP/1.1"}
+        return 303, headers, stream, ext
+
+
+# A client where any `http` requests are always redirected to `https`
+mounts = {'http://': HTTPSRedirectTransport()}
+client = httpx.Client(mounts=mounts)
+```
+
+A couple of other sketches of how you might take advantage of mounted transports...
+
+Mocking requests to a given domain:
+
+```python
+# All requests to "example.org" should be mocked out.
+# Other requests occur as usual.
+mounts = {"all://example.org": MockTransport()}
+client = httpx.Client(mounts=mounts)
+```
+
+Adding support for custom schemes:
+
+```python
+# Support URLs like "file:///Users/sylvia_green/websites/new_client/index.html"
+mounts = {"file://": FileSystemTransport()}
+client = httpx.Client(mounts=mounts)
 ```
