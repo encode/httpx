@@ -102,7 +102,8 @@ def test_create_ssl_context_with_get_request(server, cert_pem_file):
 
 def test_limits_repr():
     limits = httpx.Limits(max_connections=100)
-    assert repr(limits) == "Limits(max_connections=100, max_keepalive_connections=None)"
+    expected = "Limits(max_connections=100, max_keepalive_connections=None, keepalive_expiry=5.0)"
+    assert repr(limits) == expected
 
 
 def test_limits_eq():

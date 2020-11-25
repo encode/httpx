@@ -64,7 +64,6 @@ U = typing.TypeVar("U", bound="AsyncClient")
 
 logger = get_logger(__name__)
 
-KEEPALIVE_EXPIRY = 5.0
 USER_AGENT = f"python-httpx/{__version__}"
 ACCEPT_ENCODING = ", ".join(
     [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
@@ -656,7 +655,7 @@ class Client(BaseClient):
             ssl_context=ssl_context,
             max_connections=limits.max_connections,
             max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
+            keepalive_expiry=limits.keepalive_expiry,
             http2=http2,
         )
 
@@ -678,7 +677,7 @@ class Client(BaseClient):
             ssl_context=ssl_context,
             max_connections=limits.max_connections,
             max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
+            keepalive_expiry=limits.keepalive_expiry,
             http2=http2,
         )
 
@@ -1299,7 +1298,7 @@ class AsyncClient(BaseClient):
             ssl_context=ssl_context,
             max_connections=limits.max_connections,
             max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
+            keepalive_expiry=limits.keepalive_expiry,
             http2=http2,
         )
 
@@ -1321,7 +1320,7 @@ class AsyncClient(BaseClient):
             ssl_context=ssl_context,
             max_connections=limits.max_connections,
             max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
+            keepalive_expiry=limits.keepalive_expiry,
             http2=http2,
         )
 

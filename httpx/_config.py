@@ -294,22 +294,26 @@ class Limits:
         *,
         max_connections: int = None,
         max_keepalive_connections: int = None,
+        keepalive_expiry: typing.Optional[float] = 5.0,
     ):
         self.max_connections = max_connections
         self.max_keepalive_connections = max_keepalive_connections
+        self.keepalive_expiry = keepalive_expiry
 
     def __eq__(self, other: typing.Any) -> bool:
         return (
             isinstance(other, self.__class__)
             and self.max_connections == other.max_connections
             and self.max_keepalive_connections == other.max_keepalive_connections
+            and self.keepalive_expiry == other.keepalive_expiry
         )
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return (
             f"{class_name}(max_connections={self.max_connections}, "
-            f"max_keepalive_connections={self.max_keepalive_connections})"
+            f"max_keepalive_connections={self.max_keepalive_connections}, "
+            f"keepalive_expiry={self.keepalive_expiry})"
         )
 
 
