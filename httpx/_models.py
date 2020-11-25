@@ -15,10 +15,12 @@ import rfc3986.exceptions
 from ._content import PlainByteStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
+    ByteChunker,
     ContentDecoder,
     IdentityDecoder,
     LineDecoder,
     MultiDecoder,
+    TextChunker,
     TextDecoder,
 )
 from ._exceptions import (
@@ -1162,31 +1164,47 @@ class Response:
             self._content = b"".join(self.iter_bytes())
         return self._content
 
-    def iter_bytes(self) -> typing.Iterator[bytes]:
+    def iter_bytes(self, chunk_size: int = None) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
         """
         if hasattr(self, "_content"):
-            yield self._content
+            chunk_size = len(self._content) if chunk_size is None else chunk_size
+            for i in range(0, len(self._content), chunk_size):
+                yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
+            chunker = ByteChunker(chunk_size=chunk_size)
             with self._wrap_decoder_errors():
-                for chunk in self.iter_raw():
-                    yield decoder.decode(chunk)
-                yield decoder.flush()
+                for raw_bytes in self.iter_raw():
+                    decoded = decoder.decode(raw_bytes)
+                    for chunk in chunker.decode(decoded):
+                        yield chunk
+                decoded = decoder.flush()
+                for chunk in chunker.decode(decoded):
+                    yield chunk
+                for chunk in chunker.flush():
+                    yield chunk
 
-    def iter_text(self) -> typing.Iterator[str]:
+    def iter_text(self, chunk_size: int = None) -> typing.Iterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
         decoder = TextDecoder(encoding=self.encoding)
+        chunker = TextChunker(chunk_size=chunk_size)
         with self._wrap_decoder_errors():
-            for chunk in self.iter_bytes():
-                yield decoder.decode(chunk)
-            yield decoder.flush()
+            for byte_content in self.iter_bytes():
+                text_content = decoder.decode(byte_content)
+                for chunk in chunker.decode(text_content):
+                    yield chunk
+            text_content = decoder.flush()
+            for chunk in chunker.decode(text_content):
+                yield chunk
+            for chunk in chunker.flush():
+                yield chunk
 
     def iter_lines(self) -> typing.Iterator[str]:
         decoder = LineDecoder()
@@ -1197,7 +1215,7 @@ class Response:
             for line in decoder.flush():
                 yield line
 
-    def iter_raw(self) -> typing.Iterator[bytes]:
+    def iter_raw(self, chunk_size: int = None) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the raw response content.
         """
@@ -1210,10 +1228,17 @@ class Response:
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
+        chunker = ByteChunker(chunk_size=chunk_size)
+
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
-            for part in self.stream:
-                self._num_bytes_downloaded += len(part)
-                yield part
+            for raw_stream_bytes in self.stream:
+                self._num_bytes_downloaded += len(raw_stream_bytes)
+                for chunk in chunker.decode(raw_stream_bytes):
+                    yield chunk
+
+        for chunk in chunker.flush():
+            yield chunk
+
         self.close()
 
     def close(self) -> None:
@@ -1234,31 +1259,47 @@ class Response:
             self._content = b"".join([part async for part in self.aiter_bytes()])
         return self._content
 
-    async def aiter_bytes(self) -> typing.AsyncIterator[bytes]:
+    async def aiter_bytes(self, chunk_size: int = None) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
         """
         if hasattr(self, "_content"):
-            yield self._content
+            chunk_size = len(self._content) if chunk_size is None else chunk_size
+            for i in range(0, len(self._content), chunk_size):
+                yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
+            chunker = ByteChunker(chunk_size=chunk_size)
             with self._wrap_decoder_errors():
-                async for chunk in self.aiter_raw():
-                    yield decoder.decode(chunk)
-                yield decoder.flush()
+                async for raw_bytes in self.aiter_raw():
+                    decoded = decoder.decode(raw_bytes)
+                    for chunk in chunker.decode(decoded):
+                        yield chunk
+                decoded = decoder.flush()
+                for chunk in chunker.decode(decoded):
+                    yield chunk
+                for chunk in chunker.flush():
+                    yield chunk
 
-    async def aiter_text(self) -> typing.AsyncIterator[str]:
+    async def aiter_text(self, chunk_size: int = None) -> typing.AsyncIterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
         decoder = TextDecoder(encoding=self.encoding)
+        chunker = TextChunker(chunk_size=chunk_size)
         with self._wrap_decoder_errors():
-            async for chunk in self.aiter_bytes():
-                yield decoder.decode(chunk)
-            yield decoder.flush()
+            async for byte_content in self.aiter_bytes():
+                text_content = decoder.decode(byte_content)
+                for chunk in chunker.decode(text_content):
+                    yield chunk
+            text_content = decoder.flush()
+            for chunk in chunker.decode(text_content):
+                yield chunk
+            for chunk in chunker.flush():
+                yield chunk
 
     async def aiter_lines(self) -> typing.AsyncIterator[str]:
         decoder = LineDecoder()
@@ -1269,7 +1310,7 @@ class Response:
             for line in decoder.flush():
                 yield line
 
-    async def aiter_raw(self) -> typing.AsyncIterator[bytes]:
+    async def aiter_raw(self, chunk_size: int = None) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the raw response content.
         """
@@ -1282,10 +1323,17 @@ class Response:
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
+        chunker = ByteChunker(chunk_size=chunk_size)
+
         with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
-            async for part in self.stream:
-                self._num_bytes_downloaded += len(part)
-                yield part
+            async for raw_stream_bytes in self.stream:
+                self._num_bytes_downloaded += len(raw_stream_bytes)
+                for chunk in chunker.decode(raw_stream_bytes):
+                    yield chunk
+
+        for chunk in chunker.flush():
+            yield chunk
+
         await self.aclose()
 
     async def aclose(self) -> None:

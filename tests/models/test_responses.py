@@ -343,6 +343,23 @@ def test_iter_raw():
     assert raw == b"Hello, world!"
 
 
+def test_iter_raw_with_chunksize():
+    response = httpx.Response(200, content=streaming_body())
+
+    parts = [part for part in response.iter_raw(chunk_size=5)]
+    assert parts == [b"Hello", b", wor", b"ld!"]
+
+    response = httpx.Response(200, content=streaming_body())
+
+    parts = [part for part in response.iter_raw(chunk_size=13)]
+    assert parts == [b"Hello, world!"]
+
+    response = httpx.Response(200, content=streaming_body())
+
+    parts = [part for part in response.iter_raw(chunk_size=20)]
+    assert parts == [b"Hello, world!"]
+
+
 def test_iter_raw_on_iterable():
     response = httpx.Response(
         200,
@@ -385,6 +402,24 @@ async def test_aiter_raw():
 
 
 @pytest.mark.asyncio
+async def test_aiter_raw_with_chunksize():
+    response = httpx.Response(200, content=async_streaming_body())
+
+    parts = [part async for part in response.aiter_raw(chunk_size=5)]
+    assert parts == [b"Hello", b", wor", b"ld!"]
+
+    response = httpx.Response(200, content=async_streaming_body())
+
+    parts = [part async for part in response.aiter_raw(chunk_size=13)]
+    assert parts == [b"Hello, world!"]
+
+    response = httpx.Response(200, content=async_streaming_body())
+
+    parts = [part async for part in response.aiter_raw(chunk_size=20)]
+    assert parts == [b"Hello, world!"]
+
+
+@pytest.mark.asyncio
 async def test_aiter_raw_on_sync():
     response = httpx.Response(
         200,
@@ -406,15 +441,26 @@ async def test_aiter_raw_increments_updates_counter():
 
 
 def test_iter_bytes():
-    response = httpx.Response(
-        200,
-        content=b"Hello, world!",
-    )
+    response = httpx.Response(200, content=b"Hello, world!")
 
     content = b""
     for part in response.iter_bytes():
         content += part
     assert content == b"Hello, world!"
+
+
+def test_iter_bytes_with_chunk_size():
+    response = httpx.Response(200, content=streaming_body())
+    parts = [part for part in response.iter_bytes(chunk_size=5)]
+    assert parts == [b"Hello", b", wor", b"ld!"]
+
+    response = httpx.Response(200, content=streaming_body())
+    parts = [part for part in response.iter_bytes(chunk_size=13)]
+    assert parts == [b"Hello, world!"]
+
+    response = httpx.Response(200, content=streaming_body())
+    parts = [part for part in response.iter_bytes(chunk_size=20)]
+    assert parts == [b"Hello, world!"]
 
 
 @pytest.mark.asyncio
@@ -430,6 +476,21 @@ async def test_aiter_bytes():
     assert content == b"Hello, world!"
 
 
+@pytest.mark.asyncio
+async def test_aiter_bytes_with_chunk_size():
+    response = httpx.Response(200, content=async_streaming_body())
+    parts = [part async for part in response.aiter_bytes(chunk_size=5)]
+    assert parts == [b"Hello", b", wor", b"ld!"]
+
+    response = httpx.Response(200, content=async_streaming_body())
+    parts = [part async for part in response.aiter_bytes(chunk_size=13)]
+    assert parts == [b"Hello, world!"]
+
+    response = httpx.Response(200, content=async_streaming_body())
+    parts = [part async for part in response.aiter_bytes(chunk_size=20)]
+    assert parts == [b"Hello, world!"]
+
+
 def test_iter_text():
     response = httpx.Response(
         200,
@@ -440,6 +501,20 @@ def test_iter_text():
     for part in response.iter_text():
         content += part
     assert content == "Hello, world!"
+
+
+def test_iter_text_with_chunk_size():
+    response = httpx.Response(200, content=b"Hello, world!")
+    parts = [part for part in response.iter_text(chunk_size=5)]
+    assert parts == ["Hello", ", wor", "ld!"]
+
+    response = httpx.Response(200, content=b"Hello, world!")
+    parts = [part for part in response.iter_text(chunk_size=13)]
+    assert parts == ["Hello, world!"]
+
+    response = httpx.Response(200, content=b"Hello, world!")
+    parts = [part for part in response.iter_text(chunk_size=20)]
+    assert parts == ["Hello, world!"]
 
 
 @pytest.mark.asyncio
@@ -453,6 +528,21 @@ async def test_aiter_text():
     async for part in response.aiter_text():
         content += part
     assert content == "Hello, world!"
+
+
+@pytest.mark.asyncio
+async def test_aiter_text_with_chunk_size():
+    response = httpx.Response(200, content=b"Hello, world!")
+    parts = [part async for part in response.aiter_text(chunk_size=5)]
+    assert parts == ["Hello", ", wor", "ld!"]
+
+    response = httpx.Response(200, content=b"Hello, world!")
+    parts = [part async for part in response.aiter_text(chunk_size=13)]
+    assert parts == ["Hello, world!"]
+
+    response = httpx.Response(200, content=b"Hello, world!")
+    parts = [part async for part in response.aiter_text(chunk_size=20)]
+    assert parts == ["Hello, world!"]
 
 
 def test_iter_lines():
