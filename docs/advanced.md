@@ -1081,6 +1081,9 @@ else:
 client = httpx.Client(transport=transport)
 ```
 
+For more advanced use-cases you might want to take a look at [the third-party
+mocking library, RESPX](https://lundberg.github.io/respx/).
+
 ### Mounting transports
 
 You can also mount transports against given schemes or domains, to control
