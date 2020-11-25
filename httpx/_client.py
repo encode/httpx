@@ -30,6 +30,7 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
+from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
     AuthTypes,
@@ -649,14 +650,8 @@ class Client(BaseClient):
         if app is not None:
             return WSGITransport(app=app)
 
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.SyncConnectionPool(
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=limits.keepalive_expiry,
-            http2=http2,
+        return HTTPTransport(
+            verify=verify, cert=cert, http2=http2, limits=limits, trust_env=trust_env
         )
 
     def _init_proxy_transport(
@@ -1292,14 +1287,8 @@ class AsyncClient(BaseClient):
         if app is not None:
             return ASGITransport(app=app)
 
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.AsyncConnectionPool(
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=limits.keepalive_expiry,
-            http2=http2,
+        return AsyncHTTPTransport(
+            verify=verify, cert=cert, http2=http2, limits=limits, trust_env=trust_env
         )
 
     def _init_proxy_transport(
