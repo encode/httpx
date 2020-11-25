@@ -1081,8 +1081,8 @@ else:
 client = httpx.Client(transport=transport)
 ```
 
-For more advanced use-cases you might want to take a look at [the third-party
-mocking library, RESPX](https://lundberg.github.io/respx/).
+For more advanced use-cases you might want to take a look at either [the third-party
+mocking library, RESPX](https://lundberg.github.io/respx/), or the [pytest-httpx library](https://github.com/Colin-b/pytest_httpx).
 
 ### Mounting transports
 
