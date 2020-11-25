@@ -1059,6 +1059,28 @@ Which we can use in the same way:
 {"text": "Hello, world!"}
 ```
 
+### Mock transports
+
+During testing it can often be useful to be able to mock out a transport,
+and return pre-determined responses, rather than making actual network requests.
+
+The `httpx.MockTransport` class accepts a handler function, which can be used
+to map requests onto pre-determined responses:
+
+```python
+def handler(request):
+    return httpx.Response(200, json={"text": "Hello, world!"})
+
+
+# Switch to a mock transport, if the TESTING environment variable is set.
+if os.environ['TESTING'].upper() == "TRUE":
+    transport = httpx.MockTransport(handler)
+else:
+    transport = httpx.HTTPTransport()
+
+client = httpx.Client(transport=transport)
+```
+
 ### Mounting transports
 
 You can also mount transports against given schemes or domains, to control
