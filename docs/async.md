@@ -112,6 +112,19 @@ async def upload_bytes():
 await client.post(url, data=upload_bytes())
 ```
 
+### Explicit transport instances
+
+When instantiating a transport instance directly, you need to use `httpx.AsyncHTTPProxy`.
+
+For instance:
+
+```pycon
+>>> import httpx
+>>> transport = httpx.AsyncHTTPTransport(retries=1)
+>>> async with httpx.AsyncClient(transport=transport) as client:
+>>>     ...
+```
+
 ## Supported async environments
 
 HTTPX supports either `asyncio` or `trio` as an async environment.

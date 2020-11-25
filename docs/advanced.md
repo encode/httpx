@@ -968,45 +968,35 @@ sending of the requests.
 ### Usage
 
 For some advanced configuration you might need to instantiate a transport
-class directly, and pass it to the client instance. The `httpcore` package
-provides a `local_address` configuration that is only available via this
-low-level API.
+class directly, and pass it to the client instance. One example is the
+`local_address` configuration which is only available via this low-level API.
 
 ```pycon
->>> import httpx, httpcore
->>> ssl_context = httpx.create_ssl_context()
->>> transport = httpcore.SyncConnectionPool(
-...     ssl_context=ssl_context,
-...     max_connections=100,
-...     max_keepalive_connections=20,
-...     keepalive_expiry=5.0,
-...     local_address="0.0.0.0"
-... )  # Use the standard HTTPX defaults, but with an IPv4 only 'local_address'.
+>>> import httpx
+>>> transport = httpx.HTTPTransport(local_address="0.0.0.0")
 >>> client = httpx.Client(transport=transport)
 ```
 
-Similarly, `httpcore` provides a `uds` option for connecting via a Unix Domain Socket that is only available via this low-level API:
+Connection retries are also available via this interface.
 
-```python
->>> import httpx, httpcore
->>> ssl_context = httpx.create_ssl_context()
->>> transport = httpcore.SyncConnectionPool(
-...     ssl_context=ssl_context,
-...     max_connections=100,
-...     max_keepalive_connections=20,
-...     keepalive_expiry=5.0,
-...     uds="/var/run/docker.sock",
-... )  # Connect to the Docker API via a Unix Socket.
+```pycon
+>>> import httpx
+>>> transport = httpx.HTTPTransport(retries=1)
+>>> client = httpx.Client(transport=transport)
+```
+
+Similarly, instantiating a transport directly provides a `uds` option for
+connecting via a Unix Domain Socket that is only available via this low-level API:
+
+```pycon
+>>> import httpx
+>>> # Connect to the Docker API via a Unix Socket.
+>>> transport = httpx.HTTPTransport(uds="/var/run/docker.sock")
 >>> client = httpx.Client(transport=transport)
 >>> response = client.get("http://docker/info")
 >>> response.json()
 {"ID": "...", "Containers": 4, "Images": 74, ...}
 ```
-
-Unlike the `httpx.Client()`, the lower-level `httpcore` transport instances
-do not include any default values for configuring aspects such as the
-connection pooling details, so you'll need to provide more explicit
-configuration when using this API.
 
 ### urllib3 transport
 
