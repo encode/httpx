@@ -1083,6 +1083,16 @@ client = httpx.Client(mounts=mounts)
 
 A couple of other sketches of how you might take advantage of mounted transports...
 
+Disabling HTTP/2 on a single given domain...
+
+```python
+mounts = {
+    "all://": httpx.HTTPTransport(http2=True),
+    "all://*example.org": httpx.HTTPTransport()
+}
+client = httpx.Client(mounts=mounts)
+```
+
 Mocking requests to a given domain:
 
 ```python
