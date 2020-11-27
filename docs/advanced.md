@@ -1123,7 +1123,10 @@ Mocking requests to a given domain:
 ```python
 # All requests to "example.org" should be mocked out.
 # Other requests occur as usual.
-mounts = {"all://example.org": MockTransport()}
+def handler(request):
+    return httpx.Response(200, json={"text": "Hello, World!"})
+
+mounts = {"all://example.org": httpx.MockTransport(handler)}
 client = httpx.Client(mounts=mounts)
 ```
 
