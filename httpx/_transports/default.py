@@ -46,7 +46,7 @@ class HTTPTransport(httpcore.SyncHTTPTransport):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
         **kwargs: typing.Any,
-    ):
+    ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
         self._pool = httpcore.SyncConnectionPool(
@@ -92,7 +92,7 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
         **kwargs: typing.Any,
-    ):
+    ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
         self._pool = httpcore.AsyncConnectionPool(
