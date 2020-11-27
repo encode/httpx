@@ -114,7 +114,7 @@ await client.post(url, data=upload_bytes())
 
 ### Explicit transport instances
 
-When instantiating a transport instance directly, you need to use `httpx.AsyncHTTPProxy`.
+When instantiating a transport instance directly, you need to use `httpx.AsyncHTTPTransport`.
 
 For instance:
 
