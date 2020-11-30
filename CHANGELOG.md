@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.17.0
+
+### Added
+
+* Add `chunk_size` parameter to `iter_raw()`, `iter_bytes()`, `iter_text()`. (Pull #1277)
+* Add `keepalive_expiry` parameter to `httpx.Limits()` configuration. (Pull #1398)
+* Mount API support, using `httpx.Client(mounts=...)` (Pull #1362)
+
+### Fixed
+
+* WSGI `PATH_INFO` should be URL escaped. (Pull #1391)
+* Add `raw_path` to ASGI scope. (Pull #1357)
+
 ## 0.16.1 (October 8th, 2020)
 
 ### Fixed
