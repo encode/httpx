@@ -234,7 +234,7 @@ class URL:
         assert url.path == "/pa th"
         """
         path = self._uri_reference.path or "/"
-        return unquote(path)
+        return "%2F".join(map(unquote, path.split("%2F")))
 
     @property
     def query(self) -> bytes:
