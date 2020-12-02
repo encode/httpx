@@ -1491,6 +1491,20 @@ class Cookies(MutableMapping):
             return True
         return False
 
+    def __repr__(self) -> str:
+        template = "<Cookie {name}={value} for {domain} />"
+
+        cookies_repr = ", ".join(
+            [
+                template.format(
+                    name=cookie.name, value=cookie.value, domain=cookie.domain
+                )
+                for cookie in self.jar
+            ]
+        )
+
+        return f"<Cookies[{cookies_repr}]>"
+
     class _CookieCompatRequest(urllib.request.Request):
         """
         Wraps a `Request` instance up in a compatibility interface suitable
