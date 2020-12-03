@@ -1492,13 +1492,9 @@ class Cookies(MutableMapping):
         return False
 
     def __repr__(self) -> str:
-        template = "<Cookie {name}={value} for {domain} />"
-
         cookies_repr = ", ".join(
             [
-                template.format(
-                    name=cookie.name, value=cookie.value, domain=cookie.domain
-                )
+                f"<Cookie {cookie.name}={cookie.value} for {cookie.domain} />"
                 for cookie in self.jar
             ]
         )
