@@ -34,7 +34,7 @@ URLTypes = Union["URL", str]
 QueryParamTypes = Union[
     "QueryParams",
     Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
-    List[Tuple[str, PrimitiveData]],
+    Sequence[Tuple[str, PrimitiveData]],
     str,
     bytes,
     None,
