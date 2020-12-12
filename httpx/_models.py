@@ -441,7 +441,7 @@ class QueryParams(typing.Mapping[str, str]):
             items = parse_qsl(value)
         elif isinstance(value, QueryParams):
             items = value.multi_items()
-        elif isinstance(value, list):
+        elif isinstance(value, (list, tuple)):
             items = value
         else:
             items = flatten_queryparams(value)

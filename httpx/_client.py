@@ -520,7 +520,7 @@ class Client(BaseClient):
     * **auth** - *(optional)* An authentication class to use when sending
     requests.
     * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
+    a string, dictionary, or sequence of two-tuples.
     * **headers** - *(optional)* Dictionary of HTTP headers to include when
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
@@ -1161,7 +1161,7 @@ class AsyncClient(BaseClient):
     * **auth** - *(optional)* An authentication class to use when sending
     requests.
     * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
+    a string, dictionary, or sequence of two-tuples.
     * **headers** - *(optional)* Dictionary of HTTP headers to include when
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
