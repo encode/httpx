@@ -302,3 +302,15 @@ async def test_mounted_transport():
         response = await client.get("custom://www.example.com")
         assert response.status_code == 200
         assert response.json() == {"app": "mounted"}
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_mounted_transports_routing():
+    # Exercise default transports API as well.
+    mounts = {
+        "all://": httpx.create_default_async_transport(http2=True),
+        "all://*example.org": httpx.create_default_async_transport(),
+    }
+    async with httpx.AsyncClient(mounts=mounts) as client:
+        response = await client.get("https://example.org")
+        assert response.http_version == "HTTP/1.1"

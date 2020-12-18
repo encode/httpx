@@ -377,3 +377,14 @@ def test_all_mounted_transport():
     response = client.get("https://www.example.com")
     assert response.status_code == 200
     assert response.json() == {"app": "mounted"}
+
+
+def test_mounted_transports_routing():
+    # Exercise default transports API as well.
+    mounts = {
+        "all://": httpx.create_default_transport(http2=True),
+        "all://*example.org": httpx.create_default_transport(),
+    }
+    with httpx.Client(mounts=mounts) as client:
+        response = client.get("https://example.org")
+        assert response.http_version == "HTTP/1.1"

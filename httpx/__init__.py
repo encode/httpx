@@ -36,6 +36,10 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import StatusCode, codes
 from ._transports.asgi import ASGITransport
+from ._transports.default import (
+    create_default_transport,
+    create_default_async_transport,
+)
 from ._transports.wsgi import WSGITransport
 
 __all__ = [
@@ -54,6 +58,8 @@ __all__ = [
     "CookieConflict",
     "Cookies",
     "create_ssl_context",
+    "create_default_transport",
+    "create_default_async_transport",
     "DecodingError",
     "delete",
     "DigestAuth",
