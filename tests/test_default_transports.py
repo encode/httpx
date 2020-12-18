@@ -21,6 +21,9 @@ def test_default_transport() -> None:
         "_max_connections",
         "_max_keepalive_connections",
         "_keepalive_expiry",
+        "_uds",
+        "_local_address",
+        "_retries",
     ):
         assert getattr(transport, name) == getattr(equivalent_transport, name)
 
@@ -44,5 +47,8 @@ def test_default_async_transport() -> None:
         "_max_connections",
         "_max_keepalive_connections",
         "_keepalive_expiry",
+        "_uds",
+        "_local_address",
+        "_retries",
     ):
         assert getattr(transport, name) == getattr(equivalent_transport, name)

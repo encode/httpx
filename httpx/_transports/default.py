@@ -1,31 +1,6 @@
 """
-Custom transports, with nicely configured defaults.
-
-The following additional keyword arguments are currently supported by httpcore...
-
-* uds: str
-* local_address: str
-* retries: int
-* backend: str ("auto", "asyncio", "trio", "curio", "anyio", "sync")
-
-Example usages...
-
-# Disable HTTP/2 on a single specfic domain.
-mounts = {
-    "all://": httpx.create_default_transport(http2=True),
-    "all://*example.org": httpx.create_transport()
-}
-
-# Using advanced httpcore configuration, with connection retries.
-transport = httpx.create_default_transport(retries=1)
-client = httpx.Client(transport=transport)
-
-# Using advanced httpcore configuration, with unix domain sockets.
-transport = httpx.create_default_transport(uds="socket.uds")
-client = httpx.Client(transport=transport)
+Default HTTP transports, with nicely configured defaults.
 """
-from typing import Any
-
 import httpcore
 
 from .._config import DEFAULT_LIMITS, Limits, create_ssl_context
@@ -38,8 +13,10 @@ def create_default_transport(
     http2: bool = False,
     limits: Limits = DEFAULT_LIMITS,
     trust_env: bool = True,
-    **kwargs: Any,
-) -> httpcore.SyncConnectionPool:
+    uds: str = None,
+    local_address: str = None,
+    retries: int = 0,
+) -> httpcore.SyncHTTPTransport:
     ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
     return httpcore.SyncConnectionPool(
@@ -48,7 +25,9 @@ def create_default_transport(
         max_keepalive_connections=limits.max_keepalive_connections,
         keepalive_expiry=limits.keepalive_expiry,
         http2=http2,
-        **kwargs,
+        uds=uds,
+        local_address=local_address,
+        retries=retries,
     )
 
 
@@ -58,7 +37,10 @@ def create_default_async_transport(
     http2: bool = False,
     limits: Limits = DEFAULT_LIMITS,
     trust_env: bool = True,
-    **kwargs: Any,
+    uds: str = None,
+    local_address: str = None,
+    retries: int = 0,
+    backend: str = "auto",
 ) -> httpcore.AsyncConnectionPool:
     ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
@@ -68,5 +50,8 @@ def create_default_async_transport(
         max_keepalive_connections=limits.max_keepalive_connections,
         keepalive_expiry=limits.keepalive_expiry,
         http2=http2,
-        **kwargs,
+        uds=uds,
+        local_address=local_address,
+        retries=retries,
+        backend=backend,
     )
