@@ -1,5 +1,6 @@
-import httpx
 import httpcore
+
+import httpx
 
 
 def test_default_transport() -> None:
