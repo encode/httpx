@@ -47,7 +47,7 @@ def request(
     `HEAD`, `POST`, `PUT`, `PATCH`, or `DELETE`.
     * **url** - URL for the new `Request` object.
     * **params** - *(optional)* Query parameters to include in the URL, as a
-    string, dictionary, or list of two-tuples.
+    string, dictionary, or sequence of two-tuples.
     * **content** - *(optional)* Binary content to include in the body of the
     request, as bytes or a byte iterator.
     * **data** - *(optional)* Form data to include in the body of the request,

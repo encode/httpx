@@ -633,7 +633,7 @@ There are four different types of timeouts that may occur. These are **connect**
 **read**, **write**, and **pool** timeouts.
 
 * The **connect** timeout specifies the maximum amount of time to wait until
-a connection to the requested host is established. If HTTPX is unable to connect
+a socket connection to the requested host is established. If HTTPX is unable to connect
 within this time frame, a `ConnectTimeout` exception is raised.
 * The **read** timeout specifies the maximum duration to wait for a chunk of
 data to be received (for example, a chunk of the response body). If HTTPX is
@@ -645,7 +645,7 @@ to send data within this time frame, a `WriteTimeout` exception is raised.
 a connection from the connection pool. If HTTPX is unable to acquire a connection
 within this time frame, a `PoolTimeout` exception is raised. A related
 configuration here is the maximum number of allowable connections in the
-connection pool, which is configured by the `pool_limits`.
+connection pool, which is configured by the `limits` argument.
 
 You can configure the timeout behavior for any of these values...
 
@@ -666,7 +666,6 @@ argument on the client. It takes instances of `httpx.Limits` which define:
 allow. (Defaults 10)
 - `max_connections`, maximum number of allowable connections, or` None` for no limits.
 (Default 100)
-
 
 ```python
 limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
