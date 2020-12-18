@@ -32,7 +32,8 @@ import httpcore
 from .._config import DEFAULT_LIMITS, Limits, create_ssl_context
 from .._types import CertTypes, VerifyTypes
 
-T = typing.TypeVar("T")
+T = typing.TypeVar("T", bound="HTTPTransport")
+A = typing.TypeVar("A", bound="AsyncHTTPTransport")
 Headers = typing.List[typing.Tuple[bytes, bytes]]
 URL = typing.Tuple[bytes, bytes, typing.Optional[int], bytes]
 
@@ -58,8 +59,9 @@ class HTTPTransport(httpcore.SyncHTTPTransport):
             **kwargs,
         )
 
-    def __enter__(self: T) -> T:
-        return self._pool.__enter__()  # type: ignore
+    def __enter__(self: T) -> T:  # Use generics for subclass support.
+        self._pool.__enter__()
+        return self
 
     def __exit__(
         self,
@@ -67,7 +69,7 @@ class HTTPTransport(httpcore.SyncHTTPTransport):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        self._pool.__exit__()
+        self._pool.__exit__(exc_type, exc_value, traceback)
 
     def request(
         self,
@@ -104,8 +106,9 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
             **kwargs,
         )
 
-    async def __aenter__(self: T) -> T:
-        return await self._pool.__aenter__()  # type: ignore
+    async def __aenter__(self: A) -> A:  # Use generics for subclass support.
+        await self._pool.__aenter__()
+        return self
 
     async def __aexit__(
         self,
@@ -113,7 +116,7 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self._pool.__aexit__()
+        await self._pool.__aexit__(exc_type, exc_value, traceback)
 
     async def arequest(
         self,
