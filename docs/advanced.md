@@ -583,6 +583,10 @@ with httpx.Client(proxies=proxies) as client:
     r = client.get("http://example.com")
 ```
 
+### Troubleshooting proxies
+
+If you encounter issues when setting up proxies, please refer to our [Troubleshooting guide](troubleshooting.md#proxies).
+
 ## Timeout Configuration
 
 HTTPX is careful to enforce timeouts everywhere by default.

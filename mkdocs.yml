@@ -19,6 +19,7 @@ nav:
     - Requests Compatibility: 'compatibility.md'
     - Developer Interface: 'api.md'
     - Exceptions: 'exceptions.md'
+    - Troubleshooting: 'troubleshooting.md'
     - Third Party Packages: 'third-party-packages.md'
     - Contributing: 'contributing.md'
 
