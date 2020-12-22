@@ -50,14 +50,12 @@ For more information, see [Proxies: FORWARD vs TUNNEL](advanced.md#forward-vs-tu
 
 ### Error when making requests to an HTTPS proxy
 
-**Description**: your proxy _does_ support connecting via HTTPS, but (1) you are seeing errors along the lines of...
+**Description**: your proxy _does_ support connecting via HTTPS, but you are seeing errors along the lines of...
 
 ```console
 httpx.ProxyError: [SSL: PRE_MAC_LENGTH_TOO_LONG] invalid alert (_ssl.c:1091)
 ```
 
-... or (2) the proxy is responding with a `400 Bad Request` response on HTTP/2 requests.
-
-**Similar issues**: [encode/httpx#1424](https://github.com/encode/httpx/issues/1424) (1), [encode/httpx#1428](https://github.com/encode/httpx/issues/1428) (2).
+**Similar issues**: [encode/httpx#1424](https://github.com/encode/httpx/issues/1424).
 
 **Resolution**: HTTPX does not properly support HTTPS proxies at this time. If that's something you're interested in having, please see [encode/httpx#1434](https://github.com/encode/httpx/issues/1434) and consider lending a hand there.
