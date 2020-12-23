@@ -135,3 +135,14 @@ while request is not None:
     response = client.send(request, allow_redirects=False)
     request = response.next_request
 ```
+
+## Event Hooks
+
+`requests` allows event hooks to mutate `Request` and `Response` objects. See examples given in the documentation for `requests`: [link](https://requests.readthedocs.io/en/master/user/advanced/#event-hooks).
+
+In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response. 
+
+If you are looking for more control, consider checking out [Custom Transports](https://www.python-httpx.org/advanced/#custom-transports).
+
+
+
