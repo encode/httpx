@@ -15,6 +15,7 @@ wheel
 # Tests & Linting
 autoflake
 black==20.8b1
+coverage==5.3
 cryptography
 flake8
 flake8-bugbear
@@ -24,11 +25,9 @@ mypy
 pytest==5.*
 pytest-asyncio
 pytest-trio
-pytest-cov
 trio
 trio-typing
 trustme
 uvicorn
-seed-isort-config
 
 attrs>=19.3.0  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665

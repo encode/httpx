@@ -24,7 +24,6 @@ Our exception hierarchy:
     + RequestBodyUnavailable
   x HTTPStatusError
 * InvalidURL
-* NotRedirectResponse
 * CookieConflict
 * StreamError
   x StreamConsumed
@@ -227,18 +226,6 @@ class HTTPStatusError(HTTPError):
 class InvalidURL(Exception):
     """
     URL is improperly formed or cannot be parsed.
-    """
-
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
-
-
-class NotRedirectResponse(Exception):
-    """
-    Response was not a redirect response.
-
-    May be raised if `response.next()` is called without first
-    properly checking `response.is_redirect`.
     """
 
     def __init__(self, message: str) -> None:

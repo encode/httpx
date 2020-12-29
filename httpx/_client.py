@@ -1,5 +1,5 @@
 import datetime
-import functools
+import enum
 import typing
 import warnings
 from types import TracebackType
@@ -56,13 +56,24 @@ from ._utils import (
     warn_deprecated,
 )
 
+# The type annotation for @classmethod and context managers here follows PEP 484
+# https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
+T = typing.TypeVar("T", bound="Client")
+U = typing.TypeVar("U", bound="AsyncClient")
+
+
 logger = get_logger(__name__)
 
-KEEPALIVE_EXPIRY = 5.0
 USER_AGENT = f"python-httpx/{__version__}"
 ACCEPT_ENCODING = ", ".join(
     [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
 )
+
+
+class ClientState(enum.Enum):
+    UNOPENED = 1
+    OPENED = 2
+    CLOSED = 3
 
 
 class BaseClient:
@@ -75,7 +86,7 @@ class BaseClient:
         cookies: CookieTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
+        event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         trust_env: bool = True,
     ):
@@ -95,23 +106,23 @@ class BaseClient:
         }
         self._trust_env = trust_env
         self._netrc = NetRCInfo()
-        self._is_closed = True
+        self._state = ClientState.UNOPENED
 
     @property
     def is_closed(self) -> bool:
         """
         Check if the client being closed
         """
-        return self._is_closed
+        return self._state == ClientState.CLOSED
 
     @property
     def trust_env(self) -> bool:
         return self._trust_env
 
     def _enforce_trailing_slash(self, url: URL) -> URL:
-        if url.path.endswith("/"):
+        if url.raw_path.endswith(b"/"):
             return url
-        return url.copy_with(path=url.path + "/")
+        return url.copy_with(raw_path=url.raw_path + b"/")
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool
@@ -316,7 +327,7 @@ class BaseClient:
         if merge_url.is_relative_url:
             # We always ensure the base_url paths include the trailing '/',
             # and always strip any leading '/' from the merge URL.
-            merge_url = merge_url.copy_with(path=merge_url.path.lstrip("/"))
+            merge_url = merge_url.copy_with(raw_path=merge_url.raw_path.lstrip(b"/"))
             return self.base_url.join(merge_url)
         return merge_url
 
@@ -367,7 +378,7 @@ class BaseClient:
         elif callable(auth):
             return FunctionAuth(func=auth)
         else:
-            raise TypeError('Invalid "auth" argument.')
+            raise TypeError(f'Invalid "auth" argument: {auth!r}')
 
     def _build_request_auth(
         self, request: Request, auth: typing.Union[AuthTypes, UnsetType] = UNSET
@@ -509,7 +520,7 @@ class Client(BaseClient):
     * **auth** - *(optional)* An authentication class to use when sending
     requests.
     * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
+    a string, dictionary, or sequence of two-tuples.
     * **headers** - *(optional)* Dictionary of HTTP headers to include when
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
@@ -549,11 +560,12 @@ class Client(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         proxies: ProxiesTypes = None,
+        mounts: typing.Mapping[str, httpcore.SyncHTTPTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
+        event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -599,7 +611,7 @@ class Client(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self._proxies: typing.Dict[
+        self._mounts: typing.Dict[
             URLPattern, typing.Optional[httpcore.SyncHTTPTransport]
         ] = {
             URLPattern(key): None
@@ -614,7 +626,12 @@ class Client(BaseClient):
             )
             for key, proxy in proxy_map.items()
         }
-        self._proxies = dict(sorted(self._proxies.items()))
+        if mounts is not None:
+            self._mounts.update(
+                {URLPattern(key): transport for key, transport in mounts.items()}
+            )
+
+        self._mounts = dict(sorted(self._mounts.items()))
 
     def _init_transport(
         self,
@@ -638,7 +655,7 @@ class Client(BaseClient):
             ssl_context=ssl_context,
             max_connections=limits.max_connections,
             max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
+            keepalive_expiry=limits.keepalive_expiry,
             http2=http2,
         )
 
@@ -660,7 +677,7 @@ class Client(BaseClient):
             ssl_context=ssl_context,
             max_connections=limits.max_connections,
             max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
+            keepalive_expiry=limits.keepalive_expiry,
             http2=http2,
         )
 
@@ -669,7 +686,7 @@ class Client(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        for pattern, transport in self._proxies.items():
+        for pattern, transport in self._mounts.items():
             if pattern.matches(url):
                 return self._transport if transport is None else transport
 
@@ -744,8 +761,10 @@ class Client(BaseClient):
 
         [0]: /advanced/#request-instances
         """
-        self._is_closed = False
+        if self._state == ClientState.CLOSED:
+            raise RuntimeError("Cannot send a request, as the client has been closed.")
 
+        self._state = ClientState.OPENED
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_request_auth(request, auth)
@@ -832,13 +851,7 @@ class Client(BaseClient):
             history = history + [response]
 
             if not allow_redirects:
-                response.call_next = functools.partial(
-                    self._send_handling_redirects,
-                    request=request,
-                    timeout=timeout,
-                    allow_redirects=False,
-                    history=history,
-                )
+                response.next_request = request
                 return response
 
     def _send_single_request(self, request: Request, timeout: Timeout) -> Response:
@@ -1097,20 +1110,21 @@ class Client(BaseClient):
         """
         Close transport and proxies.
         """
-        if not self.is_closed:
-            self._is_closed = True
+        if self._state != ClientState.CLOSED:
+            self._state = ClientState.CLOSED
 
             self._transport.close()
-            for proxy in self._proxies.values():
-                if proxy is not None:
-                    proxy.close()
+            for transport in self._mounts.values():
+                if transport is not None:
+                    transport.close()
 
-    def __enter__(self) -> "Client":
+    def __enter__(self: T) -> T:
+        self._state = ClientState.OPENED
+
         self._transport.__enter__()
-        for proxy in self._proxies.values():
-            if proxy is not None:
-                proxy.__enter__()
-        self._is_closed = False
+        for transport in self._mounts.values():
+            if transport is not None:
+                transport.__enter__()
         return self
 
     def __exit__(
@@ -1119,13 +1133,12 @@ class Client(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        if not self.is_closed:
-            self._is_closed = True
+        self._state = ClientState.CLOSED
 
-            self._transport.__exit__(exc_type, exc_value, traceback)
-            for proxy in self._proxies.values():
-                if proxy is not None:
-                    proxy.__exit__(exc_type, exc_value, traceback)
+        self._transport.__exit__(exc_type, exc_value, traceback)
+        for transport in self._mounts.values():
+            if transport is not None:
+                transport.__exit__(exc_type, exc_value, traceback)
 
     def __del__(self) -> None:
         self.close()
@@ -1148,7 +1161,7 @@ class AsyncClient(BaseClient):
     * **auth** - *(optional)* An authentication class to use when sending
     requests.
     * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
+    a string, dictionary, or sequence of two-tuples.
     * **headers** - *(optional)* Dictionary of HTTP headers to include when
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
@@ -1190,11 +1203,12 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         proxies: ProxiesTypes = None,
+        mounts: typing.Mapping[str, httpcore.AsyncHTTPTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
+        event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -1241,7 +1255,7 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
-        self._proxies: typing.Dict[
+        self._mounts: typing.Dict[
             URLPattern, typing.Optional[httpcore.AsyncHTTPTransport]
         ] = {
             URLPattern(key): None
@@ -1256,7 +1270,11 @@ class AsyncClient(BaseClient):
             )
             for key, proxy in proxy_map.items()
         }
-        self._proxies = dict(sorted(self._proxies.items()))
+        if mounts is not None:
+            self._mounts.update(
+                {URLPattern(key): transport for key, transport in mounts.items()}
+            )
+        self._mounts = dict(sorted(self._mounts.items()))
 
     def _init_transport(
         self,
@@ -1280,7 +1298,7 @@ class AsyncClient(BaseClient):
             ssl_context=ssl_context,
             max_connections=limits.max_connections,
             max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
+            keepalive_expiry=limits.keepalive_expiry,
             http2=http2,
         )
 
@@ -1302,7 +1320,7 @@ class AsyncClient(BaseClient):
             ssl_context=ssl_context,
             max_connections=limits.max_connections,
             max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
+            keepalive_expiry=limits.keepalive_expiry,
             http2=http2,
         )
 
@@ -1311,7 +1329,7 @@ class AsyncClient(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        for pattern, transport in self._proxies.items():
+        for pattern, transport in self._mounts.items():
             if pattern.matches(url):
                 return self._transport if transport is None else transport
 
@@ -1387,8 +1405,10 @@ class AsyncClient(BaseClient):
 
         [0]: /advanced/#request-instances
         """
-        self._is_closed = False
+        if self._state == ClientState.CLOSED:
+            raise RuntimeError("Cannot send a request, as the client has been closed.")
 
+        self._state = ClientState.OPENED
         timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
 
         auth = self._build_request_auth(request, auth)
@@ -1475,13 +1495,7 @@ class AsyncClient(BaseClient):
             history = history + [response]
 
             if not allow_redirects:
-                response.call_next = functools.partial(
-                    self._send_handling_redirects,
-                    request=request,
-                    timeout=timeout,
-                    allow_redirects=False,
-                    history=history,
-                )
+                response.next_request = request
                 return response
 
     async def _send_single_request(
@@ -1495,7 +1509,7 @@ class AsyncClient(BaseClient):
         await timer.async_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (status_code, headers, stream, ext,) = await transport.arequest(
+            (status_code, headers, stream, ext) = await transport.arequest(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
@@ -1505,7 +1519,7 @@ class AsyncClient(BaseClient):
 
         async def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
-            if hasattr(stream, "close"):
+            if hasattr(stream, "aclose"):
                 await stream.aclose()
 
         response = Response(
@@ -1742,20 +1756,21 @@ class AsyncClient(BaseClient):
         """
         Close transport and proxies.
         """
-        if not self.is_closed:
-            self._is_closed = True
+        if self._state != ClientState.CLOSED:
+            self._state = ClientState.CLOSED
 
             await self._transport.aclose()
-            for proxy in self._proxies.values():
+            for proxy in self._mounts.values():
                 if proxy is not None:
                     await proxy.aclose()
 
-    async def __aenter__(self) -> "AsyncClient":
+    async def __aenter__(self: U) -> U:
+        self._state = ClientState.OPENED
+
         await self._transport.__aenter__()
-        for proxy in self._proxies.values():
+        for proxy in self._mounts.values():
             if proxy is not None:
                 await proxy.__aenter__()
-        self._is_closed = False
         return self
 
     async def __aexit__(
@@ -1764,15 +1779,15 @@ class AsyncClient(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        if not self.is_closed:
-            self._is_closed = True
-            await self._transport.__aexit__(exc_type, exc_value, traceback)
-            for proxy in self._proxies.values():
-                if proxy is not None:
-                    await proxy.__aexit__(exc_type, exc_value, traceback)
+        self._state = ClientState.CLOSED
+
+        await self._transport.__aexit__(exc_type, exc_value, traceback)
+        for proxy in self._mounts.values():
+            if proxy is not None:
+                await proxy.__aexit__(exc_type, exc_value, traceback)
 
     def __del__(self) -> None:
-        if not self.is_closed:
+        if self._state == ClientState.OPENED:
             warnings.warn(
                 f"Unclosed {self!r}. "
                 "See https://www.python-httpx.org/async/#opening-and-closing-clients "

@@ -15,10 +15,12 @@ import rfc3986.exceptions
 from ._content import PlainByteStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
+    ByteChunker,
     ContentDecoder,
     IdentityDecoder,
     LineDecoder,
     MultiDecoder,
+    TextChunker,
     TextDecoder,
 )
 from ._exceptions import (
@@ -27,7 +29,6 @@ from ._exceptions import (
     DecodingError,
     HTTPStatusError,
     InvalidURL,
-    NotRedirectResponse,
     RequestNotRead,
     ResponseClosed,
     ResponseNotRead,
@@ -109,6 +110,11 @@ class URL:
                 raw_scheme, raw_host, port, raw_path = url
                 scheme = raw_scheme.decode("ascii")
                 host = raw_host.decode("ascii")
+                if host and ":" in host and host[0] != "[":
+                    # it's an IPv6 address, so it should be enclosed in "[" and "]"
+                    # ref: https://tools.ietf.org/html/rfc2732#section-2
+                    # ref: https://tools.ietf.org/html/rfc3986#section-3.2.2
+                    host = f"[{host}]"
                 port_str = "" if port is None else f":{port}"
                 path = raw_path.decode("ascii")
                 url = f"{scheme}://{host}{port_str}{path}"
@@ -126,7 +132,7 @@ class URL:
             self._uri_reference = url._uri_reference
         else:
             raise TypeError(
-                f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}"
+                f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}: {url!r}"
             )
 
         # Add any query parameters, merging with any in the URL if needed.
@@ -187,8 +193,17 @@ class URL:
 
         url = httpx.URL("http://中国.icom.museum")
         assert url.host == "xn--fiqs8s.icom.museum"
+
+        url = httpx.URL("https://[::ffff:192.168.0.1]")
+        assert url.host == "::ffff:192.168.0.1"
         """
-        return self._uri_reference.host or ""
+        host: str = self._uri_reference.host
+
+        if host and ":" in host and host[0] == "[":
+            # it's an IPv6 address
+            host = host.lstrip("[").rstrip("]")
+
+        return host or ""
 
     @property
     def port(self) -> typing.Optional[int]:
@@ -337,6 +352,11 @@ class URL:
             # Consolidate host and port into  netloc.
             host = kwargs.pop("host", self.host) or ""
             port = kwargs.pop("port", self.port)
+
+            if host and ":" in host and host[0] != "[":
+                # it's an IPv6 address, so it should be hidden under bracket
+                host = f"[{host}]"
+
             kwargs["netloc"] = f"{host}:{port}" if port is not None else host
 
         if "userinfo" in kwargs or "netloc" in kwargs:
@@ -421,7 +441,7 @@ class QueryParams(typing.Mapping[str, str]):
             items = parse_qsl(value)
         elif isinstance(value, QueryParams):
             items = value.multi_items()
-        elif isinstance(value, list):
+        elif isinstance(value, (list, tuple)):
             items = value
         else:
             items = flatten_queryparams(value)
@@ -526,26 +546,27 @@ class Headers(typing.MutableMapping[str, str]):
 
     def __init__(self, headers: HeaderTypes = None, encoding: str = None) -> None:
         if headers is None:
-            self._list = []  # type: typing.List[typing.Tuple[bytes, bytes]]
+            self._list = []  # type: typing.List[typing.Tuple[bytes, bytes, bytes]]
         elif isinstance(headers, Headers):
-            self._list = list(headers.raw)
+            self._list = list(headers._list)
         elif isinstance(headers, dict):
             self._list = [
-                (normalize_header_key(k, encoding), normalize_header_value(v, encoding))
+                (
+                    normalize_header_key(k, lower=False, encoding=encoding),
+                    normalize_header_key(k, lower=True, encoding=encoding),
+                    normalize_header_value(v, encoding),
+                )
                 for k, v in headers.items()
             ]
         else:
             self._list = [
-                (normalize_header_key(k, encoding), normalize_header_value(v, encoding))
+                (
+                    normalize_header_key(k, lower=False, encoding=encoding),
+                    normalize_header_key(k, lower=True, encoding=encoding),
+                    normalize_header_value(v, encoding),
+                )
                 for k, v in headers
             ]
-
-        self._dict = {}  # type: typing.Dict[bytes, bytes]
-        for key, value in self._list:
-            if key in self._dict:
-                self._dict[key] = self._dict[key] + b", " + value
-            else:
-                self._dict[key] = value
 
         self._encoding = encoding
 
@@ -583,25 +604,36 @@ class Headers(typing.MutableMapping[str, str]):
         """
         Returns a list of the raw header items, as byte pairs.
         """
-        return list(self._list)
+        return [(raw_key, value) for raw_key, _, value in self._list]
 
     def keys(self) -> typing.KeysView[str]:
-        return {key.decode(self.encoding): None for key in self._dict.keys()}.keys()
+        return {key.decode(self.encoding): None for _, key, value in self._list}.keys()
 
     def values(self) -> typing.ValuesView[str]:
-        return {
-            key: value.decode(self.encoding) for key, value in self._dict.items()
-        }.values()
+        values_dict: typing.Dict[str, str] = {}
+        for _, key, value in self._list:
+            str_key = key.decode(self.encoding)
+            str_value = value.decode(self.encoding)
+            if str_key in values_dict:
+                values_dict[str_key] += f", {str_value}"
+            else:
+                values_dict[str_key] = str_value
+        return values_dict.values()
 
     def items(self) -> typing.ItemsView[str, str]:
         """
         Return `(key, value)` items of headers. Concatenate headers
         into a single comma seperated value when a key occurs multiple times.
         """
-        return {
-            key.decode(self.encoding): value.decode(self.encoding)
-            for key, value in self._dict.items()
-        }.items()
+        values_dict: typing.Dict[str, str] = {}
+        for _, key, value in self._list:
+            str_key = key.decode(self.encoding)
+            str_value = value.decode(self.encoding)
+            if str_key in values_dict:
+                values_dict[str_key] += f", {str_value}"
+            else:
+                values_dict[str_key] = str_value
+        return values_dict.items()
 
     def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
         """
@@ -611,7 +643,7 @@ class Headers(typing.MutableMapping[str, str]):
         """
         return [
             (key.decode(self.encoding), value.decode(self.encoding))
-            for key, value in self._list
+            for _, key, value in self._list
         ]
 
     def get(self, key: str, default: typing.Any = None) -> typing.Any:
@@ -634,8 +666,8 @@ class Headers(typing.MutableMapping[str, str]):
 
         values = [
             item_value.decode(self.encoding)
-            for item_key, item_value in self._list
-            if item_key == get_header_key
+            for _, item_key, item_value in self._list
+            if item_key.lower() == get_header_key
         ]
 
         if not split_commas:
@@ -648,11 +680,11 @@ class Headers(typing.MutableMapping[str, str]):
 
     def update(self, headers: HeaderTypes = None) -> None:  # type: ignore
         headers = Headers(headers)
-        for header in headers:
-            self[header] = headers[header]
+        for key, value in headers.raw:
+            self[key.decode(headers.encoding)] = value.decode(headers.encoding)
 
     def copy(self) -> "Headers":
-        return Headers(dict(self.items()), encoding=self.encoding)
+        return Headers(self, encoding=self.encoding)
 
     def __getitem__(self, key: str) -> str:
         """
@@ -664,7 +696,7 @@ class Headers(typing.MutableMapping[str, str]):
         normalized_key = key.lower().encode(self.encoding)
 
         items = []
-        for header_key, header_value in self._list:
+        for _, header_key, header_value in self._list:
             if header_key == normalized_key:
                 items.append(header_value.decode(self.encoding))
 
@@ -678,14 +710,13 @@ class Headers(typing.MutableMapping[str, str]):
         Set the header `key` to `value`, removing any duplicate entries.
         Retains insertion order.
         """
-        set_key = key.lower().encode(self._encoding or "utf-8")
+        set_key = key.encode(self._encoding or "utf-8")
         set_value = value.encode(self._encoding or "utf-8")
-
-        self._dict[set_key] = set_value
+        lookup_key = set_key.lower()
 
         found_indexes = []
-        for idx, (item_key, _) in enumerate(self._list):
-            if item_key == set_key:
+        for idx, (_, item_key, _) in enumerate(self._list):
+            if item_key == lookup_key:
                 found_indexes.append(idx)
 
         for idx in reversed(found_indexes[1:]):
@@ -693,9 +724,9 @@ class Headers(typing.MutableMapping[str, str]):
 
         if found_indexes:
             idx = found_indexes[0]
-            self._list[idx] = (set_key, set_value)
+            self._list[idx] = (set_key, lookup_key, set_value)
         else:
-            self._list.append((set_key, set_value))
+            self._list.append((set_key, lookup_key, set_value))
 
     def __delitem__(self, key: str) -> None:
         """
@@ -703,19 +734,20 @@ class Headers(typing.MutableMapping[str, str]):
         """
         del_key = key.lower().encode(self.encoding)
 
-        del self._dict[del_key]
-
         pop_indexes = []
-        for idx, (item_key, _) in enumerate(self._list):
-            if item_key == del_key:
+        for idx, (_, item_key, _) in enumerate(self._list):
+            if item_key.lower() == del_key:
                 pop_indexes.append(idx)
+
+        if not pop_indexes:
+            raise KeyError(key)
 
         for idx in reversed(pop_indexes):
             del self._list[idx]
 
     def __contains__(self, key: typing.Any) -> bool:
         header_key = key.lower().encode(self.encoding)
-        return header_key in self._dict
+        return header_key in [key for _, key, _ in self._list]
 
     def __iter__(self) -> typing.Iterator[typing.Any]:
         return iter(self.keys())
@@ -724,9 +756,14 @@ class Headers(typing.MutableMapping[str, str]):
         return len(self._list)
 
     def __eq__(self, other: typing.Any) -> bool:
-        if not isinstance(other, Headers):
+        try:
+            other_headers = Headers(other)
+        except ValueError:
             return False
-        return sorted(self._list) == sorted(other._list)
+
+        self_list = [(key, value) for _, key, value in self._list]
+        other_list = [(key, value) for _, key, value in other_headers._list]
+        return sorted(self_list) == sorted(other_list)
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
@@ -792,15 +829,15 @@ class Request:
     def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
         for key, value in default_headers.items():
             # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
-            if key.lower() == "transfer-encoding" and "content-length" in self.headers:
+            if key.lower() == "transfer-encoding" and "Content-Length" in self.headers:
                 continue
             self.headers.setdefault(key, value)
 
         auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
 
-        has_host = "host" in self.headers
+        has_host = "Host" in self.headers
         has_content_length = (
-            "content-length" in self.headers or "transfer-encoding" in self.headers
+            "Content-Length" in self.headers or "Transfer-Encoding" in self.headers
         )
 
         if not has_host and self.url.host:
@@ -809,9 +846,9 @@ class Request:
                 host_header = self.url.host.encode("ascii")
             else:
                 host_header = self.url.netloc.encode("ascii")
-            auto_headers.append((b"host", host_header))
+            auto_headers.append((b"Host", host_header))
         if not has_content_length and self.method in ("POST", "PUT", "PATCH"):
-            auto_headers.append((b"content-length", b"0"))
+            auto_headers.append((b"Content-Length", b"0"))
 
         self.headers = Headers(auto_headers + self.headers.raw)
 
@@ -874,6 +911,10 @@ class Response:
 
         self._request: typing.Optional[Request] = request
 
+        # When allow_redirects=False and a redirect is received,
+        # the client will set `response.next_request`.
+        self.next_request: typing.Optional[Request] = None
+
         self.call_next: typing.Optional[typing.Callable] = None
 
         self.ext = {} if ext is None else ext
@@ -900,7 +941,7 @@ class Response:
             headers, stream = encode_response(content, text, html, json)
             self._prepare(headers)
             self.stream = stream
-            if content is None or isinstance(content, bytes):
+            if content is None or isinstance(content, (bytes, str)):
                 # Load the response body, except for streaming content.
                 self.read()
 
@@ -1123,31 +1164,47 @@ class Response:
             self._content = b"".join(self.iter_bytes())
         return self._content
 
-    def iter_bytes(self) -> typing.Iterator[bytes]:
+    def iter_bytes(self, chunk_size: int = None) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
         """
         if hasattr(self, "_content"):
-            yield self._content
+            chunk_size = len(self._content) if chunk_size is None else chunk_size
+            for i in range(0, len(self._content), chunk_size):
+                yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
+            chunker = ByteChunker(chunk_size=chunk_size)
             with self._wrap_decoder_errors():
-                for chunk in self.iter_raw():
-                    yield decoder.decode(chunk)
-                yield decoder.flush()
+                for raw_bytes in self.iter_raw():
+                    decoded = decoder.decode(raw_bytes)
+                    for chunk in chunker.decode(decoded):
+                        yield chunk
+                decoded = decoder.flush()
+                for chunk in chunker.decode(decoded):
+                    yield chunk
+                for chunk in chunker.flush():
+                    yield chunk
 
-    def iter_text(self) -> typing.Iterator[str]:
+    def iter_text(self, chunk_size: int = None) -> typing.Iterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
         decoder = TextDecoder(encoding=self.encoding)
+        chunker = TextChunker(chunk_size=chunk_size)
         with self._wrap_decoder_errors():
-            for chunk in self.iter_bytes():
-                yield decoder.decode(chunk)
-            yield decoder.flush()
+            for byte_content in self.iter_bytes():
+                text_content = decoder.decode(byte_content)
+                for chunk in chunker.decode(text_content):
+                    yield chunk
+            text_content = decoder.flush()
+            for chunk in chunker.decode(text_content):
+                yield chunk
+            for chunk in chunker.flush():
+                yield chunk
 
     def iter_lines(self) -> typing.Iterator[str]:
         decoder = LineDecoder()
@@ -1158,7 +1215,7 @@ class Response:
             for line in decoder.flush():
                 yield line
 
-    def iter_raw(self) -> typing.Iterator[bytes]:
+    def iter_raw(self, chunk_size: int = None) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the raw response content.
         """
@@ -1171,24 +1228,18 @@ class Response:
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
-        with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
-            for part in self.stream:
-                self._num_bytes_downloaded += len(part)
-                yield part
-        self.close()
+        chunker = ByteChunker(chunk_size=chunk_size)
 
-    def next(self) -> "Response":
-        """
-        Get the next response from a redirect response.
-        """
-        if not self.is_redirect:
-            message = (
-                "Called .next(), but the response was not a redirect. "
-                "Calling code should check `response.is_redirect` first."
-            )
-            raise NotRedirectResponse(message)
-        assert self.call_next is not None
-        return self.call_next()
+        with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
+            for raw_stream_bytes in self.stream:
+                self._num_bytes_downloaded += len(raw_stream_bytes)
+                for chunk in chunker.decode(raw_stream_bytes):
+                    yield chunk
+
+        for chunk in chunker.flush():
+            yield chunk
+
+        self.close()
 
     def close(self) -> None:
         """
@@ -1208,31 +1259,47 @@ class Response:
             self._content = b"".join([part async for part in self.aiter_bytes()])
         return self._content
 
-    async def aiter_bytes(self) -> typing.AsyncIterator[bytes]:
+    async def aiter_bytes(self, chunk_size: int = None) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
         """
         if hasattr(self, "_content"):
-            yield self._content
+            chunk_size = len(self._content) if chunk_size is None else chunk_size
+            for i in range(0, len(self._content), chunk_size):
+                yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
+            chunker = ByteChunker(chunk_size=chunk_size)
             with self._wrap_decoder_errors():
-                async for chunk in self.aiter_raw():
-                    yield decoder.decode(chunk)
-                yield decoder.flush()
+                async for raw_bytes in self.aiter_raw():
+                    decoded = decoder.decode(raw_bytes)
+                    for chunk in chunker.decode(decoded):
+                        yield chunk
+                decoded = decoder.flush()
+                for chunk in chunker.decode(decoded):
+                    yield chunk
+                for chunk in chunker.flush():
+                    yield chunk
 
-    async def aiter_text(self) -> typing.AsyncIterator[str]:
+    async def aiter_text(self, chunk_size: int = None) -> typing.AsyncIterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
         decoder = TextDecoder(encoding=self.encoding)
+        chunker = TextChunker(chunk_size=chunk_size)
         with self._wrap_decoder_errors():
-            async for chunk in self.aiter_bytes():
-                yield decoder.decode(chunk)
-            yield decoder.flush()
+            async for byte_content in self.aiter_bytes():
+                text_content = decoder.decode(byte_content)
+                for chunk in chunker.decode(text_content):
+                    yield chunk
+            text_content = decoder.flush()
+            for chunk in chunker.decode(text_content):
+                yield chunk
+            for chunk in chunker.flush():
+                yield chunk
 
     async def aiter_lines(self) -> typing.AsyncIterator[str]:
         decoder = LineDecoder()
@@ -1243,7 +1310,7 @@ class Response:
             for line in decoder.flush():
                 yield line
 
-    async def aiter_raw(self) -> typing.AsyncIterator[bytes]:
+    async def aiter_raw(self, chunk_size: int = None) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the raw response content.
         """
@@ -1256,23 +1323,18 @@ class Response:
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
-        with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
-            async for part in self.stream:
-                self._num_bytes_downloaded += len(part)
-                yield part
-        await self.aclose()
+        chunker = ByteChunker(chunk_size=chunk_size)
 
-    async def anext(self) -> "Response":
-        """
-        Get the next response from a redirect response.
-        """
-        if not self.is_redirect:
-            raise NotRedirectResponse(
-                "Called .anext(), but the response was not a redirect. "
-                "Calling code should check `response.is_redirect` first."
-            )
-        assert self.call_next is not None
-        return await self.call_next()
+        with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
+            async for raw_stream_bytes in self.stream:
+                self._num_bytes_downloaded += len(raw_stream_bytes)
+                for chunk in chunker.decode(raw_stream_bytes):
+                    yield chunk
+
+        for chunk in chunker.flush():
+            yield chunk
+
+        await self.aclose()
 
     async def aclose(self) -> None:
         """
@@ -1429,6 +1491,16 @@ class Cookies(MutableMapping):
             return True
         return False
 
+    def __repr__(self) -> str:
+        cookies_repr = ", ".join(
+            [
+                f"<Cookie {cookie.name}={cookie.value} for {cookie.domain} />"
+                for cookie in self.jar
+            ]
+        )
+
+        return f"<Cookies[{cookies_repr}]>"
+
     class _CookieCompatRequest(urllib.request.Request):
         """
         Wraps a `Request` instance up in a compatibility interface suitable
@@ -1459,7 +1531,7 @@ class Cookies(MutableMapping):
         def info(self) -> email.message.Message:
             info = email.message.Message()
             for key, value in self.response.headers.multi_items():
-                #  Note that setting `info[key]` here is an "append" operation,
+                # Note that setting `info[key]` here is an "append" operation,
                 # not a "replace" operation.
                 # https://docs.python.org/3/library/email.compat32-message.html#email.message.Message.__setitem__
                 info[key] = value

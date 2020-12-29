@@ -41,12 +41,12 @@ def test_proxies_parameter(proxies, expected_proxies):
 
     for proxy_key, url in expected_proxies:
         pattern = URLPattern(proxy_key)
-        assert pattern in client._proxies
-        proxy = client._proxies[pattern]
+        assert pattern in client._mounts
+        proxy = client._mounts[pattern]
         assert isinstance(proxy, httpcore.SyncHTTPProxy)
         assert proxy.proxy_origin == url_to_origin(url)
 
-    assert len(expected_proxies) == len(client._proxies)
+    assert len(expected_proxies) == len(client._mounts)
 
 
 PROXY_URL = "http://[::1]"

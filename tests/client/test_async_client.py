@@ -1,9 +1,11 @@
+import typing
 from datetime import timedelta
 
 import httpcore
 import pytest
 
 import httpx
+from tests.utils import MockTransport
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -18,9 +20,6 @@ async def test_get(server):
     assert repr(response) == "<Response [200 OK]>"
     assert response.elapsed
     assert response.elapsed > timedelta(seconds=0)
-
-    with pytest.raises(httpx.NotRedirectResponse):
-        await response.anext()
 
 
 @pytest.mark.parametrize(
@@ -191,15 +190,8 @@ async def test_context_managed_transport():
             await super().__aexit__(*args)
             self.events.append("transport.__aexit__")
 
-    # Note that we're including 'proxies' here to *also* run through the
-    # proxy context management, although we can't easily test that at the
-    # moment, since we can't add proxies as transport instances.
-    #
-    # Once we have a more generalised Mount API we'll be able to remove this
-    # in favour of ensuring all mounts are context managed, which will
-    # also neccessarily include proxies.
     transport = Transport()
-    async with httpx.AsyncClient(transport=transport, proxies="http://www.example.com"):
+    async with httpx.AsyncClient(transport=transport):
         pass
 
     assert transport.events == [
@@ -210,42 +202,104 @@ async def test_context_managed_transport():
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_that_async_client_is_closed_by_default():
-    client = httpx.AsyncClient()
+async def test_context_managed_transport_and_mount():
+    class Transport(httpcore.AsyncHTTPTransport):
+        def __init__(self, name: str):
+            self.name: str = name
+            self.events: typing.List[str] = []
 
-    assert client.is_closed
+        async def aclose(self):
+            # The base implementation of httpcore.AsyncHTTPTransport just
+            # calls into `.aclose`, so simple transport cases can just override
+            # this method for any cleanup, where more complex cases
+            # might want to additionally override `__aenter__`/`__aexit__`.
+            self.events.append(f"{self.name}.aclose")
+
+        async def __aenter__(self):
+            await super().__aenter__()
+            self.events.append(f"{self.name}.__aenter__")
+
+        async def __aexit__(self, *args):
+            await super().__aexit__(*args)
+            self.events.append(f"{self.name}.__aexit__")
+
+    transport = Transport(name="transport")
+    mounted = Transport(name="mounted")
+    async with httpx.AsyncClient(
+        transport=transport, mounts={"http://www.example.org": mounted}
+    ):
+        pass
+
+    assert transport.events == [
+        "transport.__aenter__",
+        "transport.aclose",
+        "transport.__aexit__",
+    ]
+    assert mounted.events == [
+        "mounted.__aenter__",
+        "mounted.aclose",
+        "mounted.__aexit__",
+    ]
+
+
+def hello_world(request):
+    return httpx.Response(200, text="Hello, world!")
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_that_send_cause_async_client_to_be_not_closed():
-    client = httpx.AsyncClient()
+async def test_client_closed_state_using_implicit_open():
+    client = httpx.AsyncClient(transport=MockTransport(hello_world))
 
+    assert not client.is_closed
     await client.get("http://example.com")
 
     assert not client.is_closed
-
     await client.aclose()
 
+    assert client.is_closed
+    with pytest.raises(RuntimeError):
+        await client.get("http://example.com")
+
 
 @pytest.mark.usefixtures("async_environment")
-async def test_that_async_client_is_not_closed_in_with_block():
-    async with httpx.AsyncClient() as client:
+async def test_client_closed_state_using_with_block():
+    async with httpx.AsyncClient(transport=MockTransport(hello_world)) as client:
         assert not client.is_closed
-
-
-@pytest.mark.usefixtures("async_environment")
-async def test_that_async_client_is_closed_after_with_block():
-    async with httpx.AsyncClient() as client:
-        pass
+        await client.get("http://example.com")
 
     assert client.is_closed
+    with pytest.raises(RuntimeError):
+        await client.get("http://example.com")
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_that_async_client_caused_warning_when_being_deleted():
-    async_client = httpx.AsyncClient()
-
-    await async_client.get("http://example.com")
-
+async def test_deleting_unclosed_async_client_causes_warning():
+    client = httpx.AsyncClient(transport=MockTransport(hello_world))
+    await client.get("http://example.com")
     with pytest.warns(UserWarning):
-        del async_client
+        del client
+
+
+def unmounted(request: httpx.Request) -> httpx.Response:
+    data = {"app": "unmounted"}
+    return httpx.Response(200, json=data)
+
+
+def mounted(request: httpx.Request) -> httpx.Response:
+    data = {"app": "mounted"}
+    return httpx.Response(200, json=data)
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_mounted_transport():
+    transport = MockTransport(unmounted)
+    mounts = {"custom://": MockTransport(mounted)}
+
+    async with httpx.AsyncClient(transport=transport, mounts=mounts) as client:
+        response = await client.get("https://www.example.com")
+        assert response.status_code == 200
+        assert response.json() == {"app": "unmounted"}
+
+        response = await client.get("custom://www.example.com")
+        assert response.status_code == 200
+        assert response.json() == {"app": "mounted"}

@@ -58,7 +58,7 @@ setup(
         "certifi",
         "sniffio",
         "rfc3986[idna2008]>=1.3,<2",
-        "httpcore==0.11.*",
+        "httpcore==0.12.*",
     ],
     extras_require={
         "http2": "h2==3.*",
@@ -77,6 +77,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3 :: Only",
     ],
 )

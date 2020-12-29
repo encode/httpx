@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.16.1 (October 8th, 2020)
+
+### Fixed
+
+* Support literal IPv6 addresses in URLs. (Pull #1349)
+* Force lowercase headers in ASGI scope dictionaries. (Pull #1351)
+
+## 0.16.0 (October 6th, 2020)
+
+### Changed
+
+* Preserve HTTP header casing. (Pull #1338, encode/httpcore#216, python-hyper/h11#104)
+* Drop `response.next()` and `response.anext()` methods in favour of `response.next_request` attribute. (Pull #1339)
+* Closed clients now raise a runtime error if attempting to send a request. (Pull #1346)
+
+### Added
+
+* Add Python 3.9 to officially supported versions.
+* Type annotate `__enter__`/`__exit__`/`__aenter__`/`__aexit__` in a way that supports subclasses of `Client` and `AsyncClient`. (Pull #1336)
+
+## 0.15.5 (October 1st, 2020)
+
+### Added
+
+* Add `response.next_request` (Pull #1334)
+
+## 0.15.4 (September 25th, 2020)
+
+### Added
+
+* Support direct comparisons between `Headers` and dicts or lists of two-tuples. Eg. `assert response.headers == {"Content-Length": 24}` (Pull #1326)
+
+### Fixed
+
+* Fix automatic `.read()` when `Response` instances are created with `content=<str>` (Pull #1324)
+
+## 0.15.3 (September 24th, 2020)
+
+### Fixed
+
+* Fixed connection leak in async client due to improper closing of response streams. (Pull #1316)
+
 ## 0.15.2 (September 23nd, 2020)
 
 ### Fixed
