@@ -197,6 +197,16 @@ def test_merge_relative_url_with_dotted_path():
     assert request.url == "https://www.example.com/some/testing/123"
 
 
+def test_merge_relative_url_with_encoded_slashes():
+    client = httpx.Client(base_url="https://www.example.com/")
+    request = client.build_request("GET", "/testing%2F123")
+    assert request.url == "https://www.example.com/testing%2F123"
+
+    client = httpx.Client(base_url="https://www.example.com/base%2Fpath")
+    request = client.build_request("GET", "/testing")
+    assert request.url == "https://www.example.com/base%2Fpath/testing"
+
+
 def test_pool_limits_deprecated():
     limits = httpx.Limits()
 

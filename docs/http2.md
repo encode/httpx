@@ -31,7 +31,7 @@ the optional HTTP/2 dependencies...
 $ pip install httpx[http2]
 ```
 
-And then then instantiating a client with HTTP/2 support enabled:
+And then instantiating a client with HTTP/2 support enabled:
 
 ```python
 client = httpx.AsyncClient(http2=True)

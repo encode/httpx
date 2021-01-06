@@ -87,7 +87,7 @@ To run the documentation site locally (useful for previewing changes), use:
 $ scripts/docs
 ```
 
-## Resolving Build / Travis Failures
+## Resolving Build / CI Failures
 
 Once you've submitted your pull request, the test suite will automatically run, and the results will show up in GitHub.
 If the test suite fails, you'll want to click through to the "Details" link, and try to identify why the test suite failed.

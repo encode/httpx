@@ -120,9 +120,9 @@ class BaseClient:
         return self._trust_env
 
     def _enforce_trailing_slash(self, url: URL) -> URL:
-        if url.path.endswith("/"):
+        if url.raw_path.endswith(b"/"):
             return url
-        return url.copy_with(path=url.path + "/")
+        return url.copy_with(raw_path=url.raw_path + b"/")
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool
@@ -327,7 +327,7 @@ class BaseClient:
         if merge_url.is_relative_url:
             # We always ensure the base_url paths include the trailing '/',
             # and always strip any leading '/' from the merge URL.
-            merge_url = merge_url.copy_with(path=merge_url.path.lstrip("/"))
+            merge_url = merge_url.copy_with(raw_path=merge_url.raw_path.lstrip(b"/"))
             return self.base_url.join(merge_url)
         return merge_url
 
@@ -520,7 +520,7 @@ class Client(BaseClient):
     * **auth** - *(optional)* An authentication class to use when sending
     requests.
     * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
+    a string, dictionary, or sequence of two-tuples.
     * **headers** - *(optional)* Dictionary of HTTP headers to include when
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
@@ -1161,7 +1161,7 @@ class AsyncClient(BaseClient):
     * **auth** - *(optional)* An authentication class to use when sending
     requests.
     * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
+    a string, dictionary, or sequence of two-tuples.
     * **headers** - *(optional)* Dictionary of HTTP headers to include when
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
