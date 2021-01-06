@@ -5,7 +5,6 @@ import httpcore
 import pytest
 
 import httpx
-from tests.utils import MockTransport
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -247,7 +246,7 @@ def hello_world(request):
 
 @pytest.mark.usefixtures("async_environment")
 async def test_client_closed_state_using_implicit_open():
-    client = httpx.AsyncClient(transport=MockTransport(hello_world))
+    client = httpx.AsyncClient(transport=httpx.MockTransport(hello_world))
 
     assert not client.is_closed
     await client.get("http://example.com")
@@ -262,7 +261,7 @@ async def test_client_closed_state_using_implicit_open():
 
 @pytest.mark.usefixtures("async_environment")
 async def test_client_closed_state_using_with_block():
-    async with httpx.AsyncClient(transport=MockTransport(hello_world)) as client:
+    async with httpx.AsyncClient(transport=httpx.MockTransport(hello_world)) as client:
         assert not client.is_closed
         await client.get("http://example.com")
 
@@ -273,7 +272,7 @@ async def test_client_closed_state_using_with_block():
 
 @pytest.mark.usefixtures("async_environment")
 async def test_deleting_unclosed_async_client_causes_warning():
-    client = httpx.AsyncClient(transport=MockTransport(hello_world))
+    client = httpx.AsyncClient(transport=httpx.MockTransport(hello_world))
     await client.get("http://example.com")
     with pytest.warns(UserWarning):
         del client
@@ -291,8 +290,8 @@ def mounted(request: httpx.Request) -> httpx.Response:
 
 @pytest.mark.usefixtures("async_environment")
 async def test_mounted_transport():
-    transport = MockTransport(unmounted)
-    mounts = {"custom://": MockTransport(mounted)}
+    transport = httpx.MockTransport(unmounted)
+    mounts = {"custom://": httpx.MockTransport(mounted)}
 
     async with httpx.AsyncClient(transport=transport, mounts=mounts) as client:
         response = await client.get("https://www.example.com")
