@@ -43,7 +43,7 @@ UNSET = UnsetType()
 def create_ssl_context(
     cert: CertTypes = None,
     verify: VerifyTypes = True,
-    trust_env: bool = None,
+    trust_env: bool = True,
     http2: bool = False,
 ) -> ssl.SSLContext:
     return SSLConfig(
@@ -63,7 +63,7 @@ class SSLConfig:
         *,
         cert: CertTypes = None,
         verify: VerifyTypes = True,
-        trust_env: bool = None,
+        trust_env: bool = True,
         http2: bool = False,
     ):
         self.cert = cert
