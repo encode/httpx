@@ -5,7 +5,6 @@ import httpcore
 import pytest
 
 import httpx
-from tests.utils import MockTransport
 
 
 def test_get(server):
@@ -292,7 +291,7 @@ def hello_world(request):
 
 
 def test_client_closed_state_using_implicit_open():
-    client = httpx.Client(transport=MockTransport(hello_world))
+    client = httpx.Client(transport=httpx.MockTransport(hello_world))
 
     assert not client.is_closed
     client.get("http://example.com")
@@ -306,7 +305,7 @@ def test_client_closed_state_using_implicit_open():
 
 
 def test_client_closed_state_using_with_block():
-    with httpx.Client(transport=MockTransport(hello_world)) as client:
+    with httpx.Client(transport=httpx.MockTransport(hello_world)) as client:
         assert not client.is_closed
         client.get("http://example.com")
 
@@ -330,7 +329,9 @@ def test_raw_client_header():
     url = "http://example.org/echo_headers"
     headers = {"Example-Header": "example-value"}
 
-    client = httpx.Client(transport=MockTransport(echo_raw_headers), headers=headers)
+    client = httpx.Client(
+        transport=httpx.MockTransport(echo_raw_headers), headers=headers
+    )
     response = client.get(url)
 
     assert response.status_code == 200
@@ -355,8 +356,8 @@ def mounted(request: httpx.Request) -> httpx.Response:
 
 
 def test_mounted_transport():
-    transport = MockTransport(unmounted)
-    mounts = {"custom://": MockTransport(mounted)}
+    transport = httpx.MockTransport(unmounted)
+    mounts = {"custom://": httpx.MockTransport(mounted)}
 
     client = httpx.Client(transport=transport, mounts=mounts)
 
@@ -370,7 +371,7 @@ def test_mounted_transport():
 
 
 def test_all_mounted_transport():
-    mounts = {"all://": MockTransport(mounted)}
+    mounts = {"all://": httpx.MockTransport(mounted)}
 
     client = httpx.Client(mounts=mounts)
 

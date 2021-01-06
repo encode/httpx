@@ -3,7 +3,6 @@
 import pytest
 
 import httpx
-from tests.utils import MockTransport
 
 
 def echo_headers(request: httpx.Request) -> httpx.Response:
@@ -18,7 +17,7 @@ def test_client_header():
     url = "http://example.org/echo_headers"
     headers = {"Example-Header": "example-value"}
 
-    client = httpx.Client(transport=MockTransport(echo_headers), headers=headers)
+    client = httpx.Client(transport=httpx.MockTransport(echo_headers), headers=headers)
     response = client.get(url)
 
     assert response.status_code == 200
@@ -38,7 +37,9 @@ def test_header_merge():
     url = "http://example.org/echo_headers"
     client_headers = {"User-Agent": "python-myclient/0.2.1"}
     request_headers = {"X-Auth-Token": "FooBarBazToken"}
-    client = httpx.Client(transport=MockTransport(echo_headers), headers=client_headers)
+    client = httpx.Client(
+        transport=httpx.MockTransport(echo_headers), headers=client_headers
+    )
     response = client.get(url, headers=request_headers)
 
     assert response.status_code == 200
@@ -58,7 +59,9 @@ def test_header_merge_conflicting_headers():
     url = "http://example.org/echo_headers"
     client_headers = {"X-Auth-Token": "FooBar"}
     request_headers = {"X-Auth-Token": "BazToken"}
-    client = httpx.Client(transport=MockTransport(echo_headers), headers=client_headers)
+    client = httpx.Client(
+        transport=httpx.MockTransport(echo_headers), headers=client_headers
+    )
     response = client.get(url, headers=request_headers)
 
     assert response.status_code == 200
@@ -76,7 +79,7 @@ def test_header_merge_conflicting_headers():
 
 def test_header_update():
     url = "http://example.org/echo_headers"
-    client = httpx.Client(transport=MockTransport(echo_headers))
+    client = httpx.Client(transport=httpx.MockTransport(echo_headers))
     first_response = client.get(url)
     client.headers.update(
         {"User-Agent": "python-myclient/0.2.1", "Another-Header": "AThing"}
@@ -113,7 +116,7 @@ def test_remove_default_header():
     """
     url = "http://example.org/echo_headers"
 
-    client = httpx.Client(transport=MockTransport(echo_headers))
+    client = httpx.Client(transport=httpx.MockTransport(echo_headers))
     del client.headers["User-Agent"]
 
     response = client.get(url)
@@ -143,7 +146,7 @@ def test_host_with_auth_and_port_in_url():
     """
     url = "http://username:password@example.org:80/echo_headers"
 
-    client = httpx.Client(transport=MockTransport(echo_headers))
+    client = httpx.Client(transport=httpx.MockTransport(echo_headers))
     response = client.get(url)
 
     assert response.status_code == 200
@@ -166,7 +169,7 @@ def test_host_with_non_default_port_in_url():
     """
     url = "http://username:password@example.org:123/echo_headers"
 
-    client = httpx.Client(transport=MockTransport(echo_headers))
+    client = httpx.Client(transport=httpx.MockTransport(echo_headers))
     response = client.get(url)
 
     assert response.status_code == 200

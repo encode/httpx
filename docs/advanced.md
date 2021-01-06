@@ -583,6 +583,10 @@ with httpx.Client(proxies=proxies) as client:
     r = client.get("http://example.com")
 ```
 
+### Troubleshooting proxies
+
+If you encounter issues when setting up proxies, please refer to our [Troubleshooting guide](troubleshooting.md#proxies).
+
 ## Timeout Configuration
 
 HTTPX is careful to enforce timeouts everywhere by default.
@@ -1048,6 +1052,31 @@ Which we can use in the same way:
 {"text": "Hello, world!"}
 ```
 
+### Mock transports
+
+During testing it can often be useful to be able to mock out a transport,
+and return pre-determined responses, rather than making actual network requests.
+
+The `httpx.MockTransport` class accepts a handler function, which can be used
+to map requests onto pre-determined responses:
+
+```python
+def handler(request):
+    return httpx.Response(200, json={"text": "Hello, world!"})
+
+
+# Switch to a mock transport, if the TESTING environment variable is set.
+if os.environ['TESTING'].upper() == "TRUE":
+    transport = httpx.MockTransport(handler)
+else:
+    transport = httpx.HTTPTransport()
+
+client = httpx.Client(transport=transport)
+```
+
+For more advanced use-cases you might want to take a look at either [the third-party
+mocking library, RESPX](https://lundberg.github.io/respx/), or the [pytest-httpx library](https://github.com/Colin-b/pytest_httpx).
+
 ### Mounting transports
 
 You can also mount transports against given schemes or domains, to control
@@ -1097,7 +1126,10 @@ Mocking requests to a given domain:
 ```python
 # All requests to "example.org" should be mocked out.
 # Other requests occur as usual.
-mounts = {"all://example.org": MockTransport()}
+def handler(request):
+    return httpx.Response(200, json={"text": "Hello, World!"})
+
+mounts = {"all://example.org": httpx.MockTransport(handler)}
 client = httpx.Client(mounts=mounts)
 ```
 
