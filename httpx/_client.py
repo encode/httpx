@@ -17,7 +17,6 @@ from ._config import (
     Proxy,
     Timeout,
     UnsetType,
-    create_ssl_context,
 )
 from ._decoders import SUPPORTED_DECODERS
 from ._exceptions import (
@@ -663,17 +662,13 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.SyncHTTPTransport:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.SyncHTTPProxy(
-            proxy_url=proxy.url.raw,
-            proxy_headers=proxy.headers.raw,
-            proxy_mode=proxy.mode,
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=limits.keepalive_expiry,
+        return HTTPTransport(
+            verify=verify,
+            cert=cert,
             http2=http2,
+            limits=limits,
+            trust_env=trust_env,
+            proxy=proxy,
         )
 
     def _transport_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
@@ -1300,17 +1295,13 @@ class AsyncClient(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.AsyncHTTPTransport:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.AsyncHTTPProxy(
-            proxy_url=proxy.url.raw,
-            proxy_headers=proxy.headers.raw,
-            proxy_mode=proxy.mode,
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=limits.keepalive_expiry,
+        return AsyncHTTPTransport(
+            verify=verify,
+            cert=cert,
             http2=http2,
+            limits=limits,
+            trust_env=trust_env,
+            proxy=proxy,
         )
 
     def _transport_for_url(self, url: URL) -> httpcore.AsyncHTTPTransport:

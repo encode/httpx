@@ -29,7 +29,7 @@ from types import TracebackType
 
 import httpcore
 
-from .._config import DEFAULT_LIMITS, Limits, create_ssl_context
+from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._types import CertTypes, VerifyTypes
 
 T = typing.TypeVar("T", bound="HTTPTransport")
@@ -46,18 +46,32 @@ class HTTPTransport(httpcore.SyncHTTPTransport):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
+        proxy: Proxy = None,
         **kwargs: typing.Any,
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
-        self._pool = httpcore.SyncConnectionPool(
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=limits.keepalive_expiry,
-            http2=http2,
-            **kwargs,
-        )
+        if proxy is None:
+            self._pool = httpcore.SyncConnectionPool(
+                ssl_context=ssl_context,
+                max_connections=limits.max_connections,
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
+                http2=http2,
+                **kwargs,
+            )
+        else:
+            self._pool = httpcore.SyncHTTPProxy(
+                proxy_url=proxy.url.raw,
+                proxy_headers=proxy.headers.raw,
+                proxy_mode=proxy.mode,
+                ssl_context=ssl_context,
+                max_connections=limits.max_connections,
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
+                http2=http2,
+                **kwargs,
+            )
 
     def __enter__(self: T) -> T:  # Use generics for subclass support.
         self._pool.__enter__()
@@ -93,18 +107,32 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
+        proxy: Proxy = None,
         **kwargs: typing.Any,
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
-        self._pool = httpcore.AsyncConnectionPool(
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=limits.keepalive_expiry,
-            http2=http2,
-            **kwargs,
-        )
+        if proxy is None:
+            self._pool = httpcore.AsyncConnectionPool(
+                ssl_context=ssl_context,
+                max_connections=limits.max_connections,
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
+                http2=http2,
+                **kwargs,
+            )
+        else:
+            self._pool = httpcore.AsyncHTTPProxy(
+                proxy_url=proxy.url.raw,
+                proxy_headers=proxy.headers.raw,
+                proxy_mode=proxy.mode,
+                ssl_context=ssl_context,
+                max_connections=limits.max_connections,
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
+                http2=http2,
+                **kwargs,
+            )
 
     async def __aenter__(self: A) -> A:  # Use generics for subclass support.
         await self._pool.__aenter__()
