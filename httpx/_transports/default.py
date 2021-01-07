@@ -47,7 +47,10 @@ class HTTPTransport(httpcore.SyncHTTPTransport):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
         proxy: Proxy = None,
-        **kwargs: typing.Any,
+        uds: str = None,
+        local_address: str = None,
+        retries: int = 0,
+        backend: str = "sync",
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
@@ -58,7 +61,10 @@ class HTTPTransport(httpcore.SyncHTTPTransport):
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
                 http2=http2,
-                **kwargs,
+                uds=uds,
+                local_address=local_address,
+                retries=retries,
+                backend=backend,
             )
         else:
             self._pool = httpcore.SyncHTTPProxy(
@@ -70,7 +76,7 @@ class HTTPTransport(httpcore.SyncHTTPTransport):
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
                 http2=http2,
-                **kwargs,
+                backend=backend,
             )
 
     def __enter__(self: T) -> T:  # Use generics for subclass support.
@@ -108,7 +114,10 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
         proxy: Proxy = None,
-        **kwargs: typing.Any,
+        uds: str = None,
+        local_address: str = None,
+        retries: int = 0,
+        backend: str = "auto",
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
@@ -119,7 +128,10 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
                 http2=http2,
-                **kwargs,
+                uds=uds,
+                local_address=local_address,
+                retries=retries,
+                backend=backend,
             )
         else:
             self._pool = httpcore.AsyncHTTPProxy(
@@ -131,7 +143,7 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
                 http2=http2,
-                **kwargs,
+                backend=backend,
             )
 
     async def __aenter__(self: A) -> A:  # Use generics for subclass support.
