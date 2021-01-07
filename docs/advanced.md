@@ -583,6 +583,10 @@ with httpx.Client(proxies=proxies) as client:
     r = client.get("http://example.com")
 ```
 
+### Troubleshooting proxies
+
+If you encounter issues when setting up proxies, please refer to our [Troubleshooting guide](troubleshooting.md#proxies).
+
 ## Timeout Configuration
 
 HTTPX is careful to enforce timeouts everywhere by default.
@@ -633,7 +637,7 @@ There are four different types of timeouts that may occur. These are **connect**
 **read**, **write**, and **pool** timeouts.
 
 * The **connect** timeout specifies the maximum amount of time to wait until
-a connection to the requested host is established. If HTTPX is unable to connect
+a socket connection to the requested host is established. If HTTPX is unable to connect
 within this time frame, a `ConnectTimeout` exception is raised.
 * The **read** timeout specifies the maximum duration to wait for a chunk of
 data to be received (for example, a chunk of the response body). If HTTPX is
@@ -645,7 +649,7 @@ to send data within this time frame, a `WriteTimeout` exception is raised.
 a connection from the connection pool. If HTTPX is unable to acquire a connection
 within this time frame, a `PoolTimeout` exception is raised. A related
 configuration here is the maximum number of allowable connections in the
-connection pool, which is configured by the `pool_limits`.
+connection pool, which is configured by the `limits` argument.
 
 You can configure the timeout behavior for any of these values...
 
@@ -666,7 +670,6 @@ argument on the client. It takes instances of `httpx.Limits` which define:
 allow. (Defaults 10)
 - `max_connections`, maximum number of allowable connections, or` None` for no limits.
 (Default 100)
-
 
 ```python
 limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
@@ -1059,6 +1062,31 @@ Which we can use in the same way:
 {"text": "Hello, world!"}
 ```
 
+### Mock transports
+
+During testing it can often be useful to be able to mock out a transport,
+and return pre-determined responses, rather than making actual network requests.
+
+The `httpx.MockTransport` class accepts a handler function, which can be used
+to map requests onto pre-determined responses:
+
+```python
+def handler(request):
+    return httpx.Response(200, json={"text": "Hello, world!"})
+
+
+# Switch to a mock transport, if the TESTING environment variable is set.
+if os.environ['TESTING'].upper() == "TRUE":
+    transport = httpx.MockTransport(handler)
+else:
+    transport = httpx.HTTPTransport()
+
+client = httpx.Client(transport=transport)
+```
+
+For more advanced use-cases you might want to take a look at either [the third-party
+mocking library, RESPX](https://lundberg.github.io/respx/), or the [pytest-httpx library](https://github.com/Colin-b/pytest_httpx).
+
 ### Mounting transports
 
 You can also mount transports against given schemes or domains, to control
@@ -1098,7 +1126,10 @@ Mocking requests to a given domain:
 ```python
 # All requests to "example.org" should be mocked out.
 # Other requests occur as usual.
-mounts = {"all://example.org": MockTransport()}
+def handler(request):
+    return httpx.Response(200, json={"text": "Hello, World!"})
+
+mounts = {"all://example.org": httpx.MockTransport(handler)}
 client = httpx.Client(mounts=mounts)
 ```
 

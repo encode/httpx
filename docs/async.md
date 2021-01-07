@@ -156,6 +156,27 @@ trio.run(main)
 !!! important
     The `trio` package must be installed to use the Trio backend.
 
+
+### [Curio](https://github.com/dabeaz/curio)
+
+Curio is a [coroutine-based library](https://curio.readthedocs.io/en/latest/tutorial.html)
+for concurrent Python systems programming.
+
+```python
+import httpx
+import curio
+
+async def main():
+    async with httpx.AsyncClient() as client:
+        response = await client.get('https://www.example.com/')
+        print(response)
+
+curio.run(main)
+```
+
+!!! important
+    The `curio` package must be installed to use the Curio backend.
+
 ## Calling into Python Web Apps
 
 Just as `httpx.Client` allows you to call directly into WSGI web applications,
