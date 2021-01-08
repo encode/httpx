@@ -43,8 +43,9 @@ def test_proxies_parameter(proxies, expected_proxies):
         pattern = URLPattern(proxy_key)
         assert pattern in client._mounts
         proxy = client._mounts[pattern]
-        assert isinstance(proxy, httpcore.SyncHTTPProxy)
-        assert proxy.proxy_origin == url_to_origin(url)
+        assert isinstance(proxy, httpx.HTTPTransport)
+        assert isinstance(proxy._pool, httpcore.SyncHTTPProxy)
+        assert proxy._pool.proxy_origin == url_to_origin(url)
 
     assert len(expected_proxies) == len(client._mounts)
 
@@ -116,8 +117,9 @@ def test_transport_for_request(url, proxies, expected):
     if expected is None:
         assert transport is client._transport
     else:
-        assert isinstance(transport, httpcore.SyncHTTPProxy)
-        assert transport.proxy_origin == url_to_origin(expected)
+        assert isinstance(transport, httpx.HTTPTransport)
+        assert isinstance(transport._pool, httpcore.SyncHTTPProxy)
+        assert transport._pool.proxy_origin == url_to_origin(expected)
 
 
 @pytest.mark.asyncio
@@ -250,7 +252,7 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
     if expected is None:
         assert transport == client._transport
     else:
-        assert transport.proxy_origin == url_to_origin(expected)
+        assert transport._pool.proxy_origin == url_to_origin(expected)
 
 
 @pytest.mark.parametrize(
