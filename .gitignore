@@ -1,4 +1,5 @@
-*.pyc
+httpx/__version__.py
+*.py[co]
 .coverage
 .pytest_cache/
 .mypy_cache/
