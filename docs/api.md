@@ -121,7 +121,7 @@ what gets sent over the wire.*
 * `.port` - **int**
 * `.path` - **str**
 * `.query` - **str**
-* `.full_path` - **str**
+* `.raw_path` - **str**
 * `.fragment` - **str**
 * `.is_ssl` - **bool**
 * `.is_absolute_url` - **bool**
