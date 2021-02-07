@@ -26,7 +26,7 @@ class codes(IntEnum):
         obj = int.__new__(cls, value)  # type: ignore
         obj._value_ = value
 
-        obj.phrase = phrase
+        obj.phrase = phrase  # type: ignore
         return obj
 
     def __str__(self) -> str:
