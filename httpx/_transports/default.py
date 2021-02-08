@@ -111,6 +111,7 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
+        http2_prior_knowledge: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
         proxy: Proxy = None,
@@ -119,7 +120,7 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
         retries: int = 0,
         backend: str = "auto",
     ) -> None:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
+        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env, http2=http2, http2_prior_knowledge=http2_prior_knowledge)
 
         if proxy is None:
             self._pool = httpcore.AsyncConnectionPool(
@@ -128,6 +129,7 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
                 http2=http2,
+                http2_prior_knowledge=http2_prior_knowledge,
                 uds=uds,
                 local_address=local_address,
                 retries=retries,

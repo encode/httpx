@@ -559,6 +559,7 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
+        http2_prior_knowledge: bool = False,
         proxies: ProxiesTypes = None,
         mounts: typing.Mapping[str, httpcore.SyncHTTPTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -582,6 +583,9 @@ class Client(BaseClient):
             base_url=base_url,
             trust_env=trust_env,
         )
+
+        if http2_prior_knowledge:
+            http2 = True
 
         if http2:
             try:
@@ -1192,6 +1196,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
+        http2_prior_knowledge: bool = False,
         proxies: ProxiesTypes = None,
         mounts: typing.Mapping[str, httpcore.AsyncHTTPTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -1216,6 +1221,9 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
+        if http2_prior_knowledge:
+            http2 = True
+
         if http2:
             try:
                 import h2  # noqa
@@ -1239,6 +1247,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             http2=http2,
+            http2_prior_knowledge=http2_prior_knowledge,
             limits=limits,
             transport=transport,
             app=app,
@@ -1255,6 +1264,7 @@ class AsyncClient(BaseClient):
                 verify=verify,
                 cert=cert,
                 http2=http2,
+                http2_prior_knowledge=http2_prior_knowledge,
                 limits=limits,
                 trust_env=trust_env,
             )
@@ -1271,6 +1281,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
+        http2_prior_knowledge: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -1283,7 +1294,7 @@ class AsyncClient(BaseClient):
             return ASGITransport(app=app)
 
         return AsyncHTTPTransport(
-            verify=verify, cert=cert, http2=http2, limits=limits, trust_env=trust_env
+            verify=verify, cert=cert, http2=http2, http2_prior_knowledge=http2_prior_knowledge, limits=limits, trust_env=trust_env
         )
 
     def _init_proxy_transport(
@@ -1292,6 +1303,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
+        http2_prior_knowledge: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.AsyncHTTPTransport:
@@ -1299,6 +1311,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             http2=http2,
+            http2_prior_knowledge=http2_prior_knowledge,
             limits=limits,
             trust_env=trust_env,
             proxy=proxy,

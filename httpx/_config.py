@@ -45,9 +45,10 @@ def create_ssl_context(
     verify: VerifyTypes = True,
     trust_env: bool = True,
     http2: bool = False,
+    http2_prior_knowledge: bool = False,
 ) -> ssl.SSLContext:
     return SSLConfig(
-        cert=cert, verify=verify, trust_env=trust_env, http2=http2
+        cert=cert, verify=verify, trust_env=trust_env, http2=http2, http2_prior_knowledge=http2_prior_knowledge,
     ).ssl_context
 
 
@@ -65,11 +66,13 @@ class SSLConfig:
         verify: VerifyTypes = True,
         trust_env: bool = True,
         http2: bool = False,
+        http2_prior_knowledge: bool = False,
     ):
         self.cert = cert
         self.verify = verify
         self.trust_env = trust_env
         self.http2 = http2
+        self.http2_prior_knowledge = http2_prior_knowledge
         self.ssl_context = self.load_ssl_context()
 
     def load_ssl_context(self) -> ssl.SSLContext:
@@ -79,6 +82,7 @@ class SSLConfig:
             f"cert={self.cert!r} "
             f"trust_env={self.trust_env!r} "
             f"http2={self.http2!r}"
+            f"http2_prior_knowledge={self.http2_prior_knowledge!r}"
         )
 
         if self.verify:
@@ -162,7 +166,12 @@ class SSLConfig:
         context.set_ciphers(DEFAULT_CIPHERS)
 
         if ssl.HAS_ALPN:
-            alpn_idents = ["http/1.1", "h2"] if self.http2 else ["http/1.1"]
+            if self.http2_prior_knowledge:
+                alpn_idents = ["h2"]
+            elif self.http2:
+                alpn_idents = ["http/1.1", "h2"]
+            else:
+                alpn_idents = ["http/1.1"]
             context.set_alpn_protocols(alpn_idents)
 
         if hasattr(context, "keylog_filename"):  # pragma: nocover (Available in 3.8+)
