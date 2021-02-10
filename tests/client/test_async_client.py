@@ -338,17 +338,15 @@ async def test_response_aclose_map_exceptions():
     import asyncio
 
     server = await asyncio.start_server(respond_then_die, "127.0.0.1")
-    assert server.sockets is not None
-    addr = server.sockets[0].getsockname()
-    host, port = addr
-
-    serving = asyncio.ensure_future(server.serve_forever())  # py3.6
     try:
+        assert server.sockets is not None
+        addr = server.sockets[0].getsockname()
+        host, port = addr
+
         async with httpx.AsyncClient() as client:
             async with client.stream("GET", f"http://{host}:{port}") as response:
                 with pytest.raises(httpx.CloseError):
                     await response.aclose()
     finally:
-        serving.cancel()
         server.close()
         await server.wait_closed()
