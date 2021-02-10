@@ -323,11 +323,13 @@ async def test_response_aclose_map_exceptions():
         # http://deepix.github.io/2016/10/21/tcprst.html
         sock = writer.transport.get_extra_info("socket")
         if os.name == "nt":
-            linger = struct.pack("=HH", 1, 0)
+            linger = struct.pack("=HH", 1, 0)  # pragma: nocover
         elif os.name == "posix":
-            linger = struct.pack("=II", 1, 0)
+            linger = struct.pack("=II", 1, 0)  # pragma: nocover
         else:
-            raise RuntimeError("Don't know how to reset connection on this OS")
+            raise RuntimeError(
+                "Don't know how to reset connection on this OS"
+            )  # pragma: nocover
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, bytearray(linger))
         writer.close()
 
@@ -336,7 +338,8 @@ async def test_response_aclose_map_exceptions():
     import asyncio
 
     server = await asyncio.start_server(respond_then_die, "127.0.0.1")
-    async with server:
+    await server.start_serving()  # py3.6
+    try:
         assert server.sockets is not None
         addr = server.sockets[0].getsockname()
         host, port = addr
@@ -344,3 +347,6 @@ async def test_response_aclose_map_exceptions():
             async with client.stream("GET", f"http://{host}:{port}") as response:
                 with pytest.raises(httpx.CloseError):
                     await response.aclose()
+    finally:
+        server.close()
+        await server.wait_closed()
