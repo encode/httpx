@@ -1,6 +1,3 @@
-import os
-import socket
-import struct
 import typing
 from datetime import timedelta
 
@@ -306,47 +303,19 @@ async def test_mounted_transport():
         assert response.json() == {"app": "mounted"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.usefixtures("async_environment")
 async def test_response_aclose_map_exceptions():
-    async def respond_then_die(reader, writer):
-        # Read request -- as we should
-        await reader.readuntil(b"\r\n\r\n")
-        # Send HTTP header and start sending data -- so client.send() returns response
-        writer.write(
-            b"HTTP/1.1 200 OK\r\nContent-Length:1000\r\nContent-Type:text/plain\r\n\r\nstart"
-        )
-        await writer.drain()
+    class BrokenStream:
+        async def __aiter__(self):
+            yield b""
 
-        # Now force a TCP RST packet, which will cause response.aclose() to fail
-        # with OSError(errno=104 "Connection reset by peer")
-        #
-        # http://deepix.github.io/2016/10/21/tcprst.html
-        sock = writer.transport.get_extra_info("socket")
-        if os.name == "nt":
-            linger = struct.pack("=HH", 1, 0)  # pragma: nocover
-        elif os.name == "posix":
-            linger = struct.pack("=II", 1, 0)  # pragma: nocover
-        else:
-            raise RuntimeError(
-                "Don't know how to reset connection on this OS"
-            )  # pragma: nocover
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, bytearray(linger))
-        writer.close()
+        async def aclose(self):
+            raise httpcore.CloseError(OSError(104, "Connection reset by peer"))
 
-    # The HTTP server is asyncio, because a uvicorn server wouldn't reset a
-    # connection like this.
-    import asyncio
+    def handle(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, stream=BrokenStream())
 
-    server = await asyncio.start_server(respond_then_die, "127.0.0.1")
-    try:
-        assert server.sockets is not None
-        addr = server.sockets[0].getsockname()
-        host, port = addr
-
-        async with httpx.AsyncClient() as client:
-            async with client.stream("GET", f"http://{host}:{port}") as response:
-                with pytest.raises(httpx.CloseError):
-                    await response.aclose()
-    finally:
-        server.close()
-        await server.wait_closed()
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+        async with client.stream("GET", "http://example.com") as response:
+            with pytest.raises(httpx.CloseError):
+                await response.aclose()
