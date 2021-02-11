@@ -307,7 +307,7 @@ async def test_mounted_transport():
 async def test_response_aclose_map_exceptions():
     class BrokenStream:
         async def __aiter__(self):
-            yield b""
+            pass
 
         async def aclose(self):
             raise httpcore.CloseError(OSError(104, "Connection reset by peer"))
