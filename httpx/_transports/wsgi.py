@@ -87,7 +87,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
             "PATH_INFO": unquote(path.decode("ascii")),
             "QUERY_STRING": query.decode("ascii"),
             "SERVER_NAME": host.decode("ascii"),
-            "SERVER_PORT": str(port),
+            "SERVER_PORT": str(port or 80),
             "REMOTE_ADDR": self.remote_addr,
         }
         for header_key, header_value in headers:
