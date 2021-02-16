@@ -74,6 +74,9 @@ class WSGITransport(httpcore.SyncHTTPTransport):
 
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
+        if port is None:
+            port = {b"http": 80, b"https": 443}[scheme]
+
         environ = {
             "wsgi.version": (1, 0),
             "wsgi.url_scheme": scheme.decode("ascii"),
@@ -87,7 +90,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
             "PATH_INFO": unquote(path.decode("ascii")),
             "QUERY_STRING": query.decode("ascii"),
             "SERVER_NAME": host.decode("ascii"),
-            "SERVER_PORT": str(port or 80),
+            "SERVER_PORT": str(port),
             "REMOTE_ADDR": self.remote_addr,
         }
         for header_key, header_value in headers:
