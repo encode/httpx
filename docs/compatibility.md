@@ -78,6 +78,8 @@ When using a `Client` instance, the `trust_env`, `verify`, and `cert` arguments 
 
 If you need more than one different SSL configuration, you should use different client instances for each SSL configuration.
 
+Requests supports `REQUESTS_CA_BUNDLE` which points to either a file or a directory. HTTPX supports the `SSL_CERT_FILE` (for a file) and `SSL_CERT_DIR` (for a directory) OpenSSL variables instead.
+
 ## Request body on HTTP methods
 
 The HTTP `GET`, `DELETE`, `HEAD`, and `OPTIONS` methods are specified as not supporting a request body. To stay in line with this, the `.get`, `.delete`, `.head` and `.options` functions do not support `files`, `data`, or `json` arguments.

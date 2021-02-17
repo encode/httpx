@@ -110,7 +110,7 @@ CLIENT_TRAFFIC_SECRET_0 XXXX
 
 Valid values: a filename
 
-if this environment variable is set then HTTPX will load
+If this environment variable is set then HTTPX will load
 CA certificate from the specified file instead of the default
 location.
 
@@ -122,11 +122,9 @@ SSL_CERT_FILE=/path/to/ca-certs/ca-bundle.crt python -c "import httpx; httpx.get
 
 ## `SSL_CERT_DIR`
 
-Valid values: a directory
+Valid values: a directory following an [OpenSSL specific layout](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_load_verify_locations.html).
 
-if this environment variable is set then HTTPX will load
-CA certificates from the specified location instead of the default
-location.
+If this environment variable is set and the directory follows an [OpenSSL specific layout](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_load_verify_locations.html) (ie. you ran `c_rehash`) then HTTPX will load CA certificates from this directory instead of the default location.
 
 Example:
 
