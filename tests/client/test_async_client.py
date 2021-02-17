@@ -320,3 +320,16 @@ async def test_response_aclose_map_exceptions():
         async with client.stream("GET", "http://example.com") as response:
             with pytest.raises(httpx.CloseError):
                 await response.aclose()
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_async_mock_transport():
+    async def hello_world(request):
+        return httpx.Response(200, text="Hello, world!")
+
+    transport = httpx.MockTransport(hello_world)
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        response = await client.get("https://www.example.com")
+        assert response.status_code == 200
+        assert response.text == "Hello, world!"

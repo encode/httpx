@@ -1,3 +1,4 @@
+import asyncio
 from typing import Callable, List, Optional, Tuple
 
 import httpcore
@@ -47,7 +48,17 @@ class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
             stream=stream,
         )
         await request.aread()
+
         response = self.handler(request)
+
+        # Allow handler to *optionally* be an `async` function.
+        # If it is, then the `response` variable need to be awaited to actually
+        # return the result.
+
+        # https://simonwillison.net/2020/Sep/2/await-me-maybe/
+        if asyncio.iscoroutine(response):
+            response = await response
+
         return (
             response.status_code,
             response.headers.raw,
