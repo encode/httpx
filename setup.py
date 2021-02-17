@@ -41,6 +41,7 @@ setup(
     version=get_version("httpx"),
     url="https://github.com/encode/httpx",
     project_urls={
+        "Changelog": "https://github.com/encode/httpx/blob/master/CHANGELOG.md",
         "Documentation": "https://www.python-httpx.org",
         "Source": "https://github.com/encode/httpx",
     },

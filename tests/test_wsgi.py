@@ -116,3 +116,30 @@ def test_wsgi_generator_empty():
     response = client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == ""
+
+
+@pytest.mark.parametrize(
+    "url, expected_server_port",
+    [
+        pytest.param("http://www.example.org", "80", id="auto-http"),
+        pytest.param("https://www.example.org", "443", id="auto-https"),
+        pytest.param("http://www.example.org:8000", "8000", id="explicit-port"),
+    ],
+)
+def test_wsgi_server_port(url: str, expected_server_port: int):
+    """
+    SERVER_PORT is populated correctly from the requested URL.
+    """
+    hello_world_app = application_factory([b"Hello, World!"])
+    server_port: str
+
+    def app(environ, start_response):
+        nonlocal server_port
+        server_port = environ["SERVER_PORT"]
+        return hello_world_app(environ, start_response)
+
+    client = httpx.Client(app=app)
+    response = client.get(url)
+    assert response.status_code == 200
+    assert response.text == "Hello, World!"
+    assert server_port == expected_server_port
