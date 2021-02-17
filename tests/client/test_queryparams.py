@@ -1,5 +1,4 @@
 import httpx
-from tests.utils import MockTransport
 
 
 def hello_world(request: httpx.Request) -> httpx.Response:
@@ -28,7 +27,7 @@ def test_client_queryparams_echo():
     client_queryparams = "first=str"
     request_queryparams = {"second": "dict"}
     client = httpx.Client(
-        transport=MockTransport(hello_world), params=client_queryparams
+        transport=httpx.MockTransport(hello_world), params=client_queryparams
     )
     response = client.get(url, params=request_queryparams)
 

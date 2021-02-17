@@ -112,6 +112,19 @@ async def upload_bytes():
 await client.post(url, data=upload_bytes())
 ```
 
+### Explicit transport instances
+
+When instantiating a transport instance directly, you need to use `httpx.AsyncHTTPTransport`.
+
+For instance:
+
+```pycon
+>>> import httpx
+>>> transport = httpx.AsyncHTTPTransport(retries=1)
+>>> async with httpx.AsyncClient(transport=transport) as client:
+>>>     ...
+```
+
 ## Supported async environments
 
 HTTPX supports either `asyncio` or `trio` as an async environment.
@@ -155,6 +168,27 @@ trio.run(main)
 
 !!! important
     The `trio` package must be installed to use the Trio backend.
+
+
+### [Curio](https://github.com/dabeaz/curio)
+
+Curio is a [coroutine-based library](https://curio.readthedocs.io/en/latest/tutorial.html)
+for concurrent Python systems programming.
+
+```python
+import httpx
+import curio
+
+async def main():
+    async with httpx.AsyncClient() as client:
+        response = await client.get('https://www.example.com/')
+        print(response)
+
+curio.run(main)
+```
+
+!!! important
+    The `curio` package must be installed to use the Curio backend.
 
 ## Calling into Python Web Apps
 

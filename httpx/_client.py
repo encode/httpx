@@ -17,7 +17,6 @@ from ._config import (
     Proxy,
     Timeout,
     UnsetType,
-    create_ssl_context,
 )
 from ._decoders import SUPPORTED_DECODERS
 from ._exceptions import (
@@ -30,6 +29,7 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
+from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
     AuthTypes,
@@ -120,9 +120,9 @@ class BaseClient:
         return self._trust_env
 
     def _enforce_trailing_slash(self, url: URL) -> URL:
-        if url.path.endswith("/"):
+        if url.raw_path.endswith(b"/"):
             return url
-        return url.copy_with(path=url.path + "/")
+        return url.copy_with(raw_path=url.raw_path + b"/")
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool
@@ -327,7 +327,7 @@ class BaseClient:
         if merge_url.is_relative_url:
             # We always ensure the base_url paths include the trailing '/',
             # and always strip any leading '/' from the merge URL.
-            merge_url = merge_url.copy_with(path=merge_url.path.lstrip("/"))
+            merge_url = merge_url.copy_with(raw_path=merge_url.raw_path.lstrip(b"/"))
             return self.base_url.join(merge_url)
         return merge_url
 
@@ -520,7 +520,7 @@ class Client(BaseClient):
     * **auth** - *(optional)* An authentication class to use when sending
     requests.
     * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
+    a string, dictionary, or sequence of two-tuples.
     * **headers** - *(optional)* Dictionary of HTTP headers to include when
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
@@ -649,14 +649,8 @@ class Client(BaseClient):
         if app is not None:
             return WSGITransport(app=app)
 
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.SyncConnectionPool(
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=limits.keepalive_expiry,
-            http2=http2,
+        return HTTPTransport(
+            verify=verify, cert=cert, http2=http2, limits=limits, trust_env=trust_env
         )
 
     def _init_proxy_transport(
@@ -668,17 +662,13 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.SyncHTTPTransport:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.SyncHTTPProxy(
-            proxy_url=proxy.url.raw,
-            proxy_headers=proxy.headers.raw,
-            proxy_mode=proxy.mode,
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=limits.keepalive_expiry,
+        return HTTPTransport(
+            verify=verify,
+            cert=cert,
             http2=http2,
+            limits=limits,
+            trust_env=trust_env,
+            proxy=proxy,
         )
 
     def _transport_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
@@ -1161,7 +1151,7 @@ class AsyncClient(BaseClient):
     * **auth** - *(optional)* An authentication class to use when sending
     requests.
     * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
+    a string, dictionary, or sequence of two-tuples.
     * **headers** - *(optional)* Dictionary of HTTP headers to include when
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
@@ -1292,14 +1282,8 @@ class AsyncClient(BaseClient):
         if app is not None:
             return ASGITransport(app=app)
 
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.AsyncConnectionPool(
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=limits.keepalive_expiry,
-            http2=http2,
+        return AsyncHTTPTransport(
+            verify=verify, cert=cert, http2=http2, limits=limits, trust_env=trust_env
         )
 
     def _init_proxy_transport(
@@ -1311,17 +1295,13 @@ class AsyncClient(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.AsyncHTTPTransport:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.AsyncHTTPProxy(
-            proxy_url=proxy.url.raw,
-            proxy_headers=proxy.headers.raw,
-            proxy_mode=proxy.mode,
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=limits.keepalive_expiry,
+        return AsyncHTTPTransport(
+            verify=verify,
+            cert=cert,
             http2=http2,
+            limits=limits,
+            trust_env=trust_env,
+            proxy=proxy,
         )
 
     def _transport_for_url(self, url: URL) -> httpcore.AsyncHTTPTransport:

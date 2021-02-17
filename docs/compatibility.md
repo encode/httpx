@@ -31,6 +31,12 @@ httpx.post(..., data={"message": "Hello, world"})
 If you're using a type checking tool such as `mypy`, you'll see warnings issues if using test/byte content with the `data` argument.
 However, for compatibility reasons with `requests`, we do still handle the case where `data=...` is used with raw binary and text contents.
 
+## Content encoding
+
+HTTPX uses `utf-8` for encoding `str` request bodies. For example, when using `content=<str>` the request body will be encoded to `utf-8` before being sent over the wire. This differs from Requests which uses `latin1`. If you need an explicit encoding, pass encoded bytes explictly, e.g. `content=<str>.encode("latin1")`.
+
+For response bodies, assuming the server didn't send an explicit encoding then HTTPX will do its best to figure out an appropriate encoding. Unlike Requests which uses the `chardet` library, HTTPX relies on a plainer fallback strategy (basically attempting UTF-8, or using Windows-1252 as a fallback). This strategy should be robust enough to handle the vast majority of use cases.
+
 ## Status Codes
 
 In our documentation we prefer the uppercased versions, such as `codes.NOT_FOUND`, but also provide lower-cased versions for API compatibility with `requests`.
@@ -71,6 +77,8 @@ Also note that `requests.Session.request(...)` allows a `proxies=...` parameter,
 When using a `Client` instance, the `trust_env`, `verify`, and `cert` arguments should always be passed on client instantiation, rather than passed to the request method.
 
 If you need more than one different SSL configuration, you should use different client instances for each SSL configuration.
+
+Requests supports `REQUESTS_CA_BUNDLE` which points to either a file or a directory. HTTPX supports the `SSL_CERT_FILE` (for a file) and `SSL_CERT_DIR` (for a directory) OpenSSL variables instead.
 
 ## Request body on HTTP methods
 
@@ -129,3 +137,11 @@ while request is not None:
     response = client.send(request, allow_redirects=False)
     request = response.next_request
 ```
+
+## Event Hooks
+
+`requests` allows event hooks to mutate `Request` and `Response` objects. See [examples](https://requests.readthedocs.io/en/master/user/advanced/#event-hooks) given in the documentation for `requests`.
+
+In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response. 
+
+If you are looking for more control, consider checking out [Custom Transports](advanced.md#custom-transports).

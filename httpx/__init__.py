@@ -36,6 +36,8 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import StatusCode, codes
 from ._transports.asgi import ASGITransport
+from ._transports.default import AsyncHTTPTransport, HTTPTransport
+from ._transports.mock import MockTransport
 from ._transports.wsgi import WSGITransport
 
 __all__ = [
@@ -44,6 +46,7 @@ __all__ = [
     "__version__",
     "ASGITransport",
     "AsyncClient",
+    "AsyncHTTPTransport",
     "Auth",
     "BasicAuth",
     "Client",
@@ -62,9 +65,11 @@ __all__ = [
     "Headers",
     "HTTPError",
     "HTTPStatusError",
+    "HTTPTransport",
     "InvalidURL",
     "Limits",
     "LocalProtocolError",
+    "MockTransport",
     "NetworkError",
     "options",
     "patch",

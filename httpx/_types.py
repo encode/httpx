@@ -35,6 +35,7 @@ QueryParamTypes = Union[
     "QueryParams",
     Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
     List[Tuple[str, PrimitiveData]],
+    Tuple[Tuple[str, PrimitiveData], ...],
     str,
     bytes,
     None,
