@@ -2,6 +2,7 @@ import binascii
 import os
 import typing
 from pathlib import Path
+from typing import IO, Union
 
 from ._types import FileContent, FileTypes, RequestFiles
 from ._utils import (
@@ -78,11 +79,11 @@ class FileField:
                 fileobj = to_bytes(fileobj)
         else:
             filename = Path(str(getattr(value, "name", "upload"))).name
-            fileobj = value
+            fileobj = typing.cast(Union[IO[bytes], IO[str]], value)
             content_type = guess_content_type(filename)
 
         self.filename = filename
-        self.file = fileobj
+        self.file: Union[IO[bytes], IO[str], bytes] = fileobj
         self.content_type = content_type
         self._consumed = False
 
