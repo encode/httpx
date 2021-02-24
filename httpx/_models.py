@@ -581,7 +581,8 @@ class Headers(typing.MutableMapping[str, str]):
                 for key, value in self.raw:
                     try:
                         key.decode(encoding)
-                        value.decode(encoding)
+                        if value is not None:
+                            value.decode(encoding)
                     except UnicodeDecodeError:
                         break
                 else:
@@ -681,7 +682,12 @@ class Headers(typing.MutableMapping[str, str]):
     def update(self, headers: HeaderTypes = None) -> None:  # type: ignore
         headers = Headers(headers)
         for key, value in headers.raw:
-            self[key.decode(headers.encoding)] = value.decode(headers.encoding)
+            dk = key.decode(headers.encoding)
+            if value is not None:
+                self[dk] = value.decode(headers.encoding)
+            else:
+                if dk in self:
+                    del self[dk]
 
     def copy(self) -> "Headers":
         return Headers(self, encoding=self.encoding)
