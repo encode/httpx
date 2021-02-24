@@ -105,7 +105,10 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
         "c": ["11", "22", "33"],
         "d": "",
     }
-    files = {"file": ("name.txt", open(path, "rb"))}
+    files = {
+        "file": ("name.txt", open(path, "rb")),
+        "file2": ("file2.txt", "<únicode string>")
+    }
 
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
@@ -123,8 +126,11 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
             '--{0}\r\nContent-Disposition: form-data; name="file";'
             ' filename="name.txt"\r\n'
             "Content-Type: text/plain\r\n\r\n<file content>\r\n"
+            '--{0}\r\nContent-Disposition: form-data; name="file2";'
+            ' filename="file2.txt"\r\n'
+            "Content-Type: text/plain\r\n\r\n<únicode string>\r\n"
             "--{0}--\r\n"
-            "".format(boundary).encode("ascii")
+            "".format(boundary).encode("utf-8")
         )
         assert headers == {
             "Content-Type": f"multipart/form-data; boundary={boundary}",
