@@ -41,11 +41,7 @@ class DataField:
 
     def render_data(self) -> bytes:
         if not hasattr(self, "_data"):
-            self._data = (
-                self.value
-                if isinstance(self.value, bytes)
-                else self.value.encode("utf-8")
-            )
+            self._data = to_bytes(self.value)
 
         return self._data
 
