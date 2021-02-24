@@ -8,6 +8,7 @@ import pytest
 
 import httpx
 from httpx._content import encode_request
+from httpx._types import RequestFiles
 from httpx._utils import format_form_param
 
 
@@ -105,7 +106,7 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
         "c": ["11", "22", "33"],
         "d": "",
     }
-    files = {
+    files: RequestFiles = {
         "file": ("name.txt", open(path, "rb")),
         "file2": ("file2.txt", "<únicode string>"),
     }
