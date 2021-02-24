@@ -107,7 +107,7 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
     }
     files = {
         "file": ("name.txt", open(path, "rb")),
-        "file2": ("file2.txt", "<únicode string>")
+        "file2": ("file2.txt", "<únicode string>"),
     }
 
     with mock.patch("os.urandom", return_value=os.urandom(16)):
