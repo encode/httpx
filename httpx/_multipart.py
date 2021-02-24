@@ -74,6 +74,8 @@ class FileField:
             except ValueError:
                 filename, fileobj = value  # type: ignore
                 content_type = guess_content_type(filename)
+            if isinstance(fileobj, str):
+                fileobj = to_bytes(fileobj)
         else:
             filename = Path(str(getattr(value, "name", "upload"))).name
             fileobj = value
@@ -87,7 +89,7 @@ class FileField:
     def get_length(self) -> int:
         headers = self.render_headers()
 
-        if isinstance(self.file, (str, bytes)):
+        if isinstance(self.file, bytes):
             return len(headers) + len(self.file)
 
         # Let's do our best not to read `file` into memory.
@@ -119,8 +121,8 @@ class FileField:
         return self._headers
 
     def render_data(self) -> typing.Iterator[bytes]:
-        if isinstance(self.file, (str, bytes)):
-            yield to_bytes(self.file)
+        if isinstance(self.file, bytes):
+            yield self.file
             return
 
         if hasattr(self, "_data"):
