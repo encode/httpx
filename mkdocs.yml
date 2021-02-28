@@ -25,7 +25,8 @@ nav:
 
 markdown_extensions:
   - admonition
-  - codehilite
+  - codehilite:
+      css_class: highlight
   - mkautodoc
 
 extra_css:
