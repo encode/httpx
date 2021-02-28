@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * Add mount API support, using `httpx.Client(mounts=...)`. (Pull #1362)
 * Add `chunk_size` parameter to `iter_raw()`, `iter_bytes()`, `iter_text()`. (Pull #1277)
 * Add `keepalive_expiry` parameter to `httpx.Limits()` configuration. (Pull #1398)
-* Add repr to `httpx.Cookies to display available cookies. (Pull #1411)
+* Add repr to `httpx.Cookies` to display available cookies. (Pull #1411)
 * Add support for `params=<tuple>` (previously only `params=<list>` was supported). (Pull #1426)
 
 ### Fixed
