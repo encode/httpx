@@ -2,9 +2,8 @@ import binascii
 import os
 import typing
 from pathlib import Path
-from typing import IO, Union
 
-from ._types import FileContent, FileTypes, RequestFiles
+from ._types import FileTypes, RequestFiles
 from ._utils import (
     format_form_param,
     guess_content_type,
@@ -63,23 +62,25 @@ class FileField:
     def __init__(self, name: str, value: FileTypes) -> None:
         self.name = name
 
-        fileobj: FileContent
-
         if isinstance(value, tuple):
             try:
                 filename, fileobj, content_type = value  # type: ignore
             except ValueError:
                 filename, fileobj = value  # type: ignore
                 content_type = guess_content_type(filename)
-            if isinstance(fileobj, str):
-                fileobj = to_bytes(fileobj)
         else:
             filename = Path(str(getattr(value, "name", "upload"))).name
-            fileobj = typing.cast(Union[IO[bytes], IO[str]], value)
+            fileobj = value
             content_type = guess_content_type(filename)
 
+        if isinstance(fileobj, str):
+            # Ensure we only deal with bytes to prevent any content-length
+            # mismatch due to str -> bytes encoding.
+            # See: https://github.com/encode/httpx/issues/1482
+            fileobj = to_bytes(fileobj)
+
         self.filename = filename
-        self.file: Union[IO[bytes], IO[str], bytes] = fileobj
+        self.file = fileobj
         self.content_type = content_type
         self._consumed = False
 

@@ -73,13 +73,15 @@ ResponseContent = Union[str, bytes, ByteStream]
 
 RequestData = dict
 
-FileContent = Union[IO[str], IO[bytes], str, bytes]
+FileContent = Union[IO[str], IO[bytes], bytes]
 FileTypes = Union[
-    # file (or text)
+    # text
+    str,
+    # file
     FileContent,
     # (filename, file (or text))
-    Tuple[Optional[str], FileContent],
+    Tuple[Optional[str], Union[str, FileContent]],
     # (filename, file (or text), content_type)
-    Tuple[Optional[str], FileContent, Optional[str]],
+    Tuple[Optional[str], Union[str, FileContent], Optional[str]],
 ]
 RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
