@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 import enum
 import typing
@@ -8,6 +9,7 @@ import httpcore
 
 from .__version__ import __version__
 from ._auth import Auth, BasicAuth, FunctionAuth
+from ._compat import AsyncExitStack
 from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
@@ -50,6 +52,8 @@ from ._utils import (
     NetRCInfo,
     Timer,
     URLPattern,
+    cast_async_context_manager,
+    cast_context_manager,
     get_environment_proxies,
     get_logger,
     same_origin,
@@ -852,19 +856,35 @@ class Client(BaseClient):
         timer = Timer()
         timer.sync_start()
 
+        exit_stack = contextlib.ExitStack()
+
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (status_code, headers, stream, ext) = transport.request(
+            # NOTE: Once https://github.com/encode/httpcore/pull/206 is merged,
+            # HTTPCore will always return a context manager.
+            raw_response = transport.request(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
                 stream=request.stream,  # type: ignore
                 ext={"timeout": timeout.as_dict()},
             )
+            try:
+                (status_code, headers, stream, ext) = raw_response
+            except ValueError:
+                response_ctx = cast_context_manager(raw_response)
+                (status_code, headers, stream, ext) = exit_stack.enter_context(
+                    response_ctx
+                )
+            else:
+                if hasattr(
+                    stream, "close"
+                ):  # Our own content streams don't have close methods.
+                    exit_stack.callback(stream.close)
 
         def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(seconds=timer.sync_elapsed())
-            if hasattr(stream, "close"):
-                stream.close()
+            with map_exceptions(HTTPCORE_EXC_MAP, request=request):
+                exit_stack.close()
 
         response = Response(
             status_code,
@@ -1488,20 +1508,38 @@ class AsyncClient(BaseClient):
         timer = Timer()
         await timer.async_start()
 
+        exit_stack = AsyncExitStack()
+
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (status_code, headers, stream, ext) = await transport.arequest(
+            # NOTE: Once https://github.com/encode/httpcore/pull/206 is merged,
+            # HTTPCore will always return a context manager.
+            raw_response = transport.arequest(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
                 stream=request.stream,  # type: ignore
                 ext={"timeout": timeout.as_dict()},
             )
+            try:
+                (status_code, headers, stream, ext) = await raw_response
+            except ValueError:
+                response_ctx = cast_async_context_manager(raw_response)
+                (
+                    status_code,
+                    headers,
+                    stream,
+                    ext,
+                ) = await exit_stack.enter_async_context(response_ctx)
+            else:
+                if hasattr(
+                    stream, "aclose"
+                ):  # Our own content streams don't have close methods.
+                    exit_stack.push_async_callback(stream.aclose)
 
         async def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
-            if hasattr(stream, "aclose"):
-                with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-                    await stream.aclose()
+            with map_exceptions(HTTPCORE_EXC_MAP, request=request):
+                await exit_stack.aclose()
 
         response = Response(
             status_code,

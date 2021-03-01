@@ -19,6 +19,8 @@ from ._types import PrimitiveData
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._models import URL
 
+T = typing.TypeVar("T")
+
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
 _HTML5_FORM_ENCODING_REPLACEMENTS.update(
@@ -539,3 +541,13 @@ class URLPattern:
 
 def warn_deprecated(message: str) -> None:  # pragma: nocover
     warnings.warn(message, DeprecationWarning, stacklevel=2)
+
+
+def cast_context_manager(value: T) -> typing.ContextManager[T]:
+    return value  # type: ignore
+
+
+def cast_async_context_manager(
+    value: typing.Awaitable[T],
+) -> typing.AsyncContextManager[T]:
+    return value  # type: ignore
