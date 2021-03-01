@@ -101,7 +101,7 @@ what gets sent over the wire.*
 200
 ```
 
-* `def __init__(method, url, [params], [data], [json], [headers], [cookies])`
+* `def __init__(method, url, [params], [headers], [cookies], [content], [data], [files], [json], [stream])`
 * `.method` - **str**
 * `.url` - **URL**
 * `.content` - **byte**, **byte iterator**, or **byte async iterator**
@@ -125,7 +125,7 @@ what gets sent over the wire.*
 * `.port` - **int**
 * `.path` - **str**
 * `.query` - **str**
-* `.full_path` - **str**
+* `.raw_path` - **str**
 * `.fragment` - **str**
 * `.is_ssl` - **bool**
 * `.is_absolute_url` - **bool**

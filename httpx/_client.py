@@ -19,7 +19,6 @@ from ._config import (
     Proxy,
     Timeout,
     UnsetType,
-    create_ssl_context,
 )
 from ._decoders import SUPPORTED_DECODERS
 from ._exceptions import (
@@ -32,6 +31,7 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
+from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
     AuthTypes,
@@ -68,7 +68,6 @@ U = typing.TypeVar("U", bound="AsyncClient")
 
 logger = get_logger(__name__)
 
-KEEPALIVE_EXPIRY = 5.0
 USER_AGENT = f"python-httpx/{__version__}"
 ACCEPT_ENCODING = ", ".join(
     [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
@@ -91,7 +90,7 @@ class BaseClient:
         cookies: CookieTypes = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
+        event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         trust_env: bool = True,
     ):
@@ -125,9 +124,9 @@ class BaseClient:
         return self._trust_env
 
     def _enforce_trailing_slash(self, url: URL) -> URL:
-        if url.path.endswith("/"):
+        if url.raw_path.endswith(b"/"):
             return url
-        return url.copy_with(path=url.path + "/")
+        return url.copy_with(raw_path=url.raw_path + b"/")
 
     def _get_proxy_map(
         self, proxies: typing.Optional[ProxiesTypes], allow_env_proxies: bool
@@ -287,7 +286,7 @@ class BaseClient:
         if merge_url.is_relative_url:
             # We always ensure the base_url paths include the trailing '/',
             # and always strip any leading '/' from the merge URL.
-            merge_url = merge_url.copy_with(path=merge_url.path.lstrip("/"))
+            merge_url = merge_url.copy_with(raw_path=merge_url.raw_path.lstrip(b"/"))
             return self.base_url.join(merge_url)
         return merge_url
 
@@ -338,7 +337,7 @@ class BaseClient:
         elif callable(auth):
             return FunctionAuth(func=auth)
         else:
-            raise TypeError('Invalid "auth" argument.')
+            raise TypeError(f'Invalid "auth" argument: {auth!r}')
 
     def _build_request_auth(
         self, request: Request, auth: typing.Union[AuthTypes, UnsetType] = UNSET
@@ -480,7 +479,7 @@ class Client(BaseClient):
     * **auth** - *(optional)* An authentication class to use when sending
     requests.
     * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
+    a string, dictionary, or sequence of two-tuples.
     * **headers** - *(optional)* Dictionary of HTTP headers to include when
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
@@ -520,11 +519,12 @@ class Client(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         proxies: ProxiesTypes = None,
+        mounts: typing.Mapping[str, httpcore.SyncHTTPTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
+        event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         transport: httpcore.SyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -570,7 +570,7 @@ class Client(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self._proxies: typing.Dict[
+        self._mounts: typing.Dict[
             URLPattern, typing.Optional[httpcore.SyncHTTPTransport]
         ] = {
             URLPattern(key): None
@@ -585,7 +585,12 @@ class Client(BaseClient):
             )
             for key, proxy in proxy_map.items()
         }
-        self._proxies = dict(sorted(self._proxies.items()))
+        if mounts is not None:
+            self._mounts.update(
+                {URLPattern(key): transport for key, transport in mounts.items()}
+            )
+
+        self._mounts = dict(sorted(self._mounts.items()))
 
     def _init_transport(
         self,
@@ -603,14 +608,8 @@ class Client(BaseClient):
         if app is not None:
             return WSGITransport(app=app)
 
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.SyncConnectionPool(
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
-            http2=http2,
+        return HTTPTransport(
+            verify=verify, cert=cert, http2=http2, limits=limits, trust_env=trust_env
         )
 
     def _init_proxy_transport(
@@ -622,17 +621,13 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.SyncHTTPTransport:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.SyncHTTPProxy(
-            proxy_url=proxy.url.raw,
-            proxy_headers=proxy.headers.raw,
-            proxy_mode=proxy.mode,
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
+        return HTTPTransport(
+            verify=verify,
+            cert=cert,
             http2=http2,
+            limits=limits,
+            trust_env=trust_env,
+            proxy=proxy,
         )
 
     def _transport_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
@@ -640,7 +635,7 @@ class Client(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        for pattern, transport in self._proxies.items():
+        for pattern, transport in self._mounts.items():
             if pattern.matches(url):
                 return self._transport if transport is None else transport
 
@@ -1115,17 +1110,17 @@ class Client(BaseClient):
             self._state = ClientState.CLOSED
 
             self._transport.close()
-            for proxy in self._proxies.values():
-                if proxy is not None:
-                    proxy.close()
+            for transport in self._mounts.values():
+                if transport is not None:
+                    transport.close()
 
     def __enter__(self: T) -> T:
         self._state = ClientState.OPENED
 
         self._transport.__enter__()
-        for proxy in self._proxies.values():
-            if proxy is not None:
-                proxy.__enter__()
+        for transport in self._mounts.values():
+            if transport is not None:
+                transport.__enter__()
         return self
 
     def __exit__(
@@ -1137,9 +1132,9 @@ class Client(BaseClient):
         self._state = ClientState.CLOSED
 
         self._transport.__exit__(exc_type, exc_value, traceback)
-        for proxy in self._proxies.values():
-            if proxy is not None:
-                proxy.__exit__(exc_type, exc_value, traceback)
+        for transport in self._mounts.values():
+            if transport is not None:
+                transport.__exit__(exc_type, exc_value, traceback)
 
     def __del__(self) -> None:
         self.close()
@@ -1162,7 +1157,7 @@ class AsyncClient(BaseClient):
     * **auth** - *(optional)* An authentication class to use when sending
     requests.
     * **params** - *(optional)* Query parameters to include in request URLs, as
-    a string, dictionary, or list of two-tuples.
+    a string, dictionary, or sequence of two-tuples.
     * **headers** - *(optional)* Dictionary of HTTP headers to include when
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
@@ -1204,11 +1199,12 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         proxies: ProxiesTypes = None,
+        mounts: typing.Mapping[str, httpcore.AsyncHTTPTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: typing.Dict[str, typing.List[typing.Callable]] = None,
+        event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         transport: httpcore.AsyncHTTPTransport = None,
         app: typing.Callable = None,
@@ -1255,7 +1251,7 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
-        self._proxies: typing.Dict[
+        self._mounts: typing.Dict[
             URLPattern, typing.Optional[httpcore.AsyncHTTPTransport]
         ] = {
             URLPattern(key): None
@@ -1270,7 +1266,11 @@ class AsyncClient(BaseClient):
             )
             for key, proxy in proxy_map.items()
         }
-        self._proxies = dict(sorted(self._proxies.items()))
+        if mounts is not None:
+            self._mounts.update(
+                {URLPattern(key): transport for key, transport in mounts.items()}
+            )
+        self._mounts = dict(sorted(self._mounts.items()))
 
     def _init_transport(
         self,
@@ -1288,14 +1288,8 @@ class AsyncClient(BaseClient):
         if app is not None:
             return ASGITransport(app=app)
 
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.AsyncConnectionPool(
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
-            http2=http2,
+        return AsyncHTTPTransport(
+            verify=verify, cert=cert, http2=http2, limits=limits, trust_env=trust_env
         )
 
     def _init_proxy_transport(
@@ -1307,17 +1301,13 @@ class AsyncClient(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> httpcore.AsyncHTTPTransport:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
-
-        return httpcore.AsyncHTTPProxy(
-            proxy_url=proxy.url.raw,
-            proxy_headers=proxy.headers.raw,
-            proxy_mode=proxy.mode,
-            ssl_context=ssl_context,
-            max_connections=limits.max_connections,
-            max_keepalive_connections=limits.max_keepalive_connections,
-            keepalive_expiry=KEEPALIVE_EXPIRY,
+        return AsyncHTTPTransport(
+            verify=verify,
+            cert=cert,
             http2=http2,
+            limits=limits,
+            trust_env=trust_env,
+            proxy=proxy,
         )
 
     def _transport_for_url(self, url: URL) -> httpcore.AsyncHTTPTransport:
@@ -1325,7 +1315,7 @@ class AsyncClient(BaseClient):
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
         """
-        for pattern, transport in self._proxies.items():
+        for pattern, transport in self._mounts.items():
             if pattern.matches(url):
                 return self._transport if transport is None else transport
 
@@ -1795,7 +1785,7 @@ class AsyncClient(BaseClient):
             self._state = ClientState.CLOSED
 
             await self._transport.aclose()
-            for proxy in self._proxies.values():
+            for proxy in self._mounts.values():
                 if proxy is not None:
                     await proxy.aclose()
 
@@ -1803,7 +1793,7 @@ class AsyncClient(BaseClient):
         self._state = ClientState.OPENED
 
         await self._transport.__aenter__()
-        for proxy in self._proxies.values():
+        for proxy in self._mounts.values():
             if proxy is not None:
                 await proxy.__aenter__()
         return self
@@ -1817,7 +1807,7 @@ class AsyncClient(BaseClient):
         self._state = ClientState.CLOSED
 
         await self._transport.__aexit__(exc_type, exc_value, traceback)
-        for proxy in self._proxies.values():
+        for proxy in self._mounts.values():
             if proxy is not None:
                 await proxy.__aexit__(exc_type, exc_value, traceback)
 

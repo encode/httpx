@@ -26,7 +26,7 @@ class codes(IntEnum):
         obj = int.__new__(cls, value)  # type: ignore
         obj._value_ = value
 
-        obj.phrase = phrase
+        obj.phrase = phrase  # type: ignore
         return obj
 
     def __str__(self) -> str:
@@ -139,7 +139,7 @@ class codes(IntEnum):
     NETWORK_AUTHENTICATION_REQUIRED = 511, "Network Authentication Required"
 
 
-#  Include lower-case styles for `requests` compatibility.
+# Include lower-case styles for `requests` compatibility.
 for code in codes:
     setattr(codes, code._name_.lower(), int(code))
 

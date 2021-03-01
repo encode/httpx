@@ -12,7 +12,7 @@
 
 #### More efficient usage of network resources
 
-When you make requests using the top-level API as documented in the [Quickstart](/quickstart) guide, HTTPX has to establish a new connection _for every single request_ (connections are not reused). As the number of requests to a host increases, this quickly becomes inefficient.
+When you make requests using the top-level API as documented in the [Quickstart](quickstart.md) guide, HTTPX has to establish a new connection _for every single request_ (connections are not reused). As the number of requests to a host increases, this quickly becomes inefficient.
 
 On the other hand, a `Client` instance uses [HTTP connection pooling](https://en.wikipedia.org/wiki/HTTP_persistent_connection). This means that when you make several requests to the same host, the `Client` will reuse the underlying TCP connection, instead of recreating one for every single request.
 
@@ -29,7 +29,7 @@ This can bring **significant performance improvements** compared to using the to
 - Cookie persistance across requests.
 - Applying configuration across all outgoing requests.
 - Sending requests through HTTP proxies.
-- Using [HTTP/2](/http2).
+- Using [HTTP/2](http2.md).
 
 The other sections on this page go into further detail about what you can do with a `Client` instance.
 
@@ -64,7 +64,7 @@ Once you have a `Client`, you can send requests using `.get()`, `.post()`, etc. 
 <Response [200 OK]>
 ```
 
-These methods accept the same arguments as `httpx.get()`, `httpx.post()`, etc. This means that all features documented in the [Quickstart](/quickstart) guide are also available at the client level.
+These methods accept the same arguments as `httpx.get()`, `httpx.post()`, etc. This means that all features documented in the [Quickstart](quickstart.md) guide are also available at the client level.
 
 For example, to send a request with custom headers:
 
@@ -143,7 +143,7 @@ For example, `base_url` allows you to prepend an URL to all outgoing requests:
 URL('http://httpbin.org/headers')
 ```
 
-For a list of all available client parameters, see the [`Client`](/api/#client) API reference.
+For a list of all available client parameters, see the [`Client`](api.md#client) API reference.
 
 ## Calling into Python Web Apps
 
@@ -190,7 +190,7 @@ with httpx.Client(transport=transport, base_url="http://testserver") as client:
 
 ## Request instances
 
-For maximum control on what gets sent over the wire, HTTPX supports building explicit [`Request`](/api#request) instances:
+For maximum control on what gets sent over the wire, HTTPX supports building explicit [`Request`](api.md#request) instances:
 
 ```python
 request = httpx.Request("GET", "https://example.com")
@@ -538,7 +538,7 @@ proxies = {
 
 HTTP proxying can also be configured through environment variables, although with less fine-grained control.
 
-See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](/environment_variables/#http_proxy-https_proxy-all_proxy) for more information.
+See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](environment_variables.md#http_proxy-https_proxy-all_proxy) for more information.
 
 ### Proxy mechanisms
 
@@ -583,6 +583,10 @@ with httpx.Client(proxies=proxies) as client:
     # This HTTP request will be tunneled instead of forwarded.
     r = client.get("http://example.com")
 ```
+
+### Troubleshooting proxies
+
+If you encounter issues when setting up proxies, please refer to our [Troubleshooting guide](troubleshooting.md#proxies).
 
 ## Timeout Configuration
 
@@ -634,7 +638,7 @@ There are four different types of timeouts that may occur. These are **connect**
 **read**, **write**, and **pool** timeouts.
 
 * The **connect** timeout specifies the maximum amount of time to wait until
-a connection to the requested host is established. If HTTPX is unable to connect
+a socket connection to the requested host is established. If HTTPX is unable to connect
 within this time frame, a `ConnectTimeout` exception is raised.
 * The **read** timeout specifies the maximum duration to wait for a chunk of
 data to be received (for example, a chunk of the response body). If HTTPX is
@@ -646,7 +650,7 @@ to send data within this time frame, a `WriteTimeout` exception is raised.
 a connection from the connection pool. If HTTPX is unable to acquire a connection
 within this time frame, a `PoolTimeout` exception is raised. A related
 configuration here is the maximum number of allowable connections in the
-connection pool, which is configured by the `pool_limits`.
+connection pool, which is configured by the `limits` argument.
 
 You can configure the timeout behavior for any of these values...
 
@@ -668,7 +672,6 @@ allow. (Defaults 10)
 - `max_connections`, maximum number of allowable connections, or` None` for no limits.
 (Default 100)
 
-
 ```python
 limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
 client = httpx.Client(limits=limits)
@@ -676,7 +679,7 @@ client = httpx.Client(limits=limits)
 
 ## Multipart file encoding
 
-As mentioned in the [quickstart](/quickstart#sending-multipart-file-uploads)
+As mentioned in the [quickstart](quickstart.md#sending-multipart-file-uploads)
 multipart file encoding is available by passing a dictionary with the
 name of the payloads as keys and either tuple of elements or a file-like object or a string as values.
 
@@ -969,45 +972,35 @@ sending of the requests.
 ### Usage
 
 For some advanced configuration you might need to instantiate a transport
-class directly, and pass it to the client instance. The `httpcore` package
-provides a `local_address` configuration that is only available via this
-low-level API.
+class directly, and pass it to the client instance. One example is the
+`local_address` configuration which is only available via this low-level API.
 
 ```pycon
->>> import httpx, httpcore
->>> ssl_context = httpx.create_ssl_context()
->>> transport = httpcore.SyncConnectionPool(
-...     ssl_context=ssl_context,
-...     max_connections=100,
-...     max_keepalive_connections=20,
-...     keepalive_expiry=5.0,
-...     local_address="0.0.0.0"
-... )  # Use the standard HTTPX defaults, but with an IPv4 only 'local_address'.
+>>> import httpx
+>>> transport = httpx.HTTPTransport(local_address="0.0.0.0")
 >>> client = httpx.Client(transport=transport)
 ```
 
-Similarly, `httpcore` provides a `uds` option for connecting via a Unix Domain Socket that is only available via this low-level API:
+Connection retries are also available via this interface.
 
-```python
->>> import httpx, httpcore
->>> ssl_context = httpx.create_ssl_context()
->>> transport = httpcore.SyncConnectionPool(
-...     ssl_context=ssl_context,
-...     max_connections=100,
-...     max_keepalive_connections=20,
-...     keepalive_expiry=5.0,
-...     uds="/var/run/docker.sock",
-... )  # Connect to the Docker API via a Unix Socket.
+```pycon
+>>> import httpx
+>>> transport = httpx.HTTPTransport(retries=1)
+>>> client = httpx.Client(transport=transport)
+```
+
+Similarly, instantiating a transport directly provides a `uds` option for
+connecting via a Unix Domain Socket that is only available via this low-level API:
+
+```pycon
+>>> import httpx
+>>> # Connect to the Docker API via a Unix Socket.
+>>> transport = httpx.HTTPTransport(uds="/var/run/docker.sock")
 >>> client = httpx.Client(transport=transport)
 >>> response = client.get("http://docker/info")
 >>> response.json()
 {"ID": "...", "Containers": 4, "Images": 74, ...}
 ```
-
-Unlike the `httpx.Client()`, the lower-level `httpcore` transport instances
-do not include any default values for configuring aspects such as the
-connection pooling details, so you'll need to provide more explicit
-configuration when using this API.
 
 ### urllib3 transport
 
@@ -1041,12 +1034,13 @@ class HelloWorldTransport(httpcore.SyncHTTPTransport):
     A mock transport that always returns a JSON "Hello, world!" response.
     """
 
-    def request(self, method, url, headers=None, stream=None, timeout=None):
+    def request(self, method, url, headers=None, stream=None, ext=None):
         message = {"text": "Hello, world!"}
         content = json.dumps(message).encode("utf-8")
         stream = httpcore.PlainByteStream(content)
         headers = [(b"content-type", b"application/json")]
-        return b"HTTP/1.1", 200, b"OK", headers, stream
+        ext = {"http_version": b"HTTP/1.1"}
+        return 200, headers, stream, ext
 ```
 
 Which we can use in the same way:
@@ -1057,4 +1051,93 @@ Which we can use in the same way:
 >>> response = client.get("https://example.org/")
 >>> response.json()
 {"text": "Hello, world!"}
+```
+
+### Mock transports
+
+During testing it can often be useful to be able to mock out a transport,
+and return pre-determined responses, rather than making actual network requests.
+
+The `httpx.MockTransport` class accepts a handler function, which can be used
+to map requests onto pre-determined responses:
+
+```python
+def handler(request):
+    return httpx.Response(200, json={"text": "Hello, world!"})
+
+
+# Switch to a mock transport, if the TESTING environment variable is set.
+if os.environ['TESTING'].upper() == "TRUE":
+    transport = httpx.MockTransport(handler)
+else:
+    transport = httpx.HTTPTransport()
+
+client = httpx.Client(transport=transport)
+```
+
+For more advanced use-cases you might want to take a look at either [the third-party
+mocking library, RESPX](https://lundberg.github.io/respx/), or the [pytest-httpx library](https://github.com/Colin-b/pytest_httpx).
+
+### Mounting transports
+
+You can also mount transports against given schemes or domains, to control
+which transport an outgoing request should be routed via, with [the same style
+used for specifying proxy routing](#routing).
+
+```python
+import httpcore
+import httpx
+
+class HTTPSRedirectTransport(httpcore.SyncHTTPTransport):
+    """
+    A transport that always redirects to HTTPS.
+    """
+
+    def request(self, method, url, headers=None, stream=None, ext=None):
+        scheme, host, port, path = url
+        if port is None:
+            location = b"https://%s%s" % (host, path)
+        else:
+            location = b"https://%s:%d%s" % (host, port, path)
+        stream = httpcore.PlainByteStream(b"")
+        headers = [(b"location", location)]
+        ext = {"http_version": b"HTTP/1.1"}
+        return 303, headers, stream, ext
+
+
+# A client where any `http` requests are always redirected to `https`
+mounts = {'http://': HTTPSRedirectTransport()}
+client = httpx.Client(mounts=mounts)
+```
+
+A couple of other sketches of how you might take advantage of mounted transports...
+
+Disabling HTTP/2 on a single given domain...
+
+```python
+mounts = {
+    "all://": httpx.HTTPTransport(http2=True),
+    "all://*example.org": httpx.HTTPTransport()
+}
+client = httpx.Client(mounts=mounts)
+```
+
+Mocking requests to a given domain:
+
+```python
+# All requests to "example.org" should be mocked out.
+# Other requests occur as usual.
+def handler(request):
+    return httpx.Response(200, json={"text": "Hello, World!"})
+
+mounts = {"all://example.org": httpx.MockTransport(handler)}
+client = httpx.Client(mounts=mounts)
+```
+
+Adding support for custom schemes:
+
+```python
+# Support URLs like "file:///Users/sylvia_green/websites/new_client/index.html"
+mounts = {"file://": FileSystemTransport()}
+client = httpx.Client(mounts=mounts)
 ```

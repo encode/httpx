@@ -1,6 +1,7 @@
 import io
 import itertools
 import typing
+from urllib.parse import unquote
 
 import httpcore
 
@@ -73,6 +74,9 @@ class WSGITransport(httpcore.SyncHTTPTransport):
 
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
+        if port is None:
+            port = {b"http": 80, b"https": 443}[scheme]
+
         environ = {
             "wsgi.version": (1, 0),
             "wsgi.url_scheme": scheme.decode("ascii"),
@@ -83,7 +87,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
             "wsgi.run_once": False,
             "REQUEST_METHOD": method.decode(),
             "SCRIPT_NAME": self.script_name,
-            "PATH_INFO": path.decode("ascii"),
+            "PATH_INFO": unquote(path.decode("ascii")),
             "QUERY_STRING": query.decode("ascii"),
             "SERVER_NAME": host.decode("ascii"),
             "SERVER_PORT": str(port),

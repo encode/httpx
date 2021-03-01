@@ -300,7 +300,6 @@ def https_server(cert_pem_file, cert_private_key_file):
         lifespan="off",
         ssl_certfile=cert_pem_file,
         ssl_keyfile=cert_private_key_file,
-        host="localhost",
         port=8001,
         loop="asyncio",
     )

@@ -1,10 +1,10 @@
+import typing
 from datetime import timedelta
 
 import httpcore
 import pytest
 
 import httpx
-from tests.utils import MockTransport
 
 
 def test_get(server):
@@ -199,6 +199,16 @@ def test_merge_relative_url_with_dotted_path():
     assert request.url == "https://www.example.com/some/testing/123"
 
 
+def test_merge_relative_url_with_encoded_slashes():
+    client = httpx.Client(base_url="https://www.example.com/")
+    request = client.build_request("GET", "/testing%2F123")
+    assert request.url == "https://www.example.com/testing%2F123"
+
+    client = httpx.Client(base_url="https://www.example.com/base%2Fpath")
+    request = client.build_request("GET", "/testing")
+    assert request.url == "https://www.example.com/base%2Fpath/testing"
+
+
 def test_pool_limits_deprecated():
     limits = httpx.Limits()
 
@@ -229,15 +239,8 @@ def test_context_managed_transport():
             super().__exit__(*args)
             self.events.append("transport.__exit__")
 
-    # Note that we're including 'proxies' here to *also* run through the
-    # proxy context management, although we can't easily test that at the
-    # moment, since we can't add proxies as transport instances.
-    #
-    # Once we have a more generalised Mount API we'll be able to remove this
-    # in favour of ensuring all mounts are context managed, which will
-    # also neccessarily include proxies.
     transport = Transport()
-    with httpx.Client(transport=transport, proxies="http://www.example.com"):
+    with httpx.Client(transport=transport):
         pass
 
     assert transport.events == [
@@ -247,12 +250,50 @@ def test_context_managed_transport():
     ]
 
 
+def test_context_managed_transport_and_mount():
+    class Transport(httpcore.SyncHTTPTransport):
+        def __init__(self, name: str):
+            self.name: str = name
+            self.events: typing.List[str] = []
+
+        def close(self):
+            # The base implementation of httpcore.SyncHTTPTransport just
+            # calls into `.close`, so simple transport cases can just override
+            # this method for any cleanup, where more complex cases
+            # might want to additionally override `__enter__`/`__exit__`.
+            self.events.append(f"{self.name}.close")
+
+        def __enter__(self):
+            super().__enter__()
+            self.events.append(f"{self.name}.__enter__")
+
+        def __exit__(self, *args):
+            super().__exit__(*args)
+            self.events.append(f"{self.name}.__exit__")
+
+    transport = Transport(name="transport")
+    mounted = Transport(name="mounted")
+    with httpx.Client(transport=transport, mounts={"http://www.example.org": mounted}):
+        pass
+
+    assert transport.events == [
+        "transport.__enter__",
+        "transport.close",
+        "transport.__exit__",
+    ]
+    assert mounted.events == [
+        "mounted.__enter__",
+        "mounted.close",
+        "mounted.__exit__",
+    ]
+
+
 def hello_world(request):
     return httpx.Response(200, text="Hello, world!")
 
 
 def test_client_closed_state_using_implicit_open():
-    client = httpx.Client(transport=MockTransport(hello_world))
+    client = httpx.Client(transport=httpx.MockTransport(hello_world))
 
     assert not client.is_closed
     client.get("http://example.com")
@@ -266,7 +307,7 @@ def test_client_closed_state_using_implicit_open():
 
 
 def test_client_closed_state_using_with_block():
-    with httpx.Client(transport=MockTransport(hello_world)) as client:
+    with httpx.Client(transport=httpx.MockTransport(hello_world)) as client:
         assert not client.is_closed
         client.get("http://example.com")
 
@@ -290,7 +331,9 @@ def test_raw_client_header():
     url = "http://example.org/echo_headers"
     headers = {"Example-Header": "example-value"}
 
-    client = httpx.Client(transport=MockTransport(echo_raw_headers), headers=headers)
+    client = httpx.Client(
+        transport=httpx.MockTransport(echo_raw_headers), headers=headers
+    )
     response = client.get(url)
 
     assert response.status_code == 200
@@ -302,3 +345,38 @@ def test_raw_client_header():
         ["User-Agent", f"python-httpx/{httpx.__version__}"],
         ["Example-Header", "example-value"],
     ]
+
+
+def unmounted(request: httpx.Request) -> httpx.Response:
+    data = {"app": "unmounted"}
+    return httpx.Response(200, json=data)
+
+
+def mounted(request: httpx.Request) -> httpx.Response:
+    data = {"app": "mounted"}
+    return httpx.Response(200, json=data)
+
+
+def test_mounted_transport():
+    transport = httpx.MockTransport(unmounted)
+    mounts = {"custom://": httpx.MockTransport(mounted)}
+
+    client = httpx.Client(transport=transport, mounts=mounts)
+
+    response = client.get("https://www.example.com")
+    assert response.status_code == 200
+    assert response.json() == {"app": "unmounted"}
+
+    response = client.get("custom://www.example.com")
+    assert response.status_code == 200
+    assert response.json() == {"app": "mounted"}
+
+
+def test_all_mounted_transport():
+    mounts = {"all://": httpx.MockTransport(mounted)}
+
+    client = httpx.Client(mounts=mounts)
+
+    response = client.get("https://www.example.com")
+    assert response.status_code == 200
+    assert response.json() == {"app": "mounted"}

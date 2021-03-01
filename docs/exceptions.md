@@ -11,7 +11,7 @@ while issuing an HTTP request. These exceptions include a `.request` attribute.
 try:
     response = httpx.get("https://www.example.com/")
 except httpx.RequestError as exc:
-    print(f"An error occured while requesting {exc.request.url!r}.")
+    print(f"An error occurred while requesting {exc.request.url!r}.")
 ```
 
 The `HTTPStatusError` class is raised by `response.raise_for_status()` on 4xx and 5xx responses.
@@ -45,7 +45,7 @@ try:
     response = httpx.get("https://www.example.com/")
     response.raise_for_status()
 except httpx.RequestError as exc:
-    print(f"An error occured while requesting {exc.request.url!r}.")
+    print(f"An error occurred while requesting {exc.request.url!r}.")
 except httpx.HTTPStatusError as exc:
     print(f"Error response {exc.response.status_code} while requesting {exc.request.url!r}.")
 ```

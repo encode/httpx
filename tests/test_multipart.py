@@ -9,7 +9,6 @@ import pytest
 import httpx
 from httpx._content import encode_request
 from httpx._utils import format_form_param
-from tests.utils import MockTransport
 
 
 def echo_request_content(request: httpx.Request) -> httpx.Response:
@@ -18,7 +17,7 @@ def echo_request_content(request: httpx.Request) -> httpx.Response:
 
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
 def test_multipart(value, output):
-    client = httpx.Client(transport=MockTransport(echo_request_content))
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
 
     # Test with a single-value 'data' argument, and a plain file 'files' argument.
     data = {"text": value}
@@ -44,7 +43,7 @@ def test_multipart(value, output):
 
 @pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))
 def test_multipart_invalid_key(key):
-    client = httpx.Client(transport=MockTransport(echo_request_content))
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
 
     data = {key: "abc"}
     files = {"file": io.BytesIO(b"<file content>")}
@@ -55,11 +54,12 @@ def test_multipart_invalid_key(key):
             files=files,
         )
     assert "Invalid type for name" in str(e.value)
+    assert repr(key) in str(e.value)
 
 
 @pytest.mark.parametrize(("value"), (1, 2.3, None, [None, "abc"], {None: "abc"}))
 def test_multipart_invalid_value(value):
-    client = httpx.Client(transport=MockTransport(echo_request_content))
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
 
     data = {"text": value}
     files = {"file": io.BytesIO(b"<file content>")}
@@ -69,7 +69,7 @@ def test_multipart_invalid_value(value):
 
 
 def test_multipart_file_tuple():
-    client = httpx.Client(transport=MockTransport(echo_request_content))
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
 
     # Test with a list of values 'data' argument,
     #     and a tuple style 'files' argument.
