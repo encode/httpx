@@ -30,6 +30,7 @@ from ._exceptions import (
     HTTPStatusError,
     InvalidURL,
     RequestNotRead,
+    ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
     map_exceptions,
@@ -918,6 +919,7 @@ class Response:
         self.ext = {} if ext is None else ext
         self.history = [] if history is None else list(history)
 
+        self.is_closed = False
         self.is_stream_consumed = False
 
         if stream is not None:
@@ -1217,6 +1219,8 @@ class Response:
         """
         if self.is_stream_consumed:
             raise StreamConsumed()
+        if self.is_closed:
+            raise ResponseClosed()
         if not isinstance(self.stream, typing.Iterable):
             raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
@@ -1232,6 +1236,14 @@ class Response:
 
         for chunk in chunker.flush():
             yield chunk
+
+    def close(self) -> None:
+        """
+        Mark the response as closed.
+        Automatically called if the response body is read to completion.
+        """
+        if not self.is_closed:
+            self.is_closed = True
 
     async def aread(self) -> bytes:
         """
@@ -1298,6 +1310,8 @@ class Response:
         """
         if self.is_stream_consumed:
             raise StreamConsumed()
+        if self.is_closed:
+            raise ResponseClosed()
         if not isinstance(self.stream, typing.AsyncIterable):
             raise RuntimeError("Attempted to call a async iterator on a sync stream.")
 
@@ -1313,6 +1327,14 @@ class Response:
 
         for chunk in chunker.flush():
             yield chunk
+
+    async def aclose(self) -> None:
+        """
+        Mark the response as closed.
+        Automatically called if the response body is read to completion.
+        """
+        if not self.is_closed:
+            self.is_closed = True
 
 
 class Cookies(MutableMapping):

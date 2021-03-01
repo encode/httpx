@@ -848,6 +848,8 @@ class Client(BaseClient):
                     yield response
                     break
 
+            response.close()
+
     @contextmanager
     def _send_single_request(
         self, request: Request, timeout: Timeout

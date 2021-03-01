@@ -29,6 +29,7 @@ Our exception hierarchy:
   x StreamConsumed
   x ResponseNotRead
   x RequestNotRead
+  x ResponseClosed
 """
 import contextlib
 import typing
@@ -299,6 +300,20 @@ class RequestNotRead(StreamError):
 
     def __init__(self) -> None:
         message = "Attempted to access request content, without having called `read()`."
+        super().__init__(message)
+
+
+class ResponseClosed(StreamError):
+    """
+    Attempted to read or stream response content, but the request has been
+    closed.
+    """
+
+    def __init__(self) -> None:
+        message = (
+            "Attempted to read or stream response content, but the request has "
+            "been closed."
+        )
         super().__init__(message)
 
 
