@@ -63,7 +63,7 @@ setup(
     ],
     extras_require={
         "http2": "h2>=3,<4",
-        "brotli": "brotlipy>=0.7,<0.8*",
+        "brotli": "brotlipy>=0.7,<0.8",
     },
     classifiers=[
         "Development Status :: 4 - Beta",
