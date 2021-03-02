@@ -59,11 +59,11 @@ setup(
         "certifi",
         "sniffio",
         "rfc3986[idna2008]>=1.3,<2",
-        "httpcore==0.12.*",
+        "httpcore>=0.12,<0.13",
     ],
     extras_require={
-        "http2": "h2==3.*",
-        "brotli": "brotlipy==0.7.*",
+        "http2": "h2>=3,<4",
+        "brotli": "brotlipy>=0.7,<0.8*",
     },
     classifiers=[
         "Development Status :: 4 - Beta",
