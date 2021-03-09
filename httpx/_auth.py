@@ -187,7 +187,8 @@ class DigestAuth(Auth):
         scheme, _, fields = auth_header.partition(" ")
 
         # This method should only ever have been called with a Digest auth header.
-        assert scheme.lower() == "digest"
+        if scheme.lower() != "digest":
+            raise AssertionError
 
         header_dict: typing.Dict[str, str] = {}
         for field in parse_http_list(fields):
