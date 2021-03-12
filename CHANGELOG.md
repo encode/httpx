@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.17.1
+
+### Fixed
+
+* Type annotation on `CertTypes` allows `keyfile` and `password` to be optional. (Pull #1503)
+* Fix httpcore pinned version. (Pull #1495)
+
 ## 0.17.0
 
 ### Added
