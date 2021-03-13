@@ -543,11 +543,11 @@ def warn_deprecated(message: str) -> None:  # pragma: nocover
     warnings.warn(message, DeprecationWarning, stacklevel=2)
 
 
-def cast_context_manager(value: T) -> typing.ContextManager[T]:
+def cast_context_manager(value: T) -> typing.ContextManager[T]:  # pragma: no cover
     return value  # type: ignore
 
 
 def cast_async_context_manager(
     value: typing.Awaitable[T],
-) -> typing.AsyncContextManager[T]:
+) -> typing.AsyncContextManager[T]:  # pragma: no cover
     return value  # type: ignore

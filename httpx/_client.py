@@ -870,7 +870,7 @@ class Client(BaseClient):
             )
             try:
                 (status_code, headers, stream, ext) = raw_response
-            except ValueError:
+            except ValueError:  # pragma: no cover
                 response_ctx = cast_context_manager(raw_response)
                 (status_code, headers, stream, ext) = exit_stack.enter_context(
                     response_ctx
@@ -1522,7 +1522,7 @@ class AsyncClient(BaseClient):
             )
             try:
                 (status_code, headers, stream, ext) = await raw_response
-            except ValueError:
+            except ValueError:  # pragma: no cover
                 response_ctx = cast_async_context_manager(raw_response)
                 (
                     status_code,
