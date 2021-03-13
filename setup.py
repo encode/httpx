@@ -59,7 +59,7 @@ setup(
         "certifi",
         "sniffio",
         "rfc3986[idna2008]>=1.3,<2",
-        "httpcore==0.12.*",
+        "httpcore>=0.12.1,<0.13",
         # Backports.
         "async_exit_stack; python_version<'3.7'",
     ],

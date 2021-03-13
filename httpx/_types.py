@@ -51,7 +51,14 @@ HeaderTypes = Union[
 
 CookieTypes = Union["Cookies", CookieJar, Dict[str, str], List[Tuple[str, str]]]
 
-CertTypes = Union[str, Tuple[str, str], Tuple[str, str, str]]
+CertTypes = Union[
+    # certfile
+    str,
+    # (certfile, keyfile)
+    Tuple[str, Optional[str]],
+    # (certfile, keyfile, password)
+    Tuple[str, Optional[str], Optional[str]],
+]
 VerifyTypes = Union[str, bool, ssl.SSLContext]
 TimeoutTypes = Union[
     Optional[float],
