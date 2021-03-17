@@ -1,8 +1,10 @@
+import typing
 from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
 from urllib.parse import unquote
 
-import httpcore
 import sniffio
+
+from .base import AsyncBaseTransport
 
 if TYPE_CHECKING:  # pragma: no cover
     import asyncio
@@ -23,7 +25,7 @@ def create_event() -> "Event":
         return asyncio.Event()
 
 
-class ASGITransport(httpcore.AsyncHTTPTransport):
+class ASGITransport(AsyncBaseTransport):
     """
     A custom AsyncTransport that handles sending requests directly to an ASGI app.
     The simplest way to use this functionality is to use the `app` argument.
@@ -73,11 +75,10 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
-        stream: httpcore.AsyncByteStream = None,
+        stream: typing.AsyncIterator[bytes] = None,
         ext: dict = None,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.AsyncIterator[bytes], dict]:
         headers = [] if headers is None else headers
-        stream = httpcore.PlainByteStream(content=b"") if stream is None else stream
 
         # ASGI scope.
         scheme, host, port, full_path = url
@@ -98,7 +99,7 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         }
 
         # Request.
-        request_body_chunks = stream.__aiter__()
+        request_body_chunks = None if stream is None else stream.__aiter__()
         request_complete = False
 
         # Response.
@@ -116,6 +117,10 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
             if request_complete:
                 await response_complete.wait()
                 return {"type": "http.disconnect"}
+
+            if request_body_chunks is None:
+                request_complete = True
+                return {"type": "http.request", "body": b"", "more_body": False}
 
             try:
                 body = await request_body_chunks.__anext__()
@@ -155,7 +160,9 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         assert status_code is not None
         assert response_headers is not None
 
-        stream = httpcore.PlainByteStream(content=b"".join(body_parts))
+        async def response_stream() -> typing.AsyncIterator[bytes]:
+            yield b"".join(body_parts)
+
         ext = {}
 
-        return (status_code, response_headers, stream, ext)
+        return (status_code, response_headers, response_stream(), ext)

@@ -31,6 +31,7 @@ import httpcore
 
 from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._types import CertTypes, VerifyTypes
+from .base import AsyncBaseTransport, BaseTransport
 
 T = typing.TypeVar("T", bound="HTTPTransport")
 A = typing.TypeVar("A", bound="AsyncHTTPTransport")
@@ -38,7 +39,7 @@ Headers = typing.List[typing.Tuple[bytes, bytes]]
 URL = typing.Tuple[bytes, bytes, typing.Optional[int], bytes]
 
 
-class HTTPTransport(httpcore.SyncHTTPTransport):
+class HTTPTransport(BaseTransport):
     def __init__(
         self,
         verify: VerifyTypes = True,
@@ -96,16 +97,16 @@ class HTTPTransport(httpcore.SyncHTTPTransport):
         method: bytes,
         url: URL,
         headers: Headers = None,
-        stream: httpcore.SyncByteStream = None,
+        stream: typing.Iterator[bytes] = None,
         ext: dict = None,
-    ) -> typing.Tuple[int, Headers, httpcore.SyncByteStream, dict]:
-        return self._pool.request(method, url, headers=headers, stream=stream, ext=ext)
+    ) -> typing.Tuple[int, Headers, typing.Iterator[bytes], dict]:
+        return self._pool.request(method, url, headers=headers, stream=stream, ext=ext)  # type: ignore
 
     def close(self) -> None:
         self._pool.close()
 
 
-class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
+class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
         verify: VerifyTypes = True,
@@ -163,11 +164,11 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
         method: bytes,
         url: URL,
         headers: Headers = None,
-        stream: httpcore.AsyncByteStream = None,
+        stream: typing.AsyncIterator[bytes] = None,
         ext: dict = None,
-    ) -> typing.Tuple[int, Headers, httpcore.AsyncByteStream, dict]:
-        return await self._pool.arequest(
-            method, url, headers=headers, stream=stream, ext=ext
+    ) -> typing.Tuple[int, Headers, typing.AsyncIterator[bytes], dict]:
+        return await self._pool.arequest(  # type: ignore
+            method, url, headers=headers, stream=stream, ext=ext  # type: ignore
         )
 
     async def aclose(self) -> None:

@@ -1015,20 +1015,20 @@ This [public gist](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165
 
 ### Writing custom transports
 
-A transport instance must implement the Transport API defined by
-[`httpcore`](https://www.encode.io/httpcore/api/). You
-should either subclass `httpcore.AsyncHTTPTransport` to implement a transport to
-use with `AsyncClient`, or subclass `httpcore.SyncHTTPTransport` to implement a
-transport to use with `Client`.
+A transport instance must implement the low-level Transport API, which deals
+with sending a single request, and returning a response. You should either
+subclass `httpx.BaseTransport` to implement a transport to use with `Client`,
+or subclass `httpx.AsyncBaseTransport` to implement a transport to
+use with `AsyncClient`.
 
 A complete example of a custom transport implementation would be:
 
 ```python
 import json
-import httpcore
+import httpx
 
 
-class HelloWorldTransport(httpcore.SyncHTTPTransport):
+class HelloWorldTransport(httpx.BaseTransport):
     """
     A mock transport that always returns a JSON "Hello, world!" response.
     """
@@ -1036,7 +1036,7 @@ class HelloWorldTransport(httpcore.SyncHTTPTransport):
     def request(self, method, url, headers=None, stream=None, ext=None):
         message = {"text": "Hello, world!"}
         content = json.dumps(message).encode("utf-8")
-        stream = httpcore.PlainByteStream(content)
+        stream = [content]
         headers = [(b"content-type", b"application/json")]
         ext = {"http_version": b"HTTP/1.1"}
         return 200, headers, stream, ext

@@ -4,8 +4,6 @@ import typing
 import warnings
 from types import TracebackType
 
-import httpcore
-
 from .__version__ import __version__
 from ._auth import Auth, BasicAuth, FunctionAuth
 from ._config import (
@@ -29,6 +27,7 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
+from ._transports.base import AsyncBaseTransport, BaseTransport
 from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
@@ -560,14 +559,14 @@ class Client(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         proxies: ProxiesTypes = None,
-        mounts: typing.Mapping[str, httpcore.SyncHTTPTransport] = None,
+        mounts: typing.Mapping[str, BaseTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
-        transport: httpcore.SyncHTTPTransport = None,
+        transport: BaseTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
     ):
@@ -611,9 +610,7 @@ class Client(BaseClient):
             app=app,
             trust_env=trust_env,
         )
-        self._mounts: typing.Dict[
-            URLPattern, typing.Optional[httpcore.SyncHTTPTransport]
-        ] = {
+        self._mounts: typing.Dict[URLPattern, typing.Optional[BaseTransport]] = {
             URLPattern(key): None
             if proxy is None
             else self._init_proxy_transport(
@@ -639,10 +636,10 @@ class Client(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        transport: httpcore.SyncHTTPTransport = None,
+        transport: BaseTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
-    ) -> httpcore.SyncHTTPTransport:
+    ) -> BaseTransport:
         if transport is not None:
             return transport
 
@@ -661,7 +658,7 @@ class Client(BaseClient):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
-    ) -> httpcore.SyncHTTPTransport:
+    ) -> BaseTransport:
         return HTTPTransport(
             verify=verify,
             cert=cert,
@@ -671,7 +668,7 @@ class Client(BaseClient):
             proxy=proxy,
         )
 
-    def _transport_for_url(self, url: URL) -> httpcore.SyncHTTPTransport:
+    def _transport_for_url(self, url: URL) -> BaseTransport:
         """
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
@@ -864,7 +861,7 @@ class Client(BaseClient):
         def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(seconds=timer.sync_elapsed())
             if hasattr(stream, "close"):
-                stream.close()
+                stream.close()  # type: ignore
 
         response = Response(
             status_code,
@@ -1193,14 +1190,14 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         proxies: ProxiesTypes = None,
-        mounts: typing.Mapping[str, httpcore.AsyncHTTPTransport] = None,
+        mounts: typing.Mapping[str, AsyncBaseTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
         pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
-        transport: httpcore.AsyncHTTPTransport = None,
+        transport: AsyncBaseTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
     ):
@@ -1245,9 +1242,7 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
-        self._mounts: typing.Dict[
-            URLPattern, typing.Optional[httpcore.AsyncHTTPTransport]
-        ] = {
+        self._mounts: typing.Dict[URLPattern, typing.Optional[AsyncBaseTransport]] = {
             URLPattern(key): None
             if proxy is None
             else self._init_proxy_transport(
@@ -1272,10 +1267,10 @@ class AsyncClient(BaseClient):
         cert: CertTypes = None,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        transport: httpcore.AsyncHTTPTransport = None,
+        transport: AsyncBaseTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
-    ) -> httpcore.AsyncHTTPTransport:
+    ) -> AsyncBaseTransport:
         if transport is not None:
             return transport
 
@@ -1294,7 +1289,7 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
-    ) -> httpcore.AsyncHTTPTransport:
+    ) -> AsyncBaseTransport:
         return AsyncHTTPTransport(
             verify=verify,
             cert=cert,
@@ -1304,7 +1299,7 @@ class AsyncClient(BaseClient):
             proxy=proxy,
         )
 
-    def _transport_for_url(self, url: URL) -> httpcore.AsyncHTTPTransport:
+    def _transport_for_url(self, url: URL) -> AsyncBaseTransport:
         """
         Returns the transport instance that should be used for a given URL.
         This will either be the standard connection pool, or a proxy.
@@ -1501,7 +1496,7 @@ class AsyncClient(BaseClient):
             response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
             if hasattr(stream, "aclose"):
                 with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-                    await stream.aclose()
+                    await stream.aclose()  # type: ignore
 
         response = Response(
             status_code,

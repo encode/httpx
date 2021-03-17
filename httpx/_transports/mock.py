@@ -1,12 +1,12 @@
 import asyncio
+import typing
 from typing import Callable, List, Optional, Tuple
 
-import httpcore
-
 from .._models import Request
+from .base import AsyncBaseTransport, BaseTransport
 
 
-class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
+class MockTransport(AsyncBaseTransport, BaseTransport):
     def __init__(self, handler: Callable) -> None:
         self.handler = handler
 
@@ -15,9 +15,9 @@ class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
-        stream: httpcore.SyncByteStream = None,
+        stream: typing.Iterator[bytes] = None,
         ext: dict = None,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.SyncByteStream, dict]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.Iterator[bytes], dict]:
         request = Request(
             method=method,
             url=url,
@@ -38,9 +38,9 @@ class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
-        stream: httpcore.AsyncByteStream = None,
+        stream: typing.AsyncIterator[bytes] = None,
         ext: dict = None,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.AsyncIterator[bytes], dict]:
         request = Request(
             method=method,
             url=url,

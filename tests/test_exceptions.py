@@ -41,7 +41,7 @@ def test_httpcore_exception_mapping(server) -> None:
             stream.read()
 
     # Make sure it also works with custom transports.
-    class MockTransport(httpcore.SyncHTTPTransport):
+    class MockTransport(httpx.BaseTransport):
         def request(self, *args: Any, **kwargs: Any) -> Any:
             raise httpcore.ProtocolError()
 
