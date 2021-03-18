@@ -15,7 +15,7 @@ class BaseTransport:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        pass
+        self.close()
 
     def request(
         self,
@@ -27,7 +27,9 @@ class BaseTransport:
     ) -> typing.Tuple[
         int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterator[bytes], dict
     ]:
-        pass
+        raise NotImplementedError(
+            "The 'request' method must be implemented."
+        )  # pragma: nocover
 
     def close(self) -> None:
         pass
@@ -43,7 +45,7 @@ class AsyncBaseTransport:
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        pass
+        await self.aclose()
 
     async def arequest(
         self,
@@ -55,7 +57,9 @@ class AsyncBaseTransport:
     ) -> typing.Tuple[
         int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterator[bytes], dict
     ]:
-        pass
+        raise NotImplementedError(
+            "The 'arequest' method must be implemented."
+        )  # pragma: nocover
 
     async def aclose(self) -> None:
         pass
