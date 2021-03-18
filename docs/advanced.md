@@ -1084,10 +1084,9 @@ which transport an outgoing request should be routed via, with [the same style
 used for specifying proxy routing](#routing).
 
 ```python
-import httpcore
 import httpx
 
-class HTTPSRedirectTransport(httpcore.SyncHTTPTransport):
+class HTTPSRedirectTransport(httpx.BaseTransport):
     """
     A transport that always redirects to HTTPS.
     """
@@ -1098,7 +1097,7 @@ class HTTPSRedirectTransport(httpcore.SyncHTTPTransport):
             location = b"https://%s%s" % (host, path)
         else:
             location = b"https://%s:%d%s" % (host, port, path)
-        stream = httpcore.PlainByteStream(b"")
+        stream = [b""]
         headers = [(b"location", location)]
         ext = {"http_version": b"HTTP/1.1"}
         return 303, headers, stream, ext
