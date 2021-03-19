@@ -58,8 +58,8 @@ from ._utils import (
 )
 
 try:
-    from contextlib import asynccontextmanager
-except AttributeError:  # pragma: nocover
+    from contextlib import asynccontextmanager  # type: ignore
+except ImportError:  # pragma: nocover
     from async_generator import asynccontextmanager  # type: ignore
 
 
