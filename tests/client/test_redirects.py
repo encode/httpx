@@ -141,12 +141,14 @@ def test_redirect_303():
 def test_next_request():
     client = httpx.Client(transport=httpx.MockTransport(redirects))
     request = client.build_request("POST", "https://example.org/redirect_303")
-    response = client.send(request, allow_redirects=False)
+    with client.send(request, allow_redirects=False) as response:
+        response.read()
     assert response.status_code == httpx.codes.SEE_OTHER
     assert response.url == "https://example.org/redirect_303"
     assert response.next_request is not None
 
-    response = client.send(response.next_request, allow_redirects=False)
+    with client.send(response.next_request, allow_redirects=False) as response:
+        response.read()
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
     assert response.next_request is None
@@ -156,12 +158,16 @@ def test_next_request():
 async def test_async_next_request():
     async with httpx.AsyncClient(transport=httpx.MockTransport(redirects)) as client:
         request = client.build_request("POST", "https://example.org/redirect_303")
-        response = await client.send(request, allow_redirects=False)
+        async with client.send(request, allow_redirects=False) as response:
+            response.read()
         assert response.status_code == httpx.codes.SEE_OTHER
         assert response.url == "https://example.org/redirect_303"
         assert response.next_request is not None
 
-        response = await client.send(response.next_request, allow_redirects=False)
+        async with client.send(
+            response.next_request, allow_redirects=False
+        ) as response:
+            response.read()
         assert response.status_code == httpx.codes.OK
         assert response.url == "https://example.org/"
         assert response.next_request is None

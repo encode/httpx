@@ -42,7 +42,8 @@ async def test_build_request(server):
     async with httpx.AsyncClient() as client:
         request = client.build_request("GET", url)
         request.headers.update(headers)
-        response = await client.send(request)
+        async with client.send(request) as response:
+            await response.aread()
 
     assert response.status_code == 200
     assert response.url == url
@@ -307,8 +308,7 @@ async def test_mounted_transport():
 async def test_response_aclose_map_exceptions():
     class BrokenStream:
         async def __aiter__(self):
-            # so we're an AsyncIterator
-            pass  # pragma: nocover
+            yield b""
 
         async def aclose(self):
             raise httpcore.CloseError(OSError(104, "Connection reset by peer"))
@@ -317,9 +317,8 @@ async def test_response_aclose_map_exceptions():
         return httpx.Response(200, stream=BrokenStream())
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
-        async with client.stream("GET", "http://example.com") as response:
-            with pytest.raises(httpx.CloseError):
-                await response.aclose()
+        with pytest.raises(httpx.CloseError):
+            await client.get("http://example.com")
 
 
 @pytest.mark.usefixtures("async_environment")

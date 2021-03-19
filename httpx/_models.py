@@ -1243,13 +1243,12 @@ class Response:
 
     def close(self) -> None:
         """
-        Close the response and release the connection.
+        Mark the response as being closed. This will ensure that the response
+        body is no longer readable.
+
         Automatically called if the response body is read to completion.
         """
-        if not self.is_closed:
-            self.is_closed = True
-            if self._on_close is not None:
-                self._on_close(self)
+        self.is_closed = True
 
     async def aread(self) -> bytes:
         """
@@ -1338,13 +1337,12 @@ class Response:
 
     async def aclose(self) -> None:
         """
-        Close the response and release the connection.
+        Mark the response as being closed. This will ensure that the response
+        body is no longer readable.
+
         Automatically called if the response body is read to completion.
         """
-        if not self.is_closed:
-            self.is_closed = True
-            if self._on_close is not None:
-                await self._on_close(self)
+        self.is_closed = True
 
 
 class Cookies(MutableMapping):
