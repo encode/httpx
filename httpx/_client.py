@@ -59,7 +59,7 @@ from ._utils import (
 
 try:
     from contextlib import asynccontextmanager
-except ImportError:  # pragma: nocover
+except AttributeError:  # pragma: nocover
     from async_generator import asynccontextmanager  # type: ignore
 
 
