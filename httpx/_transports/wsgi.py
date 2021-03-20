@@ -3,6 +3,7 @@ import itertools
 import typing
 from urllib.parse import unquote
 
+from .._models import Headers
 from .base import BaseTransport, SyncByteStream
 
 
@@ -101,11 +102,12 @@ class WSGITransport(BaseTransport):
             "SERVER_PORT": str(port),
             "REMOTE_ADDR": self.remote_addr,
         }
-        for header_key, header_value in headers:
-            key = header_key.decode("ascii").upper().replace("-", "_")
+        # Piggyback encoding detecting strategy in Headers
+        for header_key, header_value in Headers(headers).multi_items():
+            key = header_key.upper().replace("-", "_")
             if key not in ("CONTENT_TYPE", "CONTENT_LENGTH"):
                 key = "HTTP_" + key
-            environ[key] = header_value.decode("ascii")
+            environ[key] = header_value
 
         seen_status = None
         seen_response_headers = None
