@@ -945,7 +945,7 @@ class Client(BaseClient):
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         auth: typing.Union[AuthTypes, UnsetType] = UNSET,
-        allow_redirects: bool = True,
+        allow_redirects: bool = False,  # NOTE: Differs to usual default.
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         """
@@ -1582,7 +1582,7 @@ class AsyncClient(BaseClient):
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         auth: typing.Union[AuthTypes, UnsetType] = UNSET,
-        allow_redirects: bool = True,
+        allow_redirects: bool = False,  # NOTE: Differs to usual default.
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> Response:
         """

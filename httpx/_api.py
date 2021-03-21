@@ -240,7 +240,7 @@ def head(
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
     proxies: ProxiesTypes = None,
-    allow_redirects: bool = True,
+    allow_redirects: bool = False,  # NOTE: Differs to usual default.
     cert: CertTypes = None,
     verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
