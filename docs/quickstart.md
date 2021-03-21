@@ -410,9 +410,6 @@ with additional API for accessing cookies by their domain or path.
 
 By default, HTTPX will follow redirects for all HTTP methods.
 
-!!! warning
-    For anyone comes from Requests, you may be familar that `HEAD` in Requests 
-    doesn't follow redirects by default. But that is not the case in HTTPX.
 
 The `history` property of the response can be used to inspect any followed redirects.
 It contains a list of any redirect responses that were followed, in the order
