@@ -124,8 +124,11 @@ On the other hand, HTTPX uses [HTTPCore](https://github.com/encode/httpcore) as 
 
 `requests` omits `params` whose values are `None` (e.g. `requests.get(..., params={"foo": None})`). This is not supported by HTTPX.
 
-## Determining the next redirect request
+## HEAD redirection
+In `requests`, all top-level API follow redirects by default except `HEAD`.
+In consideration of consistency, we make `HEAD` follow redirects by default in HTTPX.
 
+## Determining the next redirect request
 When using `allow_redirects=False`, the `requests` library exposes an attribute `response.next`, which can be used to obtain the next redirect request.
 
 In HTTPX, this attribute is instead named `response.next_request`. For example:

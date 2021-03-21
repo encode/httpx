@@ -408,7 +408,11 @@ with additional API for accessing cookies by their domain or path.
 
 ## Redirection and History
 
-By default, HTTPX will follow redirects for anything except `HEAD` requests.
+By default, HTTPX will follow redirects for all HTTP methods.
+
+!!! warning
+    For anyone comes from Requests, you may be familar that `HEAD` in Requests 
+    doesn't follow redirects by default. But that is not the case in HTTPX.
 
 The `history` property of the response can be used to inspect any followed redirects.
 It contains a list of any redirect responses that were followed, in the order
@@ -434,16 +438,6 @@ You can modify the default redirection handling with the allow_redirects paramet
 301
 >>> r.history
 []
-```
-
-If you’re making a `HEAD` request, you can use this to enable redirection:
-
-```pycon
->>> r = httpx.head('http://github.com/', allow_redirects=True)
->>> r.url
-'https://github.com/'
->>> r.history
-[<Response [301 Moved Permanently]>]
 ```
 
 ## Timeouts
