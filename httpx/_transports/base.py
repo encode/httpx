@@ -55,10 +55,10 @@ class BaseTransport:
         stream: The response body as a bytes iterator.
         extensions: An open ended dictionary, including optional extensions to the
                     core request/response API. Keys are plain strings, and may include:
-            reason: The textual portion of the status code, as a string. Eg 'OK'.
+            reason: The reason-phrase of the HTTP response, as bytes. Eg 'OK'.
                     HTTP/2 onwards does not include a reason phrase on the wire.
-                    When no reason key is included, a default based on the status code
-                    may be used. An empty-string reason phrase should not be substituted
+                    When no key is included, a default based on the status code may
+                    be used. An empty-string reason phrase should not be substituted
                     for a default, as it indicates the server left the portion blank
                     eg. the leading response bytes were b"HTTP/1.1 200 <CRLF>".
             http_version: The HTTP version, as a string. Eg. "HTTP/1.1".
