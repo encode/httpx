@@ -52,8 +52,8 @@ class BaseTransport:
                 try:
                     body = b''.join([part for part in stream])
                 finally:
-                    if hasattr(stream 'close'):
-                        stream.close()
+                    if 'close' in extensions:
+                        extensions['close']()
                 print(status_code, headers, body)
 
         Arguments:
@@ -86,6 +86,10 @@ class BaseTransport:
                     eg. the leading response bytes were b"HTTP/1.1 200 <CRLF>".
             http_version: The HTTP version, as a string. Eg. "HTTP/1.1".
                     When no http_version key is included, "HTTP/1.1" may be assumed.
+            close:  A callback which should be invoked to release any network
+                    resources.
+            aclose: An async callback which should be invoked to release any
+                    network resources.
         """
         raise NotImplementedError(
             "The 'handle_request' method must be implemented."
