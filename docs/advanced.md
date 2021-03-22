@@ -1041,7 +1041,7 @@ class HelloWorldTransport(httpx.BaseTransport):
     A mock transport that always returns a JSON "Hello, world!" response.
     """
 
-    def handle_request(self, method, url, headers=None, stream=None, extensions=None):
+    def handle_request(self, method, url, headers, stream, extensions):
         message = {"text": "Hello, world!"}
         content = json.dumps(message).encode("utf-8")
         stream = [content]
@@ -1099,7 +1099,7 @@ class HTTPSRedirectTransport(httpx.BaseTransport):
     A transport that always redirects to HTTPS.
     """
 
-    def handle_request(self, method, url, headers=None, stream=None, extensions=None):
+    def handle_request(self, method, url, headers, stream, extensions):
         scheme, host, port, path = url
         if port is None:
             location = b"https://%s%s" % (host, path)
