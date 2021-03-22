@@ -1041,13 +1041,13 @@ class HelloWorldTransport(httpx.BaseTransport):
     A mock transport that always returns a JSON "Hello, world!" response.
     """
 
-    def handle_request(self, method, url, headers=None, stream=None, ext=None):
+    def handle_request(self, method, url, headers=None, stream=None, extensions=None):
         message = {"text": "Hello, world!"}
         content = json.dumps(message).encode("utf-8")
         stream = [content]
         headers = [(b"content-type", b"application/json")]
-        ext = {"http_version": "HTTP/1.1"}
-        return 200, headers, stream, ext
+        extensions = {"http_version": "HTTP/1.1"}
+        return 200, headers, stream, extensions
 ```
 
 Which we can use in the same way:
@@ -1099,7 +1099,7 @@ class HTTPSRedirectTransport(httpx.BaseTransport):
     A transport that always redirects to HTTPS.
     """
 
-    def handle_request(self, method, url, headers=None, stream=None, ext=None):
+    def handle_request(self, method, url, headers=None, stream=None, extensions=None):
         scheme, host, port, path = url
         if port is None:
             location = b"https://%s%s" % (host, path)
@@ -1107,7 +1107,7 @@ class HTTPSRedirectTransport(httpx.BaseTransport):
             location = b"https://%s:%d%s" % (host, port, path)
         stream = [b""]
         headers = [(b"location", location)]
-        ext = {"http_version": "HTTP/1.1"}
+        extensions = {"http_version": "HTTP/1.1"}
         return 303, headers, stream, ext
 
 
