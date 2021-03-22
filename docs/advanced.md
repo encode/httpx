@@ -1046,7 +1046,7 @@ class HelloWorldTransport(httpx.BaseTransport):
         content = json.dumps(message).encode("utf-8")
         stream = [content]
         headers = [(b"content-type", b"application/json")]
-        extensions = {"http_version": "HTTP/1.1"}
+        extensions = {}
         return 200, headers, stream, extensions
 ```
 
@@ -1107,7 +1107,7 @@ class HTTPSRedirectTransport(httpx.BaseTransport):
             location = b"https://%s:%d%s" % (host, port, path)
         stream = [b""]
         headers = [(b"location", location)]
-        extensions = {"http_version": "HTTP/1.1"}
+        extensions = {}
         return 303, headers, stream, ext
 
 
