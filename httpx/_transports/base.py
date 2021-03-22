@@ -21,9 +21,9 @@ class BaseTransport:
         self,
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
-        stream: typing.Iterator[bytes] = None,
-        extensions: dict = None,
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: typing.Iterator[bytes],
+        extensions: dict,
     ) -> typing.Tuple[
         int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterator[bytes], dict
     ]:
@@ -111,9 +111,9 @@ class AsyncBaseTransport:
         self,
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
-        stream: typing.AsyncIterator[bytes] = None,
-        extensions: dict = None,
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: typing.AsyncIterator[bytes],
+        extensions: dict,
     ) -> typing.Tuple[
         int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterator[bytes], dict
     ]:

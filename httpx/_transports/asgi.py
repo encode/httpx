@@ -74,12 +74,10 @@ class ASGITransport(AsyncBaseTransport):
         self,
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
-        headers: List[Tuple[bytes, bytes]] = None,
-        stream: typing.AsyncIterator[bytes] = None,
-        extensions: dict = None,
+        headers: List[Tuple[bytes, bytes]],
+        stream: typing.AsyncIterator[bytes],
+        extensions: dict,
     ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.AsyncIterator[bytes], dict]:
-        headers = [] if headers is None else headers
-
         # ASGI scope.
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
@@ -99,7 +97,7 @@ class ASGITransport(AsyncBaseTransport):
         }
 
         # Request.
-        request_body_chunks = None if stream is None else stream.__aiter__()
+        request_body_chunks = stream.__aiter__()
         request_complete = False
 
         # Response.
@@ -117,10 +115,6 @@ class ASGITransport(AsyncBaseTransport):
             if request_complete:
                 await response_complete.wait()
                 return {"type": "http.disconnect"}
-
-            if request_body_chunks is None:
-                request_complete = True
-                return {"type": "http.request", "body": b"", "more_body": False}
 
             try:
                 body = await request_body_chunks.__anext__()

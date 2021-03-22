@@ -63,14 +63,13 @@ class WSGITransport(BaseTransport):
         self,
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
-        stream: typing.Iterator[bytes] = None,
-        extensions: dict = None,
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: typing.Iterator[bytes],
+        extensions: dict,
     ) -> typing.Tuple[
         int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterator[bytes], dict
     ]:
-        headers = [] if headers is None else headers
-        wsgi_input = io.BytesIO() if stream is None else io.BytesIO(b"".join(stream))
+        wsgi_input = io.BytesIO(b"".join(stream))
 
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
