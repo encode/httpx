@@ -4,14 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.17.1
+## Master
+
+The 0.18.x release series formalises our low-level Transport API, introducing the
+base classes `httpx.BaseTransport` and `httpx.AsyncBaseTransport`.
+
+* Transport instances now inherit from `httpx.BaseTransport` or `httpx.AsyncBaseTransport`,
+  and should implement either the `handle_request` method or `handle_async_request` method.
+* The `response.ext` property and `Response(ext=...)` argument are now named `extensions`.
+
+## 0.17.1 (March 15th, 2021)
 
 ### Fixed
 
 * Type annotation on `CertTypes` allows `keyfile` and `password` to be optional. (Pull #1503)
 * Fix httpcore pinned version. (Pull #1495)
 
-## 0.17.0
+## 0.17.0 (Februray 28th, 2021)
 
 ### Added
 

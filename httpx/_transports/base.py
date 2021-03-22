@@ -35,6 +35,29 @@ class BaseTransport:
         of cut-off provides a clear design seperation between the HTTPX API,
         and the low-level network handling.
 
+        Developers shouldn't typically ever need to call into this API directly,
+        since the Client class provides all the higher level user-facing API
+        niceties.
+
+        Example usage:
+
+            with httpx.HTTPTransport() as transport:
+                status_code, headers, stream, extensions = transport.handle_request(
+                    method=b'GET',
+                    url=(b'https', b'www.example.com', 443, b'/'),
+                    headers=[(b'Host', b'www.example.com')],
+                    stream=[],
+                    extensions={}
+                )
+                try:
+                    body = b''.join([part for part in stream])
+                finally:
+                    if hasattr(stream 'close'):
+                        stream.close()
+                print(status_code, headers, body)
+
+        Arguments:
+
         method: The request method as bytes. Eg. b'GET'.
         url: The components of the request URL, as a tuple of `(scheme, host, port, target)`.
              The target will usually be the URL path, but also allows for alternative
