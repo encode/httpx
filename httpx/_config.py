@@ -48,7 +48,11 @@ def create_ssl_context(
     http2_prior_knowledge: bool = False,
 ) -> ssl.SSLContext:
     return SSLConfig(
-        cert=cert, verify=verify, trust_env=trust_env, http2=http2, http2_prior_knowledge=http2_prior_knowledge,
+        cert=cert,
+        verify=verify,
+        trust_env=trust_env,
+        http2=http2,
+        http2_prior_knowledge=http2_prior_knowledge,
     ).ssl_context
 
 

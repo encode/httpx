@@ -1294,7 +1294,12 @@ class AsyncClient(BaseClient):
             return ASGITransport(app=app)
 
         return AsyncHTTPTransport(
-            verify=verify, cert=cert, http2=http2, http2_prior_knowledge=http2_prior_knowledge, limits=limits, trust_env=trust_env
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            http2_prior_knowledge=http2_prior_knowledge,
+            limits=limits,
+            trust_env=trust_env,
         )
 
     def _init_proxy_transport(

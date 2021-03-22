@@ -120,7 +120,13 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
         retries: int = 0,
         backend: str = "auto",
     ) -> None:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env, http2=http2, http2_prior_knowledge=http2_prior_knowledge)
+        ssl_context = create_ssl_context(
+            verify=verify,
+            cert=cert,
+            trust_env=trust_env,
+            http2=http2,
+            http2_prior_knowledge=http2_prior_knowledge,
+        )
 
         if proxy is None:
             self._pool = httpcore.AsyncConnectionPool(
