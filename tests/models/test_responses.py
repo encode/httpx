@@ -733,7 +733,7 @@ def test_json_without_specified_encoding_value_error():
     # force incorrect guess from `guess_json_utf` to trigger error
     with mock.patch("httpx._models.guess_json_utf", return_value="utf-32"):
         response = httpx.Response(200, content=content, headers=headers)
-        with pytest.raises(ValueError):
+        with pytest.raises(json.decoder.JSONDecodeError):
             response.json()
 
 
@@ -767,7 +767,7 @@ def test_decode_error_with_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
     body = b"test 123"
     compressed_body = brotli.compress(body)[3:]
-    with pytest.raises(ValueError):
+    with pytest.raises(httpx.DecodingError):
         httpx.Response(
             200,
             headers=headers,
@@ -788,7 +788,7 @@ def test_value_error_without_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
     body = b"test 123"
     compressed_body = brotli.compress(body)[3:]
-    with pytest.raises(ValueError):
+    with pytest.raises(httpx.DecodingError):
         httpx.Response(200, headers=headers, content=compressed_body)
 
 

@@ -1,4 +1,3 @@
-import httpcore
 import pytest
 
 import httpx
@@ -6,9 +5,7 @@ import httpx
 
 def redirects(request: httpx.Request) -> httpx.Response:
     if request.url.scheme not in ("http", "https"):
-        raise httpcore.UnsupportedProtocol(
-            f"Scheme {request.url.scheme!r} not supported."
-        )
+        raise httpx.UnsupportedProtocol(f"Scheme {request.url.scheme!r} not supported.")
 
     if request.url.path == "/redirect_301":
         status_code = httpx.codes.MOVED_PERMANENTLY

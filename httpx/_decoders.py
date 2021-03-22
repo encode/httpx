@@ -8,6 +8,8 @@ import io
 import typing
 import zlib
 
+from ._exceptions import DecodingError
+
 try:
     import brotli
 except ImportError:  # pragma: nocover
@@ -54,13 +56,13 @@ class DeflateDecoder(ContentDecoder):
             if was_first_attempt:
                 self.decompressor = zlib.decompressobj(-zlib.MAX_WBITS)
                 return self.decode(data)
-            raise ValueError(str(exc))
+            raise DecodingError(str(exc)) from exc
 
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
         except zlib.error as exc:  # pragma: nocover
-            raise ValueError(str(exc))
+            raise DecodingError(str(exc)) from exc
 
 
 class GZipDecoder(ContentDecoder):
@@ -77,13 +79,13 @@ class GZipDecoder(ContentDecoder):
         try:
             return self.decompressor.decompress(data)
         except zlib.error as exc:
-            raise ValueError(str(exc))
+            raise DecodingError(str(exc)) from exc
 
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
         except zlib.error as exc:  # pragma: nocover
-            raise ValueError(str(exc))
+            raise DecodingError(str(exc)) from exc
 
 
 class BrotliDecoder(ContentDecoder):
@@ -118,7 +120,7 @@ class BrotliDecoder(ContentDecoder):
         try:
             return self._decompress(data)
         except brotli.error as exc:
-            raise ValueError(str(exc))
+            raise DecodingError(str(exc)) from exc
 
     def flush(self) -> bytes:
         if not self.seen_data:
@@ -128,7 +130,7 @@ class BrotliDecoder(ContentDecoder):
                 self.decompressor.finish()
             return b""
         except brotli.error as exc:  # pragma: nocover
-            raise ValueError(str(exc))
+            raise DecodingError(str(exc)) from exc
 
 
 class MultiDecoder(ContentDecoder):
