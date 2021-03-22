@@ -902,7 +902,7 @@ class Response:
         json: typing.Any = None,
         stream: ByteStream = None,
         request: Request = None,
-        ext: dict = None,
+        extensions: dict = None,
         history: typing.List["Response"] = None,
         on_close: typing.Callable = None,
     ):
@@ -917,7 +917,7 @@ class Response:
 
         self.call_next: typing.Optional[typing.Callable] = None
 
-        self.ext = {} if ext is None else ext
+        self.extensions = {} if extensions is None else extensions
         self.history = [] if history is None else list(history)
         self._on_close = on_close
 
@@ -988,11 +988,11 @@ class Response:
 
     @property
     def http_version(self) -> str:
-        return self.ext.get("http_version", "HTTP/1.1")
+        return self.extensions.get("http_version", "HTTP/1.1")
 
     @property
     def reason_phrase(self) -> str:
-        return self.ext.get("reason", codes.get_reason_phrase(self.status_code))
+        return self.extensions.get("reason", codes.get_reason_phrase(self.status_code))
 
     @property
     def url(self) -> typing.Optional[URL]:

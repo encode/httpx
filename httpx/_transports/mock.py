@@ -10,13 +10,13 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
     def __init__(self, handler: Callable) -> None:
         self.handler = handler
 
-    def request(
+    def handle_request(
         self,
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: typing.Iterator[bytes] = None,
-        ext: dict = None,
+        extensions: dict = None,
     ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.Iterator[bytes], dict]:
         request = Request(
             method=method,
@@ -30,16 +30,16 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
             response.status_code,
             response.headers.raw,
             response.stream,
-            response.ext,
+            response.extensions,
         )
 
-    async def arequest(
+    async def handle_async_request(
         self,
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: typing.AsyncIterator[bytes] = None,
-        ext: dict = None,
+        extensions: dict = None,
     ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.AsyncIterator[bytes], dict]:
         request = Request(
             method=method,
@@ -63,5 +63,5 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
             response.status_code,
             response.headers.raw,
             response.stream,
-            response.ext,
+            response.extensions,
         )

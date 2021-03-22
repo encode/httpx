@@ -850,12 +850,12 @@ class Client(BaseClient):
         timer.sync_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (status_code, headers, stream, ext) = transport.request(
+            (status_code, headers, stream, extensions) = transport.handle_request(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
                 stream=request.stream,  # type: ignore
-                ext={"timeout": timeout.as_dict()},
+                extensions={"timeout": timeout.as_dict()},
             )
 
         def on_close(response: Response) -> None:
@@ -867,7 +867,7 @@ class Client(BaseClient):
             status_code,
             headers=headers,
             stream=stream,  # type: ignore
-            ext=ext,
+            extensions=extensions,
             request=request,
             on_close=on_close,
         )
@@ -1484,12 +1484,17 @@ class AsyncClient(BaseClient):
         await timer.async_start()
 
         with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-            (status_code, headers, stream, ext) = await transport.arequest(
+            (
+                status_code,
+                headers,
+                stream,
+                extensions,
+            ) = await transport.handle_async_request(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
                 stream=request.stream,  # type: ignore
-                ext={"timeout": timeout.as_dict()},
+                extensions={"timeout": timeout.as_dict()},
             )
 
         async def on_close(response: Response) -> None:
@@ -1502,7 +1507,7 @@ class AsyncClient(BaseClient):
             status_code,
             headers=headers,
             stream=stream,  # type: ignore
-            ext=ext,
+            extensions=extensions,
             request=request,
             on_close=on_close,
         )

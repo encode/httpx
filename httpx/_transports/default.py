@@ -35,8 +35,6 @@ from .base import AsyncBaseTransport, BaseTransport
 
 T = typing.TypeVar("T", bound="HTTPTransport")
 A = typing.TypeVar("A", bound="AsyncHTTPTransport")
-Headers = typing.List[typing.Tuple[bytes, bytes]]
-URL = typing.Tuple[bytes, bytes, typing.Optional[int], bytes]
 
 
 class HTTPTransport(BaseTransport):
@@ -92,15 +90,17 @@ class HTTPTransport(BaseTransport):
     ) -> None:
         self._pool.__exit__(exc_type, exc_value, traceback)
 
-    def request(
+    def handle_request(
         self,
         method: bytes,
-        url: URL,
-        headers: Headers = None,
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: typing.Iterator[bytes] = None,
-        ext: dict = None,
-    ) -> typing.Tuple[int, Headers, typing.Iterator[bytes], dict]:
-        return self._pool.request(method, url, headers=headers, stream=stream, ext=ext)  # type: ignore
+        extensions: dict = None,
+    ) -> typing.Tuple[
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterator[bytes], dict
+    ]:
+        return self._pool.request(method, url, headers=headers, stream=stream, ext=extensions)  # type: ignore
 
     def close(self) -> None:
         self._pool.close()
@@ -159,16 +159,18 @@ class AsyncHTTPTransport(AsyncBaseTransport):
     ) -> None:
         await self._pool.__aexit__(exc_type, exc_value, traceback)
 
-    async def arequest(
+    async def handle_async_request(
         self,
         method: bytes,
-        url: URL,
-        headers: Headers = None,
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: typing.AsyncIterator[bytes] = None,
-        ext: dict = None,
-    ) -> typing.Tuple[int, Headers, typing.AsyncIterator[bytes], dict]:
+        extensions: dict = None,
+    ) -> typing.Tuple[
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterator[bytes], dict
+    ]:
         return await self._pool.arequest(  # type: ignore
-            method, url, headers=headers, stream=stream, ext=ext  # type: ignore
+            method, url, headers=headers, stream=stream, ext=extensions  # type: ignore
         )
 
     async def aclose(self) -> None:

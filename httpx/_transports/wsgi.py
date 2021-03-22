@@ -59,13 +59,13 @@ class WSGITransport(BaseTransport):
         self.script_name = script_name
         self.remote_addr = remote_addr
 
-    def request(
+    def handle_request(
         self,
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]] = None,
         stream: typing.Iterator[bytes] = None,
-        ext: dict = None,
+        extensions: dict = None,
     ) -> typing.Tuple[
         int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterator[bytes], dict
     ]:
@@ -126,6 +126,6 @@ class WSGITransport(BaseTransport):
             (key.encode("ascii"), value.encode("ascii"))
             for key, value in seen_response_headers
         ]
-        ext = {}
+        extensions = {}
 
-        return (status_code, headers, result, ext)
+        return (status_code, headers, result, extensions)

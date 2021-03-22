@@ -42,7 +42,7 @@ def test_httpcore_exception_mapping(server) -> None:
 
     # Make sure it also works with custom transports.
     class MockTransport(httpx.BaseTransport):
-        def request(self, *args: Any, **kwargs: Any) -> Any:
+        def handle_request(self, *args: Any, **kwargs: Any) -> Any:
             raise httpcore.ProtocolError()
 
     client = httpx.Client(transport=MockTransport())

@@ -70,13 +70,13 @@ class ASGITransport(AsyncBaseTransport):
         self.root_path = root_path
         self.client = client
 
-    async def arequest(
+    async def handle_async_request(
         self,
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]] = None,
         stream: typing.AsyncIterator[bytes] = None,
-        ext: dict = None,
+        extensions: dict = None,
     ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.AsyncIterator[bytes], dict]:
         headers = [] if headers is None else headers
 
@@ -163,6 +163,6 @@ class ASGITransport(AsyncBaseTransport):
         async def response_stream() -> typing.AsyncIterator[bytes]:
             yield b"".join(body_parts)
 
-        ext = {}
+        extensions = {}
 
-        return (status_code, response_headers, response_stream(), ext)
+        return (status_code, response_headers, response_stream(), extensions)
