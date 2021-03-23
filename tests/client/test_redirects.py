@@ -393,3 +393,10 @@ def test_redirect_custom_scheme():
     with pytest.raises(httpx.UnsupportedProtocol) as e:
         client.post("https://example.org/redirect_custom_scheme")
     assert str(e.value) == "Scheme 'market' not supported."
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_async_invalid_redirect():
+    async with httpx.AsyncClient(transport=httpx.MockTransport(redirects)) as client:
+        with pytest.raises(httpx.RemoteProtocolError):
+            await client.get("http://example.org/invalid_redirect")
