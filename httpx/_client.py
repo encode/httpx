@@ -327,8 +327,8 @@ class BaseClient:
         if merge_url.is_relative_url:
             # We always ensure the base_url paths include the trailing '/',
             # and always strip any leading '/' from the merge URL.
-            merge_url = merge_url.copy_with(raw_path=merge_url.raw_path.lstrip(b"/"))
-            return self.base_url.join(merge_url)
+            merge_raw_path = self.base_url.raw_path + merge_url.raw_path.lstrip(b"/")
+            return self.base_url.copy_with(raw_path=merge_raw_path)
         return merge_url
 
     def _merge_cookies(

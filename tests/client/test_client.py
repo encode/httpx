@@ -197,6 +197,12 @@ def test_merge_relative_url_with_dotted_path():
     assert request.url == "https://www.example.com/some/testing/123"
 
 
+def test_merge_relative_url_with_path_including_colon():
+    client = httpx.Client(base_url="https://www.example.com/some/path")
+    request = client.build_request("GET", "/testing:123")
+    assert request.url == "https://www.example.com/some/path/testing:123"
+
+
 def test_merge_relative_url_with_encoded_slashes():
     client = httpx.Client(base_url="https://www.example.com/")
     request = client.build_request("GET", "/testing%2F123")
