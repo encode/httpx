@@ -78,14 +78,14 @@ class BaseTransport:
         stream: The response body as a bytes iterator.
         extensions: An open ended dictionary, including optional extensions to the
                     core request/response API. Keys are plain strings, and may include:
-            reason: The reason-phrase of the HTTP response, as bytes. Eg 'OK'.
+            reason_phrase: The reason-phrase of the HTTP response, as bytes. Eg b'OK'.
                     HTTP/2 onwards does not include a reason phrase on the wire.
                     When no key is included, a default based on the status code may
                     be used. An empty-string reason phrase should not be substituted
                     for a default, as it indicates the server left the portion blank
                     eg. the leading response bytes were b"HTTP/1.1 200 <CRLF>".
-            http_version: The HTTP version, as a string. Eg. "HTTP/1.1".
-                    When no http_version key is included, "HTTP/1.1" may be assumed.
+            http_version: The HTTP version, as bytes. Eg. b"HTTP/1.1".
+                    When no http_version key is included, HTTP/1.1 may be assumed.
             close:  A callback which should be invoked to release any network
                     resources.
             aclose: An async callback which should be invoked to release any
