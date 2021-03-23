@@ -18,11 +18,10 @@ from ._config import (
 )
 from ._decoders import SUPPORTED_DECODERS
 from ._exceptions import (
-    HTTPCORE_EXC_MAP,
     InvalidURL,
     RemoteProtocolError,
     TooManyRedirects,
-    map_exceptions,
+    request_context,
 )
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
@@ -849,7 +848,7 @@ class Client(BaseClient):
         timer = Timer()
         timer.sync_start()
 
-        with map_exceptions(HTTPCORE_EXC_MAP, request=request):
+        with request_context(request=request):
             (status_code, headers, stream, extensions) = transport.handle_request(
                 request.method.encode(),
                 request.url.raw,
@@ -860,13 +859,13 @@ class Client(BaseClient):
 
         def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(seconds=timer.sync_elapsed())
-            if hasattr(stream, "close"):
-                stream.close()  # type: ignore
+            if "close" in extensions:
+                extensions["close"]()
 
         response = Response(
             status_code,
             headers=headers,
-            stream=stream,  # type: ignore
+            stream=stream,
             extensions=extensions,
             request=request,
             on_close=on_close,
@@ -1483,7 +1482,7 @@ class AsyncClient(BaseClient):
         timer = Timer()
         await timer.async_start()
 
-        with map_exceptions(HTTPCORE_EXC_MAP, request=request):
+        with request_context(request=request):
             (
                 status_code,
                 headers,
@@ -1499,14 +1498,13 @@ class AsyncClient(BaseClient):
 
         async def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
-            if hasattr(stream, "aclose"):
-                with map_exceptions(HTTPCORE_EXC_MAP, request=request):
-                    await stream.aclose()  # type: ignore
+            if "aclose" in extensions:
+                await extensions["aclose"]()
 
         response = Response(
             status_code,
             headers=headers,
-            stream=stream,  # type: ignore
+            stream=stream,
             extensions=extensions,
             request=request,
             on_close=on_close,

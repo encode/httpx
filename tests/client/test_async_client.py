@@ -1,7 +1,6 @@
 import typing
 from datetime import timedelta
 
-import httpcore
 import pytest
 
 import httpx
@@ -301,25 +300,6 @@ async def test_mounted_transport():
         response = await client.get("custom://www.example.com")
         assert response.status_code == 200
         assert response.json() == {"app": "mounted"}
-
-
-@pytest.mark.usefixtures("async_environment")
-async def test_response_aclose_map_exceptions():
-    class BrokenStream:
-        async def __aiter__(self):
-            # so we're an AsyncIterator
-            pass  # pragma: nocover
-
-        async def aclose(self):
-            raise httpcore.CloseError(OSError(104, "Connection reset by peer"))
-
-    def handle(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, stream=BrokenStream())
-
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
-        async with client.stream("GET", "http://example.com") as response:
-            with pytest.raises(httpx.CloseError):
-                await response.aclose()
 
 
 @pytest.mark.usefixtures("async_environment")

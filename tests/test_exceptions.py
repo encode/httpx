@@ -1,10 +1,10 @@
-from typing import Any
+from unittest import mock
 
 import httpcore
 import pytest
 
 import httpx
-from httpx._exceptions import HTTPCORE_EXC_MAP
+from httpx._transports.default import HTTPCORE_EXC_MAP
 
 
 def test_httpcore_all_exceptions_mapped() -> None:
@@ -29,25 +29,40 @@ def test_httpcore_exception_mapping(server) -> None:
     HTTPCore exception mapping works as expected.
     """
 
-    # Make sure we don't just map to `NetworkError`.
-    with pytest.raises(httpx.ConnectError):
-        httpx.get("http://doesnotexist")
+    def connect_failed(*args, **kwargs):
+        raise httpcore.ConnectError()
 
-    # Make sure streaming methods also map exceptions.
-    url = server.url.copy_with(path="/slow_stream_response")
-    timeout = httpx.Timeout(None, read=0.1)
-    with httpx.stream("GET", url, timeout=timeout) as stream:
+    class TimeoutStream:
+        def __iter__(self):
+            raise httpcore.ReadTimeout()
+
+        def close(self):
+            pass
+
+    class CloseFailedStream:
+        def __iter__(self):
+            yield b""
+
+        def close(self):
+            raise httpcore.CloseError()
+
+    with mock.patch("httpcore.SyncConnectionPool.request", side_effect=connect_failed):
+        with pytest.raises(httpx.ConnectError):
+            httpx.get(server.url)
+
+    with mock.patch(
+        "httpcore.SyncConnectionPool.request",
+        return_value=(200, [], TimeoutStream(), {}),
+    ):
         with pytest.raises(httpx.ReadTimeout):
-            stream.read()
+            httpx.get(server.url)
 
-    # Make sure it also works with custom transports.
-    class MockTransport(httpx.BaseTransport):
-        def handle_request(self, *args: Any, **kwargs: Any) -> Any:
-            raise httpcore.ProtocolError()
-
-    client = httpx.Client(transport=MockTransport())
-    with pytest.raises(httpx.ProtocolError):
-        client.get("http://testserver")
+    with mock.patch(
+        "httpcore.SyncConnectionPool.request",
+        return_value=(200, [], CloseFailedStream(), {}),
+    ):
+        with pytest.raises(httpx.CloseError):
+            httpx.get(server.url)
 
 
 def test_httpx_exceptions_exposed() -> None:
@@ -66,3 +81,15 @@ def test_httpx_exceptions_exposed() -> None:
 
     if not_exposed:  # pragma: nocover
         pytest.fail(f"Unexposed HTTPX exceptions: {not_exposed}")
+
+
+def test_request_attribute() -> None:
+    # Exception without request attribute
+    exc = httpx.ReadTimeout("Read operation timed out")
+    with pytest.raises(RuntimeError):
+        exc.request
+
+    # Exception with request attribute
+    request = httpx.Request("GET", "https://www.example.com")
+    exc = httpx.ReadTimeout("Read operation timed out", request=request)
+    assert exc.request == request
