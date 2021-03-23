@@ -67,6 +67,12 @@ class RequestError(HTTPError):
 
     def __init__(self, message: str, *, request: "Request" = None) -> None:
         super().__init__(message)
+        # At the point an exception is raised we won't typically have a request
+        # instance to associate it with.
+        #
+        # The 'request_context' context manager is used within the Client and
+        # Response methods in order to ensure that any raised exceptions
+        # have a `.request` property set on them.
         self._request = request
 
     @property
