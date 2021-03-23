@@ -985,11 +985,17 @@ class Response:
 
     @property
     def http_version(self) -> str:
-        return self.extensions.get("http_version", "HTTP/1.1")
+        try:
+            return self.extensions["http_version"].decode("ascii", errors="ignore")
+        except KeyError:
+            return "HTTP/1.1"
 
     @property
     def reason_phrase(self) -> str:
-        return self.extensions.get("reason", codes.get_reason_phrase(self.status_code))
+        try:
+            return self.extensions["reason_phrase"].decode("ascii", errors="ignore")
+        except KeyError:
+            return codes.get_reason_phrase(self.status_code)
 
     @property
     def url(self) -> typing.Optional[URL]:
