@@ -1021,7 +1021,7 @@ subclass `httpx.BaseTransport` to implement a transport to use with `Client`,
 or subclass `httpx.AsyncBaseTransport` to implement a transport to
 use with `AsyncClient`.
 
-At the layer of the transport API we're simply using plain primitives.
+At the layer of the transport API we're using plain primitives.
 No `Request` or `Response` models, no fancy `URL` or `Header` handling.
 This strict point of cut-off provides a clear design separation between the
 HTTPX API, and the low-level network handling.
