@@ -1,7 +1,6 @@
 import typing
 from datetime import timedelta
 
-import httpcore
 import pytest
 
 import httpx
@@ -169,12 +168,12 @@ async def test_100_continue(server):
 
 @pytest.mark.usefixtures("async_environment")
 async def test_context_managed_transport():
-    class Transport(httpcore.AsyncHTTPTransport):
+    class Transport(httpx.AsyncBaseTransport):
         def __init__(self):
             self.events = []
 
         async def aclose(self):
-            # The base implementation of httpcore.AsyncHTTPTransport just
+            # The base implementation of httpx.AsyncBaseTransport just
             # calls into `.aclose`, so simple transport cases can just override
             # this method for any cleanup, where more complex cases
             # might want to additionally override `__aenter__`/`__aexit__`.
@@ -201,13 +200,13 @@ async def test_context_managed_transport():
 
 @pytest.mark.usefixtures("async_environment")
 async def test_context_managed_transport_and_mount():
-    class Transport(httpcore.AsyncHTTPTransport):
+    class Transport(httpx.AsyncBaseTransport):
         def __init__(self, name: str):
             self.name: str = name
             self.events: typing.List[str] = []
 
         async def aclose(self):
-            # The base implementation of httpcore.AsyncHTTPTransport just
+            # The base implementation of httpx.AsyncBaseTransport just
             # calls into `.aclose`, so simple transport cases can just override
             # this method for any cleanup, where more complex cases
             # might want to additionally override `__aenter__`/`__aexit__`.
@@ -301,25 +300,6 @@ async def test_mounted_transport():
         response = await client.get("custom://www.example.com")
         assert response.status_code == 200
         assert response.json() == {"app": "mounted"}
-
-
-@pytest.mark.usefixtures("async_environment")
-async def test_response_aclose_map_exceptions():
-    class BrokenStream:
-        async def __aiter__(self):
-            # so we're an AsyncIterator
-            pass  # pragma: nocover
-
-        async def aclose(self):
-            raise httpcore.CloseError(OSError(104, "Connection reset by peer"))
-
-    def handle(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, stream=BrokenStream())
-
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
-        async with client.stream("GET", "http://example.com") as response:
-            with pytest.raises(httpx.CloseError):
-                await response.aclose()
 
 
 @pytest.mark.usefixtures("async_environment")

@@ -24,21 +24,93 @@ client = httpx.Client(transport=transport)
 transport = httpx.HTTPTransport(uds="socket.uds")
 client = httpx.Client(transport=transport)
 """
+import contextlib
 import typing
 from types import TracebackType
 
 import httpcore
 
 from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
+from .._exceptions import (
+    CloseError,
+    ConnectError,
+    ConnectTimeout,
+    LocalProtocolError,
+    NetworkError,
+    PoolTimeout,
+    ProtocolError,
+    ProxyError,
+    ReadError,
+    ReadTimeout,
+    RemoteProtocolError,
+    TimeoutException,
+    UnsupportedProtocol,
+    WriteError,
+    WriteTimeout,
+)
 from .._types import CertTypes, VerifyTypes
+from .base import AsyncBaseTransport, BaseTransport
 
 T = typing.TypeVar("T", bound="HTTPTransport")
 A = typing.TypeVar("A", bound="AsyncHTTPTransport")
-Headers = typing.List[typing.Tuple[bytes, bytes]]
-URL = typing.Tuple[bytes, bytes, typing.Optional[int], bytes]
 
 
-class HTTPTransport(httpcore.SyncHTTPTransport):
+@contextlib.contextmanager
+def map_httpcore_exceptions() -> typing.Iterator[None]:
+    try:
+        yield
+    except Exception as exc:
+        mapped_exc = None
+
+        for from_exc, to_exc in HTTPCORE_EXC_MAP.items():
+            if not isinstance(exc, from_exc):
+                continue
+            # We want to map to the most specific exception we can find.
+            # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to
+            # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.
+            if mapped_exc is None or issubclass(to_exc, mapped_exc):
+                mapped_exc = to_exc
+
+        if mapped_exc is None:  # pragma: nocover
+            raise
+
+        message = str(exc)
+        raise mapped_exc(message) from exc
+
+
+def ensure_http_version_reason_phrase_as_bytes(extensions: dict) -> None:
+    # From HTTPX 0.18 onwards we're treating the "reason_phrase" and "http_version"
+    # extensions as bytes, in order to be more precise. Also we're using the
+    # "reason_phrase" key in preference to "reason", in order to match properly
+    # with the HTTP spec naming.
+    # HTTPCore 0.12 does not yet use these same conventions for the extensions,
+    # so we bridge between the two styles for now.
+    if "reason" in extensions:
+        extensions["reason_phrase"] = extensions.pop("reason").encode("ascii")
+    if "http_version" in extensions:
+        extensions["http_version"] = extensions["http_version"].encode("ascii")
+
+
+HTTPCORE_EXC_MAP = {
+    httpcore.TimeoutException: TimeoutException,
+    httpcore.ConnectTimeout: ConnectTimeout,
+    httpcore.ReadTimeout: ReadTimeout,
+    httpcore.WriteTimeout: WriteTimeout,
+    httpcore.PoolTimeout: PoolTimeout,
+    httpcore.NetworkError: NetworkError,
+    httpcore.ConnectError: ConnectError,
+    httpcore.ReadError: ReadError,
+    httpcore.WriteError: WriteError,
+    httpcore.CloseError: CloseError,
+    httpcore.ProxyError: ProxyError,
+    httpcore.UnsupportedProtocol: UnsupportedProtocol,
+    httpcore.ProtocolError: ProtocolError,
+    httpcore.LocalProtocolError: LocalProtocolError,
+    httpcore.RemoteProtocolError: RemoteProtocolError,
+}
+
+
+class HTTPTransport(BaseTransport):
     def __init__(
         self,
         verify: VerifyTypes = True,
@@ -91,21 +163,44 @@ class HTTPTransport(httpcore.SyncHTTPTransport):
     ) -> None:
         self._pool.__exit__(exc_type, exc_value, traceback)
 
-    def request(
+    def handle_request(
         self,
         method: bytes,
-        url: URL,
-        headers: Headers = None,
-        stream: httpcore.SyncByteStream = None,
-        ext: dict = None,
-    ) -> typing.Tuple[int, Headers, httpcore.SyncByteStream, dict]:
-        return self._pool.request(method, url, headers=headers, stream=stream, ext=ext)
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: typing.Iterable[bytes],
+        extensions: dict,
+    ) -> typing.Tuple[
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterable[bytes], dict
+    ]:
+        with map_httpcore_exceptions():
+            status_code, headers, byte_stream, extensions = self._pool.request(
+                method=method,
+                url=url,
+                headers=headers,
+                stream=httpcore.IteratorByteStream(iter(stream)),
+                ext=extensions,
+            )
+
+        def response_stream() -> typing.Iterator[bytes]:
+            with map_httpcore_exceptions():
+                for part in byte_stream:
+                    yield part
+
+        def close() -> None:
+            with map_httpcore_exceptions():
+                byte_stream.close()
+
+        ensure_http_version_reason_phrase_as_bytes(extensions)
+        extensions["close"] = close
+
+        return status_code, headers, response_stream(), extensions
 
     def close(self) -> None:
         self._pool.close()
 
 
-class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
+class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
         verify: VerifyTypes = True,
@@ -158,17 +253,38 @@ class AsyncHTTPTransport(httpcore.AsyncHTTPTransport):
     ) -> None:
         await self._pool.__aexit__(exc_type, exc_value, traceback)
 
-    async def arequest(
+    async def handle_async_request(
         self,
         method: bytes,
-        url: URL,
-        headers: Headers = None,
-        stream: httpcore.AsyncByteStream = None,
-        ext: dict = None,
-    ) -> typing.Tuple[int, Headers, httpcore.AsyncByteStream, dict]:
-        return await self._pool.arequest(
-            method, url, headers=headers, stream=stream, ext=ext
-        )
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: typing.AsyncIterable[bytes],
+        extensions: dict,
+    ) -> typing.Tuple[
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict
+    ]:
+        with map_httpcore_exceptions():
+            status_code, headers, byte_stream, extenstions = await self._pool.arequest(
+                method=method,
+                url=url,
+                headers=headers,
+                stream=httpcore.AsyncIteratorByteStream(stream.__aiter__()),
+                ext=extensions,
+            )
+
+        async def response_stream() -> typing.AsyncIterator[bytes]:
+            with map_httpcore_exceptions():
+                async for part in byte_stream:
+                    yield part
+
+        async def aclose() -> None:
+            with map_httpcore_exceptions():
+                await byte_stream.aclose()
+
+        ensure_http_version_reason_phrase_as_bytes(extensions)
+        extensions["aclose"] = aclose
+
+        return status_code, headers, response_stream(), extensions
 
     async def aclose(self) -> None:
         await self._pool.aclose()

@@ -1,15 +1,16 @@
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
+import typing
 from urllib.parse import unquote
 
-import httpcore
 import sniffio
 
-if TYPE_CHECKING:  # pragma: no cover
+from .base import AsyncBaseTransport
+
+if typing.TYPE_CHECKING:  # pragma: no cover
     import asyncio
 
     import trio
 
-    Event = Union[asyncio.Event, trio.Event]
+    Event = typing.Union[asyncio.Event, trio.Event]
 
 
 def create_event() -> "Event":
@@ -23,7 +24,7 @@ def create_event() -> "Event":
         return asyncio.Event()
 
 
-class ASGITransport(httpcore.AsyncHTTPTransport):
+class ASGITransport(AsyncBaseTransport):
     """
     A custom AsyncTransport that handles sending requests directly to an ASGI app.
     The simplest way to use this functionality is to use the `app` argument.
@@ -58,27 +59,26 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
 
     def __init__(
         self,
-        app: Callable,
+        app: typing.Callable,
         raise_app_exceptions: bool = True,
         root_path: str = "",
-        client: Tuple[str, int] = ("127.0.0.1", 123),
+        client: typing.Tuple[str, int] = ("127.0.0.1", 123),
     ) -> None:
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
         self.root_path = root_path
         self.client = client
 
-    async def arequest(
+    async def handle_async_request(
         self,
         method: bytes,
-        url: Tuple[bytes, bytes, Optional[int], bytes],
-        headers: List[Tuple[bytes, bytes]] = None,
-        stream: httpcore.AsyncByteStream = None,
-        ext: dict = None,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]:
-        headers = [] if headers is None else headers
-        stream = httpcore.PlainByteStream(content=b"") if stream is None else stream
-
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: typing.AsyncIterable[bytes],
+        extensions: dict,
+    ) -> typing.Tuple[
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict
+    ]:
         # ASGI scope.
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
@@ -155,7 +155,9 @@ class ASGITransport(httpcore.AsyncHTTPTransport):
         assert status_code is not None
         assert response_headers is not None
 
-        stream = httpcore.PlainByteStream(content=b"".join(body_parts))
-        ext = {}
+        async def response_stream() -> typing.AsyncIterator[bytes]:
+            yield b"".join(body_parts)
 
-        return (status_code, response_headers, stream, ext)
+        extensions = {}
+
+        return (status_code, response_headers, response_stream(), extensions)

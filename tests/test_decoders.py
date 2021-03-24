@@ -170,7 +170,7 @@ def test_decoding_errors(header_value):
         request = httpx.Request("GET", "https://example.org")
         httpx.Response(200, headers=headers, content=compressed_body, request=request)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(httpx.DecodingError):
         httpx.Response(200, headers=headers, content=compressed_body)
 
 

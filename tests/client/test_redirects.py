@@ -1,4 +1,3 @@
-import httpcore
 import pytest
 
 import httpx
@@ -6,9 +5,7 @@ import httpx
 
 def redirects(request: httpx.Request) -> httpx.Response:
     if request.url.scheme not in ("http", "https"):
-        raise httpcore.UnsupportedProtocol(
-            f"Scheme {request.url.scheme!r} not supported."
-        )
+        raise httpx.UnsupportedProtocol(f"Scheme {request.url.scheme!r} not supported.")
 
     if request.url.path == "/redirect_301":
         status_code = httpx.codes.MOVED_PERMANENTLY
@@ -396,3 +393,10 @@ def test_redirect_custom_scheme():
     with pytest.raises(httpx.UnsupportedProtocol) as e:
         client.post("https://example.org/redirect_custom_scheme")
     assert str(e.value) == "Scheme 'market' not supported."
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_async_invalid_redirect():
+    async with httpx.AsyncClient(transport=httpx.MockTransport(redirects)) as client:
+        with pytest.raises(httpx.RemoteProtocolError):
+            await client.get("http://example.org/invalid_redirect")

@@ -1015,31 +1015,39 @@ This [public gist](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165
 
 ### Writing custom transports
 
-A transport instance must implement the Transport API defined by
-[`httpcore`](https://www.encode.io/httpcore/api/). You
-should either subclass `httpcore.AsyncHTTPTransport` to implement a transport to
-use with `AsyncClient`, or subclass `httpcore.SyncHTTPTransport` to implement a
-transport to use with `Client`.
+A transport instance must implement the low-level Transport API, which deals
+with sending a single request, and returning a response. You should either
+subclass `httpx.BaseTransport` to implement a transport to use with `Client`,
+or subclass `httpx.AsyncBaseTransport` to implement a transport to
+use with `AsyncClient`.
+
+At the layer of the transport API we're using plain primitives.
+No `Request` or `Response` models, no fancy `URL` or `Header` handling.
+This strict point of cut-off provides a clear design separation between the
+HTTPX API, and the low-level network handling.
+
+See the `handle_request` and `handle_async_request` docstrings for more details
+on the specifics of the Transport API.
 
 A complete example of a custom transport implementation would be:
 
 ```python
 import json
-import httpcore
+import httpx
 
 
-class HelloWorldTransport(httpcore.SyncHTTPTransport):
+class HelloWorldTransport(httpx.BaseTransport):
     """
     A mock transport that always returns a JSON "Hello, world!" response.
     """
 
-    def request(self, method, url, headers=None, stream=None, ext=None):
+    def handle_request(self, method, url, headers, stream, extensions):
         message = {"text": "Hello, world!"}
         content = json.dumps(message).encode("utf-8")
-        stream = httpcore.PlainByteStream(content)
+        stream = [content]
         headers = [(b"content-type", b"application/json")]
-        ext = {"http_version": b"HTTP/1.1"}
-        return 200, headers, stream, ext
+        extensions = {}
+        return 200, headers, stream, extensions
 ```
 
 Which we can use in the same way:
@@ -1084,24 +1092,23 @@ which transport an outgoing request should be routed via, with [the same style
 used for specifying proxy routing](#routing).
 
 ```python
-import httpcore
 import httpx
 
-class HTTPSRedirectTransport(httpcore.SyncHTTPTransport):
+class HTTPSRedirectTransport(httpx.BaseTransport):
     """
     A transport that always redirects to HTTPS.
     """
 
-    def request(self, method, url, headers=None, stream=None, ext=None):
+    def handle_request(self, method, url, headers, stream, extensions):
         scheme, host, port, path = url
         if port is None:
             location = b"https://%s%s" % (host, path)
         else:
             location = b"https://%s:%d%s" % (host, port, path)
-        stream = httpcore.PlainByteStream(b"")
+        stream = [b""]
         headers = [(b"location", location)]
-        ext = {"http_version": b"HTTP/1.1"}
-        return 303, headers, stream, ext
+        extensions = {}
+        return 303, headers, stream, extensions
 
 
 # A client where any `http` requests are always redirected to `https`

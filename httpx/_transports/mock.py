@@ -1,23 +1,24 @@
 import asyncio
-from typing import Callable, List, Optional, Tuple
-
-import httpcore
+import typing
 
 from .._models import Request
+from .base import AsyncBaseTransport, BaseTransport
 
 
-class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
-    def __init__(self, handler: Callable) -> None:
+class MockTransport(AsyncBaseTransport, BaseTransport):
+    def __init__(self, handler: typing.Callable) -> None:
         self.handler = handler
 
-    def request(
+    def handle_request(
         self,
         method: bytes,
-        url: Tuple[bytes, bytes, Optional[int], bytes],
-        headers: List[Tuple[bytes, bytes]] = None,
-        stream: httpcore.SyncByteStream = None,
-        ext: dict = None,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.SyncByteStream, dict]:
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: typing.Iterable[bytes],
+        extensions: dict,
+    ) -> typing.Tuple[
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterable[bytes], dict
+    ]:
         request = Request(
             method=method,
             url=url,
@@ -30,17 +31,19 @@ class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
             response.status_code,
             response.headers.raw,
             response.stream,
-            response.ext,
+            response.extensions,
         )
 
-    async def arequest(
+    async def handle_async_request(
         self,
         method: bytes,
-        url: Tuple[bytes, bytes, Optional[int], bytes],
-        headers: List[Tuple[bytes, bytes]] = None,
-        stream: httpcore.AsyncByteStream = None,
-        ext: dict = None,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], httpcore.AsyncByteStream, dict]:
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: typing.AsyncIterable[bytes],
+        extensions: dict,
+    ) -> typing.Tuple[
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict
+    ]:
         request = Request(
             method=method,
             url=url,
@@ -63,5 +66,5 @@ class MockTransport(httpcore.SyncHTTPTransport, httpcore.AsyncHTTPTransport):
             response.status_code,
             response.headers.raw,
             response.stream,
-            response.ext,
+            response.extensions,
         )

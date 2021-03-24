@@ -1,5 +1,4 @@
 import cgi
-import contextlib
 import datetime
 import email.message
 import json as jsonlib
@@ -24,16 +23,14 @@ from ._decoders import (
     TextDecoder,
 )
 from ._exceptions import (
-    HTTPCORE_EXC_MAP,
     CookieConflict,
-    DecodingError,
     HTTPStatusError,
     InvalidURL,
     RequestNotRead,
     ResponseClosed,
     ResponseNotRead,
     StreamConsumed,
-    map_exceptions,
+    request_context,
 )
 from ._status_codes import codes
 from ._types import (
@@ -909,7 +906,7 @@ class Response:
         json: typing.Any = None,
         stream: ByteStream = None,
         request: Request = None,
-        ext: dict = None,
+        extensions: dict = None,
         history: typing.List["Response"] = None,
         on_close: typing.Callable = None,
     ):
@@ -924,7 +921,7 @@ class Response:
 
         self.call_next: typing.Optional[typing.Callable] = None
 
-        self.ext = {} if ext is None else ext
+        self.extensions = {} if extensions is None else extensions
         self.history = [] if history is None else list(history)
         self._on_close = on_close
 
@@ -995,11 +992,17 @@ class Response:
 
     @property
     def http_version(self) -> str:
-        return self.ext.get("http_version", "HTTP/1.1")
+        try:
+            return self.extensions["http_version"].decode("ascii", errors="ignore")
+        except KeyError:
+            return "HTTP/1.1"
 
     @property
     def reason_phrase(self) -> str:
-        return self.ext.get("reason", codes.get_reason_phrase(self.status_code))
+        try:
+            return self.extensions["reason_phrase"].decode("ascii", errors="ignore")
+        except KeyError:
+            return codes.get_reason_phrase(self.status_code)
 
     @property
     def url(self) -> typing.Optional[URL]:
@@ -1152,17 +1155,6 @@ class Response:
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
-    @contextlib.contextmanager
-    def _wrap_decoder_errors(self) -> typing.Iterator[None]:
-        # If the response has an associated request instance, we want decoding
-        # errors to be raised as proper `httpx.DecodingError` exceptions.
-        try:
-            yield
-        except ValueError as exc:
-            if self._request is None:
-                raise exc
-            raise DecodingError(message=str(exc), request=self.request) from exc
-
     def read(self) -> bytes:
         """
         Read and return the response content.
@@ -1183,7 +1175,7 @@ class Response:
         else:
             decoder = self._get_content_decoder()
             chunker = ByteChunker(chunk_size=chunk_size)
-            with self._wrap_decoder_errors():
+            with request_context(request=self._request):
                 for raw_bytes in self.iter_raw():
                     decoded = decoder.decode(raw_bytes)
                     for chunk in chunker.decode(decoded):
@@ -1202,7 +1194,7 @@ class Response:
         """
         decoder = TextDecoder(encoding=self.encoding)
         chunker = TextChunker(chunk_size=chunk_size)
-        with self._wrap_decoder_errors():
+        with request_context(request=self._request):
             for byte_content in self.iter_bytes():
                 text_content = decoder.decode(byte_content)
                 for chunk in chunker.decode(text_content):
@@ -1215,7 +1207,7 @@ class Response:
 
     def iter_lines(self) -> typing.Iterator[str]:
         decoder = LineDecoder()
-        with self._wrap_decoder_errors():
+        with request_context(request=self._request):
             for text in self.iter_text():
                 for line in decoder.decode(text):
                     yield line
@@ -1237,7 +1229,7 @@ class Response:
         self._num_bytes_downloaded = 0
         chunker = ByteChunker(chunk_size=chunk_size)
 
-        with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
+        with request_context(request=self._request):
             for raw_stream_bytes in self.stream:
                 self._num_bytes_downloaded += len(raw_stream_bytes)
                 for chunk in chunker.decode(raw_stream_bytes):
@@ -1256,7 +1248,8 @@ class Response:
         if not self.is_closed:
             self.is_closed = True
             if self._on_close is not None:
-                self._on_close(self)
+                with request_context(request=self._request):
+                    self._on_close(self)
 
     async def aread(self) -> bytes:
         """
@@ -1278,7 +1271,7 @@ class Response:
         else:
             decoder = self._get_content_decoder()
             chunker = ByteChunker(chunk_size=chunk_size)
-            with self._wrap_decoder_errors():
+            with request_context(request=self._request):
                 async for raw_bytes in self.aiter_raw():
                     decoded = decoder.decode(raw_bytes)
                     for chunk in chunker.decode(decoded):
@@ -1297,7 +1290,7 @@ class Response:
         """
         decoder = TextDecoder(encoding=self.encoding)
         chunker = TextChunker(chunk_size=chunk_size)
-        with self._wrap_decoder_errors():
+        with request_context(request=self._request):
             async for byte_content in self.aiter_bytes():
                 text_content = decoder.decode(byte_content)
                 for chunk in chunker.decode(text_content):
@@ -1310,7 +1303,7 @@ class Response:
 
     async def aiter_lines(self) -> typing.AsyncIterator[str]:
         decoder = LineDecoder()
-        with self._wrap_decoder_errors():
+        with request_context(request=self._request):
             async for text in self.aiter_text():
                 for line in decoder.decode(text):
                     yield line
@@ -1332,7 +1325,7 @@ class Response:
         self._num_bytes_downloaded = 0
         chunker = ByteChunker(chunk_size=chunk_size)
 
-        with map_exceptions(HTTPCORE_EXC_MAP, request=self._request):
+        with request_context(request=self._request):
             async for raw_stream_bytes in self.stream:
                 self._num_bytes_downloaded += len(raw_stream_bytes)
                 for chunk in chunker.decode(raw_stream_bytes):
@@ -1351,7 +1344,8 @@ class Response:
         if not self.is_closed:
             self.is_closed = True
             if self._on_close is not None:
-                await self._on_close(self)
+                with request_context(request=self._request):
+                    await self._on_close(self)
 
 
 class Cookies(MutableMapping):
