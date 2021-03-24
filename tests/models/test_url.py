@@ -109,6 +109,14 @@ def test_url_join():
     assert url.join("../../somewhere-else") == "https://example.org:123/somewhere-else"
 
 
+def test_relative_url_join():
+    url = httpx.URL("/path/to/somewhere")
+    assert url.join("/somewhere-else") == "/somewhere-else"
+    assert url.join("somewhere-else") == "/path/to/somewhere-else"
+    assert url.join("../somewhere-else") == "/path/somewhere-else"
+    assert url.join("../../somewhere-else") == "/somewhere-else"
+
+
 def test_url_join_rfc3986():
     """
     URL joining tests, as-per reference examples in RFC 3986.
