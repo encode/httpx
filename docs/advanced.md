@@ -1108,7 +1108,7 @@ class HTTPSRedirectTransport(httpx.BaseTransport):
         stream = [b""]
         headers = [(b"location", location)]
         extensions = {}
-        return 303, headers, stream, ext
+        return 303, headers, stream, extensions
 
 
 # A client where any `http` requests are always redirected to `https`
