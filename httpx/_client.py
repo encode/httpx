@@ -323,10 +323,19 @@ class BaseClient:
         """
         merge_url = URL(url)
         if merge_url.is_relative_url:
-            # We always ensure the base_url paths include the trailing '/',
-            # and always strip any leading '/' from the merge URL.
-            merge_url = merge_url.copy_with(raw_path=merge_url.raw_path.lstrip(b"/"))
-            return self.base_url.join(merge_url)
+            # To merge URLs we always append to the base URL. To get this
+            # behaviour correct we always ensure the base URL ends in a '/'
+            # seperator, and strip any leading '/' from the merge URL.
+            #
+            # So, eg...
+            #
+            # >>> client = Client(base_url="https://www.example.com/subpath")
+            # >>> client.base_url
+            # URL('https://www.example.com/subpath/')
+            # >>> client.build_request("GET", "/path").url
+            # URL('https://www.example.com/subpath/path')
+            merge_raw_path = self.base_url.raw_path + merge_url.raw_path.lstrip(b"/")
+            return self.base_url.copy_with(raw_path=merge_raw_path)
         return merge_url
 
     def _merge_cookies(

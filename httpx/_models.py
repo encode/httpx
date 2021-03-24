@@ -391,7 +391,14 @@ class URL:
         assert url == "https://www.example.com/test/new/path"
         """
         if self.is_relative_url:
-            return URL(url)
+            # Workaround to handle relative URLs, which otherwise raise
+            # rfc3986.exceptions.ResolutionError when used as an argument
+            # in `.resolve_with`.
+            return (
+                self.copy_with(scheme="http", host="example.com")
+                .join(url)
+                .copy_with(scheme=None, host=None)
+            )
 
         # We drop any fragment portion, because RFC 3986 strictly
         # treats URLs with a fragment portion as not being absolute URLs.
