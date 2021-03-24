@@ -1,17 +1,16 @@
 import typing
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
 from urllib.parse import unquote
 
 import sniffio
 
 from .base import AsyncBaseTransport
 
-if TYPE_CHECKING:  # pragma: no cover
+if typing.TYPE_CHECKING:  # pragma: no cover
     import asyncio
 
     import trio
 
-    Event = Union[asyncio.Event, trio.Event]
+    Event = typing.Union[asyncio.Event, trio.Event]
 
 
 def create_event() -> "Event":
@@ -60,10 +59,10 @@ class ASGITransport(AsyncBaseTransport):
 
     def __init__(
         self,
-        app: Callable,
+        app: typing.Callable,
         raise_app_exceptions: bool = True,
         root_path: str = "",
-        client: Tuple[str, int] = ("127.0.0.1", 123),
+        client: typing.Tuple[str, int] = ("127.0.0.1", 123),
     ) -> None:
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
@@ -73,11 +72,13 @@ class ASGITransport(AsyncBaseTransport):
     async def handle_async_request(
         self,
         method: bytes,
-        url: Tuple[bytes, bytes, Optional[int], bytes],
-        headers: List[Tuple[bytes, bytes]],
+        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
+        headers: typing.List[typing.Tuple[bytes, bytes]],
         stream: typing.AsyncIterable[bytes],
         extensions: dict,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict]:
+    ) -> typing.Tuple[
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict
+    ]:
         # ASGI scope.
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
