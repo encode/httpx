@@ -28,7 +28,7 @@ for developers implementing custom transports.
 * Type annotation on `CertTypes` allows `keyfile` and `password` to be optional. (Pull #1503)
 * Fix httpcore pinned version. (Pull #1495)
 
-## 0.17.0 (Februray 28th, 2021)
+## 0.17.0 (February 28th, 2021)
 
 ### Added
 
