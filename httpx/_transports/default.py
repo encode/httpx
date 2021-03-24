@@ -178,7 +178,7 @@ class HTTPTransport(BaseTransport):
                 method=method,
                 url=url,
                 headers=headers,
-                stream=httpcore.IteratorByteStream(stream),
+                stream=httpcore.IteratorByteStream(iter(stream)),
                 ext=extensions,
             )
 
@@ -268,7 +268,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 method=method,
                 url=url,
                 headers=headers,
-                stream=httpcore.AsyncIteratorByteStream(stream),
+                stream=httpcore.AsyncIteratorByteStream(stream.__aiter__()),
                 ext=extensions,
             )
 
