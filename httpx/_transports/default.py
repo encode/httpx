@@ -168,10 +168,10 @@ class HTTPTransport(BaseTransport):
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.Iterator[bytes],
+        stream: typing.Iterable[bytes],
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterator[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterable[bytes], dict
     ]:
         with map_httpcore_exceptions():
             status_code, headers, byte_stream, extensions = self._pool.request(
@@ -258,10 +258,10 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.AsyncIterator[bytes],
+        stream: typing.AsyncIterable[bytes],
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterator[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict
     ]:
         with map_httpcore_exceptions():
             status_code, headers, byte_stream, extenstions = await self._pool.arequest(

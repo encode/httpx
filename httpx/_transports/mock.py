@@ -15,9 +15,9 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]],
-        stream: typing.Iterator[bytes],
+        stream: typing.Iterable[bytes],
         extensions: dict,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.Iterator[bytes], dict]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.Iterable[bytes], dict]:
         request = Request(
             method=method,
             url=url,
@@ -38,9 +38,9 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]],
-        stream: typing.AsyncIterator[bytes],
+        stream: typing.AsyncIterable[bytes],
         extensions: dict,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.AsyncIterator[bytes], dict]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict]:
         request = Request(
             method=method,
             url=url,

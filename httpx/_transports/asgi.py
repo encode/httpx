@@ -75,9 +75,9 @@ class ASGITransport(AsyncBaseTransport):
         method: bytes,
         url: Tuple[bytes, bytes, Optional[int], bytes],
         headers: List[Tuple[bytes, bytes]],
-        stream: typing.AsyncIterator[bytes],
+        stream: typing.AsyncIterable[bytes],
         extensions: dict,
-    ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.AsyncIterator[bytes], dict]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict]:
         # ASGI scope.
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")

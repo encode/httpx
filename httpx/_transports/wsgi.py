@@ -64,10 +64,10 @@ class WSGITransport(BaseTransport):
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.Iterator[bytes],
+        stream: typing.Iterable[bytes],
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterator[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterable[bytes], dict
     ]:
         wsgi_input = io.BytesIO(b"".join(stream))
 
