@@ -54,7 +54,7 @@ from ._utils import (
     normalize_header_value,
     obfuscate_sensitive_headers,
     parse_header_links,
-    str_query_param,
+    primitive_value_to_str,
 )
 
 
@@ -450,8 +450,8 @@ class QueryParams(typing.Mapping[str, str]):
         else:
             items = flatten_queryparams(value)
 
-        self._list = [(str(k), str_query_param(v)) for k, v in items]
-        self._dict = {str(k): str_query_param(v) for k, v in items}
+        self._list = [(str(k), primitive_value_to_str(v)) for k, v in items]
+        self._dict = {str(k): primitive_value_to_str(v) for k, v in items}
 
     def keys(self) -> typing.KeysView:
         return self._dict.keys()
