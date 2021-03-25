@@ -3,7 +3,7 @@ import itertools
 import typing
 from urllib.parse import unquote
 
-import httpcore
+from .base import BaseTransport
 
 
 def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
@@ -14,7 +14,7 @@ def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
     return []
 
 
-class WSGITransport(httpcore.SyncHTTPTransport):
+class WSGITransport(BaseTransport):
     """
     A custom transport that handles sending requests directly to an WSGI app.
     The simplest way to use this functionality is to use the `app` argument.
@@ -59,18 +59,17 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         self.script_name = script_name
         self.remote_addr = remote_addr
 
-    def request(
+    def handle_request(
         self,
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]] = None,
-        stream: httpcore.SyncByteStream = None,
-        ext: dict = None,
+        headers: typing.List[typing.Tuple[bytes, bytes]],
+        stream: typing.Iterable[bytes],
+        extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], httpcore.SyncByteStream, dict
+        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterable[bytes], dict
     ]:
-        headers = [] if headers is None else headers
-        stream = httpcore.PlainByteStream(content=b"") if stream is None else stream
+        wsgi_input = io.BytesIO(b"".join(stream))
 
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")
@@ -80,7 +79,7 @@ class WSGITransport(httpcore.SyncHTTPTransport):
         environ = {
             "wsgi.version": (1, 0),
             "wsgi.url_scheme": scheme.decode("ascii"),
-            "wsgi.input": io.BytesIO(b"".join(stream)),
+            "wsgi.input": wsgi_input,
             "wsgi.errors": io.BytesIO(),
             "wsgi.multithread": True,
             "wsgi.multiprocess": False,
@@ -126,7 +125,6 @@ class WSGITransport(httpcore.SyncHTTPTransport):
             (key.encode("ascii"), value.encode("ascii"))
             for key, value in seen_response_headers
         ]
-        stream = httpcore.IteratorByteStream(iterator=result)
-        ext = {}
+        extensions = {}
 
-        return (status_code, headers, stream, ext)
+        return (status_code, headers, result, extensions)

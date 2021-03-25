@@ -1,7 +1,6 @@
 import typing
 from datetime import timedelta
 
-import httpcore
 import pytest
 
 import httpx
@@ -197,6 +196,12 @@ def test_merge_relative_url_with_dotted_path():
     assert request.url == "https://www.example.com/some/testing/123"
 
 
+def test_merge_relative_url_with_path_including_colon():
+    client = httpx.Client(base_url="https://www.example.com/some/path")
+    request = client.build_request("GET", "/testing:123")
+    assert request.url == "https://www.example.com/some/path/testing:123"
+
+
 def test_merge_relative_url_with_encoded_slashes():
     client = httpx.Client(base_url="https://www.example.com/")
     request = client.build_request("GET", "/testing%2F123")
@@ -218,12 +223,12 @@ def test_pool_limits_deprecated():
 
 
 def test_context_managed_transport():
-    class Transport(httpcore.SyncHTTPTransport):
+    class Transport(httpx.BaseTransport):
         def __init__(self):
             self.events = []
 
         def close(self):
-            # The base implementation of httpcore.SyncHTTPTransport just
+            # The base implementation of httpx.BaseTransport just
             # calls into `.close`, so simple transport cases can just override
             # this method for any cleanup, where more complex cases
             # might want to additionally override `__enter__`/`__exit__`.
@@ -249,13 +254,13 @@ def test_context_managed_transport():
 
 
 def test_context_managed_transport_and_mount():
-    class Transport(httpcore.SyncHTTPTransport):
+    class Transport(httpx.BaseTransport):
         def __init__(self, name: str):
             self.name: str = name
             self.events: typing.List[str] = []
 
         def close(self):
-            # The base implementation of httpcore.SyncHTTPTransport just
+            # The base implementation of httpx.BaseTransport just
             # calls into `.close`, so simple transport cases can just override
             # this method for any cleanup, where more complex cases
             # might want to additionally override `__enter__`/`__exit__`.

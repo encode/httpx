@@ -1,7 +1,11 @@
 # Ref: https://help.github.com/en/github/building-a-strong-community/configuring-issue-templates-for-your-repository#configuring-the-template-chooser
 blank_issues_enabled: true
 contact_links:
-- name: Question
+- name: Discussions
+  url: https://github.com/encode/httpx/discussions
+  about: >
+    The "Discussions" forum is where you want to start. 💖
+- name: Chat
   url: https://gitter.im/encode/community
   about: >
-    Ask a question
+    Our community chat forum.

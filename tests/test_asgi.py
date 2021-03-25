@@ -70,6 +70,42 @@ async def raise_exc_after_response(scope, receive, send):
     raise RuntimeError()
 
 
+async def empty_stream():
+    yield b""
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_transport():
+    async with httpx.ASGITransport(app=hello_world) as transport:
+        status_code, headers, stream, ext = await transport.handle_async_request(
+            method=b"GET",
+            url=(b"http", b"www.example.org", 80, b"/"),
+            headers=[(b"Host", b"www.example.org")],
+            stream=empty_stream(),
+            extensions={},
+        )
+        body = b"".join([part async for part in stream])
+
+        assert status_code == 200
+        assert body == b"Hello, World!"
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_transport_no_body():
+    async with httpx.ASGITransport(app=echo_body) as transport:
+        status_code, headers, stream, ext = await transport.handle_async_request(
+            method=b"GET",
+            url=(b"http", b"www.example.org", 80, b"/"),
+            headers=[(b"Host", b"www.example.org")],
+            stream=empty_stream(),
+            extensions={},
+        )
+        body = b"".join([part async for part in stream])
+
+        assert status_code == 200
+        assert body == b""
+
+
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi():
     async with httpx.AsyncClient(app=hello_world) as client:

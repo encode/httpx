@@ -20,8 +20,9 @@ nav:
     - Developer Interface: 'api.md'
     - Exceptions: 'exceptions.md'
     - Troubleshooting: 'troubleshooting.md'
-    - Third Party Packages: 'third-party-packages.md'
+    - Third Party Packages: 'third_party_packages.md'
     - Contributing: 'contributing.md'
+    - Code of Conduct: 'code_of_conduct.md'
 
 markdown_extensions:
   - admonition
