@@ -69,8 +69,16 @@ ACCEPT_ENCODING = ", ".join(
 
 
 class ClientState(enum.Enum):
+    # UNOPENED:
+    #   The client has been instantiated, but has not been used to send a request,
+    #   or been opened by entering the context of a `with` block.
     UNOPENED = 1
+    # OPENED:
+    #   The client has either sent a request, or is within a `with` block.
     OPENED = 2
+    # CLOSED:
+    #   The client has either exited the `with` block, or `close()` has
+    #   been called explicitly.
     CLOSED = 3
 
 
@@ -1140,7 +1148,8 @@ class Client(BaseClient):
                 transport.__exit__(exc_type, exc_value, traceback)
 
     def __del__(self) -> None:
-        self.close()
+        if self._state == ClientState.OPENED:
+            self.close()
 
 
 class AsyncClient(BaseClient):
@@ -1784,6 +1793,26 @@ class AsyncClient(BaseClient):
 
     def __del__(self) -> None:
         if self._state == ClientState.OPENED:
+            # Unlike the sync case, we cannot silently close the client when
+            # it is garbage collected, because `.aclose()` is an async operation,
+            # but `__del__` is not.
+            #
+            # For this reason we require explicit close management for
+            # `AsyncClient`, and issue a warning on unclosed clients.
+            #
+            # The context managed style is usually preferable, because it neatly
+            # ensures proper resource cleanup:
+            #
+            #     async with httpx.AsyncClient() as client:
+            #         ...
+            #
+            # However, an explicit call to `aclose()` is also sufficient:
+            #
+            #    client = httpx.AsyncClient()
+            #    try:
+            #        ...
+            #    finally:
+            #        await client.aclose()
             warnings.warn(
                 f"Unclosed {self!r}. "
                 "See https://www.python-httpx.org/async/#opening-and-closing-clients "
