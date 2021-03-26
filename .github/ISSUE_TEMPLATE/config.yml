@@ -1,5 +1,5 @@
 # Ref: https://help.github.com/en/github/building-a-strong-community/configuring-issue-templates-for-your-repository#configuring-the-template-chooser
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
 - name: Discussions
   url: https://github.com/encode/httpx/discussions
