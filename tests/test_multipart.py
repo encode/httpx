@@ -57,7 +57,7 @@ def test_multipart_invalid_key(key):
     assert repr(key) in str(e.value)
 
 
-@pytest.mark.parametrize(("value"), (1, 2.3, None, [None, "abc"], {None: "abc"}))
+@pytest.mark.parametrize(("value"), (object(), {"key": "value"}))
 def test_multipart_invalid_value(value):
     client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
 
@@ -104,6 +104,8 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
         "b": b"C",
         "c": ["11", "22", "33"],
         "d": "",
+        "e": True,
+        "f": "",
     }
     files = {"file": ("name.txt", open(path, "rb"))}
 
@@ -120,6 +122,8 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
             '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n22\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n33\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="d"\r\n\r\n\r\n'
+            '--{0}\r\nContent-Disposition: form-data; name="e"\r\n\r\ntrue\r\n'
+            '--{0}\r\nContent-Disposition: form-data; name="f"\r\n\r\n\r\n'
             '--{0}\r\nContent-Disposition: form-data; name="file";'
             ' filename="name.txt"\r\n'
             "Content-Type: text/plain\r\n\r\n<file content>\r\n"

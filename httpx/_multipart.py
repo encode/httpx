@@ -8,6 +8,7 @@ from ._utils import (
     format_form_param,
     guess_content_type,
     peek_filelike_length,
+    primitive_value_to_str,
     to_bytes,
 )
 
@@ -17,17 +18,21 @@ class DataField:
     A single form field item, within a multipart form field.
     """
 
-    def __init__(self, name: str, value: typing.Union[str, bytes]) -> None:
+    def __init__(
+        self, name: str, value: typing.Union[str, bytes, int, float, None]
+    ) -> None:
         if not isinstance(name, str):
             raise TypeError(
                 f"Invalid type for name. Expected str, got {type(name)}: {name!r}"
             )
-        if not isinstance(value, (str, bytes)):
+        if value is not None and not isinstance(value, (str, bytes, int, float)):
             raise TypeError(
-                f"Invalid type for value. Expected str or bytes, got {type(value)}: {value!r}"
+                f"Invalid type for value. Expected primitive type, got {type(value)}: {value!r}"
             )
         self.name = name
-        self.value = value
+        self.value: typing.Union[str, bytes] = (
+            value if isinstance(value, bytes) else primitive_value_to_str(value)
+        )
 
     def render_headers(self) -> bytes:
         if not hasattr(self, "_headers"):

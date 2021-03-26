@@ -56,9 +56,9 @@ def normalize_header_value(
     return value.encode(encoding or "ascii")
 
 
-def str_query_param(value: "PrimitiveData") -> str:
+def primitive_value_to_str(value: "PrimitiveData") -> str:
     """
-    Coerce a primitive data type into a string value for query params.
+    Coerce a primitive data type into a string value.
 
     Note that we prefer JSON-style 'true'/'false' for boolean values here.
     """

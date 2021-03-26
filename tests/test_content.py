@@ -140,6 +140,57 @@ async def test_urlencoded_content():
 
 
 @pytest.mark.asyncio
+async def test_urlencoded_boolean():
+    headers, stream = encode_request(data={"example": True})
+    assert isinstance(stream, typing.Iterable)
+    assert isinstance(stream, typing.AsyncIterable)
+
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert headers == {
+        "Content-Length": "12",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+    assert sync_content == b"example=true"
+    assert async_content == b"example=true"
+
+
+@pytest.mark.asyncio
+async def test_urlencoded_none():
+    headers, stream = encode_request(data={"example": None})
+    assert isinstance(stream, typing.Iterable)
+    assert isinstance(stream, typing.AsyncIterable)
+
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert headers == {
+        "Content-Length": "8",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+    assert sync_content == b"example="
+    assert async_content == b"example="
+
+
+@pytest.mark.asyncio
+async def test_urlencoded_list():
+    headers, stream = encode_request(data={"example": ["a", 1, True]})
+    assert isinstance(stream, typing.Iterable)
+    assert isinstance(stream, typing.AsyncIterable)
+
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert headers == {
+        "Content-Length": "32",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+    assert sync_content == b"example=a&example=1&example=true"
+    assert async_content == b"example=a&example=1&example=true"
+
+
+@pytest.mark.asyncio
 async def test_multipart_files_content():
     files = {"file": io.BytesIO(b"<file content>")}
     headers, stream = encode_request(files=files, boundary=b"+++")
