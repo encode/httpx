@@ -191,12 +191,11 @@ class HTTPTransport(BaseTransport):
                     for part in self._httpcore_stream:
                         yield part
 
-        def close() -> None:
-            with map_httpcore_exceptions():
-                byte_stream.close()
+            def close(self) -> None:
+                with map_httpcore_exceptions():
+                    self._httpcore_stream.close()
 
         ensure_http_version_reason_phrase_as_bytes(extensions)
-        extensions["close"] = close
         stream = ResponseStream(byte_stream)
 
         return status_code, headers, stream, extensions
@@ -286,12 +285,11 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                     async for part in self._httpcore_stream:
                         yield part
 
-        async def aclose() -> None:
-            with map_httpcore_exceptions():
-                await byte_stream.aclose()
+            async def aclose(self) -> None:
+                with map_httpcore_exceptions():
+                    await byte_stream.aclose()
 
         ensure_http_version_reason_phrase_as_bytes(extensions)
-        extensions["aclose"] = aclose
         stream = ResponseStream(byte_stream)
 
         return status_code, headers, stream, extensions
