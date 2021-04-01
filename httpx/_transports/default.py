@@ -268,7 +268,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
     ]:
         with map_httpcore_exceptions():
-            status_code, headers, byte_stream, extenstions = await self._pool.arequest(
+            status_code, headers, byte_stream, extensions = await self._pool.arequest(
                 method=method,
                 url=url,
                 headers=headers,
