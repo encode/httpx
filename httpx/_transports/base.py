@@ -5,6 +5,22 @@ T = typing.TypeVar("T", bound="BaseTransport")
 A = typing.TypeVar("A", bound="AsyncBaseTransport")
 
 
+class SyncByteStream:
+    def __iter__(self) -> typing.Iterator[bytes]:
+        raise NotImplementedError(
+            "The '__iter__' method must be implemented."
+        )  # pragma: nocover
+        yield b""  # pragma: nocover
+
+
+class AsyncByteStream:
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        raise NotImplementedError(
+            "The '__aiter__' method must be implemented."
+        )  # pragma: nocover
+        yield b""  # pragma: nocover
+
+
 class BaseTransport:
     def __enter__(self: T) -> T:
         return self
@@ -22,10 +38,10 @@ class BaseTransport:
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.Iterable[bytes],
+        stream: SyncByteStream,
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterable[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
     ]:
         """
         Send a single HTTP request and return a response.
@@ -116,10 +132,10 @@ class AsyncBaseTransport:
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.AsyncIterable[bytes],
+        stream: AsyncByteStream,
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
     ]:
         raise NotImplementedError(
             "The 'handle_async_request' method must be implemented."

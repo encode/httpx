@@ -3,7 +3,7 @@ from urllib.parse import unquote
 
 import sniffio
 
-from .base import AsyncBaseTransport
+from .base import AsyncBaseTransport, AsyncByteStream
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     import asyncio
@@ -74,10 +74,10 @@ class ASGITransport(AsyncBaseTransport):
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.AsyncIterable[bytes],
+        stream: AsyncByteStream,
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
     ]:
         # ASGI scope.
         scheme, host, port, full_path = url
@@ -155,9 +155,14 @@ class ASGITransport(AsyncBaseTransport):
         assert status_code is not None
         assert response_headers is not None
 
-        async def response_stream() -> typing.AsyncIterator[bytes]:
-            yield b"".join(body_parts)
+        class ASGIResponseStream(AsyncByteStream):
+            def __init__(self, body: typing.List[bytes]) -> None:
+                self._body = body
 
+            async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+                yield b"".join(self._body)
+
+        stream = ASGIResponseStream(body_parts)
         extensions = {}
 
-        return (status_code, response_headers, response_stream(), extensions)
+        return (status_code, response_headers, stream, extensions)

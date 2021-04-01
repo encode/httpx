@@ -3,7 +3,7 @@ import itertools
 import typing
 from urllib.parse import unquote
 
-from .base import BaseTransport
+from .base import BaseTransport, SyncByteStream
 
 
 def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
@@ -64,10 +64,10 @@ class WSGITransport(BaseTransport):
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.Iterable[bytes],
+        stream: SyncByteStream,
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterable[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
     ]:
         wsgi_input = io.BytesIO(b"".join(stream))
 
@@ -111,9 +111,16 @@ class WSGITransport(BaseTransport):
             seen_exc_info = exc_info
 
         result = self.app(environ, start_response)
-        # This is needed because the status returned by start_response
-        # shouldn't be used until the first non-empty chunk has been served.
-        result = _skip_leading_empty_chunks(result)
+
+        class WSGIByteStream(SyncByteStream):
+            def __init__(self, result: typing.Iterable[bytes]) -> None:
+                self._result = _skip_leading_empty_chunks(result)
+
+            def __iter__(self) -> typing.Iterator[bytes]:
+                for part in self._result:
+                    yield part
+
+        stream = WSGIByteStream(result)
 
         assert seen_status is not None
         assert seen_response_headers is not None
@@ -127,4 +134,4 @@ class WSGITransport(BaseTransport):
         ]
         extensions = {}
 
-        return (status_code, headers, result, extensions)
+        return (status_code, headers, stream, extensions)
