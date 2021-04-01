@@ -383,3 +383,11 @@ def test_all_mounted_transport():
     response = client.get("https://www.example.com")
     assert response.status_code == 200
     assert response.json() == {"app": "mounted"}
+
+
+def test_server_extensions(server):
+    url = server.url.copy_with(path="/http_version_2")
+    with httpx.Client(http2=True) as client:
+        response = client.get(url)
+    assert response.status_code == 200
+    assert response.extensions["http_version"] == b"HTTP/1.1"

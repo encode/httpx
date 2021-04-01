@@ -313,3 +313,12 @@ async def test_async_mock_transport():
         response = await client.get("https://www.example.com")
         assert response.status_code == 200
         assert response.text == "Hello, world!"
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_server_extensions(server):
+    url = server.url
+    async with httpx.AsyncClient(http2=True) as client:
+        response = await client.get(url)
+    assert response.status_code == 200
+    assert response.extensions["http_version"] == b"HTTP/1.1"
