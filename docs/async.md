@@ -243,38 +243,3 @@ See [the ASGI documentation](https://asgi.readthedocs.io/en/latest/specs/www.htm
 It is not in the scope of HTTPX to trigger lifespan events of your app.
 
 However it is suggested to use `LifespanManager` from [asgi-lifespan](https://github.com/florimondmanca/asgi-lifespan#usage) in pair with `AsyncClient`.
-
-```python
-# example.py
-from asgi_lifespan import LifespanManager
-from starlette.applications import Starlette
-
-# Example lifespan-capable ASGI app. Any ASGI app that supports
-# the lifespan protocol will do, e.g. FastAPI, Quart, Responder, ...
-app = Starlette(
-    on_startup=[lambda: print("Starting up!")],
-    on_shutdown=[lambda: print("Shutting down!")],
-)
-
-async def main():
-    async with LifespanManager(app):
-        print("We're in!")
-
-# On asyncio:
-import asyncio; asyncio.run(main())
-```
-
-
-`LifespanManager` can run on either `asyncio` or `trio`, and will auto-detect the async library in use.
-
-```python
-# On trio:
-import trio; trio.run(main)
-```
-Running the code above should produce the output:
-```shell
-$ python example.py
-Starting up!
-We're in!
-Shutting down!
-```
