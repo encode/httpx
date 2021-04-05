@@ -38,6 +38,7 @@ class UnsetType:
 
 
 UNSET = UnsetType()
+USE_CLIENT_DEFAULT = UnsetType()
 
 
 def create_ssl_context(
