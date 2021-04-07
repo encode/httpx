@@ -24,6 +24,12 @@ An asynchronous GitHub API library. Includes [HTTPX support](https://gidgethub.r
 
 Provides authentication classes to be used with HTTPX [authentication parameter](advanced.md#customizing-authentication).
 
+### pytest-HTTPX
+
+[GitHub](https://github.com/Colin-b/pytest_httpx) - [Documentation](https://colin-b.github.io/pytest_httpx/)
+
+Provides `httpx_mock` [pytest](https://docs.pytest.org/en/latest/) fixture to mock HTTPX within test cases.
+
 ### RESPX
 
 [GitHub](https://github.com/lundberg/respx) - [Documentation](https://lundberg.github.io/respx/)
