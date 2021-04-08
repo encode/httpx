@@ -33,12 +33,11 @@ DEFAULT_CIPHERS = ":".join(
 logger = get_logger(__name__)
 
 
-class UnsetType:
+class ClientDefaultType:
     pass  # pragma: nocover
 
 
-UNSET = UnsetType()
-USE_CLIENT_DEFAULT = UnsetType()
+USE_CLIENT_DEFAULT = ClientDefaultType()
 
 
 def create_ssl_context(
@@ -206,19 +205,19 @@ class Timeout:
 
     def __init__(
         self,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, ClientDefaultType] = USE_CLIENT_DEFAULT,
         *,
-        connect: typing.Union[None, float, UnsetType] = UNSET,
-        read: typing.Union[None, float, UnsetType] = UNSET,
-        write: typing.Union[None, float, UnsetType] = UNSET,
-        pool: typing.Union[None, float, UnsetType] = UNSET,
+        connect: typing.Union[None, float, ClientDefaultType] = USE_CLIENT_DEFAULT,
+        read: typing.Union[None, float, ClientDefaultType] = USE_CLIENT_DEFAULT,
+        write: typing.Union[None, float, ClientDefaultType] = USE_CLIENT_DEFAULT,
+        pool: typing.Union[None, float, ClientDefaultType] = USE_CLIENT_DEFAULT,
     ):
         if isinstance(timeout, Timeout):
             # Passed as a single explicit Timeout.
-            assert connect is UNSET
-            assert read is UNSET
-            assert write is UNSET
-            assert pool is UNSET
+            assert connect is USE_CLIENT_DEFAULT
+            assert read is USE_CLIENT_DEFAULT
+            assert write is USE_CLIENT_DEFAULT
+            assert pool is USE_CLIENT_DEFAULT
             self.connect = timeout.connect  # type: typing.Optional[float]
             self.read = timeout.read  # type: typing.Optional[float]
             self.write = timeout.write  # type: typing.Optional[float]
@@ -230,25 +229,27 @@ class Timeout:
             self.write = None if len(timeout) < 3 else timeout[2]
             self.pool = None if len(timeout) < 4 else timeout[3]
         elif not (
-            isinstance(connect, UnsetType)
-            or isinstance(read, UnsetType)
-            or isinstance(write, UnsetType)
-            or isinstance(pool, UnsetType)
+            isinstance(connect, ClientDefaultType)
+            or isinstance(read, ClientDefaultType)
+            or isinstance(write, ClientDefaultType)
+            or isinstance(pool, ClientDefaultType)
         ):
             self.connect = connect
             self.read = read
             self.write = write
             self.pool = pool
         else:
-            if isinstance(timeout, UnsetType):
+            if isinstance(timeout, ClientDefaultType):
                 raise ValueError(
                     "httpx.Timeout must either include a default, or set all "
                     "four parameters explicitly."
                 )
-            self.connect = timeout if isinstance(connect, UnsetType) else connect
-            self.read = timeout if isinstance(read, UnsetType) else read
-            self.write = timeout if isinstance(write, UnsetType) else write
-            self.pool = timeout if isinstance(pool, UnsetType) else pool
+            self.connect = (
+                timeout if isinstance(connect, ClientDefaultType) else connect
+            )
+            self.read = timeout if isinstance(read, ClientDefaultType) else read
+            self.write = timeout if isinstance(write, ClientDefaultType) else write
+            self.pool = timeout if isinstance(pool, ClientDefaultType) else pool
 
     def as_dict(self) -> typing.Dict[str, typing.Optional[float]]:
         return {
