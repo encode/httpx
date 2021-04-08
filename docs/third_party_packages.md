@@ -18,6 +18,18 @@ The ultimate Python library in building OAuth and OpenID Connect clients and ser
 
 An asynchronous GitHub API library. Includes [HTTPX support](https://gidgethub.readthedocs.io/en/latest/httpx.html).
 
+### HTTPX-Auth
+
+[GitHub](https://github.com/Colin-b/httpx_auth) - [Documentation](https://colin-b.github.io/httpx_auth/)
+
+Provides authentication classes to be used with HTTPX [authentication parameter](advanced.md#customizing-authentication).
+
+### pytest-HTTPX
+
+[GitHub](https://github.com/Colin-b/pytest_httpx) - [Documentation](https://colin-b.github.io/pytest_httpx/)
+
+Provides `httpx_mock` [pytest](https://docs.pytest.org/en/latest/) fixture to mock HTTPX within test cases.
+
 ### RESPX
 
 [GitHub](https://github.com/lundberg/respx) - [Documentation](https://lundberg.github.io/respx/)
