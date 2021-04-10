@@ -293,11 +293,9 @@ with tempfile.NamedTemporaryFile() as download_file:
         total = int(response.headers["Content-Length"])
 
         with tqdm(total=total, unit_scale=True, unit_divisor=1024, unit="B") as progress:
-            num_bytes_downloaded = response.num_bytes_downloaded
             for chunk in response.iter_bytes():
                 download_file.write(chunk)
-                progress.update(response.num_bytes_downloaded - num_bytes_downloaded)
-                num_bytes_downloaded = response.num_bytes_downloaded
+                progress.update(len(chunk))
 ```
 
 ![tqdm progress bar](img/tqdm-progress.gif)
