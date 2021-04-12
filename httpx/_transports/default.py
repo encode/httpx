@@ -110,6 +110,20 @@ HTTPCORE_EXC_MAP = {
 }
 
 
+class ResponseStream(SyncByteStream):
+    def __init__(self, httpcore_stream: httpcore.SyncByteStream):
+        self._httpcore_stream = httpcore_stream
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        with map_httpcore_exceptions():
+            for part in self._httpcore_stream:
+                yield part
+
+    def close(self) -> None:
+        with map_httpcore_exceptions():
+            self._httpcore_stream.close()
+
+
 class HTTPTransport(BaseTransport):
     def __init__(
         self,
@@ -182,19 +196,6 @@ class HTTPTransport(BaseTransport):
                 ext=extensions,
             )
 
-        class ResponseStream(SyncByteStream):
-            def __init__(self, httpcore_stream: httpcore.SyncByteStream):
-                self._httpcore_stream = httpcore_stream
-
-            def __iter__(self) -> typing.Iterator[bytes]:
-                with map_httpcore_exceptions():
-                    for part in self._httpcore_stream:
-                        yield part
-
-            def close(self) -> None:
-                with map_httpcore_exceptions():
-                    self._httpcore_stream.close()
-
         ensure_http_version_reason_phrase_as_bytes(extensions)
         stream = ResponseStream(byte_stream)
 
@@ -202,6 +203,20 @@ class HTTPTransport(BaseTransport):
 
     def close(self) -> None:
         self._pool.close()
+
+
+class AsyncResponseStream(AsyncByteStream):
+    def __init__(self, httpcore_stream: httpcore.AsyncByteStream):
+        self._httpcore_stream = httpcore_stream
+
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        with map_httpcore_exceptions():
+            async for part in self._httpcore_stream:
+                yield part
+
+    async def aclose(self) -> None:
+        with map_httpcore_exceptions():
+            await self._httpcore_stream.aclose()
 
 
 class AsyncHTTPTransport(AsyncBaseTransport):
@@ -276,21 +291,8 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 ext=extensions,
             )
 
-        class ResponseStream(AsyncByteStream):
-            def __init__(self, httpcore_stream: httpcore.AsyncByteStream):
-                self._httpcore_stream = httpcore_stream
-
-            async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-                with map_httpcore_exceptions():
-                    async for part in self._httpcore_stream:
-                        yield part
-
-            async def aclose(self) -> None:
-                with map_httpcore_exceptions():
-                    await self._httpcore_stream.aclose()
-
         ensure_http_version_reason_phrase_as_bytes(extensions)
-        stream = ResponseStream(byte_stream)
+        stream = AsyncResponseStream(byte_stream)
 
         return status_code, headers, stream, extensions
 

@@ -24,6 +24,14 @@ def create_event() -> "Event":
         return asyncio.Event()
 
 
+class ASGIResponseStream(AsyncByteStream):
+    def __init__(self, body: typing.List[bytes]) -> None:
+        self._body = body
+
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        yield b"".join(self._body)
+
+
 class ASGITransport(AsyncBaseTransport):
     """
     A custom AsyncTransport that handles sending requests directly to an ASGI app.
@@ -154,13 +162,6 @@ class ASGITransport(AsyncBaseTransport):
         assert response_complete.is_set()
         assert status_code is not None
         assert response_headers is not None
-
-        class ASGIResponseStream(AsyncByteStream):
-            def __init__(self, body: typing.List[bytes]) -> None:
-                self._body = body
-
-            async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-                yield b"".join(self._body)
 
         stream = ASGIResponseStream(body_parts)
         extensions = {}

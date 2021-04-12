@@ -14,6 +14,15 @@ def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
     return []
 
 
+class WSGIByteStream(SyncByteStream):
+    def __init__(self, result: typing.Iterable[bytes]) -> None:
+        self._result = _skip_leading_empty_chunks(result)
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        for part in self._result:
+            yield part
+
+
 class WSGITransport(BaseTransport):
     """
     A custom transport that handles sending requests directly to an WSGI app.
@@ -111,14 +120,6 @@ class WSGITransport(BaseTransport):
             seen_exc_info = exc_info
 
         result = self.app(environ, start_response)
-
-        class WSGIByteStream(SyncByteStream):
-            def __init__(self, result: typing.Iterable[bytes]) -> None:
-                self._result = _skip_leading_empty_chunks(result)
-
-            def __iter__(self) -> typing.Iterator[bytes]:
-                for part in self._result:
-                    yield part
 
         stream = WSGIByteStream(result)
 
