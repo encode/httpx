@@ -17,7 +17,7 @@ class SyncByteStream:
         Subclasses can override this method to release any network resources
         after a request/response cycle is complete.
 
-        Streaming cases should call use a `try...finally` block to ensure that
+        Streaming cases should use a `try...finally` block to ensure that
         the stream `close()` method is always called.
 
         Example:
