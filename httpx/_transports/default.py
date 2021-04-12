@@ -287,7 +287,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
 
             async def aclose(self) -> None:
                 with map_httpcore_exceptions():
-                    await byte_stream.aclose()
+                    await self._httpcore_stream.aclose()
 
         ensure_http_version_reason_phrase_as_bytes(extensions)
         stream = ResponseStream(byte_stream)
