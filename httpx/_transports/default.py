@@ -49,7 +49,7 @@ from .._exceptions import (
     WriteTimeout,
 )
 from .._types import CertTypes, VerifyTypes
-from .base import AsyncBaseTransport, BaseTransport
+from .base import AsyncBaseTransport, AsyncByteStream, BaseTransport, SyncByteStream
 
 T = typing.TypeVar("T", bound="HTTPTransport")
 A = typing.TypeVar("A", bound="AsyncHTTPTransport")
@@ -110,6 +110,20 @@ HTTPCORE_EXC_MAP = {
 }
 
 
+class ResponseStream(SyncByteStream):
+    def __init__(self, httpcore_stream: httpcore.SyncByteStream):
+        self._httpcore_stream = httpcore_stream
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        with map_httpcore_exceptions():
+            for part in self._httpcore_stream:
+                yield part
+
+    def close(self) -> None:
+        with map_httpcore_exceptions():
+            self._httpcore_stream.close()
+
+
 class HTTPTransport(BaseTransport):
     def __init__(
         self,
@@ -168,10 +182,10 @@ class HTTPTransport(BaseTransport):
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.Iterable[bytes],
+        stream: SyncByteStream,
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterable[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
     ]:
         with map_httpcore_exceptions():
             status_code, headers, byte_stream, extensions = self._pool.request(
@@ -182,22 +196,27 @@ class HTTPTransport(BaseTransport):
                 ext=extensions,
             )
 
-        def response_stream() -> typing.Iterator[bytes]:
-            with map_httpcore_exceptions():
-                for part in byte_stream:
-                    yield part
-
-        def close() -> None:
-            with map_httpcore_exceptions():
-                byte_stream.close()
-
         ensure_http_version_reason_phrase_as_bytes(extensions)
-        extensions["close"] = close
+        stream = ResponseStream(byte_stream)
 
-        return status_code, headers, response_stream(), extensions
+        return status_code, headers, stream, extensions
 
     def close(self) -> None:
         self._pool.close()
+
+
+class AsyncResponseStream(AsyncByteStream):
+    def __init__(self, httpcore_stream: httpcore.AsyncByteStream):
+        self._httpcore_stream = httpcore_stream
+
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        with map_httpcore_exceptions():
+            async for part in self._httpcore_stream:
+                yield part
+
+    async def aclose(self) -> None:
+        with map_httpcore_exceptions():
+            await self._httpcore_stream.aclose()
 
 
 class AsyncHTTPTransport(AsyncBaseTransport):
@@ -258,10 +277,10 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.AsyncIterable[bytes],
+        stream: AsyncByteStream,
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
     ]:
         with map_httpcore_exceptions():
             status_code, headers, byte_stream, extensions = await self._pool.arequest(
@@ -272,19 +291,10 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 ext=extensions,
             )
 
-        async def response_stream() -> typing.AsyncIterator[bytes]:
-            with map_httpcore_exceptions():
-                async for part in byte_stream:
-                    yield part
-
-        async def aclose() -> None:
-            with map_httpcore_exceptions():
-                await byte_stream.aclose()
-
         ensure_http_version_reason_phrase_as_bytes(extensions)
-        extensions["aclose"] = aclose
+        stream = AsyncResponseStream(byte_stream)
 
-        return status_code, headers, response_stream(), extensions
+        return status_code, headers, stream, extensions
 
     async def aclose(self) -> None:
         await self._pool.aclose()

@@ -3,18 +3,18 @@ import typing
 
 import pytest
 
-from httpx import StreamConsumed
+import httpx
 from httpx._content import encode_request, encode_response
 
 
 @pytest.mark.asyncio
 async def test_empty_content():
     headers, stream = encode_request()
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    assert isinstance(stream, httpx.SyncByteStream)
+    assert isinstance(stream, httpx.AsyncByteStream)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = stream.read()
+    async_content = await stream.aread()
 
     assert headers == {}
     assert sync_content == b""
@@ -62,7 +62,7 @@ async def test_iterator_content():
     assert headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
-    with pytest.raises(StreamConsumed):
+    with pytest.raises(httpx.StreamConsumed):
         [part for part in stream]
 
     # Support 'data' for compat with requests.
@@ -91,7 +91,7 @@ async def test_aiterator_content():
     assert headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
-    with pytest.raises(StreamConsumed):
+    with pytest.raises(httpx.StreamConsumed):
         [part async for part in stream]
 
     # Support 'data' for compat with requests.
@@ -382,7 +382,7 @@ async def test_response_iterator_content():
     assert headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
-    with pytest.raises(StreamConsumed):
+    with pytest.raises(httpx.StreamConsumed):
         [part for part in stream]
 
 
@@ -401,7 +401,7 @@ async def test_response_aiterator_content():
     assert headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
-    with pytest.raises(StreamConsumed):
+    with pytest.raises(httpx.StreamConsumed):
         [part async for part in stream]
 
 

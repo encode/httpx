@@ -1070,7 +1070,7 @@ class HelloWorldTransport(httpx.BaseTransport):
     def handle_request(self, method, url, headers, stream, extensions):
         message = {"text": "Hello, world!"}
         content = json.dumps(message).encode("utf-8")
-        stream = [content]
+        stream = httpx.ByteStream(content)
         headers = [(b"content-type", b"application/json")]
         extensions = {}
         return 200, headers, stream, extensions
@@ -1131,7 +1131,7 @@ class HTTPSRedirectTransport(httpx.BaseTransport):
             location = b"https://%s%s" % (host, path)
         else:
             location = b"https://%s:%d%s" % (host, port, path)
-        stream = [b""]
+        stream = httpx.ByteStream(b"")
         headers = [(b"location", location)]
         extensions = {}
         return 303, headers, stream, extensions

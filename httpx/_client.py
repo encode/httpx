@@ -26,12 +26,16 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
-from ._transports.base import AsyncBaseTransport, BaseTransport
+from ._transports.base import (
+    AsyncBaseTransport,
+    AsyncByteStream,
+    BaseTransport,
+    SyncByteStream,
+)
 from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
     AuthTypes,
-    ByteStream,
     CertTypes,
     CookieTypes,
     HeaderTypes,
@@ -509,7 +513,7 @@ class BaseClient:
 
     def _redirect_stream(
         self, request: Request, method: str
-    ) -> typing.Optional[ByteStream]:
+    ) -> typing.Optional[typing.Union[SyncByteStream, AsyncByteStream]]:
         """
         Return the body that should be used for the redirect request.
         """
@@ -880,8 +884,7 @@ class Client(BaseClient):
 
         def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(seconds=timer.sync_elapsed())
-            if "close" in extensions:
-                extensions["close"]()
+            stream.close()
 
         response = Response(
             status_code,
@@ -1524,8 +1527,7 @@ class AsyncClient(BaseClient):
 
         async def on_close(response: Response) -> None:
             response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
-            if "aclose" in extensions:
-                await extensions["aclose"]()
+            await stream.aclose()
 
         response = Response(
             status_code,

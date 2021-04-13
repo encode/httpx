@@ -3,6 +3,7 @@ import os
 import typing
 from pathlib import Path
 
+from ._transports.base import AsyncByteStream, SyncByteStream
 from ._types import FileContent, FileTypes, RequestFiles
 from ._utils import (
     format_form_param,
@@ -141,7 +142,7 @@ class FileField:
         yield from self.render_data()
 
 
-class MultipartStream:
+class MultipartStream(SyncByteStream, AsyncByteStream):
     """
     Request content as streaming multipart encoded form data.
     """
