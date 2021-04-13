@@ -945,6 +945,32 @@ client = httpx.Client(verify=False)
 
 The `client.get(...)` method and other request methods *do not* support changing the SSL settings on a per-request basis. If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
 
+### Client Side Certificates
+
+You can also specify a local cert to use as client side certificate, Either a path to an SSL certificate file, or   two-tuple of (certificate file, key file), or a three-tuple of (certificate file, key file, password)
+
+
+```python
+import httpx
+
+r = httpx.get("https://example.org", cert="path/to/client.pem")
+```
+
+Alternatively,
+
+```pycon
+>>> cert = ("path/to/client.pem", "path/to/client.key")
+>>> httpx.get("https://example.org", cert=cert)
+<Response [200 OK]>
+```
+
+or
+```
+>>> cert = ("path/to/client.pem", "path/to/client.key", "password")
+>>> httpx.get("https://example.org", cert=cert)
+<Response [200 OK]>
+```
+
 ### Making HTTPS requests to a local server
 
 When making requests to local servers, such as a development server running on `localhost`, you will typically be using unencrypted HTTP connections.
