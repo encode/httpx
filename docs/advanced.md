@@ -948,8 +948,6 @@ The `client.get(...)` method and other request methods *do not* support changing
 ### Client Side Certificates
 
 You can also specify a local cert to use as a client-side certificate, either a path to an SSL certificate file, or two-tuple of (certificate file, key file), or a three-tuple of (certificate file, key file, password)
-
-
 ```python
 import httpx
 
