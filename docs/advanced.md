@@ -963,6 +963,7 @@ Alternatively,
 ```
 
 or
+
 ```pycon
 >>> cert = ("path/to/client.pem", "path/to/client.key", "password")
 >>> httpx.get("https://example.org", cert=cert)
