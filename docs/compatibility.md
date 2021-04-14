@@ -37,6 +37,26 @@ HTTPX uses `utf-8` for encoding `str` request bodies. For example, when using `c
 
 For response bodies, assuming the server didn't send an explicit encoding then HTTPX will do its best to figure out an appropriate encoding. Unlike Requests which uses the `chardet` library, HTTPX relies on a plainer fallback strategy (basically attempting UTF-8, or using Windows-1252 as a fallback). This strategy should be robust enough to handle the vast majority of use cases.
 
+## Cookies
+
+If using a client instance, then cookies should always be set on the client rather than on a per-request basis.
+
+This usage is supported...
+
+```python
+client = httpx.Client(cookies=...)
+client.post(...)
+```
+
+This usage is deprecated...
+
+```python
+client = httpx.Client()
+client.post(..., cookies=...)
+```
+
+We prefer enforcing a stricter API here because it provides clearer expectations around cookie persistence, particularly when redirects occur.
+
 ## Status Codes
 
 In our documentation we prefer the uppercased versions, such as `codes.NOT_FOUND`, but also provide lower-cased versions for API compatibility with `requests`.
@@ -147,6 +167,6 @@ while request is not None:
 
 `requests` allows event hooks to mutate `Request` and `Response` objects. See [examples](https://requests.readthedocs.io/en/master/user/advanced/#event-hooks) given in the documentation for `requests`.
 
-In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response. 
+In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response.
 
 If you are looking for more control, consider checking out [Custom Transports](advanced.md#custom-transports).
