@@ -114,6 +114,16 @@ def test_raw_iterator(server):
     assert body == b"Hello, world!"
 
 
+def test_cannot_stream_async_request(server):
+    async def hello_world():  # pragma: nocover
+        yield b"Hello, "
+        yield b"world!"
+
+    with httpx.Client() as client:
+        with pytest.raises(RuntimeError):
+            client.post(server.url, content=hello_world())
+
+
 def test_raise_for_status(server):
     with httpx.Client() as client:
         for status_code in (200, 400, 404, 500, 505):
