@@ -35,7 +35,8 @@ async def test_bytes_content():
     assert async_content == b"Hello, world!"
 
     # Support 'data' for compat with requests.
-    headers, stream = encode_request(data=b"Hello, world!")  # type: ignore
+    with pytest.warns(DeprecationWarning):
+        headers, stream = encode_request(data=b"Hello, world!")  # type: ignore
     assert isinstance(stream, typing.Iterable)
     assert isinstance(stream, typing.AsyncIterable)
 
@@ -66,7 +67,8 @@ async def test_iterator_content():
         [part for part in stream]
 
     # Support 'data' for compat with requests.
-    headers, stream = encode_request(data=hello_world())  # type: ignore
+    with pytest.warns(DeprecationWarning):
+        headers, stream = encode_request(data=hello_world())  # type: ignore
     assert isinstance(stream, typing.Iterable)
     assert not isinstance(stream, typing.AsyncIterable)
 
@@ -95,7 +97,8 @@ async def test_aiterator_content():
         [part async for part in stream]
 
     # Support 'data' for compat with requests.
-    headers, stream = encode_request(data=hello_world())  # type: ignore
+    with pytest.warns(DeprecationWarning):
+        headers, stream = encode_request(data=hello_world())  # type: ignore
     assert not isinstance(stream, typing.Iterable)
     assert isinstance(stream, typing.AsyncIterable)
 

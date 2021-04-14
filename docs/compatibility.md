@@ -28,8 +28,8 @@ And using `data=...` to send form data:
 httpx.post(..., data={"message": "Hello, world"})
 ```
 
-If you're using a type checking tool such as `mypy`, you'll see warnings issues if using test/byte content with the `data` argument.
-However, for compatibility reasons with `requests`, we do still handle the case where `data=...` is used with raw binary and text contents.
+Using the `data=<text/byte content>` will raise a deprecation warning,
+and is expected to be fully removed with the HTTPX 1.0 release.
 
 ## Content encoding
 
@@ -147,6 +147,6 @@ while request is not None:
 
 `requests` allows event hooks to mutate `Request` and `Response` objects. See [examples](https://requests.readthedocs.io/en/master/user/advanced/#event-hooks) given in the documentation for `requests`.
 
-In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response. 
+In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response.
 
 If you are looking for more control, consider checking out [Custom Transports](advanced.md#custom-transports).
