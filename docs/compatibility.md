@@ -46,6 +46,9 @@ This usage is supported:
 ```python
 client = httpx.Client(cookies=...)
 client.post(...)
+```
+
+This usage is **not** supported:
 
 ```python
 client = httpx.Client()
