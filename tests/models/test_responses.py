@@ -1,4 +1,5 @@
 import json
+import pickle
 from unittest import mock
 
 import brotli
@@ -853,3 +854,40 @@ def test_generator_with_content_length_header():
     headers = {"Content-Length": "8"}
     response = httpx.Response(200, content=content(), headers=headers)
     assert response.headers == {"Content-Length": "8"}
+
+
+def test_response_picklable():
+    response = httpx.Response(
+        200,
+        content=b"Hello, world!",
+        request=httpx.Request("GET", "https://example.org"),
+    )
+    pickle_response = pickle.loads(pickle.dumps(response))
+    assert pickle_response.is_closed is True
+    assert pickle_response.is_stream_consumed is True
+    assert pickle_response.next_request is None
+    assert pickle_response.stream is not None
+    assert pickle_response.content == b"Hello, world!"
+    assert pickle_response.status_code == 200
+    assert pickle_response.request.url == response.request.url
+    assert pickle_response.extensions == {}
+    assert pickle_response.history == []
+
+
+@pytest.mark.asyncio
+async def test_response_async_streaming_picklable():
+    response = httpx.Response(200, content=async_streaming_body())
+    pickle_response = pickle.loads(pickle.dumps(response))
+    assert hasattr(pickle_response, "_content") is False
+    with pytest.raises(httpx.ResponseClosed):  # TODO: StreamClosed
+        await pickle_response.aread()
+    assert pickle_response.is_stream_consumed is False
+    assert pickle_response._num_bytes_downloaded == 0
+    assert pickle_response.headers == {"Transfer-Encoding": "chunked"}
+
+    response = httpx.Response(200, content=async_streaming_body())
+    await response.aread()
+    pickle_response = pickle.loads(pickle.dumps(response))
+    assert pickle_response.is_stream_consumed is True
+    assert pickle_response.content == b"Hello, world!"
+    assert pickle_response._num_bytes_downloaded == 13

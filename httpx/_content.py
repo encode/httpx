@@ -13,7 +13,7 @@ from typing import (
 )
 from urllib.parse import urlencode
 
-from ._exceptions import StreamConsumed
+from ._exceptions import ResponseClosed, StreamConsumed
 from ._multipart import MultipartStream
 from ._transports.base import AsyncByteStream, SyncByteStream
 from ._types import RequestContent, RequestData, RequestFiles, ResponseContent
@@ -59,6 +59,21 @@ class AsyncIteratorByteStream(AsyncByteStream):
         self._is_stream_consumed = True
         async for part in self._stream:
             yield part
+
+
+class UnattachedStream(AsyncByteStream, SyncByteStream):
+    """
+    If a request or response is serialized using pickle, then it is no longer
+    attached to a stream for I/O purposes. Any stream operations should result
+    in `httpx.StreamClosed`.
+    """
+
+    def __iter__(self) -> Iterator[bytes]:
+        raise ResponseClosed()  # TODO: StreamClosed
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        raise ResponseClosed()  # TODO: StreamClosed
+        yield b""  # pragma: nocover
 
 
 def encode_content(
