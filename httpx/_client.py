@@ -733,7 +733,7 @@ class Client(BaseClient):
         """
         if cookies is not None:
             message = (
-                "Setting per-request cookies=... is being deprecated, because "
+                "Setting per-request cookies=<...> is being deprecated, because "
                 "the expected behaviour on cookie persistence is ambiguous. Set "
                 "cookies directly on the client instance instead."
             )
