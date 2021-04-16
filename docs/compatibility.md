@@ -41,14 +41,11 @@ For response bodies, assuming the server didn't send an explicit encoding then H
 
 If using a client instance, then cookies should always be set on the client rather than on a per-request basis.
 
-This usage is supported...
+This usage is supported:
 
 ```python
 client = httpx.Client(cookies=...)
 client.post(...)
-```
-
-This usage is deprecated...
 
 ```python
 client = httpx.Client()
