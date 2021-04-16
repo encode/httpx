@@ -945,6 +945,32 @@ client = httpx.Client(verify=False)
 
 The `client.get(...)` method and other request methods *do not* support changing the SSL settings on a per-request basis. If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
 
+### Client Side Certificates
+
+You can also specify a local cert to use as a client-side certificate, either a path to an SSL certificate file, or two-tuple of (certificate file, key file), or a three-tuple of (certificate file, key file, password)
+
+```python
+import httpx
+
+r = httpx.get("https://example.org", cert="path/to/client.pem")
+```
+
+Alternatively,
+
+```pycon
+>>> cert = ("path/to/client.pem", "path/to/client.key")
+>>> httpx.get("https://example.org", cert=cert)
+<Response [200 OK]>
+```
+
+or
+
+```pycon
+>>> cert = ("path/to/client.pem", "path/to/client.key", "password")
+>>> httpx.get("https://example.org", cert=cert)
+<Response [200 OK]>
+```
+
 ### Making HTTPS requests to a local server
 
 When making requests to local servers, such as a development server running on `localhost`, you will typically be using unencrypted HTTP connections.
@@ -1044,7 +1070,7 @@ class HelloWorldTransport(httpx.BaseTransport):
     def handle_request(self, method, url, headers, stream, extensions):
         message = {"text": "Hello, world!"}
         content = json.dumps(message).encode("utf-8")
-        stream = [content]
+        stream = httpx.ByteStream(content)
         headers = [(b"content-type", b"application/json")]
         extensions = {}
         return 200, headers, stream, extensions
@@ -1105,7 +1131,7 @@ class HTTPSRedirectTransport(httpx.BaseTransport):
             location = b"https://%s%s" % (host, path)
         else:
             location = b"https://%s:%d%s" % (host, port, path)
-        stream = [b""]
+        stream = httpx.ByteStream(b"")
         headers = [(b"location", location)]
         extensions = {}
         return 303, headers, stream, extensions

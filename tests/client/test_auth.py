@@ -630,7 +630,7 @@ async def test_digest_auth_unavailable_streaming_body():
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         with pytest.raises(httpx.StreamConsumed):
-            await client.post(url, data=streaming_body(), auth=auth)
+            await client.post(url, content=streaming_body(), auth=auth)
 
 
 @pytest.mark.asyncio

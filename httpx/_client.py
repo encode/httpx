@@ -26,12 +26,16 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
-from ._transports.base import AsyncBaseTransport, BaseTransport
+from ._transports.base import (
+    AsyncBaseTransport,
+    AsyncByteStream,
+    BaseTransport,
+    SyncByteStream,
+)
 from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
     AuthTypes,
-    ByteStream,
     CertTypes,
     CookieTypes,
     HeaderTypes,
@@ -80,6 +84,52 @@ class ClientState(enum.Enum):
     #   The client has either exited the `with` block, or `close()` has
     #   been called explicitly.
     CLOSED = 3
+
+
+class BoundSyncStream(SyncByteStream):
+    """
+    A byte stream that is bound to a given response instance, and that
+    ensures the `response.elapsed` is set once the response is closed.
+    """
+
+    def __init__(
+        self, stream: SyncByteStream, response: Response, timer: Timer
+    ) -> None:
+        self._stream = stream
+        self._response = response
+        self._timer = timer
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        for chunk in self._stream:
+            yield chunk
+
+    def close(self) -> None:
+        seconds = self._timer.sync_elapsed()
+        self._response.elapsed = datetime.timedelta(seconds=seconds)
+        self._stream.close()
+
+
+class BoundAsyncStream(AsyncByteStream):
+    """
+    An async byte stream that is bound to a given response instance, and that
+    ensures the `response.elapsed` is set once the response is closed.
+    """
+
+    def __init__(
+        self, stream: AsyncByteStream, response: Response, timer: Timer
+    ) -> None:
+        self._stream = stream
+        self._response = response
+        self._timer = timer
+
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        async for chunk in self._stream:
+            yield chunk
+
+    async def aclose(self) -> None:
+        seconds = await self._timer.async_elapsed()
+        self._response.elapsed = datetime.timedelta(seconds=seconds)
+        await self._stream.aclose()
 
 
 class BaseClient:
@@ -515,7 +565,7 @@ class BaseClient:
 
     def _redirect_stream(
         self, request: Request, method: str
-    ) -> typing.Optional[ByteStream]:
+    ) -> typing.Optional[typing.Union[SyncByteStream, AsyncByteStream]]:
         """
         Return the body that should be used for the redirect request.
         """
@@ -548,7 +598,8 @@ class Client(BaseClient):
     sending requests.
     * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
     verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, or `False` (disable verification).
+    a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
+    (which will disable verification).
     * **cert** - *(optional)* An SSL certificate used by the requested host
     to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
@@ -877,19 +928,19 @@ class Client(BaseClient):
         timer = Timer()
         timer.sync_start()
 
+        if not isinstance(request.stream, SyncByteStream):
+            raise RuntimeError(
+                "Attempted to send an async request with a sync Client instance."
+            )
+
         with request_context(request=request):
             (status_code, headers, stream, extensions) = transport.handle_request(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
-                stream=request.stream,  # type: ignore
+                stream=request.stream,
                 extensions={"timeout": timeout.as_dict()},
             )
-
-        def on_close(response: Response) -> None:
-            response.elapsed = datetime.timedelta(seconds=timer.sync_elapsed())
-            if "close" in extensions:
-                extensions["close"]()
 
         response = Response(
             status_code,
@@ -897,9 +948,9 @@ class Client(BaseClient):
             stream=stream,
             extensions=extensions,
             request=request,
-            on_close=on_close,
         )
 
+        response.stream = BoundSyncStream(stream, response=response, timer=timer)
         self.cookies.extract_cookies(response)
 
         status = f"{response.status_code} {response.reason_phrase}"
@@ -1518,6 +1569,11 @@ class AsyncClient(BaseClient):
         timer = Timer()
         await timer.async_start()
 
+        if not isinstance(request.stream, AsyncByteStream):
+            raise RuntimeError(
+                "Attempted to send an sync request with an AsyncClient instance."
+            )
+
         with request_context(request=request):
             (
                 status_code,
@@ -1528,14 +1584,9 @@ class AsyncClient(BaseClient):
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
-                stream=request.stream,  # type: ignore
+                stream=request.stream,
                 extensions={"timeout": timeout.as_dict()},
             )
-
-        async def on_close(response: Response) -> None:
-            response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
-            if "aclose" in extensions:
-                await extensions["aclose"]()
 
         response = Response(
             status_code,
@@ -1543,9 +1594,9 @@ class AsyncClient(BaseClient):
             stream=stream,
             extensions=extensions,
             request=request,
-            on_close=on_close,
         )
 
+        response.stream = BoundAsyncStream(stream, response=response, timer=timer)
         self.cookies.extract_cookies(response)
 
         status = f"{response.status_code} {response.reason_phrase}"

@@ -3,6 +3,7 @@ from ._api import delete, get, head, options, patch, post, put, request, stream
 from ._auth import Auth, BasicAuth, DigestAuth
 from ._client import USE_CLIENT_DEFAULT, AsyncClient, Client
 from ._config import Limits, Proxy, Timeout, create_ssl_context
+from ._content import ByteStream
 from ._exceptions import (
     CloseError,
     ConnectError,
@@ -36,7 +37,12 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import StatusCode, codes
 from ._transports.asgi import ASGITransport
-from ._transports.base import AsyncBaseTransport, BaseTransport
+from ._transports.base import (
+    AsyncBaseTransport,
+    AsyncByteStream,
+    BaseTransport,
+    SyncByteStream,
+)
 from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.mock import MockTransport
 from ._transports.wsgi import WSGITransport
@@ -47,11 +53,13 @@ __all__ = [
     "__version__",
     "ASGITransport",
     "AsyncBaseTransport",
+    "AsyncByteStream",
     "AsyncClient",
     "AsyncHTTPTransport",
     "Auth",
     "BaseTransport",
     "BasicAuth",
+    "ByteStream",
     "Client",
     "CloseError",
     "codes",
@@ -97,6 +105,7 @@ __all__ = [
     "stream",
     "StreamConsumed",
     "StreamError",
+    "SyncByteStream",
     "Timeout",
     "TimeoutException",
     "TooManyRedirects",

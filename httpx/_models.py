@@ -11,7 +11,7 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode
 import rfc3986
 import rfc3986.exceptions
 
-from ._content import PlainByteStream, encode_request, encode_response
+from ._content import ByteStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
     ByteChunker,
@@ -33,8 +33,8 @@ from ._exceptions import (
     request_context,
 )
 from ._status_codes import codes
+from ._transports.base import AsyncByteStream, SyncByteStream
 from ._types import (
-    ByteStream,
     CookieTypes,
     HeaderTypes,
     PrimitiveData,
@@ -798,7 +798,7 @@ class Request:
         data: RequestData = None,
         files: RequestFiles = None,
         json: typing.Any = None,
-        stream: ByteStream = None,
+        stream: typing.Union[SyncByteStream, AsyncByteStream] = None,
     ):
         if isinstance(method, bytes):
             self.method = method.decode("ascii").upper()
@@ -872,7 +872,7 @@ class Request:
             # If a streaming request has been read entirely into memory, then
             # we can replace the stream with a raw bytes implementation,
             # to ensure that any non-replayable streams can still be used.
-            self.stream = PlainByteStream(self._content)
+            self.stream = ByteStream(self._content)
         return self._content
 
     async def aread(self) -> bytes:
@@ -885,7 +885,7 @@ class Request:
             # If a streaming request has been read entirely into memory, then
             # we can replace the stream with a raw bytes implementation,
             # to ensure that any non-replayable streams can still be used.
-            self.stream = PlainByteStream(self._content)
+            self.stream = ByteStream(self._content)
         return self._content
 
     def __repr__(self) -> str:
@@ -904,11 +904,10 @@ class Response:
         text: str = None,
         html: str = None,
         json: typing.Any = None,
-        stream: ByteStream = None,
+        stream: typing.Union[SyncByteStream, AsyncByteStream] = None,
         request: Request = None,
         extensions: dict = None,
         history: typing.List["Response"] = None,
-        on_close: typing.Callable = None,
     ):
         self.status_code = status_code
         self.headers = Headers(headers)
@@ -923,7 +922,6 @@ class Response:
 
         self.extensions = {} if extensions is None else extensions
         self.history = [] if history is None else list(history)
-        self._on_close = on_close
 
         self.is_closed = False
         self.is_stream_consumed = False
@@ -1222,7 +1220,7 @@ class Response:
             raise StreamConsumed()
         if self.is_closed:
             raise ResponseClosed()
-        if not isinstance(self.stream, typing.Iterable):
+        if not isinstance(self.stream, SyncByteStream):
             raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
         self.is_stream_consumed = True
@@ -1245,11 +1243,13 @@ class Response:
         Close the response and release the connection.
         Automatically called if the response body is read to completion.
         """
+        if not isinstance(self.stream, SyncByteStream):
+            raise RuntimeError("Attempted to call an sync close on an async stream.")
+
         if not self.is_closed:
             self.is_closed = True
-            if self._on_close is not None:
-                with request_context(request=self._request):
-                    self._on_close(self)
+            with request_context(request=self._request):
+                self.stream.close()
 
     async def aread(self) -> bytes:
         """
@@ -1318,8 +1318,8 @@ class Response:
             raise StreamConsumed()
         if self.is_closed:
             raise ResponseClosed()
-        if not isinstance(self.stream, typing.AsyncIterable):
-            raise RuntimeError("Attempted to call a async iterator on a sync stream.")
+        if not isinstance(self.stream, AsyncByteStream):
+            raise RuntimeError("Attempted to call an async iterator on an sync stream.")
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
@@ -1341,11 +1341,13 @@ class Response:
         Close the response and release the connection.
         Automatically called if the response body is read to completion.
         """
+        if not isinstance(self.stream, AsyncByteStream):
+            raise RuntimeError("Attempted to call an async close on an sync stream.")
+
         if not self.is_closed:
             self.is_closed = True
-            if self._on_close is not None:
-                with request_context(request=self._request):
-                    await self._on_close(self)
+            with request_context(request=self._request):
+                await self.stream.aclose()
 
 
 class Cookies(MutableMapping):
