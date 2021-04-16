@@ -1,8 +1,9 @@
 import typing
+from contextlib import contextmanager
 
-from ._client import Client, StreamContextManager
+from ._client import Client
 from ._config import DEFAULT_TIMEOUT_CONFIG
-from ._models import Request, Response
+from ._models import Response
 from ._types import (
     AuthTypes,
     CertTypes,
@@ -106,6 +107,7 @@ def request(
         )
 
 
+@contextmanager
 def stream(
     method: str,
     url: URLTypes,
@@ -124,7 +126,7 @@ def stream(
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     trust_env: bool = True,
-) -> StreamContextManager:
+) -> typing.Iterator[Response]:
     """
     Alternative to `httpx.request()` that streams the response body
     instead of loading it into memory at once.
@@ -135,26 +137,23 @@ def stream(
 
     [0]: /quickstart#streaming-responses
     """
-    client = Client(proxies=proxies, cert=cert, verify=verify, trust_env=trust_env)
-    request = Request(
-        method=method,
-        url=url,
-        params=params,
-        content=content,
-        data=data,
-        files=files,
-        json=json,
-        headers=headers,
-        cookies=cookies,
-    )
-    return StreamContextManager(
-        client=client,
-        request=request,
-        auth=auth,
-        timeout=timeout,
-        allow_redirects=allow_redirects,
-        close_client=True,
-    )
+    with Client(
+        proxies=proxies, cert=cert, verify=verify, trust_env=trust_env
+    ) as client:
+        with client.stream(
+            method=method,
+            url=url,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            allow_redirects=allow_redirects,
+        ) as response:
+            yield response
 
 
 def get(
