@@ -4,22 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Master
+## 0.18.0 (TODO: Date)
 
-The 0.18.x release series formalises our low-level Transport API, introducing the
-base classes `httpx.BaseTransport` and `httpx.AsyncBaseTransport`.
+The 0.18.x release series formalises our low-level Transport API, introducing the base classes `httpx.BaseTransport` and `httpx.AsyncBaseTransport`.
 
-See the "Writing custom transports" documentation and the `httpx.BaseTransport.handle_request()`
-docstring for more complete details on implementing custom transports.
+See the "[Writing custom transports](https://www.python-httpx.org/advanced/#writing-custom-transports)" documentation and [the `httpx.BaseTransport.handle_request()` docstring](https://github.com/encode/httpx/blob/397aad98fdc8b7580a5fc3e88f1578b4302c6382/httpx/_transports/base.py#L77-L147) for more complete details on implementing custom transports.
 
-Pull request #1522 includes a checklist of differences from the previous `httpcore` transport API,
-for developers implementing custom transports.
+Pull request #1522 includes a checklist of differences from the previous `httpcore` transport API, for developers implementing custom transports.
 
 ### Changed
 
 * Transport instances now inherit from `httpx.BaseTransport` or `httpx.AsyncBaseTransport`,
-  and should implement either the `handle_request` method or `handle_async_request` method.
-* The `response.ext` property and `Response(ext=...)` argument are now named `extensions`.
+  and should implement either the `handle_request` method or `handle_async_request` method. (Pull #1522, #1550)
+* The `response.ext` property and `Response(ext=...)` argument are now named `extensions`. (Pull #1522)
+* The recommendation to not use `data=<bytes|str|bytes (a)iterator>` in favour of `content=<bytes|str|bytes (a)iterator>` has now been escalated to a deprecation warning. (Pull #1573)
+* Drop `Response(on_close=...)` from API, since it was a bit of leaking implementation detail. (Pull #1572)
+
+### Added
+
+* Handle `data={"key": [None|int|float|bool]}` cases. (Pull #1539)
+
+### Fixed
+
+* Fix Content-Length for cases of `files=...` where unicode string is used as the file content. (Pull #1537)
+* Fix some cases of merging relative URLs against `Client(base_url=...)`. (Pull #1532)
 
 ## 0.17.1 (March 15th, 2021)
 
