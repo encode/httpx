@@ -1,4 +1,5 @@
 import inspect
+import warnings
 from json import dumps as json_dumps
 from typing import (
     Any,
@@ -148,6 +149,8 @@ def encode_request(
         # However for compat with requests, we *do* still support
         # `data=<bytes...>` usages. We deal with that case here, treating it
         # as if `content=<...>` had been supplied instead.
+        message = "Use 'content=<...>' to upload raw bytes/text content."
+        warnings.warn(message, DeprecationWarning)
         return encode_content(data)
 
     if content is not None:

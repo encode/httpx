@@ -382,6 +382,16 @@ def test_iter_raw_on_async():
         [part for part in response.iter_raw()]
 
 
+def test_close_on_async():
+    response = httpx.Response(
+        200,
+        content=async_streaming_body(),
+    )
+
+    with pytest.raises(RuntimeError):
+        response.close()
+
+
 def test_iter_raw_increments_updates_counter():
     response = httpx.Response(200, content=streaming_body())
 
@@ -428,6 +438,17 @@ async def test_aiter_raw_on_sync():
 
     with pytest.raises(RuntimeError):
         [part async for part in response.aiter_raw()]
+
+
+@pytest.mark.asyncio
+async def test_aclose_on_sync():
+    response = httpx.Response(
+        200,
+        content=streaming_body(),
+    )
+
+    with pytest.raises(RuntimeError):
+        await response.aclose()
 
 
 @pytest.mark.asyncio

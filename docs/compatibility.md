@@ -28,8 +28,8 @@ And using `data=...` to send form data:
 httpx.post(..., data={"message": "Hello, world"})
 ```
 
-If you're using a type checking tool such as `mypy`, you'll see warnings issues if using test/byte content with the `data` argument.
-However, for compatibility reasons with `requests`, we do still handle the case where `data=...` is used with raw binary and text contents.
+Using the `data=<text/byte content>` will raise a deprecation warning,
+and is expected to be fully removed with the HTTPX 1.0 release.
 
 ## Content encoding
 
