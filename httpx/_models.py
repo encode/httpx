@@ -908,7 +908,6 @@ class Response:
         request: Request = None,
         extensions: dict = None,
         history: typing.List["Response"] = None,
-        on_close: typing.Callable = None,
     ):
         self.status_code = status_code
         self.headers = Headers(headers)
@@ -923,7 +922,6 @@ class Response:
 
         self.extensions = {} if extensions is None else extensions
         self.history = [] if history is None else list(history)
-        self._on_close = on_close
 
         self.is_closed = False
         self.is_stream_consumed = False
@@ -1245,11 +1243,13 @@ class Response:
         Close the response and release the connection.
         Automatically called if the response body is read to completion.
         """
+        if not isinstance(self.stream, SyncByteStream):
+            raise RuntimeError("Attempted to call an sync close on an async stream.")
+
         if not self.is_closed:
             self.is_closed = True
-            if self._on_close is not None:
-                with request_context(request=self._request):
-                    self._on_close(self)
+            with request_context(request=self._request):
+                self.stream.close()
 
     async def aread(self) -> bytes:
         """
@@ -1341,11 +1341,13 @@ class Response:
         Close the response and release the connection.
         Automatically called if the response body is read to completion.
         """
+        if not isinstance(self.stream, AsyncByteStream):
+            raise RuntimeError("Attempted to call an async close on an sync stream.")
+
         if not self.is_closed:
             self.is_closed = True
-            if self._on_close is not None:
-                with request_context(request=self._request):
-                    await self._on_close(self)
+            with request_context(request=self._request):
+                await self.stream.aclose()
 
 
 class Cookies(MutableMapping):
