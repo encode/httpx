@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 The 0.18.x release series formalises our low-level Transport API, introducing the base classes `httpx.BaseTransport` and `httpx.AsyncBaseTransport`.
 
-See the "[Writing custom transports](https://www.python-httpx.org/advanced/#writing-custom-transports)" documentation and [the `httpx.BaseTransport.handle_request()` docstring](https://github.com/encode/httpx/blob/397aad98fdc8b7580a5fc3e88f1578b4302c6382/httpx/_transports/base.py#L77-L147) for more complete details on implementing custom transports.
+See the "[Writing custom transports](https://www.python-httpx.org/advanced/#writing-custom-transports)" documentation and the [`httpx.BaseTransport.handle_request()`](https://github.com/encode/httpx/blob/397aad98fdc8b7580a5fc3e88f1578b4302c6382/httpx/_transports/base.py#L77-L147) docstring for more complete details on implementing custom transports.
 
 Pull request #1522 includes a checklist of differences from the previous `httpcore` transport API, for developers implementing custom transports.
 
