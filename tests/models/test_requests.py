@@ -97,11 +97,12 @@ async def test_aread_and_stream_data():
     assert content == request.content
 
 
-@pytest.mark.asyncio
-async def test_cannot_access_content_without_read():
-    # Ensure a request may still be streamed if it has been read.
-    # Needed for cases such as authentication classes that read the request body.
-    request = httpx.Request("POST", "http://example.org", json={"test": 123})
+def test_cannot_access_streaming_content_without_read():
+    # Ensure that streaming requests
+    def streaming_body():  # pragma: nocover
+        yield ""
+
+    request = httpx.Request("POST", "http://example.org", content=streaming_body())
     with pytest.raises(httpx.RequestNotRead):
         request.content
 

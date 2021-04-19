@@ -294,25 +294,23 @@ class StreamConsumed(StreamError):
 
 class ResponseNotRead(StreamError):
     """
-    Attempted to access response content, without having called `read()`
-    after a streaming response.
+    Attempted to access streaming response content, without having called `read()`.
     """
 
     def __init__(self) -> None:
         message = (
-            "Attempted to access response content, without having called `read()` "
-            "after a streaming response."
+            "Attempted to access streaming response content, without having called `read()`."
         )
         super().__init__(message)
 
 
 class RequestNotRead(StreamError):
     """
-    Attempted to access request content, without having called `read()`.
+    Attempted to access streaming request content, without having called `read()`.
     """
 
     def __init__(self) -> None:
-        message = "Attempted to access request content, without having called `read()`."
+        message = "Attempted to access streaming request content, without having called `read()`."
         super().__init__(message)
 
 
