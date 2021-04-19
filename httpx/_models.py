@@ -829,6 +829,9 @@ class Request:
             headers, stream = encode_request(content, data, files, json)
             self._prepare(headers)
             self.stream = stream
+            # Load the request body, except for streaming content.
+            if isinstance(stream, ByteStream):
+                self.read()
 
     def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
         for key, value in default_headers.items():
@@ -869,10 +872,11 @@ class Request:
         if not hasattr(self, "_content"):
             assert isinstance(self.stream, typing.Iterable)
             self._content = b"".join(self.stream)
-            # If a streaming request has been read entirely into memory, then
-            # we can replace the stream with a raw bytes implementation,
-            # to ensure that any non-replayable streams can still be used.
-            self.stream = ByteStream(self._content)
+            if not isinstance(self.stream, ByteStream):
+                # If a streaming request has been read entirely into memory, then
+                # we can replace the stream with a raw bytes implementation,
+                # to ensure that any non-replayable streams can still be used.
+                self.stream = ByteStream(self._content)
         return self._content
 
     async def aread(self) -> bytes:
@@ -882,10 +886,11 @@ class Request:
         if not hasattr(self, "_content"):
             assert isinstance(self.stream, typing.AsyncIterable)
             self._content = b"".join([part async for part in self.stream])
-            # If a streaming request has been read entirely into memory, then
-            # we can replace the stream with a raw bytes implementation,
-            # to ensure that any non-replayable streams can still be used.
-            self.stream = ByteStream(self._content)
+            if not isinstance(self.stream, ByteStream):
+                # If a streaming request has been read entirely into memory, then
+                # we can replace the stream with a raw bytes implementation,
+                # to ensure that any non-replayable streams can still be used.
+                self.stream = ByteStream(self._content)
         return self._content
 
     def __repr__(self) -> str:
@@ -918,8 +923,6 @@ class Response:
         # the client will set `response.next_request`.
         self.next_request: typing.Optional[Request] = None
 
-        self.call_next: typing.Optional[typing.Callable] = None
-
         self.extensions = {} if extensions is None else extensions
         self.history = [] if history is None else list(history)
 
@@ -943,7 +946,7 @@ class Response:
             headers, stream = encode_response(content, text, html, json)
             self._prepare(headers)
             self.stream = stream
-            if content is None or isinstance(content, (bytes, str)):
+            if isinstance(stream, ByteStream):
                 # Load the response body, except for streaming content.
                 self.read()
 
