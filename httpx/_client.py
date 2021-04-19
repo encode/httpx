@@ -735,6 +735,14 @@ class Client(BaseClient):
 
         [0]: /advanced/#merging-of-configuration
         """
+        if cookies is not None:
+            message = (
+                "Setting per-request cookies=<...> is being deprecated, because "
+                "the expected behaviour on cookie persistence is ambiguous. Set "
+                "cookies directly on the client instance instead."
+            )
+            warnings.warn(message, DeprecationWarning)
+
         request = self.build_request(
             method=method,
             url=url,

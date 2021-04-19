@@ -90,7 +90,12 @@ def request(
     ```
     """
     with Client(
-        proxies=proxies, cert=cert, verify=verify, timeout=timeout, trust_env=trust_env
+        cookies=cookies,
+        proxies=proxies,
+        cert=cert,
+        verify=verify,
+        timeout=timeout,
+        trust_env=trust_env,
     ) as client:
         return client.request(
             method=method,
@@ -101,7 +106,6 @@ def request(
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
         )
@@ -138,7 +142,7 @@ def stream(
     [0]: /quickstart#streaming-responses
     """
     with Client(
-        proxies=proxies, cert=cert, verify=verify, trust_env=trust_env
+        cookies=cookies, proxies=proxies, cert=cert, verify=verify, trust_env=trust_env
     ) as client:
         with client.stream(
             method=method,
@@ -149,7 +153,6 @@ def stream(
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
         ) as response:
