@@ -660,7 +660,7 @@ def test_cannot_read_after_response_closed():
     )
 
     response.close()
-    with pytest.raises(httpx.ResponseClosed):
+    with pytest.raises(httpx.StreamClosed):
         response.read()
 
 
@@ -672,7 +672,7 @@ async def test_cannot_aread_after_response_closed():
     )
 
     await response.aclose()
-    with pytest.raises(httpx.ResponseClosed):
+    with pytest.raises(httpx.StreamClosed):
         await response.aread()
 
 
