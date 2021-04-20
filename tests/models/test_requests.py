@@ -200,7 +200,8 @@ async def test_request_async_streaming_content_picklable():
     data = streaming_body(b"test 123")
     request = httpx.Request("POST", "http://example.org", content=data)
     pickle_request = pickle.loads(pickle.dumps(request))
-    assert hasattr(pickle_request, "_content") is False
+    with pytest.raises(httpx.RequestNotRead):
+        pickle_request.content
     with pytest.raises(httpx.ResponseClosed):  # TODO: StreamClosed
         await pickle_request.aread()
 
@@ -216,7 +217,8 @@ def test_request_generator_content_picklable():
 
     request = httpx.Request("POST", "http://example.org", content=content())
     pickle_request = pickle.loads(pickle.dumps(request))
-    assert hasattr(pickle_request, "_content") is False
+    with pytest.raises(httpx.RequestNotRead):
+        pickle_request.content
     with pytest.raises(httpx.ResponseClosed):  # TODO: StreamClosed
         pickle_request.read()
 

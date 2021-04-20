@@ -878,11 +878,12 @@ def test_response_picklable():
 async def test_response_async_streaming_picklable():
     response = httpx.Response(200, content=async_streaming_body())
     pickle_response = pickle.loads(pickle.dumps(response))
-    assert hasattr(pickle_response, "_content") is False
+    with pytest.raises(httpx.ResponseNotRead):
+        pickle_response.content
     with pytest.raises(httpx.ResponseClosed):  # TODO: StreamClosed
         await pickle_response.aread()
     assert pickle_response.is_stream_consumed is False
-    assert pickle_response._num_bytes_downloaded == 0
+    assert pickle_response.num_bytes_downloaded == 0
     assert pickle_response.headers == {"Transfer-Encoding": "chunked"}
 
     response = httpx.Response(200, content=async_streaming_body())
@@ -890,4 +891,4 @@ async def test_response_async_streaming_picklable():
     pickle_response = pickle.loads(pickle.dumps(response))
     assert pickle_response.is_stream_consumed is True
     assert pickle_response.content == b"Hello, world!"
-    assert pickle_response._num_bytes_downloaded == 13
+    assert pickle_response.num_bytes_downloaded == 13
