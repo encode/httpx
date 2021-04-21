@@ -78,19 +78,6 @@ def map_httpcore_exceptions() -> typing.Iterator[None]:
         raise mapped_exc(message) from exc
 
 
-def ensure_http_version_reason_phrase_as_bytes(extensions: dict) -> None:
-    # From HTTPX 0.18 onwards we're treating the "reason_phrase" and "http_version"
-    # extensions as bytes, in order to be more precise. Also we're using the
-    # "reason_phrase" key in preference to "reason", in order to match properly
-    # with the HTTP spec naming.
-    # HTTPCore 0.12 does not yet use these same conventions for the extensions,
-    # so we bridge between the two styles for now.
-    if "reason" in extensions:
-        extensions["reason_phrase"] = extensions.pop("reason").encode("ascii")
-    if "http_version" in extensions:
-        extensions["http_version"] = extensions["http_version"].encode("ascii")
-
-
 HTTPCORE_EXC_MAP = {
     httpcore.TimeoutException: TimeoutException,
     httpcore.ConnectTimeout: ConnectTimeout,
@@ -188,15 +175,14 @@ class HTTPTransport(BaseTransport):
         int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
     ]:
         with map_httpcore_exceptions():
-            status_code, headers, byte_stream, extensions = self._pool.request(
+            status_code, headers, byte_stream, extensions = self._pool.handle_request(
                 method=method,
                 url=url,
                 headers=headers,
                 stream=httpcore.IteratorByteStream(iter(stream)),
-                ext=extensions,
+                extensions=extensions,
             )
 
-        ensure_http_version_reason_phrase_as_bytes(extensions)
         stream = ResponseStream(byte_stream)
 
         return status_code, headers, stream, extensions
@@ -283,15 +269,19 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
     ]:
         with map_httpcore_exceptions():
-            status_code, headers, byte_stream, extensions = await self._pool.arequest(
+            (
+                status_code,
+                headers,
+                byte_stream,
+                extensions,
+            ) = await self._pool.handle_async_request(
                 method=method,
                 url=url,
                 headers=headers,
                 stream=httpcore.AsyncIteratorByteStream(stream.__aiter__()),
-                ext=extensions,
+                extensions=extensions,
             )
 
-        ensure_http_version_reason_phrase_as_bytes(extensions)
         stream = AsyncResponseStream(byte_stream)
 
         return status_code, headers, stream, extensions
