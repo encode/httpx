@@ -11,7 +11,7 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode
 import rfc3986
 import rfc3986.exceptions
 
-from ._content import ByteStream, encode_request, encode_response
+from ._content import ByteStream, UnattachedStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
     ByteChunker,
@@ -27,8 +27,8 @@ from ._exceptions import (
     HTTPStatusError,
     InvalidURL,
     RequestNotRead,
-    ResponseClosed,
     ResponseNotRead,
+    StreamClosed,
     StreamConsumed,
     request_context,
 )
@@ -829,6 +829,9 @@ class Request:
             headers, stream = encode_request(content, data, files, json)
             self._prepare(headers)
             self.stream = stream
+            # Load the request body, except for streaming content.
+            if isinstance(stream, ByteStream):
+                self.read()
 
     def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
         for key, value in default_headers.items():
@@ -869,10 +872,11 @@ class Request:
         if not hasattr(self, "_content"):
             assert isinstance(self.stream, typing.Iterable)
             self._content = b"".join(self.stream)
-            # If a streaming request has been read entirely into memory, then
-            # we can replace the stream with a raw bytes implementation,
-            # to ensure that any non-replayable streams can still be used.
-            self.stream = ByteStream(self._content)
+            if not isinstance(self.stream, ByteStream):
+                # If a streaming request has been read entirely into memory, then
+                # we can replace the stream with a raw bytes implementation,
+                # to ensure that any non-replayable streams can still be used.
+                self.stream = ByteStream(self._content)
         return self._content
 
     async def aread(self) -> bytes:
@@ -882,16 +886,29 @@ class Request:
         if not hasattr(self, "_content"):
             assert isinstance(self.stream, typing.AsyncIterable)
             self._content = b"".join([part async for part in self.stream])
-            # If a streaming request has been read entirely into memory, then
-            # we can replace the stream with a raw bytes implementation,
-            # to ensure that any non-replayable streams can still be used.
-            self.stream = ByteStream(self._content)
+            if not isinstance(self.stream, ByteStream):
+                # If a streaming request has been read entirely into memory, then
+                # we can replace the stream with a raw bytes implementation,
+                # to ensure that any non-replayable streams can still be used.
+                self.stream = ByteStream(self._content)
         return self._content
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         url = str(self.url)
         return f"<{class_name}({self.method!r}, {url!r})>"
+
+    def __getstate__(self) -> typing.Dict[str, typing.Any]:
+        return {
+            name: value
+            for name, value in self.__dict__.items()
+            if name not in ["stream"]
+        }
+
+    def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
+        for name, value in state.items():
+            setattr(self, name, value)
+        self.stream = UnattachedStream()
 
 
 class Response:
@@ -918,8 +935,6 @@ class Response:
         # the client will set `response.next_request`.
         self.next_request: typing.Optional[Request] = None
 
-        self.call_next: typing.Optional[typing.Callable] = None
-
         self.extensions = {} if extensions is None else extensions
         self.history = [] if history is None else list(history)
 
@@ -943,7 +958,7 @@ class Response:
             headers, stream = encode_response(content, text, html, json)
             self._prepare(headers)
             self.stream = stream
-            if content is None or isinstance(content, (bytes, str)):
+            if isinstance(stream, ByteStream):
                 # Load the response body, except for streaming content.
                 self.read()
 
@@ -1153,6 +1168,19 @@ class Response:
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
+    def __getstate__(self) -> typing.Dict[str, typing.Any]:
+        return {
+            name: value
+            for name, value in self.__dict__.items()
+            if name not in ["stream", "is_closed", "_decoder"]
+        }
+
+    def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
+        for name, value in state.items():
+            setattr(self, name, value)
+        self.is_closed = True
+        self.stream = UnattachedStream()
+
     def read(self) -> bytes:
         """
         Read and return the response content.
@@ -1219,7 +1247,7 @@ class Response:
         if self.is_stream_consumed:
             raise StreamConsumed()
         if self.is_closed:
-            raise ResponseClosed()
+            raise StreamClosed()
         if not isinstance(self.stream, SyncByteStream):
             raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
@@ -1317,7 +1345,7 @@ class Response:
         if self.is_stream_consumed:
             raise StreamConsumed()
         if self.is_closed:
-            raise ResponseClosed()
+            raise StreamClosed()
         if not isinstance(self.stream, AsyncByteStream):
             raise RuntimeError("Attempted to call an async iterator on an sync stream.")
 
