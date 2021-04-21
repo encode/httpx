@@ -1,3 +1,4 @@
+import pickle
 import typing
 
 import pytest
@@ -174,3 +175,54 @@ def test_url():
     assert request.url.port is None
     assert request.url.path == "/abc"
     assert request.url.raw_path == b"/abc?foo=bar"
+
+
+def test_request_picklable():
+    request = httpx.Request("POST", "http://example.org", json={"test": 123})
+    pickle_request = pickle.loads(pickle.dumps(request))
+    assert pickle_request.method == "POST"
+    assert pickle_request.url.path == "/"
+    assert pickle_request.headers["Content-Type"] == "application/json"
+    assert pickle_request.content == b'{"test": 123}'
+    assert pickle_request.stream is not None
+    assert request.headers == {
+        "Host": "example.org",
+        "Content-Type": "application/json",
+        "content-length": "13",
+    }
+
+
+@pytest.mark.asyncio
+async def test_request_async_streaming_content_picklable():
+    async def streaming_body(data):
+        yield data
+
+    data = streaming_body(b"test 123")
+    request = httpx.Request("POST", "http://example.org", content=data)
+    pickle_request = pickle.loads(pickle.dumps(request))
+    with pytest.raises(httpx.RequestNotRead):
+        pickle_request.content
+    with pytest.raises(httpx.StreamClosed):
+        await pickle_request.aread()
+
+    request = httpx.Request("POST", "http://example.org", content=data)
+    await request.aread()
+    pickle_request = pickle.loads(pickle.dumps(request))
+    assert pickle_request.content == b"test 123"
+
+
+def test_request_generator_content_picklable():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    request = httpx.Request("POST", "http://example.org", content=content())
+    pickle_request = pickle.loads(pickle.dumps(request))
+    with pytest.raises(httpx.RequestNotRead):
+        pickle_request.content
+    with pytest.raises(httpx.StreamClosed):
+        pickle_request.read()
+
+    request = httpx.Request("POST", "http://example.org", content=content())
+    request.read()
+    pickle_request = pickle.loads(pickle.dumps(request))
+    assert pickle_request.content == b"test 123"

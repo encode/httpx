@@ -11,7 +11,7 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode
 import rfc3986
 import rfc3986.exceptions
 
-from ._content import ByteStream, encode_request, encode_response
+from ._content import ByteStream, UnattachedStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
     ByteChunker,
@@ -898,6 +898,18 @@ class Request:
         url = str(self.url)
         return f"<{class_name}({self.method!r}, {url!r})>"
 
+    def __getstate__(self) -> typing.Dict[str, typing.Any]:
+        return {
+            name: value
+            for name, value in self.__dict__.items()
+            if name not in ["stream"]
+        }
+
+    def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
+        for name, value in state.items():
+            setattr(self, name, value)
+        self.stream = UnattachedStream()
+
 
 class Response:
     def __init__(
@@ -1155,6 +1167,19 @@ class Response:
 
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
+
+    def __getstate__(self) -> typing.Dict[str, typing.Any]:
+        return {
+            name: value
+            for name, value in self.__dict__.items()
+            if name not in ["stream", "is_closed", "_decoder"]
+        }
+
+    def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
+        for name, value in state.items():
+            setattr(self, name, value)
+        self.is_closed = True
+        self.stream = UnattachedStream()
 
     def read(self) -> bytes:
         """
