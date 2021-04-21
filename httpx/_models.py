@@ -27,8 +27,8 @@ from ._exceptions import (
     HTTPStatusError,
     InvalidURL,
     RequestNotRead,
-    ResponseClosed,
     ResponseNotRead,
+    StreamClosed,
     StreamConsumed,
     request_context,
 )
@@ -1247,7 +1247,7 @@ class Response:
         if self.is_stream_consumed:
             raise StreamConsumed()
         if self.is_closed:
-            raise ResponseClosed()
+            raise StreamClosed()
         if not isinstance(self.stream, SyncByteStream):
             raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
@@ -1345,7 +1345,7 @@ class Response:
         if self.is_stream_consumed:
             raise StreamConsumed()
         if self.is_closed:
-            raise ResponseClosed()
+            raise StreamClosed()
         if not isinstance(self.stream, AsyncByteStream):
             raise RuntimeError("Attempted to call an async iterator on an sync stream.")
 
