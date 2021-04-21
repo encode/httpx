@@ -13,7 +13,7 @@ from typing import (
 )
 from urllib.parse import urlencode
 
-from ._exceptions import ResponseClosed, StreamConsumed
+from ._exceptions import StreamClosed, StreamConsumed
 from ._multipart import MultipartStream
 from ._transports.base import AsyncByteStream, SyncByteStream
 from ._types import RequestContent, RequestData, RequestFiles, ResponseContent
@@ -69,10 +69,10 @@ class UnattachedStream(AsyncByteStream, SyncByteStream):
     """
 
     def __iter__(self) -> Iterator[bytes]:
-        raise ResponseClosed()  # TODO: StreamClosed
+        raise StreamClosed()
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
-        raise ResponseClosed()  # TODO: StreamClosed
+        raise StreamClosed()
         yield b""  # pragma: nocover
 
 
