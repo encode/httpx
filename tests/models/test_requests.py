@@ -219,7 +219,7 @@ def test_request_generator_content_picklable():
     pickle_request = pickle.loads(pickle.dumps(request))
     with pytest.raises(httpx.RequestNotRead):
         pickle_request.content
-    with pytest.raises(https.StreamClosed):
+    with pytest.raises(httpx.StreamClosed):
         pickle_request.read()
 
     request = httpx.Request("POST", "http://example.org", content=content())
