@@ -19,15 +19,19 @@ Pull request #1522 includes a checklist of differences from the previous `httpco
 * The `response.ext` property and `Response(ext=...)` argument are now named `extensions`. (Pull #1522)
 * The recommendation to not use `data=<bytes|str|bytes (a)iterator>` in favour of `content=<bytes|str|bytes (a)iterator>` has now been escalated to a deprecation warning. (Pull #1573)
 * Drop `Response(on_close=...)` from API, since it was a bit of leaking implementation detail. (Pull #1572)
+* When using a client instance, cookies should always be set on the client, rather than on a per-request basis. We prefer enforcing a stricter API here because it provides clearer expectations around cookie persistence, particularly when redirects occur. (Pull #1574)
+* The runtime exception `httpx.ResponseClosed` is now named `httpx.StreamClosed`. (#1584)
 
 ### Added
 
+* The `Request` and `Response` classes can now be serialized using pickle. (#1579)
 * Handle `data={"key": [None|int|float|bool]}` cases. (Pull #1539)
 
 ### Fixed
 
 * Fix Content-Length for cases of `files=...` where unicode string is used as the file content. (Pull #1537)
 * Fix some cases of merging relative URLs against `Client(base_url=...)`. (Pull #1532)
+* The `request.content` attribute is now always available except for streaming content, which requires an explicit `.read()`. (Pull #1583)
 
 ## 0.17.1 (March 15th, 2021)
 
