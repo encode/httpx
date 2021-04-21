@@ -880,7 +880,7 @@ async def test_response_async_streaming_picklable():
     pickle_response = pickle.loads(pickle.dumps(response))
     with pytest.raises(httpx.ResponseNotRead):
         pickle_response.content
-    with pytest.raises(httpx.ResponseClosed):  # TODO: StreamClosed
+    with pytest.raises(httpx.StreamClosed):
         await pickle_response.aread()
     assert pickle_response.is_stream_consumed is False
     assert pickle_response.num_bytes_downloaded == 0
