@@ -271,11 +271,9 @@ class URL:
         Either `<host>` or `<host>:<port>` as bytes.
         Always normlized to lowercase, and IDNA encoded.
         """
-        netloc = self.raw_host
+        host = self._uri_reference.host or ""
         port = self._uri_reference.port
-        if b":" in netloc:
-            # IPv6 addresses should be enclosed within square brackets.
-            netloc = b"[" + netloc + b"]"
+        netloc = host.encode("ascii")
         if port:
             netloc = netloc + b":" + str(port).encode("ascii")
         return netloc
