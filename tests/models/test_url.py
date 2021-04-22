@@ -4,41 +4,53 @@ import httpx
 
 
 @pytest.mark.parametrize(
-    "given,idna,host,scheme,port",
+    "given,idna,host,raw_host,scheme,port",
     [
         (
             "http://中国.icom.museum:80/",
             "http://xn--fiqs8s.icom.museum:80/",
-            "xn--fiqs8s.icom.museum",
+            "中国.icom.museum",
+            b"xn--fiqs8s.icom.museum",
             "http",
             80,
         ),
         (
             "http://Königsgäßchen.de",
             "http://xn--knigsgchen-b4a3dun.de",
-            "xn--knigsgchen-b4a3dun.de",
+            "königsgäßchen.de",
+            b"xn--knigsgchen-b4a3dun.de",
             "http",
             None,
         ),
-        ("https://faß.de", "https://xn--fa-hia.de", "xn--fa-hia.de", "https", None),
+        (
+            "https://faß.de",
+            "https://xn--fa-hia.de",
+            "faß.de",
+            b"xn--fa-hia.de",
+            "https",
+            None,
+        ),
         (
             "https://βόλος.com:443",
             "https://xn--nxasmm1c.com:443",
-            "xn--nxasmm1c.com",
+            "βόλος.com",
+            b"xn--nxasmm1c.com",
             "https",
             443,
         ),
         (
             "http://ශ්‍රී.com:444",
             "http://xn--10cl1a0b660p.com:444",
-            "xn--10cl1a0b660p.com",
+            "ශ්‍රී.com",
+            b"xn--10cl1a0b660p.com",
             "http",
             444,
         ),
         (
             "https://نامه‌ای.com:4433",
             "https://xn--mgba3gch31f060k.com:4433",
-            "xn--mgba3gch31f060k.com",
+            "نامه‌ای.com",
+            b"xn--mgba3gch31f060k.com",
             "https",
             4433,
         ),
@@ -52,10 +64,11 @@ import httpx
         "https_with_custom_port",
     ],
 )
-def test_idna_url(given, idna, host, scheme, port):
+def test_idna_url(given, idna, host, raw_host, scheme, port):
     url = httpx.URL(given)
     assert url == httpx.URL(idna)
     assert url.host == host
+    assert url.raw_host == raw_host
     assert url.scheme == scheme
     assert url.port == port
 
@@ -197,7 +210,7 @@ def test_url_copywith_authority_subcomponents():
 
 def test_url_copywith_netloc():
     copy_with_kwargs = {
-        "netloc": "example.net:444",
+        "netloc": b"example.net:444",
     }
     url = httpx.URL("https://example.org")
     new = url.copy_with(**copy_with_kwargs)
@@ -301,7 +314,7 @@ def test_ipv6_url():
     url = httpx.URL("http://[::ffff:192.168.0.1]:5678/")
 
     assert url.host == "::ffff:192.168.0.1"
-    assert url.netloc == "[::ffff:192.168.0.1]:5678"
+    assert url.netloc == b"[::ffff:192.168.0.1]:5678"
 
 
 @pytest.mark.parametrize(
@@ -317,7 +330,7 @@ def test_ipv6_url_copy_with_host(url_str, new_host):
     url = httpx.URL(url_str).copy_with(host=new_host)
 
     assert url.host == "::ffff:192.168.0.1"
-    assert url.netloc == "[::ffff:192.168.0.1]:1234"
+    assert url.netloc == b"[::ffff:192.168.0.1]:1234"
     assert str(url) == "http://[::ffff:192.168.0.1]:1234"
 
 
@@ -327,5 +340,5 @@ def test_ipv6_url_from_raw_url(host):
     url = httpx.URL(raw_url)
 
     assert url.host == "::ffff:192.168.0.1"
-    assert url.netloc == "[::ffff:192.168.0.1]:443"
+    assert url.netloc == b"[::ffff:192.168.0.1]:443"
     assert str(url) == "https://[::ffff:192.168.0.1]:443/"
