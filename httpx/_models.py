@@ -70,7 +70,7 @@ class URL:
     assert url.host == "müller.de"
     assert url.raw_host == b"xn--mller-kva.de"
     assert url.port == 1234
-    assert url.netloc == b"xn--mller-kva.dem:1234"
+    assert url.netloc == b"xn--mller-kva.de:1234"
     assert url.path == "/pa th"
     assert url.query == b"?search=ab"
     assert url.raw_path == b"/pa%20th?search=ab"
