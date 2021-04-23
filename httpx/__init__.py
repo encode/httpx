@@ -1,5 +1,7 @@
 from .__version__ import __description__, __title__, __version__
 from ._api import delete, get, head, options, patch, post, put, request, stream
+from ._apps.routing import Route, Router
+from ._apps.wsgi import WSGIApp
 from ._auth import Auth, BasicAuth, DigestAuth
 from ._client import AsyncClient, Client
 from ._config import Limits, Proxy, Timeout, create_ssl_context
@@ -100,6 +102,8 @@ __all__ = [
     "RequestNotRead",
     "Response",
     "ResponseNotRead",
+    "Route",
+    "Router",
     "StatusCode",
     "stream",
     "StreamClosed",
@@ -114,6 +118,7 @@ __all__ = [
     "URL",
     "WriteError",
     "WriteTimeout",
+    "WSGIApp",
     "WSGITransport",
 ]
 
