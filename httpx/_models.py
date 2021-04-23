@@ -233,7 +233,7 @@ class URL:
     def raw_host(self) -> bytes:
         """
         The raw bytes representation of the URL host.
-        Always normlized to lowercase, and IDNA encoded.
+        Always normalized to lowercase, and IDNA encoded.
 
         Examples:
 
