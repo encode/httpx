@@ -202,7 +202,7 @@ class URL:
     def host(self) -> str:
         """
         The URL host as a string.
-        Always normlized to lowercase, with IDNA hosts decoded into unicode.
+        Always normalized to lowercase, with IDNA hosts decoded into unicode.
 
         Examples:
 
