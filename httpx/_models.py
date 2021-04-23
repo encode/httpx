@@ -269,7 +269,7 @@ class URL:
     def netloc(self) -> bytes:
         """
         Either `<host>` or `<host>:<port>` as bytes.
-        Always normlized to lowercase, and IDNA encoded.
+        Always normalized to lowercase, and IDNA encoded.
         """
         host = self._uri_reference.host or ""
         port = self._uri_reference.port
