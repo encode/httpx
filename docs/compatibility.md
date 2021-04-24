@@ -37,6 +37,26 @@ HTTPX uses `utf-8` for encoding `str` request bodies. For example, when using `c
 
 For response bodies, assuming the server didn't send an explicit encoding then HTTPX will do its best to figure out an appropriate encoding. Unlike Requests which uses the `chardet` library, HTTPX relies on a plainer fallback strategy (basically attempting UTF-8, or using Windows-1252 as a fallback). This strategy should be robust enough to handle the vast majority of use cases.
 
+## Cookies
+
+If using a client instance, then cookies should always be set on the client rather than on a per-request basis.
+
+This usage is supported:
+
+```python
+client = httpx.Client(cookies=...)
+client.post(...)
+```
+
+This usage is **not** supported:
+
+```python
+client = httpx.Client()
+client.post(..., cookies=...)
+```
+
+We prefer enforcing a stricter API here because it provides clearer expectations around cookie persistence, particularly when redirects occur.
+
 ## Status Codes
 
 In our documentation we prefer the uppercased versions, such as `codes.NOT_FOUND`, but also provide lower-cased versions for API compatibility with `requests`.

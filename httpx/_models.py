@@ -8,10 +8,11 @@ from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, quote, unquote, urlencode
 
+import idna
 import rfc3986
 import rfc3986.exceptions
 
-from ._content import ByteStream, encode_request, encode_response
+from ._content import ByteStream, UnattachedStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
     ByteChunker,
@@ -27,8 +28,8 @@ from ._exceptions import (
     HTTPStatusError,
     InvalidURL,
     RequestNotRead,
-    ResponseClosed,
     ResponseNotRead,
+    StreamClosed,
     StreamConsumed,
     request_context,
 )
@@ -60,15 +61,16 @@ from ._utils import (
 
 class URL:
     """
-    url = httpx.URL("HTTPS://jo%40email.com:a%20secret@example.com:1234/pa%20th?search=ab#anchorlink")
+    url = httpx.URL("HTTPS://jo%40email.com:a%20secret@müller.de:1234/pa%20th?search=ab#anchorlink")
 
     assert url.scheme == "https"
     assert url.username == "jo@email.com"
     assert url.password == "a secret"
     assert url.userinfo == b"jo%40email.com:a%20secret"
-    assert url.host == "example.com"
+    assert url.host == "müller.de"
+    assert url.raw_host == b"xn--mller-kva.de"
     assert url.port == 1234
-    assert url.netloc == "example.com:1234"
+    assert url.netloc == b"xn--mller-kva.de:1234"
     assert url.path == "/pa th"
     assert url.query == b"?search=ab"
     assert url.raw_path == b"/pa%20th?search=ab"
@@ -76,17 +78,28 @@ class URL:
 
     The components of a URL are broken down like this:
 
-    https://jo%40email.com:a%20secret@example.com:1234/pa%20th?search=ab#anchorlink
-    [scheme][  username  ] [password] [  host  ][port][ path ] [ query ] [fragment]
-            [       userinfo        ] [    netloc    ][    raw_path    ]
+       https://jo%40email.com:a%20secret@müller.de:1234/pa%20th?search=ab#anchorlink
+    [scheme]   [  username  ] [password] [ host ][port][ path ] [ query ] [fragment]
+               [       userinfo        ] [   netloc   ][    raw_path    ]
 
     Note that:
 
     * `url.scheme` is normalized to always be lowercased.
 
-    * `url.host` is normalized to always be lowercased, and is IDNA encoded. For instance:
-       url = httpx.URL("http://中国.icom.museum")
-       assert url.host == "xn--fiqs8s.icom.museum"
+    * `url.host` is normalized to always be lowercased. Internationalized domain
+      names are represented in unicode, without IDNA encoding applied. For instance:
+
+      url = httpx.URL("http://中国.icom.museum")
+      assert url.host == "中国.icom.museum"
+      url = httpx.URL("http://xn--fiqs8s.icom.museum")
+      assert url.host == "中国.icom.museum"
+
+    * `url.raw_host` is normalized to always be lowercased, and is IDNA encoded.
+
+      url = httpx.URL("http://中国.icom.museum")
+      assert url.raw_host == b"xn--fiqs8s.icom.museum"
+      url = httpx.URL("http://xn--fiqs8s.icom.museum")
+      assert url.raw_host == b"xn--fiqs8s.icom.museum"
 
     * `url.userinfo` is raw bytes, without URL escaping. Usually you'll want to work with
       `url.username` and `url.password` instead, which handle the URL escaping.
@@ -151,6 +164,14 @@ class URL:
         return self._uri_reference.scheme or ""
 
     @property
+    def raw_scheme(self) -> bytes:
+        """
+        The raw bytes representation of the URL scheme, such as b"http", b"https".
+        Always normalised to lowercase.
+        """
+        return self.scheme.encode("ascii")
+
+    @property
     def userinfo(self) -> bytes:
         """
         The URL userinfo as a raw bytestring.
@@ -181,7 +202,7 @@ class URL:
     def host(self) -> str:
         """
         The URL host as a string.
-        Always normlized to lowercase, and IDNA encoded.
+        Always normalized to lowercase, with IDNA hosts decoded into unicode.
 
         Examples:
 
@@ -189,18 +210,52 @@ class URL:
         assert url.host == "www.example.org"
 
         url = httpx.URL("http://中国.icom.museum")
-        assert url.host == "xn--fiqs8s.icom.museum"
+        assert url.host == "中国.icom.museum"
+
+        url = httpx.URL("http://xn--fiqs8s.icom.museum")
+        assert url.host == "中国.icom.museum"
 
         url = httpx.URL("https://[::ffff:192.168.0.1]")
         assert url.host == "::ffff:192.168.0.1"
         """
-        host: str = self._uri_reference.host
+        host: str = self._uri_reference.host or ""
 
         if host and ":" in host and host[0] == "[":
             # it's an IPv6 address
             host = host.lstrip("[").rstrip("]")
 
-        return host or ""
+        if host.startswith("xn--"):
+            host = idna.decode(host)
+
+        return host
+
+    @property
+    def raw_host(self) -> bytes:
+        """
+        The raw bytes representation of the URL host.
+        Always normalized to lowercase, and IDNA encoded.
+
+        Examples:
+
+        url = httpx.URL("http://www.EXAMPLE.org")
+        assert url.raw_host == b"www.example.org"
+
+        url = httpx.URL("http://中国.icom.museum")
+        assert url.raw_host == b"xn--fiqs8s.icom.museum"
+
+        url = httpx.URL("http://xn--fiqs8s.icom.museum")
+        assert url.raw_host == b"xn--fiqs8s.icom.museum"
+
+        url = httpx.URL("https://[::ffff:192.168.0.1]")
+        assert url.raw_host == b"::ffff:192.168.0.1"
+        """
+        host: str = self._uri_reference.host or ""
+
+        if host and ":" in host and host[0] == "[":
+            # it's an IPv6 address
+            host = host.lstrip("[").rstrip("]")
+
+        return host.encode("ascii")
 
     @property
     def port(self) -> typing.Optional[int]:
@@ -211,14 +266,17 @@ class URL:
         return int(port) if port else None
 
     @property
-    def netloc(self) -> str:
+    def netloc(self) -> bytes:
         """
-        Either `<host>` or `<host>:<port>` as a string.
-        Always normlized to lowercase, and IDNA encoded.
+        Either `<host>` or `<host>:<port>` as bytes.
+        Always normalized to lowercase, and IDNA encoded.
         """
         host = self._uri_reference.host or ""
         port = self._uri_reference.port
-        return host if port is None else f"{host}:{port}"
+        netloc = host.encode("ascii")
+        if port:
+            netloc = netloc + b":" + str(port).encode("ascii")
+        return netloc
 
     @property
     def path(self) -> str:
@@ -277,8 +335,8 @@ class URL:
         Provides the (scheme, host, port, target) for the outgoing request.
         """
         return (
-            self.scheme.encode("ascii"),
-            self.host.encode("ascii"),
+            self.raw_scheme,
+            self.raw_host,
             self.port,
             self.raw_path,
         )
@@ -293,7 +351,7 @@ class URL:
         # URLs with a fragment portion as not absolute.
         # What we actually care about is if the URL provides
         # a scheme and hostname to which connections should be made.
-        return bool(self.scheme and self.host)
+        return bool(self._uri_reference.scheme and self._uri_reference.host)
 
     @property
     def is_relative_url(self) -> bool:
@@ -321,7 +379,7 @@ class URL:
             "userinfo": bytes,
             "host": str,
             "port": int,
-            "netloc": str,
+            "netloc": bytes,
             "path": str,
             "query": bytes,
             "raw_path": bytes,
@@ -354,12 +412,16 @@ class URL:
                 # it's an IPv6 address, so it should be hidden under bracket
                 host = f"[{host}]"
 
-            kwargs["netloc"] = f"{host}:{port}" if port is not None else host
+            kwargs["netloc"] = (
+                f"{host}:{port}".encode("ascii")
+                if port is not None
+                else host.encode("ascii")
+            )
 
         if "userinfo" in kwargs or "netloc" in kwargs:
             # Consolidate userinfo and netloc into authority.
             userinfo = (kwargs.pop("userinfo", self.userinfo) or b"").decode("ascii")
-            netloc = kwargs.pop("netloc", self.netloc) or ""
+            netloc = (kwargs.pop("netloc", self.netloc) or b"").decode("ascii")
             authority = f"{userinfo}@{netloc}" if userinfo else netloc
             kwargs["authority"] = authority
 
@@ -829,6 +891,9 @@ class Request:
             headers, stream = encode_request(content, data, files, json)
             self._prepare(headers)
             self.stream = stream
+            # Load the request body, except for streaming content.
+            if isinstance(stream, ByteStream):
+                self.read()
 
     def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
         for key, value in default_headers.items():
@@ -845,11 +910,10 @@ class Request:
         )
 
         if not has_host and self.url.host:
-            default_port = {"http": 80, "https": 443}.get(self.url.scheme)
-            if self.url.port is None or self.url.port == default_port:
-                host_header = self.url.host.encode("ascii")
-            else:
-                host_header = self.url.netloc.encode("ascii")
+            default_port = {"http": b":80", "https": b":443"}.get(self.url.scheme, b"")
+            host_header = self.url.netloc
+            if host_header.endswith(default_port):
+                host_header = host_header[: -len(default_port)]
             auto_headers.append((b"Host", host_header))
         if not has_content_length and self.method in ("POST", "PUT", "PATCH"):
             auto_headers.append((b"Content-Length", b"0"))
@@ -869,10 +933,11 @@ class Request:
         if not hasattr(self, "_content"):
             assert isinstance(self.stream, typing.Iterable)
             self._content = b"".join(self.stream)
-            # If a streaming request has been read entirely into memory, then
-            # we can replace the stream with a raw bytes implementation,
-            # to ensure that any non-replayable streams can still be used.
-            self.stream = ByteStream(self._content)
+            if not isinstance(self.stream, ByteStream):
+                # If a streaming request has been read entirely into memory, then
+                # we can replace the stream with a raw bytes implementation,
+                # to ensure that any non-replayable streams can still be used.
+                self.stream = ByteStream(self._content)
         return self._content
 
     async def aread(self) -> bytes:
@@ -882,16 +947,29 @@ class Request:
         if not hasattr(self, "_content"):
             assert isinstance(self.stream, typing.AsyncIterable)
             self._content = b"".join([part async for part in self.stream])
-            # If a streaming request has been read entirely into memory, then
-            # we can replace the stream with a raw bytes implementation,
-            # to ensure that any non-replayable streams can still be used.
-            self.stream = ByteStream(self._content)
+            if not isinstance(self.stream, ByteStream):
+                # If a streaming request has been read entirely into memory, then
+                # we can replace the stream with a raw bytes implementation,
+                # to ensure that any non-replayable streams can still be used.
+                self.stream = ByteStream(self._content)
         return self._content
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         url = str(self.url)
         return f"<{class_name}({self.method!r}, {url!r})>"
+
+    def __getstate__(self) -> typing.Dict[str, typing.Any]:
+        return {
+            name: value
+            for name, value in self.__dict__.items()
+            if name not in ["stream"]
+        }
+
+    def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
+        for name, value in state.items():
+            setattr(self, name, value)
+        self.stream = UnattachedStream()
 
 
 class Response:
@@ -941,7 +1019,7 @@ class Response:
             headers, stream = encode_response(content, text, html, json)
             self._prepare(headers)
             self.stream = stream
-            if content is None or isinstance(content, (bytes, str)):
+            if isinstance(stream, ByteStream):
                 # Load the response body, except for streaming content.
                 self.read()
 
@@ -1151,6 +1229,19 @@ class Response:
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
+    def __getstate__(self) -> typing.Dict[str, typing.Any]:
+        return {
+            name: value
+            for name, value in self.__dict__.items()
+            if name not in ["stream", "is_closed", "_decoder"]
+        }
+
+    def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
+        for name, value in state.items():
+            setattr(self, name, value)
+        self.is_closed = True
+        self.stream = UnattachedStream()
+
     def read(self) -> bytes:
         """
         Read and return the response content.
@@ -1217,7 +1308,7 @@ class Response:
         if self.is_stream_consumed:
             raise StreamConsumed()
         if self.is_closed:
-            raise ResponseClosed()
+            raise StreamClosed()
         if not isinstance(self.stream, SyncByteStream):
             raise RuntimeError("Attempted to call a sync iterator on an async stream.")
 
@@ -1315,7 +1406,7 @@ class Response:
         if self.is_stream_consumed:
             raise StreamConsumed()
         if self.is_closed:
-            raise ResponseClosed()
+            raise StreamClosed()
         if not isinstance(self.stream, AsyncByteStream):
             raise RuntimeError("Attempted to call an async iterator on an sync stream.")
 

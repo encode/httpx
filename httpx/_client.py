@@ -2,10 +2,12 @@ import datetime
 import enum
 import typing
 import warnings
+from contextlib import contextmanager
 from types import TracebackType
 
 from .__version__ import __version__
 from ._auth import Auth, BasicAuth, FunctionAuth
+from ._compat import asynccontextmanager
 from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
@@ -786,6 +788,14 @@ class Client(BaseClient):
 
         [0]: /advanced/#merging-of-configuration
         """
+        if cookies is not None:
+            message = (
+                "Setting per-request cookies=<...> is being deprecated, because "
+                "the expected behaviour on cookie persistence is ambiguous. Set "
+                "cookies directly on the client instance instead."
+            )
+            warnings.warn(message, DeprecationWarning)
+
         request = self.build_request(
             method=method,
             url=url,
@@ -800,6 +810,56 @@ class Client(BaseClient):
         return self.send(
             request, auth=auth, allow_redirects=allow_redirects, timeout=timeout
         )
+
+    @contextmanager
+    def stream(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        content: RequestContent = None,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> typing.Iterator[Response]:
+        """
+        Alternative to `httpx.request()` that streams the response body
+        instead of loading it into memory at once.
+
+        **Parameters**: See `httpx.request`.
+
+        See also: [Streaming Responses][0]
+
+        [0]: /quickstart#streaming-responses
+        """
+        request = self.build_request(
+            method=method,
+            url=url,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        response = self.send(
+            request=request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+            stream=True,
+        )
+        try:
+            yield response
+        finally:
+            response.close()
 
     def send(
         self,
@@ -1437,6 +1497,56 @@ class AsyncClient(BaseClient):
             request, auth=auth, allow_redirects=allow_redirects, timeout=timeout
         )
         return response
+
+    @asynccontextmanager
+    async def stream(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        content: RequestContent = None,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> typing.AsyncIterator[Response]:
+        """
+        Alternative to `httpx.request()` that streams the response body
+        instead of loading it into memory at once.
+
+        **Parameters**: See `httpx.request`.
+
+        See also: [Streaming Responses][0]
+
+        [0]: /quickstart#streaming-responses
+        """
+        request = self.build_request(
+            method=method,
+            url=url,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        response = await self.send(
+            request=request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+            stream=True,
+        )
+        try:
+            yield response
+        finally:
+            await response.aclose()
 
     async def send(
         self,

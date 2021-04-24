@@ -114,6 +114,7 @@ The HTTPX project relies on these excellent libraries:
 * `rfc3986` - URL parsing & normalization.
   * `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.
+* `async_generator` - Backport support for `contextlib.asynccontextmanager`. *(Only required for Python 3.6)*
 * `brotlipy` - Decoding for "brotli" compressed responses. *(Optional)*
 
 A huge amount of credit is due to `requests` for the API layout that
