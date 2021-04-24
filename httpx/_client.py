@@ -824,7 +824,7 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, ClientDefaultType] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> typing.Iterator[Response]:
@@ -1511,7 +1511,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, ClientDefaultType] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
         timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
     ) -> typing.AsyncIterator[Response]:
