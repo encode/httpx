@@ -34,10 +34,15 @@ logger = get_logger(__name__)
 
 
 class UnsetType:
+    pass  #  pragma: nocover
+
+
+class ClientDefaultType:
     pass  # pragma: nocover
 
 
 UNSET = UnsetType()
+USE_CLIENT_DEFAULT = ClientDefaultType()
 
 
 def create_ssl_context(
