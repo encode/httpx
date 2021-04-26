@@ -450,9 +450,21 @@ class URL:
 
             if "params" in kwargs:
                 params = kwargs.pop("params")
-                kwargs["query"] = None if params is None else str(QueryParams(params))
+                kwargs["query"] = None if not params else str(QueryParams(params))
 
         return URL(self._uri_reference.copy_with(**kwargs).unsplit())
+
+    def copy_set_param(self, key: str, value: typing.Any = None) -> "URL":
+        return self.copy_with(params=self.params.set(key, value))
+
+    def copy_add_param(self, key: str, value: typing.Any = None) -> "URL":
+        return self.copy_with(params=self.params.add(key, value))
+
+    def copy_remove_param(self, key: str) -> "URL":
+        return self.copy_with(params=self.params.remove(key))
+
+    def copy_merge_params(self, params: QueryParamTypes) -> "URL":
+        return self.copy_with(params=self.params.merge(params))
 
     def join(self, url: URLTypes) -> "URL":
         """
@@ -609,7 +621,7 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[str(key)][0]
         return default
 
-    def get_list(self, key: typing.Any) -> typing.List[str]:
+    def get_list(self, key: str) -> typing.List[str]:
         """
         Get all values from the query param for a given key.
 
@@ -620,7 +632,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return list(self._dict.get(str(key), []))
 
-    def set(self, key: typing.Any, value: typing.Any = None) -> "QueryParams":
+    def set(self, key: str, value: typing.Any = None) -> "QueryParams":
         """
         Return a new QueryParams instance, setting the value of a key.
 
@@ -635,7 +647,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict[str(key)] = [primitive_value_to_str(value)]
         return q
 
-    def add(self, key: typing.Any, value: typing.Any = None) -> "QueryParams":
+    def add(self, key: str, value: typing.Any = None) -> "QueryParams":
         """
         Return a new QueryParams instance, setting or appending the value of a key.
 
@@ -650,7 +662,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict[str(key)] = q.get_list(key) + [primitive_value_to_str(value)]
         return q
 
-    def remove(self, key: typing.Any) -> "QueryParams":
+    def remove(self, key: str) -> "QueryParams":
         """
         Return a new QueryParams instance, removing the value of a key.
 
@@ -694,6 +706,9 @@ class QueryParams(typing.Mapping[str, str]):
 
     def __len__(self) -> int:
         return len(self._dict)
+
+    def __bool__(self) -> bool:
+        return bool(self._dict)
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -985,7 +1000,9 @@ class Request:
             self.method = method.decode("ascii").upper()
         else:
             self.method = method.upper()
-        self.url = URL(url) if params is None else URL(url, params=params)
+        self.url = URL(url)
+        if params is not None:
+            self.url = self.url.copy_merge_params(params=params)
         self.headers = Headers(headers)
         if cookies:
             Cookies(cookies).set_cookie_header(self)

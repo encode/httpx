@@ -124,6 +124,38 @@ def test_url_join():
     assert url.join("../../somewhere-else") == "https://example.org:123/somewhere-else"
 
 
+def test_url_set_param_manipulation():
+    """
+    Some basic URL query parameter manipulation.
+    """
+    url = httpx.URL("https://example.org:123/?a=123")
+    assert url.copy_set_param("a", "456") == "https://example.org:123/?a=456"
+
+
+def test_url_add_param_manipulation():
+    """
+    Some basic URL query parameter manipulation.
+    """
+    url = httpx.URL("https://example.org:123/?a=123")
+    assert url.copy_add_param("a", "456") == "https://example.org:123/?a=123&a=456"
+
+
+def test_url_remove_param_manipulation():
+    """
+    Some basic URL query parameter manipulation.
+    """
+    url = httpx.URL("https://example.org:123/?a=123")
+    assert url.copy_remove_param("a") == "https://example.org:123/"
+
+
+def test_url_merge_params_manipulation():
+    """
+    Some basic URL query parameter manipulation.
+    """
+    url = httpx.URL("https://example.org:123/?a=123")
+    assert url.copy_merge_params({"b": "456"}) == "https://example.org:123/?a=123&b=456"
+
+
 def test_relative_url_join():
     url = httpx.URL("/path/to/somewhere")
     assert url.join("/somewhere-else") == "/somewhere-else"
