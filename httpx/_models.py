@@ -6,7 +6,7 @@ import typing
 import urllib.request
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
-from urllib.parse import parse_qsl, quote, unquote, urlencode
+from urllib.parse import parse_qs, quote, unquote, urlencode
 
 import idna
 import rfc3986
@@ -48,7 +48,6 @@ from ._types import (
     URLTypes,
 )
 from ._utils import (
-    flatten_queryparams,
     guess_json_utf,
     is_known_encoding,
     normalize_header_key,
@@ -148,8 +147,7 @@ class URL:
         # Add any query parameters, merging with any in the URL if needed.
         if params:
             if self._uri_reference.query:
-                url_params = QueryParams(self._uri_reference.query)
-                url_params.update(params)
+                url_params = QueryParams(self._uri_reference.query).merge(params)
                 query_string = str(url_params)
             else:
                 query_string = str(QueryParams(params))
@@ -450,7 +448,7 @@ class URL:
 
         url = httpx.URL("https://www.example.com/test")
         url = url.join("/new/path")
-        assert url == "https://www.example.com/test/new/path"
+        assert url == "https://www.example.com/new/path"
         """
         if self.is_relative_url:
             # Workaround to handle relative URLs, which otherwise raise
@@ -504,83 +502,175 @@ class QueryParams(typing.Mapping[str, str]):
         items: typing.Sequence[typing.Tuple[str, PrimitiveData]]
         if value is None or isinstance(value, (str, bytes)):
             value = value.decode("ascii") if isinstance(value, bytes) else value
-            items = parse_qsl(value)
+            self._dict = parse_qs(value)
         elif isinstance(value, QueryParams):
-            items = value.multi_items()
-        elif isinstance(value, (list, tuple)):
-            items = value
+            self._dict = {k: list(v) for k, v in value._dict.items()}
         else:
-            items = flatten_queryparams(value)
+            dict_value: typing.Dict[typing.Any, typing.List[typing.Any]] = {}
+            if isinstance(value, (list, tuple)):
+                # Convert list inputs like:
+                #     [("a", "123"), ("a", "456"), ("b", "789")]
+                # To a dict representation, like:
+                #     {"a": ["123", "456"], "b": ["789"]}
+                for item in value:
+                    dict_value.setdefault(item[0], []).append(item[1])
+            else:
+                # Convert dict inputs like:
+                #    {"a": "123", "b": ["456", "789"]}
+                # To dict inputs where values are always lists, like:
+                #    {"a": ["123"], "b": ["456", "789"]}
+                dict_value = {
+                    k: list(v) if isinstance(v, (list, tuple)) else [v]
+                    for k, v in value.items()
+                }
 
-        self._list = [(str(k), primitive_value_to_str(v)) for k, v in items]
-        self._dict = {str(k): primitive_value_to_str(v) for k, v in items}
+            # Ensure that keys and values are neatly coerced to strings.
+            # We coerce values `True` and `False` to JSON-like "true" and "false"
+            # representations, and coerce `None` values to the empty string.
+            self._dict = {
+                str(k): [primitive_value_to_str(item) for item in v]
+                for k, v in dict_value.items()
+            }
 
     def keys(self) -> typing.KeysView:
+        """
+        Return all the keys in the query params.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert list(q.keys()) == ["a", "b"]
+        """
         return self._dict.keys()
 
     def values(self) -> typing.ValuesView:
-        return self._dict.values()
+        """
+        Return all the values in the query params. If a key occurs more than once
+        only the first item for that key is returned.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert list(q.values()) == ["123", "789"]
+        """
+        return {k: v[0] for k, v in self._dict.items()}.values()
 
     def items(self) -> typing.ItemsView:
         """
         Return all items in the query params. If a key occurs more than once
         only the first item for that key is returned.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert list(q.items()) == [("a", "123"), ("b", "789")]
         """
-        return self._dict.items()
+        return {k: v[0] for k, v in self._dict.items()}.items()
 
     def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
         """
         Return all items in the query params. Allow duplicate keys to occur.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert list(q.multi_items()) == [("a", "123"), ("a", "456"), ("b", "789")]
         """
-        return list(self._list)
+        multi_items: typing.List[typing.Tuple[str, str]] = []
+        for k, v in self._dict.items():
+            multi_items.extend([(k, i) for i in v])
+        return multi_items
 
     def get(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
         """
         Get a value from the query param for a given key. If the key occurs
         more than once, then only the first value is returned.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert q.get("a") == "123"
         """
         if key in self._dict:
-            return self._dict[key]
+            return self._dict[str(key)][0]
         return default
 
     def get_list(self, key: typing.Any) -> typing.List[str]:
         """
         Get all values from the query param for a given key.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert q.get_list("a") == ["123", "456"]
         """
-        return [item_value for item_key, item_value in self._list if item_key == key]
+        return list(self._dict.get(str(key), []))
 
-    def update(self, params: QueryParamTypes = None) -> None:
-        if not params:
-            return
+    def set(self, key: typing.Any, value: typing.Any = None) -> "QueryParams":
+        """
+        Return a new QueryParams instance, setting the value of a key.
 
-        params = QueryParams(params)
-        for param in params:
-            item, *extras = params.get_list(param)
-            self[param] = item
-            if extras:
-                self._list.extend((param, e) for e in extras)
-                # ensure getter matches merged QueryParams getter
-                self._dict[param] = params[param]
+        Usage:
+
+        q = httpx.QueryParams("a=123")
+        q = q.set("a", "456")
+        assert q == httpx.QueryParams("a=456")
+        """
+        q = QueryParams()
+        q._dict = dict(self._dict)
+        q._dict[str(key)] = [primitive_value_to_str(value)]
+        return q
+
+    def add(self, key: typing.Any, value: typing.Any = None) -> "QueryParams":
+        """
+        Return a new QueryParams instance, setting or appending the value of a key.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123")
+        q = q.add("a", "456")
+        assert q == httpx.QueryParams("a=123&a=456")
+        """
+        q = QueryParams()
+        q._dict = dict(self._dict)
+        q._dict[str(key)] = q.get_list(key) + [primitive_value_to_str(value)]
+        return q
+
+    def remove(self, key: typing.Any) -> "QueryParams":
+        """
+        Return a new QueryParams instance, removing the value of a key.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123")
+        q = q.remove("a")
+        assert q == httpx.QueryParams("")
+        """
+        q = QueryParams()
+        q._dict = dict(self._dict)
+        q._dict.pop(str(key), None)
+        return q
+
+    def merge(self, params: QueryParamTypes = None) -> "QueryParams":
+        """
+        Return a new QueryParams instance, updated with.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123")
+        q = q.merge({"b": "456"})
+        assert q == httpx.QueryParams("a=123&b=456")
+
+        q = httpx.QueryParams("a=123")
+        q = q.merge({"a": "456", "b": "789"})
+        assert q == httpx.QueryParams("a=456&b=789")
+        """
+        q = QueryParams(params)
+        q._dict = {**self._dict, **q._dict}
+        return q
 
     def __getitem__(self, key: typing.Any) -> str:
-        return self._dict[key]
-
-    def __setitem__(self, key: str, value: str) -> None:
-        self._dict[key] = value
-
-        found_indexes = []
-        for idx, (item_key, _) in enumerate(self._list):
-            if item_key == key:
-                found_indexes.append(idx)
-
-        for idx in reversed(found_indexes[1:]):
-            del self._list[idx]
-
-        if found_indexes:
-            idx = found_indexes[0]
-            self._list[idx] = (key, value)
-        else:
-            self._list.append((key, value))
+        return self._dict[key][0]
 
     def __contains__(self, key: typing.Any) -> bool:
         return key in self._dict
@@ -591,18 +681,33 @@ class QueryParams(typing.Mapping[str, str]):
     def __len__(self) -> int:
         return len(self._dict)
 
+    def __hash__(self) -> int:
+        return hash(str(self))
+
     def __eq__(self, other: typing.Any) -> bool:
         if not isinstance(other, self.__class__):
             return False
-        return sorted(self._list) == sorted(other._list)
+        return sorted(self.multi_items()) == sorted(other.multi_items())
 
     def __str__(self) -> str:
-        return urlencode(self._list)
+        return urlencode(self.multi_items())
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         query_string = str(self)
         return f"{class_name}({query_string!r})"
+
+    def update(self, params: QueryParamTypes = None) -> None:
+        raise RuntimeError(
+            "QueryParams are immutable since 0.18.0. "
+            "Use `q = q.merge(...)` to create an updated copy."
+        )
+
+    def __setitem__(self, key: str, value: str) -> None:
+        raise RuntimeError(
+            "QueryParams are immutable since 0.18.0. "
+            "Use `q = q.set(key, value)` to create an updated copy."
+        )
 
 
 class Headers(typing.MutableMapping[str, str]):

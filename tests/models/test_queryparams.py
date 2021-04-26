@@ -18,17 +18,17 @@ def test_queryparams(source):
     assert "a" in q
     assert "A" not in q
     assert "c" not in q
-    assert q["a"] == "456"
-    assert q.get("a") == "456"
+    assert q["a"] == "123"
+    assert q.get("a") == "123"
     assert q.get("nope", default=None) is None
     assert q.get_list("a") == ["123", "456"]
 
     assert list(q.keys()) == ["a", "b"]
-    assert list(q.values()) == ["456", "789"]
-    assert list(q.items()) == [("a", "456"), ("b", "789")]
+    assert list(q.values()) == ["123", "789"]
+    assert list(q.items()) == [("a", "123"), ("b", "789")]
     assert len(q) == 2
     assert list(q) == ["a", "b"]
-    assert dict(q) == {"a": "456", "b": "789"}
+    assert dict(q) == {"a": "123", "b": "789"}
     assert str(q) == "a=123&a=456&b=789"
     assert repr(q) == "QueryParams('a=123&a=456&b=789')"
     assert httpx.QueryParams({"a": "123", "b": "456"}) == httpx.QueryParams(
@@ -76,19 +76,50 @@ def test_queryparam_types():
     assert str(q) == "a=1&a=2"
 
 
-def test_queryparam_setters():
-    q = httpx.QueryParams({"a": 1})
-    q.update([])
+def test_queryparam_update_is_hard_deprecated():
+    q = httpx.QueryParams("a=123")
+    with pytest.raises(RuntimeError):
+        q.update({"a": "456"})
 
-    assert str(q) == "a=1"
 
-    q = httpx.QueryParams([("a", 1), ("a", 2)])
-    q["a"] = "3"
-    assert str(q) == "a=3"
+def test_queryparam_setter_is_hard_deprecated():
+    q = httpx.QueryParams("a=123")
+    with pytest.raises(RuntimeError):
+        q["a"] = "456"
 
-    q = httpx.QueryParams([("a", 1), ("b", 1)])
-    u = httpx.QueryParams([("b", 2), ("b", 3)])
-    q.update(u)
 
-    assert str(q) == "a=1&b=2&b=3"
-    assert q["b"] == u["b"]
+def test_queryparam_set():
+    q = httpx.QueryParams("a=123")
+    q = q.set("a", "456")
+    assert q == httpx.QueryParams("a=456")
+
+
+def test_queryparam_add():
+    q = httpx.QueryParams("a=123")
+    q = q.add("a", "456")
+    assert q == httpx.QueryParams("a=123&a=456")
+
+
+def test_queryparam_remove():
+    q = httpx.QueryParams("a=123")
+    q = q.remove("a")
+    assert q == httpx.QueryParams("")
+
+
+def test_queryparam_merge():
+    q = httpx.QueryParams("a=123")
+    q = q.merge({"b": "456"})
+    assert q == httpx.QueryParams("a=123&b=456")
+    q = q.merge({"a": "000", "c": "789"})
+    assert q == httpx.QueryParams("a=000&b=456&c=789")
+
+
+def test_queryparams_are_hashable():
+    params = (
+        httpx.QueryParams("a=123"),
+        httpx.QueryParams({"a": 123}),
+        httpx.QueryParams("b=456"),
+        httpx.QueryParams({"b": 456}),
+    )
+
+    assert len(set(params)) == 2
