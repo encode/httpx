@@ -386,7 +386,7 @@ class BaseClient:
         """
         if params or self.params:
             merged_queryparams = QueryParams(self.params)
-            merged_queryparams.update(params)
+            merged_queryparams = merged_queryparams.merge(params)
             return merged_queryparams
         return params
 
