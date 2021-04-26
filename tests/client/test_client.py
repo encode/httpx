@@ -222,16 +222,6 @@ def test_merge_relative_url_with_encoded_slashes():
     assert request.url == "https://www.example.com/base%2Fpath/testing"
 
 
-def test_pool_limits_deprecated():
-    limits = httpx.Limits()
-
-    with pytest.warns(DeprecationWarning):
-        httpx.Client(pool_limits=limits)
-
-    with pytest.warns(DeprecationWarning):
-        httpx.AsyncClient(pool_limits=limits)
-
-
 def test_context_managed_transport():
     class Transport(httpx.BaseTransport):
         def __init__(self):
