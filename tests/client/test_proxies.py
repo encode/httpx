@@ -256,17 +256,19 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
 
 
 @pytest.mark.parametrize(
-    ["proxies", "expected_scheme"],
+    ["proxies", "is_valid"],
     [
-        ({"http": "http://127.0.0.1"}, "http://"),
-        ({"https": "http://127.0.0.1"}, "https://"),
-        ({"all": "http://127.0.0.1"}, "all://"),
+        ({"http": "http://127.0.0.1"}, False),
+        ({"https": "http://127.0.0.1"}, False),
+        ({"all": "http://127.0.0.1"}, False),
+        ({"http://": "http://127.0.0.1"}, True),
+        ({"https://": "http://127.0.0.1"}, True),
+        ({"all://": "http://127.0.0.1"}, True),
     ],
 )
-def test_for_deprecated_proxy_params(proxies, expected_scheme):
-    with pytest.deprecated_call() as block:
+def test_for_deprecated_proxy_params(proxies, is_valid):
+    if not is_valid:
+        with pytest.raises(ValueError):
+            httpx.Client(proxies=proxies)
+    else:
         httpx.Client(proxies=proxies)
-
-    warning_message = str(block.pop(DeprecationWarning))
-
-    assert expected_scheme in warning_message

@@ -35,7 +35,7 @@ from ._exceptions import (
     WriteTimeout,
 )
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
-from ._status_codes import StatusCode, codes
+from ._status_codes import codes
 from ._transports.asgi import ASGITransport
 from ._transports.base import (
     AsyncBaseTransport,
@@ -100,7 +100,6 @@ __all__ = [
     "RequestNotRead",
     "Response",
     "ResponseNotRead",
-    "StatusCode",
     "stream",
     "StreamClosed",
     "StreamConsumed",
