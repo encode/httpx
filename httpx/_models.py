@@ -112,7 +112,7 @@ class URL:
     """
 
     def __init__(
-        self, url: typing.Union["URL", str, RawURL] = "", params: QueryParamTypes = None
+        self, url: typing.Union["URL", str, RawURL] = "", **kwargs: typing.Any
     ) -> None:
         if isinstance(url, (str, tuple)):
             if isinstance(url, tuple):
@@ -144,14 +144,8 @@ class URL:
                 f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}: {url!r}"
             )
 
-        # Add any query parameters, merging with any in the URL if needed.
-        if params:
-            if self._uri_reference.query:
-                url_params = QueryParams(self._uri_reference.query).merge(params)
-                query_string = str(url_params)
-            else:
-                query_string = str(QueryParams(params))
-            self._uri_reference = self._uri_reference.copy_with(query=query_string)
+        if kwargs:
+            self._uri_reference = self.copy_with(**kwargs)._uri_reference
 
     @property
     def scheme(self) -> str:
@@ -293,11 +287,26 @@ class URL:
     def query(self) -> bytes:
         """
         The URL query string, as raw bytes, excluding the leading b"?".
-        Note that URL decoding can only be applied on URL query strings
-        at the point of decoding the individual parameter names/values.
+
+        This is neccessarily a bytewise interface, because we cannot
+        perform URL decoding of this representation until we've parsed
+        the keys and values into a QueryParams instance.
+
+        For example:
+
+        url = httpx.URL("https://example.com/?filter=some%20search%20terms")
+        assert url.query == b"filter=some%20search%20terms"
         """
         query = self._uri_reference.query or ""
         return query.encode("ascii")
+
+    @property
+    def params(self) -> "QueryParams":
+        """
+        The URL query parameters, neatly parsed and packaged into an immutable
+        multidict representation.
+        """
+        return QueryParams(self._uri_reference.query)
 
     @property
     def raw_path(self) -> bytes:
@@ -382,6 +391,7 @@ class URL:
             "query": bytes,
             "raw_path": bytes,
             "fragment": str,
+            "params": object,
         }
         for key, value in kwargs.items():
             if key not in allowed:
@@ -434,9 +444,13 @@ class URL:
             if kwargs.get("path") is not None:
                 kwargs["path"] = quote(kwargs["path"])
 
-            # Ensure query=<str> for rfc3986
             if kwargs.get("query") is not None:
+                # Ensure query=<str> for rfc3986
                 kwargs["query"] = kwargs["query"].decode("ascii")
+
+            if "params" in kwargs:
+                params = kwargs.pop("params")
+                kwargs["query"] = None if params is None else str(QueryParams(params))
 
         return URL(self._uri_reference.copy_with(**kwargs).unsplit())
 
@@ -971,7 +985,7 @@ class Request:
             self.method = method.decode("ascii").upper()
         else:
             self.method = method.upper()
-        self.url = URL(url, params=params)
+        self.url = URL(url) if params is None else URL(url, params=params)
         self.headers = Headers(headers)
         if cookies:
             Cookies(cookies).set_cookie_header(self)
