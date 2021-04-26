@@ -57,7 +57,6 @@ from ._utils import (
     get_environment_proxies,
     get_logger,
     same_origin,
-    warn_deprecated,
 )
 
 # The type annotation for @classmethod and context managers here follows PEP 484
@@ -586,7 +585,6 @@ class Client(BaseClient):
         mounts: typing.Mapping[str, BaseTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
-        pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
@@ -614,13 +612,6 @@ class Client(BaseClient):
                     "Using http2=True, but the 'h2' package is not installed. "
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
-
-        if pool_limits is not None:
-            warn_deprecated(
-                "Client(..., pool_limits=...) is deprecated and will raise "
-                "errors in the future. Use Client(..., limits=...) instead."
-            )
-            limits = pool_limits
 
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies, allow_env_proxies)
@@ -1280,7 +1271,6 @@ class AsyncClient(BaseClient):
         mounts: typing.Mapping[str, AsyncBaseTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
-        pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
@@ -1308,13 +1298,6 @@ class AsyncClient(BaseClient):
                     "Using http2=True, but the 'h2' package is not installed. "
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
-
-        if pool_limits is not None:
-            warn_deprecated(
-                "AsyncClient(..., pool_limits=...) is deprecated and will raise "
-                "errors in the future. Use AsyncClient(..., limits=...) instead."
-            )
-            limits = pool_limits
 
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies, allow_env_proxies)
