@@ -12,6 +12,12 @@ See the "[Writing custom transports](https://www.python-httpx.org/advanced/#writ
 
 Pull request #1522 includes a checklist of differences from the previous `httpcore` transport API, for developers implementing custom transports.
 
+The following API changes have been issuing deprecation warnings since 0.17.0 onwards, and are now fully deprecated...
+
+* You should now use httpx.codes consistently instead of httpx.StatusCodes.
+* Use limits=... instead of pool_limits=....
+* Use proxies={"http://": ...} instead of proxies={"http": ...} for scheme-specific mounting.
+
 ### Changed
 
 * Transport instances now inherit from `httpx.BaseTransport` or `httpx.AsyncBaseTransport`,
@@ -21,11 +27,16 @@ Pull request #1522 includes a checklist of differences from the previous `httpco
 * Drop `Response(on_close=...)` from API, since it was a bit of leaking implementation detail. (Pull #1572)
 * When using a client instance, cookies should always be set on the client, rather than on a per-request basis. We prefer enforcing a stricter API here because it provides clearer expectations around cookie persistence, particularly when redirects occur. (Pull #1574)
 * The runtime exception `httpx.ResponseClosed` is now named `httpx.StreamClosed`. (#1584)
+* The `httpx.QueryParams` model now presents an immutable interface. The is a discussion on [the design and motivation here](https://github.com/encode/httpx/discussions/1599). Use `client.params = client.params.merge(...)` instead of `client.params.update(...)`. The basic query manipulation methods are `query.set(...)`, `query.add(...)`, and `query.remove()`. (#1600)
 
 ### Added
 
 * The `Request` and `Response` classes can now be serialized using pickle. (#1579)
 * Handle `data={"key": [None|int|float|bool]}` cases. (Pull #1539)
+* Support `httpx.URL(**kwargs)`, for example `httpx.URL(scheme="https", host="www.example.com", path="/')`, or `httpx.URL("https://www.example.com/", username="tom@gmail.com", password="123 456")`. (Pull #1601)
+* Support `url.copy_with(params=...)`. (Pull #1601)
+* Add `url.params` parameter, returning an immutable `QueryParams` instance. (Pull #1601)
+* Support query manipulation methods on the URL class. These are `url.copy_set_param()`, `url.copy_add_param()`, `url.copy_remove_param()`, `url.copy_merge_params()`. (Pull #1601)
 
 ### Fixed
 
