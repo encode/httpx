@@ -6,7 +6,7 @@ import typing
 import urllib.request
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
-from urllib.parse import parse_qsl, quote, unquote, urlencode
+from urllib.parse import parse_qs, quote, unquote, urlencode
 
 import idna
 import rfc3986
@@ -48,7 +48,6 @@ from ._types import (
     URLTypes,
 )
 from ._utils import (
-    flatten_queryparams,
     guess_json_utf,
     is_known_encoding,
     normalize_header_key,
@@ -113,7 +112,7 @@ class URL:
     """
 
     def __init__(
-        self, url: typing.Union["URL", str, RawURL] = "", params: QueryParamTypes = None
+        self, url: typing.Union["URL", str, RawURL] = "", **kwargs: typing.Any
     ) -> None:
         if isinstance(url, (str, tuple)):
             if isinstance(url, tuple):
@@ -145,15 +144,8 @@ class URL:
                 f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}: {url!r}"
             )
 
-        # Add any query parameters, merging with any in the URL if needed.
-        if params:
-            if self._uri_reference.query:
-                url_params = QueryParams(self._uri_reference.query)
-                url_params.update(params)
-                query_string = str(url_params)
-            else:
-                query_string = str(QueryParams(params))
-            self._uri_reference = self._uri_reference.copy_with(query=query_string)
+        if kwargs:
+            self._uri_reference = self.copy_with(**kwargs)._uri_reference
 
     @property
     def scheme(self) -> str:
@@ -270,12 +262,20 @@ class URL:
         """
         Either `<host>` or `<host>:<port>` as bytes.
         Always normalized to lowercase, and IDNA encoded.
+
+        The port component is not included if it is the default for an
+        "http://" or "https://" URL.
+
+        This property may be used for generating the value of a request
+        "Host" header.
+
+        See: https://tools.ietf.org/html/rfc3986#section-3.2.3
         """
         host = self._uri_reference.host or ""
         port = self._uri_reference.port
         netloc = host.encode("ascii")
         if port:
-            netloc = netloc + b":" + str(port).encode("ascii")
+            netloc = netloc + b":" + port.encode("ascii")
         return netloc
 
     @property
@@ -295,11 +295,26 @@ class URL:
     def query(self) -> bytes:
         """
         The URL query string, as raw bytes, excluding the leading b"?".
-        Note that URL decoding can only be applied on URL query strings
-        at the point of decoding the individual parameter names/values.
+
+        This is neccessarily a bytewise interface, because we cannot
+        perform URL decoding of this representation until we've parsed
+        the keys and values into a QueryParams instance.
+
+        For example:
+
+        url = httpx.URL("https://example.com/?filter=some%20search%20terms")
+        assert url.query == b"filter=some%20search%20terms"
         """
         query = self._uri_reference.query or ""
         return query.encode("ascii")
+
+    @property
+    def params(self) -> "QueryParams":
+        """
+        The URL query parameters, neatly parsed and packaged into an immutable
+        multidict representation.
+        """
+        return QueryParams(self._uri_reference.query)
 
     @property
     def raw_path(self) -> bytes:
@@ -324,13 +339,13 @@ class URL:
         The URL fragments, as used in HTML anchors.
         As a string, without the leading '#'.
         """
-        return self._uri_reference.fragment or ""
+        return unquote(self._uri_reference.fragment or "")
 
     @property
     def raw(self) -> RawURL:
         """
         The URL in the raw representation used by the low level
-        transport API. For example, see `httpcore`.
+        transport API. See `BaseTransport.handle_request`.
 
         Provides the (scheme, host, port, target) for the outgoing request.
         """
@@ -384,7 +399,13 @@ class URL:
             "query": bytes,
             "raw_path": bytes,
             "fragment": str,
+            "params": object,
         }
+
+        # Step 1
+        # ======
+        #
+        # Perform type checking for all supported keyword arguments.
         for key, value in kwargs.items():
             if key not in allowed:
                 message = f"{key!r} is an invalid keyword argument for copy_with()"
@@ -395,21 +416,25 @@ class URL:
                 message = f"Argument {key!r} must be {expected} but got {seen}"
                 raise TypeError(message)
 
-        # Replace username, password, userinfo, host, port, netloc with "authority" for rfc3986
+        # Step 2
+        # ======
+        #
+        # Consolidate "username", "password", "userinfo", "host", "port" and "netloc"
+        # into a single "authority" keyword, for `rfc3986`.
         if "username" in kwargs or "password" in kwargs:
-            # Consolidate username and password into userinfo.
+            # Consolidate "username" and "password" into "userinfo".
             username = quote(kwargs.pop("username", self.username) or "")
             password = quote(kwargs.pop("password", self.password) or "")
             userinfo = f"{username}:{password}" if password else username
             kwargs["userinfo"] = userinfo.encode("ascii")
 
         if "host" in kwargs or "port" in kwargs:
-            # Consolidate host and port into  netloc.
+            # Consolidate "host" and "port" into "netloc".
             host = kwargs.pop("host", self.host) or ""
             port = kwargs.pop("port", self.port)
 
             if host and ":" in host and host[0] != "[":
-                # it's an IPv6 address, so it should be hidden under bracket
+                # IPv6 addresses need to be escaped within sqaure brackets.
                 host = f"[{host}]"
 
             kwargs["netloc"] = (
@@ -419,28 +444,78 @@ class URL:
             )
 
         if "userinfo" in kwargs or "netloc" in kwargs:
-            # Consolidate userinfo and netloc into authority.
+            # Consolidate "userinfo" and "netloc" into authority.
             userinfo = (kwargs.pop("userinfo", self.userinfo) or b"").decode("ascii")
             netloc = (kwargs.pop("netloc", self.netloc) or b"").decode("ascii")
             authority = f"{userinfo}@{netloc}" if userinfo else netloc
             kwargs["authority"] = authority
 
+        # Step 3
+        # ======
+        #
+        # Wrangle any "path", "query", "raw_path" and "params" keywords into
+        # "query" and "path" keywords for `rfc3986`.
         if "raw_path" in kwargs:
+            # If "raw_path" is included, then split it into "path" and "query" components.
             raw_path = kwargs.pop("raw_path") or b""
             path, has_query, query = raw_path.decode("ascii").partition("?")
             kwargs["path"] = path
             kwargs["query"] = query if has_query else None
 
         else:
-            # Ensure path=<url quoted str> for rfc3986
             if kwargs.get("path") is not None:
+                # Ensure `kwargs["path"] = <url quoted str>` for `rfc3986`.
                 kwargs["path"] = quote(kwargs["path"])
 
-            # Ensure query=<str> for rfc3986
             if kwargs.get("query") is not None:
+                # Ensure `kwargs["query"] = <str>` for `rfc3986`.
+                #
+                # Note that `.copy_with(query=None)` and `.copy_with(query=b"")`
+                # are subtly different. The `None` style will not include an empty
+                # trailing "?" character.
                 kwargs["query"] = kwargs["query"].decode("ascii")
 
+            if "params" in kwargs:
+                # Replace any "params" keyword with the raw "query" instead.
+                #
+                # Ensure that empty params use `kwargs["query"] = None` rather
+                # than `kwargs["query"] = ""`, so that generated URLs do not
+                # include an empty trailing "?".
+                params = kwargs.pop("params")
+                kwargs["query"] = None if not params else str(QueryParams(params))
+
+        # Step 4
+        # ======
+        #
+        # Ensure any fragment component is quoted.
+        if kwargs.get("fragment") is not None:
+            kwargs["fragment"] = quote(kwargs["fragment"])
+
+        # Step 5
+        # ======
+        #
+        # At this point kwargs may include keys for "scheme", "authority", "path",
+        # "query" and "fragment". Together these constitute the entire URL.
+        #
+        # See https://tools.ietf.org/html/rfc3986#section-3
+        #
+        #  foo://example.com:8042/over/there?name=ferret#nose
+        #  \_/   \______________/\_________/ \_________/ \__/
+        #   |           |            |            |        |
+        # scheme     authority       path        query   fragment
         return URL(self._uri_reference.copy_with(**kwargs).unsplit())
+
+    def copy_set_param(self, key: str, value: typing.Any = None) -> "URL":
+        return self.copy_with(params=self.params.set(key, value))
+
+    def copy_add_param(self, key: str, value: typing.Any = None) -> "URL":
+        return self.copy_with(params=self.params.add(key, value))
+
+    def copy_remove_param(self, key: str) -> "URL":
+        return self.copy_with(params=self.params.remove(key))
+
+    def copy_merge_params(self, params: QueryParamTypes) -> "URL":
+        return self.copy_with(params=self.params.merge(params))
 
     def join(self, url: URLTypes) -> "URL":
         """
@@ -450,7 +525,7 @@ class URL:
 
         url = httpx.URL("https://www.example.com/test")
         url = url.join("/new/path")
-        assert url == "https://www.example.com/test/new/path"
+        assert url == "https://www.example.com/new/path"
         """
         if self.is_relative_url:
             # Workaround to handle relative URLs, which otherwise raise
@@ -481,6 +556,8 @@ class URL:
         class_name = self.__class__.__name__
         url_str = str(self)
         if self._uri_reference.userinfo:
+            # Mask any password component in the URL representation, to lower the
+            # risk of unintended leakage, such as in debug information and logging.
             username = quote(self.username)
             url_str = (
                 rfc3986.urlparse(url_str)
@@ -504,83 +581,175 @@ class QueryParams(typing.Mapping[str, str]):
         items: typing.Sequence[typing.Tuple[str, PrimitiveData]]
         if value is None or isinstance(value, (str, bytes)):
             value = value.decode("ascii") if isinstance(value, bytes) else value
-            items = parse_qsl(value)
+            self._dict = parse_qs(value)
         elif isinstance(value, QueryParams):
-            items = value.multi_items()
-        elif isinstance(value, (list, tuple)):
-            items = value
+            self._dict = {k: list(v) for k, v in value._dict.items()}
         else:
-            items = flatten_queryparams(value)
+            dict_value: typing.Dict[typing.Any, typing.List[typing.Any]] = {}
+            if isinstance(value, (list, tuple)):
+                # Convert list inputs like:
+                #     [("a", "123"), ("a", "456"), ("b", "789")]
+                # To a dict representation, like:
+                #     {"a": ["123", "456"], "b": ["789"]}
+                for item in value:
+                    dict_value.setdefault(item[0], []).append(item[1])
+            else:
+                # Convert dict inputs like:
+                #    {"a": "123", "b": ["456", "789"]}
+                # To dict inputs where values are always lists, like:
+                #    {"a": ["123"], "b": ["456", "789"]}
+                dict_value = {
+                    k: list(v) if isinstance(v, (list, tuple)) else [v]
+                    for k, v in value.items()
+                }
 
-        self._list = [(str(k), primitive_value_to_str(v)) for k, v in items]
-        self._dict = {str(k): primitive_value_to_str(v) for k, v in items}
+            # Ensure that keys and values are neatly coerced to strings.
+            # We coerce values `True` and `False` to JSON-like "true" and "false"
+            # representations, and coerce `None` values to the empty string.
+            self._dict = {
+                str(k): [primitive_value_to_str(item) for item in v]
+                for k, v in dict_value.items()
+            }
 
     def keys(self) -> typing.KeysView:
+        """
+        Return all the keys in the query params.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert list(q.keys()) == ["a", "b"]
+        """
         return self._dict.keys()
 
     def values(self) -> typing.ValuesView:
-        return self._dict.values()
+        """
+        Return all the values in the query params. If a key occurs more than once
+        only the first item for that key is returned.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert list(q.values()) == ["123", "789"]
+        """
+        return {k: v[0] for k, v in self._dict.items()}.values()
 
     def items(self) -> typing.ItemsView:
         """
         Return all items in the query params. If a key occurs more than once
         only the first item for that key is returned.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert list(q.items()) == [("a", "123"), ("b", "789")]
         """
-        return self._dict.items()
+        return {k: v[0] for k, v in self._dict.items()}.items()
 
     def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
         """
         Return all items in the query params. Allow duplicate keys to occur.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert list(q.multi_items()) == [("a", "123"), ("a", "456"), ("b", "789")]
         """
-        return list(self._list)
+        multi_items: typing.List[typing.Tuple[str, str]] = []
+        for k, v in self._dict.items():
+            multi_items.extend([(k, i) for i in v])
+        return multi_items
 
     def get(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
         """
         Get a value from the query param for a given key. If the key occurs
         more than once, then only the first value is returned.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert q.get("a") == "123"
         """
         if key in self._dict:
-            return self._dict[key]
+            return self._dict[str(key)][0]
         return default
 
-    def get_list(self, key: typing.Any) -> typing.List[str]:
+    def get_list(self, key: str) -> typing.List[str]:
         """
         Get all values from the query param for a given key.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123&a=456&b=789")
+        assert q.get_list("a") == ["123", "456"]
         """
-        return [item_value for item_key, item_value in self._list if item_key == key]
+        return list(self._dict.get(str(key), []))
 
-    def update(self, params: QueryParamTypes = None) -> None:
-        if not params:
-            return
+    def set(self, key: str, value: typing.Any = None) -> "QueryParams":
+        """
+        Return a new QueryParams instance, setting the value of a key.
 
-        params = QueryParams(params)
-        for param in params:
-            item, *extras = params.get_list(param)
-            self[param] = item
-            if extras:
-                self._list.extend((param, e) for e in extras)
-                # ensure getter matches merged QueryParams getter
-                self._dict[param] = params[param]
+        Usage:
+
+        q = httpx.QueryParams("a=123")
+        q = q.set("a", "456")
+        assert q == httpx.QueryParams("a=456")
+        """
+        q = QueryParams()
+        q._dict = dict(self._dict)
+        q._dict[str(key)] = [primitive_value_to_str(value)]
+        return q
+
+    def add(self, key: str, value: typing.Any = None) -> "QueryParams":
+        """
+        Return a new QueryParams instance, setting or appending the value of a key.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123")
+        q = q.add("a", "456")
+        assert q == httpx.QueryParams("a=123&a=456")
+        """
+        q = QueryParams()
+        q._dict = dict(self._dict)
+        q._dict[str(key)] = q.get_list(key) + [primitive_value_to_str(value)]
+        return q
+
+    def remove(self, key: str) -> "QueryParams":
+        """
+        Return a new QueryParams instance, removing the value of a key.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123")
+        q = q.remove("a")
+        assert q == httpx.QueryParams("")
+        """
+        q = QueryParams()
+        q._dict = dict(self._dict)
+        q._dict.pop(str(key), None)
+        return q
+
+    def merge(self, params: QueryParamTypes = None) -> "QueryParams":
+        """
+        Return a new QueryParams instance, updated with.
+
+        Usage:
+
+        q = httpx.QueryParams("a=123")
+        q = q.merge({"b": "456"})
+        assert q == httpx.QueryParams("a=123&b=456")
+
+        q = httpx.QueryParams("a=123")
+        q = q.merge({"a": "456", "b": "789"})
+        assert q == httpx.QueryParams("a=456&b=789")
+        """
+        q = QueryParams(params)
+        q._dict = {**self._dict, **q._dict}
+        return q
 
     def __getitem__(self, key: typing.Any) -> str:
-        return self._dict[key]
-
-    def __setitem__(self, key: str, value: str) -> None:
-        self._dict[key] = value
-
-        found_indexes = []
-        for idx, (item_key, _) in enumerate(self._list):
-            if item_key == key:
-                found_indexes.append(idx)
-
-        for idx in reversed(found_indexes[1:]):
-            del self._list[idx]
-
-        if found_indexes:
-            idx = found_indexes[0]
-            self._list[idx] = (key, value)
-        else:
-            self._list.append((key, value))
+        return self._dict[key][0]
 
     def __contains__(self, key: typing.Any) -> bool:
         return key in self._dict
@@ -591,18 +760,36 @@ class QueryParams(typing.Mapping[str, str]):
     def __len__(self) -> int:
         return len(self._dict)
 
+    def __bool__(self) -> bool:
+        return bool(self._dict)
+
+    def __hash__(self) -> int:
+        return hash(str(self))
+
     def __eq__(self, other: typing.Any) -> bool:
         if not isinstance(other, self.__class__):
             return False
-        return sorted(self._list) == sorted(other._list)
+        return sorted(self.multi_items()) == sorted(other.multi_items())
 
     def __str__(self) -> str:
-        return urlencode(self._list)
+        return urlencode(self.multi_items())
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         query_string = str(self)
         return f"{class_name}({query_string!r})"
+
+    def update(self, params: QueryParamTypes = None) -> None:
+        raise RuntimeError(
+            "QueryParams are immutable since 0.18.0. "
+            "Use `q = q.merge(...)` to create an updated copy."
+        )
+
+    def __setitem__(self, key: str, value: str) -> None:
+        raise RuntimeError(
+            "QueryParams are immutable since 0.18.0. "
+            "Use `q = q.set(key, value)` to create an updated copy."
+        )
 
 
 class Headers(typing.MutableMapping[str, str]):
@@ -866,7 +1053,9 @@ class Request:
             self.method = method.decode("ascii").upper()
         else:
             self.method = method.upper()
-        self.url = URL(url, params=params)
+        self.url = URL(url)
+        if params is not None:
+            self.url = self.url.copy_merge_params(params=params)
         self.headers = Headers(headers)
         if cookies:
             Cookies(cookies).set_cookie_header(self)

@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.18.0 (26th April, 2021)
+## 0.18.0 (27th April, 2021)
 
 The 0.18.x release series formalises our low-level Transport API, introducing the base classes `httpx.BaseTransport` and `httpx.AsyncBaseTransport`.
 
@@ -27,7 +27,7 @@ The following API changes have been issuing deprecation warnings since 0.17.0 on
 * Drop `Response(on_close=...)` from API, since it was a bit of leaking implementation detail. (Pull #1572)
 * When using a client instance, cookies should always be set on the client, rather than on a per-request basis. We prefer enforcing a stricter API here because it provides clearer expectations around cookie persistence, particularly when redirects occur. (Pull #1574)
 * The runtime exception `httpx.ResponseClosed` is now named `httpx.StreamClosed`. (#1584)
-* The `httpx.QueryParams` model now presents an immutable interface. The is a discussion on [the design and motivation here](https://github.com/encode/httpx/discussions/1599). Use `client.params = client.params.merge(...)` instead of `client.params.update(...)`. The basic query manipulation methods are `query.set(...)`, `query.add(...)`, and `query.remove()`. (#1600)
+* The `httpx.QueryParams` model now presents an immutable interface. There is a discussion on [the design and motivation here](https://github.com/encode/httpx/discussions/1599). Use `client.params = client.params.merge(...)` instead of `client.params.update(...)`. The basic query manipulation methods are `query.set(...)`, `query.add(...)`, and `query.remove()`. (#1600)
 
 ### Added
 

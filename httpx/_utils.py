@@ -1,5 +1,4 @@
 import codecs
-import collections
 import logging
 import mimetypes
 import netrc
@@ -367,31 +366,6 @@ def peek_filelike_length(stream: typing.IO) -> int:
     else:
         # Yup, seems to be an actual file.
         return os.fstat(fd).st_size
-
-
-def flatten_queryparams(
-    queryparams: typing.Mapping[
-        str, typing.Union["PrimitiveData", typing.Sequence["PrimitiveData"]]
-    ]
-) -> typing.List[typing.Tuple[str, "PrimitiveData"]]:
-    """
-    Convert a mapping of query params into a flat list of two-tuples
-    representing each item.
-
-    Example:
-    >>> flatten_queryparams_values({"q": "httpx", "tag": ["python", "dev"]})
-    [("q", "httpx), ("tag", "python"), ("tag", "dev")]
-    """
-    items = []
-
-    for k, v in queryparams.items():
-        if isinstance(v, collections.abc.Sequence) and not isinstance(v, (str, bytes)):
-            for u in v:
-                items.append((k, u))
-        else:
-            items.append((k, typing.cast("PrimitiveData", v)))
-
-    return items
 
 
 class Timer:
