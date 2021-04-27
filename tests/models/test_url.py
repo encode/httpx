@@ -12,7 +12,7 @@ import httpx
             "中国.icom.museum",
             b"xn--fiqs8s.icom.museum",
             "http",
-            80,
+            None,
         ),
         (
             "http://Königsgäßchen.de",
@@ -36,7 +36,7 @@ import httpx
             "βόλος.com",
             b"xn--nxasmm1c.com",
             "https",
-            443,
+            None,
         ),
         (
             "http://ශ්‍රී.com:444",
@@ -374,5 +374,5 @@ def test_ipv6_url_from_raw_url(host):
     url = httpx.URL(raw_url)
 
     assert url.host == "::ffff:192.168.0.1"
-    assert url.netloc == b"[::ffff:192.168.0.1]:443"
-    assert str(url) == "https://[::ffff:192.168.0.1]:443/"
+    assert url.netloc == b"[::ffff:192.168.0.1]"
+    assert str(url) == "https://[::ffff:192.168.0.1]/"
