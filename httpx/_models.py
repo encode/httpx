@@ -112,7 +112,7 @@ class URL:
     """
 
     def __init__(
-        self, url: typing.Union["URL", str, RawURL] = "", params: QueryParamTypes = None
+        self, url: typing.Union["URL", str, RawURL] = "", **kwargs: typing.Any
     ) -> None:
         if isinstance(url, (str, tuple)):
             if isinstance(url, tuple):
@@ -144,14 +144,8 @@ class URL:
                 f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}: {url!r}"
             )
 
-        # Add any query parameters, merging with any in the URL if needed.
-        if params:
-            if self._uri_reference.query:
-                url_params = QueryParams(self._uri_reference.query).merge(params)
-                query_string = str(url_params)
-            else:
-                query_string = str(QueryParams(params))
-            self._uri_reference = self._uri_reference.copy_with(query=query_string)
+        if kwargs:
+            self._uri_reference = self.copy_with(**kwargs)._uri_reference
 
     @property
     def scheme(self) -> str:
@@ -268,12 +262,20 @@ class URL:
         """
         Either `<host>` or `<host>:<port>` as bytes.
         Always normalized to lowercase, and IDNA encoded.
+
+        The port component is not included if it is the default for an
+        "http://" or "https://" URL.
+
+        This property may be used for generating the value of a request
+        "Host" header.
+
+        See: https://tools.ietf.org/html/rfc3986#section-3.2.3
         """
         host = self._uri_reference.host or ""
         port = self._uri_reference.port
         netloc = host.encode("ascii")
         if port:
-            netloc = netloc + b":" + str(port).encode("ascii")
+            netloc = netloc + b":" + port.encode("ascii")
         return netloc
 
     @property
@@ -293,11 +295,26 @@ class URL:
     def query(self) -> bytes:
         """
         The URL query string, as raw bytes, excluding the leading b"?".
-        Note that URL decoding can only be applied on URL query strings
-        at the point of decoding the individual parameter names/values.
+
+        This is neccessarily a bytewise interface, because we cannot
+        perform URL decoding of this representation until we've parsed
+        the keys and values into a QueryParams instance.
+
+        For example:
+
+        url = httpx.URL("https://example.com/?filter=some%20search%20terms")
+        assert url.query == b"filter=some%20search%20terms"
         """
         query = self._uri_reference.query or ""
         return query.encode("ascii")
+
+    @property
+    def params(self) -> "QueryParams":
+        """
+        The URL query parameters, neatly parsed and packaged into an immutable
+        multidict representation.
+        """
+        return QueryParams(self._uri_reference.query)
 
     @property
     def raw_path(self) -> bytes:
@@ -322,13 +339,13 @@ class URL:
         The URL fragments, as used in HTML anchors.
         As a string, without the leading '#'.
         """
-        return self._uri_reference.fragment or ""
+        return unquote(self._uri_reference.fragment or "")
 
     @property
     def raw(self) -> RawURL:
         """
         The URL in the raw representation used by the low level
-        transport API. For example, see `httpcore`.
+        transport API. See `BaseTransport.handle_request`.
 
         Provides the (scheme, host, port, target) for the outgoing request.
         """
@@ -382,7 +399,13 @@ class URL:
             "query": bytes,
             "raw_path": bytes,
             "fragment": str,
+            "params": object,
         }
+
+        # Step 1
+        # ======
+        #
+        # Perform type checking for all supported keyword arguments.
         for key, value in kwargs.items():
             if key not in allowed:
                 message = f"{key!r} is an invalid keyword argument for copy_with()"
@@ -393,21 +416,25 @@ class URL:
                 message = f"Argument {key!r} must be {expected} but got {seen}"
                 raise TypeError(message)
 
-        # Replace username, password, userinfo, host, port, netloc with "authority" for rfc3986
+        # Step 2
+        # ======
+        #
+        # Consolidate "username", "password", "userinfo", "host", "port" and "netloc"
+        # into a single "authority" keyword, for `rfc3986`.
         if "username" in kwargs or "password" in kwargs:
-            # Consolidate username and password into userinfo.
+            # Consolidate "username" and "password" into "userinfo".
             username = quote(kwargs.pop("username", self.username) or "")
             password = quote(kwargs.pop("password", self.password) or "")
             userinfo = f"{username}:{password}" if password else username
             kwargs["userinfo"] = userinfo.encode("ascii")
 
         if "host" in kwargs or "port" in kwargs:
-            # Consolidate host and port into  netloc.
+            # Consolidate "host" and "port" into "netloc".
             host = kwargs.pop("host", self.host) or ""
             port = kwargs.pop("port", self.port)
 
             if host and ":" in host and host[0] != "[":
-                # it's an IPv6 address, so it should be hidden under bracket
+                # IPv6 addresses need to be escaped within sqaure brackets.
                 host = f"[{host}]"
 
             kwargs["netloc"] = (
@@ -417,28 +444,78 @@ class URL:
             )
 
         if "userinfo" in kwargs or "netloc" in kwargs:
-            # Consolidate userinfo and netloc into authority.
+            # Consolidate "userinfo" and "netloc" into authority.
             userinfo = (kwargs.pop("userinfo", self.userinfo) or b"").decode("ascii")
             netloc = (kwargs.pop("netloc", self.netloc) or b"").decode("ascii")
             authority = f"{userinfo}@{netloc}" if userinfo else netloc
             kwargs["authority"] = authority
 
+        # Step 3
+        # ======
+        #
+        # Wrangle any "path", "query", "raw_path" and "params" keywords into
+        # "query" and "path" keywords for `rfc3986`.
         if "raw_path" in kwargs:
+            # If "raw_path" is included, then split it into "path" and "query" components.
             raw_path = kwargs.pop("raw_path") or b""
             path, has_query, query = raw_path.decode("ascii").partition("?")
             kwargs["path"] = path
             kwargs["query"] = query if has_query else None
 
         else:
-            # Ensure path=<url quoted str> for rfc3986
             if kwargs.get("path") is not None:
+                # Ensure `kwargs["path"] = <url quoted str>` for `rfc3986`.
                 kwargs["path"] = quote(kwargs["path"])
 
-            # Ensure query=<str> for rfc3986
             if kwargs.get("query") is not None:
+                # Ensure `kwargs["query"] = <str>` for `rfc3986`.
+                #
+                # Note that `.copy_with(query=None)` and `.copy_with(query=b"")`
+                # are subtly different. The `None` style will not include an empty
+                # trailing "?" character.
                 kwargs["query"] = kwargs["query"].decode("ascii")
 
+            if "params" in kwargs:
+                # Replace any "params" keyword with the raw "query" instead.
+                #
+                # Ensure that empty params use `kwargs["query"] = None` rather
+                # than `kwargs["query"] = ""`, so that generated URLs do not
+                # include an empty trailing "?".
+                params = kwargs.pop("params")
+                kwargs["query"] = None if not params else str(QueryParams(params))
+
+        # Step 4
+        # ======
+        #
+        # Ensure any fragment component is quoted.
+        if kwargs.get("fragment") is not None:
+            kwargs["fragment"] = quote(kwargs["fragment"])
+
+        # Step 5
+        # ======
+        #
+        # At this point kwargs may include keys for "scheme", "authority", "path",
+        # "query" and "fragment". Together these constitute the entire URL.
+        #
+        # See https://tools.ietf.org/html/rfc3986#section-3
+        #
+        #  foo://example.com:8042/over/there?name=ferret#nose
+        #  \_/   \______________/\_________/ \_________/ \__/
+        #   |           |            |            |        |
+        # scheme     authority       path        query   fragment
         return URL(self._uri_reference.copy_with(**kwargs).unsplit())
+
+    def copy_set_param(self, key: str, value: typing.Any = None) -> "URL":
+        return self.copy_with(params=self.params.set(key, value))
+
+    def copy_add_param(self, key: str, value: typing.Any = None) -> "URL":
+        return self.copy_with(params=self.params.add(key, value))
+
+    def copy_remove_param(self, key: str) -> "URL":
+        return self.copy_with(params=self.params.remove(key))
+
+    def copy_merge_params(self, params: QueryParamTypes) -> "URL":
+        return self.copy_with(params=self.params.merge(params))
 
     def join(self, url: URLTypes) -> "URL":
         """
@@ -479,6 +556,8 @@ class URL:
         class_name = self.__class__.__name__
         url_str = str(self)
         if self._uri_reference.userinfo:
+            # Mask any password component in the URL representation, to lower the
+            # risk of unintended leakage, such as in debug information and logging.
             username = quote(self.username)
             url_str = (
                 rfc3986.urlparse(url_str)
@@ -595,7 +674,7 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[str(key)][0]
         return default
 
-    def get_list(self, key: typing.Any) -> typing.List[str]:
+    def get_list(self, key: str) -> typing.List[str]:
         """
         Get all values from the query param for a given key.
 
@@ -606,7 +685,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return list(self._dict.get(str(key), []))
 
-    def set(self, key: typing.Any, value: typing.Any = None) -> "QueryParams":
+    def set(self, key: str, value: typing.Any = None) -> "QueryParams":
         """
         Return a new QueryParams instance, setting the value of a key.
 
@@ -621,7 +700,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict[str(key)] = [primitive_value_to_str(value)]
         return q
 
-    def add(self, key: typing.Any, value: typing.Any = None) -> "QueryParams":
+    def add(self, key: str, value: typing.Any = None) -> "QueryParams":
         """
         Return a new QueryParams instance, setting or appending the value of a key.
 
@@ -636,7 +715,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict[str(key)] = q.get_list(key) + [primitive_value_to_str(value)]
         return q
 
-    def remove(self, key: typing.Any) -> "QueryParams":
+    def remove(self, key: str) -> "QueryParams":
         """
         Return a new QueryParams instance, removing the value of a key.
 
@@ -680,6 +759,9 @@ class QueryParams(typing.Mapping[str, str]):
 
     def __len__(self) -> int:
         return len(self._dict)
+
+    def __bool__(self) -> bool:
+        return bool(self._dict)
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -971,7 +1053,9 @@ class Request:
             self.method = method.decode("ascii").upper()
         else:
             self.method = method.upper()
-        self.url = URL(url, params=params)
+        self.url = URL(url)
+        if params is not None:
+            self.url = self.url.copy_merge_params(params=params)
         self.headers = Headers(headers)
         if cookies:
             Cookies(cookies).set_cookie_header(self)
