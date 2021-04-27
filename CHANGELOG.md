@@ -37,6 +37,8 @@ The following API changes have been issuing deprecation warnings since 0.17.0 on
 * Support `url.copy_with(params=...)`. (Pull #1601)
 * Add `url.params` parameter, returning an immutable `QueryParams` instance. (Pull #1601)
 * Support query manipulation methods on the URL class. These are `url.copy_set_param()`, `url.copy_add_param()`, `url.copy_remove_param()`, `url.copy_merge_params()`. (Pull #1601)
+* The `httpx.URL` class now performs port normalization, so `:80` ports are stripped from `http` URLs and `:443` ports are stripped from `https` URLs. (Pull #1603)
+* The `URL.host` property returns unicode strings for internationalized domain names. The `URL.raw_host` property returns byte strings with IDNA escaping applied. (Pull #1590)
 
 ### Fixed
 
