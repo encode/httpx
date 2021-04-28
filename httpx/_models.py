@@ -1060,14 +1060,21 @@ class Request:
         if cookies:
             Cookies(cookies).set_cookie_header(self)
 
-        if stream is not None:
+        if stream is None:
+            headers, stream = encode_request(content, data, files, json)
+            self._prepare(headers)
+            self.stream = stream
+            # Load the request body, except for streaming content.
+            if isinstance(stream, ByteStream):
+                self.read()
+        else:
             # There's an important distinction between `Request(content=...)`,
             # and `Request(stream=...)`.
             #
-            # Using `content=...` implies automatically populated content headers,
-            # of either `Content-Length: ...` or `Transfer-Encoding: chunked`.
+            # Using `content=...` implies automatically populated `Host` and content
+            # headers, of either `Content-Length: ...` or `Transfer-Encoding: chunked`.
             #
-            # Using `stream=...` will not automatically include any content headers.
+            # Using `stream=...` will not automatically include *any* auto-populated headers.
             #
             # As an end-user you don't really need `stream=...`. It's only
             # useful when:
@@ -1075,14 +1082,6 @@ class Request:
             # * Preserving the request stream when copying requests, eg for redirects.
             # * Creating request instances on the *server-side* of the transport API.
             self.stream = stream
-            self._prepare({})
-        else:
-            headers, stream = encode_request(content, data, files, json)
-            self._prepare(headers)
-            self.stream = stream
-            # Load the request body, except for streaming content.
-            if isinstance(stream, ByteStream):
-                self.read()
 
     def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
         for key, value in default_headers.items():
@@ -1191,7 +1190,14 @@ class Response:
         self.is_closed = False
         self.is_stream_consumed = False
 
-        if stream is not None:
+        if stream is None:
+            headers, stream = encode_response(content, text, html, json)
+            self._prepare(headers)
+            self.stream = stream
+            if isinstance(stream, ByteStream):
+                # Load the response body, except for streaming content.
+                self.read()
+        else:
             # There's an important distinction between `Response(content=...)`,
             # and `Response(stream=...)`.
             #
@@ -1204,13 +1210,6 @@ class Response:
             # useful when creating response instances having received a stream
             # from the transport API.
             self.stream = stream
-        else:
-            headers, stream = encode_response(content, text, html, json)
-            self._prepare(headers)
-            self.stream = stream
-            if isinstance(stream, ByteStream):
-                # Load the response body, except for streaming content.
-                self.read()
 
         self._num_bytes_downloaded = 0
 

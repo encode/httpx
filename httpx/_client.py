@@ -497,9 +497,8 @@ class BaseClient:
             # the origin.
             headers.pop("Authorization", None)
 
-            # Remove the Host header, so that a new one will be auto-populated on
-            # the request instance.
-            headers.pop("Host", None)
+            # Update the Host header.
+            headers["Host"] = url.netloc.decode("ascii")
 
         if method != request.method and method == "GET":
             # If we've switch to a 'GET' request, then strip any headers which
