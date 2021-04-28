@@ -104,6 +104,8 @@ def encode_urlencoded_data(
     for key, value in data.items():
         if isinstance(value, (list, tuple)):
             plain_data.extend([(key, primitive_value_to_str(item)) for item in value])
+        elif isinstance(value, (bytes, bytearray)):
+            plain_data.append((key, value))
         else:
             plain_data.append((key, primitive_value_to_str(value)))
     body = urlencode(plain_data, doseq=True).encode("utf-8")
