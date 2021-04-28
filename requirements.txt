@@ -1,7 +1,4 @@
--e .[http2]
-
-# Optional
-brotlipy==0.7.*
+-e .[http2,brotli]
 
 # Documentation
 mkdocs
