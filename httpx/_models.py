@@ -100,6 +100,13 @@ class URL:
       url = httpx.URL("http://xn--fiqs8s.icom.museum")
       assert url.raw_host == b"xn--fiqs8s.icom.museum"
 
+    * `url.port` is either None or an integer. URLs that include the default port for
+      "http", "https", "ws", "wss", and "ftp" schemes have their port normalized to `None`.
+
+      assert httpx.URL("http://example.com") == httpx.URL("http://example.com:80")
+      assert httpx.URL("http://example.com").port is None
+      assert httpx.URL("http://example.com:80").port is None
+
     * `url.userinfo` is raw bytes, without URL escaping. Usually you'll want to work with
       `url.username` and `url.password` instead, which handle the URL escaping.
 
@@ -143,6 +150,24 @@ class URL:
             raise TypeError(
                 f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}: {url!r}"
             )
+
+        # Perform port normalization, following the WHATWG spec for default ports.
+        #
+        # See:
+        # * https://tools.ietf.org/html/rfc3986#section-3.2.3
+        # * https://url.spec.whatwg.org/#url-miscellaneous
+        # * https://url.spec.whatwg.org/#scheme-state
+        default_port = {
+            "ftp": ":21",
+            "http": ":80",
+            "https": ":443",
+            "ws": ":80",
+            "wss": ":443",
+        }.get(self._uri_reference.scheme, "")
+        authority = self._uri_reference.authority or ""
+        if default_port and authority.endswith(default_port):
+            authority = authority[: -len(default_port)]
+            self._uri_reference = self._uri_reference.copy_with(authority=authority)
 
         if kwargs:
             self._uri_reference = self.copy_with(**kwargs)._uri_reference
@@ -253,6 +278,15 @@ class URL:
     def port(self) -> typing.Optional[int]:
         """
         The URL port as an integer.
+
+        Note that the URL class performs port normalization as per the WHATWG spec.
+        Default ports for "http", "https", "ws", "wss", and "ftp" schemes are always
+        treated as `None`.
+
+        For example:
+
+        assert httpx.URL("http://www.example.com") == httpx.URL("http://www.example.com:80")
+        assert httpx.URL("http://www.example.com:80").port is None
         """
         port = self._uri_reference.port
         return int(port) if port else None
@@ -263,13 +297,8 @@ class URL:
         Either `<host>` or `<host>:<port>` as bytes.
         Always normalized to lowercase, and IDNA encoded.
 
-        The port component is not included if it is the default for an
-        "http://" or "https://" URL.
-
         This property may be used for generating the value of a request
         "Host" header.
-
-        See: https://tools.ietf.org/html/rfc3986#section-3.2.3
         """
         host = self._uri_reference.host or ""
         port = self._uri_reference.port
@@ -547,7 +576,7 @@ class URL:
         return hash(str(self))
 
     def __eq__(self, other: typing.Any) -> bool:
-        return isinstance(other, (URL, str)) and str(self) == str(other)
+        return isinstance(other, (URL, str)) and str(self) == str(URL(other))
 
     def __str__(self) -> str:
         return self._uri_reference.unsplit()
@@ -1098,11 +1127,7 @@ class Request:
         )
 
         if not has_host and self.url.host:
-            default_port = {"http": b":80", "https": b":443"}.get(self.url.scheme, b"")
-            host_header = self.url.netloc
-            if host_header.endswith(default_port):
-                host_header = host_header[: -len(default_port)]
-            auto_headers.append((b"Host", host_header))
+            auto_headers.append((b"Host", self.url.netloc))
         if not has_content_length and self.method in ("POST", "PUT", "PATCH"):
             auto_headers.append((b"Content-Length", b"0"))
 
