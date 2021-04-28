@@ -162,7 +162,8 @@ class HTTPTransport(BaseTransport):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        self._pool.__exit__(exc_type, exc_value, traceback)
+        with map_httpcore_exceptions():
+            self._pool.__exit__(exc_type, exc_value, traceback)
 
     def handle_request(
         self,
@@ -256,7 +257,8 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        await self._pool.__aexit__(exc_type, exc_value, traceback)
+        with map_httpcore_exceptions():
+            await self._pool.__aexit__(exc_type, exc_value, traceback)
 
     async def handle_async_request(
         self,
