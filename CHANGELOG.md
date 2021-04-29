@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.18.1 (29th April, 2021)
+
+### Changed
+
+* Update brotli support to use the `brotlicffi` package (Pull #1605)
+* Ensure that `Request(..., stream=...)` does not auto-generate any headers on the request instance. (Pull #1607)
+
+### Fixed
+
+* Pass through `timeout=...` in top-level httpx.stream() function. (Pull #1613)
+* Map httpcore transport close exceptions to httpx exceptions. (Pull #1606)
+
 ## 0.18.0 (27th April, 2021)
 
 The 0.18.x release series formalises our low-level Transport API, introducing the base classes `httpx.BaseTransport` and `httpx.AsyncBaseTransport`.
