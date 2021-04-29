@@ -105,8 +105,10 @@ class BrotliDecoder(ContentDecoder):
         self.decompressor = brotli.Decompressor()
         self.seen_data = False
         if hasattr(self.decompressor, "decompress"):
+            # The 'brotlicffi' package.
             self._decompress = self.decompressor.decompress  # pragma: nocover
         else:
+            # The 'brotli' package.
             self._decompress = self.decompressor.process  # pragma: nocover
 
     def decode(self, data: bytes) -> bytes:
@@ -123,6 +125,8 @@ class BrotliDecoder(ContentDecoder):
             return b""
         try:
             if hasattr(self.decompressor, "finish"):
+                # Only available in the 'brotlicffi' package.
+
                 # As the decompressor decompresses eagerly, this
                 # will never actually emit any data. However, it will potentially throw
                 # errors if a truncated or damaged data stream has been used.
