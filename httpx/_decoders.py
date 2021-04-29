@@ -8,12 +8,8 @@ import io
 import typing
 import zlib
 
+from ._compat import brotli
 from ._exceptions import DecodingError
-
-try:
-    import brotlicffi
-except ImportError:  # pragma: nocover
-    brotlicffi = None
 
 
 class ContentDecoder:
@@ -99,17 +95,17 @@ class BrotliDecoder(ContentDecoder):
     """
 
     def __init__(self) -> None:
-        if brotlicffi is None:  # pragma: nocover
+        if brotli is None:  # pragma: nocover
             raise ImportError(
-                "Using 'BrotliDecoder', but the 'brotlicffi' library "
-                "is not installed."
+                "Using 'BrotliDecoder', but neither of the 'brotlicffi' or 'brotli' "
+                "packages have been installed. "
                 "Make sure to install httpx using `pip install httpx[brotli]`."
             ) from None
 
-        self.decompressor = brotlicffi.Decompressor()
+        self.decompressor = brotli.Decompressor()
         self.seen_data = False
         if hasattr(self.decompressor, "decompress"):
-            self._decompress = self.decompressor.decompress
+            self._decompress = self.decompressor.decompress  # pragma: nocover
         else:
             self._decompress = self.decompressor.process  # pragma: nocover
 
@@ -118,8 +114,8 @@ class BrotliDecoder(ContentDecoder):
             return b""
         self.seen_data = True
         try:
-            return self.decompressor.decompress(data)
-        except brotlicffi.Error as exc:
+            return self._decompress(data)
+        except brotli.error as exc:
             raise DecodingError(str(exc)) from exc
 
     def flush(self) -> bytes:
@@ -127,9 +123,12 @@ class BrotliDecoder(ContentDecoder):
             return b""
         try:
             if hasattr(self.decompressor, "finish"):
-                self.decompressor.finish()
+                # As the decompressor decompresses eagerly, this
+                # will never actually emit any data. However, it will potentially throw
+                # errors if a truncated or damaged data stream has been used.
+                self.decompressor.finish()  # pragma: nocover
             return b""
-        except brotlicffi.Error as exc:  # pragma: nocover
+        except brotli.error as exc:  # pragma: nocover
             raise DecodingError(str(exc)) from exc
 
 
@@ -365,5 +364,5 @@ SUPPORTED_DECODERS = {
 }
 
 
-if brotlicffi is None:
+if brotli is None:
     SUPPORTED_DECODERS.pop("br")  # pragma: nocover
