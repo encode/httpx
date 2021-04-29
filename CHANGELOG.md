@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-* Pass through `timeout=...`` in top-level httpx.stream() function. (Pull #1613)
+* Pass through `timeout=...` in top-level httpx.stream() function. (Pull #1613)
 * Map httpcore transport close exceptions to httpx exceptions. (Pull #1606)
 
 ## 0.18.0 (27th April, 2021)
