@@ -342,7 +342,7 @@ def guess_content_type(filename: typing.Optional[str]) -> typing.Optional[str]:
     return None
 
 
-def peek_filelike_length(stream: typing.IO) -> int:
+def peek_filelike_length(stream: typing.IO) -> typing.Optional[int]:
     """
     Given a file-like stream object, return its length in number of bytes
     without reading it into memory.
@@ -360,7 +360,7 @@ def peek_filelike_length(stream: typing.IO) -> int:
             stream.seek(offset)
         except OSError:
             # Not even that? Sorry, we're doomed...
-            raise
+            return None
         else:
             return length
     else:
