@@ -49,6 +49,18 @@ async def test_bytes_content():
 
 
 @pytest.mark.asyncio
+async def test_bytesio_content():
+    headers, stream = encode_request(content=io.BytesIO(b"Hello, world!"))
+    assert isinstance(stream, typing.Iterable)
+    assert not isinstance(stream, typing.AsyncIterable)
+
+    content = b"".join([part for part in stream])
+
+    assert headers == {"Content-Length": "13"}
+    assert content == b"Hello, world!"
+
+
+@pytest.mark.asyncio
 async def test_iterator_content():
     def hello_world():
         yield b"Hello, "

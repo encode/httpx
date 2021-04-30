@@ -17,7 +17,7 @@ from ._exceptions import StreamClosed, StreamConsumed
 from ._multipart import MultipartStream
 from ._transports.base import AsyncByteStream, SyncByteStream
 from ._types import RequestContent, RequestData, RequestFiles, ResponseContent
-from ._utils import primitive_value_to_str
+from ._utils import peek_filelike_length, primitive_value_to_str
 
 
 class ByteStream(AsyncByteStream, SyncByteStream):
@@ -82,12 +82,17 @@ def encode_content(
 
     if isinstance(content, (bytes, str)):
         body = content.encode("utf-8") if isinstance(content, str) else content
-        content_length = str(len(body))
-        headers = {"Content-Length": content_length} if body else {}
+        content_length = len(body)
+        headers = {"Content-Length": str(content_length)} if body else {}
         return headers, ByteStream(body)
 
     elif isinstance(content, Iterable):
-        headers = {"Transfer-Encoding": "chunked"}
+        content_length_or_none = peek_filelike_length(content)
+
+        if content_length_or_none is None:
+            headers = {"Transfer-Encoding": "chunked"}
+        else:
+            headers = {"Content-Length": str(content_length_or_none)}
         return headers, IteratorByteStream(content)  # type: ignore
 
     elif isinstance(content, AsyncIterable):
