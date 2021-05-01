@@ -1100,7 +1100,7 @@ def handler(request):
 
 
 # Switch to a mock transport, if the TESTING environment variable is set.
-if os.environ['TESTING'].upper() == "TRUE":
+if os.environ.get('TESTING', '').upper() == "TRUE":
     transport = httpx.MockTransport(handler)
 else:
     transport = httpx.HTTPTransport()
