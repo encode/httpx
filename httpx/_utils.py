@@ -342,7 +342,7 @@ def guess_content_type(filename: typing.Optional[str]) -> typing.Optional[str]:
     return None
 
 
-def peek_filelike_length(stream: typing.IO) -> int:
+def peek_filelike_length(stream: typing.Any) -> typing.Optional[int]:
     """
     Given a file-like stream object, return its length in number of bytes
     without reading it into memory.
@@ -350,7 +350,9 @@ def peek_filelike_length(stream: typing.IO) -> int:
     try:
         # Is it an actual file?
         fd = stream.fileno()
-    except OSError:
+        # Yup, seems to be an actual file.
+        length = os.fstat(fd).st_size
+    except (AttributeError, OSError):
         # No... Maybe it's something that supports random access, like `io.BytesIO`?
         try:
             # Assuming so, go to end of stream to figure out its length,
@@ -358,14 +360,11 @@ def peek_filelike_length(stream: typing.IO) -> int:
             offset = stream.tell()
             length = stream.seek(0, os.SEEK_END)
             stream.seek(offset)
-        except OSError:
+        except (AttributeError, OSError):
             # Not even that? Sorry, we're doomed...
-            raise
-        else:
-            return length
-    else:
-        # Yup, seems to be an actual file.
-        return os.fstat(fd).st_size
+            return None
+
+    return length
 
 
 class Timer:
