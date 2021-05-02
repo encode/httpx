@@ -289,7 +289,7 @@ async def test_client_unsensible_use_in_with_block():
         client = httpx.AsyncClient(transport=httpx.MockTransport(hello_world))
         await client.aclose()
         async with client:
-            pass
+            pass  # pragma: no cover
 
 
 def unmounted(request: httpx.Request) -> httpx.Response:

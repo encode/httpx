@@ -328,7 +328,7 @@ def test_client_unsensible_use_in_with_block():
         client = httpx.Client(transport=httpx.MockTransport(hello_world))
         client._state = httpx._client.ClientState.OPENED
         with client:
-            pass
+            pass  # pragma: no cover
 
 
 def echo_raw_headers(request: httpx.Request) -> httpx.Response:
