@@ -319,6 +319,12 @@ def test_client_closed_state_using_with_block():
         client.get("http://example.com")
 
 
+def test_client_unsensible_use_in_with_block():
+    with pytest.raises(RuntimeError):
+        with httpx.Client(transport=httpx.MockTransport(hello_world)) as client:
+            client.close()
+
+
 def echo_raw_headers(request: httpx.Request) -> httpx.Response:
     data = [
         (name.decode("ascii"), value.decode("ascii"))
