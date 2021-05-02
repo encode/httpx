@@ -285,6 +285,12 @@ async def test_client_unsensible_use_in_with_block():
         ) as client:
             await client.aclose()
 
+    with pytest.raises(RuntimeError):
+        client = httpx.AsyncClient(transport=httpx.MockTransport(hello_world))
+        await client.aclose()
+        async with client:
+            pass
+
 
 def unmounted(request: httpx.Request) -> httpx.Response:
     data = {"app": "unmounted"}

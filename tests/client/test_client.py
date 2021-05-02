@@ -324,6 +324,12 @@ def test_client_unsensible_use_in_with_block():
         with httpx.Client(transport=httpx.MockTransport(hello_world)) as client:
             client.close()
 
+    with pytest.raises(RuntimeError):
+        client = httpx.Client(transport=httpx.MockTransport(hello_world))
+        client._state = httpx._client.ClientState.OPENED
+        with client:
+            pass
+
 
 def echo_raw_headers(request: httpx.Request) -> httpx.Response:
     data = [
