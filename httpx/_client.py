@@ -1182,6 +1182,11 @@ class Client(BaseClient):
                     transport.close()
 
     def __enter__(self: T) -> T:
+        if self._state != ClientState.UNOPENED:
+            raise RuntimeError(
+                "Cannot open a client, as the current state is not 'UNOPENED'."
+            )
+
         self._state = ClientState.OPENED
 
         self._transport.__enter__()
@@ -1196,6 +1201,11 @@ class Client(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
+        if self._state != ClientState.OPENED:
+            raise RuntimeError(
+                "Cannot close a client, as the current state is not 'OPENED'."
+            )
+
         self._state = ClientState.CLOSED
 
         self._transport.__exit__(exc_type, exc_value, traceback)
@@ -1868,6 +1878,11 @@ class AsyncClient(BaseClient):
                     await proxy.aclose()
 
     async def __aenter__(self: U) -> U:
+        if self._state != ClientState.UNOPENED:
+            raise RuntimeError(
+                "Cannot open a client, as the current state is not 'UNOPENED'."
+            )
+
         self._state = ClientState.OPENED
 
         await self._transport.__aenter__()
@@ -1882,6 +1897,11 @@ class AsyncClient(BaseClient):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
+        if self._state != ClientState.OPENED:
+            raise RuntimeError(
+                "Cannot close a client, as the current state is not 'OPENED'."
+            )
+
         self._state = ClientState.CLOSED
 
         await self._transport.__aexit__(exc_type, exc_value, traceback)
