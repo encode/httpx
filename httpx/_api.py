@@ -1,8 +1,9 @@
 import typing
+from contextlib import contextmanager
 
-from ._client import Client, StreamContextManager
+from ._client import Client
 from ._config import DEFAULT_TIMEOUT_CONFIG
-from ._models import Request, Response
+from ._models import Response
 from ._types import (
     AuthTypes,
     CertTypes,
@@ -68,7 +69,8 @@ def request(
     * **allow_redirects** - *(optional)* Enables or disables HTTP redirects.
     * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
     verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, or `False` (disable verification).
+    a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
+    (which will disable verification).
     * **cert** - *(optional)* An SSL certificate used by the requested host
     to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
@@ -88,7 +90,12 @@ def request(
     ```
     """
     with Client(
-        proxies=proxies, cert=cert, verify=verify, timeout=timeout, trust_env=trust_env
+        cookies=cookies,
+        proxies=proxies,
+        cert=cert,
+        verify=verify,
+        timeout=timeout,
+        trust_env=trust_env,
     ) as client:
         return client.request(
             method=method,
@@ -99,12 +106,12 @@ def request(
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             allow_redirects=allow_redirects,
         )
 
 
+@contextmanager
 def stream(
     method: str,
     url: URLTypes,
@@ -123,7 +130,7 @@ def stream(
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     trust_env: bool = True,
-) -> StreamContextManager:
+) -> typing.Iterator[Response]:
     """
     Alternative to `httpx.request()` that streams the response body
     instead of loading it into memory at once.
@@ -134,26 +141,27 @@ def stream(
 
     [0]: /quickstart#streaming-responses
     """
-    client = Client(proxies=proxies, cert=cert, verify=verify, trust_env=trust_env)
-    request = Request(
-        method=method,
-        url=url,
-        params=params,
-        content=content,
-        data=data,
-        files=files,
-        json=json,
-        headers=headers,
+    with Client(
         cookies=cookies,
-    )
-    return StreamContextManager(
-        client=client,
-        request=request,
-        auth=auth,
+        proxies=proxies,
+        cert=cert,
+        verify=verify,
         timeout=timeout,
-        allow_redirects=allow_redirects,
-        close_client=True,
-    )
+        trust_env=trust_env,
+    ) as client:
+        with client.stream(
+            method=method,
+            url=url,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            auth=auth,
+            allow_redirects=allow_redirects,
+        ) as response:
+            yield response
 
 
 def get(

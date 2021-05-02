@@ -46,19 +46,21 @@ def test_httpcore_exception_mapping(server) -> None:
         def close(self):
             raise httpcore.CloseError()
 
-    with mock.patch("httpcore.SyncConnectionPool.request", side_effect=connect_failed):
+    with mock.patch(
+        "httpcore.SyncConnectionPool.handle_request", side_effect=connect_failed
+    ):
         with pytest.raises(httpx.ConnectError):
             httpx.get(server.url)
 
     with mock.patch(
-        "httpcore.SyncConnectionPool.request",
+        "httpcore.SyncConnectionPool.handle_request",
         return_value=(200, [], TimeoutStream(), {}),
     ):
         with pytest.raises(httpx.ReadTimeout):
             httpx.get(server.url)
 
     with mock.patch(
-        "httpcore.SyncConnectionPool.request",
+        "httpcore.SyncConnectionPool.handle_request",
         return_value=(200, [], CloseFailedStream(), {}),
     ):
         with pytest.raises(httpx.CloseError):

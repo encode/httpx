@@ -1,7 +1,8 @@
 import json
+import pickle
 from unittest import mock
 
-import brotli
+import brotlicffi
 import pytest
 
 import httpx
@@ -382,6 +383,16 @@ def test_iter_raw_on_async():
         [part for part in response.iter_raw()]
 
 
+def test_close_on_async():
+    response = httpx.Response(
+        200,
+        content=async_streaming_body(),
+    )
+
+    with pytest.raises(RuntimeError):
+        response.close()
+
+
 def test_iter_raw_increments_updates_counter():
     response = httpx.Response(200, content=streaming_body())
 
@@ -428,6 +439,17 @@ async def test_aiter_raw_on_sync():
 
     with pytest.raises(RuntimeError):
         [part async for part in response.aiter_raw()]
+
+
+@pytest.mark.asyncio
+async def test_aclose_on_sync():
+    response = httpx.Response(
+        200,
+        content=streaming_body(),
+    )
+
+    with pytest.raises(RuntimeError):
+        await response.aclose()
 
 
 @pytest.mark.asyncio
@@ -639,7 +661,7 @@ def test_cannot_read_after_response_closed():
     )
 
     response.close()
-    with pytest.raises(httpx.ResponseClosed):
+    with pytest.raises(httpx.StreamClosed):
         response.read()
 
 
@@ -651,7 +673,7 @@ async def test_cannot_aread_after_response_closed():
     )
 
     await response.aclose()
-    with pytest.raises(httpx.ResponseClosed):
+    with pytest.raises(httpx.StreamClosed):
         await response.aread()
 
 
@@ -766,7 +788,7 @@ def test_link_headers(headers, expected):
 def test_decode_error_with_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
     body = b"test 123"
-    compressed_body = brotli.compress(body)[3:]
+    compressed_body = brotlicffi.compress(body)[3:]
     with pytest.raises(httpx.DecodingError):
         httpx.Response(
             200,
@@ -787,7 +809,7 @@ def test_decode_error_with_request(header_value):
 def test_value_error_without_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
     body = b"test 123"
-    compressed_body = brotli.compress(body)[3:]
+    compressed_body = brotlicffi.compress(body)[3:]
     with pytest.raises(httpx.DecodingError):
         httpx.Response(200, headers=headers, content=compressed_body)
 
@@ -832,3 +854,41 @@ def test_generator_with_content_length_header():
     headers = {"Content-Length": "8"}
     response = httpx.Response(200, content=content(), headers=headers)
     assert response.headers == {"Content-Length": "8"}
+
+
+def test_response_picklable():
+    response = httpx.Response(
+        200,
+        content=b"Hello, world!",
+        request=httpx.Request("GET", "https://example.org"),
+    )
+    pickle_response = pickle.loads(pickle.dumps(response))
+    assert pickle_response.is_closed is True
+    assert pickle_response.is_stream_consumed is True
+    assert pickle_response.next_request is None
+    assert pickle_response.stream is not None
+    assert pickle_response.content == b"Hello, world!"
+    assert pickle_response.status_code == 200
+    assert pickle_response.request.url == response.request.url
+    assert pickle_response.extensions == {}
+    assert pickle_response.history == []
+
+
+@pytest.mark.asyncio
+async def test_response_async_streaming_picklable():
+    response = httpx.Response(200, content=async_streaming_body())
+    pickle_response = pickle.loads(pickle.dumps(response))
+    with pytest.raises(httpx.ResponseNotRead):
+        pickle_response.content
+    with pytest.raises(httpx.StreamClosed):
+        await pickle_response.aread()
+    assert pickle_response.is_stream_consumed is False
+    assert pickle_response.num_bytes_downloaded == 0
+    assert pickle_response.headers == {"Transfer-Encoding": "chunked"}
+
+    response = httpx.Response(200, content=async_streaming_body())
+    await response.aread()
+    pickle_response = pickle.loads(pickle.dumps(response))
+    assert pickle_response.is_stream_consumed is True
+    assert pickle_response.content == b"Hello, world!"
+    assert pickle_response.num_bytes_downloaded == 13
