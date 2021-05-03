@@ -1678,10 +1678,10 @@ class Cookies(MutableMapping):
         """
         Loads any cookies based on the response `Set-Cookie` headers.
         """
-        urlib_response = self._CookieCompatResponse(response)
+        urllib_response = self._CookieCompatResponse(response)
         urllib_request = self._CookieCompatRequest(response.request)
 
-        self.jar.extract_cookies(urlib_response, urllib_request)  # type: ignore
+        self.jar.extract_cookies(urllib_response, urllib_request)  # type: ignore
 
     def set_cookie_header(self, request: Request) -> None:
         """
