@@ -28,14 +28,34 @@ And using `data=...` to send form data:
 httpx.post(..., data={"message": "Hello, world"})
 ```
 
-If you're using a type checking tool such as `mypy`, you'll see warnings issues if using test/byte content with the `data` argument.
-However, for compatibility reasons with `requests`, we do still handle the case where `data=...` is used with raw binary and text contents.
+Using the `data=<text/byte content>` will raise a deprecation warning,
+and is expected to be fully removed with the HTTPX 1.0 release.
 
 ## Content encoding
 
 HTTPX uses `utf-8` for encoding `str` request bodies. For example, when using `content=<str>` the request body will be encoded to `utf-8` before being sent over the wire. This differs from Requests which uses `latin1`. If you need an explicit encoding, pass encoded bytes explictly, e.g. `content=<str>.encode("latin1")`.
 
 For response bodies, assuming the server didn't send an explicit encoding then HTTPX will do its best to figure out an appropriate encoding. Unlike Requests which uses the `chardet` library, HTTPX relies on a plainer fallback strategy (basically attempting UTF-8, or using Windows-1252 as a fallback). This strategy should be robust enough to handle the vast majority of use cases.
+
+## Cookies
+
+If using a client instance, then cookies should always be set on the client rather than on a per-request basis.
+
+This usage is supported:
+
+```python
+client = httpx.Client(cookies=...)
+client.post(...)
+```
+
+This usage is **not** supported:
+
+```python
+client = httpx.Client()
+client.post(..., cookies=...)
+```
+
+We prefer enforcing a stricter API here because it provides clearer expectations around cookie persistence, particularly when redirects occur.
 
 ## Status Codes
 
@@ -147,6 +167,6 @@ while request is not None:
 
 `requests` allows event hooks to mutate `Request` and `Response` objects. See [examples](https://requests.readthedocs.io/en/master/user/advanced/#event-hooks) given in the documentation for `requests`.
 
-In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response. 
+In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response.
 
 If you are looking for more control, consider checking out [Custom Transports](advanced.md#custom-transports).

@@ -162,11 +162,11 @@ except httpx.HTTPStatusError as exc:
 ::: httpx.StreamConsumed
     :docstring:
 
+::: httpx.StreamClosed
+    :docstring:
+
 ::: httpx.ResponseNotRead
     :docstring:
 
 ::: httpx.RequestNotRead
-    :docstring:
-
-::: httpx.ResponseClosed
     :docstring:

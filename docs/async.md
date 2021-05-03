@@ -237,3 +237,9 @@ async with httpx.AsyncClient(transport=transport, base_url="http://testserver") 
 ```
 
 See [the ASGI documentation](https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope) for more details on the `client` and `root_path` keys.
+
+## Startup/shutdown of ASGI apps
+
+It is not in the scope of HTTPX to trigger lifespan events of your app.
+
+However it is suggested to use `LifespanManager` from [asgi-lifespan](https://github.com/florimondmanca/asgi-lifespan#usage) in pair with `AsyncClient`.

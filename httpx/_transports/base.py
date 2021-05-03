@@ -5,6 +5,63 @@ T = typing.TypeVar("T", bound="BaseTransport")
 A = typing.TypeVar("A", bound="AsyncBaseTransport")
 
 
+class SyncByteStream:
+    def __iter__(self) -> typing.Iterator[bytes]:
+        raise NotImplementedError(
+            "The '__iter__' method must be implemented."
+        )  # pragma: nocover
+        yield b""  # pragma: nocover
+
+    def close(self) -> None:
+        """
+        Subclasses can override this method to release any network resources
+        after a request/response cycle is complete.
+
+        Streaming cases should use a `try...finally` block to ensure that
+        the stream `close()` method is always called.
+
+        Example:
+
+            status_code, headers, stream, extensions = transport.handle_request(...)
+            try:
+                ...
+            finally:
+                stream.close()
+        """
+
+    def read(self) -> bytes:
+        """
+        Simple cases can use `.read()` as a convience method for consuming
+        the entire stream and then closing it.
+
+        Example:
+
+            status_code, headers, stream, extensions = transport.handle_request(...)
+            body = stream.read()
+        """
+        try:
+            return b"".join([part for part in self])
+        finally:
+            self.close()
+
+
+class AsyncByteStream:
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        raise NotImplementedError(
+            "The '__aiter__' method must be implemented."
+        )  # pragma: nocover
+        yield b""  # pragma: nocover
+
+    async def aclose(self) -> None:
+        pass
+
+    async def aread(self) -> bytes:
+        try:
+            return b"".join([part async for part in self])
+        finally:
+            await self.aclose()
+
+
 class BaseTransport:
     def __enter__(self: T) -> T:
         return self
@@ -22,10 +79,10 @@ class BaseTransport:
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.Iterable[bytes],
+        stream: SyncByteStream,
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterable[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
     ]:
         """
         Send a single HTTP request and return a response.
@@ -39,6 +96,11 @@ class BaseTransport:
         since the Client class provides all the higher level user-facing API
         niceties.
 
+        In order to properly release any network resources, the response stream
+        should *either* be consumed immediately, with a call to `stream.read()`,
+        or else the `handle_request` call should be followed with a try/finally
+        block to ensuring the stream is always closed.
+
         Example usage:
 
             with httpx.HTTPTransport() as transport:
@@ -49,11 +111,7 @@ class BaseTransport:
                     stream=[],
                     extensions={}
                 )
-                try:
-                    body = b''.join([part for part in stream])
-                finally:
-                    if 'close' in extensions:
-                        extensions['close']()
+                body = stream.read()
                 print(status_code, headers, body)
 
         Arguments:
@@ -86,10 +144,6 @@ class BaseTransport:
                     eg. the leading response bytes were b"HTTP/1.1 200 <CRLF>".
             http_version: The HTTP version, as bytes. Eg. b"HTTP/1.1".
                     When no http_version key is included, HTTP/1.1 may be assumed.
-            close:  A callback which should be invoked to release any network
-                    resources.
-            aclose: An async callback which should be invoked to release any
-                    network resources.
         """
         raise NotImplementedError(
             "The 'handle_request' method must be implemented."
@@ -116,10 +170,10 @@ class AsyncBaseTransport:
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.AsyncIterable[bytes],
+        stream: AsyncByteStream,
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
     ]:
         raise NotImplementedError(
             "The 'handle_async_request' method must be implemented."

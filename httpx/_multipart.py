@@ -3,6 +3,7 @@ import os
 import typing
 from pathlib import Path
 
+from ._transports.base import AsyncByteStream, SyncByteStream
 from ._types import FileContent, FileTypes, RequestFiles
 from ._utils import (
     format_form_param,
@@ -92,9 +93,8 @@ class FileField:
             return len(headers) + len(to_bytes(self.file))
 
         # Let's do our best not to read `file` into memory.
-        try:
-            file_length = peek_filelike_length(self.file)
-        except OSError:
+        file_length = peek_filelike_length(self.file)
+        if file_length is None:
             # As a last resort, read file and cache contents for later.
             assert not hasattr(self, "_data")
             self._data = to_bytes(self.file.read())
@@ -141,7 +141,7 @@ class FileField:
         yield from self.render_data()
 
 
-class MultipartStream:
+class MultipartStream(SyncByteStream, AsyncByteStream):
     """
     Request content as streaming multipart encoded form data.
     """
