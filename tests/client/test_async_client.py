@@ -277,6 +277,14 @@ async def test_deleting_unclosed_async_client_causes_warning():
         del client
 
 
+@pytest.mark.usefixtures("async_environment")
+async def test_closing_pending_async_client_causes_warning():
+    client = httpx.AsyncClient(transport=httpx.MockTransport(hello_world))
+    client.pending_requests = 1
+    with pytest.warns(UserWarning):
+        await client.aclose()
+
+
 def unmounted(request: httpx.Request) -> httpx.Response:
     data = {"app": "unmounted"}
     return httpx.Response(200, json=data)
