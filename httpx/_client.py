@@ -580,6 +580,7 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
+        http1: bool = True,
         proxies: ProxiesTypes = None,
         mounts: typing.Mapping[str, BaseTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -619,6 +620,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             http2=http2,
+            http1=http1,
             limits=limits,
             transport=transport,
             app=app,
@@ -632,6 +634,7 @@ class Client(BaseClient):
                 verify=verify,
                 cert=cert,
                 http2=http2,
+                http1=http1,
                 limits=limits,
                 trust_env=trust_env,
             )
@@ -649,6 +652,7 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
+        http1: bool = True,
         limits: Limits = DEFAULT_LIMITS,
         transport: BaseTransport = None,
         app: typing.Callable = None,
@@ -661,7 +665,12 @@ class Client(BaseClient):
             return WSGITransport(app=app)
 
         return HTTPTransport(
-            verify=verify, cert=cert, http2=http2, limits=limits, trust_env=trust_env
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            http1=http1,
+            limits=limits,
+            trust_env=trust_env,
         )
 
     def _init_proxy_transport(
@@ -670,6 +679,7 @@ class Client(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
+        http1: bool = True,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> BaseTransport:
@@ -677,6 +687,7 @@ class Client(BaseClient):
             verify=verify,
             cert=cert,
             http2=http2,
+            http1=http1,
             limits=limits,
             trust_env=trust_env,
             proxy=proxy,
@@ -1266,6 +1277,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
+        http1: bool = True,
         proxies: ProxiesTypes = None,
         mounts: typing.Mapping[str, AsyncBaseTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -1305,6 +1317,7 @@ class AsyncClient(BaseClient):
             verify=verify,
             cert=cert,
             http2=http2,
+            http1=http1,
             limits=limits,
             transport=transport,
             app=app,
@@ -1319,6 +1332,7 @@ class AsyncClient(BaseClient):
                 verify=verify,
                 cert=cert,
                 http2=http2,
+                http1=http1,
                 limits=limits,
                 trust_env=trust_env,
             )
@@ -1335,6 +1349,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
+        http1: bool = True,
         limits: Limits = DEFAULT_LIMITS,
         transport: AsyncBaseTransport = None,
         app: typing.Callable = None,
@@ -1347,7 +1362,12 @@ class AsyncClient(BaseClient):
             return ASGITransport(app=app)
 
         return AsyncHTTPTransport(
-            verify=verify, cert=cert, http2=http2, limits=limits, trust_env=trust_env
+            verify=verify,
+            cert=cert,
+            http2=http2,
+            http1=http1,
+            limits=limits,
+            trust_env=trust_env,
         )
 
     def _init_proxy_transport(
@@ -1356,6 +1376,7 @@ class AsyncClient(BaseClient):
         verify: VerifyTypes = True,
         cert: CertTypes = None,
         http2: bool = False,
+        http1: bool = True,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> AsyncBaseTransport:
