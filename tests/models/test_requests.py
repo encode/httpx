@@ -1,3 +1,4 @@
+import pickle
 import typing
 
 import pytest
@@ -97,11 +98,12 @@ async def test_aread_and_stream_data():
     assert content == request.content
 
 
-@pytest.mark.asyncio
-async def test_cannot_access_content_without_read():
-    # Ensure a request may still be streamed if it has been read.
-    # Needed for cases such as authentication classes that read the request body.
-    request = httpx.Request("POST", "http://example.org", json={"test": 123})
+def test_cannot_access_streaming_content_without_read():
+    # Ensure that streaming requests
+    def streaming_body():  # pragma: nocover
+        yield ""
+
+    request = httpx.Request("POST", "http://example.org", content=streaming_body())
     with pytest.raises(httpx.RequestNotRead):
         request.content
 
@@ -112,7 +114,7 @@ def test_transfer_encoding_header():
 
     data = streaming_body(b"test 123")
 
-    request = httpx.Request("POST", "http://example.org", data=data)
+    request = httpx.Request("POST", "http://example.org", content=data)
     assert "Content-Length" not in request.headers
     assert request.headers["Transfer-Encoding"] == "chunked"
 
@@ -129,7 +131,7 @@ def test_ignore_transfer_encoding_header_if_content_length_exists():
     data = streaming_body(b"abcd")
 
     headers = {"Content-Length": "4"}
-    request = httpx.Request("POST", "http://example.org", data=data, headers=headers)
+    request = httpx.Request("POST", "http://example.org", content=data, headers=headers)
     assert "Transfer-Encoding" not in request.headers
     assert request.headers["Content-Length"] == "4"
 
@@ -155,7 +157,7 @@ def test_override_content_length_header():
     data = streaming_body(b"test 123")
     headers = {"Content-Length": "8"}
 
-    request = httpx.Request("POST", "http://example.org", data=data, headers=headers)
+    request = httpx.Request("POST", "http://example.org", content=data, headers=headers)
     assert request.headers["Content-Length"] == "8"
 
 
@@ -173,3 +175,54 @@ def test_url():
     assert request.url.port is None
     assert request.url.path == "/abc"
     assert request.url.raw_path == b"/abc?foo=bar"
+
+
+def test_request_picklable():
+    request = httpx.Request("POST", "http://example.org", json={"test": 123})
+    pickle_request = pickle.loads(pickle.dumps(request))
+    assert pickle_request.method == "POST"
+    assert pickle_request.url.path == "/"
+    assert pickle_request.headers["Content-Type"] == "application/json"
+    assert pickle_request.content == b'{"test": 123}'
+    assert pickle_request.stream is not None
+    assert request.headers == {
+        "Host": "example.org",
+        "Content-Type": "application/json",
+        "content-length": "13",
+    }
+
+
+@pytest.mark.asyncio
+async def test_request_async_streaming_content_picklable():
+    async def streaming_body(data):
+        yield data
+
+    data = streaming_body(b"test 123")
+    request = httpx.Request("POST", "http://example.org", content=data)
+    pickle_request = pickle.loads(pickle.dumps(request))
+    with pytest.raises(httpx.RequestNotRead):
+        pickle_request.content
+    with pytest.raises(httpx.StreamClosed):
+        await pickle_request.aread()
+
+    request = httpx.Request("POST", "http://example.org", content=data)
+    await request.aread()
+    pickle_request = pickle.loads(pickle.dumps(request))
+    assert pickle_request.content == b"test 123"
+
+
+def test_request_generator_content_picklable():
+    def content():
+        yield b"test 123"  # pragma: nocover
+
+    request = httpx.Request("POST", "http://example.org", content=content())
+    pickle_request = pickle.loads(pickle.dumps(request))
+    with pytest.raises(httpx.RequestNotRead):
+        pickle_request.content
+    with pytest.raises(httpx.StreamClosed):
+        pickle_request.read()
+
+    request = httpx.Request("POST", "http://example.org", content=content())
+    request.read()
+    pickle_request = pickle.loads(pickle.dumps(request))
+    assert pickle_request.content == b"test 123"

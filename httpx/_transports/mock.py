@@ -2,7 +2,7 @@ import asyncio
 import typing
 
 from .._models import Request
-from .base import AsyncBaseTransport, BaseTransport
+from .base import AsyncBaseTransport, AsyncByteStream, BaseTransport, SyncByteStream
 
 
 class MockTransport(AsyncBaseTransport, BaseTransport):
@@ -14,10 +14,10 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.Iterable[bytes],
+        stream: SyncByteStream,
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.Iterable[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
     ]:
         request = Request(
             method=method,
@@ -39,10 +39,10 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         method: bytes,
         url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
         headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.AsyncIterable[bytes],
+        stream: AsyncByteStream,
         extensions: dict,
     ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict
+        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
     ]:
         request = Request(
             method=method,
