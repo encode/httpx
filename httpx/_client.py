@@ -1284,14 +1284,6 @@ class AsyncClient(BaseClient):
             )
         self._mounts = dict(sorted(self._mounts.items()))
 
-    @property
-    def pending_requests(self) -> int:
-        return self._pending_requests
-
-    @pending_requests.setter
-    def pending_requests(self, p: int) -> None:
-        self._pending_requests = p
-
     def _init_transport(
         self,
         verify: VerifyTypes = True,
@@ -1419,7 +1411,7 @@ class AsyncClient(BaseClient):
 
         auth = self._build_request_auth(request, auth)
 
-        self.pending_requests += 1
+        self._pending_requests += 1
         response = await self._send_handling_auth(
             request,
             auth=auth,
@@ -1434,7 +1426,7 @@ class AsyncClient(BaseClient):
             for hook in self._event_hooks["response"]:
                 await hook(response)
 
-            self.pending_requests -= 1
+            self._pending_requests -= 1
             return response
 
         except Exception as exc:
