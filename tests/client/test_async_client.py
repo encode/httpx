@@ -94,8 +94,19 @@ async def test_stream_request(server):
         yield b"world!"
 
     async with httpx.AsyncClient() as client:
-        response = await client.request("POST", server.url, content=hello_world())
+        response = await client.post(server.url, content=hello_world())
     assert response.status_code == 200
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_cannot_stream_sync_request(server):
+    def hello_world():  # pragma: nocover
+        yield b"Hello, "
+        yield b"world!"
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(RuntimeError):
+            await client.post(server.url, content=hello_world())
 
 
 @pytest.mark.usefixtures("async_environment")

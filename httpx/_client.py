@@ -2,10 +2,12 @@ import datetime
 import enum
 import typing
 import warnings
+from contextlib import contextmanager
 from types import TracebackType
 
 from .__version__ import __version__
 from ._auth import Auth, BasicAuth, FunctionAuth
+from ._compat import asynccontextmanager
 from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
@@ -26,12 +28,16 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
-from ._transports.base import AsyncBaseTransport, BaseTransport
+from ._transports.base import (
+    AsyncBaseTransport,
+    AsyncByteStream,
+    BaseTransport,
+    SyncByteStream,
+)
 from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
     AuthTypes,
-    ByteStream,
     CertTypes,
     CookieTypes,
     HeaderTypes,
@@ -51,7 +57,6 @@ from ._utils import (
     get_environment_proxies,
     get_logger,
     same_origin,
-    warn_deprecated,
 )
 
 # The type annotation for @classmethod and context managers here follows PEP 484
@@ -80,6 +85,52 @@ class ClientState(enum.Enum):
     #   The client has either exited the `with` block, or `close()` has
     #   been called explicitly.
     CLOSED = 3
+
+
+class BoundSyncStream(SyncByteStream):
+    """
+    A byte stream that is bound to a given response instance, and that
+    ensures the `response.elapsed` is set once the response is closed.
+    """
+
+    def __init__(
+        self, stream: SyncByteStream, response: Response, timer: Timer
+    ) -> None:
+        self._stream = stream
+        self._response = response
+        self._timer = timer
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        for chunk in self._stream:
+            yield chunk
+
+    def close(self) -> None:
+        seconds = self._timer.sync_elapsed()
+        self._response.elapsed = datetime.timedelta(seconds=seconds)
+        self._stream.close()
+
+
+class BoundAsyncStream(AsyncByteStream):
+    """
+    An async byte stream that is bound to a given response instance, and that
+    ensures the `response.elapsed` is set once the response is closed.
+    """
+
+    def __init__(
+        self, stream: AsyncByteStream, response: Response, timer: Timer
+    ) -> None:
+        self._stream = stream
+        self._response = response
+        self._timer = timer
+
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        async for chunk in self._stream:
+            yield chunk
+
+    async def aclose(self) -> None:
+        seconds = await self._timer.async_elapsed()
+        self._response.elapsed = datetime.timedelta(seconds=seconds)
+        await self._stream.aclose()
 
 
 class BaseClient:
@@ -239,51 +290,6 @@ class BaseClient:
     def params(self, params: QueryParamTypes) -> None:
         self._params = QueryParams(params)
 
-    def stream(
-        self,
-        method: str,
-        url: URLTypes,
-        *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
-        allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-    ) -> "StreamContextManager":
-        """
-        Alternative to `httpx.request()` that streams the response body
-        instead of loading it into memory at once.
-
-        **Parameters**: See `httpx.request`.
-
-        See also: [Streaming Responses][0]
-
-        [0]: /quickstart#streaming-responses
-        """
-        request = self.build_request(
-            method=method,
-            url=url,
-            content=content,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-        )
-        return StreamContextManager(
-            client=self,
-            request=request,
-            auth=auth,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
-        )
-
     def build_request(
         self,
         method: str,
@@ -379,7 +385,7 @@ class BaseClient:
         """
         if params or self.params:
             merged_queryparams = QueryParams(self.params)
-            merged_queryparams.update(params)
+            merged_queryparams = merged_queryparams.merge(params)
             return merged_queryparams
         return params
 
@@ -491,9 +497,8 @@ class BaseClient:
             # the origin.
             headers.pop("Authorization", None)
 
-            # Remove the Host header, so that a new one will be auto-populated on
-            # the request instance.
-            headers.pop("Host", None)
+            # Update the Host header.
+            headers["Host"] = url.netloc.decode("ascii")
 
         if method != request.method and method == "GET":
             # If we've switch to a 'GET' request, then strip any headers which
@@ -509,7 +514,7 @@ class BaseClient:
 
     def _redirect_stream(
         self, request: Request, method: str
-    ) -> typing.Optional[ByteStream]:
+    ) -> typing.Optional[typing.Union[SyncByteStream, AsyncByteStream]]:
         """
         Return the body that should be used for the redirect request.
         """
@@ -542,7 +547,8 @@ class Client(BaseClient):
     sending requests.
     * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
     verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, or `False` (disable verification).
+    a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
+    (which will disable verification).
     * **cert** - *(optional)* An SSL certificate used by the requested host
     to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
@@ -578,7 +584,6 @@ class Client(BaseClient):
         mounts: typing.Mapping[str, BaseTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
-        pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
@@ -606,13 +611,6 @@ class Client(BaseClient):
                     "Using http2=True, but the 'h2' package is not installed. "
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
-
-        if pool_limits is not None:
-            warn_deprecated(
-                "Client(..., pool_limits=...) is deprecated and will raise "
-                "errors in the future. Use Client(..., limits=...) instead."
-            )
-            limits = pool_limits
 
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies, allow_env_proxies)
@@ -727,6 +725,14 @@ class Client(BaseClient):
 
         [0]: /advanced/#merging-of-configuration
         """
+        if cookies is not None:
+            message = (
+                "Setting per-request cookies=<...> is being deprecated, because "
+                "the expected behaviour on cookie persistence is ambiguous. Set "
+                "cookies directly on the client instance instead."
+            )
+            warnings.warn(message, DeprecationWarning)
+
         request = self.build_request(
             method=method,
             url=url,
@@ -741,6 +747,56 @@ class Client(BaseClient):
         return self.send(
             request, auth=auth, allow_redirects=allow_redirects, timeout=timeout
         )
+
+    @contextmanager
+    def stream(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        content: RequestContent = None,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> typing.Iterator[Response]:
+        """
+        Alternative to `httpx.request()` that streams the response body
+        instead of loading it into memory at once.
+
+        **Parameters**: See `httpx.request`.
+
+        See also: [Streaming Responses][0]
+
+        [0]: /quickstart#streaming-responses
+        """
+        request = self.build_request(
+            method=method,
+            url=url,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        response = self.send(
+            request=request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+            stream=True,
+        )
+        try:
+            yield response
+        finally:
+            response.close()
 
     def send(
         self,
@@ -869,19 +925,19 @@ class Client(BaseClient):
         timer = Timer()
         timer.sync_start()
 
+        if not isinstance(request.stream, SyncByteStream):
+            raise RuntimeError(
+                "Attempted to send an async request with a sync Client instance."
+            )
+
         with request_context(request=request):
             (status_code, headers, stream, extensions) = transport.handle_request(
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
-                stream=request.stream,  # type: ignore
+                stream=request.stream,
                 extensions={"timeout": timeout.as_dict()},
             )
-
-        def on_close(response: Response) -> None:
-            response.elapsed = datetime.timedelta(seconds=timer.sync_elapsed())
-            if "close" in extensions:
-                extensions["close"]()
 
         response = Response(
             status_code,
@@ -889,9 +945,9 @@ class Client(BaseClient):
             stream=stream,
             extensions=extensions,
             request=request,
-            on_close=on_close,
         )
 
+        response.stream = BoundSyncStream(stream, response=response, timer=timer)
         self.cookies.extract_cookies(response)
 
         status = f"{response.status_code} {response.reason_phrase}"
@@ -1214,7 +1270,6 @@ class AsyncClient(BaseClient):
         mounts: typing.Mapping[str, AsyncBaseTransport] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         limits: Limits = DEFAULT_LIMITS,
-        pool_limits: Limits = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
@@ -1244,13 +1299,6 @@ class AsyncClient(BaseClient):
                     "Using http2=True, but the 'h2' package is not installed. "
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
-
-        if pool_limits is not None:
-            warn_deprecated(
-                "AsyncClient(..., pool_limits=...) is deprecated and will raise "
-                "errors in the future. Use AsyncClient(..., limits=...) instead."
-            )
-            limits = pool_limits
 
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies, allow_env_proxies)
@@ -1380,6 +1428,56 @@ class AsyncClient(BaseClient):
             request, auth=auth, allow_redirects=allow_redirects, timeout=timeout
         )
         return response
+
+    @asynccontextmanager
+    async def stream(
+        self,
+        method: str,
+        url: URLTypes,
+        *,
+        content: RequestContent = None,
+        data: RequestData = None,
+        files: RequestFiles = None,
+        json: typing.Any = None,
+        params: QueryParamTypes = None,
+        headers: HeaderTypes = None,
+        cookies: CookieTypes = None,
+        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        allow_redirects: bool = True,
+        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+    ) -> typing.AsyncIterator[Response]:
+        """
+        Alternative to `httpx.request()` that streams the response body
+        instead of loading it into memory at once.
+
+        **Parameters**: See `httpx.request`.
+
+        See also: [Streaming Responses][0]
+
+        [0]: /quickstart#streaming-responses
+        """
+        request = self.build_request(
+            method=method,
+            url=url,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+        )
+        response = await self.send(
+            request=request,
+            auth=auth,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+            stream=True,
+        )
+        try:
+            yield response
+        finally:
+            await response.aclose()
 
     async def send(
         self,
@@ -1512,6 +1610,11 @@ class AsyncClient(BaseClient):
         timer = Timer()
         await timer.async_start()
 
+        if not isinstance(request.stream, AsyncByteStream):
+            raise RuntimeError(
+                "Attempted to send an sync request with an AsyncClient instance."
+            )
+
         with request_context(request=request):
             (
                 status_code,
@@ -1522,14 +1625,9 @@ class AsyncClient(BaseClient):
                 request.method.encode(),
                 request.url.raw,
                 headers=request.headers.raw,
-                stream=request.stream,  # type: ignore
+                stream=request.stream,
                 extensions={"timeout": timeout.as_dict()},
             )
-
-        async def on_close(response: Response) -> None:
-            response.elapsed = datetime.timedelta(seconds=await timer.async_elapsed())
-            if "aclose" in extensions:
-                await extensions["aclose"]()
 
         response = Response(
             status_code,
@@ -1537,9 +1635,9 @@ class AsyncClient(BaseClient):
             stream=stream,
             extensions=extensions,
             request=request,
-            on_close=on_close,
         )
 
+        response.stream = BoundAsyncStream(stream, response=response, timer=timer)
         self.cookies.extract_cookies(response)
 
         status = f"{response.status_code} {response.reason_phrase}"
@@ -1826,64 +1924,3 @@ class AsyncClient(BaseClient):
                 "See https://www.python-httpx.org/async/#opening-and-closing-clients "
                 "for details."
             )
-
-
-class StreamContextManager:
-    def __init__(
-        self,
-        client: BaseClient,
-        request: Request,
-        *,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
-        allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
-        close_client: bool = False,
-    ) -> None:
-        self.client = client
-        self.request = request
-        self.auth = auth
-        self.allow_redirects = allow_redirects
-        self.timeout = timeout
-        self.close_client = close_client
-
-    def __enter__(self) -> "Response":
-        assert isinstance(self.client, Client)
-        self.response = self.client.send(
-            request=self.request,
-            auth=self.auth,
-            allow_redirects=self.allow_redirects,
-            timeout=self.timeout,
-            stream=True,
-        )
-        return self.response
-
-    def __exit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        assert isinstance(self.client, Client)
-        self.response.close()
-        if self.close_client:
-            self.client.close()
-
-    async def __aenter__(self) -> "Response":
-        assert isinstance(self.client, AsyncClient)
-        self.response = await self.client.send(
-            request=self.request,
-            auth=self.auth,
-            allow_redirects=self.allow_redirects,
-            timeout=self.timeout,
-            stream=True,
-        )
-        return self.response
-
-    async def __aexit__(
-        self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
-    ) -> None:
-        assert isinstance(self.client, AsyncClient)
-        await self.response.aclose()
