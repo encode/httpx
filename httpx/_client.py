@@ -1289,6 +1289,8 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
         )
 
+        self._pending_requests = 0
+
         if http2:
             try:
                 import h2  # noqa
@@ -1507,6 +1509,7 @@ class AsyncClient(BaseClient):
 
         auth = self._build_request_auth(request, auth)
 
+        self._pending_requests += 1
         response = await self._send_handling_auth(
             request,
             auth=auth,
@@ -1521,6 +1524,7 @@ class AsyncClient(BaseClient):
             for hook in self._event_hooks["response"]:
                 await hook(response)
 
+            self._pending_requests -= 1
             return response
 
         except Exception as exc:
@@ -1860,6 +1864,10 @@ class AsyncClient(BaseClient):
         Close transport and proxies.
         """
         if self._state != ClientState.CLOSED:
+            if self._pending_requests != 0:
+                warnings.warn(
+                    f"Closing client with {self._pending_requests} in-flight requests."
+                )
             self._state = ClientState.CLOSED
 
             await self._transport.aclose()
