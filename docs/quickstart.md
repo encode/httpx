@@ -102,7 +102,7 @@ b'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 ```
 
 Any `gzip` and `deflate` HTTP response encodings will automatically
-be decoded for you. If `brotlipy` is installed, then the `brotli` response
+be decoded for you. If `brotlicffi` is installed, then the `brotli` response
 encoding will also be supported.
 
 For example, to create an image from binary data returned by a request, you can use the following code:
