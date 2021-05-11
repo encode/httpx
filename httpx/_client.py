@@ -12,11 +12,9 @@ from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_TIMEOUT_CONFIG,
-    UNSET,
     Limits,
     Proxy,
     Timeout,
-    UnsetType,
 )
 from ._decoders import SUPPORTED_DECODERS
 from ._exceptions import (
@@ -63,6 +61,31 @@ from ._utils import (
 # https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
 T = typing.TypeVar("T", bound="Client")
 U = typing.TypeVar("U", bound="AsyncClient")
+
+
+class UseClientDefault:
+    """
+    For some parameters such as `auth=...` and `timeout=...` we need to be able
+    to indicate the default "unset" state, in a way that is distinctly different
+    to using `None`.
+
+    The default "unset" state indicates that whatever default is set on the
+    client should be used. This is different to setting `None`, which
+    explicitly disables the parameter, possibly overriding a client default.
+
+    For example we use `timeout=USE_CLIENT_DEFAULT` in the `request()` signature.
+    Omitting the `timeout` parameter will send a request using whatever default
+    timeout has been configured on the client. Including `timeout=None` will
+    ensure no timeout is used.
+
+    Note that user code shouldn't need to use the `USE_CLIENT_DEFAULT` constant,
+    but it is used internally when a parameter is not included.
+    """
+
+    pass  # pragma: nocover
+
+
+USE_CLIENT_DEFAULT = UseClientDefault()
 
 
 logger = get_logger(__name__)
@@ -402,9 +425,13 @@ class BaseClient:
             raise TypeError(f'Invalid "auth" argument: {auth!r}')
 
     def _build_request_auth(
-        self, request: Request, auth: typing.Union[AuthTypes, UnsetType] = UNSET
+        self,
+        request: Request,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Auth:
-        auth = self._auth if isinstance(auth, UnsetType) else self._build_auth(auth)
+        auth = (
+            self._auth if isinstance(auth, UseClientDefault) else self._build_auth(auth)
+        )
 
         if auth is not None:
             return auth
@@ -716,9 +743,9 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Build and send a request.
@@ -772,9 +799,9 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> typing.Iterator[Response]:
         """
         Alternative to `httpx.request()` that streams the response body
@@ -814,9 +841,9 @@ class Client(BaseClient):
         request: Request,
         *,
         stream: bool = False,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a request.
@@ -835,7 +862,9 @@ class Client(BaseClient):
             raise RuntimeError("Cannot send a request, as the client has been closed.")
 
         self._state = ClientState.OPENED
-        timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
+        timeout = (
+            self.timeout if isinstance(timeout, UseClientDefault) else Timeout(timeout)
+        )
 
         auth = self._build_request_auth(request, auth)
 
@@ -974,9 +1003,9 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `GET` request.
@@ -1001,9 +1030,9 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send an `OPTIONS` request.
@@ -1028,9 +1057,9 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `HEAD` request.
@@ -1059,9 +1088,9 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `POST` request.
@@ -1094,9 +1123,9 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `PUT` request.
@@ -1129,9 +1158,9 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `PATCH` request.
@@ -1160,9 +1189,9 @@ class Client(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `DELETE` request.
@@ -1412,9 +1441,9 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Build and send a request.
@@ -1461,9 +1490,9 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> typing.AsyncIterator[Response]:
         """
         Alternative to `httpx.request()` that streams the response body
@@ -1503,9 +1532,9 @@ class AsyncClient(BaseClient):
         request: Request,
         *,
         stream: bool = False,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a request.
@@ -1524,7 +1553,9 @@ class AsyncClient(BaseClient):
             raise RuntimeError("Cannot send a request, as the client has been closed.")
 
         self._state = ClientState.OPENED
-        timeout = self.timeout if isinstance(timeout, UnsetType) else Timeout(timeout)
+        timeout = (
+            self.timeout if isinstance(timeout, UseClientDefault) else Timeout(timeout)
+        )
 
         auth = self._build_request_auth(request, auth)
 
@@ -1670,9 +1701,9 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `GET` request.
@@ -1697,9 +1728,9 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send an `OPTIONS` request.
@@ -1724,9 +1755,9 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `HEAD` request.
@@ -1755,9 +1786,9 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `POST` request.
@@ -1790,9 +1821,9 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `PUT` request.
@@ -1825,9 +1856,9 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `PATCH` request.
@@ -1856,9 +1887,9 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UnsetType] = UNSET,
+        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: bool = True,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a `DELETE` request.
