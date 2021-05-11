@@ -81,6 +81,7 @@ class UseClientDefault:
     Note that user code shouldn't need to use the `USE_CLIENT_DEFAULT` constant,
     but it is used internally when a parameter is not included.
     """
+
     pass  # pragma: nocover
 
 
