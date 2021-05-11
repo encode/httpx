@@ -5,7 +5,7 @@ efficient transport, with potential performance benefits. HTTP/2 does not change
 the core semantics of the request or response, but alters the way that data is
 sent to and from the server.
 
-Rather that the text format that HTTP/1.1 uses, HTTP/2 is a binary format.
+Rather than the text format that HTTP/1.1 uses, HTTP/2 is a binary format.
 The binary format provides full request and response multiplexing, and efficient
 compression of HTTP headers. The stream multiplexing means that where HTTP/1.1
 requires one TCP stream for each concurrent request, HTTP/2 allows a single TCP
