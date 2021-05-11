@@ -606,6 +606,7 @@ class Client(BaseClient):
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http1: bool = True,
         http2: bool = False,
         proxies: ProxiesTypes = None,
         mounts: typing.Mapping[str, BaseTransport] = None,
@@ -645,6 +646,7 @@ class Client(BaseClient):
         self._transport = self._init_transport(
             verify=verify,
             cert=cert,
+            http1=http1,
             http2=http2,
             limits=limits,
             transport=transport,
@@ -658,6 +660,7 @@ class Client(BaseClient):
                 proxy,
                 verify=verify,
                 cert=cert,
+                http1=http1,
                 http2=http2,
                 limits=limits,
                 trust_env=trust_env,
@@ -675,6 +678,7 @@ class Client(BaseClient):
         self,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: BaseTransport = None,
@@ -688,7 +692,12 @@ class Client(BaseClient):
             return WSGITransport(app=app)
 
         return HTTPTransport(
-            verify=verify, cert=cert, http2=http2, limits=limits, trust_env=trust_env
+            verify=verify,
+            cert=cert,
+            http1=http1,
+            http2=http2,
+            limits=limits,
+            trust_env=trust_env,
         )
 
     def _init_proxy_transport(
@@ -696,6 +705,7 @@ class Client(BaseClient):
         proxy: Proxy,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
@@ -703,6 +713,7 @@ class Client(BaseClient):
         return HTTPTransport(
             verify=verify,
             cert=cert,
+            http1=http1,
             http2=http2,
             limits=limits,
             trust_env=trust_env,
@@ -1294,6 +1305,7 @@ class AsyncClient(BaseClient):
         cookies: CookieTypes = None,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http1: bool = True,
         http2: bool = False,
         proxies: ProxiesTypes = None,
         mounts: typing.Mapping[str, AsyncBaseTransport] = None,
@@ -1333,6 +1345,7 @@ class AsyncClient(BaseClient):
         self._transport = self._init_transport(
             verify=verify,
             cert=cert,
+            http1=http1,
             http2=http2,
             limits=limits,
             transport=transport,
@@ -1347,6 +1360,7 @@ class AsyncClient(BaseClient):
                 proxy,
                 verify=verify,
                 cert=cert,
+                http1=http1,
                 http2=http2,
                 limits=limits,
                 trust_env=trust_env,
@@ -1363,6 +1377,7 @@ class AsyncClient(BaseClient):
         self,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: AsyncBaseTransport = None,
@@ -1376,7 +1391,12 @@ class AsyncClient(BaseClient):
             return ASGITransport(app=app)
 
         return AsyncHTTPTransport(
-            verify=verify, cert=cert, http2=http2, limits=limits, trust_env=trust_env
+            verify=verify,
+            cert=cert,
+            http1=http1,
+            http2=http2,
+            limits=limits,
+            trust_env=trust_env,
         )
 
     def _init_proxy_transport(
@@ -1384,6 +1404,7 @@ class AsyncClient(BaseClient):
         proxy: Proxy,
         verify: VerifyTypes = True,
         cert: CertTypes = None,
+        http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
