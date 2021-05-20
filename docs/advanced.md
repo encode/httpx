@@ -228,10 +228,10 @@ every time a particular type of event takes place.
 
 There are currently two event hooks:
 
-* `request` - Called once a request is about to be sent. Passed the `request` instance.
-* `response` - Called once the response has been returned. Passed the `response` instance.
+* `request` - Called after a request is fully prepared, but before it is sent to the network. Passed the `request` instance.
+* `response` - Called after the response has been fetched from the network, but before it is returned to the caller. Passed the `response` instance.
 
-These allow you to install client-wide functionality such as logging and monitoring.
+These allow you to install client-wide functionality such as logging, monitoring or tracing.
 
 ```python
 def log_request(request):
@@ -253,6 +253,15 @@ def raise_on_4xx_5xx(response):
     response.raise_for_status()
 
 client = httpx.Client(event_hooks={'response': [raise_on_4xx_5xx]})
+```
+
+The hooks are also allowed to modify `request` and `response` objects.
+
+```python
+def add_timestamp(request):
+    request.headers['x-request-timestamp'] = datetime.now(tz=datetime.utc).isoformat()
+    
+client = httpx.Client(event_hooks={'request': [add_timestamp]})
 ```
 
 Event hooks must always be set as a **list of callables**, and you may register
