@@ -319,7 +319,8 @@ class Limits:
 
 class Proxy:
     def __init__(
-        self, url: URLTypes, *, headers: HeaderTypes = None, mode: str = "DEFAULT"
+        self, url: URLTypes, *, headers: HeaderTypes = None, mode: str = "DEFAULT",
+        http1_override: typing.Optional[bool] = None, http2_override: typing.Optional[bool] = None
     ):
         url = URL(url)
         headers = Headers(headers)
@@ -341,6 +342,18 @@ class Proxy:
         self.url = url
         self.headers = headers
         self.mode = mode
+        self._http1_override = http1_override
+        self._http2_override = http2_override
+
+    def http1_support(self, default: bool) -> bool:
+        if self._http1_override is not None:
+            return self._http1_override
+        return default
+
+    def http2_support(self, default: bool) -> bool:
+        if self._http2_override is not None:
+            return self._http2_override
+        return default
 
     def _build_auth_header(self, username: str, password: str) -> str:
         userpass = (username.encode("utf-8"), password.encode("utf-8"))

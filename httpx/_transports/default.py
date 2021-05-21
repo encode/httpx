@@ -150,8 +150,8 @@ class HTTPTransport(BaseTransport):
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
-                http1=http1,
-                http2=http2,
+                http1=proxy.http1_support(http1),
+                http2=proxy.http2_support(http2),
                 backend=backend,
             )
 
@@ -248,8 +248,8 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
-                http1=http1,
-                http2=http2,
+                http1=proxy.http1_support(http1),
+                http2=proxy.http2_support(http2),
                 backend=backend,
             )
 
