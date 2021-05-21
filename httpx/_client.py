@@ -580,6 +580,10 @@ class Client(BaseClient):
     to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
     file, key file, password).
+    * **http1** - *(optional)* A boolean indicating if HTTP/1 support should be
+    enabled. Defaults to `True`.
+    * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
+    enabled. Default to `False`.
     * **proxies** - *(optional)* A dictionary mapping proxy keys to proxy
     URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
@@ -1277,6 +1281,8 @@ class AsyncClient(BaseClient):
     to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
     file, key file, password).
+    * **http1** - *(optional)* A boolean indicating if HTTP/1 support should be
+    enabled. Defaults to `True`.
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
     * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
@@ -1412,6 +1418,7 @@ class AsyncClient(BaseClient):
         return AsyncHTTPTransport(
             verify=verify,
             cert=cert,
+            http1=http1,
             http2=http2,
             limits=limits,
             trust_env=trust_env,
