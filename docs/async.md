@@ -207,7 +207,7 @@ async def main():
 anyio.run(main, backend='trio')
 ```
 
-When instantiating transport instance explicitly, for maximum consistency, the same `backend` parameter can be passed to `AsyncHTTPTransport`.
+When instantiating a transport instance explicitly, for maximum consistency, the same `backend` parameter can be passed to `AsyncHTTPTransport`.
 ```python
 transport = httpx.AsyncHTTPTransport(backend="trio")
 ```
