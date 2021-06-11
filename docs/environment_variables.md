@@ -132,6 +132,25 @@ Example:
 SSL_CERT_DIR=/path/to/ca-certs/ python -c "import httpx; httpx.get('https://example.com')"
 ```
 
+## `.NETRCFILE`
+
+Valid values: a filename
+
+If this environment variable is set and auth parameter is not defined, HTTPX will add auth information stored in
+.netrc file into request's header. If you do not provide NETRC environment, HTTPX will use default files. (~/.netrc
+, ~/_netrc)
+
+Example:
+
+```python
+# test_script.py
+import httpx
+import os
+os.environ["NETRC"] = "my_default_folder/.my_netrc"
+with httpx.Client(trust_env=False) as client:
+    r = client.get("https://example.org/")
+```
+
 ## Proxies
 
 The environment variables documented below are used as a convention by various HTTP tooling, including:
@@ -175,3 +194,5 @@ python -c "import httpx; httpx.get('http://example.com')"
 python -c "import httpx; httpx.get('http://127.0.0.1:5000/my-api')"
 python -c "import httpx; httpx.get('https://www.python-httpx.org')"
 ```
+
+
