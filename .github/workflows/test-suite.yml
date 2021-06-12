@@ -21,13 +21,26 @@ jobs:
       - uses: "actions/setup-python@v2"
         with:
           python-version: "${{ matrix.python-version }}"
+
+      - name: "Cache venv"
+        id: cache-venv
+        uses: actions/cache@v2.1.6
+        with:
+          path: venv
+          key: env-${{ matrix.python-version }}-${{ hashFiles('requirements.txt', 'setup.py') }}
+
       - name: "Install dependencies"
         run: "scripts/install"
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+
       - name: "Run linting checks"
         run: "scripts/check"
+
       - name: "Build package & docs"
         run: "scripts/build"
+
       - name: "Run tests"
         run: "scripts/test"
+
       - name: "Enforce coverage"
         run: "scripts/coverage"
