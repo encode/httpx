@@ -136,12 +136,12 @@ SSL_CERT_DIR=/path/to/ca-certs/ python -c "import httpx; httpx.get('https://exam
 
 Valid values: a filename
 
-If this environment variable is set and auth parameter is not defined, HTTPX will add auth information stored in .netrc file into request's header. If you do not provide NETRC environment, HTTPX will use default files. (~/.netrc, ~/_netrc)
+If this environment variable is set but auth parameter is not defined, HTTPX will add auth information stored in the .netrc file into the request's header. If you do not provide NETRC environment either, HTTPX will use default files. (~/.netrc, ~/_netrc)
 
 Example:
 
 ```console
-NETRCFILE=/path/to/netrcfile/my_netrc python -c "import httpx; httpx.get('https://example.com')"
+NETRCFILE=/path/to/netrcfile/.my_netrc python -c "import httpx; httpx.get('https://example.com')"
 ```
 
 ## Proxies
