@@ -22,16 +22,15 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
 
-      - name: "Cache venv"
-        id: cache-venv
-        uses: actions/cache@v2.1.6
+      - uses: actions/cache@v2.1.6
+        id: cache-requirements
         with:
-          path: venv
+          path: ~/.cache/pip
           key: env-${{ matrix.python-version }}-${{ hashFiles('requirements.txt', 'setup.py') }}
 
       - name: "Install dependencies"
         run: "scripts/install"
-        if: steps.cache-venv.outputs.cache-hit != 'true'
+        if: steps.cache-requirements.outputs.cache-hit != 'true'
 
       - name: "Run linting checks"
         run: "scripts/check"
