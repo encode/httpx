@@ -4,10 +4,7 @@ export PREFIX=""
 if [ -d 'venv' ] ; then
     export PREFIX="venv/bin/"
 fi
-export SOURCE_FILES="httpx tests"
 
 set -x
 
-${PREFIX}autoflake --in-place --recursive $SOURCE_FILES
-${PREFIX}isort --project=httpx $SOURCE_FILES
-${PREFIX}black --target-version=py36 $SOURCE_FILES
+${PREFIX}pre-commit run --config .pre-commit-lint-config.yaml --all-files

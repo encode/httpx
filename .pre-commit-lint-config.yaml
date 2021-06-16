@@ -1,0 +1,22 @@
+repos:
+  - repo: https://github.com/myint/autoflake
+    rev: v1.4
+    hooks:
+      - id: autoflake
+        exclude: "setup.py"
+        args:
+          - "--in-place"
+          - "--recursive"
+  - repo: https://github.com/psf/black
+    rev: 21.5b2
+    hooks:
+      - id: black
+        exclude: "setup.py"
+        args:
+          - "--target-version=py36"
+  - repo: https://github.com/pycqa/isort
+    rev: 5.8.0
+    hooks:
+      - id: isort
+        args:
+          - "--project=httpx"

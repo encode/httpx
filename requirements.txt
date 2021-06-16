@@ -10,16 +10,9 @@ twine
 wheel
 
 # Tests & Linting
-autoflake
-black==20.8b1
+pre-commit
 coverage==5.3
 cryptography
-flake8
-flake8-bugbear
-flake8-pie==0.5.*
-isort==5.*
-mypy
-types-certifi
 pytest==6.*
 pytest-asyncio
 pytest-trio

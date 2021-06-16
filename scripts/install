@@ -17,3 +17,7 @@ fi
 
 "$PIP" install -r "$REQUIREMENTS"
 "$PIP" install -e .
+
+if [ -d '.git' ] ; then
+    echo "scripts/check" > .git/hooks/pre-commit
+fi
