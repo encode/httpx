@@ -13,6 +13,8 @@ def set_minimum_tls_version_1_2(context: ssl.SSLContext):
     if sys.version_info >= (3, 10):
         context.minimum_version = ssl.TLSVersion.TLSv1_2
     else:
+        # These become deprecated in favor of 'context.minimum_version'
+        # from Python 3.10 onwards.
         context.options |= ssl.OP_NO_SSLv2
         context.options |= ssl.OP_NO_SSLv3
         context.options |= ssl.OP_NO_TLSv1
