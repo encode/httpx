@@ -90,8 +90,8 @@ class SSLConfig:
         Return an SSL context for unverified connections.
         """
         context = self._create_default_ssl_context()
-        context.verify_mode = ssl.CERT_NONE
         context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
         self._load_client_certs(context)
         return context
 
