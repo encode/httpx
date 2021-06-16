@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives.serialization import (
     PrivateFormat,
     load_pem_private_key,
 )
+from typing_extensions import Literal
 from uvicorn.config import Config
 from uvicorn.main import Server
 
@@ -164,7 +165,7 @@ async def redirect_301(scope, receive, send):
     await send({"type": "http.response.body"})
 
 
-SERVER_SCOPE = "session"
+SERVER_SCOPE: Literal["session"] = "session"
 
 
 @pytest.fixture(scope=SERVER_SCOPE)
