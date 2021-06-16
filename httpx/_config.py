@@ -6,6 +6,7 @@ from pathlib import Path
 
 import certifi
 
+from ._compat import set_minimum_tls_version_1_2
 from ._models import URL, Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._utils import get_ca_bundle_from_env, get_logger
@@ -154,10 +155,7 @@ class SSLConfig:
         and unverified connections.
         """
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.options |= ssl.OP_NO_SSLv2
-        context.options |= ssl.OP_NO_SSLv3
-        context.options |= ssl.OP_NO_TLSv1
-        context.options |= ssl.OP_NO_TLSv1_1
+        set_minimum_tls_version_1_2(context)
         context.options |= ssl.OP_NO_COMPRESSION
         context.set_ciphers(DEFAULT_CIPHERS)
 
