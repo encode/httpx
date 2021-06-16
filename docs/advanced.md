@@ -370,7 +370,7 @@ password example-password
 ...
 ```
 
-When using `Client` instances, `trust_env` should be set on the client itself, rather that on the request methods:
+When using `Client` instances, `trust_env` should be set on the client itself, rather than on the request methods:
 
 ```python
 client = httpx.Client(trust_env=False)
