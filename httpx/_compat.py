@@ -2,15 +2,26 @@
 The _compat module is used for code which requires branching between different
 Python environments. It is excluded from the code coverage checks.
 """
+
+__all__ = ["asynccontextmanager", "aclosing", "set_minimum_tls_version_1_2"]
+
 import ssl
 import sys
 
-# `contextlib.asynccontextmanager` exists from Python 3.7 onwards.
-# For 3.6 we require the `async_generator` package for a backported version.
-try:
-    from contextlib import asynccontextmanager  # type: ignore
-except ImportError:
-    from async_generator import asynccontextmanager  # type: ignore # noqa
+
+if sys.version_info >= (3, 7):
+    # `contextlib.asynccontextmanager` exists from Python 3.7 onwards.
+    from contextlib import asynccontextmanager
+else:
+    # For 3.6 we require the `async_generator` package for a backported version.
+    from async_generator import asynccontextmanager
+
+if sys.version_info >= (3, 10):
+    # `contextlib.aclosing` exists from Python 3.10 onwards
+    from contextlib import aclosing
+else:
+    # For 3.9 we require the `async_generator` package for a backported version.
+    from async_generator import aclosing
 
 if sys.version_info >= (3, 10) or (
     sys.version_info >= (3, 7) and ssl.OPENSSL_VERSION_INFO >= (1, 1, 0, 7)

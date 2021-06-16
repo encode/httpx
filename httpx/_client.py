@@ -2,12 +2,12 @@ import datetime
 import enum
 import typing
 import warnings
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 from types import TracebackType
 
 from .__version__ import __version__
 from ._auth import Auth, BasicAuth, FunctionAuth
-from ._compat import asynccontextmanager
+from ._compat import asynccontextmanager, aclosing
 from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
@@ -896,8 +896,7 @@ class Client(BaseClient):
         allow_redirects: bool,
         history: typing.List[Response],
     ) -> Response:
-        auth_flow = auth.sync_auth_flow(request)
-        try:
+        with closing(auth.sync_auth_flow(request)) as auth_flow:
             request = next(auth_flow)
 
             for hook in self._event_hooks["request"]:
@@ -924,8 +923,6 @@ class Client(BaseClient):
                 except Exception as exc:
                     response.close()
                     raise exc
-        finally:
-            auth_flow.close()
 
     def _send_handling_redirects(
         self,
@@ -1593,8 +1590,7 @@ class AsyncClient(BaseClient):
         allow_redirects: bool,
         history: typing.List[Response],
     ) -> Response:
-        auth_flow = auth.async_auth_flow(request)
-        try:
+        async with aclosing(auth.async_auth_flow(request)) as auth_flow:
             request = await auth_flow.__anext__()
 
             for hook in self._event_hooks["request"]:
@@ -1621,8 +1617,6 @@ class AsyncClient(BaseClient):
                 except Exception as exc:
                     await response.aclose()
                     raise exc
-        finally:
-            await auth_flow.aclose()
 
     async def _send_handling_redirects(
         self,
