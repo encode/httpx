@@ -9,7 +9,7 @@ except ImportError:  # pragma: no cover
     from async_generator import asynccontextmanager  # type: ignore # noqa
 
 
-def set_minimum_tls_version_1_2(context: ssl.SSLContext):
+def set_minimum_tls_version_1_2(context: ssl.SSLContext) -> None:
     if sys.version_info >= (3, 10):
         context.minimum_version = ssl.TLSVersion.TLSv1_2
     else:
