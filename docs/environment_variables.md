@@ -132,7 +132,7 @@ Example:
 SSL_CERT_DIR=/path/to/ca-certs/ python -c "import httpx; httpx.get('https://example.com')"
 ```
 
-## `.NETRCFILE`
+## `.NETRC`
 
 Valid values: a filename
 
