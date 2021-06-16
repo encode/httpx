@@ -107,34 +107,35 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
         "e": True,
         "f": "",
     }
-    files = {"file": ("name.txt", open(path, "rb"))}
+    with open(path, "rb") as input_file:
+        files = {"file": ("name.txt", input_file)}
 
-    with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = os.urandom(16).hex()
+        with mock.patch("os.urandom", return_value=os.urandom(16)):
+            boundary = os.urandom(16).hex()
 
-        headers, stream = encode_request(data=data, files=files)
-        assert isinstance(stream, typing.Iterable)
+            headers, stream = encode_request(data=data, files=files)
+            assert isinstance(stream, typing.Iterable)
 
-        content = (
-            '--{0}\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="b"\r\n\r\nC\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n11\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n22\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n33\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="d"\r\n\r\n\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="e"\r\n\r\ntrue\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="f"\r\n\r\n\r\n'
-            '--{0}\r\nContent-Disposition: form-data; name="file";'
-            ' filename="name.txt"\r\n'
-            "Content-Type: text/plain\r\n\r\n<file content>\r\n"
-            "--{0}--\r\n"
-            "".format(boundary).encode("ascii")
-        )
-        assert headers == {
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "Content-Length": str(len(content)),
-        }
-        assert content == b"".join(stream)
+            content = (
+                '--{0}\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n'
+                '--{0}\r\nContent-Disposition: form-data; name="b"\r\n\r\nC\r\n'
+                '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n11\r\n'
+                '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n22\r\n'
+                '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n33\r\n'
+                '--{0}\r\nContent-Disposition: form-data; name="d"\r\n\r\n\r\n'
+                '--{0}\r\nContent-Disposition: form-data; name="e"\r\n\r\ntrue\r\n'
+                '--{0}\r\nContent-Disposition: form-data; name="f"\r\n\r\n\r\n'
+                '--{0}\r\nContent-Disposition: form-data; name="file";'
+                ' filename="name.txt"\r\n'
+                "Content-Type: text/plain\r\n\r\n<file content>\r\n"
+                "--{0}--\r\n"
+                "".format(boundary).encode("ascii")
+            )
+            assert headers == {
+                "Content-Type": f"multipart/form-data; boundary={boundary}",
+                "Content-Length": str(len(content)),
+            }
+            assert content == b"".join(stream)
 
 
 def test_multipart_encode_unicode_file_contents() -> None:
