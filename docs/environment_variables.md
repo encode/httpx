@@ -141,7 +141,7 @@ If this environment variable is set but auth parameter is not defined, HTTPX wil
 Example:
 
 ```console
-NETRCFILE=/path/to/netrcfile/.my_netrc python -c "import httpx; httpx.get('https://example.com')"
+NETRC=/path/to/netrcfile/.my_netrc python -c "import httpx; httpx.get('https://example.com')"
 ```
 
 ## Proxies
