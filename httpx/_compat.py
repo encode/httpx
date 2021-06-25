@@ -13,13 +13,20 @@ except ImportError:
     from async_generator import asynccontextmanager  # type: ignore # noqa
 
 
-def set_minimum_tls_version_1_2(context: ssl.SSLContext) -> None:
-    if sys.version_info >= (3, 10):
+if sys.version_info >= (3, 10) or (
+    sys.version_info >= (3, 7) and ssl.OPENSSL_VERSION_INFO >= (1, 1, 0, 7)
+):
+    # The OP_NO_SSL* and OP_NO_TLS* become deprecated in favor of
+    # 'SSLContext.minimum_version' from Python 3.7 onwards, however
+    # this attribute is not available unless the ssl module is compiled
+    # with OpenSSL 1.1.0g or newer.
+    def set_minimum_tls_version_1_2(context: ssl.SSLContext) -> None:
         context.minimum_version = ssl.TLSVersion.TLSv1_2
-    else:
-        # These become deprecated in favor of 'context.minimum_version'
-        # from Python 3.10 onwards.
-        context.options |= ssl.OP_NO_SSLv2
-        context.options |= ssl.OP_NO_SSLv3
-        context.options |= ssl.OP_NO_TLSv1
-        context.options |= ssl.OP_NO_TLSv1_1
+
+
+else:
+
+    def set_minimum_tls_version_1_2(context: ssl.SSLContext) -> None:
+        context.options |= (
+            ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+        )
