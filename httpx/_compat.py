@@ -27,6 +27,7 @@ if sys.version_info >= (3, 10) or (
 else:
 
     def set_minimum_tls_version_1_2(context: ssl.SSLContext) -> None:
-        context.options |= (
-            ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
-        )
+        context.options |= ssl.OP_NO_SSLv2
+        context.options |= ssl.OP_NO_SSLv3
+        context.options |= ssl.OP_NO_TLSv1
+        context.options |= ssl.OP_NO_TLSv1_1
