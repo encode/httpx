@@ -25,6 +25,8 @@ def set_minimum_tls_version_1_2(context: ssl.SSLContext) -> None:
         # https://docs.python.org/3.7/library/ssl.html#ssl.SSLContext.minimum_version
         context.minimum_version = ssl.TLSVersion.TLSv1_2
     else:
+        # If 'minimum_version' isn't available, we configure these options with
+        # the older deprecated variants.
         context.options |= ssl.OP_NO_SSLv2
         context.options |= ssl.OP_NO_SSLv3
         context.options |= ssl.OP_NO_TLSv1
