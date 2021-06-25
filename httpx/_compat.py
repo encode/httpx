@@ -20,6 +20,8 @@ if sys.version_info >= (3, 10) or (
     # 'SSLContext.minimum_version' from Python 3.7 onwards, however
     # this attribute is not available unless the ssl module is compiled
     # with OpenSSL 1.1.0g or newer.
+    # https://docs.python.org/3.10/library/ssl.html#ssl.SSLContext.minimum_version
+    # https://docs.python.org/3.7/library/ssl.html#ssl.SSLContext.minimum_version
     def set_minimum_tls_version_1_2(context: ssl.SSLContext) -> None:
         context.minimum_version = ssl.TLSVersion.TLSv1_2
 
