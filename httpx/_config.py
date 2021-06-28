@@ -6,6 +6,7 @@ from pathlib import Path
 
 import certifi
 
+from ._compat import set_minimum_tls_version_1_2
 from ._models import URL, Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._utils import get_ca_bundle_from_env, get_logger
@@ -90,8 +91,8 @@ class SSLConfig:
         Return an SSL context for unverified connections.
         """
         context = self._create_default_ssl_context()
-        context.verify_mode = ssl.CERT_NONE
         context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
         self._load_client_certs(context)
         return context
 
@@ -153,11 +154,8 @@ class SSLConfig:
         Creates the default SSLContext object that's used for both verified
         and unverified connections.
         """
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-        context.options |= ssl.OP_NO_SSLv2
-        context.options |= ssl.OP_NO_SSLv3
-        context.options |= ssl.OP_NO_TLSv1
-        context.options |= ssl.OP_NO_TLSv1_1
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        set_minimum_tls_version_1_2(context)
         context.options |= ssl.OP_NO_COMPRESSION
         context.set_ciphers(DEFAULT_CIPHERS)
 
