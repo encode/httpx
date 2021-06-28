@@ -13,15 +13,15 @@ if sys.version_info >= (3, 7):
     # `contextlib.asynccontextmanager` exists from Python 3.7 onwards.
     from contextlib import asynccontextmanager
 else:
-    # For 3.6 we require the `async_generator` package for a backported version.
-    from async_generator import asynccontextmanager
+    # For 3.6 we require the `contextlib2` package for a backported version.
+    from contextlib2 import asynccontextmanager
 
 if sys.version_info >= (3, 10):
     # `contextlib.aclosing` exists from Python 3.10 onwards
     from contextlib import aclosing
 else:
-    # For 3.9 we require the `async_generator` package for a backported version.
-    from async_generator import aclosing
+    # For 3.9 we require the `contextlib2` package for a backported version.
+    from contextlib2 import aclosing
 
 if sys.version_info >= (3, 10) or (
     sys.version_info >= (3, 7) and ssl.OPENSSL_VERSION_INFO >= (1, 1, 0, 7)
