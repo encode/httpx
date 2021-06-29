@@ -27,5 +27,3 @@ trio==0.19.0
 trio-typing==0.5.0
 trustme==0.8.0
 uvicorn==0.14.0
-
-attrs==21.2.0  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665
