@@ -272,9 +272,7 @@ class TextDecoder:
         if self.decoder is None:
             # If this is the first decode pass then we need to determine which
             # encoding to use by attempting UTF-8 and raising any decode errors.
-            attempt_utf_8 = codecs.getincrementaldecoder("utf-8-sig")(
-                errors="strict"
-            )
+            attempt_utf_8 = codecs.getincrementaldecoder("utf-8-sig")(errors="strict")
             try:
                 attempt_utf_8.decode(data)
             except UnicodeDecodeError:
@@ -282,7 +280,9 @@ class TextDecoder:
                 self.decoder = codecs.getincrementaldecoder("cp1252")(errors="replace")
             else:
                 # Can decode as UTF-8. Use UTF-8 with lenient error settings.
-                self.decoder = codecs.getincrementaldecoder("utf-8-sig")(errors="replace")
+                self.decoder = codecs.getincrementaldecoder("utf-8-sig")(
+                    errors="replace"
+                )
 
         return self.decoder.decode(data)
 
