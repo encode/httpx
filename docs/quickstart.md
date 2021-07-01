@@ -246,6 +246,12 @@ For more complicated data structures you'll often want to use JSON encoding inst
   ...
 }
 ```
+In case you wish to encode the JSON on your own, you can give a `bytes` object as a parameter for `json=`.
+
+>>> r = httpx.post("https://httpbin.org/post", json=b'"i_am_a_valid_json"')
+>>> print(r.headers['content-type'])
+application/json
+```
 
 ## Sending Binary Request Data
 

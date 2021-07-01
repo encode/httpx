@@ -143,7 +143,10 @@ def encode_html(html: str) -> Tuple[Dict[str, str], ByteStream]:
 
 
 def encode_json(json: Any) -> Tuple[Dict[str, str], ByteStream]:
-    body = json_dumps(json).encode("utf-8")
+    if isinstance(json, bytes):
+        body = json
+    else:
+        body = json_dumps(json).encode("utf-8")
     content_length = str(len(body))
     content_type = "application/json"
     headers = {"Content-Length": content_length, "Content-Type": content_type}

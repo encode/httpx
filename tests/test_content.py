@@ -138,6 +138,23 @@ async def test_json_content():
 
 
 @pytest.mark.asyncio
+async def test_json_preserialized_content():
+    headers, stream = encode_request(json=b'"iamajson"')
+    assert isinstance(stream, typing.Iterable)
+    assert isinstance(stream, typing.AsyncIterable)
+
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
+
+    assert headers == {
+        "Content-Length": "10",
+        "Content-Type": "application/json",
+    }
+    assert sync_content == b'"iamajson"'
+    assert async_content == b'"iamajson"'
+
+
+@pytest.mark.asyncio
 async def test_urlencoded_content():
     headers, stream = encode_request(data={"Hello": "world!"})
     assert isinstance(stream, typing.Iterable)
