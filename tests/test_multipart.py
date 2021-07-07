@@ -242,7 +242,7 @@ def test_multipart_encode_files_raises_exception_with_str_content() -> None:
             encode_request(data={}, files=files)  # type: ignore
 
 
-def test_multipart_encode_files_raises_exception_with_StringIO() -> None:
+def test_multipart_encode_files_raises_exception_with_StringIO_content() -> None:
     files = {"file": ("test.txt", io.StringIO("content"), "text/plain")}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
 
