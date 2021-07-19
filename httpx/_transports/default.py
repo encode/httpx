@@ -103,8 +103,7 @@ class ResponseStream(SyncByteStream):
 
     def __iter__(self) -> typing.Iterator[bytes]:
         with map_httpcore_exceptions():
-            for part in self._httpcore_stream:
-                yield part
+            yield from self._httpcore_stream
 
     def close(self) -> None:
         with map_httpcore_exceptions():

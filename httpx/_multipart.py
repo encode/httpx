@@ -197,8 +197,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
         return {"Content-Length": content_length, "Content-Type": content_type}
 
     def __iter__(self) -> typing.Iterator[bytes]:
-        for chunk in self.iter_chunks():
-            yield chunk
+        yield from self.iter_chunks()
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         for chunk in self.iter_chunks():

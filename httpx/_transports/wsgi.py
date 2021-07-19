@@ -19,8 +19,7 @@ class WSGIByteStream(SyncByteStream):
         self._result = _skip_leading_empty_chunks(result)
 
     def __iter__(self) -> typing.Iterator[bytes]:
-        for part in self._result:
-            yield part
+        yield from self._result
 
 
 class WSGITransport(BaseTransport):

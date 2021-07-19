@@ -124,8 +124,7 @@ class BoundSyncStream(SyncByteStream):
         self._timer = timer
 
     def __iter__(self) -> typing.Iterator[bytes]:
-        for chunk in self._stream:
-            yield chunk
+        yield from self._stream
 
     def close(self) -> None:
         seconds = self._timer.sync_elapsed()
