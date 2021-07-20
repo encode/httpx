@@ -41,9 +41,10 @@ class HTTPConnection(ConnectionInterface):
         return self._connection.handle_request(request)
 
     def attempt_aclose(self) -> bool:
-        if self._connection is None:
-            return False
-        return self._connection.attempt_aclose()
+        closed = False
+        if self._connection is not None:
+            closed = self._connection.attempt_aclose()
+        return closed
 
     def close(self) -> None:
         if self._connection is not None:

@@ -181,7 +181,7 @@ class AsyncConnectionPool:
                 #   that ended up resulting in an HTTP/1.1 connection.
                 # * The request was to an HTTP/2 connection, but the stream ID
                 #   space became exhausted, or a global error occured.
-                continue
+                continue  # pragma: nocover
             except BaseException as exc:
                 # If an exception occurs we check if we can release the
                 # the connection to the pool.
@@ -217,7 +217,7 @@ class AsyncConnectionPool:
         # exceeding the max_keepalive_connections.
         while len(self._pool) > self._max_keepalive_connections:
             if not await self._close_one_idle_connection():
-                break
+                break  # pragma: nocover
 
     async def aclose(self) -> None:
         async with self._pool_lock:

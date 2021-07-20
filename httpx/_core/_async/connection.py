@@ -41,9 +41,10 @@ class AsyncHTTPConnection(AsyncConnectionInterface):
         return await self._connection.handle_async_request(request)
 
     async def attempt_aclose(self) -> bool:
-        if self._connection is None:
-            return False
-        return await self._connection.attempt_aclose()
+        closed = False
+        if self._connection is not None:
+            closed = await self._connection.attempt_aclose()
+        return closed
 
     async def aclose(self) -> None:
         if self._connection is not None:

@@ -65,7 +65,7 @@ class Semaphore:
         return self._semaphore.acquire(blocking=False)
 
     def acquire(self) -> None:
-        self._semaphore.acquire()
+        self._semaphore.acquire()  # pragma: nocover
 
     def release(self) -> None:
         self._semaphore.release()
