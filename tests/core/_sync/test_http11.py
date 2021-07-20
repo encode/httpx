@@ -28,7 +28,7 @@ def test_http11_connection():
         url = RawURL(b"https", b"example.com", 443, b"/")
         request = RawRequest(b"GET", url, [(b"Host", b"example.com")])
         with conn.handle_request(request) as response:
-            content = response.stream.read()
+            content = response.sync_stream.read()
             assert response.status == 200
             assert content == b"Hello, world!"
 
@@ -123,7 +123,7 @@ def test_http11_connection_handles_one_active_request():
 
 
 
-def test_http11_connection_attempt_close():
+def test_http11_connection_attempt_aclose():
     """
     A connection can only be closed when it is idle.
     """
@@ -143,8 +143,8 @@ def test_http11_connection_attempt_close():
         url = RawURL(b"https", b"example.com", 443, b"/")
         request = RawRequest(b"GET", url, [(b"Host", b"example.com")])
         with conn.handle_request(request) as response:
-            content = response.stream.read()
+            content = response.sync_stream.read()
             assert response.status == 200
             assert content == b"Hello, world!"
-            assert not conn.attempt_close()
-        assert conn.attempt_close()
+            assert not conn.attempt_aclose()
+        assert conn.attempt_aclose()

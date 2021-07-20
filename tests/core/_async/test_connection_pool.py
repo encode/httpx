@@ -35,7 +35,7 @@ async def test_connection_pool_with_keepalive():
             assert info == [
                 "'https://example.com:443', HTTP/1.1, ACTIVE, Request Count: 1"
             ]
-            body = await response.stream.aread()
+            body = await response.async_stream.aread()
 
         assert response.status == 200
         assert body == b"Hello, world!"
@@ -48,7 +48,7 @@ async def test_connection_pool_with_keepalive():
             assert info == [
                 "'https://example.com:443', HTTP/1.1, ACTIVE, Request Count: 2"
             ]
-            body = await response.stream.aread()
+            body = await response.async_stream.aread()
 
         assert response.status == 200
         assert body == b"Hello, world!"
@@ -65,7 +65,7 @@ async def test_connection_pool_with_keepalive():
                 "'http://example.com:80', HTTP/1.1, ACTIVE, Request Count: 1",
                 "'https://example.com:443', HTTP/1.1, IDLE, Request Count: 2",
             ]
-            body = await response.stream.aread()
+            body = await response.async_stream.aread()
 
         assert response.status == 200
         assert body == b"Hello, world!"
@@ -106,7 +106,7 @@ async def test_connection_pool_with_close():
             assert info == [
                 "'https://example.com:443', HTTP/1.1, ACTIVE, Request Count: 1"
             ]
-            body = await response.stream.aread()
+            body = await response.async_stream.aread()
 
         assert response.status == 200
         assert body == b"Hello, world!"
@@ -170,7 +170,7 @@ async def test_connection_pool_with_immediate_expiry():
             assert info == [
                 "'https://example.com:443', HTTP/1.1, ACTIVE, Request Count: 1"
             ]
-            body = await response.stream.aread()
+            body = await response.async_stream.aread()
 
         assert response.status == 200
         assert body == b"Hello, world!"
@@ -207,7 +207,7 @@ async def test_connection_pool_with_no_keepalive_connections_allowed():
             assert info == [
                 "'https://example.com:443', HTTP/1.1, ACTIVE, Request Count: 1"
             ]
-            body = await response.stream.aread()
+            body = await response.async_stream.aread()
 
         assert response.status == 200
         assert body == b"Hello, world!"
@@ -238,7 +238,7 @@ async def test_connection_pool_concurrency():
         async with await pool.handle_async_request(request) as response:
             info = await pool.pool_info()
             info_list.append(info)
-            await response.stream.aread()
+            await response.async_stream.aread()
 
     async with AsyncConnectionPool(
         max_connections=1, network_backend=network_backend

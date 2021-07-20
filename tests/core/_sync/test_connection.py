@@ -40,7 +40,7 @@ def test_http_connection():
                 repr(conn)
                 == "<HTTPConnection ['https://example.com:443', HTTP/1.1, ACTIVE, Request Count: 1]>"
             )
-            content = response.stream.read()
+            content = response.sync_stream.read()
             assert response.status == 200
             assert content == b"Hello, world!"
 

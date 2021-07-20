@@ -40,7 +40,7 @@ async def test_http_connection():
                 repr(conn)
                 == "<AsyncHTTPConnection ['https://example.com:443', HTTP/1.1, ACTIVE, Request Count: 1]>"
             )
-            content = await response.stream.aread()
+            content = await response.async_stream.aread()
             assert response.status == 200
             assert content == b"Hello, world!"
 

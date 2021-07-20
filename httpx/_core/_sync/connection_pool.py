@@ -191,11 +191,12 @@ class ConnectionPool:
             # When we return the response, we wrap the stream in a special class
             # that handles notifying the connection pool once the response
             # has been released.
-            assert isinstance(response.stream, ByteStream)
             return RawResponse(
                 status=response.status,
                 headers=response.headers,
-                stream=ConnectionPoolByteStream(response.stream, self, connection),
+                stream=ConnectionPoolByteStream(
+                    response.sync_stream, self, connection
+                ),
                 extensions=response.extensions,
             )
 

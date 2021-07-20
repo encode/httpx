@@ -92,8 +92,7 @@ class HTTP11Connection(ConnectionInterface):
         self._send_event(event)
 
     def _send_request_body(self, request: RawRequest) -> None:
-        assert isinstance(request.stream, ByteStream)
-        for chunk in request.stream:
+        for chunk in request.sync_stream:
             event = h11.Data(data=chunk)
             self._send_event(event)
 
@@ -187,7 +186,7 @@ class HTTP11Connection(ConnectionInterface):
     def is_closed(self) -> bool:
         return self._state == HTTPConnectionState.CLOSED
 
-    def attempt_close(self) -> bool:
+    def attempt_aclose(self) -> bool:
         with self._state_lock:
             if self._state in (HTTPConnectionState.NEW, HTTPConnectionState.IDLE):
                 self.close()

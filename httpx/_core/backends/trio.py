@@ -24,7 +24,7 @@ class TrioStream(AsyncNetworkStream):
     ) -> AsyncNetworkStream:
         hostname = None if server_hostname is None else server_hostname.decode("ascii")
         trio_ssl_stream = trio.SSLStream(
-            self._stream, ssl_context, server_hostname=hostname
+            self._stream, ssl_context, server_hostname=hostname, https_compatible=True
         )
         await trio_ssl_stream.do_handshake()
         return TrioStream(trio_ssl_stream)

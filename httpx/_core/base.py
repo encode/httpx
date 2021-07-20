@@ -76,6 +76,16 @@ class RawRequest:
         self.stream = EmptyByteStream() if stream is None else stream
         self.extensions = {} if extensions is None else extensions
 
+    @property
+    def sync_stream(self) -> ByteStream:
+        assert isinstance(self.stream, ByteStream)
+        return self.stream
+
+    @property
+    def async_stream(self) -> AsyncByteStream:
+        assert isinstance(self.stream, AsyncByteStream)
+        return self.stream
+
 
 class RawResponse:
     def __init__(
@@ -90,6 +100,16 @@ class RawResponse:
         self.stream = EmptyByteStream() if stream is None else stream
         self.extensions = {} if extensions is None else extensions
 
+    @property
+    def sync_stream(self) -> ByteStream:
+        assert isinstance(self.stream, ByteStream)
+        return self.stream
+
+    @property
+    def async_stream(self) -> AsyncByteStream:
+        assert isinstance(self.stream, AsyncByteStream)
+        return self.stream
+
     def __enter__(self) -> "RawResponse":
         return self
 
@@ -102,8 +122,7 @@ class RawResponse:
         self.close()
 
     def close(self) -> None:
-        assert isinstance(self.stream, ByteStream)
-        self.stream.close()
+        self.sync_stream.close()
 
     async def __aenter__(self) -> "RawResponse":
         return self
@@ -117,8 +136,7 @@ class RawResponse:
         await self.aclose()
 
     async def aclose(self) -> None:
-        assert isinstance(self.stream, AsyncByteStream)
-        await self.stream.aclose()
+        await self.async_stream.aclose()
 
 
 class ConnectionNotAvailable(Exception):

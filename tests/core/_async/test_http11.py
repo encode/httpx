@@ -28,7 +28,7 @@ async def test_http11_connection():
         url = RawURL(b"https", b"example.com", 443, b"/")
         request = RawRequest(b"GET", url, [(b"Host", b"example.com")])
         async with await conn.handle_async_request(request) as response:
-            content = await response.stream.aread()
+            content = await response.async_stream.aread()
             assert response.status == 200
             assert content == b"Hello, world!"
 
@@ -123,7 +123,7 @@ async def test_http11_connection_handles_one_active_request():
 
 
 @pytest.mark.trio
-async def test_http11_connection_attempt_close():
+async def test_http11_connection_attempt_aclose():
     """
     A connection can only be closed when it is idle.
     """
@@ -143,8 +143,8 @@ async def test_http11_connection_attempt_close():
         url = RawURL(b"https", b"example.com", 443, b"/")
         request = RawRequest(b"GET", url, [(b"Host", b"example.com")])
         async with await conn.handle_async_request(request) as response:
-            content = await response.stream.aread()
+            content = await response.async_stream.aread()
             assert response.status == 200
             assert content == b"Hello, world!"
-            assert not await conn.attempt_close()
-        assert await conn.attempt_close()
+            assert not await conn.attempt_aclose()
+        assert await conn.attempt_aclose()

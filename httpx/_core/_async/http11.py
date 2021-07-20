@@ -92,8 +92,7 @@ class AsyncHTTP11Connection(AsyncConnectionInterface):
         await self._send_event(event)
 
     async def _send_request_body(self, request: RawRequest) -> None:
-        assert isinstance(request.stream, AsyncByteStream)
-        async for chunk in request.stream:
+        async for chunk in request.async_stream:
             event = h11.Data(data=chunk)
             await self._send_event(event)
 
@@ -187,7 +186,7 @@ class AsyncHTTP11Connection(AsyncConnectionInterface):
     def is_closed(self) -> bool:
         return self._state == HTTPConnectionState.CLOSED
 
-    async def attempt_close(self) -> bool:
+    async def attempt_aclose(self) -> bool:
         async with self._state_lock:
             if self._state in (HTTPConnectionState.NEW, HTTPConnectionState.IDLE):
                 await self.aclose()
