@@ -2,6 +2,7 @@ import ssl
 from types import TracebackType
 from typing import AsyncIterator, List, Optional, Type
 
+from ..._exceptions import UnsupportedProtocol
 from ..backends.base import AsyncNetworkBackend
 from ..backends.trio import TrioBackend
 from ..base import (
@@ -128,6 +129,16 @@ class AsyncConnectionPool:
         """
         Send an HTTP request, and return an HTTP response.
         """
+        scheme = request.url.scheme.decode()
+        if scheme == "":
+            raise UnsupportedProtocol(
+                f"The request to '{request.url}' is missing an 'http://' or 'https://' protocol."
+            )
+        if scheme not in ("http", "https"):
+            raise UnsupportedProtocol(
+                f"The request to '{request.url}' has an unsupported protocol '{scheme}://'."
+            )
+
         origin = self.get_origin(request)
 
         while True:

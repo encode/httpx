@@ -1,5 +1,5 @@
 from types import TracebackType
-from typing import Any, AsyncIterator, Iterator, List, Tuple, Type, Union
+from typing import Any, AsyncIterator, Iterator, List, Optional, Tuple, Type, Union
 
 
 class AsyncByteStream:
@@ -50,7 +50,9 @@ class Origin:
 
 
 class RawURL:
-    def __init__(self, scheme: bytes, host: bytes, port: int, target: bytes) -> None:
+    def __init__(
+        self, scheme: bytes, host: bytes, port: Optional[int], target: bytes
+    ) -> None:
         self.scheme = scheme
         self.host = host
         self.port = port
@@ -58,7 +60,15 @@ class RawURL:
 
     @property
     def origin(self) -> Origin:
-        return Origin(self.scheme, self.host, self.port)
+        default_port = {b"http": 80, b"https": 443}[self.scheme]
+        return Origin(self.scheme, self.host, self.port or default_port)
+
+    def __str__(self) -> str:
+        scheme = self.scheme.decode("ascii")
+        host = self.host.decode("ascii")
+        port_str = "f:{self.port}" if self.port else ""
+        target = self.target.decode("ascii")
+        return f"{scheme}://{host}{port_str}{target}"
 
 
 class RawRequest:
