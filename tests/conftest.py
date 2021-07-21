@@ -144,10 +144,10 @@ async def echo_body(scope, receive, send):
 
 
 async def echo_headers(scope, receive, send):
-    body = {}
-    for name, value in scope.get("headers", []):
-        body[name.capitalize().decode()] = value.decode()
-
+    body = {
+        name.capitalize().decode(): value.decode()
+        for name, value in scope.get("headers", [])
+    }
     await send(
         {
             "type": "http.response.start",
