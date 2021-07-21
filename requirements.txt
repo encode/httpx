@@ -16,7 +16,7 @@ coverage==5.3
 cryptography
 flake8
 flake8-bugbear
-flake8-pie>=0.12.0
+flake8-pie>=0.12.0; python_version > '3.6'
 isort==5.*
 mypy
 types-certifi
