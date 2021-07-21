@@ -977,10 +977,11 @@ class Headers(typing.MutableMapping[str, str]):
         """
         normalized_key = key.lower().encode(self.encoding)
 
-        items = []
-        for _, header_key, header_value in self._list:
-            if header_key == normalized_key:
-                items.append(header_value.decode(self.encoding))
+        items = [
+            header_value.decode(self.encoding)
+            for _, header_key, header_value in self._list
+            if header_key == normalized_key
+        ]
 
         if items:
             return ", ".join(items)
@@ -996,10 +997,11 @@ class Headers(typing.MutableMapping[str, str]):
         set_value = value.encode(self._encoding or "utf-8")
         lookup_key = set_key.lower()
 
-        found_indexes = []
-        for idx, (_, item_key, _) in enumerate(self._list):
-            if item_key == lookup_key:
-                found_indexes.append(idx)
+        found_indexes = [
+            idx
+            for idx, (_, item_key, _) in enumerate(self._list)
+            if item_key == lookup_key
+        ]
 
         for idx in reversed(found_indexes[1:]):
             del self._list[idx]
@@ -1016,10 +1018,11 @@ class Headers(typing.MutableMapping[str, str]):
         """
         del_key = key.lower().encode(self.encoding)
 
-        pop_indexes = []
-        for idx, (_, item_key, _) in enumerate(self._list):
-            if item_key.lower() == del_key:
-                pop_indexes.append(idx)
+        pop_indexes = [
+            idx
+            for idx, (_, item_key, _) in enumerate(self._list)
+            if item_key.lower() == del_key
+        ]
 
         if not pop_indexes:
             raise KeyError(key)
@@ -1735,12 +1738,13 @@ class Cookies(MutableMapping):
         if domain is not None and path is not None:
             return self.jar.clear(domain, path, name)
 
-        remove = []
-        for cookie in self.jar:
-            if cookie.name == name:
-                if domain is None or cookie.domain == domain:
-                    if path is None or cookie.path == path:
-                        remove.append(cookie)
+        remove = [
+            cookie
+            for cookie in self.jar
+            if cookie.name == name
+            and (domain is None or cookie.domain == domain)
+            and (path is None or cookie.path == path)
+        ]
 
         for cookie in remove:
             self.jar.clear(cookie.domain, cookie.path, cookie.name)
