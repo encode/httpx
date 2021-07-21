@@ -59,7 +59,7 @@ setup(
         "sniffio",
         "rfc3986[idna2008]>=1.3,<2",
         "httpcore>=0.13.3,<0.14.0",
-        "async_generator; python_version < '3.7'"
+        "async_generator; python_version < '3.7'",
     ],
     extras_require={
         "http2": "h2==3.*",
