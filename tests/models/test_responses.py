@@ -572,10 +572,7 @@ def test_iter_lines():
         200,
         content=b"Hello,\nworld!",
     )
-
-    content = []
-    for line in response.iter_lines():
-        content.append(line)
+    content = [line for line in response.iter_lines()]
     assert content == ["Hello,\n", "world!"]
 
 
