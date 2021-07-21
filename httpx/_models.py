@@ -1478,13 +1478,10 @@ class Response:
             with request_context(request=self._request):
                 for raw_bytes in self.iter_raw():
                     decoded = decoder.decode(raw_bytes)
-                    for chunk in chunker.decode(decoded):
-                        yield chunk
+                    yield from chunker.decode(decoded)
                 decoded = decoder.flush()
-                for chunk in chunker.decode(decoded):
-                    yield chunk
-                for chunk in chunker.flush():
-                    yield chunk
+                yield from chunker.decode(decoded)
+                yield from chunker.flush()
 
     def iter_text(self, chunk_size: int = None) -> typing.Iterator[str]:
         """
@@ -1497,22 +1494,17 @@ class Response:
         with request_context(request=self._request):
             for byte_content in self.iter_bytes():
                 text_content = decoder.decode(byte_content)
-                for chunk in chunker.decode(text_content):
-                    yield chunk
+                yield from chunker.decode(text_content)
             text_content = decoder.flush()
-            for chunk in chunker.decode(text_content):
-                yield chunk
-            for chunk in chunker.flush():
-                yield chunk
+            yield from chunker.decode(text_content)
+            yield from chunker.flush()
 
     def iter_lines(self) -> typing.Iterator[str]:
         decoder = LineDecoder()
         with request_context(request=self._request):
             for text in self.iter_text():
-                for line in decoder.decode(text):
-                    yield line
-            for line in decoder.flush():
-                yield line
+                yield from decoder.decode(text)
+            yield from decoder.flush()
 
     def iter_raw(self, chunk_size: int = None) -> typing.Iterator[bytes]:
         """
@@ -1532,11 +1524,9 @@ class Response:
         with request_context(request=self._request):
             for raw_stream_bytes in self.stream:
                 self._num_bytes_downloaded += len(raw_stream_bytes)
-                for chunk in chunker.decode(raw_stream_bytes):
-                    yield chunk
+                yield from chunker.decode(raw_stream_bytes)
 
-        for chunk in chunker.flush():
-            yield chunk
+        yield from chunker.flush()
 
         self.close()
 

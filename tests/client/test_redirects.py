@@ -35,7 +35,7 @@ def redirects(request: httpx.Request) -> httpx.Response:
 
     elif request.url.path == "/invalid_redirect":
         status_code = httpx.codes.SEE_OTHER
-        raw_headers = [(b"location", "https://😇/".encode("utf-8"))]
+        raw_headers = [(b"location", "https://😇/".encode())]
         return httpx.Response(status_code, headers=raw_headers)
 
     elif request.url.path == "/no_scheme_redirect":

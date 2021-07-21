@@ -115,7 +115,7 @@ class SSLConfig:
         elif Path(self.verify).exists():
             ca_bundle_path = Path(self.verify)
         else:
-            raise IOError(
+            raise OSError(
                 "Could not find a suitable TLS CA certificate bundle, "
                 "invalid path: {}".format(self.verify)
             )

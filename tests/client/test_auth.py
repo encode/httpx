@@ -66,7 +66,7 @@ class DigestApp:
             "stale": "FALSE",
         }
         challenge_str = ", ".join(
-            '{}="{}"'.format(key, value)
+            f'{key}="{value}"'
             for key, value in challenge_data.items()
             if value
         )

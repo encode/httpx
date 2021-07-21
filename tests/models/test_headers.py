@@ -99,7 +99,7 @@ def test_headers_encoding_in_repr():
     """
     Headers should display an encoding in the repr if required.
     """
-    headers = httpx.Headers({b"custom": "example ☃".encode("utf-8")})
+    headers = httpx.Headers({b"custom": "example ☃".encode()})
     assert repr(headers) == "Headers({'custom': 'example ☃'}, encoding='utf-8')"
 
 
@@ -127,7 +127,7 @@ def test_headers_decode_utf_8():
     """
     Headers containing non-ascii codepoints should default to decoding as utf-8.
     """
-    raw_headers = [(b"Custom", "Code point: ☃".encode("utf-8"))]
+    raw_headers = [(b"Custom", "Code point: ☃".encode())]
     headers = httpx.Headers(raw_headers)
     assert dict(headers) == {"custom": "Code point: ☃"}
     assert headers.encoding == "utf-8"
@@ -148,7 +148,7 @@ def test_headers_decode_explicit_encoding():
     An explicit encoding may be set on headers in order to force a
     particular decoding.
     """
-    raw_headers = [(b"Custom", "Code point: ☃".encode("utf-8"))]
+    raw_headers = [(b"Custom", "Code point: ☃".encode())]
     headers = httpx.Headers(raw_headers)
     headers.encoding = "iso-8859-1"
     assert dict(headers) == {"custom": "Code point: â\x98\x83"}

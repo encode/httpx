@@ -135,7 +135,7 @@ def test_response_autodetect_encoding():
     """
     Autodetect encoding if there is no Content-Type header.
     """
-    content = "おはようございます。".encode("utf-8")
+    content = "おはようございます。".encode()
     response = httpx.Response(
         200,
         content=content,
@@ -149,7 +149,7 @@ def test_response_fallback_to_autodetect():
     Fallback to autodetection if we get an invalid charset in the Content-Type header.
     """
     headers = {"Content-Type": "text-plain; charset=invalid-codec-name"}
-    content = "おはようございます。".encode("utf-8")
+    content = "おはようございます。".encode()
     response = httpx.Response(
         200,
         content=content,
@@ -181,7 +181,7 @@ def test_response_no_charset_with_utf8_content():
     A response with UTF-8 encoded content should decode correctly,
     even with no charset specified.
     """
-    content = "Unicode Snowman: ☃".encode("utf-8")
+    content = "Unicode Snowman: ☃".encode()
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
         200,
@@ -255,7 +255,7 @@ def test_response_set_explicit_encoding():
 def test_response_force_encoding():
     response = httpx.Response(
         200,
-        content="Snowman: ☃".encode("utf-8"),
+        content="Snowman: ☃".encode(),
     )
     response.encoding = "iso-8859-1"
     assert response.status_code == 200
