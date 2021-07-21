@@ -1,0 +1,38 @@
+repos:
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.21.2
+    hooks:
+      - id: pyupgrade
+        args: ["--py36-plus"]
+
+  - repo: https://github.com/psf/black
+    rev: 21.7b0
+    hooks:
+      - id: black
+
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.9.2
+    hooks:
+      - id: flake8
+        additional_dependencies: &flake8-deps
+          - flake8-bugbear
+          - flake8-pie>=0.14.0
+
+  - repo: https://github.com/asottile/yesqa
+    rev: v1.2.3
+    hooks:
+      - id: yesqa
+        additional_dependencies: *flake8-deps
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: mixed-line-ending
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.9.2
+    hooks:
+      - id: isort
