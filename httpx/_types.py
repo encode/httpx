@@ -47,9 +47,10 @@ HeaderTypes = Union[
     Dict[bytes, bytes],
     Sequence[Tuple[str, str]],
     Sequence[Tuple[bytes, bytes]],
+    None,
 ]
 
-CookieTypes = Union["Cookies", CookieJar, Dict[str, str], List[Tuple[str, str]]]
+CookieTypes = Union["Cookies", CookieJar, Dict[str, str], List[Tuple[str, str]], None]
 
 CertTypes = Union[
     # certfile
@@ -58,6 +59,7 @@ CertTypes = Union[
     Tuple[str, Optional[str]],
     # (certfile, keyfile, password)
     Tuple[str, Optional[str], Optional[str]],
+    None,
 ]
 VerifyTypes = Union[str, bool, ssl.SSLContext]
 TimeoutTypes = Union[
@@ -65,7 +67,9 @@ TimeoutTypes = Union[
     Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
     "Timeout",
 ]
-ProxiesTypes = Union[URLTypes, "Proxy", Dict[URLTypes, Union[None, URLTypes, "Proxy"]]]
+ProxiesTypes = Union[
+    URLTypes, "Proxy", Dict[URLTypes, Union[None, URLTypes, "Proxy"]], None
+]
 
 AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
@@ -74,10 +78,10 @@ AuthTypes = Union[
     None,
 ]
 
-RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes], None]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 
-RequestData = dict
+RequestData = Union[dict, None]
 
 FileContent = Union[IO[str], IO[bytes], str, bytes]
 FileTypes = Union[
