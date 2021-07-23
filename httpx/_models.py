@@ -2,10 +2,26 @@ import cgi
 import datetime
 import email.message
 import json as jsonlib
-import typing
 import urllib.request
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
+from typing import (
+    Any,
+    AsyncIterable,
+    AsyncIterator,
+    Dict,
+    ItemsView,
+    Iterable,
+    Iterator,
+    KeysView,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    ValuesView,
+)
 from urllib.parse import parse_qs, quote, unquote, urlencode
 
 import idna
@@ -118,9 +134,7 @@ class URL:
       be properly URL escaped when decoding the parameter names and values themselves.
     """
 
-    def __init__(
-        self, url: typing.Union["URL", str, RawURL] = "", **kwargs: typing.Any
-    ) -> None:
+    def __init__(self, url: Union["URL", str, RawURL] = "", **kwargs: Any) -> None:
         if isinstance(url, (str, tuple)):
             if isinstance(url, tuple):
                 raw_scheme, raw_host, port, raw_path = url
@@ -275,7 +289,7 @@ class URL:
         return host.encode("ascii")
 
     @property
-    def port(self) -> typing.Optional[int]:
+    def port(self) -> Optional[int]:
         """
         The URL port as an integer.
 
@@ -405,7 +419,7 @@ class URL:
         """
         return not self.is_absolute_url
 
-    def copy_with(self, **kwargs: typing.Any) -> "URL":
+    def copy_with(self, **kwargs: Any) -> "URL":
         """
         Copy this URL, returning a new URL with some components altered.
         Accepts the same set of parameters as the components that are made
@@ -534,10 +548,10 @@ class URL:
         # scheme     authority       path        query   fragment
         return URL(self._uri_reference.copy_with(**kwargs).unsplit())
 
-    def copy_set_param(self, key: str, value: typing.Any = None) -> "URL":
+    def copy_set_param(self, key: str, value: Any = None) -> "URL":
         return self.copy_with(params=self.params.set(key, value))
 
-    def copy_add_param(self, key: str, value: typing.Any = None) -> "URL":
+    def copy_add_param(self, key: str, value: Any = None) -> "URL":
         return self.copy_with(params=self.params.add(key, value))
 
     def copy_remove_param(self, key: str) -> "URL":
@@ -575,7 +589,7 @@ class URL:
     def __hash__(self) -> int:
         return hash(str(self))
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, (URL, str)) and str(self) == str(URL(other))
 
     def __str__(self) -> str:
@@ -596,25 +610,25 @@ class URL:
         return f"{class_name}({url_str!r})"
 
 
-class QueryParams(typing.Mapping[str, str]):
+class QueryParams(Mapping[str, str]):
     """
     URL query parameters, as a multi-dict.
     """
 
-    def __init__(self, *args: QueryParamTypes, **kwargs: typing.Any) -> None:
+    def __init__(self, *args: QueryParamTypes, **kwargs: Any) -> None:
         assert len(args) < 2, "Too many arguments."
         assert not (args and kwargs), "Cannot mix named and unnamed arguments."
 
         value = args[0] if args else kwargs
 
-        items: typing.Sequence[typing.Tuple[str, PrimitiveData]]
+        items: Sequence[Tuple[str, PrimitiveData]]
         if value is None or isinstance(value, (str, bytes)):
             value = value.decode("ascii") if isinstance(value, bytes) else value
             self._dict = parse_qs(value)
         elif isinstance(value, QueryParams):
             self._dict = {k: list(v) for k, v in value._dict.items()}
         else:
-            dict_value: typing.Dict[typing.Any, typing.List[typing.Any]] = {}
+            dict_value: Dict[Any, List[Any]] = {}
             if isinstance(value, (list, tuple)):
                 # Convert list inputs like:
                 #     [("a", "123"), ("a", "456"), ("b", "789")]
@@ -640,7 +654,7 @@ class QueryParams(typing.Mapping[str, str]):
                 for k, v in dict_value.items()
             }
 
-    def keys(self) -> typing.KeysView:
+    def keys(self) -> KeysView:
         """
         Return all the keys in the query params.
 
@@ -651,7 +665,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return self._dict.keys()
 
-    def values(self) -> typing.ValuesView:
+    def values(self) -> ValuesView:
         """
         Return all the values in the query params. If a key occurs more than once
         only the first item for that key is returned.
@@ -663,7 +677,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return {k: v[0] for k, v in self._dict.items()}.values()
 
-    def items(self) -> typing.ItemsView:
+    def items(self) -> ItemsView:
         """
         Return all items in the query params. If a key occurs more than once
         only the first item for that key is returned.
@@ -675,7 +689,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return {k: v[0] for k, v in self._dict.items()}.items()
 
-    def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
+    def multi_items(self) -> List[Tuple[str, str]]:
         """
         Return all items in the query params. Allow duplicate keys to occur.
 
@@ -684,12 +698,12 @@ class QueryParams(typing.Mapping[str, str]):
         q = httpx.QueryParams("a=123&a=456&b=789")
         assert list(q.multi_items()) == [("a", "123"), ("a", "456"), ("b", "789")]
         """
-        multi_items: typing.List[typing.Tuple[str, str]] = []
+        multi_items: List[Tuple[str, str]] = []
         for k, v in self._dict.items():
             multi_items.extend([(k, i) for i in v])
         return multi_items
 
-    def get(self, key: typing.Any, default: typing.Any = None) -> typing.Any:
+    def get(self, key: Any, default: Any = None) -> Any:
         """
         Get a value from the query param for a given key. If the key occurs
         more than once, then only the first value is returned.
@@ -703,7 +717,7 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[str(key)][0]
         return default
 
-    def get_list(self, key: str) -> typing.List[str]:
+    def get_list(self, key: str) -> List[str]:
         """
         Get all values from the query param for a given key.
 
@@ -714,7 +728,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return list(self._dict.get(str(key), []))
 
-    def set(self, key: str, value: typing.Any = None) -> "QueryParams":
+    def set(self, key: str, value: Any = None) -> "QueryParams":
         """
         Return a new QueryParams instance, setting the value of a key.
 
@@ -729,7 +743,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict[str(key)] = [primitive_value_to_str(value)]
         return q
 
-    def add(self, key: str, value: typing.Any = None) -> "QueryParams":
+    def add(self, key: str, value: Any = None) -> "QueryParams":
         """
         Return a new QueryParams instance, setting or appending the value of a key.
 
@@ -777,13 +791,13 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict = {**self._dict, **q._dict}
         return q
 
-    def __getitem__(self, key: typing.Any) -> str:
+    def __getitem__(self, key: Any) -> str:
         return self._dict[key][0]
 
-    def __contains__(self, key: typing.Any) -> bool:
+    def __contains__(self, key: Any) -> bool:
         return key in self._dict
 
-    def __iter__(self) -> typing.Iterator[typing.Any]:
+    def __iter__(self) -> Iterator[Any]:
         return iter(self.keys())
 
     def __len__(self) -> int:
@@ -795,7 +809,7 @@ class QueryParams(typing.Mapping[str, str]):
     def __hash__(self) -> int:
         return hash(str(self))
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
             return False
         return sorted(self.multi_items()) == sorted(other.multi_items())
@@ -821,14 +835,14 @@ class QueryParams(typing.Mapping[str, str]):
         )
 
 
-class Headers(typing.MutableMapping[str, str]):
+class Headers(MutableMapping[str, str]):
     """
     HTTP headers, as a case-insensitive multi-dict.
     """
 
     def __init__(self, headers: HeaderTypes = None, encoding: str = None) -> None:
         if headers is None:
-            self._list = []  # type: typing.List[typing.Tuple[bytes, bytes, bytes]]
+            self._list = []  # type: List[Tuple[bytes, bytes, bytes]]
         elif isinstance(headers, Headers):
             self._list = list(headers._list)
         elif isinstance(headers, dict):
@@ -882,17 +896,17 @@ class Headers(typing.MutableMapping[str, str]):
         self._encoding = value
 
     @property
-    def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
+    def raw(self) -> List[Tuple[bytes, bytes]]:
         """
         Returns a list of the raw header items, as byte pairs.
         """
         return [(raw_key, value) for raw_key, _, value in self._list]
 
-    def keys(self) -> typing.KeysView[str]:
+    def keys(self) -> KeysView[str]:
         return {key.decode(self.encoding): None for _, key, value in self._list}.keys()
 
-    def values(self) -> typing.ValuesView[str]:
-        values_dict: typing.Dict[str, str] = {}
+    def values(self) -> ValuesView[str]:
+        values_dict: Dict[str, str] = {}
         for _, key, value in self._list:
             str_key = key.decode(self.encoding)
             str_value = value.decode(self.encoding)
@@ -902,12 +916,12 @@ class Headers(typing.MutableMapping[str, str]):
                 values_dict[str_key] = str_value
         return values_dict.values()
 
-    def items(self) -> typing.ItemsView[str, str]:
+    def items(self) -> ItemsView[str, str]:
         """
         Return `(key, value)` items of headers. Concatenate headers
         into a single comma seperated value when a key occurs multiple times.
         """
-        values_dict: typing.Dict[str, str] = {}
+        values_dict: Dict[str, str] = {}
         for _, key, value in self._list:
             str_key = key.decode(self.encoding)
             str_value = value.decode(self.encoding)
@@ -917,7 +931,7 @@ class Headers(typing.MutableMapping[str, str]):
                 values_dict[str_key] = str_value
         return values_dict.items()
 
-    def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
+    def multi_items(self) -> List[Tuple[str, str]]:
         """
         Return a list of `(key, value)` pairs of headers. Allow multiple
         occurences of the same key without concatenating into a single
@@ -928,7 +942,7 @@ class Headers(typing.MutableMapping[str, str]):
             for _, key, value in self._list
         ]
 
-    def get(self, key: str, default: typing.Any = None) -> typing.Any:
+    def get(self, key: str, default: Any = None) -> Any:
         """
         Return a header value. If multiple occurences of the header occur
         then concatenate them together with commas.
@@ -938,7 +952,7 @@ class Headers(typing.MutableMapping[str, str]):
         except KeyError:
             return default
 
-    def get_list(self, key: str, split_commas: bool = False) -> typing.List[str]:
+    def get_list(self, key: str, split_commas: bool = False) -> List[str]:
         """
         Return a list of all header values for a given key.
         If `split_commas=True` is passed, then any comma seperated header
@@ -1030,17 +1044,17 @@ class Headers(typing.MutableMapping[str, str]):
         for idx in reversed(pop_indexes):
             del self._list[idx]
 
-    def __contains__(self, key: typing.Any) -> bool:
+    def __contains__(self, key: Any) -> bool:
         header_key = key.lower().encode(self.encoding)
         return header_key in [key for _, key, _ in self._list]
 
-    def __iter__(self) -> typing.Iterator[typing.Any]:
+    def __iter__(self) -> Iterator[Any]:
         return iter(self.keys())
 
     def __len__(self) -> int:
         return len(self._list)
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         try:
             other_headers = Headers(other)
         except ValueError:
@@ -1069,8 +1083,8 @@ class Headers(typing.MutableMapping[str, str]):
 class Request:
     def __init__(
         self,
-        method: typing.Union[str, bytes],
-        url: typing.Union["URL", str, RawURL],
+        method: Union[str, bytes],
+        url: Union["URL", str, RawURL],
         *,
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
@@ -1078,8 +1092,8 @@ class Request:
         content: RequestContent = None,
         data: RequestData = None,
         files: RequestFiles = None,
-        json: typing.Any = None,
-        stream: typing.Union[SyncByteStream, AsyncByteStream] = None,
+        json: Any = None,
+        stream: Union[SyncByteStream, AsyncByteStream] = None,
     ):
         if isinstance(method, bytes):
             self.method = method.decode("ascii").upper()
@@ -1115,14 +1129,14 @@ class Request:
             # * Creating request instances on the *server-side* of the transport API.
             self.stream = stream
 
-    def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
+    def _prepare(self, default_headers: Dict[str, str]) -> None:
         for key, value in default_headers.items():
             # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
             if key.lower() == "transfer-encoding" and "Content-Length" in self.headers:
                 continue
             self.headers.setdefault(key, value)
 
-        auto_headers: typing.List[typing.Tuple[bytes, bytes]] = []
+        auto_headers: List[Tuple[bytes, bytes]] = []
 
         has_host = "Host" in self.headers
         has_content_length = (
@@ -1147,7 +1161,7 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
-            assert isinstance(self.stream, typing.Iterable)
+            assert isinstance(self.stream, Iterable)
             self._content = b"".join(self.stream)
             if not isinstance(self.stream, ByteStream):
                 # If a streaming request has been read entirely into memory, then
@@ -1161,7 +1175,7 @@ class Request:
         Read and return the request content.
         """
         if not hasattr(self, "_content"):
-            assert isinstance(self.stream, typing.AsyncIterable)
+            assert isinstance(self.stream, AsyncIterable)
             self._content = b"".join([part async for part in self.stream])
             if not isinstance(self.stream, ByteStream):
                 # If a streaming request has been read entirely into memory, then
@@ -1175,14 +1189,14 @@ class Request:
         url = str(self.url)
         return f"<{class_name}({self.method!r}, {url!r})>"
 
-    def __getstate__(self) -> typing.Dict[str, typing.Any]:
+    def __getstate__(self) -> Dict[str, Any]:
         return {
             name: value
             for name, value in self.__dict__.items()
             if name not in ["stream"]
         }
 
-    def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         for name, value in state.items():
             setattr(self, name, value)
         self.stream = UnattachedStream()
@@ -1197,20 +1211,20 @@ class Response:
         content: ResponseContent = None,
         text: str = None,
         html: str = None,
-        json: typing.Any = None,
-        stream: typing.Union[SyncByteStream, AsyncByteStream] = None,
+        json: Any = None,
+        stream: Union[SyncByteStream, AsyncByteStream] = None,
         request: Request = None,
         extensions: dict = None,
-        history: typing.List["Response"] = None,
+        history: List["Response"] = None,
     ):
         self.status_code = status_code
         self.headers = Headers(headers)
 
-        self._request: typing.Optional[Request] = request
+        self._request: Optional[Request] = request
 
         # When allow_redirects=False and a redirect is received,
         # the client will set `response.next_request`.
-        self.next_request: typing.Optional[Request] = None
+        self.next_request: Optional[Request] = None
 
         self.extensions = {} if extensions is None else extensions
         self.history = [] if history is None else list(history)
@@ -1241,7 +1255,7 @@ class Response:
 
         self._num_bytes_downloaded = 0
 
-    def _prepare(self, default_headers: typing.Dict[str, str]) -> None:
+    def _prepare(self, default_headers: Dict[str, str]) -> None:
         for key, value in default_headers.items():
             # Ignore Transfer-Encoding if the Content-Length has been set explicitly.
             if key.lower() == "transfer-encoding" and "content-length" in self.headers:
@@ -1295,7 +1309,7 @@ class Response:
             return codes.get_reason_phrase(self.status_code)
 
     @property
-    def url(self) -> typing.Optional[URL]:
+    def url(self) -> Optional[URL]:
         """
         Returns the URL for which the request was made.
         """
@@ -1319,7 +1333,7 @@ class Response:
         return self._text
 
     @property
-    def encoding(self) -> typing.Optional[str]:
+    def encoding(self) -> Optional[str]:
         """
         Return the encoding, which may have been set explicitly, or may have
         been specified by the Content-Type header.
@@ -1337,7 +1351,7 @@ class Response:
         self._encoding = value
 
     @property
-    def charset_encoding(self) -> typing.Optional[str]:
+    def charset_encoding(self) -> Optional[str]:
         """
         Return the encoding, as specified by the Content-Type header.
         """
@@ -1357,7 +1371,7 @@ class Response:
         content, depending on the Content-Encoding used in the response.
         """
         if not hasattr(self, "_decoder"):
-            decoders: typing.List[ContentDecoder] = []
+            decoders: List[ContentDecoder] = []
             values = self.headers.get_list("content-encoding", split_commas=True)
             for value in values:
                 value = value.strip().lower()
@@ -1407,7 +1421,7 @@ class Response:
             message = message.format(self, error_type="Server Error")
             raise HTTPStatusError(message, request=request, response=self)
 
-    def json(self, **kwargs: typing.Any) -> typing.Any:
+    def json(self, **kwargs: Any) -> Any:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
@@ -1425,7 +1439,7 @@ class Response:
         return self._cookies
 
     @property
-    def links(self) -> typing.Dict[typing.Optional[str], typing.Dict[str, str]]:
+    def links(self) -> Dict[Optional[str], Dict[str, str]]:
         """
         Returns the parsed header links of the response, if any
         """
@@ -1445,14 +1459,14 @@ class Response:
     def __repr__(self) -> str:
         return f"<Response [{self.status_code} {self.reason_phrase}]>"
 
-    def __getstate__(self) -> typing.Dict[str, typing.Any]:
+    def __getstate__(self) -> Dict[str, Any]:
         return {
             name: value
             for name, value in self.__dict__.items()
             if name not in ["stream", "is_closed", "_decoder"]
         }
 
-    def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         for name, value in state.items():
             setattr(self, name, value)
         self.is_closed = True
@@ -1466,7 +1480,7 @@ class Response:
             self._content = b"".join(self.iter_bytes())
         return self._content
 
-    def iter_bytes(self, chunk_size: int = None) -> typing.Iterator[bytes]:
+    def iter_bytes(self, chunk_size: int = None) -> Iterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
@@ -1489,7 +1503,7 @@ class Response:
                 for chunk in chunker.flush():
                     yield chunk
 
-    def iter_text(self, chunk_size: int = None) -> typing.Iterator[str]:
+    def iter_text(self, chunk_size: int = None) -> Iterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
@@ -1508,7 +1522,7 @@ class Response:
             for chunk in chunker.flush():
                 yield chunk
 
-    def iter_lines(self) -> typing.Iterator[str]:
+    def iter_lines(self) -> Iterator[str]:
         decoder = LineDecoder()
         with request_context(request=self._request):
             for text in self.iter_text():
@@ -1517,7 +1531,7 @@ class Response:
             for line in decoder.flush():
                 yield line
 
-    def iter_raw(self, chunk_size: int = None) -> typing.Iterator[bytes]:
+    def iter_raw(self, chunk_size: int = None) -> Iterator[bytes]:
         """
         A byte-iterator over the raw response content.
         """
@@ -1564,7 +1578,7 @@ class Response:
             self._content = b"".join([part async for part in self.aiter_bytes()])
         return self._content
 
-    async def aiter_bytes(self, chunk_size: int = None) -> typing.AsyncIterator[bytes]:
+    async def aiter_bytes(self, chunk_size: int = None) -> AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
@@ -1587,7 +1601,7 @@ class Response:
                 for chunk in chunker.flush():
                     yield chunk
 
-    async def aiter_text(self, chunk_size: int = None) -> typing.AsyncIterator[str]:
+    async def aiter_text(self, chunk_size: int = None) -> AsyncIterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
@@ -1606,7 +1620,7 @@ class Response:
             for chunk in chunker.flush():
                 yield chunk
 
-    async def aiter_lines(self) -> typing.AsyncIterator[str]:
+    async def aiter_lines(self) -> AsyncIterator[str]:
         decoder = LineDecoder()
         with request_context(request=self._request):
             async for text in self.aiter_text():
@@ -1615,7 +1629,7 @@ class Response:
             for line in decoder.flush():
                 yield line
 
-    async def aiter_raw(self, chunk_size: int = None) -> typing.AsyncIterator[bytes]:
+    async def aiter_raw(self, chunk_size: int = None) -> AsyncIterator[bytes]:
         """
         A byte-iterator over the raw response content.
         """
@@ -1721,7 +1735,7 @@ class Cookies(MutableMapping):
 
     def get(  # type: ignore
         self, name: str, default: str = None, domain: str = None, path: str = None
-    ) -> typing.Optional[str]:
+    ) -> Optional[str]:
         """
         Get a cookie by name. May optionally include domain and path
         in order to specify exactly which cookie to retrieve.
@@ -1792,7 +1806,7 @@ class Cookies(MutableMapping):
     def __len__(self) -> int:
         return len(self.jar)
 
-    def __iter__(self) -> typing.Iterator[str]:
+    def __iter__(self) -> Iterator[str]:
         return (cookie.name for cookie in self.jar)
 
     def __bool__(self) -> bool:

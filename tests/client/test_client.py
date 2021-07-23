@@ -1,5 +1,5 @@
-import typing
 from datetime import timedelta
+from typing import List
 
 import pytest
 
@@ -257,7 +257,7 @@ def test_context_managed_transport_and_mount():
     class Transport(httpx.BaseTransport):
         def __init__(self, name: str):
             self.name: str = name
-            self.events: typing.List[str] = []
+            self.events: List[str] = []
 
         def close(self):
             # The base implementation of httpx.BaseTransport just

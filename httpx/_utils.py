@@ -6,15 +6,29 @@ import os
 import re
 import sys
 import time
-import typing
 from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AnyStr,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Match,
+    Optional,
+    Pattern,
+    Tuple,
+    Union,
+    cast,
+)
 from urllib.request import getproxies
 
 import sniffio
 
 from ._types import PrimitiveData
 
-if typing.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from ._models import URL
 
 
@@ -28,7 +42,7 @@ _HTML5_FORM_ENCODING_RE = re.compile(
 
 
 def normalize_header_key(
-    value: typing.Union[str, bytes],
+    value: Union[str, bytes],
     lower: bool,
     encoding: str = None,
 ) -> bytes:
@@ -43,9 +57,7 @@ def normalize_header_key(
     return bytes_value.lower() if lower else bytes_value
 
 
-def normalize_header_value(
-    value: typing.Union[str, bytes], encoding: str = None
-) -> bytes:
+def normalize_header_value(value: Union[str, bytes], encoding: str = None) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header value.
     """
@@ -80,14 +92,14 @@ def is_known_encoding(encoding: str) -> bool:
     return True
 
 
-def format_form_param(name: str, value: typing.Union[str, bytes]) -> bytes:
+def format_form_param(name: str, value: Union[str, bytes]) -> bytes:
     """
     Encode a name/value pair within a multipart form.
     """
     if isinstance(value, bytes):
         value = value.decode()
 
-    def replacer(match: typing.Match[str]) -> str:
+    def replacer(match: Match[str]) -> str:
         return _HTML5_FORM_ENCODING_REPLACEMENTS[match.group(0)]
 
     value = _HTML5_FORM_ENCODING_RE.sub(replacer, value)
@@ -100,7 +112,7 @@ _null2 = _null * 2
 _null3 = _null * 3
 
 
-def guess_json_utf(data: bytes) -> typing.Optional[str]:
+def guess_json_utf(data: bytes) -> Optional[str]:
     # JSON always starts with two ASCII characters, so detection is as
     # easy as counting the nulls and from their location and count
     # determine the encoding. Also detect a BOM, if present.
@@ -130,13 +142,13 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
 
 
 class NetRCInfo:
-    def __init__(self, files: typing.Optional[typing.List[str]] = None) -> None:
+    def __init__(self, files: Optional[List[str]] = None) -> None:
         if files is None:
             files = [os.getenv("NETRC", ""), "~/.netrc", "~/_netrc"]
         self.netrc_files = files
 
     @property
-    def netrc_info(self) -> typing.Optional[netrc.netrc]:
+    def netrc_info(self) -> Optional[netrc.netrc]:
         if not hasattr(self, "_netrc_info"):
             self._netrc_info = None
             for file_path in self.netrc_files:
@@ -150,7 +162,7 @@ class NetRCInfo:
                     pass
         return self._netrc_info
 
-    def get_credentials(self, host: str) -> typing.Optional[typing.Tuple[str, str]]:
+    def get_credentials(self, host: str) -> Optional[Tuple[str, str]]:
         if self.netrc_info is None:
             return None
 
@@ -160,7 +172,7 @@ class NetRCInfo:
         return (auth_info[0], auth_info[2])
 
 
-def get_ca_bundle_from_env() -> typing.Optional[str]:
+def get_ca_bundle_from_env() -> Optional[str]:
     if "SSL_CERT_FILE" in os.environ:
         ssl_file = Path(os.environ["SSL_CERT_FILE"])
         if ssl_file.is_file():
@@ -172,7 +184,7 @@ def get_ca_bundle_from_env() -> typing.Optional[str]:
     return None
 
 
-def parse_header_links(value: str) -> typing.List[typing.Dict[str, str]]:
+def parse_header_links(value: str) -> List[Dict[str, str]]:
     """
     Returns a list of parsed link headers, for more info see:
     https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link
@@ -188,7 +200,7 @@ def parse_header_links(value: str) -> typing.List[typing.Dict[str, str]]:
     :param value: HTTP Link entity-header field
     :return: list of parsed link headers
     """
-    links: typing.List[typing.Dict[str, str]] = []
+    links: List[Dict[str, str]] = []
     replace_chars = " '\""
     value = value.strip(replace_chars)
     if not value:
@@ -213,8 +225,8 @@ SENSITIVE_HEADERS = {"authorization", "proxy-authorization"}
 
 
 def obfuscate_sensitive_headers(
-    items: typing.Iterable[typing.Tuple[typing.AnyStr, typing.AnyStr]]
-) -> typing.Iterator[typing.Tuple[typing.AnyStr, typing.AnyStr]]:
+    items: Iterable[Tuple[AnyStr, AnyStr]]
+) -> Iterator[Tuple[AnyStr, AnyStr]]:
     for k, v in items:
         if to_str(k.lower()) in SENSITIVE_HEADERS:
             v = to_bytes_or_str("[secure]", match_type_of=v)
@@ -227,7 +239,7 @@ TRACE_LOG_LEVEL = 5
 
 class Logger(logging.Logger):
     # Stub for type checkers.
-    def trace(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
+    def trace(self, message: str, *args: Any, **kwargs: Any) -> None:
         ...  # pragma: nocover
 
 
@@ -257,15 +269,15 @@ def get_logger(name: str) -> Logger:
 
     logger = logging.getLogger(name)
 
-    def trace(message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
+    def trace(message: str, *args: Any, **kwargs: Any) -> None:
         logger.log(TRACE_LOG_LEVEL, message, *args, **kwargs)
 
     logger.trace = trace  # type: ignore
 
-    return typing.cast(Logger, logger)
+    return cast(Logger, logger)
 
 
-def port_or_default(url: "URL") -> typing.Optional[int]:
+def port_or_default(url: "URL") -> Optional[int]:
     if url.port is not None:
         return url.port
     return {"http": 80, "https": 443}.get(url.scheme)
@@ -282,7 +294,7 @@ def same_origin(url: "URL", other: "URL") -> bool:
     )
 
 
-def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
+def get_environment_proxies() -> Dict[str, Optional[str]]:
     """Gets proxy information from the environment"""
 
     # urllib.request.getproxies() falls back on System
@@ -290,7 +302,7 @@ def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
     # We don't want to propagate non-HTTP proxies into
     # our configuration such as 'TRAVIS_APT_PROXY'.
     proxy_info = getproxies()
-    mounts: typing.Dict[str, typing.Optional[str]] = {}
+    mounts: Dict[str, Optional[str]] = {}
 
     for scheme in ("http", "https", "all"):
         if proxy_info.get(scheme):
@@ -320,15 +332,15 @@ def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
     return mounts
 
 
-def to_bytes(value: typing.Union[str, bytes], encoding: str = "utf-8") -> bytes:
+def to_bytes(value: Union[str, bytes], encoding: str = "utf-8") -> bytes:
     return value.encode(encoding) if isinstance(value, str) else value
 
 
-def to_str(value: typing.Union[str, bytes], encoding: str = "utf-8") -> str:
+def to_str(value: Union[str, bytes], encoding: str = "utf-8") -> str:
     return value if isinstance(value, str) else value.decode(encoding)
 
 
-def to_bytes_or_str(value: str, match_type_of: typing.AnyStr) -> typing.AnyStr:
+def to_bytes_or_str(value: str, match_type_of: AnyStr) -> AnyStr:
     return value if isinstance(match_type_of, str) else value.encode()
 
 
@@ -336,13 +348,13 @@ def unquote(value: str) -> str:
     return value[1:-1] if value[0] == value[-1] == '"' else value
 
 
-def guess_content_type(filename: typing.Optional[str]) -> typing.Optional[str]:
+def guess_content_type(filename: Optional[str]) -> Optional[str]:
     if filename:
         return mimetypes.guess_type(filename)[0] or "application/octet-stream"
     return None
 
 
-def peek_filelike_length(stream: typing.Any) -> typing.Optional[int]:
+def peek_filelike_length(stream: Any) -> Optional[int]:
     """
     Given a file-like stream object, return its length in number of bytes
     without reading it into memory.
@@ -456,7 +468,7 @@ class URLPattern:
         self.host = "" if url.host == "*" else url.host
         self.port = url.port
         if not url.host or url.host == "*":
-            self.host_regex: typing.Optional[typing.Pattern[str]] = None
+            self.host_regex: Optional[Pattern[str]] = None
         else:
             if url.host.startswith("*."):
                 # *.example.com should match "www.example.com", but not "example.com"
@@ -504,5 +516,5 @@ class URLPattern:
     def __lt__(self, other: "URLPattern") -> bool:
         return self.priority < other.priority
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, URLPattern) and self.pattern == other.pattern

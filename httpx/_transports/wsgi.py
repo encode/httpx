@@ -1,12 +1,12 @@
 import io
 import itertools
-import typing
+from typing import Any, Callable, Iterable, Iterator, List, Optional, Tuple
 from urllib.parse import unquote
 
 from .base import BaseTransport, SyncByteStream
 
 
-def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
+def _skip_leading_empty_chunks(body: Iterable) -> Iterable:
     body = iter(body)
     for chunk in body:
         if chunk:
@@ -15,10 +15,10 @@ def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
 
 
 class WSGIByteStream(SyncByteStream):
-    def __init__(self, result: typing.Iterable[bytes]) -> None:
+    def __init__(self, result: Iterable[bytes]) -> None:
         self._result = _skip_leading_empty_chunks(result)
 
-    def __iter__(self) -> typing.Iterator[bytes]:
+    def __iter__(self) -> Iterator[bytes]:
         for part in self._result:
             yield part
 
@@ -58,7 +58,7 @@ class WSGITransport(BaseTransport):
 
     def __init__(
         self,
-        app: typing.Callable,
+        app: Callable,
         raise_app_exceptions: bool = True,
         script_name: str = "",
         remote_addr: str = "127.0.0.1",
@@ -71,13 +71,11 @@ class WSGITransport(BaseTransport):
     def handle_request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
+        url: Tuple[bytes, bytes, Optional[int], bytes],
+        headers: List[Tuple[bytes, bytes]],
         stream: SyncByteStream,
         extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
-    ]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], SyncByteStream, dict]:
         wsgi_input = io.BytesIO(b"".join(stream))
 
         scheme, host, port, full_path = url
@@ -112,7 +110,7 @@ class WSGITransport(BaseTransport):
         seen_exc_info = None
 
         def start_response(
-            status: str, response_headers: list, exc_info: typing.Any = None
+            status: str, response_headers: list, exc_info: Any = None
         ) -> None:
             nonlocal seen_status, seen_response_headers, seen_exc_info
             seen_status = status

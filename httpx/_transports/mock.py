@@ -1,24 +1,22 @@
 import asyncio
-import typing
+from typing import Callable, List, Optional, Tuple
 
 from .._models import Request
 from .base import AsyncBaseTransport, AsyncByteStream, BaseTransport, SyncByteStream
 
 
 class MockTransport(AsyncBaseTransport, BaseTransport):
-    def __init__(self, handler: typing.Callable) -> None:
+    def __init__(self, handler: Callable) -> None:
         self.handler = handler
 
     def handle_request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
+        url: Tuple[bytes, bytes, Optional[int], bytes],
+        headers: List[Tuple[bytes, bytes]],
         stream: SyncByteStream,
         extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
-    ]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], SyncByteStream, dict]:
         request = Request(
             method=method,
             url=url,
@@ -37,13 +35,11 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
     async def handle_async_request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
+        url: Tuple[bytes, bytes, Optional[int], bytes],
+        headers: List[Tuple[bytes, bytes]],
         stream: AsyncByteStream,
         extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
-    ]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], AsyncByteStream, dict]:
         request = Request(
             method=method,
             url=url,

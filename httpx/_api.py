@@ -1,5 +1,5 @@
-import typing
 from contextlib import contextmanager
+from typing import Any, Iterator
 
 from ._client import Client
 from ._config import DEFAULT_TIMEOUT_CONFIG
@@ -28,7 +28,7 @@ def request(
     content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
-    json: typing.Any = None,
+    json: Any = None,
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
@@ -120,7 +120,7 @@ def stream(
     content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
-    json: typing.Any = None,
+    json: Any = None,
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
     auth: AuthTypes = None,
@@ -130,7 +130,7 @@ def stream(
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     trust_env: bool = True,
-) -> typing.Iterator[Response]:
+) -> Iterator[Response]:
     """
     Alternative to `httpx.request()` that streams the response body
     instead of loading it into memory at once.
@@ -284,7 +284,7 @@ def post(
     content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
-    json: typing.Any = None,
+    json: Any = None,
     params: QueryParamTypes = None,
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
@@ -327,7 +327,7 @@ def put(
     content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
-    json: typing.Any = None,
+    json: Any = None,
     params: QueryParamTypes = None,
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,
@@ -370,7 +370,7 @@ def patch(
     content: RequestContent = None,
     data: RequestData = None,
     files: RequestFiles = None,
-    json: typing.Any = None,
+    json: Any = None,
     params: QueryParamTypes = None,
     headers: HeaderTypes = None,
     cookies: CookieTypes = None,

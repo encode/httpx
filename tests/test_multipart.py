@@ -1,7 +1,7 @@
 import cgi
 import io
 import os
-import typing
+from typing import Any, Iterable, Iterator, Union
 from unittest import mock
 
 import pytest
@@ -94,7 +94,7 @@ def test_multipart_file_tuple():
     assert multipart["file"] == [b"<file content>"]
 
 
-def test_multipart_encode(tmp_path: typing.Any) -> None:
+def test_multipart_encode(tmp_path: Any) -> None:
     path = str(tmp_path / "name.txt")
     with open(path, "wb") as f:
         f.write(b"<file content>")
@@ -114,7 +114,7 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
             boundary = os.urandom(16).hex()
 
             headers, stream = encode_request(data=data, files=files)
-            assert isinstance(stream, typing.Iterable)
+            assert isinstance(stream, Iterable)
 
             content = (
                 '--{0}\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n'
@@ -145,7 +145,7 @@ def test_multipart_encode_unicode_file_contents() -> None:
         boundary = os.urandom(16).hex()
 
         headers, stream = encode_request(files=files)
-        assert isinstance(stream, typing.Iterable)
+        assert isinstance(stream, Iterable)
 
         content = (
             '--{0}\r\nContent-Disposition: form-data; name="file";'
@@ -167,7 +167,7 @@ def test_multipart_encode_files_allows_filenames_as_none() -> None:
         boundary = os.urandom(16).hex()
 
         headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, typing.Iterable)
+        assert isinstance(stream, Iterable)
 
         content = (
             '--{0}\r\nContent-Disposition: form-data; name="file"\r\n\r\n'
@@ -197,7 +197,7 @@ def test_multipart_encode_files_guesses_correct_content_type(
         boundary = os.urandom(16).hex()
 
         headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, typing.Iterable)
+        assert isinstance(stream, Iterable)
 
         content = (
             f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
@@ -217,14 +217,14 @@ def test_multipart_encode_files_guesses_correct_content_type(
     ((b"<bytes content>", "<bytes content>"), ("<string content>", "<string content>")),
 )
 def test_multipart_encode_files_allows_bytes_or_str_content(
-    value: typing.Union[str, bytes], output: str
+    value: Union[str, bytes], output: str
 ) -> None:
     files = {"file": ("test.txt", value, "text/plain")}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
         headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, typing.Iterable)
+        assert isinstance(stream, Iterable)
 
         content = (
             '--{0}\r\nContent-Disposition: form-data; name="file"; '
@@ -247,20 +247,20 @@ def test_multipart_encode_non_seekable_filelike() -> None:
     """
 
     class IteratorIO(io.IOBase):
-        def __init__(self, iterator: typing.Iterator[bytes]) -> None:
+        def __init__(self, iterator: Iterator[bytes]) -> None:
             self._iterator = iterator
 
-        def read(self, *args: typing.Any) -> bytes:
+        def read(self, *args: Any) -> bytes:
             return b"".join(self._iterator)
 
-    def data() -> typing.Iterator[bytes]:
+    def data() -> Iterator[bytes]:
         yield b"Hello"
         yield b"World"
 
-    fileobj: typing.Any = IteratorIO(data())
+    fileobj: Any = IteratorIO(data())
     files = {"file": fileobj}
     headers, stream = encode_request(files=files, boundary=b"+++")
-    assert isinstance(stream, typing.Iterable)
+    assert isinstance(stream, Iterable)
 
     content = (
         b"--+++\r\n"

@@ -7,7 +7,7 @@ import asyncio
 import hashlib
 import os
 import threading
-import typing
+from typing import AsyncGenerator, Generator, cast
 
 import pytest
 
@@ -90,7 +90,7 @@ class RepeatAuth(Auth):
     def __init__(self, repeat: int):
         self.repeat = repeat
 
-    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+    def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         nonces = []
 
         for index in range(self.repeat):
@@ -115,7 +115,7 @@ class ResponseBodyAuth(Auth):
     def __init__(self, token):
         self.token = token
 
-    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+    def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         request.headers["Authorization"] = self.token
         response = yield request
         data = response.text
@@ -133,16 +133,14 @@ class SyncOrAsyncAuth(Auth):
         self._lock = threading.Lock()
         self._async_lock = asyncio.Lock()
 
-    def sync_auth_flow(
-        self, request: Request
-    ) -> typing.Generator[Request, Response, None]:
+    def sync_auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         with self._lock:
             request.headers["Authorization"] = "sync-auth"
         yield request
 
     async def async_auth_flow(
         self, request: Request
-    ) -> typing.AsyncGenerator[Request, Response]:
+    ) -> AsyncGenerator[Request, Response]:
         async with self._async_lock:
             request.headers["Authorization"] = "async-auth"
         yield request
@@ -428,7 +426,7 @@ async def test_digest_auth(
     assert response.status_code == 200
     assert len(response.history) == 1
 
-    authorization = typing.cast(dict, response.json())["auth"]
+    authorization = cast(dict, response.json())["auth"]
     scheme, _, fields = authorization.partition(" ")
     assert scheme == "Digest"
 
@@ -459,7 +457,7 @@ async def test_digest_auth_no_specified_qop() -> None:
     assert response.status_code == 200
     assert len(response.history) == 1
 
-    authorization = typing.cast(dict, response.json())["auth"]
+    authorization = cast(dict, response.json())["auth"]
     scheme, _, fields = authorization.partition(" ")
     assert scheme == "Digest"
 

@@ -1,8 +1,8 @@
 import os
 import ssl
-import typing
 from base64 import b64encode
 from pathlib import Path
+from typing import Any, Dict, Optional, Union
 
 import certifi
 
@@ -203,12 +203,12 @@ class Timeout:
 
     def __init__(
         self,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: Union[TimeoutTypes, UnsetType] = UNSET,
         *,
-        connect: typing.Union[None, float, UnsetType] = UNSET,
-        read: typing.Union[None, float, UnsetType] = UNSET,
-        write: typing.Union[None, float, UnsetType] = UNSET,
-        pool: typing.Union[None, float, UnsetType] = UNSET,
+        connect: Union[None, float, UnsetType] = UNSET,
+        read: Union[None, float, UnsetType] = UNSET,
+        write: Union[None, float, UnsetType] = UNSET,
+        pool: Union[None, float, UnsetType] = UNSET,
     ):
         if isinstance(timeout, Timeout):
             # Passed as a single explicit Timeout.
@@ -216,10 +216,10 @@ class Timeout:
             assert read is UNSET
             assert write is UNSET
             assert pool is UNSET
-            self.connect = timeout.connect  # type: typing.Optional[float]
-            self.read = timeout.read  # type: typing.Optional[float]
-            self.write = timeout.write  # type: typing.Optional[float]
-            self.pool = timeout.pool  # type: typing.Optional[float]
+            self.connect = timeout.connect  # type: Optional[float]
+            self.read = timeout.read  # type: Optional[float]
+            self.write = timeout.write  # type: Optional[float]
+            self.pool = timeout.pool  # type: Optional[float]
         elif isinstance(timeout, tuple):
             # Passed as a tuple.
             self.connect = timeout[0]
@@ -247,7 +247,7 @@ class Timeout:
             self.write = timeout if isinstance(write, UnsetType) else write
             self.pool = timeout if isinstance(pool, UnsetType) else pool
 
-    def as_dict(self) -> typing.Dict[str, typing.Optional[float]]:
+    def as_dict(self) -> Dict[str, Optional[float]]:
         return {
             "connect": self.connect,
             "read": self.read,
@@ -255,7 +255,7 @@ class Timeout:
             "pool": self.pool,
         }
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return (
             isinstance(other, self.__class__)
             and self.connect == other.connect
@@ -292,13 +292,13 @@ class Limits:
         *,
         max_connections: int = None,
         max_keepalive_connections: int = None,
-        keepalive_expiry: typing.Optional[float] = 5.0,
+        keepalive_expiry: Optional[float] = 5.0,
     ):
         self.max_connections = max_connections
         self.max_keepalive_connections = max_keepalive_connections
         self.keepalive_expiry = keepalive_expiry
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return (
             isinstance(other, self.__class__)
             and self.max_connections == other.max_connections

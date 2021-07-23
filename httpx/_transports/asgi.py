@@ -1,16 +1,16 @@
-import typing
+from typing import TYPE_CHECKING, AsyncIterator, Callable, List, Optional, Tuple, Union
 from urllib.parse import unquote
 
 import sniffio
 
 from .base import AsyncBaseTransport, AsyncByteStream
 
-if typing.TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     import asyncio
 
     import trio
 
-    Event = typing.Union[asyncio.Event, trio.Event]
+    Event = Union[asyncio.Event, trio.Event]
 
 
 def create_event() -> "Event":
@@ -25,10 +25,10 @@ def create_event() -> "Event":
 
 
 class ASGIResponseStream(AsyncByteStream):
-    def __init__(self, body: typing.List[bytes]) -> None:
+    def __init__(self, body: List[bytes]) -> None:
         self._body = body
 
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+    async def __aiter__(self) -> AsyncIterator[bytes]:
         yield b"".join(self._body)
 
 
@@ -67,10 +67,10 @@ class ASGITransport(AsyncBaseTransport):
 
     def __init__(
         self,
-        app: typing.Callable,
+        app: Callable,
         raise_app_exceptions: bool = True,
         root_path: str = "",
-        client: typing.Tuple[str, int] = ("127.0.0.1", 123),
+        client: Tuple[str, int] = ("127.0.0.1", 123),
     ) -> None:
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
@@ -80,13 +80,11 @@ class ASGITransport(AsyncBaseTransport):
     async def handle_async_request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
+        url: Tuple[bytes, bytes, Optional[int], bytes],
+        headers: List[Tuple[bytes, bytes]],
         stream: AsyncByteStream,
         extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
-    ]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], AsyncByteStream, dict]:
         # ASGI scope.
         scheme, host, port, full_path = url
         path, _, query = full_path.partition(b"?")

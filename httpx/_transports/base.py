@@ -1,12 +1,12 @@
-import typing
 from types import TracebackType
+from typing import AsyncIterator, Iterator, List, Optional, Tuple, Type, TypeVar
 
-T = typing.TypeVar("T", bound="BaseTransport")
-A = typing.TypeVar("A", bound="AsyncBaseTransport")
+T = TypeVar("T", bound="BaseTransport")
+A = TypeVar("A", bound="AsyncBaseTransport")
 
 
 class SyncByteStream:
-    def __iter__(self) -> typing.Iterator[bytes]:
+    def __iter__(self) -> Iterator[bytes]:
         raise NotImplementedError(
             "The '__iter__' method must be implemented."
         )  # pragma: nocover
@@ -46,7 +46,7 @@ class SyncByteStream:
 
 
 class AsyncByteStream:
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+    async def __aiter__(self) -> AsyncIterator[bytes]:
         raise NotImplementedError(
             "The '__aiter__' method must be implemented."
         )  # pragma: nocover
@@ -68,7 +68,7 @@ class BaseTransport:
 
     def __exit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
+        exc_type: Type[BaseException] = None,
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
@@ -77,13 +77,11 @@ class BaseTransport:
     def handle_request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
+        url: Tuple[bytes, bytes, Optional[int], bytes],
+        headers: List[Tuple[bytes, bytes]],
         stream: SyncByteStream,
         extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
-    ]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], SyncByteStream, dict]:
         """
         Send a single HTTP request and return a response.
 
@@ -159,7 +157,7 @@ class AsyncBaseTransport:
 
     async def __aexit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
+        exc_type: Type[BaseException] = None,
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
@@ -168,13 +166,11 @@ class AsyncBaseTransport:
     async def handle_async_request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
+        url: Tuple[bytes, bytes, Optional[int], bytes],
+        headers: List[Tuple[bytes, bytes]],
         stream: AsyncByteStream,
         extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
-    ]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], AsyncByteStream, dict]:
         raise NotImplementedError(
             "The 'handle_async_request' method must be implemented."
         )  # pragma: nocover

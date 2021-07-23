@@ -3,7 +3,7 @@ import json
 import os
 import threading
 import time
-import typing
+from typing import Any
 
 import pytest
 import trustme
@@ -38,7 +38,7 @@ ENVIRONMENT_VARIABLES = {
         pytest.param("trio", marks=pytest.mark.trio),
     ]
 )
-def async_environment(request: typing.Any) -> str:
+def async_environment(request: Any) -> str:
     """
     Mark a test function to be run on both asyncio and trio.
 

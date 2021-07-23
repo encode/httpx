@@ -2,8 +2,16 @@ import hashlib
 import os
 import re
 import time
-import typing
 from base64 import b64encode
+from typing import (
+    AsyncGenerator,
+    Callable,
+    Dict,
+    Generator,
+    NamedTuple,
+    Optional,
+    Union,
+)
 from urllib.request import parse_http_list
 
 from ._exceptions import ProtocolError
@@ -27,7 +35,7 @@ class Auth:
     requires_request_body = False
     requires_response_body = False
 
-    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+    def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         """
         Execute the authentication flow.
 
@@ -51,9 +59,7 @@ class Auth:
         """
         yield request
 
-    def sync_auth_flow(
-        self, request: Request
-    ) -> typing.Generator[Request, Response, None]:
+    def sync_auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         """
         Execute the authentication flow synchronously.
 
@@ -78,7 +84,7 @@ class Auth:
 
     async def async_auth_flow(
         self, request: Request
-    ) -> typing.AsyncGenerator[Request, Response]:
+    ) -> AsyncGenerator[Request, Response]:
         """
         Execute the authentication flow asynchronously.
 
@@ -108,10 +114,10 @@ class FunctionAuth(Auth):
     that takes the request, and returns a new, modified request.
     """
 
-    def __init__(self, func: typing.Callable[[Request], Request]) -> None:
+    def __init__(self, func: Callable[[Request], Request]) -> None:
         self._func = func
 
-    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+    def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         yield self._func(request)
 
 
@@ -121,17 +127,15 @@ class BasicAuth(Auth):
     and uses HTTP Basic authentication.
     """
 
-    def __init__(
-        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
-    ):
+    def __init__(self, username: Union[str, bytes], password: Union[str, bytes]):
         self._auth_header = self._build_auth_header(username, password)
 
-    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+    def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         request.headers["Authorization"] = self._auth_header
         yield request
 
     def _build_auth_header(
-        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
+        self, username: Union[str, bytes], password: Union[str, bytes]
     ) -> str:
         userpass = b":".join((to_bytes(username), to_bytes(password)))
         token = b64encode(userpass).decode()
@@ -139,7 +143,7 @@ class BasicAuth(Auth):
 
 
 class DigestAuth(Auth):
-    _ALGORITHM_TO_HASH_FUNCTION: typing.Dict[str, typing.Callable] = {
+    _ALGORITHM_TO_HASH_FUNCTION: Dict[str, Callable] = {
         "MD5": hashlib.md5,
         "MD5-SESS": hashlib.md5,
         "SHA": hashlib.sha1,
@@ -151,12 +155,12 @@ class DigestAuth(Auth):
     }
 
     def __init__(
-        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
+        self, username: Union[str, bytes], password: Union[str, bytes]
     ) -> None:
         self._username = to_bytes(username)
         self._password = to_bytes(password)
 
-    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+    def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         response = yield request
 
         if response.status_code != 401 or "www-authenticate" not in response.headers:
@@ -189,7 +193,7 @@ class DigestAuth(Auth):
         # This method should only ever have been called with a Digest auth header.
         assert scheme.lower() == "digest"
 
-        header_dict: typing.Dict[str, str] = {}
+        header_dict: Dict[str, str] = {}
         for field in parse_http_list(fields):
             key, value = field.strip().split("=", 1)
             header_dict[key] = unquote(value)
@@ -262,7 +266,7 @@ class DigestAuth(Auth):
 
         return hashlib.sha1(s).hexdigest()[:16].encode()
 
-    def _get_header_value(self, header_fields: typing.Dict[str, bytes]) -> str:
+    def _get_header_value(self, header_fields: Dict[str, bytes]) -> str:
         NON_QUOTED_FIELDS = ("algorithm", "qop", "nc")
         QUOTED_TEMPLATE = '{}="{}"'
         NON_QUOTED_TEMPLATE = "{}={}"
@@ -280,9 +284,7 @@ class DigestAuth(Auth):
 
         return header_value
 
-    def _resolve_qop(
-        self, qop: typing.Optional[bytes], request: Request
-    ) -> typing.Optional[bytes]:
+    def _resolve_qop(self, qop: Optional[bytes], request: Request) -> Optional[bytes]:
         if qop is None:
             return None
         qops = re.split(b", ?", qop)
@@ -296,9 +298,9 @@ class DigestAuth(Auth):
         raise ProtocolError(message, request=request)
 
 
-class _DigestAuthChallenge(typing.NamedTuple):
+class _DigestAuthChallenge(NamedTuple):
     realm: bytes
     nonce: bytes
     algorithm: str
-    opaque: typing.Optional[bytes]
-    qop: typing.Optional[bytes]
+    opaque: Optional[bytes]
+    qop: Optional[bytes]

@@ -5,8 +5,8 @@ See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 """
 import codecs
 import io
-import typing
 import zlib
+from typing import List, Optional, Sequence
 
 from ._exceptions import DecodingError
 
@@ -138,7 +138,7 @@ class MultiDecoder(ContentDecoder):
     Handle the case where multiple encodings have been applied.
     """
 
-    def __init__(self, children: typing.Sequence[ContentDecoder]) -> None:
+    def __init__(self, children: Sequence[ContentDecoder]) -> None:
         """
         'children' should be a sequence of decoders in the order in which
         each was applied.
@@ -167,7 +167,7 @@ class ByteChunker:
         self._buffer = io.BytesIO()
         self._chunk_size = chunk_size
 
-    def decode(self, content: bytes) -> typing.List[bytes]:
+    def decode(self, content: bytes) -> List[bytes]:
         if self._chunk_size is None:
             return [content]
 
@@ -190,7 +190,7 @@ class ByteChunker:
         else:
             return []
 
-    def flush(self) -> typing.List[bytes]:
+    def flush(self) -> List[bytes]:
         value = self._buffer.getvalue()
         self._buffer.seek(0)
         self._buffer.truncate()
@@ -206,7 +206,7 @@ class TextChunker:
         self._buffer = io.StringIO()
         self._chunk_size = chunk_size
 
-    def decode(self, content: str) -> typing.List[str]:
+    def decode(self, content: str) -> List[str]:
         if self._chunk_size is None:
             return [content]
 
@@ -229,7 +229,7 @@ class TextChunker:
         else:
             return []
 
-    def flush(self) -> typing.List[str]:
+    def flush(self) -> List[str]:
         value = self._buffer.getvalue()
         self._buffer.seek(0)
         self._buffer.truncate()
@@ -241,8 +241,8 @@ class TextDecoder:
     Handles incrementally decoding bytes into text
     """
 
-    def __init__(self, encoding: typing.Optional[str] = None):
-        self.decoder: typing.Optional[codecs.IncrementalDecoder] = None
+    def __init__(self, encoding: Optional[str] = None):
+        self.decoder: Optional[codecs.IncrementalDecoder] = None
         if encoding is not None:
             self.decoder = codecs.getincrementaldecoder(encoding)(errors="strict")
 
@@ -301,7 +301,7 @@ class LineDecoder:
     def __init__(self) -> None:
         self.buffer = ""
 
-    def decode(self, text: str) -> typing.List[str]:
+    def decode(self, text: str) -> List[str]:
         lines = []
 
         if text and self.buffer and self.buffer[-1] == "\r":
@@ -344,7 +344,7 @@ class LineDecoder:
 
         return lines
 
-    def flush(self) -> typing.List[str]:
+    def flush(self) -> List[str]:
         if self.buffer.endswith("\r"):
             # Handle the case where we had a trailing '\r', which could have
             # been a '\r\n' pair.

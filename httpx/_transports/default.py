@@ -25,8 +25,8 @@ transport = httpx.HTTPTransport(uds="socket.uds")
 client = httpx.Client(transport=transport)
 """
 import contextlib
-import typing
 from types import TracebackType
+from typing import AsyncIterator, Iterator, List, Optional, Tuple, Type, TypeVar
 
 import httpcore
 
@@ -51,12 +51,12 @@ from .._exceptions import (
 from .._types import CertTypes, VerifyTypes
 from .base import AsyncBaseTransport, AsyncByteStream, BaseTransport, SyncByteStream
 
-T = typing.TypeVar("T", bound="HTTPTransport")
-A = typing.TypeVar("A", bound="AsyncHTTPTransport")
+T = TypeVar("T", bound="HTTPTransport")
+A = TypeVar("A", bound="AsyncHTTPTransport")
 
 
 @contextlib.contextmanager
-def map_httpcore_exceptions() -> typing.Iterator[None]:
+def map_httpcore_exceptions() -> Iterator[None]:
     try:
         yield
     except Exception as exc:
@@ -101,7 +101,7 @@ class ResponseStream(SyncByteStream):
     def __init__(self, httpcore_stream: httpcore.SyncByteStream):
         self._httpcore_stream = httpcore_stream
 
-    def __iter__(self) -> typing.Iterator[bytes]:
+    def __iter__(self) -> Iterator[bytes]:
         with map_httpcore_exceptions():
             for part in self._httpcore_stream:
                 yield part
@@ -160,7 +160,7 @@ class HTTPTransport(BaseTransport):
 
     def __exit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
+        exc_type: Type[BaseException] = None,
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
@@ -170,13 +170,11 @@ class HTTPTransport(BaseTransport):
     def handle_request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
+        url: Tuple[bytes, bytes, Optional[int], bytes],
+        headers: List[Tuple[bytes, bytes]],
         stream: SyncByteStream,
         extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
-    ]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], SyncByteStream, dict]:
         with map_httpcore_exceptions():
             status_code, headers, byte_stream, extensions = self._pool.handle_request(
                 method=method,
@@ -198,7 +196,7 @@ class AsyncResponseStream(AsyncByteStream):
     def __init__(self, httpcore_stream: httpcore.AsyncByteStream):
         self._httpcore_stream = httpcore_stream
 
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+    async def __aiter__(self) -> AsyncIterator[bytes]:
         with map_httpcore_exceptions():
             async for part in self._httpcore_stream:
                 yield part
@@ -257,7 +255,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
 
     async def __aexit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
+        exc_type: Type[BaseException] = None,
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
@@ -267,13 +265,11 @@ class AsyncHTTPTransport(AsyncBaseTransport):
     async def handle_async_request(
         self,
         method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
+        url: Tuple[bytes, bytes, Optional[int], bytes],
+        headers: List[Tuple[bytes, bytes]],
         stream: AsyncByteStream,
         extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
-    ]:
+    ) -> Tuple[int, List[Tuple[bytes, bytes]], AsyncByteStream, dict]:
         with map_httpcore_exceptions():
             (
                 status_code,

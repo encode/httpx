@@ -1,5 +1,5 @@
-import typing
 from datetime import timedelta
+from typing import List
 
 import pytest
 
@@ -214,7 +214,7 @@ async def test_context_managed_transport_and_mount():
     class Transport(httpx.AsyncBaseTransport):
         def __init__(self, name: str):
             self.name: str = name
-            self.events: typing.List[str] = []
+            self.events: List[str] = []
 
         async def aclose(self):
             # The base implementation of httpx.AsyncBaseTransport just

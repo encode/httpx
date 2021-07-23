@@ -1,7 +1,7 @@
 import binascii
 import os
-import typing
 from pathlib import Path
+from typing import AsyncIterator, Dict, Iterator, Mapping, Union
 
 from ._transports.base import AsyncByteStream, SyncByteStream
 from ._types import FileContent, FileTypes, RequestFiles
@@ -19,9 +19,7 @@ class DataField:
     A single form field item, within a multipart form field.
     """
 
-    def __init__(
-        self, name: str, value: typing.Union[str, bytes, int, float, None]
-    ) -> None:
+    def __init__(self, name: str, value: Union[str, bytes, int, float, None]) -> None:
         if not isinstance(name, str):
             raise TypeError(
                 f"Invalid type for name. Expected str, got {type(name)}: {name!r}"
@@ -31,7 +29,7 @@ class DataField:
                 f"Invalid type for value. Expected primitive type, got {type(value)}: {value!r}"
             )
         self.name = name
-        self.value: typing.Union[str, bytes] = (
+        self.value: Union[str, bytes] = (
             value if isinstance(value, bytes) else primitive_value_to_str(value)
         )
 
@@ -55,7 +53,7 @@ class DataField:
         data = self.render_data()
         return len(headers) + len(data)
 
-    def render(self) -> typing.Iterator[bytes]:
+    def render(self) -> Iterator[bytes]:
         yield self.render_headers()
         yield self.render_data()
 
@@ -119,7 +117,7 @@ class FileField:
 
         return self._headers
 
-    def render_data(self) -> typing.Iterator[bytes]:
+    def render_data(self) -> Iterator[bytes]:
         if isinstance(self.file, (str, bytes)):
             yield to_bytes(self.file)
             return
@@ -136,7 +134,7 @@ class FileField:
         for chunk in self.file:
             yield to_bytes(chunk)
 
-    def render(self) -> typing.Iterator[bytes]:
+    def render(self) -> Iterator[bytes]:
         yield self.render_headers()
         yield from self.render_data()
 
@@ -158,7 +156,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
 
     def _iter_fields(
         self, data: dict, files: RequestFiles
-    ) -> typing.Iterator[typing.Union[FileField, DataField]]:
+    ) -> Iterator[Union[FileField, DataField]]:
         for name, value in data.items():
             if isinstance(value, list):
                 for item in value:
@@ -166,18 +164,18 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
             else:
                 yield DataField(name=name, value=value)
 
-        file_items = files.items() if isinstance(files, typing.Mapping) else files
+        file_items = files.items() if isinstance(files, Mapping) else files
         for name, value in file_items:
             yield FileField(name=name, value=value)
 
-    def iter_chunks(self) -> typing.Iterator[bytes]:
+    def iter_chunks(self) -> Iterator[bytes]:
         for field in self.fields:
             yield b"--%s\r\n" % self.boundary
             yield from field.render()
             yield b"\r\n"
         yield b"--%s--\r\n" % self.boundary
 
-    def iter_chunks_lengths(self) -> typing.Iterator[int]:
+    def iter_chunks_lengths(self) -> Iterator[int]:
         boundary_length = len(self.boundary)
         # Follow closely what `.iter_chunks()` does.
         for field in self.fields:
@@ -191,15 +189,15 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
 
     # Content stream interface.
 
-    def get_headers(self) -> typing.Dict[str, str]:
+    def get_headers(self) -> Dict[str, str]:
         content_length = str(self.get_content_length())
         content_type = self.content_type
         return {"Content-Length": content_length, "Content-Type": content_type}
 
-    def __iter__(self) -> typing.Iterator[bytes]:
+    def __iter__(self) -> Iterator[bytes]:
         for chunk in self.iter_chunks():
             yield chunk
 
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+    async def __aiter__(self) -> AsyncIterator[bytes]:
         for chunk in self.iter_chunks():
             yield chunk

@@ -32,9 +32,9 @@ Our exception hierarchy:
   x RequestNotRead
 """
 import contextlib
-import typing
+from typing import TYPE_CHECKING, Iterator
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from ._models import Request, Response  # pragma: nocover
 
 
@@ -326,7 +326,7 @@ class RequestNotRead(StreamError):
 
 
 @contextlib.contextmanager
-def request_context(request: "Request" = None) -> typing.Iterator[None]:
+def request_context(request: "Request" = None) -> Iterator[None]:
     """
     A context manager that can be used to attach the given request context
     to any `RequestError` exceptions that are raised within the block.

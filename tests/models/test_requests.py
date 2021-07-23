@@ -1,5 +1,5 @@
 import pickle
-import typing
+from typing import AsyncIterable, Iterable
 
 import pytest
 
@@ -81,7 +81,7 @@ def test_read_and_stream_data():
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
     request.read()
     assert request.stream is not None
-    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, Iterable)
     content = b"".join([part for part in request.stream])
     assert content == request.content
 
@@ -93,7 +93,7 @@ async def test_aread_and_stream_data():
     request = httpx.Request("POST", "http://example.org", json={"test": 123})
     await request.aread()
     assert request.stream is not None
-    assert isinstance(request.stream, typing.AsyncIterable)
+    assert isinstance(request.stream, AsyncIterable)
     content = b"".join([part async for part in request.stream])
     assert content == request.content
 
