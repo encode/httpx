@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import sys
 import threading
 import time
 import typing
@@ -14,9 +15,15 @@ from cryptography.hazmat.primitives.serialization import (
     PrivateFormat,
     load_pem_private_key,
 )
-from typing_extensions import Literal
 from uvicorn.config import Config
 from uvicorn.main import Server
+
+# `typing.Literal` exists from Python 3.8 onwards.
+# For <=3.7 we require the `typing_extensions` package for a backported version.
+if sys.version_info >= (3, 8):  # pragma: no cover
+    from typing import Literal
+else:  # pragma: no cover
+    from typing_extensions import Literal
 
 from httpx import URL
 from tests.concurrency import sleep

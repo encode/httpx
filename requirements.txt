@@ -26,6 +26,7 @@ pytest-trio
 trio
 trio-typing
 trustme
+typing_extensions; python_version < "3.8"
 uvicorn
 
 attrs>=19.3.0  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665
