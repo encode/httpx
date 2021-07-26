@@ -66,7 +66,7 @@ class RawURL:
     def __str__(self) -> str:
         scheme = self.scheme.decode("ascii")
         host = self.host.decode("ascii")
-        port_str = "f:{self.port}" if self.port else ""
+        port_str = f":{self.port}" if self.port else ""
         target = self.target.decode("ascii")
         return f"{scheme}://{host}{port_str}{target}"
 
