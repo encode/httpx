@@ -3,7 +3,11 @@ import json
 import os
 import threading
 import time
-import typing
+
+try:
+    import typing
+except ImportError:
+    from typing_extensions import Literal
 
 import pytest
 import trustme
@@ -14,7 +18,6 @@ from cryptography.hazmat.primitives.serialization import (
     PrivateFormat,
     load_pem_private_key,
 )
-from typing_extensions import Literal
 from uvicorn.config import Config
 from uvicorn.main import Server
 
