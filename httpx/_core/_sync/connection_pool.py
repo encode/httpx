@@ -2,6 +2,7 @@ import ssl
 from types import TracebackType
 from typing import Iterator, List, Optional, Type
 
+from ..._exceptions import UnsupportedProtocol
 from ..backends.base import NetworkBackend
 from ..backends.sync import SyncBackend
 from ..base import (
@@ -128,6 +129,16 @@ class ConnectionPool:
         """
         Send an HTTP request, and return an HTTP response.
         """
+        scheme = request.url.scheme.decode()
+        if scheme == "":
+            raise UnsupportedProtocol(
+                f"The request to '{request.url}' is missing an 'http://' or 'https://' protocol."
+            )
+        if scheme not in ("http", "https"):
+            raise UnsupportedProtocol(
+                f"The request to '{request.url}' has an unsupported protocol '{scheme}://'."
+            )
+
         origin = self.get_origin(request)
 
         while True:
@@ -181,7 +192,7 @@ class ConnectionPool:
                 #   that ended up resulting in an HTTP/1.1 connection.
                 # * The request was to an HTTP/2 connection, but the stream ID
                 #   space became exhausted, or a global error occured.
-                continue
+                continue  # pragma: nocover
             except BaseException as exc:
                 # If an exception occurs we check if we can release the
                 # the connection to the pool.
@@ -217,7 +228,7 @@ class ConnectionPool:
         # exceeding the max_keepalive_connections.
         while len(self._pool) > self._max_keepalive_connections:
             if not self._close_one_idle_connection():
-                break
+                break  # pragma: nocover
 
     def close(self) -> None:
         with self._pool_lock:

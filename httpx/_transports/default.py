@@ -30,6 +30,7 @@ from types import TracebackType
 
 import httpcore
 
+from .. import _core as core
 from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._exceptions import (
     CloseError,
@@ -97,18 +98,23 @@ HTTPCORE_EXC_MAP = {
 }
 
 
-class ResponseStream(SyncByteStream):
-    def __init__(self, httpcore_stream: httpcore.SyncByteStream):
-        self._httpcore_stream = httpcore_stream
+class RequestStream(core.ByteStream):
+    def __init__(self, model_stream: SyncByteStream):
+        self._model_stream = model_stream
 
     def __iter__(self) -> typing.Iterator[bytes]:
-        with map_httpcore_exceptions():
-            for part in self._httpcore_stream:
-                yield part
+        yield from self._model_stream
+
+
+class ResponseStream(SyncByteStream):
+    def __init__(self, core_stream: core.ByteStream):
+        self._core_stream = core_stream
+
+    def __iter__(self) -> typing.Iterator[bytes]:
+        yield from self._core_stream
 
     def close(self) -> None:
-        with map_httpcore_exceptions():
-            self._httpcore_stream.close()
+        self._core_stream.close()
 
 
 class HTTPTransport(BaseTransport):
@@ -128,31 +134,37 @@ class HTTPTransport(BaseTransport):
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
-        if proxy is None:
-            self._pool = httpcore.SyncConnectionPool(
-                ssl_context=ssl_context,
-                max_connections=limits.max_connections,
-                max_keepalive_connections=limits.max_keepalive_connections,
-                keepalive_expiry=limits.keepalive_expiry,
-                http1=http1,
-                http2=http2,
-                uds=uds,
-                local_address=local_address,
-                retries=retries,
-                backend=backend,
-            )
-        else:
-            self._pool = httpcore.SyncHTTPProxy(
-                proxy_url=proxy.url.raw,
-                proxy_headers=proxy.headers.raw,
-                proxy_mode=proxy.mode,
-                ssl_context=ssl_context,
-                max_connections=limits.max_connections,
-                max_keepalive_connections=limits.max_keepalive_connections,
-                keepalive_expiry=limits.keepalive_expiry,
-                http2=http2,
-                backend=backend,
-            )
+        self._pool = core.ConnectionPool(
+            ssl_context=ssl_context,
+            max_connections=limits.max_connections or 1000,
+            max_keepalive_connections=limits.max_keepalive_connections,
+            keepalive_expiry=limits.keepalive_expiry,
+        )
+        # if proxy is None:
+        #     self._pool = httpcore.SyncConnectionPool(
+        #         ssl_context=ssl_context,
+        #         max_connections=limits.max_connections,
+        #         max_keepalive_connections=limits.max_keepalive_connections,
+        #         keepalive_expiry=limits.keepalive_expiry,
+        #         http1=http1,
+        #         http2=http2,
+        #         uds=uds,
+        #         local_address=local_address,
+        #         retries=retries,
+        #         backend=backend,
+        #     )
+        # else:
+        #     self._pool = httpcore.SyncHTTPProxy(
+        #         proxy_url=proxy.url.raw,
+        #         proxy_headers=proxy.headers.raw,
+        #         proxy_mode=proxy.mode,
+        #         ssl_context=ssl_context,
+        #         max_connections=limits.max_connections,
+        #         max_keepalive_connections=limits.max_keepalive_connections,
+        #         keepalive_expiry=limits.keepalive_expiry,
+        #         http2=http2,
+        #         backend=backend,
+        #     )
 
     def __enter__(self: T) -> T:  # Use generics for subclass support.
         self._pool.__enter__()
@@ -164,8 +176,8 @@ class HTTPTransport(BaseTransport):
         exc_value: BaseException = None,
         traceback: TracebackType = None,
     ) -> None:
-        with map_httpcore_exceptions():
-            self._pool.__exit__(exc_type, exc_value, traceback)
+        # with map_httpcore_exceptions():
+        self._pool.__exit__(exc_type, exc_value, traceback)
 
     def handle_request(
         self,
@@ -177,18 +189,17 @@ class HTTPTransport(BaseTransport):
     ) -> typing.Tuple[
         int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
     ]:
-        with map_httpcore_exceptions():
-            status_code, headers, byte_stream, extensions = self._pool.handle_request(
-                method=method,
-                url=url,
-                headers=headers,
-                stream=httpcore.IteratorByteStream(iter(stream)),
-                extensions=extensions,
-            )
+        request = core.RawRequest(
+            method=method,
+            url=core.RawURL(*url),
+            headers=headers,
+            stream=RequestStream(stream),
+        )
 
-        stream = ResponseStream(byte_stream)
+        response = self._pool.handle_request(request)
+        stream = ResponseStream(response.sync_stream)
 
-        return status_code, headers, stream, extensions
+        return response.status, response.headers, stream, {}
 
     def close(self) -> None:
         self._pool.close()

@@ -30,38 +30,39 @@ def test_httpcore_exception_mapping(server) -> None:
     """
 
     def connect_failed(*args, **kwargs):
-        raise httpcore.ConnectError()
+        raise httpx.ConnectError("connect error")
 
-    class TimeoutStream:
+    class TimeoutStream(httpx._core.ByteStream):
         def __iter__(self):
-            raise httpcore.ReadTimeout()
+            raise httpx.ReadTimeout("read timeout")
 
         def close(self):
             pass
 
-    class CloseFailedStream:
+    class CloseFailedStream(httpx._core.ByteStream):
         def __iter__(self):
             yield b""
 
         def close(self):
-            raise httpcore.CloseError()
+            raise httpx.CloseError("close error")
 
     with mock.patch(
-        "httpcore.SyncConnectionPool.handle_request", side_effect=connect_failed
+        "httpx._core._sync.connection_pool.ConnectionPool.handle_request",
+        side_effect=connect_failed,
     ):
         with pytest.raises(httpx.ConnectError):
             httpx.get(server.url)
 
     with mock.patch(
-        "httpcore.SyncConnectionPool.handle_request",
-        return_value=(200, [], TimeoutStream(), {}),
+        "httpx._core._sync.connection_pool.ConnectionPool.handle_request",
+        return_value=httpx._core.RawResponse(200, [], TimeoutStream()),
     ):
         with pytest.raises(httpx.ReadTimeout):
             httpx.get(server.url)
 
     with mock.patch(
-        "httpcore.SyncConnectionPool.handle_request",
-        return_value=(200, [], CloseFailedStream(), {}),
+        "httpx._core._sync.connection_pool.ConnectionPool.handle_request",
+        return_value=httpx._core.RawResponse(200, [], CloseFailedStream()),
     ):
         with pytest.raises(httpx.CloseError):
             httpx.get(server.url)
