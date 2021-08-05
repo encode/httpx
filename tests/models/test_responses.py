@@ -735,7 +735,7 @@ def test_json_without_specified_encoding_decode_error():
     content = json.dumps(data).encode("utf-32-be")
     headers = {"Content-Type": "application/json"}
     # force incorrect guess from `guess_json_utf` to trigger error
-    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32"):
+    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32-le"):
         response = httpx.Response(
             200,
             content=content,
@@ -750,7 +750,7 @@ def test_json_without_specified_encoding_value_error():
     content = json.dumps(data).encode("utf-32-be")
     headers = {"Content-Type": "application/json"}
     # force incorrect guess from `guess_json_utf` to trigger error
-    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32"):
+    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32-le"):
         response = httpx.Response(200, content=content, headers=headers)
         with pytest.raises(json.decoder.JSONDecodeError):
             response.json()
