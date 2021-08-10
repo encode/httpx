@@ -1,6 +1,5 @@
 import json
 import pickle
-from unittest import mock
 
 import brotlicffi
 import pytest
@@ -720,9 +719,22 @@ def test_json_with_options():
     assert response.json(parse_int=str)["amount"] == "1"
 
 
-def test_json_without_specified_encoding():
+@pytest.mark.parametrize(
+    "encoding",
+    [
+        "utf-8",
+        "utf-8-sig",
+        "utf-16",
+        "utf-16-be",
+        "utf-16-le",
+        "utf-32",
+        "utf-32-be",
+        "utf-32-le",
+    ],
+)
+def test_json_without_specified_charset(encoding):
     data = {"greeting": "hello", "recipient": "world"}
-    content = json.dumps(data).encode("utf-32-be")
+    content = json.dumps(data).encode(encoding)
     headers = {"Content-Type": "application/json"}
     response = httpx.Response(
         200,
@@ -732,30 +744,29 @@ def test_json_without_specified_encoding():
     assert response.json() == data
 
 
-def test_json_without_specified_encoding_decode_error():
+@pytest.mark.parametrize(
+    "encoding",
+    [
+        "utf-8",
+        "utf-8-sig",
+        "utf-16",
+        "utf-16-be",
+        "utf-16-le",
+        "utf-32",
+        "utf-32-be",
+        "utf-32-le",
+    ],
+)
+def test_json_with_specified_charset(encoding):
     data = {"greeting": "hello", "recipient": "world"}
-    content = json.dumps(data).encode("utf-32-be")
-    headers = {"Content-Type": "application/json"}
-    # force incorrect guess from `guess_json_utf` to trigger error
-    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32-le"):
-        response = httpx.Response(
-            200,
-            content=content,
-            headers=headers,
-        )
-        with pytest.raises(json.decoder.JSONDecodeError):
-            response.json()
-
-
-def test_json_without_specified_encoding_value_error():
-    data = {"greeting": "hello", "recipient": "world"}
-    content = json.dumps(data).encode("utf-32-be")
-    headers = {"Content-Type": "application/json"}
-    # force incorrect guess from `guess_json_utf` to trigger error
-    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32-le"):
-        response = httpx.Response(200, content=content, headers=headers)
-        with pytest.raises(json.decoder.JSONDecodeError):
-            response.json()
+    content = json.dumps(data).encode(encoding)
+    headers = {"Content-Type": f"application/json; charset={encoding}"}
+    response = httpx.Response(
+        200,
+        content=content,
+        headers=headers,
+    )
+    assert response.json() == data
 
 
 @pytest.mark.parametrize(

@@ -248,8 +248,6 @@ class TextDecoder:
         return self.decoder.decode(data)
 
     def flush(self) -> str:
-        if self.decoder is None:
-            return ""
         return self.decoder.decode(b"", True)
 
 

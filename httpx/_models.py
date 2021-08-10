@@ -1361,14 +1361,13 @@ class Response:
         """
         Return the encoding, as detemined by `charset_normalizer`.
         """
-        if hasattr(self, "_content"):
-            if len(self.content) < 32:
-                # charset_normalizer will issue warnings if we run it with
-                # fewer bytes than this cutoff.
-                return None
-            match = charset_normalizer.from_bytes(self.content).best()
-            return None if match is None else match.encoding
-        return None
+        content = getattr(self, "_content", b"")
+        if len(content) < 32:
+            # charset_normalizer will issue warnings if we run it with
+            # fewer bytes than this cutoff.
+            return None
+        match = charset_normalizer.from_bytes(self.content).best()
+        return None if match is None else match.encoding
 
     def _get_content_decoder(self) -> ContentDecoder:
         """
@@ -1430,10 +1429,7 @@ class Response:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
-                try:
-                    return jsonlib.loads(self.content.decode(encoding), **kwargs)
-                except UnicodeDecodeError:
-                    pass
+                return jsonlib.loads(self.content.decode(encoding), **kwargs)
         return jsonlib.loads(self.text, **kwargs)
 
     @property
