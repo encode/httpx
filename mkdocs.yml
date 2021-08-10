@@ -4,6 +4,7 @@ site_url: https://www.python-httpx.org/
 
 theme:
     name: 'material'
+    custom_dir: docs/overrides
 
 repo_name: encode/httpx
 repo_url: https://github.com/encode/httpx/
