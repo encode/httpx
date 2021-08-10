@@ -197,15 +197,16 @@ def test_response_no_charset_with_iso_8859_1_content():
     A response with ISO 8859-1 encoded content should decode correctly,
     even with no charset specified.
     """
-    content = "Accented: Österreich".encode("iso-8859-1")
+    content = "Accented: Österreich abcdefghijklmnopqrstuzwxyz".encode("iso-8859-1")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
         200,
         content=content,
         headers=headers,
     )
-    assert response.text == "Accented: Österreich"
-    assert response.encoding is None
+    assert response.text == "Accented: Österreich abcdefghijklmnopqrstuzwxyz"
+    assert response.charset_encoding is None
+    assert response.apparent_encoding is not None
 
 
 def test_response_no_charset_with_cp_1252_content():
@@ -213,15 +214,16 @@ def test_response_no_charset_with_cp_1252_content():
     A response with Windows 1252 encoded content should decode correctly,
     even with no charset specified.
     """
-    content = "Euro Currency: €".encode("cp1252")
+    content = "Euro Currency: € abcdefghijklmnopqrstuzwxyz".encode("cp1252")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
         200,
         content=content,
         headers=headers,
     )
-    assert response.text == "Euro Currency: €"
-    assert response.encoding is None
+    assert response.text == "Euro Currency: € abcdefghijklmnopqrstuzwxyz"
+    assert response.charset_encoding is None
+    assert response.apparent_encoding is not None
 
 
 def test_response_non_text_encoding():

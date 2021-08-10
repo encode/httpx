@@ -8,6 +8,7 @@ from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qs, quote, unquote, urlencode
 
+import charset_normalizer
 import idna
 import rfc3986
 import rfc3986.exceptions
@@ -1314,22 +1315,26 @@ class Response:
             if not content:
                 self._text = ""
             else:
-                decoder = TextDecoder(encoding=self.encoding)
+                decoder = TextDecoder(encoding=self.encoding or "utf-8")
                 self._text = "".join([decoder.decode(self.content), decoder.flush()])
         return self._text
 
     @property
     def encoding(self) -> typing.Optional[str]:
         """
-        Return the encoding, which may have been set explicitly, or may have
-        been specified by the Content-Type header.
+        Return an encoding to use for decoding the byte content into text.
+        The priority for determining this is given by...
+
+        * `.encoding = <>` has been set explicitly.
+        * The encoding as specified by the charset parameter in the Content-Type header.
+        * The encoding as determined by `charset_normalizer`.
+        * UTF-8.
         """
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
-                self._encoding = None
-            else:
-                self._encoding = encoding
+                encoding = self.apparent_encoding
+            self._encoding = encoding
         return self._encoding
 
     @encoding.setter
@@ -1350,6 +1355,20 @@ class Response:
             return None
 
         return params["charset"].strip("'\"")
+
+    @property
+    def apparent_encoding(self) -> typing.Optional[str]:
+        """
+        Return the encoding, as detemined by `charset_normalizer`.
+        """
+        if hasattr(self, "_content"):
+            if len(self.content) < 32:
+                # charset_normalizer will issue warnings if we run it with
+                # fewer bytes than this cutoff.
+                return None
+            match = charset_normalizer.from_bytes(self.content).best()
+            return None if match is None else match.encoding
+        return None
 
     def _get_content_decoder(self) -> ContentDecoder:
         """
@@ -1495,7 +1514,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.encoding)
+        decoder = TextDecoder(encoding=self.encoding or "utf-8")
         chunker = TextChunker(chunk_size=chunk_size)
         with request_context(request=self._request):
             for byte_content in self.iter_bytes():
@@ -1593,7 +1612,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.encoding)
+        decoder = TextDecoder(encoding=self.encoding or "utf-8")
         chunker = TextChunker(chunk_size=chunk_size)
         with request_context(request=self._request):
             async for byte_content in self.aiter_bytes():

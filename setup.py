@@ -57,6 +57,7 @@ setup(
     zip_safe=False,
     install_requires=[
         "certifi",
+        "charset_normalizer",
         "sniffio",
         "rfc3986[idna2008]>=1.3,<2",
         "httpcore>=0.13.3,<0.14.0",
