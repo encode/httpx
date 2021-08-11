@@ -23,9 +23,11 @@ nav:
     - Third Party Packages: 'third_party_packages.md'
     - Contributing: 'contributing.md'
     - Code of Conduct: 'code_of_conduct.md'
+    - Funding: 'funding.md'
 
 markdown_extensions:
   - admonition
+  - attr_list
   - codehilite:
       css_class: highlight
   - mkautodoc
