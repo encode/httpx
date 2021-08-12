@@ -10,13 +10,17 @@ HTTPX is a fully featured HTTP client for Python, which offers both HTTP/1.1 and
 * A fully type annotated interface, with 100% code coverage.
 * Development & maintenance that's backed by a sustainable and transparent business model.
 
-HTTPX is the *only Python HTTP client with HTTP/1.1 and HTTP/2 support*, as well as being the *only client providing both sync and async support*. We'd like to continue pushing the project forward, and we're asking for sponsors to help us in building the foundation of modern HTTP stack for Python.
+HTTPX is the **only** Python HTTP client with **HTTP/1.1 and HTTP/2** support, as well as being the only client providing both **sync and async** support. We'd like to continue pushing the project forward, and we're asking for sponsors to help us in building the foundation of modern HTTP stack for Python.
+
+We've spent a long time finessing the API for the project, and we're now happy to release a 1.0 version, and provide a standard SEMVER policy on future API updates.
 
 ## Sponsorship plans
 
-We offer a number of sponsorship plans
+We offer a number of sponsorship plans for businesses looking to support our collaborative development model.
 
 [Sign up as a sponsor](https://github.com/sponsors/encode){ .md-button }
+
+*Currently sponsorships are displayed primarily on the [Django REST framework](https://www.django-rest-framework.org) site, but we're looking at rolling these out across our other projects. Get in touch with your requirements, and we'll aim to work with you to ensure your sponsorship is properly advocated.*
 
 ## Roadmap
 
