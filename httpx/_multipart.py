@@ -1,4 +1,5 @@
 import binascii
+import io
 import os
 import typing
 from pathlib import Path
@@ -80,6 +81,9 @@ class FileField:
             filename = Path(str(getattr(value, "name", "upload"))).name
             fileobj = value
             content_type = guess_content_type(filename)
+
+        if isinstance(fileobj, str) or isinstance(fileobj, io.StringIO):
+            raise TypeError(f"Expected bytes or bytes-like object got: {type(fileobj)}")
 
         self.filename = filename
         self.file = fileobj
