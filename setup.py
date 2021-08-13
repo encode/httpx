@@ -63,7 +63,7 @@ setup(
         "async_generator; python_version < '3.7'"
     ],
     extras_require={
-        "http2": "httpcore[http2]",
+        "http2": "h2>=3,<5",
         "brotli": "brotlicffi==1.*",
     },
     classifiers=[
