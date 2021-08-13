@@ -119,6 +119,7 @@ The HTTPX project relies on these excellent libraries:
   * `h11` - HTTP/1.1 support.
   * `h2` - HTTP/2 support. *(Optional)*
 * `certifi` - SSL certificates.
+* `charset_normalizer` - Charset auto-detection.
 * `rfc3986` - URL parsing & normalization.
   * `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.
