@@ -19,7 +19,8 @@ flake8-bugbear
 flake8-pie==0.5.*
 isort==5.*
 mypy
-pytest==5.*
+types-certifi
+pytest==6.*
 pytest-asyncio
 pytest-trio
 trio
