@@ -1,9 +1,9 @@
 import zlib
 
-import brotlicffi
 import pytest
 
 import httpx
+from httpx._compat import brotli
 from httpx._decoders import (
     BrotliDecoder,
     ByteChunker,
@@ -69,7 +69,7 @@ def test_gzip():
 
 def test_brotli():
     body = b"test 123"
-    compressed_body = brotlicffi.compress(body)
+    compressed_body = brotli.compress(body)
 
     headers = [(b"Content-Encoding", b"br")]
     response = httpx.Response(
@@ -102,7 +102,7 @@ def test_multi():
 
 def test_multi_with_identity():
     body = b"test 123"
-    compressed_body = brotlicffi.compress(body)
+    compressed_body = brotli.compress(body)
 
     headers = [(b"Content-Encoding", b"br, identity")]
     response = httpx.Response(
@@ -165,7 +165,7 @@ def test_decoders_empty_cases(decoder):
 def test_decoding_errors(header_value):
     headers = [(b"Content-Encoding", header_value)]
     body = b"test 123"
-    compressed_body = brotlicffi.compress(body)[3:]
+    compressed_body = brotli.compress(body)[3:]
     with pytest.raises(httpx.DecodingError):
         request = httpx.Request("GET", "https://example.org")
         httpx.Response(200, headers=headers, content=compressed_body, request=request)

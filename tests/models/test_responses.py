@@ -1,10 +1,10 @@
 import json
 import pickle
 
-import brotlicffi
 import pytest
 
 import httpx
+from httpx._compat import brotli
 
 
 class StreamingBody:
@@ -798,7 +798,7 @@ def test_link_headers(headers, expected):
 def test_decode_error_with_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
     body = b"test 123"
-    compressed_body = brotlicffi.compress(body)[3:]
+    compressed_body = brotli.compress(body)[3:]
     with pytest.raises(httpx.DecodingError):
         httpx.Response(
             200,
@@ -819,7 +819,7 @@ def test_decode_error_with_request(header_value):
 def test_value_error_without_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
     body = b"test 123"
-    compressed_body = brotlicffi.compress(body)[3:]
+    compressed_body = brotli.compress(body)[3:]
     with pytest.raises(httpx.DecodingError):
         httpx.Response(200, headers=headers, content=compressed_body)
 
