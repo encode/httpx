@@ -11,7 +11,7 @@ if [ -z $GITHUB_ACTIONS ]; then
     scripts/check
 fi
 
-${PREFIX}coverage run -m pytest
+${PREFIX}coverage run -m pytest "$@"
 
 if [ -z $GITHUB_ACTIONS ]; then
     scripts/coverage
