@@ -139,7 +139,7 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
 
 
 def test_multipart_encode_unicode_file_contents() -> None:
-    files = {"file": ("name.txt", "<únicode string>")}
+    files = {"file": ("name.txt", b"<bytes content>")}
 
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
@@ -150,7 +150,7 @@ def test_multipart_encode_unicode_file_contents() -> None:
         content = (
             '--{0}\r\nContent-Disposition: form-data; name="file";'
             ' filename="name.txt"\r\n'
-            "Content-Type: text/plain\r\n\r\n<únicode string>\r\n"
+            "Content-Type: text/plain\r\n\r\n<bytes content>\r\n"
             "--{0}--\r\n"
             "".format(boundary).encode("utf-8")
         )
@@ -212,14 +212,8 @@ def test_multipart_encode_files_guesses_correct_content_type(
         assert content == b"".join(stream)
 
 
-@pytest.mark.parametrize(
-    "value, output",
-    ((b"<bytes content>", "<bytes content>"), ("<string content>", "<string content>")),
-)
-def test_multipart_encode_files_allows_bytes_or_str_content(
-    value: typing.Union[str, bytes], output: str
-) -> None:
-    files = {"file": ("test.txt", value, "text/plain")}
+def test_multipart_encode_files_allows_bytes_content() -> None:
+    files = {"file": ("test.txt", b"<bytes content>", "text/plain")}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
         boundary = os.urandom(16).hex()
 
@@ -229,15 +223,31 @@ def test_multipart_encode_files_allows_bytes_or_str_content(
         content = (
             '--{0}\r\nContent-Disposition: form-data; name="file"; '
             'filename="test.txt"\r\n'
-            "Content-Type: text/plain\r\n\r\n{1}\r\n"
+            "Content-Type: text/plain\r\n\r\n<bytes content>\r\n"
             "--{0}--\r\n"
-            "".format(boundary, output).encode("ascii")
+            "".format(boundary).encode("ascii")
         )
         assert headers == {
             "Content-Type": f"multipart/form-data; boundary={boundary}",
             "Content-Length": str(len(content)),
         }
         assert content == b"".join(stream)
+
+
+def test_multipart_encode_files_raises_exception_with_str_content() -> None:
+    files = {"file": ("test.txt", "<bytes content>", "text/plain")}
+    with mock.patch("os.urandom", return_value=os.urandom(16)):
+
+        with pytest.raises(TypeError):
+            encode_request(data={}, files=files)  # type: ignore
+
+
+def test_multipart_encode_files_raises_exception_with_StringIO_content() -> None:
+    files = {"file": ("test.txt", io.StringIO("content"), "text/plain")}
+    with mock.patch("os.urandom", return_value=os.urandom(16)):
+
+        with pytest.raises(TypeError):
+            encode_request(data={}, files=files)  # type: ignore
 
 
 def test_multipart_encode_non_seekable_filelike() -> None:
