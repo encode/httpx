@@ -71,10 +71,12 @@ $ scripts/test
     The test suite spawns testing servers on ports **8000** and **8001**.
     Make sure these are not in use, so the tests can run properly.
 
-You can run a single test script like this:
+Any additional arguments will be passed to `pytest`. See the [pytest documentation](https://docs.pytest.org/en/latest/how-to/usage.html) for more information.
+
+For example, to run a single test script:
 
 ```shell
-$ scripts/test -- tests/test_multipart.py
+$ scripts/test tests/test_multipart.py
 ```
 
 To run the code auto-formatting:

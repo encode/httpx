@@ -8,12 +8,8 @@ import io
 import typing
 import zlib
 
+from ._compat import brotli
 from ._exceptions import DecodingError
-
-try:
-    import brotlicffi
-except ImportError:  # pragma: nocover
-    brotlicffi = None
 
 
 class ContentDecoder:
@@ -99,18 +95,20 @@ class BrotliDecoder(ContentDecoder):
     """
 
     def __init__(self) -> None:
-        if brotlicffi is None:  # pragma: nocover
+        if brotli is None:  # pragma: nocover
             raise ImportError(
-                "Using 'BrotliDecoder', but the 'brotlicffi' library "
-                "is not installed."
+                "Using 'BrotliDecoder', but neither of the 'brotlicffi' or 'brotli' "
+                "packages have been installed. "
                 "Make sure to install httpx using `pip install httpx[brotli]`."
             ) from None
 
-        self.decompressor = brotlicffi.Decompressor()
+        self.decompressor = brotli.Decompressor()
         self.seen_data = False
         if hasattr(self.decompressor, "decompress"):
-            self._decompress = self.decompressor.decompress
+            # The 'brotlicffi' package.
+            self._decompress = self.decompressor.decompress  # pragma: nocover
         else:
+            # The 'brotli' package.
             self._decompress = self.decompressor.process  # pragma: nocover
 
     def decode(self, data: bytes) -> bytes:
@@ -118,8 +116,8 @@ class BrotliDecoder(ContentDecoder):
             return b""
         self.seen_data = True
         try:
-            return self.decompressor.decompress(data)
-        except brotlicffi.Error as exc:
+            return self._decompress(data)
+        except brotli.error as exc:
             raise DecodingError(str(exc)) from exc
 
     def flush(self) -> bytes:
@@ -127,9 +125,14 @@ class BrotliDecoder(ContentDecoder):
             return b""
         try:
             if hasattr(self.decompressor, "finish"):
-                self.decompressor.finish()
+                # Only available in the 'brotlicffi' package.
+
+                # As the decompressor decompresses eagerly, this
+                # will never actually emit any data. However, it will potentially throw
+                # errors if a truncated or damaged data stream has been used.
+                self.decompressor.finish()  # pragma: nocover
             return b""
-        except brotlicffi.Error as exc:  # pragma: nocover
+        except brotli.error as exc:  # pragma: nocover
             raise DecodingError(str(exc)) from exc
 
 
@@ -241,52 +244,13 @@ class TextDecoder:
     Handles incrementally decoding bytes into text
     """
 
-    def __init__(self, encoding: typing.Optional[str] = None):
-        self.decoder: typing.Optional[codecs.IncrementalDecoder] = None
-        if encoding is not None:
-            self.decoder = codecs.getincrementaldecoder(encoding)(errors="strict")
+    def __init__(self, encoding: str = "utf-8"):
+        self.decoder = codecs.getincrementaldecoder(encoding)(errors="replace")
 
     def decode(self, data: bytes) -> str:
-        """
-        If an encoding is explicitly specified, then we use that.
-        Otherwise our strategy is to attempt UTF-8, and fallback to Windows 1252.
-
-        Note that UTF-8 is a strict superset of ascii, and Windows 1252 is a
-        superset of the non-control characters in iso-8859-1, so we essentially
-        end up supporting any of ascii, utf-8, iso-8859-1, cp1252.
-
-        Given that UTF-8 is now by *far* the most widely used encoding, this
-        should be a pretty robust strategy for cases where a charset has
-        not been explicitly included.
-
-        Useful stats on the prevalence of different charsets in the wild...
-
-        * https://w3techs.com/technologies/overview/character_encoding
-        * https://w3techs.com/technologies/history_overview/character_encoding
-
-        The HTML5 spec also has some useful guidelines, suggesting defaults of
-        either UTF-8 or Windows 1252 in most cases...
-
-        * https://dev.w3.org/html5/spec-LC/Overview.html
-        """
-        if self.decoder is None:
-            # If this is the first decode pass then we need to determine which
-            # encoding to use by attempting UTF-8 and raising any decode errors.
-            attempt_utf_8 = codecs.getincrementaldecoder("utf-8")(errors="strict")
-            try:
-                attempt_utf_8.decode(data)
-            except UnicodeDecodeError:
-                # Could not decode as UTF-8. Use Windows 1252.
-                self.decoder = codecs.getincrementaldecoder("cp1252")(errors="replace")
-            else:
-                # Can decode as UTF-8. Use UTF-8 with lenient error settings.
-                self.decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
-
         return self.decoder.decode(data)
 
     def flush(self) -> str:
-        if self.decoder is None:
-            return ""
         return self.decoder.decode(b"", True)
 
 
@@ -365,5 +329,5 @@ SUPPORTED_DECODERS = {
 }
 
 
-if brotlicffi is None:
+if brotli is None:
     SUPPORTED_DECODERS.pop("br")  # pragma: nocover

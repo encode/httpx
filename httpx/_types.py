@@ -79,7 +79,7 @@ ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 
 RequestData = dict
 
-FileContent = Union[IO[str], IO[bytes], str, bytes]
+FileContent = Union[IO[bytes], bytes]
 FileTypes = Union[
     # file (or text)
     FileContent,
