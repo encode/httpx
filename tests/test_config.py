@@ -200,33 +200,26 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
 
 
 @pytest.mark.parametrize(
-    "url,expected_url,expected_headers,expected_mode",
+    "url,expected_url,expected_headers",
     [
-        ("https://example.com", "https://example.com", {}, "DEFAULT"),
+        ("https://example.com", "https://example.com", {}),
         (
             "https://user:pass@example.com",
             "https://example.com",
             {"proxy-authorization": "Basic dXNlcjpwYXNz"},
-            "DEFAULT",
         ),
     ],
 )
-def test_proxy_from_url(url, expected_url, expected_headers, expected_mode):
+def test_proxy_from_url(url, expected_url, expected_headers):
     proxy = httpx.Proxy(url)
 
     assert str(proxy.url) == expected_url
     assert dict(proxy.headers) == expected_headers
-    assert proxy.mode == expected_mode
-    assert repr(proxy) == "Proxy(url='{}', headers={}, mode='{}')".format(
-        expected_url, str(expected_headers), expected_mode
+    assert repr(proxy) == "Proxy(url='{}', headers={})".format(
+        expected_url, str(expected_headers)
     )
 
 
 def test_invalid_proxy_scheme():
     with pytest.raises(ValueError):
         httpx.Proxy("invalid://example.com")
-
-
-def test_invalid_proxy_mode():
-    with pytest.raises(ValueError):
-        httpx.Proxy("https://example.com", mode="INVALID")

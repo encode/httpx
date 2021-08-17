@@ -51,7 +51,7 @@ class WSGITransport(BaseTransport):
     * `raise_app_exceptions` - Boolean indicating if exceptions in the application
        should be raised. Default to `True`. Can be set to `False` for use cases
        such as testing the content of a client 500 response.
-    * `script_name` - The root path on which the ASGI application should be mounted.
+    * `script_name` - The root path on which the WSGI application should be mounted.
     * `remote_addr` - A string indicating the client IP of incoming requests.
     ```
     """

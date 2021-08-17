@@ -119,11 +119,12 @@ The HTTPX project relies on these excellent libraries:
   * `h11` - HTTP/1.1 support.
   * `h2` - HTTP/2 support. *(Optional)*
 * `certifi` - SSL certificates.
+* `charset_normalizer` - Charset auto-detection.
 * `rfc3986` - URL parsing & normalization.
   * `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.
 * `async_generator` - Backport support for `contextlib.asynccontextmanager`. *(Only required for Python 3.6)*
-* `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional)*
+* `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
