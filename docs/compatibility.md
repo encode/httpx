@@ -128,7 +128,7 @@ client = httpx.Client(**kwargs)
 
 There is no notion of [prepared requests](https://requests.readthedocs.io/en/stable/user/advanced/#prepared-requests) in HTTPX. If you need to customize request instantiation, see [Request instances](advanced.md#request-instances).
 
-Besides, `httpx.Request()` does not support the `auth`, `timeout`, `allow_redirects`, `proxies`, `verify` and `cert` parameters. However these are available in `httpx.request`, `httpx.get`, `httpx.post` etc., as well as on [`Client` instances](advanced.md#client-instances).
+Besides, `httpx.Request()` does not support the `auth`, `timeout`, `follow_redirects`, `proxies`, `verify` and `cert` parameters. However these are available in `httpx.request`, `httpx.get`, `httpx.post` etc., as well as on [`Client` instances](advanced.md#client-instances).
 
 ## Mocking
 
@@ -151,7 +151,7 @@ In consideration of consistency, we make `HEAD` follow redirects by default in H
 
 ## Determining the next redirect request
 
-When using `allow_redirects=False`, the `requests` library exposes an attribute `response.next`, which can be used to obtain the next redirect request.
+When using `follow_redirects=False`, the `requests` library exposes an attribute `response.next`, which can be used to obtain the next redirect request.
 
 In HTTPX, this attribute is instead named `response.next_request`. For example:
 
@@ -159,7 +159,7 @@ In HTTPX, this attribute is instead named `response.next_request`. For example:
 client = httpx.Client()
 request = client.build_request("GET", ...)
 while request is not None:
-    response = client.send(request, allow_redirects=False)
+    response = client.send(request, follow_redirects=False)
     request = response.next_request
 ```
 

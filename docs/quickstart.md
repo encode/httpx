@@ -380,7 +380,7 @@ If you're using streaming responses in any of these ways then the `response.cont
 Any cookies that are set on the response can be easily accessed:
 
 ```pycon
->>> r = httpx.get('http://httpbin.org/cookies/set?chocolate=chip', allow_redirects=False)
+>>> r = httpx.get('http://httpbin.org/cookies/set?chocolate=chip', follow_redirects=False)
 >>> r.cookies['chocolate']
 'chip'
 ```
@@ -427,10 +427,10 @@ URL('https://github.com/')
 [<Response [301 Moved Permanently]>]
 ```
 
-You can modify the default redirection handling with the allow_redirects parameter:
+You can modify the default redirection handling with the follow_redirects parameter:
 
 ```pycon
->>> r = httpx.get('http://github.com/', allow_redirects=False)
+>>> r = httpx.get('http://github.com/', follow_redirects=False)
 >>> r.status_code
 301
 >>> r.history
