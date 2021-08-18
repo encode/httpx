@@ -26,6 +26,6 @@ pytest-trio
 trio
 trio-typing
 trustme
-uvicorn
+uvicorn==0.14.0
 
 attrs>=19.3.0  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665
