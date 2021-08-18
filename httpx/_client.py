@@ -888,9 +888,6 @@ class Client(BaseClient):
             if not stream:
                 response.read()
 
-            for hook in self._event_hooks["response"]:
-                hook(response)
-
             return response
 
         except Exception as exc:
@@ -908,9 +905,6 @@ class Client(BaseClient):
         auth_flow = auth.sync_auth_flow(request)
         try:
             request = next(auth_flow)
-
-            for hook in self._event_hooks["request"]:
-                hook(request)
 
             while True:
                 response = self._send_handling_redirects(
@@ -949,8 +943,13 @@ class Client(BaseClient):
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
+            for hook in self._event_hooks["request"]:
+                hook(request)
+
             response = self._send_single_request(request, timeout)
             try:
+                for hook in self._event_hooks["response"]:
+                    hook(response)
                 response.history = list(history)
 
                 if not response.is_redirect:
@@ -1599,12 +1598,9 @@ class AsyncClient(BaseClient):
             if not stream:
                 await response.aread()
 
-            for hook in self._event_hooks["response"]:
-                await hook(response)
-
             return response
 
-        except Exception as exc:
+        except Exception as exc:  # pragma: no cover
             await response.aclose()
             raise exc
 
@@ -1619,9 +1615,6 @@ class AsyncClient(BaseClient):
         auth_flow = auth.async_auth_flow(request)
         try:
             request = await auth_flow.__anext__()
-
-            for hook in self._event_hooks["request"]:
-                await hook(request)
 
             while True:
                 response = await self._send_handling_redirects(
@@ -1660,8 +1653,14 @@ class AsyncClient(BaseClient):
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
+            for hook in self._event_hooks["request"]:
+                await hook(request)
+
             response = await self._send_single_request(request, timeout)
             try:
+                for hook in self._event_hooks["response"]:
+                    await hook(response)
+
                 response.history = list(history)
 
                 if not response.is_redirect:
