@@ -174,29 +174,6 @@ def test_delete(server):
     assert response.reason_phrase == "OK"
 
 
-def test_timeout():
-    class TimeoutStream(httpx.SyncByteStream):
-        def __iter__(self):
-            raise httpx.ReadTimeout("Timed out")
-            yield b""  # pragma: nocover
-
-    class Transport(httpx.BaseTransport):
-        def handle_request(
-            self,
-            method: bytes,
-            url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-            headers: typing.List[typing.Tuple[bytes, bytes]],
-            stream: httpx.SyncByteStream,
-            extensions: dict,
-        ):
-            return (200, [], TimeoutStream(), {})
-
-    transport = Transport()
-    with httpx.Client(transport=transport) as client:
-        with pytest.raises(httpx.ReadTimeout):
-            client.get("http://www.example.com/")
-
-
 def test_base_url(server):
     base_url = server.url
     with httpx.Client(base_url=base_url) as client:

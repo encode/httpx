@@ -178,30 +178,6 @@ async def test_100_continue(server):
 
 
 @pytest.mark.usefixtures("async_environment")
-async def test_timeout():
-    class TimeoutStream(httpx.AsyncByteStream):
-        async def __aiter__(self):
-            raise httpx.ReadTimeout("Timed out")
-            yield b""  # pragma: nocover
-
-    class Transport(httpx.AsyncBaseTransport):
-        async def handle_async_request(
-            self,
-            method: bytes,
-            url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-            headers: typing.List[typing.Tuple[bytes, bytes]],
-            stream: httpx.AsyncByteStream,
-            extensions: dict,
-        ):
-            return (200, [], TimeoutStream(), {})
-
-    transport = Transport()
-    async with httpx.AsyncClient(transport=transport) as client:
-        with pytest.raises(httpx.ReadTimeout):
-            await client.get("http://www.example.com/")
-
-
-@pytest.mark.usefixtures("async_environment")
 async def test_context_managed_transport():
     class Transport(httpx.AsyncBaseTransport):
         def __init__(self):

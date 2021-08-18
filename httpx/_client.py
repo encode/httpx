@@ -1596,7 +1596,7 @@ class AsyncClient(BaseClient):
 
             return response
 
-        except Exception as exc:
+        except Exception as exc:  # pragma: no cover
             await response.aclose()
             raise exc
 
