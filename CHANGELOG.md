@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-* Add support for `Client(allow_redirect=<bool>)`. (Pull #1790)
+* Add support for `Client(allow_redirects=<bool>)`. (Pull #1790)
 * Add automatic character set detection, when no `charset` is included in the response `Content-Type` header. (Pull #1791)
 
 ### Changed
