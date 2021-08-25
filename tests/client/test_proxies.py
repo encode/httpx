@@ -79,9 +79,8 @@ PROXY_URL = "http://[::1]"
         ("http://example.com", {"all://": PROXY_URL, "http://example.com": None}, None),
         ("http://example.com", {"http://": PROXY_URL}, PROXY_URL),
         ("http://example.com", {"all://example.com": PROXY_URL}, PROXY_URL),
-        ("http://example.com", {"all://example.com:80": PROXY_URL}, None),
         ("http://example.com", {"http://example.com": PROXY_URL}, PROXY_URL),
-        ("http://example.com", {"http://example.com:80": PROXY_URL}, None),
+        ("http://example.com", {"http://example.com:80": PROXY_URL}, PROXY_URL),
         ("http://example.com:8080", {"http://example.com:8080": PROXY_URL}, PROXY_URL),
         ("http://example.com:8080", {"http://example.com": PROXY_URL}, PROXY_URL),
         (
@@ -123,6 +122,7 @@ def test_transport_for_request(url, proxies, expected):
 
 
 @pytest.mark.asyncio
+@pytest.mark.network
 async def test_async_proxy_close():
     try:
         client = httpx.AsyncClient(proxies={"https://": PROXY_URL})
@@ -131,6 +131,7 @@ async def test_async_proxy_close():
         await client.aclose()
 
 
+@pytest.mark.network
 def test_sync_proxy_close():
     try:
         client = httpx.Client(proxies={"https://": PROXY_URL})
@@ -256,17 +257,19 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
 
 
 @pytest.mark.parametrize(
-    ["proxies", "expected_scheme"],
+    ["proxies", "is_valid"],
     [
-        ({"http": "http://127.0.0.1"}, "http://"),
-        ({"https": "http://127.0.0.1"}, "https://"),
-        ({"all": "http://127.0.0.1"}, "all://"),
+        ({"http": "http://127.0.0.1"}, False),
+        ({"https": "http://127.0.0.1"}, False),
+        ({"all": "http://127.0.0.1"}, False),
+        ({"http://": "http://127.0.0.1"}, True),
+        ({"https://": "http://127.0.0.1"}, True),
+        ({"all://": "http://127.0.0.1"}, True),
     ],
 )
-def test_for_deprecated_proxy_params(proxies, expected_scheme):
-    with pytest.deprecated_call() as block:
+def test_for_deprecated_proxy_params(proxies, is_valid):
+    if not is_valid:
+        with pytest.raises(ValueError):
+            httpx.Client(proxies=proxies)
+    else:
         httpx.Client(proxies=proxies)
-
-    warning_message = str(block.pop(DeprecationWarning))
-
-    assert expected_scheme in warning_message

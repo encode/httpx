@@ -1,7 +1,4 @@
--e .[http2]
-
-# Optional
-brotlipy==0.7.*
+-e .[http2,brotli]
 
 # Documentation
 mkdocs
@@ -22,12 +19,13 @@ flake8-bugbear
 flake8-pie==0.5.*
 isort==5.*
 mypy
-pytest==5.*
+types-certifi
+pytest==6.*
 pytest-asyncio
 pytest-trio
 trio
 trio-typing
 trustme
-uvicorn
+uvicorn==0.14.0
 
 attrs>=19.3.0  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665

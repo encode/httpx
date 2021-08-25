@@ -142,7 +142,12 @@ def stream(
     [0]: /quickstart#streaming-responses
     """
     with Client(
-        cookies=cookies, proxies=proxies, cert=cert, verify=verify, trust_env=trust_env
+        cookies=cookies,
+        proxies=proxies,
+        cert=cert,
+        verify=verify,
+        timeout=timeout,
+        trust_env=trust_env,
     ) as client:
         with client.stream(
             method=method,

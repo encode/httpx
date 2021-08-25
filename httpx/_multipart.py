@@ -1,4 +1,5 @@
 import binascii
+import io
 import os
 import typing
 from pathlib import Path
@@ -81,6 +82,9 @@ class FileField:
             fileobj = value
             content_type = guess_content_type(filename)
 
+        if isinstance(fileobj, str) or isinstance(fileobj, io.StringIO):
+            raise TypeError(f"Expected bytes or bytes-like object got: {type(fileobj)}")
+
         self.filename = filename
         self.file = fileobj
         self.content_type = content_type
@@ -93,9 +97,8 @@ class FileField:
             return len(headers) + len(to_bytes(self.file))
 
         # Let's do our best not to read `file` into memory.
-        try:
-            file_length = peek_filelike_length(self.file)
-        except OSError:
+        file_length = peek_filelike_length(self.file)
+        if file_length is None:
             # As a last resort, read file and cache contents for later.
             assert not hasattr(self, "_data")
             self._data = to_bytes(self.file.read())

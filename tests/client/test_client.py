@@ -222,16 +222,6 @@ def test_merge_relative_url_with_encoded_slashes():
     assert request.url == "https://www.example.com/base%2Fpath/testing"
 
 
-def test_pool_limits_deprecated():
-    limits = httpx.Limits()
-
-    with pytest.warns(DeprecationWarning):
-        httpx.Client(pool_limits=limits)
-
-    with pytest.warns(DeprecationWarning):
-        httpx.AsyncClient(pool_limits=limits)
-
-
 def test_context_managed_transport():
     class Transport(httpx.BaseTransport):
         def __init__(self):
@@ -315,8 +305,15 @@ def test_client_closed_state_using_implicit_open():
     client.close()
 
     assert client.is_closed
+
+    # Once we're close we cannot make any more requests.
     with pytest.raises(RuntimeError):
         client.get("http://example.com")
+
+    # Once we're closed we cannot reopen the client.
+    with pytest.raises(RuntimeError):
+        with client:
+            pass  # pragma: nocover
 
 
 def test_client_closed_state_using_with_block():

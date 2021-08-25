@@ -1,11 +1,10 @@
 import json
 import pickle
-from unittest import mock
 
-import brotli
 import pytest
 
 import httpx
+from httpx._compat import brotli
 
 
 class StreamingBody:
@@ -197,15 +196,16 @@ def test_response_no_charset_with_iso_8859_1_content():
     A response with ISO 8859-1 encoded content should decode correctly,
     even with no charset specified.
     """
-    content = "Accented: Österreich".encode("iso-8859-1")
+    content = "Accented: Österreich abcdefghijklmnopqrstuzwxyz".encode("iso-8859-1")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
         200,
         content=content,
         headers=headers,
     )
-    assert response.text == "Accented: Österreich"
-    assert response.encoding is None
+    assert response.text == "Accented: Österreich abcdefghijklmnopqrstuzwxyz"
+    assert response.charset_encoding is None
+    assert response.apparent_encoding is not None
 
 
 def test_response_no_charset_with_cp_1252_content():
@@ -213,15 +213,16 @@ def test_response_no_charset_with_cp_1252_content():
     A response with Windows 1252 encoded content should decode correctly,
     even with no charset specified.
     """
-    content = "Euro Currency: €".encode("cp1252")
+    content = "Euro Currency: € abcdefghijklmnopqrstuzwxyz".encode("cp1252")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
         200,
         content=content,
         headers=headers,
     )
-    assert response.text == "Euro Currency: €"
-    assert response.encoding is None
+    assert response.text == "Euro Currency: € abcdefghijklmnopqrstuzwxyz"
+    assert response.charset_encoding is None
+    assert response.apparent_encoding is not None
 
 
 def test_response_non_text_encoding():
@@ -572,10 +573,7 @@ def test_iter_lines():
         200,
         content=b"Hello,\nworld!",
     )
-
-    content = []
-    for line in response.iter_lines():
-        content.append(line)
+    content = [line for line in response.iter_lines()]
     assert content == ["Hello,\n", "world!"]
 
 
@@ -721,9 +719,22 @@ def test_json_with_options():
     assert response.json(parse_int=str)["amount"] == "1"
 
 
-def test_json_without_specified_encoding():
+@pytest.mark.parametrize(
+    "encoding",
+    [
+        "utf-8",
+        "utf-8-sig",
+        "utf-16",
+        "utf-16-be",
+        "utf-16-le",
+        "utf-32",
+        "utf-32-be",
+        "utf-32-le",
+    ],
+)
+def test_json_without_specified_charset(encoding):
     data = {"greeting": "hello", "recipient": "world"}
-    content = json.dumps(data).encode("utf-32-be")
+    content = json.dumps(data).encode(encoding)
     headers = {"Content-Type": "application/json"}
     response = httpx.Response(
         200,
@@ -733,30 +744,29 @@ def test_json_without_specified_encoding():
     assert response.json() == data
 
 
-def test_json_without_specified_encoding_decode_error():
+@pytest.mark.parametrize(
+    "encoding",
+    [
+        "utf-8",
+        "utf-8-sig",
+        "utf-16",
+        "utf-16-be",
+        "utf-16-le",
+        "utf-32",
+        "utf-32-be",
+        "utf-32-le",
+    ],
+)
+def test_json_with_specified_charset(encoding):
     data = {"greeting": "hello", "recipient": "world"}
-    content = json.dumps(data).encode("utf-32-be")
-    headers = {"Content-Type": "application/json"}
-    # force incorrect guess from `guess_json_utf` to trigger error
-    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32"):
-        response = httpx.Response(
-            200,
-            content=content,
-            headers=headers,
-        )
-        with pytest.raises(json.decoder.JSONDecodeError):
-            response.json()
-
-
-def test_json_without_specified_encoding_value_error():
-    data = {"greeting": "hello", "recipient": "world"}
-    content = json.dumps(data).encode("utf-32-be")
-    headers = {"Content-Type": "application/json"}
-    # force incorrect guess from `guess_json_utf` to trigger error
-    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32"):
-        response = httpx.Response(200, content=content, headers=headers)
-        with pytest.raises(json.decoder.JSONDecodeError):
-            response.json()
+    content = json.dumps(data).encode(encoding)
+    headers = {"Content-Type": f"application/json; charset={encoding}"}
+    response = httpx.Response(
+        200,
+        content=content,
+        headers=headers,
+    )
+    assert response.json() == data
 
 
 @pytest.mark.parametrize(
