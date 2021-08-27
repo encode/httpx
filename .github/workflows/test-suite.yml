@@ -9,12 +9,13 @@ on:
 
 jobs:
   tests-linux:
-    name: "Python ${{ matrix.python-version }} - Ubuntu"
-    runs-on: "ubuntu-latest"
+    name: "Python ${{ matrix.python-version }} ${{ matrix.os }}"
+    runs-on: "${{ matrix.os }}"
 
     strategy:
       matrix:
         python-version: ["3.6", "3.7", "3.8", "3.9", "3.10.0-rc.1"]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - uses: "actions/checkout@v2"
@@ -23,35 +24,16 @@ jobs:
           python-version: "${{ matrix.python-version }}"
       - name: "Install dependencies"
         run: "scripts/install"
+        shell: bash
       - name: "Run linting checks"
         run: "scripts/check"
+        shell: bash
       - name: "Build package & docs"
         run: "scripts/build"
+        shell: bash
       - name: "Run tests"
         run: "scripts/test"
+        shell: bash
       - name: "Enforce coverage"
         run: "scripts/coverage"
-
-  tests-windows:
-    name: "Python ${{ matrix.python-version }} - Windows"
-    runs-on: "windows-latest"
-
-    strategy:
-      matrix:
-        python-version: [ "3.6", "3.7", "3.8", "3.9", "3.10.0-rc.1" ]
-
-    steps:
-      - uses: "actions/checkout@v2"
-      - uses: "actions/setup-python@v2"
-        with:
-          python-version: "${{ matrix.python-version }}"
-      - name: "Install dependencies"
-        run: "scripts/win/install.ps1"
-      - name: "Run linting checks"
-        run: "scripts/win/check.ps1"
-      - name: "Build package & docs"
-        run: "scripts/win/build.ps1"
-      - name: "Run tests"
-        run: "scripts/win/test.ps1"
-      - name: "Enforce coverage"
-        run: "scripts/win/coverage.ps1"
+        shell: bash
