@@ -148,7 +148,13 @@ def test_get_ssl_cert_file():
     os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
     # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
     ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
+    dir_name, file_name = os.path.split(ca_bundle)
+    _, parent_dir_name = os.path.split(dir_name)
+    assert (
+        ca_bundle is not None
+        and parent_dir_name == "tests"
+        and file_name == "test_utils.py"
+    )
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
@@ -163,7 +169,13 @@ def test_get_ssl_cert_file():
     os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
     # Two environments is correctly set.
     ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
+    dir_name, file_name = os.path.split(ca_bundle)
+    _, parent_dir_name = os.path.split(dir_name)
+    assert (
+        ca_bundle is not None
+        and parent_dir_name == "tests"
+        and file_name == "test_utils.py"
+    )
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # Two environments is set but SSL_CERT_FILE is not a file.
