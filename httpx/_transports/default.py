@@ -145,7 +145,6 @@ class HTTPTransport(BaseTransport):
             self._pool = httpcore.SyncHTTPProxy(
                 proxy_url=proxy.url.raw,
                 proxy_headers=proxy.headers.raw,
-                proxy_mode=proxy.mode,
                 ssl_context=ssl_context,
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
@@ -242,7 +241,6 @@ class AsyncHTTPTransport(AsyncBaseTransport):
             self._pool = httpcore.AsyncHTTPProxy(
                 proxy_url=proxy.url.raw,
                 proxy_headers=proxy.headers.raw,
-                proxy_mode=proxy.mode,
                 ssl_context=ssl_context,
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,

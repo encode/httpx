@@ -265,8 +265,14 @@ async def test_client_closed_state_using_implicit_open():
     await client.aclose()
 
     assert client.is_closed
+    # Once we're close we cannot make any more requests.
     with pytest.raises(RuntimeError):
         await client.get("http://example.com")
+
+    # Once we're closed we cannot reopen the client.
+    with pytest.raises(RuntimeError):
+        async with client:
+            pass  # pragma: nocover
 
 
 @pytest.mark.usefixtures("async_environment")

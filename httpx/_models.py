@@ -8,6 +8,7 @@ from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qs, quote, unquote, urlencode
 
+import charset_normalizer
 import idna
 import rfc3986
 import rfc3986.exceptions
@@ -977,10 +978,11 @@ class Headers(typing.MutableMapping[str, str]):
         """
         normalized_key = key.lower().encode(self.encoding)
 
-        items = []
-        for _, header_key, header_value in self._list:
-            if header_key == normalized_key:
-                items.append(header_value.decode(self.encoding))
+        items = [
+            header_value.decode(self.encoding)
+            for _, header_key, header_value in self._list
+            if header_key == normalized_key
+        ]
 
         if items:
             return ", ".join(items)
@@ -996,10 +998,11 @@ class Headers(typing.MutableMapping[str, str]):
         set_value = value.encode(self._encoding or "utf-8")
         lookup_key = set_key.lower()
 
-        found_indexes = []
-        for idx, (_, item_key, _) in enumerate(self._list):
-            if item_key == lookup_key:
-                found_indexes.append(idx)
+        found_indexes = [
+            idx
+            for idx, (_, item_key, _) in enumerate(self._list)
+            if item_key == lookup_key
+        ]
 
         for idx in reversed(found_indexes[1:]):
             del self._list[idx]
@@ -1016,10 +1019,11 @@ class Headers(typing.MutableMapping[str, str]):
         """
         del_key = key.lower().encode(self.encoding)
 
-        pop_indexes = []
-        for idx, (_, item_key, _) in enumerate(self._list):
-            if item_key.lower() == del_key:
-                pop_indexes.append(idx)
+        pop_indexes = [
+            idx
+            for idx, (_, item_key, _) in enumerate(self._list)
+            if item_key.lower() == del_key
+        ]
 
         if not pop_indexes:
             raise KeyError(key)
@@ -1311,22 +1315,26 @@ class Response:
             if not content:
                 self._text = ""
             else:
-                decoder = TextDecoder(encoding=self.encoding)
+                decoder = TextDecoder(encoding=self.encoding or "utf-8")
                 self._text = "".join([decoder.decode(self.content), decoder.flush()])
         return self._text
 
     @property
     def encoding(self) -> typing.Optional[str]:
         """
-        Return the encoding, which may have been set explicitly, or may have
-        been specified by the Content-Type header.
+        Return an encoding to use for decoding the byte content into text.
+        The priority for determining this is given by...
+
+        * `.encoding = <>` has been set explicitly.
+        * The encoding as specified by the charset parameter in the Content-Type header.
+        * The encoding as determined by `charset_normalizer`.
+        * UTF-8.
         """
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
-                self._encoding = None
-            else:
-                self._encoding = encoding
+                encoding = self.apparent_encoding
+            self._encoding = encoding
         return self._encoding
 
     @encoding.setter
@@ -1347,6 +1355,19 @@ class Response:
             return None
 
         return params["charset"].strip("'\"")
+
+    @property
+    def apparent_encoding(self) -> typing.Optional[str]:
+        """
+        Return the encoding, as detemined by `charset_normalizer`.
+        """
+        content = getattr(self, "_content", b"")
+        if len(content) < 32:
+            # charset_normalizer will issue warnings if we run it with
+            # fewer bytes than this cutoff.
+            return None
+        match = charset_normalizer.from_bytes(self.content).best()
+        return None if match is None else match.encoding
 
     def _get_content_decoder(self) -> ContentDecoder:
         """
@@ -1408,10 +1429,7 @@ class Response:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
-                try:
-                    return jsonlib.loads(self.content.decode(encoding), **kwargs)
-                except UnicodeDecodeError:
-                    pass
+                return jsonlib.loads(self.content.decode(encoding), **kwargs)
         return jsonlib.loads(self.text, **kwargs)
 
     @property
@@ -1492,7 +1510,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.encoding)
+        decoder = TextDecoder(encoding=self.encoding or "utf-8")
         chunker = TextChunker(chunk_size=chunk_size)
         with request_context(request=self._request):
             for byte_content in self.iter_bytes():
@@ -1590,7 +1608,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.encoding)
+        decoder = TextDecoder(encoding=self.encoding or "utf-8")
         chunker = TextChunker(chunk_size=chunk_size)
         with request_context(request=self._request):
             async for byte_content in self.aiter_bytes():
@@ -1745,12 +1763,13 @@ class Cookies(MutableMapping):
         if domain is not None and path is not None:
             return self.jar.clear(domain, path, name)
 
-        remove = []
-        for cookie in self.jar:
-            if cookie.name == name:
-                if domain is None or cookie.domain == domain:
-                    if path is None or cookie.path == path:
-                        remove.append(cookie)
+        remove = [
+            cookie
+            for cookie in self.jar
+            if cookie.name == name
+            and (domain is None or cookie.domain == domain)
+            and (path is None or cookie.path == path)
+        ]
 
         for cookie in remove:
             self.jar.clear(cookie.domain, cookie.path, cookie.name)

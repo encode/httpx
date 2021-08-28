@@ -12,6 +12,17 @@ try:
 except ImportError:
     from async_generator import asynccontextmanager  # type: ignore # noqa
 
+# Brotli support is optional
+# The C bindings in `brotli` are recommended for CPython.
+# The CFFI bindings in `brotlicffi` are recommended for PyPy and everything else.
+try:
+    import brotlicffi as brotli
+except ImportError:  # pragma: nocover
+    try:
+        import brotli
+    except ImportError:
+        brotli = None
+
 if sys.version_info >= (3, 10) or (
     sys.version_info >= (3, 7) and ssl.OPENSSL_VERSION_INFO >= (1, 1, 0, 7)
 ):

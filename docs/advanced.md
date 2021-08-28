@@ -255,12 +255,19 @@ def raise_on_4xx_5xx(response):
 client = httpx.Client(event_hooks={'response': [raise_on_4xx_5xx]})
 ```
 
+!!! note
+    Response event hooks are called before determining if the response body
+    should be read or not.
+
+    If you need access to the response body inside an event hook, you'll
+    need to call `response.read()`.
+
 The hooks are also allowed to modify `request` and `response` objects.
 
 ```python
 def add_timestamp(request):
     request.headers['x-request-timestamp'] = datetime.now(tz=datetime.utc).isoformat()
-    
+
 client = httpx.Client(event_hooks={'request': [add_timestamp]})
 ```
 
