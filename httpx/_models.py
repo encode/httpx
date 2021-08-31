@@ -1488,7 +1488,7 @@ class Response:
         """
         if hasattr(self, "_content"):
             chunk_size = len(self._content) if chunk_size is None else chunk_size
-            for i in range(0, len(self._content), chunk_size):
+            for i in range(0, len(self._content), max(chunk_size, 1)):
                 yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
@@ -1586,7 +1586,7 @@ class Response:
         """
         if hasattr(self, "_content"):
             chunk_size = len(self._content) if chunk_size is None else chunk_size
-            for i in range(0, len(self._content), chunk_size):
+            for i in range(0, len(self._content), max(chunk_size, 1)):
                 yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
