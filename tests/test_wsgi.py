@@ -1,5 +1,6 @@
 import sys
 from functools import partial
+from io import StringIO
 
 import pytest
 
@@ -69,6 +70,12 @@ def raise_exc(environ, start_response, exc=ValueError):
     return [output]
 
 
+def log_to_wsgi_log_buffer(environ, start_response):
+    print("test1", file=environ["wsgi.errors"])
+    environ["wsgi.errors"].write("test2")
+    return echo_body(environ, start_response)
+
+
 def test_wsgi():
     client = httpx.Client(app=application_factory([b"Hello, World!"]))
     response = client.get("http://www.example.org/")
@@ -116,6 +123,16 @@ def test_wsgi_generator_empty():
     response = client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == ""
+
+
+def test_logging():
+    buffer = StringIO()
+    transport = httpx.WSGITransport(app=log_to_wsgi_log_buffer, log_file=buffer)
+    client = httpx.Client(transport=transport)
+    response = client.post("http://www.example.org/", content=b"example")
+    assert response.status_code == 200  # no errors
+    buffer.seek(0)
+    assert buffer.read() == "test1\ntest2"
 
 
 @pytest.mark.parametrize(
