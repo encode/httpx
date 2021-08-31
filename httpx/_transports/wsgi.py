@@ -16,11 +16,16 @@ def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
 
 class WSGIByteStream(SyncByteStream):
     def __init__(self, result: typing.Iterable[bytes]) -> None:
+        self._close = getattr(result, "close", None)
         self._result = _skip_leading_empty_chunks(result)
 
     def __iter__(self) -> typing.Iterator[bytes]:
         for part in self._result:
             yield part
+
+    def close(self) -> None:
+        if self._close is not None:
+            self._close()
 
 
 class WSGITransport(BaseTransport):
