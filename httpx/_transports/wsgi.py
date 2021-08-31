@@ -89,7 +89,7 @@ class WSGITransport(BaseTransport):
             "wsgi.version": (1, 0),
             "wsgi.url_scheme": scheme.decode("ascii"),
             "wsgi.input": wsgi_input,
-            "wsgi.errors": io.BytesIO(),
+            "wsgi.errors": io.StringIO(),
             "wsgi.multithread": True,
             "wsgi.multiprocess": False,
             "wsgi.run_once": False,
