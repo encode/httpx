@@ -127,7 +127,7 @@ def test_wsgi_generator_empty():
 
 def test_logging():
     buffer = StringIO()
-    transport = httpx.WSGITransport(app=log_to_wsgi_log_buffer, log_file=buffer)
+    transport = httpx.WSGITransport(app=log_to_wsgi_log_buffer, wsgi_errors=buffer)
     client = httpx.Client(transport=transport)
     response = client.post("http://www.example.org/", content=b"example")
     assert response.status_code == 200  # no errors
