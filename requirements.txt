@@ -5,9 +5,9 @@
 -e .[http2,brotli]
 
 # Documentation
-mkdocs==1.2.1
+mkdocs==1.2.2
 mkautodoc==0.1.0
-mkdocs-material==7.1.8
+mkdocs-material==7.2.6
 
 # Packaging
 twine==3.4.2
