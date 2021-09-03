@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 import httpx
@@ -13,9 +15,12 @@ async def test_read_timeout(server):
 
 
 @pytest.mark.usefixtures("async_environment")
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Write timeout is not triggered on Windows with Asyncio backend",
+)
 async def test_write_timeout(server):
     timeout = httpx.Timeout(None, write=1e-6)
-
     async with httpx.AsyncClient(timeout=timeout) as client:
         with pytest.raises(httpx.WriteTimeout):
             data = b"*" * 1024 * 1024 * 100

@@ -1,3 +1,4 @@
+import sys
 import typing
 from datetime import timedelta
 
@@ -7,6 +8,10 @@ import httpx
 
 
 @pytest.mark.usefixtures("async_environment")
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="response.elapsed returns 0ms with AsyncIO backend on Windows",
+)
 async def test_get(server):
     url = server.url
     async with httpx.AsyncClient(http2=True) as client:
