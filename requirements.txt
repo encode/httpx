@@ -7,7 +7,7 @@
 # Documentation
 mkdocs==1.2.1
 mkautodoc==0.1.0
-mkdocs-material==7.1.8
+mkdocs-material==7.2.6
 
 # Packaging
 twine==3.4.2
