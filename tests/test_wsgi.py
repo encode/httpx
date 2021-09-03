@@ -1,4 +1,5 @@
 import sys
+import wsgiref.validate
 from functools import partial
 
 import pytest
@@ -19,7 +20,7 @@ def application_factory(output):
         for item in output:
             yield item
 
-    return application
+    return wsgiref.validate.validator(application)
 
 
 def echo_body(environ, start_response):
