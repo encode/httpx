@@ -5,19 +5,19 @@
 -e .[http2,brotli]
 
 # Documentation
-mkdocs==1.2.1
+mkdocs==1.2.2
 mkautodoc==0.1.0
-mkdocs-material==7.1.8
+mkdocs-material==7.2.6
 
 # Packaging
-twine==3.4.1
+twine==3.4.2
 wheel==0.36.2
 
 # Tests & Linting
 autoflake==1.4
 black==20.8b1
 coverage==5.3
-cryptography==3.4.7
+cryptography==3.4.8
 flake8==3.9.2
 flake8-bugbear==21.4.3
 flake8-pie==0.5.0
@@ -28,6 +28,6 @@ pytest==6.2.4
 pytest-asyncio==0.15.1
 pytest-trio==0.7.0
 trio==0.19.0
-trio-typing==0.5.0
+trio-typing==0.5.1
 trustme==0.8.0
 uvicorn==0.14.0
