@@ -4,8 +4,13 @@ import os
 import typing
 from pathlib import Path
 
-from ._transports.base import AsyncByteStream, SyncByteStream
-from ._types import FileContent, FileTypes, RequestFiles
+from ._types import (
+    AsyncByteStream,
+    FileContent,
+    FileTypes,
+    RequestFiles,
+    SyncByteStream,
+)
 from ._utils import (
     format_form_param,
     guess_content_type,

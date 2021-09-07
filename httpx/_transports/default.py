@@ -48,8 +48,9 @@ from .._exceptions import (
     WriteError,
     WriteTimeout,
 )
-from .._types import CertTypes, VerifyTypes
-from .base import AsyncBaseTransport, AsyncByteStream, BaseTransport, SyncByteStream
+from .._models import Request, Response
+from .._types import AsyncByteStream, CertTypes, SyncByteStream, VerifyTypes
+from .base import AsyncBaseTransport, BaseTransport
 
 T = typing.TypeVar("T", bound="HTTPTransport")
 A = typing.TypeVar("A", bound="AsyncHTTPTransport")
@@ -168,26 +169,24 @@ class HTTPTransport(BaseTransport):
 
     def handle_request(
         self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: SyncByteStream,
-        extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
-    ]:
+        request: Request,
+    ) -> Response:
+        assert isinstance(request.stream, SyncByteStream)
+
         with map_httpcore_exceptions():
             status_code, headers, byte_stream, extensions = self._pool.handle_request(
-                method=method,
-                url=url,
-                headers=headers,
-                stream=httpcore.IteratorByteStream(iter(stream)),
-                extensions=extensions,
+                method=request.method.encode("ascii"),
+                url=request.url.raw,
+                headers=request.headers.raw,
+                stream=httpcore.IteratorByteStream(iter(request.stream)),
+                extensions=request.extensions,
             )
 
         stream = ResponseStream(byte_stream)
 
-        return status_code, headers, stream, extensions
+        return Response(
+            status_code, headers=headers, stream=stream, extensions=extensions
+        )
 
     def close(self) -> None:
         self._pool.close()
@@ -264,14 +263,10 @@ class AsyncHTTPTransport(AsyncBaseTransport):
 
     async def handle_async_request(
         self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: AsyncByteStream,
-        extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
-    ]:
+        request: Request,
+    ) -> Response:
+        assert isinstance(request.stream, AsyncByteStream)
+
         with map_httpcore_exceptions():
             (
                 status_code,
@@ -279,16 +274,18 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 byte_stream,
                 extensions,
             ) = await self._pool.handle_async_request(
-                method=method,
-                url=url,
-                headers=headers,
-                stream=httpcore.AsyncIteratorByteStream(stream.__aiter__()),
-                extensions=extensions,
+                method=request.method.encode("ascii"),
+                url=request.url.raw,
+                headers=request.headers.raw,
+                stream=httpcore.AsyncIteratorByteStream(request.stream.__aiter__()),
+                extensions=request.extensions,
             )
 
         stream = AsyncResponseStream(byte_stream)
 
-        return status_code, headers, stream, extensions
+        return Response(
+            status_code, headers=headers, stream=stream, extensions=extensions
+        )
 
     async def aclose(self) -> None:
         await self._pool.aclose()

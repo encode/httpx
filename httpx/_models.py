@@ -36,8 +36,8 @@ from ._exceptions import (
     request_context,
 )
 from ._status_codes import codes
-from ._transports.base import AsyncByteStream, SyncByteStream
 from ._types import (
+    AsyncByteStream,
     CookieTypes,
     HeaderTypes,
     PrimitiveData,
@@ -47,6 +47,7 @@ from ._types import (
     RequestData,
     RequestFiles,
     ResponseContent,
+    SyncByteStream,
     URLTypes,
 )
 from ._utils import (
@@ -1084,10 +1085,11 @@ class Request:
         stream: typing.Union[SyncByteStream, AsyncByteStream] = None,
         extensions: dict = None,
     ):
-        if isinstance(method, bytes):
-            self.method = method.decode("ascii").upper()
-        else:
-            self.method = method.upper()
+        self.method = (
+            method.decode("ascii").upper()
+            if isinstance(method, bytes)
+            else method.upper()
+        )
         self.url = URL(url)
         if params is not None:
             self.url = self.url.copy_merge_params(params=params)

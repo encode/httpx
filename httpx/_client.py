@@ -24,15 +24,11 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
-from ._transports.base import (
-    AsyncBaseTransport,
-    AsyncByteStream,
-    BaseTransport,
-    SyncByteStream,
-)
+from ._transports.base import AsyncBaseTransport, BaseTransport
 from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
+    AsyncByteStream,
     AuthTypes,
     CertTypes,
     CookieTypes,
@@ -42,6 +38,7 @@ from ._types import (
     RequestContent,
     RequestData,
     RequestFiles,
+    SyncByteStream,
     TimeoutTypes,
     URLTypes,
     VerifyTypes,
@@ -969,23 +966,14 @@ class Client(BaseClient):
             )
 
         with request_context(request=request):
-            (status_code, headers, stream, extensions) = transport.handle_request(
-                request.method.encode(),
-                request.url.raw,
-                headers=request.headers.raw,
-                stream=request.stream,
-                extensions=request.extensions,
-            )
+            response = transport.handle_request(request)
 
-        response = Response(
-            status_code,
-            headers=headers,
-            stream=stream,
-            extensions=extensions,
-            request=request,
+        assert isinstance(response.stream, SyncByteStream)
+
+        response.request = request
+        response.stream = BoundSyncStream(
+            response.stream, response=response, timer=timer
         )
-
-        response.stream = BoundSyncStream(stream, response=response, timer=timer)
         self.cookies.extract_cookies(response)
 
         status = f"{response.status_code} {response.reason_phrase}"
@@ -1664,28 +1652,13 @@ class AsyncClient(BaseClient):
             )
 
         with request_context(request=request):
-            (
-                status_code,
-                headers,
-                stream,
-                extensions,
-            ) = await transport.handle_async_request(
-                request.method.encode(),
-                request.url.raw,
-                headers=request.headers.raw,
-                stream=request.stream,
-                extensions=request.extensions,
-            )
+            response = await transport.handle_async_request(request)
 
-        response = Response(
-            status_code,
-            headers=headers,
-            stream=stream,
-            extensions=extensions,
-            request=request,
+        assert isinstance(response.stream, AsyncByteStream)
+        response.request = request
+        response.stream = BoundAsyncStream(
+            response.stream, response=response, timer=timer
         )
-
-        response.stream = BoundAsyncStream(stream, response=response, timer=timer)
         self.cookies.extract_cookies(response)
 
         status = f"{response.status_code} {response.reason_phrase}"
