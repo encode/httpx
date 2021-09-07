@@ -1,4 +1,5 @@
 import typing
+from contextlib import contextmanager
 
 from ._client import Client
 from ._config import DEFAULT_TIMEOUT_CONFIG
@@ -110,6 +111,7 @@ def request(
         )
 
 
+@contextmanager
 def stream(
     method: str,
     url: URLTypes,
@@ -128,7 +130,7 @@ def stream(
     verify: VerifyTypes = True,
     cert: CertTypes = None,
     trust_env: bool = True,
-) -> Response:
+) -> typing.Iterator[Response]:
     """
     Alternative to `httpx.request()` that streams the response body
     instead of loading it into memory at once.
@@ -147,7 +149,7 @@ def stream(
         timeout=timeout,
         trust_env=trust_env,
     ) as client:
-        return client.stream(
+        with client.stream(
             method=method,
             url=url,
             content=content,
@@ -158,7 +160,8 @@ def stream(
             headers=headers,
             auth=auth,
             allow_redirects=allow_redirects,
-        )
+        ) as response:
+            yield response
 
 
 def get(
