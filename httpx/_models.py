@@ -1082,6 +1082,7 @@ class Request:
         files: RequestFiles = None,
         json: typing.Any = None,
         stream: typing.Union[SyncByteStream, AsyncByteStream] = None,
+        extensions: dict = None,
     ):
         if isinstance(method, bytes):
             self.method = method.decode("ascii").upper()
@@ -1091,6 +1092,8 @@ class Request:
         if params is not None:
             self.url = self.url.copy_merge_params(params=params)
         self.headers = Headers(headers)
+        self.extensions = {} if extensions is None else extensions
+
         if cookies:
             Cookies(cookies).set_cookie_header(self)
 
