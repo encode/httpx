@@ -1,31 +1,33 @@
+# We're pinning our tooling, because it's an environment we can strictly control.
+# On the other hand, we're not pinning package dependencies, because our tests
+# needs to pass with the latest version of the packages.
+# Reference: https://github.com/encode/httpx/pull/1721#discussion_r661241588
 -e .[http2,brotli]
 
 # Documentation
-mkdocs
-mkautodoc
-mkdocs-material
+mkdocs==1.2.2
+mkautodoc==0.1.0
+mkdocs-material==7.2.6
 
 # Packaging
-twine
-wheel
+twine==3.4.2
+wheel==0.36.2
 
 # Tests & Linting
-autoflake
+autoflake==1.4
 black==20.8b1
 coverage==5.3
-cryptography
-flake8
-flake8-bugbear
-flake8-pie==0.5.*
-isort==5.*
-mypy
-types-certifi
-pytest==6.*
-pytest-asyncio
-pytest-trio
-trio
-trio-typing
-trustme
-uvicorn
-
-attrs>=19.3.0  # See: https://github.com/encode/httpx/pull/566#issuecomment-559862665
+cryptography==3.4.8
+flake8==3.9.2
+flake8-bugbear==21.4.3
+flake8-pie==0.5.0
+isort==5.9.1
+mypy==0.910
+types-certifi==0.1.4
+pytest==6.2.4
+pytest-asyncio==0.15.1
+pytest-trio==0.7.0
+trio==0.19.0
+trio-typing==0.5.1
+trustme==0.8.0
+uvicorn==0.14.0

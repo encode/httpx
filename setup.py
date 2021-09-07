@@ -57,14 +57,18 @@ setup(
     zip_safe=False,
     install_requires=[
         "certifi",
+        "charset_normalizer",
         "sniffio",
         "rfc3986[idna2008]>=1.3,<2",
         "httpcore>=0.13.3,<0.14.0",
         "contextlib2; python_version < '3.10'"
     ],
     extras_require={
-        "http2": "h2==3.*",
-        "brotli": "brotlicffi==1.*",
+        "http2": "h2>=3,<5",
+        "brotli": [
+            "brotli; platform_python_implementation == 'CPython'",
+            "brotlicffi; platform_python_implementation != 'CPython'"
+        ],
     },
     classifiers=[
         "Development Status :: 4 - Beta",

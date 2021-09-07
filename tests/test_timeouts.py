@@ -23,6 +23,7 @@ async def test_write_timeout(server):
 
 
 @pytest.mark.usefixtures("async_environment")
+@pytest.mark.network
 async def test_connect_timeout(server):
     timeout = httpx.Timeout(None, connect=1e-6)
 

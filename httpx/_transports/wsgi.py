@@ -16,11 +16,16 @@ def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
 
 class WSGIByteStream(SyncByteStream):
     def __init__(self, result: typing.Iterable[bytes]) -> None:
+        self._close = getattr(result, "close", None)
         self._result = _skip_leading_empty_chunks(result)
 
     def __iter__(self) -> typing.Iterator[bytes]:
         for part in self._result:
             yield part
+
+    def close(self) -> None:
+        if self._close is not None:
+            self._close()
 
 
 class WSGITransport(BaseTransport):
@@ -51,7 +56,7 @@ class WSGITransport(BaseTransport):
     * `raise_app_exceptions` - Boolean indicating if exceptions in the application
        should be raised. Default to `True`. Can be set to `False` for use cases
        such as testing the content of a client 500 response.
-    * `script_name` - The root path on which the ASGI application should be mounted.
+    * `script_name` - The root path on which the WSGI application should be mounted.
     * `remote_addr` - A string indicating the client IP of incoming requests.
     ```
     """

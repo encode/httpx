@@ -117,7 +117,7 @@ async def test_async_event_hooks_raising_exception():
 
 def test_event_hooks_with_redirect():
     """
-    A redirect request should not trigger a second 'request' event hook.
+    A redirect request should trigger additional 'request' and 'response' event hooks.
     """
 
     events = []
@@ -149,6 +149,21 @@ def test_event_hooks_with_redirect():
         },
         {
             "event": "response",
+            "headers": {"location": "/", "server": "testserver"},
+        },
+        {
+            "event": "request",
+            "headers": {
+                "host": "127.0.0.1:8000",
+                "user-agent": f"python-httpx/{httpx.__version__}",
+                "accept": "*/*",
+                "accept-encoding": "gzip, deflate, br",
+                "connection": "keep-alive",
+                "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+            },
+        },
+        {
+            "event": "response",
             "headers": {"server": "testserver"},
         },
     ]
@@ -157,7 +172,7 @@ def test_event_hooks_with_redirect():
 @pytest.mark.usefixtures("async_environment")
 async def test_async_event_hooks_with_redirect():
     """
-    A redirect request should not trigger a second 'request' event hook.
+    A redirect request should trigger additional 'request' and 'response' event hooks.
     """
 
     events = []
@@ -176,6 +191,21 @@ async def test_async_event_hooks_with_redirect():
         await http.get("http://127.0.0.1:8000/redirect", auth=("username", "password"))
 
     assert events == [
+        {
+            "event": "request",
+            "headers": {
+                "host": "127.0.0.1:8000",
+                "user-agent": f"python-httpx/{httpx.__version__}",
+                "accept": "*/*",
+                "accept-encoding": "gzip, deflate, br",
+                "connection": "keep-alive",
+                "authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ=",
+            },
+        },
+        {
+            "event": "response",
+            "headers": {"location": "/", "server": "testserver"},
+        },
         {
             "event": "request",
             "headers": {
