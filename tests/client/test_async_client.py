@@ -68,7 +68,7 @@ async def test_post_json(server):
 @pytest.mark.usefixtures("async_environment")
 async def test_stream_response(server):
     async with httpx.AsyncClient() as client:
-        async with await client.stream("GET", server.url) as response:
+        async with client.stream("GET", server.url) as response:
             body = await response.aread()
 
     assert response.status_code == 200
@@ -79,7 +79,7 @@ async def test_stream_response(server):
 @pytest.mark.usefixtures("async_environment")
 async def test_access_content_stream_response(server):
     async with httpx.AsyncClient() as client:
-        async with await client.stream("GET", server.url) as response:
+        async with client.stream("GET", server.url) as response:
             pass
 
     assert response.status_code == 200

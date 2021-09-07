@@ -74,20 +74,26 @@ async def raise_exc_after_response(scope, receive, send):
 async def test_asgi_transport():
     async with httpx.ASGITransport(app=hello_world) as transport:
         request = httpx.Request("GET", "http://www.example.com/")
-        async with await transport.handle_async_request(request) as response:
+        response = await transport.handle_async_request(request)
+        try:
             await response.aread()
             assert response.status_code == 200
             assert response.content == b"Hello, World!"
+        finally:
+            await response.aclose()
 
 
 @pytest.mark.usefixtures("async_environment")
 async def test_asgi_transport_no_body():
     async with httpx.ASGITransport(app=echo_body) as transport:
         request = httpx.Request("GET", "http://www.example.com/")
-        async with await transport.handle_async_request(request) as response:
+        response = await transport.handle_async_request(request)
+        try:
             await response.aread()
             assert response.status_code == 200
             assert response.content == b""
+        finally:
+            await response.aclose()
 
 
 @pytest.mark.usefixtures("async_environment")

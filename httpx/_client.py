@@ -2,10 +2,12 @@ import datetime
 import enum
 import typing
 import warnings
+from contextlib import contextmanager
 from types import TracebackType
 
 from .__version__ import __version__
 from ._auth import Auth, BasicAuth, FunctionAuth
+from ._compat import asynccontextmanager
 from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
@@ -787,6 +789,7 @@ class Client(BaseClient):
         )
         return self.send(request, auth=auth, allow_redirects=allow_redirects)
 
+    @contextmanager
     def stream(
         self,
         method: str,
@@ -802,7 +805,7 @@ class Client(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-    ) -> Response:
+    ) -> typing.Iterator[Response]:
         """
         Alternative to `httpx.request()` that streams the response body
         instead of loading it into memory at once.
@@ -825,12 +828,16 @@ class Client(BaseClient):
             cookies=cookies,
             timeout=timeout,
         )
-        return self.send(
+        response = self.send(
             request=request,
             auth=auth,
             allow_redirects=allow_redirects,
             stream=True,
         )
+        try:
+            yield response
+        finally:
+            response.close()
 
     def send(
         self,
@@ -1472,6 +1479,7 @@ class AsyncClient(BaseClient):
         response = await self.send(request, auth=auth, allow_redirects=allow_redirects)
         return response
 
+    @asynccontextmanager
     async def stream(
         self,
         method: str,
@@ -1487,7 +1495,7 @@ class AsyncClient(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         allow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-    ) -> Response:
+    ) -> typing.AsyncIterator[Response]:
         """
         Alternative to `httpx.request()` that streams the response body
         instead of loading it into memory at once.
@@ -1510,12 +1518,16 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             timeout=timeout,
         )
-        return await self.send(
+        response = await self.send(
             request=request,
             auth=auth,
             allow_redirects=allow_redirects,
             stream=True,
         )
+        try:
+            yield response
+        finally:
+            await response.aclose()
 
     async def send(
         self,
