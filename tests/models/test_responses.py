@@ -486,6 +486,12 @@ def test_iter_bytes_with_chunk_size():
     assert parts == [b"Hello, world!"]
 
 
+def test_iter_bytes_with_empty_response():
+    response = httpx.Response(200, content=b"")
+    parts = [part for part in response.iter_bytes()]
+    assert parts == []
+
+
 @pytest.mark.asyncio
 async def test_aiter_bytes():
     response = httpx.Response(
