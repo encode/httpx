@@ -945,7 +945,7 @@ class Client(BaseClient):
                     hook(response)
                 response.history = list(history)
 
-                if not response.is_redirect:
+                if not response.has_redirect_location:
                     return response
 
                 request = self._build_redirect_request(request, response)
@@ -1640,7 +1640,7 @@ class AsyncClient(BaseClient):
 
                 response.history = list(history)
 
-                if not response.is_redirect:
+                if not response.has_redirect_location:
                     return response
 
                 request = self._build_redirect_request(request, response)
