@@ -1,5 +1,6 @@
 import io
 import itertools
+import sys
 import typing
 
 from .._models import Request, Response
@@ -68,11 +69,13 @@ class WSGITransport(BaseTransport):
         raise_app_exceptions: bool = True,
         script_name: str = "",
         remote_addr: str = "127.0.0.1",
+        wsgi_errors: typing.Optional[typing.TextIO] = None,
     ) -> None:
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
         self.script_name = script_name
         self.remote_addr = remote_addr
+        self.wsgi_errors = wsgi_errors
 
     def handle_request(self, request: Request) -> Response:
         request.read()
@@ -83,7 +86,7 @@ class WSGITransport(BaseTransport):
             "wsgi.version": (1, 0),
             "wsgi.url_scheme": request.url.scheme,
             "wsgi.input": wsgi_input,
-            "wsgi.errors": io.BytesIO(),
+            "wsgi.errors": self.wsgi_errors or sys.stderr,
             "wsgi.multithread": True,
             "wsgi.multiprocess": False,
             "wsgi.run_once": False,
