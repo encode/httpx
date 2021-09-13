@@ -63,6 +63,8 @@ def test_redirects(server):
         "location: /",
         "Transfer-Encoding: chunked",
     ]
+
+
 #
 #
 # def test_follow_redirects(server):
