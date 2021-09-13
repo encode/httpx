@@ -399,40 +399,40 @@ def main(
     if follow_redirects:
         event_hooks["response"] = [print_redirects]
 
-    try:
-        client = Client(
-            proxies=proxies,
-            timeout=timeout,
-            verify=verify,
-            http2=http2,
-            event_hooks=event_hooks,
-        )
-        with client.stream(
-            method,
-            url,
-            params=list(params),
-            content=content,
-            data=dict(data),
-            files=files,  # type: ignore
-            json=json,
-            headers=headers,
-            cookies=dict(cookies),
-            auth=auth,
-            follow_redirects=follow_redirects,
-        ) as response:
-            print_response_headers(response)
+    with Client(
+        proxies=proxies,
+        timeout=timeout,
+        verify=verify,
+        http2=http2,
+        event_hooks=event_hooks,
+    ) as client:
+        try:
+            with client.stream(
+                method,
+                url,
+                params=list(params),
+                content=content,
+                data=dict(data),
+                files=files,  # type: ignore
+                json=json,
+                headers=headers,
+                cookies=dict(cookies),
+                auth=auth,
+                follow_redirects=follow_redirects,
+            ) as response:
+                print_response_headers(response)
 
-            if download is not None:
-                download_response(response, download)
-            else:
-                response.read()
-                if response.content:
-                    print_delimiter()
-                    print_response(response)
+                if download is not None:
+                    download_response(response, download)
+                else:
+                    response.read()
+                    if response.content:
+                        print_delimiter()
+                        print_response(response)
 
-    except RequestError as exc:
-        console = rich.console.Console()
-        console.print(f"{type(exc).__name__}: {exc}")
-        sys.exit(1)
+        except RequestError as exc:
+            console = rich.console.Console()
+            console.print(f"{type(exc).__name__}: {exc}")
+            sys.exit(1)
 
     sys.exit(0 if response.is_success else 1)
