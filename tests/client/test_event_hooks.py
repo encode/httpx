@@ -131,7 +131,9 @@ def test_event_hooks_with_redirect():
     event_hooks = {"request": [on_request], "response": [on_response]}
 
     with httpx.Client(
-        event_hooks=event_hooks, transport=httpx.MockTransport(app)
+        event_hooks=event_hooks,
+        transport=httpx.MockTransport(app),
+        follow_redirects=True,
     ) as http:
         http.get("http://127.0.0.1:8000/redirect", auth=("username", "password"))
 
@@ -186,7 +188,9 @@ async def test_async_event_hooks_with_redirect():
     event_hooks = {"request": [on_request], "response": [on_response]}
 
     async with httpx.AsyncClient(
-        event_hooks=event_hooks, transport=httpx.MockTransport(app)
+        event_hooks=event_hooks,
+        transport=httpx.MockTransport(app),
+        follow_redirects=True,
     ) as http:
         await http.get("http://127.0.0.1:8000/redirect", auth=("username", "password"))
 

@@ -1214,7 +1214,7 @@ class Response:
 
         self._request: typing.Optional[Request] = request
 
-        # When allow_redirects=False and a redirect is received,
+        # When follow_redirects=False and a redirect is received,
         # the client will set `response.next_request`.
         self.next_request: typing.Optional[Request] = None
 

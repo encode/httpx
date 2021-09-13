@@ -4,10 +4,67 @@ HTTPX aims to be broadly compatible with the `requests` API.
 
 This documentation outlines places where the API differs...
 
+## Client instances
+
+The HTTPX equivalent of `requests.Session` is `httpx.Client`.
+
+```python
+session = requests.Session(**kwargs)
+```
+
+is generally equivalent to
+
+```python
+client = httpx.Client(**kwargs)
+```
+
 ## Request URLs
 
 Accessing `response.url` will return a `URL` instance, rather than a string.
+
 Use `str(response.url)` if you need a string instance.
+
+## Redirects
+
+Unlike `requests`, HTTPX does **not follow redirects by default**.
+
+We differ in behaviour here [because auto-redirects can easily mask unnecessary network
+calls being made](https://github.com/encode/httpx/discussions/1785).
+
+You can still enable behaviour to automatically follow redirects, but you need to
+do so explicitly...
+
+```python
+respose = client.get(url, follow_redirects=True)
+```
+
+Or else instantiate a client, with redirect following enabled by default...
+
+```python
+client = httpx.Client(follow_redirects=True)
+```
+
+## Determining the next redirect request
+
+The `requests` library exposes an attribute `response.next`, which can be used to obtain the next redirect request.
+
+```python
+session = requests.Session()
+request = requests.Request("GET", ...).prepare()
+while request is not None:
+    response = session.send(request, allow_redirects=False)
+    request = response.next
+```
+
+In HTTPX, this attribute is instead named `response.next_request`. For example:
+
+```python
+client = httpx.Client()
+request = client.build_request("GET", ...)
+while request is not None:
+    response = client.send(request)
+    request = response.next_request
+```
 
 ## Request Content
 
@@ -30,6 +87,12 @@ httpx.post(..., data={"message": "Hello, world"})
 
 Using the `data=<text/byte content>` will raise a deprecation warning,
 and is expected to be fully removed with the HTTPX 1.0 release.
+
+## Upload files
+
+HTTPX strictly enforces that upload files must be opened in binary mode, in order
+to avoid character encoding issues that can result from attempting to upload files
+opened in text mode.
 
 ## Content encoding
 
@@ -110,25 +173,11 @@ If you really do need to send request data using these http methods you should u
 
 We don't support `response.is_ok` since the naming is ambiguous there, and might incorrectly imply an equivalence to `response.status_code == codes.OK`. Instead we provide the `response.is_error` property. Use `if not response.is_error:` instead of `if response.is_ok:`.
 
-## Client instances
-
-The HTTPX equivalent of `requests.Session` is `httpx.Client`.
-
-```python
-session = requests.Session(**kwargs)
-```
-
-is generally equivalent to
-
-```python
-client = httpx.Client(**kwargs)
-```
-
 ## Request instantiation
 
 There is no notion of [prepared requests](https://requests.readthedocs.io/en/stable/user/advanced/#prepared-requests) in HTTPX. If you need to customize request instantiation, see [Request instances](advanced.md#request-instances).
 
-Besides, `httpx.Request()` does not support the `auth`, `timeout`, `allow_redirects`, `proxies`, `verify` and `cert` parameters. However these are available in `httpx.request`, `httpx.get`, `httpx.post` etc., as well as on [`Client` instances](advanced.md#client-instances).
+Besides, `httpx.Request()` does not support the `auth`, `timeout`, `follow_redirects`, `proxies`, `verify` and `cert` parameters. However these are available in `httpx.request`, `httpx.get`, `httpx.post` etc., as well as on [`Client` instances](advanced.md#client-instances).
 
 ## Mocking
 
@@ -143,25 +192,6 @@ On the other hand, HTTPX uses [HTTPCore](https://github.com/encode/httpcore) as 
 ## Query Parameters
 
 `requests` omits `params` whose values are `None` (e.g. `requests.get(..., params={"foo": None})`). This is not supported by HTTPX.
-
-## HEAD redirection
-
-In `requests`, all top-level API follow redirects by default except `HEAD`.
-In consideration of consistency, we make `HEAD` follow redirects by default in HTTPX.
-
-## Determining the next redirect request
-
-When using `allow_redirects=False`, the `requests` library exposes an attribute `response.next`, which can be used to obtain the next redirect request.
-
-In HTTPX, this attribute is instead named `response.next_request`. For example:
-
-```python
-client = httpx.Client()
-request = client.build_request("GET", ...)
-while request is not None:
-    response = client.send(request, allow_redirects=False)
-    request = response.next_request
-```
 
 ## Event Hooks
 
