@@ -69,6 +69,14 @@ setup(
             "brotli; platform_python_implementation == 'CPython'",
             "brotlicffi; platform_python_implementation != 'CPython'"
         ],
+        "cli": [
+            "click==8.*",
+            "rich==10.*",
+            "pygments==2.*"
+        ]
+    },
+    entry_points = {
+        "console_scripts": "httpx=httpx:main"
     },
     classifiers=[
         "Development Status :: 4 - Beta",
