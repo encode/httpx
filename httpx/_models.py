@@ -8,6 +8,7 @@ from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qs, quote, unquote, urlencode
 
+import charset_normalizer
 import idna
 import rfc3986
 import rfc3986.exceptions
@@ -34,8 +35,8 @@ from ._exceptions import (
     request_context,
 )
 from ._status_codes import codes
-from ._transports.base import AsyncByteStream, SyncByteStream
 from ._types import (
+    AsyncByteStream,
     CookieTypes,
     HeaderTypes,
     PrimitiveData,
@@ -45,6 +46,7 @@ from ._types import (
     RequestData,
     RequestFiles,
     ResponseContent,
+    SyncByteStream,
     URLTypes,
 )
 from ._utils import (
@@ -1080,15 +1082,19 @@ class Request:
         files: RequestFiles = None,
         json: typing.Any = None,
         stream: typing.Union[SyncByteStream, AsyncByteStream] = None,
+        extensions: dict = None,
     ):
-        if isinstance(method, bytes):
-            self.method = method.decode("ascii").upper()
-        else:
-            self.method = method.upper()
+        self.method = (
+            method.decode("ascii").upper()
+            if isinstance(method, bytes)
+            else method.upper()
+        )
         self.url = URL(url)
         if params is not None:
             self.url = self.url.copy_merge_params(params=params)
         self.headers = Headers(headers)
+        self.extensions = {} if extensions is None else extensions
+
         if cookies:
             Cookies(cookies).set_cookie_header(self)
 
@@ -1208,7 +1214,7 @@ class Response:
 
         self._request: typing.Optional[Request] = request
 
-        # When allow_redirects=False and a redirect is received,
+        # When follow_redirects=False and a redirect is received,
         # the client will set `response.next_request`.
         self.next_request: typing.Optional[Request] = None
 
@@ -1314,22 +1320,26 @@ class Response:
             if not content:
                 self._text = ""
             else:
-                decoder = TextDecoder(encoding=self.encoding)
+                decoder = TextDecoder(encoding=self.encoding or "utf-8")
                 self._text = "".join([decoder.decode(self.content), decoder.flush()])
         return self._text
 
     @property
     def encoding(self) -> typing.Optional[str]:
         """
-        Return the encoding, which may have been set explicitly, or may have
-        been specified by the Content-Type header.
+        Return an encoding to use for decoding the byte content into text.
+        The priority for determining this is given by...
+
+        * `.encoding = <>` has been set explicitly.
+        * The encoding as specified by the charset parameter in the Content-Type header.
+        * The encoding as determined by `charset_normalizer`.
+        * UTF-8.
         """
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
-                self._encoding = None
-            else:
-                self._encoding = encoding
+                encoding = self.apparent_encoding
+            self._encoding = encoding
         return self._encoding
 
     @encoding.setter
@@ -1350,6 +1360,19 @@ class Response:
             return None
 
         return params["charset"].strip("'\"")
+
+    @property
+    def apparent_encoding(self) -> typing.Optional[str]:
+        """
+        Return the encoding, as detemined by `charset_normalizer`.
+        """
+        content = getattr(self, "_content", b"")
+        if len(content) < 32:
+            # charset_normalizer will issue warnings if we run it with
+            # fewer bytes than this cutoff.
+            return None
+        match = charset_normalizer.from_bytes(self.content).best()
+        return None if match is None else match.encoding
 
     def _get_content_decoder(self) -> ContentDecoder:
         """
@@ -1411,10 +1434,7 @@ class Response:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
-                try:
-                    return jsonlib.loads(self.content.decode(encoding), **kwargs)
-                except UnicodeDecodeError:
-                    pass
+                return jsonlib.loads(self.content.decode(encoding), **kwargs)
         return jsonlib.loads(self.text, **kwargs)
 
     @property
@@ -1473,7 +1493,7 @@ class Response:
         """
         if hasattr(self, "_content"):
             chunk_size = len(self._content) if chunk_size is None else chunk_size
-            for i in range(0, len(self._content), chunk_size):
+            for i in range(0, len(self._content), max(chunk_size, 1)):
                 yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
@@ -1495,7 +1515,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.encoding)
+        decoder = TextDecoder(encoding=self.encoding or "utf-8")
         chunker = TextChunker(chunk_size=chunk_size)
         with request_context(request=self._request):
             for byte_content in self.iter_bytes():
@@ -1571,7 +1591,7 @@ class Response:
         """
         if hasattr(self, "_content"):
             chunk_size = len(self._content) if chunk_size is None else chunk_size
-            for i in range(0, len(self._content), chunk_size):
+            for i in range(0, len(self._content), max(chunk_size, 1)):
                 yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
@@ -1593,7 +1613,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.encoding)
+        decoder = TextDecoder(encoding=self.encoding or "utf-8")
         chunker = TextChunker(chunk_size=chunk_size)
         with request_context(request=self._request):
             async for byte_content in self.aiter_bytes():
