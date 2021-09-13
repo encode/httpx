@@ -128,7 +128,7 @@ Often Web API responses will be encoded as JSON.
 To include additional headers in the outgoing request, use the `headers` keyword argument:
 
 ```pycon
->>> url = 'http://httpbin.org/headers'
+>>> url = 'https://httpbin.org/headers'
 >>> headers = {'user-agent': 'my-app/0.0.1'}
 >>> r = httpx.get(url, headers=headers)
 ```
@@ -380,7 +380,7 @@ If you're using streaming responses in any of these ways then the `response.cont
 Any cookies that are set on the response can be easily accessed:
 
 ```pycon
->>> r = httpx.get('http://httpbin.org/cookies/set?chocolate=chip', allow_redirects=False)
+>>> r = httpx.get('https://httpbin.org/cookies/set?chocolate=chip')
 >>> r.cookies['chocolate']
 'chip'
 ```
@@ -389,7 +389,7 @@ To include cookies in an outgoing request, use the `cookies` parameter:
 
 ```pycon
 >>> cookies = {"peanut": "butter"}
->>> r = httpx.get('http://httpbin.org/cookies', cookies=cookies)
+>>> r = httpx.get('https://httpbin.org/cookies', cookies=cookies)
 >>> r.json()
 {'cookies': {'peanut': 'butter'}}
 ```
@@ -408,17 +408,25 @@ with additional API for accessing cookies by their domain or path.
 
 ## Redirection and History
 
-By default, HTTPX will follow redirects for all HTTP methods.
-
-
-The `history` property of the response can be used to inspect any followed redirects.
-It contains a list of any redirect responses that were followed, in the order
-in which they were made.
+By default, HTTPX will **not** follow redirects for all HTTP methods, although
+this can be explicitly enabled.
 
 For example, GitHub redirects all HTTP requests to HTTPS.
 
 ```pycon
 >>> r = httpx.get('http://github.com/')
+>>> r.status_code
+301
+>>> r.history
+[]
+>>> r.next_request
+<Request('GET', 'https://github.com/')>
+```
+
+You can modify the default redirection handling with the `follow_redirects` parameter:
+
+```pycon
+>>> r = httpx.get('http://github.com/', follow_redirects=True)
 >>> r.url
 URL('https://github.com/')
 >>> r.status_code
@@ -427,15 +435,9 @@ URL('https://github.com/')
 [<Response [301 Moved Permanently]>]
 ```
 
-You can modify the default redirection handling with the allow_redirects parameter:
-
-```pycon
->>> r = httpx.get('http://github.com/', allow_redirects=False)
->>> r.status_code
-301
->>> r.history
-[]
-```
+The `history` property of the response can be used to inspect any followed redirects.
+It contains a list of any redirect responses that were followed, in the order
+in which they were made.
 
 ## Timeouts
 
