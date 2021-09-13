@@ -156,11 +156,11 @@ def test_auth(server):
 #             assert input_file.read() == "Hello, world!"
 
 
-def test_errors(server):
-    url = str(server.url)
-    runner = CliRunner()
-    result = runner.invoke(httpx.main, [url, "-h", "host", " "])
-    assert result.exit_code == 1
-    assert splitlines(result.output) == [
-        "LocalProtocolError: Illegal header value b' '",
-    ]
+# def test_errors(server):
+#     url = str(server.url)
+#     runner = CliRunner()
+#     result = runner.invoke(httpx.main, [url, "-h", "host", " "])
+#     assert result.exit_code == 1
+#     assert splitlines(result.output) == [
+#         "LocalProtocolError: Illegal header value b' '",
+#     ]
