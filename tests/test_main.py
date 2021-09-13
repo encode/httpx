@@ -65,28 +65,26 @@ def test_redirects(server):
     ]
 
 
-#
-#
-# def test_follow_redirects(server):
-#     url = str(server.url.copy_with(path="/redirect_301"))
-#     runner = CliRunner()
-#     result = runner.invoke(httpx.main, [url, "--follow-redirects"])
-#     assert result.exit_code == 0
-#     assert remove_date_header(splitlines(result.output)) == [
-#         "HTTP/1.1 301 Moved Permanently",
-#         "server: uvicorn",
-#         "location: /",
-#         "Transfer-Encoding: chunked",
-#         "",
-#         "HTTP/1.1 200 OK",
-#         "server: uvicorn",
-#         "content-type: text/plain",
-#         "Transfer-Encoding: chunked",
-#         "",
-#         "Hello, world!",
-#     ]
-#
-#
+def test_follow_redirects(server):
+    url = str(server.url.copy_with(path="/redirect_301"))
+    runner = CliRunner()
+    result = runner.invoke(httpx.main, [url, "--follow-redirects"])
+    assert result.exit_code == 0
+    assert remove_date_header(splitlines(result.output)) == [
+        "HTTP/1.1 301 Moved Permanently",
+        "server: uvicorn",
+        "location: /",
+        "Transfer-Encoding: chunked",
+        "",
+        "HTTP/1.1 200 OK",
+        "server: uvicorn",
+        "content-type: text/plain",
+        "Transfer-Encoding: chunked",
+        "",
+        "Hello, world!",
+    ]
+
+
 # def test_post(server):
 #     url = str(server.url.copy_with(path="/echo_body"))
 #     runner = CliRunner()
