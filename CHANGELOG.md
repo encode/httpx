@@ -6,9 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## 1.0.0.pre0
 
-The 1.0 pre-release includes some design changes. The most notable of these is that
-redirect responses are no longer automatically followed, unless specifically
-requested.
+The 1.0 pre-release adds an integrated command-line client, and also includes some
+design changes. The most notable of these is that redirect responses are no longer
+automatically followed, unless specifically requested.
 
 This design decision prioritises a more explicit approach to redirects, in order
 to avoid code that unintentionally issues multiple requests as a result of
@@ -61,6 +61,7 @@ finally:
 
 ### Added
 
+* Added the `httpx` command-line client.
 * Response instances now include `.is_informational`, `.is_success`, `.is_redirect`, `.is_client_error`, and `.is_server_error`
   properties for checking 1xx, 2xx, 3xx, 4xx, and 5xx response types. Note that the behaviour of `.is_redirect` is slightly different in that it now returns True for all 3xx responses, in order to allow for a consistent set of properties onto the different HTTP status code types. The `response.has_redirect_location` location may be used to determine responses with properly formed URL redirects.
 

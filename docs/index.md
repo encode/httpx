@@ -25,15 +25,19 @@ HTTPX is a fully featured HTTP client for Python 3, which provides sync and asyn
 
 
 !!! note
-    HTTPX should currently be considered in beta.
+    This is the documentation for the 1.0 pre-release.
 
-    We believe we've got the public API to a stable point now, but would strongly recommend pinning your dependencies to the `0.19.*` release, so that you're able to properly review [API changes between package updates](https://github.com/encode/httpx/blob/master/CHANGELOG.md).
-
-    A 1.0 release is expected to be issued sometime in 2021.
+    This release adds support for an integrated command-line client, and also includes a couple of design changes from 0.19. Redirects are no longer followed by default, and the low-level Transport API has been updated. See [the CHANGELOG](https://github.com/encode/httpx/blob/version-1.0/CHANGELOG.md) for more details.
 
 ---
 
-Let's get started...
+Installing the HTTPX 1.0 pre-release.
+
+```shell
+$ pip install httpx --pre
+```
+
+Now, let's get started...
 
 ```pycon
 >>> import httpx
@@ -48,23 +52,24 @@ Let's get started...
 '<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 ```
 
-Or, using the async API...
+Or, using the command-line client.
 
-_Use [IPython](https://ipython.readthedocs.io/en/stable/) or Python 3.8+ with `python -m asyncio` to try this code interactively._
-
-```pycon
->>> import httpx
->>> async with httpx.AsyncClient() as client:
-...     r = await client.get('https://www.example.org/')
-...
->>> r
-<Response [200 OK]>
+```shell
+# The command line client is an optional dependency.
+$ pip install --pre 'httpx[cli]'
 ```
+
+Which now allows us to use HTTPX directly from the command-line...
+
+![httpx --help](img/httpx-help.png)
+
+Sending a request...
+
+![httpx http://httpbin.org/json](img/httpx-request.png)
 
 ## Features
 
-HTTPX is a high performance asynchronous HTTP client, that builds on the
-well-established usability of `requests`, and gives you:
+HTTPX builds on the well-established usability of `requests`, and gives you:
 
 * A broadly [requests-compatible API](compatibility.md).
 * Standard synchronous interface, but with [async support if you need it](async.md).
