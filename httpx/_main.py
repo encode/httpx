@@ -31,7 +31,8 @@ def print_help() -> None:
     table.add_column("Description")
     table.add_row(
         "-m, --method [cyan]METHOD",
-        "Request method, such as GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD. [Default: GET]",
+        "Request method, such as GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD. "
+        "[Default: GET, or POST if the a request body is included]",
     )
     table.add_row(
         "-p, --params [cyan]<NAME VALUE> ...",
@@ -234,10 +235,9 @@ def handle_help(
     "-m",
     "method",
     type=str,
-    default="GET",
     help=(
         "Request method, such as GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD. "
-        "[Default: GET]"
+        "[Default: GET, or POST if the a request body is included]"
     ),
 )
 @click.option(
@@ -390,6 +390,9 @@ def main(
     An HTTP command line client.
     Sends a request and displays the response.
     """
+    if not method:
+        method = "POST" if content or data or files or json else "GET"
+
     event_hooks: typing.Dict[str, typing.List[typing.Callable]] = {}
     if verbose:
         event_hooks["request"] = [print_request_headers]
@@ -408,6 +411,7 @@ def main(
             method,
             url,
             params=list(params),
+            content=content,
             data=dict(data),
             files=files,  # type: ignore
             json=json,

@@ -13,7 +13,9 @@
 </a>
 </p>
 
-HTTPX is a fully featured HTTP client for Python 3, which provides sync and async APIs, and support for both HTTP/1.1 and HTTP/2.
+HTTPX is a fully featured HTTP client library for Python 3. It includes an integrated
+command line client, has support for both HTTP/1.1 and HTTP/2, and provides both sync
+and async APIs.
 
 **Note**: _HTTPX should be considered in beta. We believe we've got the public API to
 a stable point now, but would strongly recommend pinning your dependencies to the `0.19.*`
