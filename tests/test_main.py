@@ -156,11 +156,11 @@ def test_download(server):
             assert input_file.read() == "Hello, world!"
 
 
-# def test_errors(server):
-#     url = str(server.url)
-#     runner = CliRunner()
-#     result = runner.invoke(httpx.main, [url, "-h", "user-agent", "\0"])
-#     assert result.exit_code == 1
-#     assert splitlines(result.output) == [
-#         "LocalProtocolError: Illegal header value b'\\x00'",
-#     ]
+def test_errors(server):
+    url = str(server.url)
+    runner = CliRunner()
+    result = runner.invoke(httpx.main, [url, "-h", "user-agent", "\0"])
+    assert result.exit_code == 1
+    assert splitlines(result.output) == [
+        "LocalProtocolError: Illegal header value b'\\x00'",
+    ]
