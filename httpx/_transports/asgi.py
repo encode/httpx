@@ -1,9 +1,10 @@
 import typing
-from urllib.parse import unquote
 
 import sniffio
 
-from .base import AsyncBaseTransport, AsyncByteStream
+from .._models import Request, Response
+from .._types import AsyncByteStream
+from .base import AsyncBaseTransport
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     import asyncio
@@ -79,34 +80,28 @@ class ASGITransport(AsyncBaseTransport):
 
     async def handle_async_request(
         self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: AsyncByteStream,
-        extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
-    ]:
+        request: Request,
+    ) -> Response:
+        assert isinstance(request.stream, AsyncByteStream)
+
         # ASGI scope.
-        scheme, host, port, full_path = url
-        path, _, query = full_path.partition(b"?")
         scope = {
             "type": "http",
             "asgi": {"version": "3.0"},
             "http_version": "1.1",
-            "method": method.decode(),
-            "headers": [(k.lower(), v) for (k, v) in headers],
-            "scheme": scheme.decode("ascii"),
-            "path": unquote(path.decode("ascii")),
-            "raw_path": path,
-            "query_string": query,
-            "server": (host.decode("ascii"), port),
+            "method": request.method,
+            "headers": [(k.lower(), v) for (k, v) in request.headers.raw],
+            "scheme": request.url.scheme,
+            "path": request.url.path,
+            "raw_path": request.url.raw_path,
+            "query_string": request.url.query,
+            "server": (request.url.host, request.url.port),
             "client": self.client,
             "root_path": self.root_path,
         }
 
         # Request.
-        request_body_chunks = stream.__aiter__()
+        request_body_chunks = request.stream.__aiter__()
         request_complete = False
 
         # Response.
@@ -147,7 +142,7 @@ class ASGITransport(AsyncBaseTransport):
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
 
-                if body and method != b"HEAD":
+                if body and request.method != "HEAD":
                     body_parts.append(body)
 
                 if not more_body:
@@ -164,6 +159,5 @@ class ASGITransport(AsyncBaseTransport):
         assert response_headers is not None
 
         stream = ASGIResponseStream(body_parts)
-        extensions = {}
 
-        return (status_code, response_headers, stream, extensions)
+        return Response(status_code, headers=response_headers, stream=stream)

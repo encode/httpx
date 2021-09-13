@@ -26,15 +26,11 @@ from ._exceptions import (
 from ._models import URL, Cookies, Headers, QueryParams, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
-from ._transports.base import (
-    AsyncBaseTransport,
-    AsyncByteStream,
-    BaseTransport,
-    SyncByteStream,
-)
+from ._transports.base import AsyncBaseTransport, BaseTransport
 from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
+    AsyncByteStream,
     AuthTypes,
     CertTypes,
     CookieTypes,
@@ -44,6 +40,7 @@ from ._types import (
     RequestContent,
     RequestData,
     RequestFiles,
+    SyncByteStream,
     TimeoutTypes,
     URLTypes,
     VerifyTypes,
@@ -327,6 +324,7 @@ class BaseClient:
         params: QueryParamTypes = None,
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
+        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Request:
         """
         Build and return a request instance.
@@ -343,6 +341,9 @@ class BaseClient:
         headers = self._merge_headers(headers)
         cookies = self._merge_cookies(cookies)
         params = self._merge_queryparams(params)
+        timeout = (
+            self.timeout if isinstance(timeout, UseClientDefault) else Timeout(timeout)
+        )
         return Request(
             method,
             url,
@@ -353,6 +354,7 @@ class BaseClient:
             params=params,
             headers=headers,
             cookies=cookies,
+            extensions={"timeout": timeout.as_dict()},
         )
 
     def _merge_url(self, url: URLTypes) -> URL:
@@ -785,10 +787,9 @@ class Client(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
+            timeout=timeout,
         )
-        return self.send(
-            request, auth=auth, follow_redirects=follow_redirects, timeout=timeout
-        )
+        return self.send(request, auth=auth, follow_redirects=follow_redirects)
 
     @contextmanager
     def stream(
@@ -827,12 +828,12 @@ class Client(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
+            timeout=timeout,
         )
         response = self.send(
             request=request,
             auth=auth,
             follow_redirects=follow_redirects,
-            timeout=timeout,
             stream=True,
         )
         try:
@@ -847,7 +848,6 @@ class Client(BaseClient):
         stream: bool = False,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
-        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a request.
@@ -866,9 +866,6 @@ class Client(BaseClient):
             raise RuntimeError("Cannot send a request, as the client has been closed.")
 
         self._state = ClientState.OPENED
-        timeout = (
-            self.timeout if isinstance(timeout, UseClientDefault) else Timeout(timeout)
-        )
         follow_redirects = (
             self.follow_redirects
             if isinstance(follow_redirects, UseClientDefault)
@@ -880,7 +877,6 @@ class Client(BaseClient):
         response = self._send_handling_auth(
             request,
             auth=auth,
-            timeout=timeout,
             follow_redirects=follow_redirects,
             history=[],
         )
@@ -898,7 +894,6 @@ class Client(BaseClient):
         self,
         request: Request,
         auth: Auth,
-        timeout: Timeout,
         follow_redirects: bool,
         history: typing.List[Response],
     ) -> Response:
@@ -909,7 +904,6 @@ class Client(BaseClient):
             while True:
                 response = self._send_handling_redirects(
                     request,
-                    timeout=timeout,
                     follow_redirects=follow_redirects,
                     history=history,
                 )
@@ -933,7 +927,6 @@ class Client(BaseClient):
     def _send_handling_redirects(
         self,
         request: Request,
-        timeout: Timeout,
         follow_redirects: bool,
         history: typing.List[Response],
     ) -> Response:
@@ -946,7 +939,7 @@ class Client(BaseClient):
             for hook in self._event_hooks["request"]:
                 hook(request)
 
-            response = self._send_single_request(request, timeout)
+            response = self._send_single_request(request)
             try:
                 for hook in self._event_hooks["response"]:
                     hook(response)
@@ -968,7 +961,7 @@ class Client(BaseClient):
                 response.close()
                 raise exc
 
-    def _send_single_request(self, request: Request, timeout: Timeout) -> Response:
+    def _send_single_request(self, request: Request) -> Response:
         """
         Sends a single request, without handling any redirections.
         """
@@ -982,23 +975,14 @@ class Client(BaseClient):
             )
 
         with request_context(request=request):
-            (status_code, headers, stream, extensions) = transport.handle_request(
-                request.method.encode(),
-                request.url.raw,
-                headers=request.headers.raw,
-                stream=request.stream,
-                extensions={"timeout": timeout.as_dict()},
-            )
+            response = transport.handle_request(request)
 
-        response = Response(
-            status_code,
-            headers=headers,
-            stream=stream,
-            extensions=extensions,
-            request=request,
+        assert isinstance(response.stream, SyncByteStream)
+
+        response.request = request
+        response.stream = BoundSyncStream(
+            response.stream, response=response, timer=timer
         )
-
-        response.stream = BoundSyncStream(stream, response=response, timer=timer)
         self.cookies.extract_cookies(response)
 
         status = f"{response.status_code} {response.reason_phrase}"
@@ -1494,9 +1478,10 @@ class AsyncClient(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
+            timeout=timeout,
         )
         response = await self.send(
-            request, auth=auth, follow_redirects=follow_redirects, timeout=timeout
+            request, auth=auth, follow_redirects=follow_redirects
         )
         return response
 
@@ -1537,12 +1522,12 @@ class AsyncClient(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
+            timeout=timeout,
         )
         response = await self.send(
             request=request,
             auth=auth,
             follow_redirects=follow_redirects,
-            timeout=timeout,
             stream=True,
         )
         try:
@@ -1557,7 +1542,6 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
-        timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a request.
@@ -1576,9 +1560,6 @@ class AsyncClient(BaseClient):
             raise RuntimeError("Cannot send a request, as the client has been closed.")
 
         self._state = ClientState.OPENED
-        timeout = (
-            self.timeout if isinstance(timeout, UseClientDefault) else Timeout(timeout)
-        )
         follow_redirects = (
             self.follow_redirects
             if isinstance(follow_redirects, UseClientDefault)
@@ -1590,7 +1571,6 @@ class AsyncClient(BaseClient):
         response = await self._send_handling_auth(
             request,
             auth=auth,
-            timeout=timeout,
             follow_redirects=follow_redirects,
             history=[],
         )
@@ -1608,7 +1588,6 @@ class AsyncClient(BaseClient):
         self,
         request: Request,
         auth: Auth,
-        timeout: Timeout,
         follow_redirects: bool,
         history: typing.List[Response],
     ) -> Response:
@@ -1619,7 +1598,6 @@ class AsyncClient(BaseClient):
             while True:
                 response = await self._send_handling_redirects(
                     request,
-                    timeout=timeout,
                     follow_redirects=follow_redirects,
                     history=history,
                 )
@@ -1643,7 +1621,6 @@ class AsyncClient(BaseClient):
     async def _send_handling_redirects(
         self,
         request: Request,
-        timeout: Timeout,
         follow_redirects: bool,
         history: typing.List[Response],
     ) -> Response:
@@ -1656,7 +1633,7 @@ class AsyncClient(BaseClient):
             for hook in self._event_hooks["request"]:
                 await hook(request)
 
-            response = await self._send_single_request(request, timeout)
+            response = await self._send_single_request(request)
             try:
                 for hook in self._event_hooks["response"]:
                     await hook(response)
@@ -1679,9 +1656,7 @@ class AsyncClient(BaseClient):
                 await response.aclose()
                 raise exc
 
-    async def _send_single_request(
-        self, request: Request, timeout: Timeout
-    ) -> Response:
+    async def _send_single_request(self, request: Request) -> Response:
         """
         Sends a single request, without handling any redirections.
         """
@@ -1695,28 +1670,13 @@ class AsyncClient(BaseClient):
             )
 
         with request_context(request=request):
-            (
-                status_code,
-                headers,
-                stream,
-                extensions,
-            ) = await transport.handle_async_request(
-                request.method.encode(),
-                request.url.raw,
-                headers=request.headers.raw,
-                stream=request.stream,
-                extensions={"timeout": timeout.as_dict()},
-            )
+            response = await transport.handle_async_request(request)
 
-        response = Response(
-            status_code,
-            headers=headers,
-            stream=stream,
-            extensions=extensions,
-            request=request,
+        assert isinstance(response.stream, AsyncByteStream)
+        response.request = request
+        response.stream = BoundAsyncStream(
+            response.stream, response=response, timer=timer
         )
-
-        response.stream = BoundAsyncStream(stream, response=response, timer=timer)
         self.cookies.extract_cookies(response)
 
         status = f"{response.status_code} {response.reason_phrase}"

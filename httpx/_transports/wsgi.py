@@ -2,9 +2,10 @@ import io
 import itertools
 import sys
 import typing
-from urllib.parse import unquote
 
-from .base import BaseTransport, SyncByteStream
+from .._models import Request, Response
+from .._types import SyncByteStream
+from .base import BaseTransport
 
 
 def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
@@ -76,40 +77,28 @@ class WSGITransport(BaseTransport):
         self.remote_addr = remote_addr
         self.wsgi_errors = wsgi_errors
 
-    def handle_request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: SyncByteStream,
-        extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
-    ]:
-        wsgi_input = io.BytesIO(b"".join(stream))
+    def handle_request(self, request: Request) -> Response:
+        request.read()
+        wsgi_input = io.BytesIO(request.content)
 
-        scheme, host, port, full_path = url
-        path, _, query = full_path.partition(b"?")
-        if port is None:
-            port = {b"http": 80, b"https": 443}[scheme]
-
+        port = request.url.port or {"http": 80, "https": 443}[request.url.scheme]
         environ = {
             "wsgi.version": (1, 0),
-            "wsgi.url_scheme": scheme.decode("ascii"),
+            "wsgi.url_scheme": request.url.scheme,
             "wsgi.input": wsgi_input,
             "wsgi.errors": self.wsgi_errors or sys.stderr,
             "wsgi.multithread": True,
             "wsgi.multiprocess": False,
             "wsgi.run_once": False,
-            "REQUEST_METHOD": method.decode(),
+            "REQUEST_METHOD": request.method,
             "SCRIPT_NAME": self.script_name,
-            "PATH_INFO": unquote(path.decode("ascii")),
-            "QUERY_STRING": query.decode("ascii"),
-            "SERVER_NAME": host.decode("ascii"),
+            "PATH_INFO": request.url.path,
+            "QUERY_STRING": request.url.query.decode("ascii"),
+            "SERVER_NAME": request.url.host,
             "SERVER_PORT": str(port),
             "REMOTE_ADDR": self.remote_addr,
         }
-        for header_key, header_value in headers:
+        for header_key, header_value in request.headers.raw:
             key = header_key.decode("ascii").upper().replace("-", "_")
             if key not in ("CONTENT_TYPE", "CONTENT_LENGTH"):
                 key = "HTTP_" + key
@@ -141,6 +130,5 @@ class WSGITransport(BaseTransport):
             (key.encode("ascii"), value.encode("ascii"))
             for key, value in seen_response_headers
         ]
-        extensions = {}
 
-        return (status_code, headers, stream, extensions)
+        return Response(status_code, headers=headers, stream=stream)

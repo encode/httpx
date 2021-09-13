@@ -317,13 +317,20 @@ def test_can_stream_if_no_redirect():
     client = httpx.Client(transport=httpx.MockTransport(redirects))
     url = "https://example.org/redirect_301"
     with client.stream("GET", url, follow_redirects=False) as response:
-        assert not response.is_closed
+        pass
     assert response.status_code == httpx.codes.MOVED_PERMANENTLY
     assert response.headers["location"] == "https://example.org/"
 
 
+class ConsumeBodyTransport(httpx.MockTransport):
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        assert isinstance(request.stream, httpx.SyncByteStream)
+        [_ for _ in request.stream]
+        return self.handler(request)
+
+
 def test_cannot_redirect_streaming_body():
-    client = httpx.Client(transport=httpx.MockTransport(redirects))
+    client = httpx.Client(transport=ConsumeBodyTransport(redirects))
     url = "https://example.org/redirect_body"
 
     def streaming_body():

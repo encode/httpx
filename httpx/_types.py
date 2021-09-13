@@ -8,9 +8,11 @@ from typing import (
     IO,
     TYPE_CHECKING,
     AsyncIterable,
+    AsyncIterator,
     Callable,
     Dict,
     Iterable,
+    Iterator,
     List,
     Mapping,
     Optional,
@@ -89,3 +91,60 @@ FileTypes = Union[
     Tuple[Optional[str], FileContent, Optional[str]],
 ]
 RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
+
+
+class SyncByteStream:
+    def __iter__(self) -> Iterator[bytes]:
+        raise NotImplementedError(
+            "The '__iter__' method must be implemented."
+        )  # pragma: nocover
+        yield b""  # pragma: nocover
+
+    def close(self) -> None:
+        """
+        Subclasses can override this method to release any network resources
+        after a request/response cycle is complete.
+
+        Streaming cases should use a `try...finally` block to ensure that
+        the stream `close()` method is always called.
+
+        Example:
+
+            status_code, headers, stream, extensions = transport.handle_request(...)
+            try:
+                ...
+            finally:
+                stream.close()
+        """
+
+    def read(self) -> bytes:
+        """
+        Simple cases can use `.read()` as a convience method for consuming
+        the entire stream and then closing it.
+
+        Example:
+
+            status_code, headers, stream, extensions = transport.handle_request(...)
+            body = stream.read()
+        """
+        try:
+            return b"".join([part for part in self])
+        finally:
+            self.close()
+
+
+class AsyncByteStream:
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        raise NotImplementedError(
+            "The '__aiter__' method must be implemented."
+        )  # pragma: nocover
+        yield b""  # pragma: nocover
+
+    async def aclose(self) -> None:
+        pass
+
+    async def aread(self) -> bytes:
+        try:
+            return b"".join([part async for part in self])
+        finally:
+            await self.aclose()
