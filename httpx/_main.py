@@ -31,8 +31,8 @@ def print_help() -> None:
     table.add_column("Description")
     table.add_row(
         "-m, --method [cyan]METHOD",
-        "Request method, such as GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD. "
-        "[Default: GET, or POST if the a request body is included]",
+        "Request method, such as GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD.\n"
+        "[Default: GET, or POST if a request body is included]",
     )
     table.add_row(
         "-p, --params [cyan]<NAME VALUE> ...",
@@ -237,7 +237,7 @@ def handle_help(
     type=str,
     help=(
         "Request method, such as GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD. "
-        "[Default: GET, or POST if the a request body is included]"
+        "[Default: GET, or POST if a request body is included]"
     ),
 )
 @click.option(
