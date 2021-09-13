@@ -90,15 +90,49 @@ def test_raise_for_status():
     response = httpx.Response(200, request=request)
     response.raise_for_status()
 
+    # 1xx status codes are informational responses.
+    response = httpx.Response(101, request=request)
+    assert response.is_informational
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        response.raise_for_status()
+    assert str(exc_info.value) == (
+        "Informational response '101 Switching Protocols' for url 'https://example.org'\n"
+        "For more information check: https://httpstatuses.com/101"
+    )
+
+    # 3xx status codes are redirections.
+    headers = {"location": "https://other.org"}
+    response = httpx.Response(303, headers=headers, request=request)
+    assert response.is_redirect
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        response.raise_for_status()
+    assert str(exc_info.value) == (
+        "Redirect response '303 See Other' for url 'https://example.org'\n"
+        "Redirect location: 'https://other.org'\n"
+        "For more information check: https://httpstatuses.com/303"
+    )
+
     # 4xx status codes are a client error.
     response = httpx.Response(403, request=request)
-    with pytest.raises(httpx.HTTPStatusError):
+    assert response.is_client_error
+    assert response.is_error
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
         response.raise_for_status()
+    assert str(exc_info.value) == (
+        "Client error '403 Forbidden' for url 'https://example.org'\n"
+        "For more information check: https://httpstatuses.com/403"
+    )
 
     # 5xx status codes are a server error.
     response = httpx.Response(500, request=request)
-    with pytest.raises(httpx.HTTPStatusError):
+    assert response.is_server_error
+    assert response.is_error
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
         response.raise_for_status()
+    assert str(exc_info.value) == (
+        "Server error '500 Internal Server Error' for url 'https://example.org'\n"
+        "For more information check: https://httpstatuses.com/500"
+    )
 
     # Calling .raise_for_status without setting a request instance is
     # not valid. Should raise a runtime error.
