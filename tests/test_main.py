@@ -1,4 +1,4 @@
-# import os
+import os
 
 from click.testing import CliRunner
 
@@ -146,21 +146,21 @@ def test_auth(server):
     ]
 
 
-# def test_download(server):
-#     url = str(server.url)
-#     runner = CliRunner()
-#     with runner.isolated_filesystem():
-#         runner.invoke(httpx.main, [url, "--download", "index.txt"])
-#         assert os.path.exists("index.txt")
-#         with open("index.txt", "r") as input_file:
-#             assert input_file.read() == "Hello, world!"
+def test_download(server):
+    url = str(server.url)
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        runner.invoke(httpx.main, [url, "--download", "index.txt"])
+        assert os.path.exists("index.txt")
+        with open("index.txt", "r") as input_file:
+            assert input_file.read() == "Hello, world!"
 
 
 # def test_errors(server):
 #     url = str(server.url)
 #     runner = CliRunner()
-#     result = runner.invoke(httpx.main, [url, "-h", "host", " "])
+#     result = runner.invoke(httpx.main, [url, "-h", "user-agent", "\0"])
 #     assert result.exit_code == 1
 #     assert splitlines(result.output) == [
-#         "LocalProtocolError: Illegal header value b' '",
+#         "LocalProtocolError: Illegal header value b'\\x00'",
 #     ]
