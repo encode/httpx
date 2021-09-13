@@ -52,7 +52,7 @@ except ImportError:  # pragma: nocover
 
         print(
             "The httpx command line client could not run because the required "
-            "dependancies were not installed.\nMake sure you've installed "
+            "dependencies were not installed.\nMake sure you've installed "
             "everything with: pip install 'httpx[cli]'"
         )
         sys.exit(1)
