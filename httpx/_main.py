@@ -399,14 +399,14 @@ def main(
     if follow_redirects:
         event_hooks["response"] = [print_redirects]
 
-    with Client(
-        proxies=proxies,
-        timeout=timeout,
-        verify=verify,
-        http2=http2,
-        event_hooks=event_hooks,
-    ) as client:
-        try:
+    try:
+        with Client(
+            proxies=proxies,
+            timeout=timeout,
+            verify=verify,
+            http2=http2,
+            event_hooks=event_hooks,
+        ) as client:
             with client.stream(
                 method,
                 url,
@@ -430,9 +430,9 @@ def main(
                         print_delimiter()
                         print_response(response)
 
-        except RequestError as exc:
-            console = rich.console.Console()
-            console.print(f"{type(exc).__name__}: {exc}")
-            sys.exit(1)
+    except RequestError as exc:
+        console = rich.console.Console()
+        console.print(f"{type(exc).__name__}: {exc}")
+        sys.exit(1)
 
     sys.exit(0 if response.is_success else 1)
