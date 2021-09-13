@@ -1480,7 +1480,9 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             timeout=timeout,
         )
-        response = await self.send(request, auth=auth, follow_redirects=follow_redirects)
+        response = await self.send(
+            request, auth=auth, follow_redirects=follow_redirects
+        )
         return response
 
     @asynccontextmanager
