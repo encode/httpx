@@ -52,17 +52,17 @@ def test_json(server):
     ]
 
 
-# def test_redirects(server):
-#     url = str(server.url.copy_with(path="/redirect_301"))
-#     runner = CliRunner()
-#     result = runner.invoke(httpx.main, [url])
-#     assert result.exit_code == 1
-#     assert remove_date_header(splitlines(result.output)) == [
-#         "HTTP/1.1 301 Moved Permanently",
-#         "server: uvicorn",
-#         "location: /",
-#         "Transfer-Encoding: chunked",
-#     ]
+def test_redirects(server):
+    url = str(server.url.copy_with(path="/redirect_301"))
+    runner = CliRunner()
+    result = runner.invoke(httpx.main, [url])
+    assert result.exit_code == 1
+    assert remove_date_header(splitlines(result.output)) == [
+        "HTTP/1.1 301 Moved Permanently",
+        "server: uvicorn",
+        "location: /",
+        "Transfer-Encoding: chunked",
+    ]
 #
 #
 # def test_follow_redirects(server):
