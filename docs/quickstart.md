@@ -73,9 +73,7 @@ You can inspect what encoding will be used to decode the response.
 ```
 
 In some cases the response may not contain an explicit encoding, in which case HTTPX
-will attempt to automatically determine an encoding to use. This defaults to
-UTF-8, but also includes robust fallback behaviour for handling ascii,
-iso-8859-1 and windows 1252 encodings.
+will attempt to automatically determine an encoding to use.
 
 ```pycon
 >>> r.encoding
@@ -83,7 +81,6 @@ None
 >>> r.text
 '<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 ```
-
 
 If you need to override the standard behaviour and explicitly set the encoding to
 use, then you can do that too.
@@ -277,7 +274,7 @@ HTTPX also includes an easy shortcut for accessing status codes by their text ph
 True
 ```
 
-We can raise an exception for any Client or Server error responses (4xx or 5xx status codes):
+We can raise an exception for any responses which are not a 2xx success code:
 
 ```pycon
 >>> not_found = httpx.get('https://httpbin.org/status/404')
