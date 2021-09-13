@@ -1,28 +1,9 @@
 # Requests Compatibility Guide
 
-HTTPX aims to be broadly compatible with the `requests` API.
+HTTPX aims to be broadly compatible with the `requests` API, although there are a
+few design differences in places.
 
 This documentation outlines places where the API differs...
-
-## Client instances
-
-The HTTPX equivalent of `requests.Session` is `httpx.Client`.
-
-```python
-session = requests.Session(**kwargs)
-```
-
-is generally equivalent to
-
-```python
-client = httpx.Client(**kwargs)
-```
-
-## Request URLs
-
-Accessing `response.url` will return a `URL` instance, rather than a string.
-
-Use `str(response.url)` if you need a string instance.
 
 ## Redirects
 
@@ -43,6 +24,26 @@ Or else instantiate a client, with redirect following enabled by default...
 ```python
 client = httpx.Client(follow_redirects=True)
 ```
+
+## Client instances
+
+The HTTPX equivalent of `requests.Session` is `httpx.Client`.
+
+```python
+session = requests.Session(**kwargs)
+```
+
+is generally equivalent to
+
+```python
+client = httpx.Client(**kwargs)
+```
+
+## Request URLs
+
+Accessing `response.url` will return a `URL` instance, rather than a string.
+
+Use `str(response.url)` if you need a string instance.
 
 ## Determining the next redirect request
 
@@ -97,8 +98,7 @@ opened in text mode.
 ## Content encoding
 
 HTTPX uses `utf-8` for encoding `str` request bodies. For example, when using `content=<str>` the request body will be encoded to `utf-8` before being sent over the wire. This differs from Requests which uses `latin1`. If you need an explicit encoding, pass encoded bytes explictly, e.g. `content=<str>.encode("latin1")`.
-
-For response bodies, assuming the server didn't send an explicit encoding then HTTPX will do its best to figure out an appropriate encoding. HTTPX makes a guess at the encoding to use for decoding the response using `charset_normalizer`. Fallback to that or any content with less than 32 octets will be decoded using `utf-8` with the `error="replace"` decoder strategy.  
+For response bodies, assuming the server didn't send an explicit encoding then HTTPX will do its best to figure out an appropriate encoding. HTTPX makes a guess at the encoding to use for decoding the response using `charset_normalizer`. Fallback to that or any content with less than 32 octets will be decoded using `utf-8` with the `error="replace"` decoder strategy.
 
 ## Cookies
 
@@ -133,7 +133,7 @@ HTTPX provides a `.stream()` interface rather than using `stream=True`. This ens
 For example:
 
 ```python
-with request.stream("GET", "https://www.example.com") as response:
+with httpx.stream("GET", "https://www.example.com") as response:
     ...
 ```
 
@@ -165,13 +165,21 @@ Requests supports `REQUESTS_CA_BUNDLE` which points to either a file or a direct
 
 ## Request body on HTTP methods
 
-The HTTP `GET`, `DELETE`, `HEAD`, and `OPTIONS` methods are specified as not supporting a request body. To stay in line with this, the `.get`, `.delete`, `.head` and `.options` functions do not support `files`, `data`, or `json` arguments.
+The HTTP `GET`, `DELETE`, `HEAD`, and `OPTIONS` methods are specified as not supporting a request body. To stay in line with this, the `.get`, `.delete`, `.head` and `.options` functions do not support `content`, `files`, `data`, or `json` arguments.
 
 If you really do need to send request data using these http methods you should use the generic `.request` function instead.
 
-## Checking for 4xx/5xx responses
+```python
+httpx.request(
+  method="DELETE",
+  url="https://www.example.com/",
+  content=b'A request body on a DELETE request.'
+)
+```
 
-We don't support `response.is_ok` since the naming is ambiguous there, and might incorrectly imply an equivalence to `response.status_code == codes.OK`. Instead we provide the `response.is_error` property. Use `if not response.is_error:` instead of `if response.is_ok:`.
+## Checking for success and failure responses
+
+We don't support `response.is_ok` since the naming is ambiguous there, and might incorrectly imply an equivalence to `response.status_code == codes.OK`. Instead we provide the `response.is_success` property, which can be used to check for a 2xx response.
 
 ## Request instantiation
 
