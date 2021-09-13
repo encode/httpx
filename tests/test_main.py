@@ -35,23 +35,23 @@ def test_get(server):
     ]
 
 
-# def test_json(server):
-#     url = str(server.url.copy_with(path="/json"))
-#     runner = CliRunner()
-#     result = runner.invoke(httpx.main, [url])
-#     assert result.exit_code == 0
-#     assert remove_date_header(splitlines(result.output)) == [
-#         "HTTP/1.1 200 OK",
-#         "server: uvicorn",
-#         "content-type: application/json",
-#         "Transfer-Encoding: chunked",
-#         "",
-#         "{",
-#         '"Hello": "world!"',
-#         "}",
-#     ]
-#
-#
+def test_json(server):
+    url = str(server.url.copy_with(path="/json"))
+    runner = CliRunner()
+    result = runner.invoke(httpx.main, [url])
+    assert result.exit_code == 0
+    assert remove_date_header(splitlines(result.output)) == [
+        "HTTP/1.1 200 OK",
+        "server: uvicorn",
+        "content-type: application/json",
+        "Transfer-Encoding: chunked",
+        "",
+        "{",
+        '"Hello": "world!"',
+        "}",
+    ]
+
+
 # def test_redirects(server):
 #     url = str(server.url.copy_with(path="/redirect_301"))
 #     runner = CliRunner()
