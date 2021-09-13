@@ -1400,22 +1400,79 @@ class Response:
         return self._decoder
 
     @property
-    def is_error(self) -> bool:
-        return codes.is_error(self.status_code)
+    def is_informational(self) -> bool:
+        """
+        A property which is `True` for 1xx status codes, `False` otherwise.
+        """
+        return codes.is_informational(self.status_code)
+
+    @property
+    def is_success(self) -> bool:
+        """
+        A property which is `True` for 2xx status codes, `False` otherwise.
+        """
+        return codes.is_success(self.status_code)
 
     @property
     def is_redirect(self) -> bool:
-        return codes.is_redirect(self.status_code) and "location" in self.headers
+        """
+        A property which is `True` for 3xx status codes, `False` otherwise.
+
+        Note that not all responses with a 3xx status code indicate a URL redirect.
+
+        Use `response.has_redirect_location` to determine responses with a properly
+        formed URL redirection.
+        """
+        return codes.is_redirect(self.status_code)
+
+    @property
+    def is_client_error(self) -> bool:
+        """
+        A property which is `True` for 4xx status codes, `False` otherwise.
+        """
+        return codes.is_client_error(self.status_code)
+
+    @property
+    def is_server_error(self) -> bool:
+        """
+        A property which is `True` for 5xx status codes, `False` otherwise.
+        """
+        return codes.is_server_error(self.status_code)
+
+    @property
+    def is_error(self) -> bool:
+        """
+        A property which is `True` for 4xx and 5xx status codes, `False` otherwise.
+        """
+        return codes.is_error(self.status_code)
+
+    @property
+    def has_redirect_location(self) -> bool:
+        """
+        Returns True for 3xx responses with a properly formed URL redirection,
+        `False` otherwise.
+        """
+        return (
+            self.status_code
+            in (
+                # 301 (Cacheable redirect. Method may change to GET.)
+                codes.MOVED_PERMANENTLY,
+                # 302 (Uncacheable redirect. Method may change to GET.)
+                codes.FOUND,
+                # 303 (Client should make a GET or HEAD request.)
+                codes.SEE_OTHER,
+                # 307 (Equiv. 302, but retain method)
+                codes.TEMPORARY_REDIRECT,
+                # 308 (Equiv. 301, but retain method)
+                codes.PERMANENT_REDIRECT,
+            )
+            and "Location" in self.headers
+        )
 
     def raise_for_status(self) -> None:
         """
         Raise the `HTTPStatusError` if one occurred.
         """
-        message = (
-            "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
-            "For more information check: https://httpstatuses.com/{0.status_code}"
-        )
-
         request = self._request
         if request is None:
             raise RuntimeError(
@@ -1423,12 +1480,31 @@ class Response:
                 "instance has not been set on this response."
             )
 
-        if codes.is_client_error(self.status_code):
-            message = message.format(self, error_type="Client Error")
-            raise HTTPStatusError(message, request=request, response=self)
-        elif codes.is_server_error(self.status_code):
-            message = message.format(self, error_type="Server Error")
-            raise HTTPStatusError(message, request=request, response=self)
+        if self.is_success:
+            return
+
+        if self.has_redirect_location:
+            message = (
+                "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
+                "Redirect location: '{0.headers[location]}'\n"
+                "For more information check: https://httpstatuses.com/{0.status_code}"
+            )
+        else:
+            message = (
+                "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
+                "For more information check: https://httpstatuses.com/{0.status_code}"
+            )
+
+        status_class = self.status_code // 100
+        error_types = {
+            1: "Informational response",
+            3: "Redirect response",
+            4: "Client error",
+            5: "Server error",
+        }
+        error_type = error_types.get(status_class, "Invalid status code")
+        message = message.format(self, error_type=error_type)
+        raise HTTPStatusError(message, request=request, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
