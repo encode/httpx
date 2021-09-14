@@ -122,8 +122,8 @@ The HTTPX project relies on these excellent libraries:
 * `sniffio` - Async library autodetection.
 * `rich` - Rich terminal support. *(Optional, with `httpx[cli]`)*
 * `click` - Command line client support. *(Optional, with `httpx[cli]`)*
-* `async_generator` - Backport support for `contextlib.asynccontextmanager`. *(Only required for Python 3.6)*
 * `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx[brotli]`)*
+* `async_generator` - Backport support for `contextlib.asynccontextmanager`. *(Only required for Python 3.6)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
