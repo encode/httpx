@@ -174,6 +174,8 @@ def print_response(response: Response) -> None:
 
 
 def download_response(response: Response, download: typing.BinaryIO) -> None:
+    console = rich.console.Console()
+    console.print()
     content_length = response.headers.get("Content-Length")
     with rich.progress.Progress(
         "[progress.description]{task.description}",
