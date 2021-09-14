@@ -12,7 +12,6 @@ import rich.progress
 import rich.syntax
 import rich.table
 
-
 from ._client import Client
 from ._exceptions import RequestError
 from ._models import Request, Response
