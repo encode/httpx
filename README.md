@@ -17,7 +17,7 @@ HTTPX is a fully featured HTTP client library for Python 3. It includes **an int
 command line client**, has support for both **HTTP/1.1 and HTTP/2**, and provides both **sync
 and async APIs**.
 
-**Note**: This is the README for the 1.0 pre-release. This release adds support for an integrated command-line client, and also includes a couple of design changes from 0.19. Redirects are no longer followed by default, and the low-level Transport API has been updated. See [the CHANGELOG](https://github.com/encode/httpx/blob/version-1.0/CHANGELOG.md) for more details.
+**Note**: *This is the README for the 1.0 pre-release. This release adds support for an integrated command-line client, and also includes a couple of design changes from 0.19. Redirects are no longer followed by default, and the low-level Transport API has been updated. Upgrades from 0.19 will need to see [the CHANGELOG](https://github.com/encode/httpx/blob/version-1.0/CHANGELOG.md) for more details.*
 
 ---
 
