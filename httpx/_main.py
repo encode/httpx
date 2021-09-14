@@ -104,11 +104,12 @@ def get_lexer_for_response(response: Response) -> str:
 
 def format_request_headers(request: Request, http2: bool = False) -> str:
     version = "HTTP/2" if http2 else "HTTP/1.1"
-    headers = [(name.lower() if http2 else name, value) for name, value in request.headers.raw]
+    headers = [
+        (name.lower() if http2 else name, value) for name, value in request.headers.raw
+    ]
     target = request.url.raw[-1].decode("ascii")
     lines = [f"{request.method} {target} {version}"] + [
-        f"{name.decode('ascii')}: {value.decode('ascii')}"
-        for name, value in headers
+        f"{name.decode('ascii')}: {value.decode('ascii')}" for name, value in headers
     ]
     return "\n".join(lines)
 
