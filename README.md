@@ -50,11 +50,11 @@ $ pip install --pre 'httpx[cli]'  # The command line client is an optional depen
 
 Which now allows us to use HTTPX directly from the command-line...
 
-[!httpx --help](docs/img/httpx-help.png)
+![httpx --help](docs/img/httpx-help.png)
 
 Sending a request...
 
-[!httpx http://httpbin.org/json](docs/img/httpx-request.png)
+![httpx http://httpbin.org/json](docs/img/httpx-request.png)
 
 ## Features
 
