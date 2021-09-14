@@ -60,7 +60,7 @@ def print_help() -> None:
         "--auth [cyan]<USER PASS>",
         "Username and password to include in the request. Specify '-' for the password to use "
         "a password prompt. Note that using --verbose/-v will expose the Authorization "
-        "header, including the password encoding in a trivially reverisible format.",
+        "header, including the password encoding in a trivially reversible format.",
     )
 
     table.add_row(
@@ -304,7 +304,7 @@ def handle_help(
         "Username and password to include in the request. "
         "Specify '-' for the password to use a password prompt. "
         "Note that using --verbose/-v will expose the Authorization header, "
-        "including the password encoding in a trivially reverisible format."
+        "including the password encoding in a trivially reversible format."
     ),
 )
 @click.option(
