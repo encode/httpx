@@ -1185,12 +1185,13 @@ class Request:
         return {
             name: value
             for name, value in self.__dict__.items()
-            if name not in ["stream"]
+            if name not in ["extensions", "stream"]
         }
 
     def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
         for name, value in state.items():
             setattr(self, name, value)
+        self.extensions = {}
         self.stream = UnattachedStream()
 
 
@@ -1545,13 +1546,14 @@ class Response:
         return {
             name: value
             for name, value in self.__dict__.items()
-            if name not in ["stream", "is_closed", "_decoder"]
+            if name not in ["extensions", "stream", "is_closed", "_decoder"]
         }
 
     def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
         for name, value in state.items():
             setattr(self, name, value)
         self.is_closed = True
+        self.extensions = {}
         self.stream = UnattachedStream()
 
     def read(self) -> bytes:

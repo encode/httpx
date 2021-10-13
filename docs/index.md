@@ -25,19 +25,17 @@ HTTPX is a fully featured HTTP client for Python 3, which provides sync and asyn
 
 
 !!! note
-    This is the documentation for the 1.0 pre-release.
-
-    This release adds support for an integrated command-line client, and also includes a couple of design changes from 0.19. Redirects are no longer followed by default, and the low-level Transport API has been updated. See [the CHANGELOG](https://github.com/encode/httpx/blob/version-1.0/CHANGELOG.md) for more details.
+    The 0.20 release adds support for an integrated command-line client, and also includes a couple of design changes from 0.19. Redirects are no longer followed by default, and the low-level Transport API has been updated. See [the CHANGELOG](https://github.com/encode/httpx/blob/master/CHANGELOG.md) for more details.
 
 ---
 
-Installing the HTTPX 1.0 pre-release.
+Install HTTPX using pip:
 
 ```shell
-$ pip install httpx --pre
+$ pip install httpx
 ```
 
-Now, let's get started...
+Now, let's get started:
 
 ```pycon
 >>> import httpx
@@ -56,7 +54,7 @@ Or, using the command-line client.
 
 ```shell
 # The command line client is an optional dependency.
-$ pip install --pre 'httpx[cli]'
+$ pip install 'httpx[cli]'
 ```
 
 Which now allows us to use HTTPX directly from the command-line...
