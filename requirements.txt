@@ -4,6 +4,8 @@
 # Reference: https://github.com/encode/httpx/pull/1721#discussion_r661241588
 -e .[cli,http2,brotli]
 
+charset-normalizer==2.0.6
+
 # Documentation
 mkdocs==1.2.2
 mkautodoc==0.1.0
@@ -11,17 +13,17 @@ mkdocs-material==7.2.6
 
 # Packaging
 twine==3.4.2
-wheel==0.36.2
+wheel==0.37.0
 
 # Tests & Linting
 autoflake==1.4
 black==21.9b0
-coverage==5.3
+coverage==6.0.2
 cryptography==3.4.8
 flake8==3.9.2
 flake8-bugbear==21.4.3
 flake8-pie==0.5.0
-isort==5.9.1
+isort==5.9.3
 mypy==0.910
 types-certifi==0.1.4
 pytest==6.2.4
