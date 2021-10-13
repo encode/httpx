@@ -4,9 +4,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 1.0.0.beta0
+## 0.20.0
 
-The 1.0 pre-release adds an integrated command-line client, and also includes some
+The 0.20.0 release adds an integrated command-line client, and also includes some
 design changes. The most notable of these is that redirect responses are no longer
 automatically followed, unless specifically requested.
 
