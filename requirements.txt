@@ -23,7 +23,7 @@ cryptography==3.4.8
 flake8==3.9.2
 flake8-bugbear==21.4.3
 flake8-pie==0.5.0
-isort==5.9.1
+isort==5.9.3
 mypy==0.910
 types-certifi==0.1.4
 pytest==6.2.4
