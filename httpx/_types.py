@@ -83,7 +83,7 @@ RequestData = dict
 
 FileContent = Union[IO[bytes], bytes]
 FileTypes = Union[
-    # file (or text)
+    # file (or bytes)
     FileContent,
     # (filename, file (or bytes))
     Tuple[Optional[str], FileContent],
