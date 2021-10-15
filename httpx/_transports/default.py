@@ -60,7 +60,7 @@ A = typing.TypeVar("A", bound="AsyncHTTPTransport")
 def map_httpcore_exceptions() -> typing.Iterator[None]:
     try:
         yield
-    except Exception as exc:
+    except Exception as exc:  # noqa: PIE-786
         mapped_exc = None
 
         for from_exc, to_exc in HTTPCORE_EXC_MAP.items():

@@ -79,8 +79,6 @@ class UseClientDefault:
     but it is used internally when a parameter is not included.
     """
 
-    pass  # pragma: nocover
-
 
 USE_CLIENT_DEFAULT = UseClientDefault()
 
@@ -412,8 +410,7 @@ class BaseClient:
         """
         if params or self.params:
             merged_queryparams = QueryParams(self.params)
-            merged_queryparams = merged_queryparams.merge(params)
-            return merged_queryparams
+            return merged_queryparams.merge(params)
         return params
 
     def _build_auth(self, auth: AuthTypes) -> typing.Optional[Auth]:
@@ -987,7 +984,9 @@ class Client(BaseClient):
 
         status = f"{response.status_code} {response.reason_phrase}"
         response_line = f"{response.http_version} {status}"
-        logger.debug(f'HTTP Request: {request.method} {request.url} "{response_line}"')
+        logger.debug(
+            'HTTP Request: %s %s "%s"', request.method, request.url, response_line
+        )
 
         return response
 
@@ -1480,10 +1479,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             timeout=timeout,
         )
-        response = await self.send(
-            request, auth=auth, follow_redirects=follow_redirects
-        )
-        return response
+        return await self.send(request, auth=auth, follow_redirects=follow_redirects)
 
     @asynccontextmanager
     async def stream(
@@ -1681,7 +1677,9 @@ class AsyncClient(BaseClient):
 
         status = f"{response.status_code} {response.reason_phrase}"
         response_line = f"{response.http_version} {status}"
-        logger.debug(f'HTTP Request: {request.method} {request.url} "{response_line}"')
+        logger.debug(
+            'HTTP Request: %s %s "%s"', request.method, request.url, response_line
+        )
 
         return response
 
