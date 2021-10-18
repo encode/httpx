@@ -150,7 +150,7 @@ class ASGITransport(AsyncBaseTransport):
 
         try:
             await self.app(scope, receive, send)
-        except Exception:
+        except Exception:  # noqa: PIE-786
             if self.raise_app_exceptions or not response_complete.is_set():
                 raise
 
