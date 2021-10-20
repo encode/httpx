@@ -8,6 +8,7 @@ from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qs, quote, unquote, urlencode
 
+import charset_normalizer
 import idna
 import rfc3986
 import rfc3986.exceptions
@@ -34,8 +35,8 @@ from ._exceptions import (
     request_context,
 )
 from ._status_codes import codes
-from ._transports.base import AsyncByteStream, SyncByteStream
 from ._types import (
+    AsyncByteStream,
     CookieTypes,
     HeaderTypes,
     PrimitiveData,
@@ -45,6 +46,7 @@ from ._types import (
     RequestData,
     RequestFiles,
     ResponseContent,
+    SyncByteStream,
     URLTypes,
 )
 from ._utils import (
@@ -977,10 +979,11 @@ class Headers(typing.MutableMapping[str, str]):
         """
         normalized_key = key.lower().encode(self.encoding)
 
-        items = []
-        for _, header_key, header_value in self._list:
-            if header_key == normalized_key:
-                items.append(header_value.decode(self.encoding))
+        items = [
+            header_value.decode(self.encoding)
+            for _, header_key, header_value in self._list
+            if header_key == normalized_key
+        ]
 
         if items:
             return ", ".join(items)
@@ -996,10 +999,11 @@ class Headers(typing.MutableMapping[str, str]):
         set_value = value.encode(self._encoding or "utf-8")
         lookup_key = set_key.lower()
 
-        found_indexes = []
-        for idx, (_, item_key, _) in enumerate(self._list):
-            if item_key == lookup_key:
-                found_indexes.append(idx)
+        found_indexes = [
+            idx
+            for idx, (_, item_key, _) in enumerate(self._list)
+            if item_key == lookup_key
+        ]
 
         for idx in reversed(found_indexes[1:]):
             del self._list[idx]
@@ -1016,10 +1020,11 @@ class Headers(typing.MutableMapping[str, str]):
         """
         del_key = key.lower().encode(self.encoding)
 
-        pop_indexes = []
-        for idx, (_, item_key, _) in enumerate(self._list):
-            if item_key.lower() == del_key:
-                pop_indexes.append(idx)
+        pop_indexes = [
+            idx
+            for idx, (_, item_key, _) in enumerate(self._list)
+            if item_key.lower() == del_key
+        ]
 
         if not pop_indexes:
             raise KeyError(key)
@@ -1077,15 +1082,19 @@ class Request:
         files: RequestFiles = None,
         json: typing.Any = None,
         stream: typing.Union[SyncByteStream, AsyncByteStream] = None,
+        extensions: dict = None,
     ):
-        if isinstance(method, bytes):
-            self.method = method.decode("ascii").upper()
-        else:
-            self.method = method.upper()
+        self.method = (
+            method.decode("ascii").upper()
+            if isinstance(method, bytes)
+            else method.upper()
+        )
         self.url = URL(url)
         if params is not None:
             self.url = self.url.copy_merge_params(params=params)
         self.headers = Headers(headers)
+        self.extensions = {} if extensions is None else extensions
+
         if cookies:
             Cookies(cookies).set_cookie_header(self)
 
@@ -1176,12 +1185,13 @@ class Request:
         return {
             name: value
             for name, value in self.__dict__.items()
-            if name not in ["stream"]
+            if name not in ["extensions", "stream"]
         }
 
     def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
         for name, value in state.items():
             setattr(self, name, value)
+        self.extensions = {}
         self.stream = UnattachedStream()
 
 
@@ -1205,7 +1215,7 @@ class Response:
 
         self._request: typing.Optional[Request] = request
 
-        # When allow_redirects=False and a redirect is received,
+        # When follow_redirects=False and a redirect is received,
         # the client will set `response.next_request`.
         self.next_request: typing.Optional[Request] = None
 
@@ -1311,22 +1321,26 @@ class Response:
             if not content:
                 self._text = ""
             else:
-                decoder = TextDecoder(encoding=self.encoding)
+                decoder = TextDecoder(encoding=self.encoding or "utf-8")
                 self._text = "".join([decoder.decode(self.content), decoder.flush()])
         return self._text
 
     @property
     def encoding(self) -> typing.Optional[str]:
         """
-        Return the encoding, which may have been set explicitly, or may have
-        been specified by the Content-Type header.
+        Return an encoding to use for decoding the byte content into text.
+        The priority for determining this is given by...
+
+        * `.encoding = <>` has been set explicitly.
+        * The encoding as specified by the charset parameter in the Content-Type header.
+        * The encoding as determined by `charset_normalizer`.
+        * UTF-8.
         """
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
-                self._encoding = None
-            else:
-                self._encoding = encoding
+                encoding = self.apparent_encoding
+            self._encoding = encoding
         return self._encoding
 
     @encoding.setter
@@ -1347,6 +1361,19 @@ class Response:
             return None
 
         return params["charset"].strip("'\"")
+
+    @property
+    def apparent_encoding(self) -> typing.Optional[str]:
+        """
+        Return the encoding, as detemined by `charset_normalizer`.
+        """
+        content = getattr(self, "_content", b"")
+        if len(content) < 32:
+            # charset_normalizer will issue warnings if we run it with
+            # fewer bytes than this cutoff.
+            return None
+        match = charset_normalizer.from_bytes(self.content).best()
+        return None if match is None else match.encoding
 
     def _get_content_decoder(self) -> ContentDecoder:
         """
@@ -1374,22 +1401,79 @@ class Response:
         return self._decoder
 
     @property
-    def is_error(self) -> bool:
-        return codes.is_error(self.status_code)
+    def is_informational(self) -> bool:
+        """
+        A property which is `True` for 1xx status codes, `False` otherwise.
+        """
+        return codes.is_informational(self.status_code)
+
+    @property
+    def is_success(self) -> bool:
+        """
+        A property which is `True` for 2xx status codes, `False` otherwise.
+        """
+        return codes.is_success(self.status_code)
 
     @property
     def is_redirect(self) -> bool:
-        return codes.is_redirect(self.status_code) and "location" in self.headers
+        """
+        A property which is `True` for 3xx status codes, `False` otherwise.
+
+        Note that not all responses with a 3xx status code indicate a URL redirect.
+
+        Use `response.has_redirect_location` to determine responses with a properly
+        formed URL redirection.
+        """
+        return codes.is_redirect(self.status_code)
+
+    @property
+    def is_client_error(self) -> bool:
+        """
+        A property which is `True` for 4xx status codes, `False` otherwise.
+        """
+        return codes.is_client_error(self.status_code)
+
+    @property
+    def is_server_error(self) -> bool:
+        """
+        A property which is `True` for 5xx status codes, `False` otherwise.
+        """
+        return codes.is_server_error(self.status_code)
+
+    @property
+    def is_error(self) -> bool:
+        """
+        A property which is `True` for 4xx and 5xx status codes, `False` otherwise.
+        """
+        return codes.is_error(self.status_code)
+
+    @property
+    def has_redirect_location(self) -> bool:
+        """
+        Returns True for 3xx responses with a properly formed URL redirection,
+        `False` otherwise.
+        """
+        return (
+            self.status_code
+            in (
+                # 301 (Cacheable redirect. Method may change to GET.)
+                codes.MOVED_PERMANENTLY,
+                # 302 (Uncacheable redirect. Method may change to GET.)
+                codes.FOUND,
+                # 303 (Client should make a GET or HEAD request.)
+                codes.SEE_OTHER,
+                # 307 (Equiv. 302, but retain method)
+                codes.TEMPORARY_REDIRECT,
+                # 308 (Equiv. 301, but retain method)
+                codes.PERMANENT_REDIRECT,
+            )
+            and "Location" in self.headers
+        )
 
     def raise_for_status(self) -> None:
         """
         Raise the `HTTPStatusError` if one occurred.
         """
-        message = (
-            "{0.status_code} {error_type}: {0.reason_phrase} for url: {0.url}\n"
-            "For more information check: https://httpstatuses.com/{0.status_code}"
-        )
-
         request = self._request
         if request is None:
             raise RuntimeError(
@@ -1397,21 +1481,37 @@ class Response:
                 "instance has not been set on this response."
             )
 
-        if codes.is_client_error(self.status_code):
-            message = message.format(self, error_type="Client Error")
-            raise HTTPStatusError(message, request=request, response=self)
-        elif codes.is_server_error(self.status_code):
-            message = message.format(self, error_type="Server Error")
-            raise HTTPStatusError(message, request=request, response=self)
+        if self.is_success:
+            return
+
+        if self.has_redirect_location:
+            message = (
+                "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
+                "Redirect location: '{0.headers[location]}'\n"
+                "For more information check: https://httpstatuses.com/{0.status_code}"
+            )
+        else:
+            message = (
+                "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
+                "For more information check: https://httpstatuses.com/{0.status_code}"
+            )
+
+        status_class = self.status_code // 100
+        error_types = {
+            1: "Informational response",
+            3: "Redirect response",
+            4: "Client error",
+            5: "Server error",
+        }
+        error_type = error_types.get(status_class, "Invalid status code")
+        message = message.format(self, error_type=error_type)
+        raise HTTPStatusError(message, request=request, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
         if self.charset_encoding is None and self.content and len(self.content) > 3:
             encoding = guess_json_utf(self.content)
             if encoding is not None:
-                try:
-                    return jsonlib.loads(self.content.decode(encoding), **kwargs)
-                except UnicodeDecodeError:
-                    pass
+                return jsonlib.loads(self.content.decode(encoding), **kwargs)
         return jsonlib.loads(self.text, **kwargs)
 
     @property
@@ -1446,13 +1546,14 @@ class Response:
         return {
             name: value
             for name, value in self.__dict__.items()
-            if name not in ["stream", "is_closed", "_decoder"]
+            if name not in ["extensions", "stream", "is_closed", "_decoder"]
         }
 
     def __setstate__(self, state: typing.Dict[str, typing.Any]) -> None:
         for name, value in state.items():
             setattr(self, name, value)
         self.is_closed = True
+        self.extensions = {}
         self.stream = UnattachedStream()
 
     def read(self) -> bytes:
@@ -1470,7 +1571,7 @@ class Response:
         """
         if hasattr(self, "_content"):
             chunk_size = len(self._content) if chunk_size is None else chunk_size
-            for i in range(0, len(self._content), chunk_size):
+            for i in range(0, len(self._content), max(chunk_size, 1)):
                 yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
@@ -1492,7 +1593,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.encoding)
+        decoder = TextDecoder(encoding=self.encoding or "utf-8")
         chunker = TextChunker(chunk_size=chunk_size)
         with request_context(request=self._request):
             for byte_content in self.iter_bytes():
@@ -1568,7 +1669,7 @@ class Response:
         """
         if hasattr(self, "_content"):
             chunk_size = len(self._content) if chunk_size is None else chunk_size
-            for i in range(0, len(self._content), chunk_size):
+            for i in range(0, len(self._content), max(chunk_size, 1)):
                 yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
@@ -1590,7 +1691,7 @@ class Response:
         that handles both gzip, deflate, etc but also detects the content's
         string encoding.
         """
-        decoder = TextDecoder(encoding=self.encoding)
+        decoder = TextDecoder(encoding=self.encoding or "utf-8")
         chunker = TextChunker(chunk_size=chunk_size)
         with request_context(request=self._request):
             async for byte_content in self.aiter_bytes():
@@ -1745,12 +1846,13 @@ class Cookies(MutableMapping):
         if domain is not None and path is not None:
             return self.jar.clear(domain, path, name)
 
-        remove = []
-        for cookie in self.jar:
-            if cookie.name == name:
-                if domain is None or cookie.domain == domain:
-                    if path is None or cookie.path == path:
-                        remove.append(cookie)
+        remove = [
+            cookie
+            for cookie in self.jar
+            if cookie.name == name
+            and (domain is None or cookie.domain == domain)
+            and (path is None or cookie.path == path)
+        ]
 
         for cookie in remove:
             self.jar.clear(cookie.domain, cookie.path, cookie.name)

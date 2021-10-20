@@ -25,15 +25,17 @@ HTTPX is a fully featured HTTP client for Python 3, which provides sync and asyn
 
 
 !!! note
-    HTTPX should currently be considered in beta.
-
-    We believe we've got the public API to a stable point now, but would strongly recommend pinning your dependencies to the `0.18.*` release, so that you're able to properly review [API changes between package updates](https://github.com/encode/httpx/blob/master/CHANGELOG.md).
-
-    A 1.0 release is expected to be issued sometime in 2021.
+    The 0.20 release adds support for an integrated command-line client, and also includes a couple of design changes from 0.19. Redirects are no longer followed by default, and the low-level Transport API has been updated. See [the CHANGELOG](https://github.com/encode/httpx/blob/master/CHANGELOG.md) for more details.
 
 ---
 
-Let's get started...
+Install HTTPX using pip:
+
+```shell
+$ pip install httpx
+```
+
+Now, let's get started:
 
 ```pycon
 >>> import httpx
@@ -48,23 +50,24 @@ Let's get started...
 '<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 ```
 
-Or, using the async API...
+Or, using the command-line client.
 
-_Use [IPython](https://ipython.readthedocs.io/en/stable/) or Python 3.8+ with `python -m asyncio` to try this code interactively._
-
-```pycon
->>> import httpx
->>> async with httpx.AsyncClient() as client:
-...     r = await client.get('https://www.example.org/')
-...
->>> r
-<Response [200 OK]>
+```shell
+# The command line client is an optional dependency.
+$ pip install 'httpx[cli]'
 ```
+
+Which now allows us to use HTTPX directly from the command-line...
+
+![httpx --help](img/httpx-help.png)
+
+Sending a request...
+
+![httpx http://httpbin.org/json](img/httpx-request.png)
 
 ## Features
 
-HTTPX is a high performance asynchronous HTTP client, that builds on the
-well-established usability of `requests`, and gives you:
+HTTPX builds on the well-established usability of `requests`, and gives you:
 
 * A broadly [requests-compatible API](compatibility.md).
 * Standard synchronous interface, but with [async support if you need it](async.md).
@@ -109,13 +112,16 @@ The HTTPX project relies on these excellent libraries:
 
 * `httpcore` - The underlying transport implementation for `httpx`.
   * `h11` - HTTP/1.1 support.
-  * `h2` - HTTP/2 support. *(Optional)*
+  * `h2` - HTTP/2 support. *(Optional, with `httpx[http2]`)*
 * `certifi` - SSL certificates.
+* `charset_normalizer` - Charset auto-detection.
 * `rfc3986` - URL parsing & normalization.
   * `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.
+* `rich` - Rich terminal support. *(Optional, with `httpx[cli]`)*
+* `click` - Command line client support. *(Optional, with `httpx[cli]`)*
+* `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx[brotli]`)*
 * `async_generator` - Backport support for `contextlib.asynccontextmanager`. *(Only required for Python 3.6)*
-* `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design

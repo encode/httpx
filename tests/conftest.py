@@ -14,7 +14,6 @@ from cryptography.hazmat.primitives.serialization import (
     PrivateFormat,
     load_pem_private_key,
 )
-from typing_extensions import Literal
 from uvicorn.config import Config
 from uvicorn.main import Server
 
@@ -85,6 +84,8 @@ async def app(scope, receive, send):
         await echo_headers(scope, receive, send)
     elif scope["path"].startswith("/redirect_301"):
         await redirect_301(scope, receive, send)
+    elif scope["path"].startswith("/json"):
+        await hello_world_json(scope, receive, send)
     else:
         await hello_world(scope, receive, send)
 
@@ -98,6 +99,17 @@ async def hello_world(scope, receive, send):
         }
     )
     await send({"type": "http.response.body", "body": b"Hello, world!"})
+
+
+async def hello_world_json(scope, receive, send):
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [[b"content-type", b"application/json"]],
+        }
+    )
+    await send({"type": "http.response.body", "body": b'{"Hello": "world!"}'})
 
 
 async def slow_response(scope, receive, send):
@@ -144,10 +156,10 @@ async def echo_body(scope, receive, send):
 
 
 async def echo_headers(scope, receive, send):
-    body = {}
-    for name, value in scope.get("headers", []):
-        body[name.capitalize().decode()] = value.decode()
-
+    body = {
+        name.capitalize().decode(): value.decode()
+        for name, value in scope.get("headers", [])
+    }
     await send(
         {
             "type": "http.response.start",
@@ -165,38 +177,35 @@ async def redirect_301(scope, receive, send):
     await send({"type": "http.response.body"})
 
 
-SERVER_SCOPE: Literal["session"] = "session"
-
-
-@pytest.fixture(scope=SERVER_SCOPE)
+@pytest.fixture(scope="session")
 def cert_authority():
     return trustme.CA()
 
 
-@pytest.fixture(scope=SERVER_SCOPE)
+@pytest.fixture(scope="session")
 def ca_cert_pem_file(cert_authority):
     with cert_authority.cert_pem.tempfile() as tmp:
         yield tmp
 
 
-@pytest.fixture(scope=SERVER_SCOPE)
+@pytest.fixture(scope="session")
 def localhost_cert(cert_authority):
     return cert_authority.issue_cert("localhost")
 
 
-@pytest.fixture(scope=SERVER_SCOPE)
+@pytest.fixture(scope="session")
 def cert_pem_file(localhost_cert):
     with localhost_cert.cert_chain_pems[0].tempfile() as tmp:
         yield tmp
 
 
-@pytest.fixture(scope=SERVER_SCOPE)
+@pytest.fixture(scope="session")
 def cert_private_key_file(localhost_cert):
     with localhost_cert.private_key_pem.tempfile() as tmp:
         yield tmp
 
 
-@pytest.fixture(scope=SERVER_SCOPE)
+@pytest.fixture(scope="session")
 def cert_encrypted_private_key_file(localhost_cert):
     # Deserialize the private key and then reserialize with a password
     private_key = load_pem_private_key(
@@ -272,14 +281,14 @@ def serve_in_thread(server: Server):
         thread.join()
 
 
-@pytest.fixture(scope=SERVER_SCOPE)
+@pytest.fixture(scope="session")
 def server():
     config = Config(app=app, lifespan="off", loop="asyncio")
     server = TestServer(config=config)
     yield from serve_in_thread(server)
 
 
-@pytest.fixture(scope=SERVER_SCOPE)
+@pytest.fixture(scope="session")
 def https_server(cert_pem_file, cert_private_key_file):
     config = Config(
         app=app,

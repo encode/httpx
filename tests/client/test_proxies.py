@@ -122,6 +122,7 @@ def test_transport_for_request(url, proxies, expected):
 
 
 @pytest.mark.asyncio
+@pytest.mark.network
 async def test_async_proxy_close():
     try:
         client = httpx.AsyncClient(proxies={"https://": PROXY_URL})
@@ -130,6 +131,7 @@ async def test_async_proxy_close():
         await client.aclose()
 
 
+@pytest.mark.network
 def test_sync_proxy_close():
     try:
         client = httpx.Client(proxies={"https://": PROXY_URL})

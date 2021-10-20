@@ -73,9 +73,7 @@ You can inspect what encoding will be used to decode the response.
 ```
 
 In some cases the response may not contain an explicit encoding, in which case HTTPX
-will attempt to automatically determine an encoding to use. This defaults to
-UTF-8, but also includes robust fallback behaviour for handling ascii,
-iso-8859-1 and windows 1252 encodings.
+will attempt to automatically determine an encoding to use.
 
 ```pycon
 >>> r.encoding
@@ -83,7 +81,6 @@ None
 >>> r.text
 '<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 ```
-
 
 If you need to override the standard behaviour and explicitly set the encoding to
 use, then you can do that too.
@@ -128,7 +125,7 @@ Often Web API responses will be encoded as JSON.
 To include additional headers in the outgoing request, use the `headers` keyword argument:
 
 ```pycon
->>> url = 'http://httpbin.org/headers'
+>>> url = 'https://httpbin.org/headers'
 >>> headers = {'user-agent': 'my-app/0.0.1'}
 >>> r = httpx.get(url, headers=headers)
 ```
@@ -277,7 +274,7 @@ HTTPX also includes an easy shortcut for accessing status codes by their text ph
 True
 ```
 
-We can raise an exception for any Client or Server error responses (4xx or 5xx status codes):
+We can raise an exception for any responses which are not a 2xx success code:
 
 ```pycon
 >>> not_found = httpx.get('https://httpbin.org/status/404')
@@ -380,7 +377,7 @@ If you're using streaming responses in any of these ways then the `response.cont
 Any cookies that are set on the response can be easily accessed:
 
 ```pycon
->>> r = httpx.get('http://httpbin.org/cookies/set?chocolate=chip', allow_redirects=False)
+>>> r = httpx.get('https://httpbin.org/cookies/set?chocolate=chip')
 >>> r.cookies['chocolate']
 'chip'
 ```
@@ -389,7 +386,7 @@ To include cookies in an outgoing request, use the `cookies` parameter:
 
 ```pycon
 >>> cookies = {"peanut": "butter"}
->>> r = httpx.get('http://httpbin.org/cookies', cookies=cookies)
+>>> r = httpx.get('https://httpbin.org/cookies', cookies=cookies)
 >>> r.json()
 {'cookies': {'peanut': 'butter'}}
 ```
@@ -408,17 +405,25 @@ with additional API for accessing cookies by their domain or path.
 
 ## Redirection and History
 
-By default, HTTPX will follow redirects for all HTTP methods.
-
-
-The `history` property of the response can be used to inspect any followed redirects.
-It contains a list of any redirect responses that were followed, in the order
-in which they were made.
+By default, HTTPX will **not** follow redirects for all HTTP methods, although
+this can be explicitly enabled.
 
 For example, GitHub redirects all HTTP requests to HTTPS.
 
 ```pycon
 >>> r = httpx.get('http://github.com/')
+>>> r.status_code
+301
+>>> r.history
+[]
+>>> r.next_request
+<Request('GET', 'https://github.com/')>
+```
+
+You can modify the default redirection handling with the `follow_redirects` parameter:
+
+```pycon
+>>> r = httpx.get('http://github.com/', follow_redirects=True)
 >>> r.url
 URL('https://github.com/')
 >>> r.status_code
@@ -427,15 +432,9 @@ URL('https://github.com/')
 [<Response [301 Moved Permanently]>]
 ```
 
-You can modify the default redirection handling with the allow_redirects parameter:
-
-```pycon
->>> r = httpx.get('http://github.com/', allow_redirects=False)
->>> r.status_code
-301
->>> r.history
-[]
-```
+The `history` property of the response can be used to inspect any followed redirects.
+It contains a list of any redirect responses that were followed, in the order
+in which they were made.
 
 ## Timeouts
 
