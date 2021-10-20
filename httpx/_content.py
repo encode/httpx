@@ -15,8 +15,14 @@ from urllib.parse import urlencode
 
 from ._exceptions import StreamClosed, StreamConsumed
 from ._multipart import MultipartStream
-from ._transports.base import AsyncByteStream, SyncByteStream
-from ._types import RequestContent, RequestData, RequestFiles, ResponseContent
+from ._types import (
+    AsyncByteStream,
+    RequestContent,
+    RequestData,
+    RequestFiles,
+    ResponseContent,
+    SyncByteStream,
+)
 from ._utils import peek_filelike_length, primitive_value_to_str
 
 

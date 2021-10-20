@@ -1,11 +1,10 @@
 import json
 import pickle
-from unittest import mock
 
-import brotlicffi
 import pytest
 
 import httpx
+from httpx._compat import brotli
 
 
 class StreamingBody:
@@ -91,15 +90,49 @@ def test_raise_for_status():
     response = httpx.Response(200, request=request)
     response.raise_for_status()
 
+    # 1xx status codes are informational responses.
+    response = httpx.Response(101, request=request)
+    assert response.is_informational
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        response.raise_for_status()
+    assert str(exc_info.value) == (
+        "Informational response '101 Switching Protocols' for url 'https://example.org'\n"
+        "For more information check: https://httpstatuses.com/101"
+    )
+
+    # 3xx status codes are redirections.
+    headers = {"location": "https://other.org"}
+    response = httpx.Response(303, headers=headers, request=request)
+    assert response.is_redirect
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        response.raise_for_status()
+    assert str(exc_info.value) == (
+        "Redirect response '303 See Other' for url 'https://example.org'\n"
+        "Redirect location: 'https://other.org'\n"
+        "For more information check: https://httpstatuses.com/303"
+    )
+
     # 4xx status codes are a client error.
     response = httpx.Response(403, request=request)
-    with pytest.raises(httpx.HTTPStatusError):
+    assert response.is_client_error
+    assert response.is_error
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
         response.raise_for_status()
+    assert str(exc_info.value) == (
+        "Client error '403 Forbidden' for url 'https://example.org'\n"
+        "For more information check: https://httpstatuses.com/403"
+    )
 
     # 5xx status codes are a server error.
     response = httpx.Response(500, request=request)
-    with pytest.raises(httpx.HTTPStatusError):
+    assert response.is_server_error
+    assert response.is_error
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
         response.raise_for_status()
+    assert str(exc_info.value) == (
+        "Server error '500 Internal Server Error' for url 'https://example.org'\n"
+        "For more information check: https://httpstatuses.com/500"
+    )
 
     # Calling .raise_for_status without setting a request instance is
     # not valid. Should raise a runtime error.
@@ -197,15 +230,16 @@ def test_response_no_charset_with_iso_8859_1_content():
     A response with ISO 8859-1 encoded content should decode correctly,
     even with no charset specified.
     """
-    content = "Accented: Österreich".encode("iso-8859-1")
+    content = "Accented: Österreich abcdefghijklmnopqrstuzwxyz".encode("iso-8859-1")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
         200,
         content=content,
         headers=headers,
     )
-    assert response.text == "Accented: Österreich"
-    assert response.encoding is None
+    assert response.text == "Accented: Österreich abcdefghijklmnopqrstuzwxyz"
+    assert response.charset_encoding is None
+    assert response.apparent_encoding is not None
 
 
 def test_response_no_charset_with_cp_1252_content():
@@ -213,15 +247,16 @@ def test_response_no_charset_with_cp_1252_content():
     A response with Windows 1252 encoded content should decode correctly,
     even with no charset specified.
     """
-    content = "Euro Currency: €".encode("cp1252")
+    content = "Euro Currency: € abcdefghijklmnopqrstuzwxyz".encode("cp1252")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
         200,
         content=content,
         headers=headers,
     )
-    assert response.text == "Euro Currency: €"
-    assert response.encoding is None
+    assert response.text == "Euro Currency: € abcdefghijklmnopqrstuzwxyz"
+    assert response.charset_encoding is None
+    assert response.apparent_encoding is not None
 
 
 def test_response_non_text_encoding():
@@ -485,6 +520,12 @@ def test_iter_bytes_with_chunk_size():
     assert parts == [b"Hello, world!"]
 
 
+def test_iter_bytes_with_empty_response():
+    response = httpx.Response(200, content=b"")
+    parts = [part for part in response.iter_bytes()]
+    assert parts == []
+
+
 @pytest.mark.asyncio
 async def test_aiter_bytes():
     response = httpx.Response(
@@ -572,10 +613,7 @@ def test_iter_lines():
         200,
         content=b"Hello,\nworld!",
     )
-
-    content = []
-    for line in response.iter_lines():
-        content.append(line)
+    content = [line for line in response.iter_lines()]
     assert content == ["Hello,\n", "world!"]
 
 
@@ -721,9 +759,22 @@ def test_json_with_options():
     assert response.json(parse_int=str)["amount"] == "1"
 
 
-def test_json_without_specified_encoding():
+@pytest.mark.parametrize(
+    "encoding",
+    [
+        "utf-8",
+        "utf-8-sig",
+        "utf-16",
+        "utf-16-be",
+        "utf-16-le",
+        "utf-32",
+        "utf-32-be",
+        "utf-32-le",
+    ],
+)
+def test_json_without_specified_charset(encoding):
     data = {"greeting": "hello", "recipient": "world"}
-    content = json.dumps(data).encode("utf-32-be")
+    content = json.dumps(data).encode(encoding)
     headers = {"Content-Type": "application/json"}
     response = httpx.Response(
         200,
@@ -733,30 +784,29 @@ def test_json_without_specified_encoding():
     assert response.json() == data
 
 
-def test_json_without_specified_encoding_decode_error():
+@pytest.mark.parametrize(
+    "encoding",
+    [
+        "utf-8",
+        "utf-8-sig",
+        "utf-16",
+        "utf-16-be",
+        "utf-16-le",
+        "utf-32",
+        "utf-32-be",
+        "utf-32-le",
+    ],
+)
+def test_json_with_specified_charset(encoding):
     data = {"greeting": "hello", "recipient": "world"}
-    content = json.dumps(data).encode("utf-32-be")
-    headers = {"Content-Type": "application/json"}
-    # force incorrect guess from `guess_json_utf` to trigger error
-    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32"):
-        response = httpx.Response(
-            200,
-            content=content,
-            headers=headers,
-        )
-        with pytest.raises(json.decoder.JSONDecodeError):
-            response.json()
-
-
-def test_json_without_specified_encoding_value_error():
-    data = {"greeting": "hello", "recipient": "world"}
-    content = json.dumps(data).encode("utf-32-be")
-    headers = {"Content-Type": "application/json"}
-    # force incorrect guess from `guess_json_utf` to trigger error
-    with mock.patch("httpx._models.guess_json_utf", return_value="utf-32"):
-        response = httpx.Response(200, content=content, headers=headers)
-        with pytest.raises(json.decoder.JSONDecodeError):
-            response.json()
+    content = json.dumps(data).encode(encoding)
+    headers = {"Content-Type": f"application/json; charset={encoding}"}
+    response = httpx.Response(
+        200,
+        content=content,
+        headers=headers,
+    )
+    assert response.json() == data
 
 
 @pytest.mark.parametrize(
@@ -788,7 +838,7 @@ def test_link_headers(headers, expected):
 def test_decode_error_with_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
     body = b"test 123"
-    compressed_body = brotlicffi.compress(body)[3:]
+    compressed_body = brotli.compress(body)[3:]
     with pytest.raises(httpx.DecodingError):
         httpx.Response(
             200,
@@ -809,7 +859,7 @@ def test_decode_error_with_request(header_value):
 def test_value_error_without_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
     body = b"test 123"
-    compressed_body = brotlicffi.compress(body)[3:]
+    compressed_body = brotli.compress(body)[3:]
     with pytest.raises(httpx.DecodingError):
         httpx.Response(200, headers=headers, content=compressed_body)
 

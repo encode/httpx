@@ -305,8 +305,15 @@ def test_client_closed_state_using_implicit_open():
     client.close()
 
     assert client.is_closed
+
+    # Once we're close we cannot make any more requests.
     with pytest.raises(RuntimeError):
         client.get("http://example.com")
+
+    # Once we're closed we cannot reopen the client.
+    with pytest.raises(RuntimeError):
+        with client:
+            pass  # pragma: nocover
 
 
 def test_client_closed_state_using_with_block():

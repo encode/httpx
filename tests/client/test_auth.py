@@ -619,6 +619,13 @@ def test_sync_auth_history() -> None:
     assert len(resp1.history) == 0
 
 
+class ConsumeBodyTransport(httpx.MockTransport):
+    async def handle_async_request(self, request: Request) -> Response:
+        assert isinstance(request.stream, httpx.AsyncByteStream)
+        [_ async for _ in request.stream]
+        return self.handler(request)
+
+
 @pytest.mark.asyncio
 async def test_digest_auth_unavailable_streaming_body():
     url = "https://example.org/"
@@ -628,7 +635,7 @@ async def test_digest_auth_unavailable_streaming_body():
     async def streaming_body():
         yield b"Example request body"  # pragma: nocover
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
+    async with httpx.AsyncClient(transport=ConsumeBodyTransport(app)) as client:
         with pytest.raises(httpx.StreamConsumed):
             await client.post(url, content=streaming_body(), auth=auth)
 
