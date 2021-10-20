@@ -414,7 +414,7 @@ def test_redirect_cookie_behavior():
 def test_redirect_custom_scheme():
     client = httpx.Client(transport=httpx.MockTransport(redirects))
     with pytest.raises(httpx.InvalidURL) as e:
-        client.post("https://example.org/redirect_custom_scheme")
+        client.post("https://example.org/redirect_custom_scheme", follow_redirects=True)
     assert str(e.value) == "Scheme 'market' not supported."
 
 

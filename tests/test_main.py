@@ -161,5 +161,5 @@ def test_errors():
     result = runner.invoke(httpx.main, ["invalid://example.org"])
     assert result.exit_code == 1
     assert splitlines(result.output) == [
-        "UnsupportedProtocol: Request URL has an unsupported protocol 'invalid://'.",
+        "InvalidURL: Request URL has an unsupported protocol 'invalid://'.",
     ]
