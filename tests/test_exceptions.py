@@ -95,3 +95,14 @@ def test_request_attribute() -> None:
     request = httpx.Request("GET", "https://www.example.com")
     exc = httpx.ReadTimeout("Read operation timed out", request=request)
     assert exc.request == request
+
+
+def test_consistent_invalid_url_exception() -> None:
+    with pytest.raises(httpx.InvalidURL):
+        httpx.get("https:/example.com")
+
+    with pytest.raises(httpx.InvalidURL):
+        httpx.get("https://example<>.com")
+
+    with pytest.raises(httpx.InvalidURL):
+        httpx.get("https://🦋")
