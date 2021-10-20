@@ -66,8 +66,3 @@ def test_stream(server):
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert response.http_version == "HTTP/1.1"
-
-
-def test_get_invalid_url():
-    with pytest.raises(httpx.UnsupportedProtocol):
-        httpx.get("invalid://example.org")

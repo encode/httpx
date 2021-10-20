@@ -33,7 +33,7 @@ def test_get(server):
 )
 def test_get_invalid_url(server, url):
     with httpx.Client() as client:
-        with pytest.raises((httpx.UnsupportedProtocol, httpx.LocalProtocolError)):
+        with pytest.raises(httpx.InvalidURL):
             client.get(url)
 
 

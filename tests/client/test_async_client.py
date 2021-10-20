@@ -30,7 +30,7 @@ async def test_get(server):
 @pytest.mark.usefixtures("async_environment")
 async def test_get_invalid_url(server, url):
     async with httpx.AsyncClient() as client:
-        with pytest.raises((httpx.UnsupportedProtocol, httpx.LocalProtocolError)):
+        with pytest.raises(httpx.InvalidURL):
             await client.get(url)
 
 

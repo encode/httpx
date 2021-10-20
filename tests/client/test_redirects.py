@@ -5,7 +5,7 @@ import httpx
 
 def redirects(request: httpx.Request) -> httpx.Response:
     if request.url.scheme not in ("http", "https"):
-        raise httpx.UnsupportedProtocol(f"Scheme {request.url.scheme!r} not supported.")
+        raise httpx.InvalidURL(f"Scheme {request.url.scheme!r} not supported.")
 
     if request.url.path == "/redirect_301":
         status_code = httpx.codes.MOVED_PERMANENTLY
@@ -390,7 +390,7 @@ def test_redirect_cookie_behavior():
 
 def test_redirect_custom_scheme():
     client = httpx.Client(transport=httpx.MockTransport(redirects))
-    with pytest.raises(httpx.UnsupportedProtocol) as e:
+    with pytest.raises(httpx.InvalidURL) as e:
         client.post("https://example.org/redirect_custom_scheme")
     assert str(e.value) == "Scheme 'market' not supported."
 
