@@ -46,10 +46,10 @@ def redirects(request: httpx.Request) -> httpx.Response:
     elif request.url.path == "/multiple_redirects":
         params = httpx.QueryParams(request.url.query)
         count = int(params.get("count", "0"))
-        redirect_count = count - 1
         status_code = httpx.codes.SEE_OTHER if count else httpx.codes.OK
         if count:
             location = "/multiple_redirects"
+            redirect_count = count - 1
             if redirect_count:
                 location += f"?count={redirect_count}"
             headers = {"location": location}
@@ -93,13 +93,12 @@ def redirects(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=data)
 
     elif request.url.path == "/cross_subdomain":
-        if request.headers["Host"] != "www.example.org":
-            status_code = httpx.codes.PERMANENT_REDIRECT
-            headers = {"location": "https://www.example.org/cross_subdomain"}
-            return httpx.Response(status_code, headers=headers)
-        else:
+        if request.headers["Host"] == "www.example.org":
             return httpx.Response(200, text="Hello, world!")
 
+        status_code = httpx.codes.PERMANENT_REDIRECT
+        headers = {"location": "https://www.example.org/cross_subdomain"}
+        return httpx.Response(status_code, headers=headers)
     elif request.url.path == "/redirect_custom_scheme":
         status_code = httpx.codes.MOVED_PERMANENTLY
         headers = {"location": "market://details?id=42"}
@@ -350,10 +349,7 @@ def test_cross_subdomain_redirect():
 def cookie_sessions(request: httpx.Request) -> httpx.Response:
     if request.url.path == "/":
         cookie = request.headers.get("Cookie")
-        if cookie is not None:
-            content = b"Logged in"
-        else:
-            content = b"Not logged in"
+        content = b"Logged in" if cookie is not None else b"Not logged in"
         return httpx.Response(200, content=content)
 
     elif request.url.path == "/login":

@@ -48,8 +48,7 @@ class IteratorByteStream(SyncByteStream):
             raise StreamConsumed()
 
         self._is_stream_consumed = True
-        for part in self._stream:
-            yield part
+        yield from self._stream
 
 
 class AsyncIteratorByteStream(AsyncByteStream):

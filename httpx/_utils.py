@@ -23,7 +23,7 @@ _HTML5_FORM_ENCODING_REPLACEMENTS.update(
     {chr(c): "%{:02X}".format(c) for c in range(0x1F + 1) if c != 0x1B}
 )
 _HTML5_FORM_ENCODING_RE = re.compile(
-    r"|".join([re.escape(c) for c in _HTML5_FORM_ENCODING_REPLACEMENTS.keys()])
+    r"|".join(re.escape(c) for c in _HTML5_FORM_ENCODING_REPLACEMENTS)
 )
 
 
@@ -120,12 +120,11 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
         if sample[1::2] == _null2:  # 2nd and 4th are null
             return "utf-16-le"
         # Did not detect 2 valid UTF-16 ascii-range characters
-    if nullcount == 3:
+    elif nullcount == 3:
         if sample[:3] == _null3:
             return "utf-32-be"
         if sample[1:] == _null3:
             return "utf-32-le"
-        # Did not detect a valid UTF-32 ascii-range character
     return None
 
 
@@ -457,19 +456,18 @@ class URLPattern:
         self.port = url.port
         if not url.host or url.host == "*":
             self.host_regex: typing.Optional[typing.Pattern[str]] = None
+        elif url.host.startswith("*."):
+            # *.example.com should match "www.example.com", but not "example.com"
+            domain = re.escape(url.host[2:])
+            self.host_regex = re.compile(f"^.+\\.{domain}$")
+        elif url.host.startswith("*"):
+            # *example.com should match "www.example.com" and "example.com"
+            domain = re.escape(url.host[1:])
+            self.host_regex = re.compile(f"^(.+\\.)?{domain}$")
         else:
-            if url.host.startswith("*."):
-                # *.example.com should match "www.example.com", but not "example.com"
-                domain = re.escape(url.host[2:])
-                self.host_regex = re.compile(f"^.+\\.{domain}$")
-            elif url.host.startswith("*"):
-                # *example.com should match "www.example.com" and "example.com"
-                domain = re.escape(url.host[1:])
-                self.host_regex = re.compile(f"^(.+\\.)?{domain}$")
-            else:
-                # example.com should match "example.com" but not "www.example.com"
-                domain = re.escape(url.host)
-                self.host_regex = re.compile(f"^{domain}$")
+            # example.com should match "example.com" but not "www.example.com"
+            domain = re.escape(url.host)
+            self.host_regex = re.compile(f"^{domain}$")
 
     def matches(self, other: "URL") -> bool:
         if self.scheme and self.scheme != other.scheme:

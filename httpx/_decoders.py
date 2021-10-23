@@ -175,23 +175,23 @@ class ByteChunker:
             return [content]
 
         self._buffer.write(content)
-        if self._buffer.tell() >= self._chunk_size:
-            value = self._buffer.getvalue()
-            chunks = [
-                value[i : i + self._chunk_size]
-                for i in range(0, len(value), self._chunk_size)
-            ]
-            if len(chunks[-1]) == self._chunk_size:
-                self._buffer.seek(0)
-                self._buffer.truncate()
-                return chunks
-            else:
-                self._buffer.seek(0)
-                self._buffer.write(chunks[-1])
-                self._buffer.truncate()
-                return chunks[:-1]
-        else:
+        if self._buffer.tell() < self._chunk_size:
             return []
+
+        value = self._buffer.getvalue()
+        chunks = [
+            value[i : i + self._chunk_size]
+            for i in range(0, len(value), self._chunk_size)
+        ]
+        if len(chunks[-1]) == self._chunk_size:
+            self._buffer.seek(0)
+            self._buffer.truncate()
+            return chunks
+        else:
+            self._buffer.seek(0)
+            self._buffer.write(chunks[-1])
+            self._buffer.truncate()
+            return chunks[:-1]
 
     def flush(self) -> typing.List[bytes]:
         value = self._buffer.getvalue()
@@ -214,23 +214,23 @@ class TextChunker:
             return [content]
 
         self._buffer.write(content)
-        if self._buffer.tell() >= self._chunk_size:
-            value = self._buffer.getvalue()
-            chunks = [
-                value[i : i + self._chunk_size]
-                for i in range(0, len(value), self._chunk_size)
-            ]
-            if len(chunks[-1]) == self._chunk_size:
-                self._buffer.seek(0)
-                self._buffer.truncate()
-                return chunks
-            else:
-                self._buffer.seek(0)
-                self._buffer.write(chunks[-1])
-                self._buffer.truncate()
-                return chunks[:-1]
-        else:
+        if self._buffer.tell() < self._chunk_size:
             return []
+
+        value = self._buffer.getvalue()
+        chunks = [
+            value[i : i + self._chunk_size]
+            for i in range(0, len(value), self._chunk_size)
+        ]
+        if len(chunks[-1]) == self._chunk_size:
+            self._buffer.seek(0)
+            self._buffer.truncate()
+            return chunks
+        else:
+            self._buffer.seek(0)
+            self._buffer.write(chunks[-1])
+            self._buffer.truncate()
+            return chunks[:-1]
 
     def flush(self) -> typing.List[str]:
         value = self._buffer.getvalue()
@@ -269,16 +269,13 @@ class LineDecoder:
         lines = []
 
         if text and self.buffer and self.buffer[-1] == "\r":
+            lines.append(self.buffer[:-1] + "\n")
             if text.startswith("\n"):
                 # Handle the case where we have an "\r\n" split across
                 # our previous input, and our new chunk.
-                lines.append(self.buffer[:-1] + "\n")
                 self.buffer = ""
                 text = text[1:]
             else:
-                # Handle the case where we have "\r" at the end of our
-                # previous input.
-                lines.append(self.buffer[:-1] + "\n")
                 self.buffer = ""
 
         while text:
