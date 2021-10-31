@@ -260,7 +260,7 @@ client = httpx.Client(event_hooks={'response': [raise_on_4xx_5xx]})
     should be read or not.
 
     If you need access to the response body inside an event hook, you'll
-    need to call `response.read()` (or `response.aread()` for AsyncClients)
+    need to call `response.read()`, or for AsyncClients, `response.aread()`.
 
 The hooks are also allowed to modify `request` and `response` objects.
 
