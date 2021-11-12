@@ -7,7 +7,7 @@
 charset-normalizer==2.0.6
 
 # Documentation
-mkdocs==1.2.2
+mkdocs==1.2.3
 mkautodoc==0.1.0
 mkdocs-material==7.2.6
 
