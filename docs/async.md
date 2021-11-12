@@ -190,6 +190,29 @@ curio.run(main)
 !!! important
     The `curio` package must be installed to use the Curio backend.
 
+
+### [AnyIO](https://github.com/agronholm/anyio)
+
+AnyIO is an [asynchronous networking and concurrency library](https://anyio.readthedocs.io/) that works on top of either `asyncio` or `trio`. It blends in with native libraries of your chosen backend (defaults to `asyncio`).
+
+```python
+import httpx
+import anyio
+
+async def main():
+    async with httpx.AsyncClient() as client:
+        response = await client.get('https://www.example.com/')
+        print(response)
+
+anyio.run(main, backend='trio')
+```
+
+When instantiating a transport instance explicitly, for maximum consistency, the same `backend` parameter can be passed to `AsyncHTTPTransport`.
+```python
+transport = httpx.AsyncHTTPTransport(backend="trio")
+```
+
+
 ## Calling into Python Web Apps
 
 Just as `httpx.Client` allows you to call directly into WSGI web applications,
@@ -237,3 +260,9 @@ async with httpx.AsyncClient(transport=transport, base_url="http://testserver") 
 ```
 
 See [the ASGI documentation](https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope) for more details on the `client` and `root_path` keys.
+
+## Startup/shutdown of ASGI apps
+
+It is not in the scope of HTTPX to trigger lifespan events of your app.
+
+However it is suggested to use `LifespanManager` from [asgi-lifespan](https://github.com/florimondmanca/asgi-lifespan#usage) in pair with `AsyncClient`.

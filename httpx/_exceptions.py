@@ -27,9 +27,9 @@ Our exception hierarchy:
 * CookieConflict
 * StreamError
   x StreamConsumed
+  x StreamClosed
   x ResponseNotRead
   x RequestNotRead
-  x ResponseClosed
 """
 import contextlib
 import typing
@@ -199,7 +199,7 @@ class RemoteProtocolError(ProtocolError):
     """
     The protocol was violated by the server.
 
-    For exaample, returning malformed HTTP.
+    For example, returning malformed HTTP.
     """
 
 
@@ -262,7 +262,7 @@ class CookieConflict(Exception):
 # the request/response stream in an invalid manner.
 
 
-class StreamError(Exception):
+class StreamError(RuntimeError):
     """
     The base class for stream exceptions.
 
@@ -292,31 +292,7 @@ class StreamConsumed(StreamError):
         super().__init__(message)
 
 
-class ResponseNotRead(StreamError):
-    """
-    Attempted to access response content, without having called `read()`
-    after a streaming response.
-    """
-
-    def __init__(self) -> None:
-        message = (
-            "Attempted to access response content, without having called `read()` "
-            "after a streaming response."
-        )
-        super().__init__(message)
-
-
-class RequestNotRead(StreamError):
-    """
-    Attempted to access request content, without having called `read()`.
-    """
-
-    def __init__(self) -> None:
-        message = "Attempted to access request content, without having called `read()`."
-        super().__init__(message)
-
-
-class ResponseClosed(StreamError):
+class StreamClosed(StreamError):
     """
     Attempted to read or stream response content, but the request has been
     closed.
@@ -324,9 +300,28 @@ class ResponseClosed(StreamError):
 
     def __init__(self) -> None:
         message = (
-            "Attempted to read or stream response content, but the request has "
-            "been closed."
+            "Attempted to read or stream content, but the stream has " "been closed."
         )
+        super().__init__(message)
+
+
+class ResponseNotRead(StreamError):
+    """
+    Attempted to access streaming response content, without having called `read()`.
+    """
+
+    def __init__(self) -> None:
+        message = "Attempted to access streaming response content, without having called `read()`."
+        super().__init__(message)
+
+
+class RequestNotRead(StreamError):
+    """
+    Attempted to access streaming request content, without having called `read()`.
+    """
+
+    def __init__(self) -> None:
+        message = "Attempted to access streaming request content, without having called `read()`."
         super().__init__(message)
 
 

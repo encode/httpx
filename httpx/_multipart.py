@@ -1,13 +1,21 @@
 import binascii
+import io
 import os
 import typing
 from pathlib import Path
 
-from ._types import FileContent, FileTypes, RequestFiles
+from ._types import (
+    AsyncByteStream,
+    FileContent,
+    FileTypes,
+    RequestFiles,
+    SyncByteStream,
+)
 from ._utils import (
     format_form_param,
     guess_content_type,
     peek_filelike_length,
+    primitive_value_to_str,
     to_bytes,
 )
 
@@ -17,17 +25,21 @@ class DataField:
     A single form field item, within a multipart form field.
     """
 
-    def __init__(self, name: str, value: typing.Union[str, bytes]) -> None:
+    def __init__(
+        self, name: str, value: typing.Union[str, bytes, int, float, None]
+    ) -> None:
         if not isinstance(name, str):
             raise TypeError(
                 f"Invalid type for name. Expected str, got {type(name)}: {name!r}"
             )
-        if not isinstance(value, (str, bytes)):
+        if value is not None and not isinstance(value, (str, bytes, int, float)):
             raise TypeError(
-                f"Invalid type for value. Expected str or bytes, got {type(value)}: {value!r}"
+                f"Invalid type for value. Expected primitive type, got {type(value)}: {value!r}"
             )
         self.name = name
-        self.value = value
+        self.value: typing.Union[str, bytes] = (
+            value if isinstance(value, bytes) else primitive_value_to_str(value)
+        )
 
     def render_headers(self) -> bytes:
         if not hasattr(self, "_headers"):
@@ -40,11 +52,7 @@ class DataField:
 
     def render_data(self) -> bytes:
         if not hasattr(self, "_data"):
-            self._data = (
-                self.value
-                if isinstance(self.value, bytes)
-                else self.value.encode("utf-8")
-            )
+            self._data = to_bytes(self.value)
 
         return self._data
 
@@ -79,6 +87,9 @@ class FileField:
             fileobj = value
             content_type = guess_content_type(filename)
 
+        if isinstance(fileobj, str) or isinstance(fileobj, io.StringIO):
+            raise TypeError(f"Expected bytes or bytes-like object got: {type(fileobj)}")
+
         self.filename = filename
         self.file = fileobj
         self.content_type = content_type
@@ -88,12 +99,11 @@ class FileField:
         headers = self.render_headers()
 
         if isinstance(self.file, (str, bytes)):
-            return len(headers) + len(self.file)
+            return len(headers) + len(to_bytes(self.file))
 
         # Let's do our best not to read `file` into memory.
-        try:
-            file_length = peek_filelike_length(self.file)
-        except OSError:
+        file_length = peek_filelike_length(self.file)
+        if file_length is None:
             # As a last resort, read file and cache contents for later.
             assert not hasattr(self, "_data")
             self._data = to_bytes(self.file.read())
@@ -140,7 +150,7 @@ class FileField:
         yield from self.render_data()
 
 
-class MultipartStream:
+class MultipartStream(SyncByteStream, AsyncByteStream):
     """
     Request content as streaming multipart encoded form data.
     """

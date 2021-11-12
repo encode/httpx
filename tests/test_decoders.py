@@ -1,9 +1,9 @@
 import zlib
 
-import brotli
 import pytest
 
 import httpx
+from httpx._compat import brotli
 from httpx._decoders import (
     BrotliDecoder,
     ByteChunker,
@@ -179,8 +179,8 @@ def test_decoding_errors(header_value):
     [
         ((b"Hello,", b" world!"), "ascii"),
         ((b"\xe3\x83", b"\x88\xe3\x83\xa9", b"\xe3", b"\x83\x99\xe3\x83\xab"), "utf-8"),
-        ((b"Euro character: \x88!", b""), "cp1252"),
-        ((b"Accented: \xd6sterreich", b""), "iso-8859-1"),
+        ((b"Euro character: \x88! abcdefghijklmnopqrstuvwxyz", b""), "cp1252"),
+        ((b"Accented: \xd6sterreich abcdefghijklmnopqrstuvwxyz", b""), "iso-8859-1"),
     ],
 )
 @pytest.mark.asyncio
@@ -199,10 +199,9 @@ async def test_text_decoder(data, encoding):
     assert response.text == (b"".join(data)).decode(encoding)
 
     # Streaming `.aiter_text` iteratively.
-    response = httpx.Response(
-        200,
-        content=iterator(),
-    )
+    # Note that if we streamed the text *without* having read it first, then
+    # we won't get a `charset_normalizer` guess, and will instead always rely
+    # on utf-8 if no charset is specified.
     text = "".join([part async for part in response.aiter_text()])
     assert text == (b"".join(data)).decode(encoding)
 

@@ -228,10 +228,10 @@ every time a particular type of event takes place.
 
 There are currently two event hooks:
 
-* `request` - Called once a request is about to be sent. Passed the `request` instance.
-* `response` - Called once the response has been returned. Passed the `response` instance.
+* `request` - Called after a request is fully prepared, but before it is sent to the network. Passed the `request` instance.
+* `response` - Called after the response has been fetched from the network, but before it is returned to the caller. Passed the `response` instance.
 
-These allow you to install client-wide functionality such as logging and monitoring.
+These allow you to install client-wide functionality such as logging, monitoring or tracing.
 
 ```python
 def log_request(request):
@@ -253,6 +253,22 @@ def raise_on_4xx_5xx(response):
     response.raise_for_status()
 
 client = httpx.Client(event_hooks={'response': [raise_on_4xx_5xx]})
+```
+
+!!! note
+    Response event hooks are called before determining if the response body
+    should be read or not.
+
+    If you need access to the response body inside an event hook, you'll
+    need to call `response.read()`, or for AsyncClients, `response.aread()`.
+
+The hooks are also allowed to modify `request` and `response` objects.
+
+```python
+def add_timestamp(request):
+    request.headers['x-request-timestamp'] = datetime.now(tz=datetime.utc).isoformat()
+
+client = httpx.Client(event_hooks={'request': [add_timestamp]})
 ```
 
 Event hooks must always be set as a **list of callables**, and you may register
@@ -361,7 +377,7 @@ password example-password
 ...
 ```
 
-When using `Client` instances, `trust_env` should be set on the client itself, rather that on the request methods:
+When using `Client` instances, `trust_env` should be set on the client itself, rather than on the request methods:
 
 ```python
 client = httpx.Client(trust_env=False)
@@ -667,7 +683,7 @@ You can control the connection pool size using the `limits` keyword
 argument on the client. It takes instances of `httpx.Limits` which define:
 
 - `max_keepalive`, number of allowable keep-alive connections, or `None` to always
-allow. (Defaults 10)
+allow. (Defaults 20)
 - `max_connections`, maximum number of allowable connections, or` None` for no limits.
 (Default 100)
 
@@ -945,6 +961,32 @@ client = httpx.Client(verify=False)
 
 The `client.get(...)` method and other request methods *do not* support changing the SSL settings on a per-request basis. If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
 
+### Client Side Certificates
+
+You can also specify a local cert to use as a client-side certificate, either a path to an SSL certificate file, or two-tuple of (certificate file, key file), or a three-tuple of (certificate file, key file, password)
+
+```python
+import httpx
+
+r = httpx.get("https://example.org", cert="path/to/client.pem")
+```
+
+Alternatively,
+
+```pycon
+>>> cert = ("path/to/client.pem", "path/to/client.key")
+>>> httpx.get("https://example.org", cert=cert)
+<Response [200 OK]>
+```
+
+or
+
+```pycon
+>>> cert = ("path/to/client.pem", "path/to/client.key", "password")
+>>> httpx.get("https://example.org", cert=cert)
+<Response [200 OK]>
+```
+
 ### Making HTTPS requests to a local server
 
 When making requests to local servers, such as a development server running on `localhost`, you will typically be using unencrypted HTTP connections.
@@ -1044,7 +1086,7 @@ class HelloWorldTransport(httpx.BaseTransport):
     def handle_request(self, method, url, headers, stream, extensions):
         message = {"text": "Hello, world!"}
         content = json.dumps(message).encode("utf-8")
-        stream = [content]
+        stream = httpx.ByteStream(content)
         headers = [(b"content-type", b"application/json")]
         extensions = {}
         return 200, headers, stream, extensions
@@ -1074,7 +1116,7 @@ def handler(request):
 
 
 # Switch to a mock transport, if the TESTING environment variable is set.
-if os.environ['TESTING'].upper() == "TRUE":
+if os.environ.get('TESTING', '').upper() == "TRUE":
     transport = httpx.MockTransport(handler)
 else:
     transport = httpx.HTTPTransport()
@@ -1105,7 +1147,7 @@ class HTTPSRedirectTransport(httpx.BaseTransport):
             location = b"https://%s%s" % (host, path)
         else:
             location = b"https://%s:%d%s" % (host, port, path)
-        stream = [b""]
+        stream = httpx.ByteStream(b"")
         headers = [(b"location", location)]
         extensions = {}
         return 303, headers, stream, extensions

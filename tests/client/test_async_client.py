@@ -94,8 +94,19 @@ async def test_stream_request(server):
         yield b"world!"
 
     async with httpx.AsyncClient() as client:
-        response = await client.request("POST", server.url, content=hello_world())
+        response = await client.post(server.url, content=hello_world())
     assert response.status_code == 200
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_cannot_stream_sync_request(server):
+    def hello_world():  # pragma: nocover
+        yield b"Hello, "
+        yield b"world!"
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(RuntimeError):
+            await client.post(server.url, content=hello_world())
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -254,8 +265,14 @@ async def test_client_closed_state_using_implicit_open():
     await client.aclose()
 
     assert client.is_closed
+    # Once we're close we cannot make any more requests.
     with pytest.raises(RuntimeError):
         await client.get("http://example.com")
+
+    # Once we're closed we cannot reopen the client.
+    with pytest.raises(RuntimeError):
+        async with client:
+            pass  # pragma: nocover
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -313,3 +330,12 @@ async def test_async_mock_transport():
         response = await client.get("https://www.example.com")
         assert response.status_code == 200
         assert response.text == "Hello, world!"
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_server_extensions(server):
+    url = server.url
+    async with httpx.AsyncClient(http2=True) as client:
+        response = await client.get(url)
+    assert response.status_code == 200
+    assert response.extensions["http_version"] == b"HTTP/1.1"

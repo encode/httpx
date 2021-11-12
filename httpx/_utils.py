@@ -1,5 +1,4 @@
 import codecs
-import collections
 import logging
 import mimetypes
 import netrc
@@ -8,7 +7,6 @@ import re
 import sys
 import time
 import typing
-import warnings
 from pathlib import Path
 from urllib.request import getproxies
 
@@ -22,7 +20,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
 _HTML5_FORM_ENCODING_REPLACEMENTS.update(
-    {chr(c): "%{:02X}".format(c) for c in range(0x00, 0x1F + 1) if c != 0x1B}
+    {chr(c): "%{:02X}".format(c) for c in range(0x1F + 1) if c != 0x1B}
 )
 _HTML5_FORM_ENCODING_RE = re.compile(
     r"|".join([re.escape(c) for c in _HTML5_FORM_ENCODING_REPLACEMENTS.keys()])
@@ -56,9 +54,9 @@ def normalize_header_value(
     return value.encode(encoding or "ascii")
 
 
-def str_query_param(value: "PrimitiveData") -> str:
+def primitive_value_to_str(value: "PrimitiveData") -> str:
     """
-    Coerce a primitive data type into a string value for query params.
+    Coerce a primitive data type into a string value.
 
     Note that we prefer JSON-style 'true'/'false' for boolean values here.
     """
@@ -344,7 +342,7 @@ def guess_content_type(filename: typing.Optional[str]) -> typing.Optional[str]:
     return None
 
 
-def peek_filelike_length(stream: typing.IO) -> int:
+def peek_filelike_length(stream: typing.Any) -> typing.Optional[int]:
     """
     Given a file-like stream object, return its length in number of bytes
     without reading it into memory.
@@ -352,7 +350,9 @@ def peek_filelike_length(stream: typing.IO) -> int:
     try:
         # Is it an actual file?
         fd = stream.fileno()
-    except OSError:
+        # Yup, seems to be an actual file.
+        length = os.fstat(fd).st_size
+    except (AttributeError, OSError):
         # No... Maybe it's something that supports random access, like `io.BytesIO`?
         try:
             # Assuming so, go to end of stream to figure out its length,
@@ -360,39 +360,11 @@ def peek_filelike_length(stream: typing.IO) -> int:
             offset = stream.tell()
             length = stream.seek(0, os.SEEK_END)
             stream.seek(offset)
-        except OSError:
+        except (AttributeError, OSError):
             # Not even that? Sorry, we're doomed...
-            raise
-        else:
-            return length
-    else:
-        # Yup, seems to be an actual file.
-        return os.fstat(fd).st_size
+            return None
 
-
-def flatten_queryparams(
-    queryparams: typing.Mapping[
-        str, typing.Union["PrimitiveData", typing.Sequence["PrimitiveData"]]
-    ]
-) -> typing.List[typing.Tuple[str, "PrimitiveData"]]:
-    """
-    Convert a mapping of query params into a flat list of two-tuples
-    representing each item.
-
-    Example:
-    >>> flatten_queryparams_values({"q": "httpx", "tag": ["python", "dev"]})
-    [("q", "httpx), ("tag", "python"), ("tag", "dev")]
-    """
-    items = []
-
-    for k, v in queryparams.items():
-        if isinstance(v, collections.abc.Sequence) and not isinstance(v, (str, bytes)):
-            for u in v:
-                items.append((k, u))
-        else:
-            items.append((k, typing.cast("PrimitiveData", v)))
-
-    return items
+    return length
 
 
 class Timer:
@@ -472,12 +444,11 @@ class URLPattern:
         from ._models import URL
 
         if pattern and ":" not in pattern:
-            warn_deprecated(
+            raise ValueError(
                 f"Proxy keys should use proper URL forms rather "
                 f"than plain scheme strings. "
                 f'Instead of "{pattern}", use "{pattern}://"'
             )
-            pattern += "://"
 
         url = URL(pattern)
         self.pattern = pattern
@@ -535,7 +506,3 @@ class URLPattern:
 
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, URLPattern) and self.pattern == other.pattern
-
-
-def warn_deprecated(message: str) -> None:  # pragma: nocover
-    warnings.warn(message, DeprecationWarning, stacklevel=2)

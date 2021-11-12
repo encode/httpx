@@ -1,13 +1,71 @@
 # Requests Compatibility Guide
 
-HTTPX aims to be broadly compatible with the `requests` API.
+HTTPX aims to be broadly compatible with the `requests` API, although there are a
+few design differences in places.
 
 This documentation outlines places where the API differs...
+
+## Redirects
+
+Unlike `requests`, HTTPX does **not follow redirects by default**.
+
+We differ in behaviour here [because auto-redirects can easily mask unnecessary network
+calls being made](https://github.com/encode/httpx/discussions/1785).
+
+You can still enable behaviour to automatically follow redirects, but you need to
+do so explicitly...
+
+```python
+respose = client.get(url, follow_redirects=True)
+```
+
+Or else instantiate a client, with redirect following enabled by default...
+
+```python
+client = httpx.Client(follow_redirects=True)
+```
+
+## Client instances
+
+The HTTPX equivalent of `requests.Session` is `httpx.Client`.
+
+```python
+session = requests.Session(**kwargs)
+```
+
+is generally equivalent to
+
+```python
+client = httpx.Client(**kwargs)
+```
 
 ## Request URLs
 
 Accessing `response.url` will return a `URL` instance, rather than a string.
+
 Use `str(response.url)` if you need a string instance.
+
+## Determining the next redirect request
+
+The `requests` library exposes an attribute `response.next`, which can be used to obtain the next redirect request.
+
+```python
+session = requests.Session()
+request = requests.Request("GET", ...).prepare()
+while request is not None:
+    response = session.send(request, allow_redirects=False)
+    request = response.next
+```
+
+In HTTPX, this attribute is instead named `response.next_request`. For example:
+
+```python
+client = httpx.Client()
+request = client.build_request("GET", ...)
+while request is not None:
+    response = client.send(request)
+    request = response.next_request
+```
 
 ## Request Content
 
@@ -28,14 +86,39 @@ And using `data=...` to send form data:
 httpx.post(..., data={"message": "Hello, world"})
 ```
 
-If you're using a type checking tool such as `mypy`, you'll see warnings issues if using test/byte content with the `data` argument.
-However, for compatibility reasons with `requests`, we do still handle the case where `data=...` is used with raw binary and text contents.
+Using the `data=<text/byte content>` will raise a deprecation warning,
+and is expected to be fully removed with the HTTPX 1.0 release.
+
+## Upload files
+
+HTTPX strictly enforces that upload files must be opened in binary mode, in order
+to avoid character encoding issues that can result from attempting to upload files
+opened in text mode.
 
 ## Content encoding
 
 HTTPX uses `utf-8` for encoding `str` request bodies. For example, when using `content=<str>` the request body will be encoded to `utf-8` before being sent over the wire. This differs from Requests which uses `latin1`. If you need an explicit encoding, pass encoded bytes explictly, e.g. `content=<str>.encode("latin1")`.
+For response bodies, assuming the server didn't send an explicit encoding then HTTPX will do its best to figure out an appropriate encoding. HTTPX makes a guess at the encoding to use for decoding the response using `charset_normalizer`. Fallback to that or any content with less than 32 octets will be decoded using `utf-8` with the `error="replace"` decoder strategy.
 
-For response bodies, assuming the server didn't send an explicit encoding then HTTPX will do its best to figure out an appropriate encoding. Unlike Requests which uses the `chardet` library, HTTPX relies on a plainer fallback strategy (basically attempting UTF-8, or using Windows-1252 as a fallback). This strategy should be robust enough to handle the vast majority of use cases.
+## Cookies
+
+If using a client instance, then cookies should always be set on the client rather than on a per-request basis.
+
+This usage is supported:
+
+```python
+client = httpx.Client(cookies=...)
+client.post(...)
+```
+
+This usage is **not** supported:
+
+```python
+client = httpx.Client()
+client.post(..., cookies=...)
+```
+
+We prefer enforcing a stricter API here because it provides clearer expectations around cookie persistence, particularly when redirects occur.
 
 ## Status Codes
 
@@ -50,7 +133,7 @@ HTTPX provides a `.stream()` interface rather than using `stream=True`. This ens
 For example:
 
 ```python
-with request.stream("GET", "https://www.example.com") as response:
+with httpx.stream("GET", "https://www.example.com") as response:
     ...
 ```
 
@@ -82,33 +165,27 @@ Requests supports `REQUESTS_CA_BUNDLE` which points to either a file or a direct
 
 ## Request body on HTTP methods
 
-The HTTP `GET`, `DELETE`, `HEAD`, and `OPTIONS` methods are specified as not supporting a request body. To stay in line with this, the `.get`, `.delete`, `.head` and `.options` functions do not support `files`, `data`, or `json` arguments.
+The HTTP `GET`, `DELETE`, `HEAD`, and `OPTIONS` methods are specified as not supporting a request body. To stay in line with this, the `.get`, `.delete`, `.head` and `.options` functions do not support `content`, `files`, `data`, or `json` arguments.
 
 If you really do need to send request data using these http methods you should use the generic `.request` function instead.
 
-## Checking for 4xx/5xx responses
-
-We don't support `response.is_ok` since the naming is ambiguous there, and might incorrectly imply an equivalence to `response.status_code == codes.OK`. Instead we provide the `response.is_error` property. Use `if not response.is_error:` instead of `if response.is_ok:`.
-
-## Client instances
-
-The HTTPX equivalent of `requests.Session` is `httpx.Client`.
-
 ```python
-session = requests.Session(**kwargs)
+httpx.request(
+  method="DELETE",
+  url="https://www.example.com/",
+  content=b'A request body on a DELETE request.'
+)
 ```
 
-is generally equivalent to
+## Checking for success and failure responses
 
-```python
-client = httpx.Client(**kwargs)
-```
+We don't support `response.is_ok` since the naming is ambiguous there, and might incorrectly imply an equivalence to `response.status_code == codes.OK`. Instead we provide the `response.is_success` property, which can be used to check for a 2xx response.
 
 ## Request instantiation
 
 There is no notion of [prepared requests](https://requests.readthedocs.io/en/stable/user/advanced/#prepared-requests) in HTTPX. If you need to customize request instantiation, see [Request instances](advanced.md#request-instances).
 
-Besides, `httpx.Request()` does not support the `auth`, `timeout`, `allow_redirects`, `proxies`, `verify` and `cert` parameters. However these are available in `httpx.request`, `httpx.get`, `httpx.post` etc., as well as on [`Client` instances](advanced.md#client-instances).
+Besides, `httpx.Request()` does not support the `auth`, `timeout`, `follow_redirects`, `proxies`, `verify` and `cert` parameters. However these are available in `httpx.request`, `httpx.get`, `httpx.post` etc., as well as on [`Client` instances](advanced.md#client-instances).
 
 ## Mocking
 
@@ -124,29 +201,10 @@ On the other hand, HTTPX uses [HTTPCore](https://github.com/encode/httpcore) as 
 
 `requests` omits `params` whose values are `None` (e.g. `requests.get(..., params={"foo": None})`). This is not supported by HTTPX.
 
-## HEAD redirection
-
-In `requests`, all top-level API follow redirects by default except `HEAD`.
-In consideration of consistency, we make `HEAD` follow redirects by default in HTTPX.
-
-## Determining the next redirect request
-
-When using `allow_redirects=False`, the `requests` library exposes an attribute `response.next`, which can be used to obtain the next redirect request.
-
-In HTTPX, this attribute is instead named `response.next_request`. For example:
-
-```python
-client = httpx.Client()
-request = client.build_request("GET", ...)
-while request is not None:
-    response = client.send(request, allow_redirects=False)
-    request = response.next_request
-```
-
 ## Event Hooks
 
 `requests` allows event hooks to mutate `Request` and `Response` objects. See [examples](https://requests.readthedocs.io/en/master/user/advanced/#event-hooks) given in the documentation for `requests`.
 
-In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response. 
+In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response.
 
 If you are looking for more control, consider checking out [Custom Transports](advanced.md#custom-transports).

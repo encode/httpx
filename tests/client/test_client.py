@@ -114,6 +114,16 @@ def test_raw_iterator(server):
     assert body == b"Hello, world!"
 
 
+def test_cannot_stream_async_request(server):
+    async def hello_world():  # pragma: nocover
+        yield b"Hello, "
+        yield b"world!"
+
+    with httpx.Client() as client:
+        with pytest.raises(RuntimeError):
+            client.post(server.url, content=hello_world())
+
+
 def test_raise_for_status(server):
     with httpx.Client() as client:
         for status_code in (200, 400, 404, 500, 505):
@@ -212,16 +222,6 @@ def test_merge_relative_url_with_encoded_slashes():
     assert request.url == "https://www.example.com/base%2Fpath/testing"
 
 
-def test_pool_limits_deprecated():
-    limits = httpx.Limits()
-
-    with pytest.warns(DeprecationWarning):
-        httpx.Client(pool_limits=limits)
-
-    with pytest.warns(DeprecationWarning):
-        httpx.AsyncClient(pool_limits=limits)
-
-
 def test_context_managed_transport():
     class Transport(httpx.BaseTransport):
         def __init__(self):
@@ -305,8 +305,15 @@ def test_client_closed_state_using_implicit_open():
     client.close()
 
     assert client.is_closed
+
+    # Once we're close we cannot make any more requests.
     with pytest.raises(RuntimeError):
         client.get("http://example.com")
+
+    # Once we're closed we cannot reopen the client.
+    with pytest.raises(RuntimeError):
+        with client:
+            pass  # pragma: nocover
 
 
 def test_client_closed_state_using_with_block():
@@ -383,3 +390,11 @@ def test_all_mounted_transport():
     response = client.get("https://www.example.com")
     assert response.status_code == 200
     assert response.json() == {"app": "mounted"}
+
+
+def test_server_extensions(server):
+    url = server.url.copy_with(path="/http_version_2")
+    with httpx.Client(http2=True) as client:
+        response = client.get(url)
+    assert response.status_code == 200
+    assert response.extensions["http_version"] == b"HTTP/1.1"

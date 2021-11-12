@@ -1,8 +1,9 @@
 import typing
-from urllib.parse import unquote
 
 import sniffio
 
+from .._models import Request, Response
+from .._types import AsyncByteStream
 from .base import AsyncBaseTransport
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -22,6 +23,14 @@ def create_event() -> "Event":
         import asyncio
 
         return asyncio.Event()
+
+
+class ASGIResponseStream(AsyncByteStream):
+    def __init__(self, body: typing.List[bytes]) -> None:
+        self._body = body
+
+    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        yield b"".join(self._body)
 
 
 class ASGITransport(AsyncBaseTransport):
@@ -71,34 +80,28 @@ class ASGITransport(AsyncBaseTransport):
 
     async def handle_async_request(
         self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: typing.AsyncIterable[bytes],
-        extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], typing.AsyncIterable[bytes], dict
-    ]:
+        request: Request,
+    ) -> Response:
+        assert isinstance(request.stream, AsyncByteStream)
+
         # ASGI scope.
-        scheme, host, port, full_path = url
-        path, _, query = full_path.partition(b"?")
         scope = {
             "type": "http",
             "asgi": {"version": "3.0"},
             "http_version": "1.1",
-            "method": method.decode(),
-            "headers": [(k.lower(), v) for (k, v) in headers],
-            "scheme": scheme.decode("ascii"),
-            "path": unquote(path.decode("ascii")),
-            "raw_path": path,
-            "query_string": query,
-            "server": (host.decode("ascii"), port),
+            "method": request.method,
+            "headers": [(k.lower(), v) for (k, v) in request.headers.raw],
+            "scheme": request.url.scheme,
+            "path": request.url.path,
+            "raw_path": request.url.raw_path,
+            "query_string": request.url.query,
+            "server": (request.url.host, request.url.port),
             "client": self.client,
             "root_path": self.root_path,
         }
 
         # Request.
-        request_body_chunks = stream.__aiter__()
+        request_body_chunks = request.stream.__aiter__()
         request_complete = False
 
         # Response.
@@ -139,7 +142,7 @@ class ASGITransport(AsyncBaseTransport):
                 body = message.get("body", b"")
                 more_body = message.get("more_body", False)
 
-                if body and method != b"HEAD":
+                if body and request.method != "HEAD":
                     body_parts.append(body)
 
                 if not more_body:
@@ -147,7 +150,7 @@ class ASGITransport(AsyncBaseTransport):
 
         try:
             await self.app(scope, receive, send)
-        except Exception:
+        except Exception:  # noqa: PIE-786
             if self.raise_app_exceptions or not response_complete.is_set():
                 raise
 
@@ -155,9 +158,6 @@ class ASGITransport(AsyncBaseTransport):
         assert status_code is not None
         assert response_headers is not None
 
-        async def response_stream() -> typing.AsyncIterator[bytes]:
-            yield b"".join(body_parts)
+        stream = ASGIResponseStream(body_parts)
 
-        extensions = {}
-
-        return (status_code, response_headers, response_stream(), extensions)
+        return Response(status_code, headers=response_headers, stream=stream)
