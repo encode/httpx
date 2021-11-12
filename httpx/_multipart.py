@@ -76,23 +76,38 @@ class FileField:
 
         fileobj: FileContent
 
+        headers: typing.Dict[str, str] = {}
+        content_type: typing.Optional[str] = None
+
         if isinstance(value, tuple):
             try:
-                filename, fileobj, content_type = value  # type: ignore
+                filename, fileobj, content_type, headers = value  # type: ignore
+                headers = {k.title(): v for k, v in headers.items()}
+                if "Content-Type" in headers:
+                    raise ValueError(
+                        "Content-Type cannot be included in multipart headers"
+                    )
             except ValueError:
-                filename, fileobj = value  # type: ignore
-                content_type = guess_content_type(filename)
+                try:
+                    filename, fileobj, content_type = value  # type: ignore
+                except ValueError:
+                    filename, fileobj = value  # type: ignore
         else:
             filename = Path(str(getattr(value, "name", "upload"))).name
             fileobj = value
+
+        if content_type is None:
             content_type = guess_content_type(filename)
+
+        if content_type is not None:
+            headers["Content-Type"] = content_type
 
         if isinstance(fileobj, str) or isinstance(fileobj, io.StringIO):
             raise TypeError(f"Expected bytes or bytes-like object got: {type(fileobj)}")
 
         self.filename = filename
         self.file = fileobj
-        self.content_type = content_type
+        self.headers = headers
         self._consumed = False
 
     def get_length(self) -> int:
@@ -120,9 +135,9 @@ class FileField:
             if self.filename:
                 filename = format_form_param("filename", self.filename)
                 parts.extend([b"; ", filename])
-            if self.content_type is not None:
-                content_type = self.content_type.encode()
-                parts.extend([b"\r\nContent-Type: ", content_type])
+            for header_name, header_value in self.headers.items():
+                key, val = f"\r\n{header_name}: ".encode(), header_value.encode()
+                parts.extend([key, val])
             parts.append(b"\r\n\r\n")
             self._headers = b"".join(parts)
 

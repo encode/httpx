@@ -94,6 +94,31 @@ def test_multipart_file_tuple():
     assert multipart["file"] == [b"<file content>"]
 
 
+def test_multipart_file_tuple_headers():
+    file_name = "test.txt"
+    content_type = "text/plain"
+    headers = {"Expires": "0"}
+
+    files = {"file": (file_name, io.BytesIO(b"<file content>"), content_type, headers)}
+    with mock.patch("os.urandom", return_value=os.urandom(16)):
+        boundary = os.urandom(16).hex()
+
+        headers, stream = encode_request(data={}, files=files)
+        assert isinstance(stream, typing.Iterable)
+
+        content = (
+            f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
+            f'filename="{file_name}"\r\nExpires: 0\r\nContent-Type: '
+            f"{content_type}\r\n\r\n<file content>\r\n--{boundary}--\r\n"
+            "".encode("ascii")
+        )
+        assert headers == {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(content)),
+        }
+        assert content == b"".join(stream)
+
+
 def test_multipart_encode(tmp_path: typing.Any) -> None:
     path = str(tmp_path / "name.txt")
     with open(path, "wb") as f:
