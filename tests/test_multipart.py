@@ -94,9 +94,7 @@ def test_multipart_file_tuple():
     assert multipart["file"] == [b"<file content>"]
 
 
-@pytest.mark.parametrize(
-    "content_type", [None, "text/plain"]
-)
+@pytest.mark.parametrize("content_type", [None, "text/plain"])
 def test_multipart_file_tuple_headers(content_type: typing.Optional[str]):
     file_name = "test.txt"
     expected_content_type = "text/plain"
@@ -122,13 +120,18 @@ def test_multipart_file_tuple_headers(content_type: typing.Optional[str]):
         assert content == b"".join(stream)
 
 
+@pytest.mark.parametrize("content_type", [None, "text/plain"])
 @pytest.mark.parametrize(
-    "content_type", [None, "text/plain"]
+    "headers",
+    [
+        {"content-type": "text/plain"},
+        {"Content-Type": "text/plain"},
+        {"CONTENT-TYPE": "text/plain"},
+    ],
 )
-@pytest.mark.parametrize(
-    "headers", [{"content-type": "text/plain"}, {"Content-Type": "text/plain"}, {"CONTENT-TYPE": "text/plain"}]
-)
-def test_multipart_headers_include_content_type(content_type: typing.Optional[str], headers: typing.Dict[str, str]) -> None:
+def test_multipart_headers_include_content_type(
+    content_type: typing.Optional[str], headers: typing.Dict[str, str]
+) -> None:
     """Including contet-type in the multipart headers should not be allowed"""
     client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
 
