@@ -82,16 +82,17 @@ class FileField:
         if isinstance(value, tuple):
             try:
                 filename, fileobj, content_type, headers = value  # type: ignore
-                headers = {k.title(): v for k, v in headers.items()}
-                if "Content-Type" in headers:
-                    raise ValueError(
-                        "Content-Type cannot be included in multipart headers"
-                    )
             except ValueError:
                 try:
                     filename, fileobj, content_type = value  # type: ignore
                 except ValueError:
                     filename, fileobj = value  # type: ignore
+            else:
+                headers = {k.title(): v for k, v in headers.items()}
+                if "Content-Type" in headers:
+                    raise ValueError(
+                        "Content-Type cannot be included in multipart headers"
+                    )
         else:
             filename = Path(str(getattr(value, "name", "upload"))).name
             fileobj = value
