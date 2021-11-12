@@ -25,7 +25,7 @@ async def async_streaming_body():
     yield b"world!"
 
 
-async def async_streaming_body_with_size(content, chunk_size: int = 5):
+async def async_streaming_content(content, chunk_size: int = 5):
     contents = [iter(content)] * chunk_size
     for chunk in zip(*contents):
         yield bytes(chunk)
@@ -568,7 +568,7 @@ async def test_aiter_bytes_with_chunk_size_fix_lost_param():
     response = httpx.Response(
         200,
         headers={"content-encoding": "gzip"},
-        content=async_streaming_body_with_size(bytes(content), chunk_size=10),
+        content=async_streaming_content(bytes(content), chunk_size=10),
     )
     parts = [part async for part in response.aiter_bytes(chunk_size=20)]
     assert parts == [b"Hello, world!"]
