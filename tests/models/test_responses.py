@@ -1,5 +1,7 @@
+import gzip
 import json
 from unittest import mock
+from unittest.mock import patch
 
 import brotli
 import pytest
@@ -21,6 +23,12 @@ def streaming_body():
 async def async_streaming_body():
     yield b"Hello, "
     yield b"world!"
+
+
+async def async_streaming_body_with_size(content, chunk_size: int = 5):
+    contents = [iter(content)] * chunk_size
+    for chunk in zip(*contents):
+        yield bytes(chunk)
 
 
 def test_response():
@@ -489,6 +497,22 @@ async def test_aiter_bytes_with_chunk_size():
     response = httpx.Response(200, content=async_streaming_body())
     parts = [part async for part in response.aiter_bytes(chunk_size=20)]
     assert parts == [b"Hello, world!"]
+
+
+@pytest.mark.asyncio
+async def test_aiter_bytes_with_chunk_size_fix_lost_param():
+    content = gzip.compress(b"Hello, world!")
+    response = httpx.Response(
+        200,
+        headers={"content-encoding": "gzip"},
+        content=async_streaming_body_with_size(bytes(content), chunk_size=10),
+    )
+    parts = [part async for part in response.aiter_bytes(chunk_size=20)]
+    assert parts == [b"Hello, world!"]
+
+    with patch.object(response, "aiter_raw") as mock:
+        _ = [part async for part in response.aiter_bytes(chunk_size=20)]
+    mock.assert_called_with(20)
 
 
 def test_iter_text():
