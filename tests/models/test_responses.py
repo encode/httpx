@@ -571,7 +571,7 @@ async def test_aiter_bytes_with_chunk_size_fix_lost_param():
         content=async_streaming_content(bytes(content), chunk_size=10),
     )
     parts = [part async for part in response.aiter_bytes(chunk_size=4)]
-    assert parts == [b'Hell', b'o, w', b'orld', b'!']
+    assert parts == [b"Hell", b"o, w", b"orld", b"!"]
 
     with patch.object(response, "aiter_raw") as mock:
         _ = [part async for part in response.aiter_bytes(chunk_size=20)]
@@ -837,15 +837,15 @@ def test_json_with_specified_charset(encoding):
     "headers, expected",
     [
         (
-                {"Link": "<https://example.com>; rel='preload'"},
-                {"preload": {"rel": "preload", "url": "https://example.com"}},
+            {"Link": "<https://example.com>; rel='preload'"},
+            {"preload": {"rel": "preload", "url": "https://example.com"}},
         ),
         (
-                {"Link": '</hub>; rel="hub", </resource>; rel="self"'},
-                {
-                    "hub": {"url": "/hub", "rel": "hub"},
-                    "self": {"url": "/resource", "rel": "self"},
-                },
+            {"Link": '</hub>; rel="hub", </resource>; rel="self"'},
+            {
+                "hub": {"url": "/hub", "rel": "hub"},
+                "self": {"url": "/resource", "rel": "self"},
+            },
         ),
     ],
 )
