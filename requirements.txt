@@ -4,7 +4,7 @@
 # Reference: https://github.com/encode/httpx/pull/1721#discussion_r661241588
 -e .[cli,http2,brotli]
 
-charset-normalizer==2.0.6
+charset-normalizer==2.0.7
 
 # Documentation
 mkdocs==1.2.2
