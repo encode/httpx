@@ -1302,7 +1302,7 @@ class Response:
             return codes.get_reason_phrase(self.status_code)
 
     @property
-    def url(self) -> typing.Optional[URL]:
+    def url(self) -> URL:
         """
         Returns the URL for which the request was made.
         """
