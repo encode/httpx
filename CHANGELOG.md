@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.21.1 (16th November, 2021)
+
+### Fixed
+
+* The `response.url` property is now correctly annotated as `URL`, instead of `Optional[URL]`. (#1940)
+
 ## 0.21.0 (15th November, 2021)
 
 The 0.21.0 release integrates against a newly redesigned `httpcore` backend.
