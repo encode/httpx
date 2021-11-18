@@ -457,19 +457,18 @@ class URLPattern:
         self.port = url.port
         if not url.host or url.host == "*":
             self.host_regex: typing.Optional[typing.Pattern[str]] = None
+        elif url.host.startswith("*."):
+            # *.example.com should match "www.example.com", but not "example.com"
+            domain = re.escape(url.host[2:])
+            self.host_regex = re.compile(f"^.+\\.{domain}$")
+        elif url.host.startswith("*"):
+            # *example.com should match "www.example.com" and "example.com"
+            domain = re.escape(url.host[1:])
+            self.host_regex = re.compile(f"^(.+\\.)?{domain}$")
         else:
-            if url.host.startswith("*."):
-                # *.example.com should match "www.example.com", but not "example.com"
-                domain = re.escape(url.host[2:])
-                self.host_regex = re.compile(f"^.+\\.{domain}$")
-            elif url.host.startswith("*"):
-                # *example.com should match "www.example.com" and "example.com"
-                domain = re.escape(url.host[1:])
-                self.host_regex = re.compile(f"^(.+\\.)?{domain}$")
-            else:
-                # example.com should match "example.com" but not "www.example.com"
-                domain = re.escape(url.host)
-                self.host_regex = re.compile(f"^{domain}$")
+            # example.com should match "example.com" but not "www.example.com"
+            domain = re.escape(url.host)
+            self.host_regex = re.compile(f"^{domain}$")
 
     def matches(self, other: "URL") -> bool:
         if self.scheme and self.scheme != other.scheme:
