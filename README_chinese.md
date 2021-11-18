@@ -15,7 +15,7 @@
 
 HTTPX是一个功能齐全的HTTP客户端python3库. 它集成了 **一个命令行客户端**, 支持 **HTTP/1.1 和 HTTP/2**, 而且提供了 **同步和异步API**.
 
-**注意！**: *0.21版本包括对集成命令行的一些改进。最新版本与重新设计的 `http核心`. 都应该自动更新到所需的版本，但是如果您遇到任何问题，那么您应该确保您安装的版本为 `httpx版本为0.21.*` 且 `http核心版本为0.14.*` . 请参考 [the CHANGELOG](https://github.com/encode/httpx/blob/master/CHANGELOG.md) 来获得更多细节.*
+**注意！**: *0.21版本包括对集成命令行的一些改进。最新版本与重新设计的 `http核心`. 都应该自动更新到所需的版本，但是如果您遇到任何问题，那么您应该确保您安装的版本为 `httpx0.21.*` 且 `httpcore0.14.*` . 请参考 [the CHANGELOG](https://github.com/encode/httpx/blob/master/CHANGELOG.md) 来获得更多细节.*
 
 ---
 
