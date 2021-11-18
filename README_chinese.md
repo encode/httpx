@@ -71,7 +71,7 @@ HTTPX将并为您提供以下功能:
 * 全类型注释.
 * 我们测试了全部代码！.
 
-加上这些请求应该具备的标准功能
+加上这些应该具备的标准功能
 
 * 域名与URL
 * 保持活动状态
@@ -85,45 +85,45 @@ HTTPX将并为您提供以下功能:
 * 分段文件上传
 * 支持HTTP(S) 代理
 * 支持设定链接超时
-* Streaming Downloads
-* .netrc Support
-* Chunked Requests
+* 流式下载
+* 支持 .netrc 
+* 接收Chunked编码
 
-## Installation
+## 安装
 
-Install with pip:
+使用pip安装:
 
 ```shell
 $ pip install httpx
 ```
 
-Or, to include the optional HTTP/2 support, use:
+安装HTTP/2支持:
 
 ```shell
 $ pip install httpx[http2]
 ```
 
-HTTPX requires Python 3.6+.
+HTTPX 要求 Python 3.6版本或更高.
 
-## Documentation
+## 文档
 
-Project documentation is available at [https://www.python-httpx.org/](https://www.python-httpx.org/).
+项目文档现已就绪，请访问 [https://www.python-httpx.org/](https://www.python-httpx.org/) 来阅读！
 
-For a run-through of all the basics, head over to the [QuickStart](https://www.python-httpx.org/quickstart/).
+想学习基础知识？请访问 [快速开始](https://www.python-httpx.org/quickstart/).
 
-For more advanced topics, see the [Advanced Usage](https://www.python-httpx.org/advanced/) section, the [async support](https://www.python-httpx.org/async/) section, or the [HTTP/2](https://www.python-httpx.org/http2/) section.
+想获得进阶帮助？ 请访问 [Advanced Usage](https://www.python-httpx.org/advanced/) 来获得答案, 不妨来看看 [async support](https://www.python-httpx.org/async/) 或者 [HTTP/2](https://www.python-httpx.org/http2/) 
 
-The [Developer Interface](https://www.python-httpx.org/api/) provides a comprehensive API reference.
+[Developer Interface](https://www.python-httpx.org/api/) 提供了全面的API参考。
 
-To find out about tools that integrate with HTTPX, see [Third Party Packages](https://www.python-httpx.org/third_party_packages/).
+要了解与HTTPX集成的工具, 请访问 [第三方包](https://www.python-httpx.org/third_party_packages/).
 
-## Contribute
+## 贡献
 
-If you want to contribute with HTTPX check out the [Contributing Guide](https://www.python-httpx.org/contributing/) to learn how to start.
+如果您想对本项目做出，请访问 [贡献者指南](https://www.python-httpx.org/contributing/) 来了解注意事项
 
-## Dependencies
+## 依赖
 
-The HTTPX project relies on these excellent libraries:
+HTTPX项目依赖于这些优秀的库:
 
 * `httpcore` - The underlying transport implementation for `httpx`.
   * `h11` - HTTP/1.1 support.
@@ -143,4 +143,4 @@ much of this work follows, as well as to `urllib3` for plenty of design
 inspiration around the lower-level networking details.
 
 <p align="center">&mdash; ⭐️ &mdash;</p>
-<p align="center"><i>HTTPX is <a href="https://github.com/encode/httpx/blob/master/LICENSE.md">BSD licensed</a> code. Designed & built in Brighton, England.</i></p>
+<p align="center"><i>HTTPX 代码使用 <a href="https://github.com/encode/httpx/blob/master/LICENSE.md">BSD 开源协议</a>. 在英国布莱顿设计和构建。</i></p>
