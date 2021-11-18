@@ -175,23 +175,23 @@ class ByteChunker:
             return [content]
 
         self._buffer.write(content)
-        if self._buffer.tell() >= self._chunk_size:
-            value = self._buffer.getvalue()
-            chunks = [
-                value[i : i + self._chunk_size]
-                for i in range(0, len(value), self._chunk_size)
-            ]
-            if len(chunks[-1]) == self._chunk_size:
-                self._buffer.seek(0)
-                self._buffer.truncate()
-                return chunks
-            else:
-                self._buffer.seek(0)
-                self._buffer.write(chunks[-1])
-                self._buffer.truncate()
-                return chunks[:-1]
-        else:
+        if self._buffer.tell() < self._chunk_size:
             return []
+
+        value = self._buffer.getvalue()
+        chunks = [
+            value[i : i + self._chunk_size]
+            for i in range(0, len(value), self._chunk_size)
+        ]
+        if len(chunks[-1]) == self._chunk_size:
+            self._buffer.seek(0)
+            self._buffer.truncate()
+            return chunks
+        else:
+            self._buffer.seek(0)
+            self._buffer.write(chunks[-1])
+            self._buffer.truncate()
+            return chunks[:-1]
 
     def flush(self) -> typing.List[bytes]:
         value = self._buffer.getvalue()
@@ -214,23 +214,23 @@ class TextChunker:
             return [content]
 
         self._buffer.write(content)
-        if self._buffer.tell() >= self._chunk_size:
-            value = self._buffer.getvalue()
-            chunks = [
-                value[i : i + self._chunk_size]
-                for i in range(0, len(value), self._chunk_size)
-            ]
-            if len(chunks[-1]) == self._chunk_size:
-                self._buffer.seek(0)
-                self._buffer.truncate()
-                return chunks
-            else:
-                self._buffer.seek(0)
-                self._buffer.write(chunks[-1])
-                self._buffer.truncate()
-                return chunks[:-1]
-        else:
+        if self._buffer.tell() < self._chunk_size:
             return []
+
+        value = self._buffer.getvalue()
+        chunks = [
+            value[i : i + self._chunk_size]
+            for i in range(0, len(value), self._chunk_size)
+        ]
+        if len(chunks[-1]) == self._chunk_size:
+            self._buffer.seek(0)
+            self._buffer.truncate()
+            return chunks
+        else:
+            self._buffer.seek(0)
+            self._buffer.write(chunks[-1])
+            self._buffer.truncate()
+            return chunks[:-1]
 
     def flush(self) -> typing.List[str]:
         value = self._buffer.getvalue()
