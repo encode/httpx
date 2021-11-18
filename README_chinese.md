@@ -15,7 +15,7 @@
 
 HTTPX是一个功能齐全的HTTP客户端python3库. 它集成了 **一个命令行客户端**, 支持 **HTTP/1.1 和 HTTP/2**, 而且提供了 **同步和异步API**.
 
-**注意！**: *0.21版本包括对集成命令行的一些改进。最新版本与重新设计的 `http核心`. 都应该自动更新到所需的版本，但是如果您遇到任何问题，那么您应该确保您安装的版本为 `httpx0.21.*` 且 `httpcore0.14.*` . 请参考 [the CHANGELOG](https://github.com/encode/httpx/blob/master/CHANGELOG.md) 来获得更多细节.*
+**注意！**: *0.21版本包括对集成命令行的一些改进。最新版本与重新设计的 `http核心`. 都应该自动更新到所需的版本，如果您遇到任何问题，那么您应该确保您安装的版本为 `httpx0.21.*` 且 `httpcore0.14.*` . 请参考 [the CHANGELOG](https://github.com/encode/httpx/blob/master/CHANGELOG.md) 来获得更多细节.*
 
 ---
 
@@ -69,7 +69,7 @@ HTTPX将并为您提供以下功能:
 * 能够直接向 [WSGI 应用发送请求](https://www.python-httpx.org/advanced/#calling-into-python-web-apps) 或向 [ASGI 应用发送请求](https://www.python-httpx.org/async/#calling-into-python-web-apps).
 * 在任何地方设置详细的timeout.
 * 全类型注释.
-* 我们测试了全部代码！.
+* 全部代码均通过测试.
 
 加上这些应该具备的标准功能
 
@@ -84,7 +84,7 @@ HTTPX将并为您提供以下功能:
 * Unicode Response Bodies
 * 分段文件上传
 * 支持HTTP(S) 代理
-* 支持设定链接超时
+* 支持设定timeout
 * 流式下载
 * 支持 .netrc 
 * 接收Chunked编码
@@ -111,7 +111,7 @@ HTTPX 要求 Python 3.6版本或更高.
 
 想学习基础知识？请访问 [快速开始](https://www.python-httpx.org/quickstart/).
 
-想获得进阶帮助？ 请访问 [Advanced Usage](https://www.python-httpx.org/advanced/) 来获得答案, 不妨来看看 [async support](https://www.python-httpx.org/async/) 或者 [HTTP/2](https://www.python-httpx.org/http2/) 
+想获得进阶帮助？ 请访问 [Advanced Usage](https://www.python-httpx.org/advanced/) 来获得答案, 不妨来看看 [异步支持](https://www.python-httpx.org/async/) 或者 [HTTP/2](https://www.python-httpx.org/http2/) 
 
 [Developer Interface](https://www.python-httpx.org/api/) 提供了全面的API参考。
 
