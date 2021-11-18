@@ -341,7 +341,7 @@ class Proxy:
         return f"Basic {token}"
 
     def __repr__(self) -> str:
-        return f"Proxy(url={str(self.url)!r}, headers={dict(self.headers)!r})"
+        return f'Proxy(url={self.url!r}, headers={dict(self.headers)!r})'
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
