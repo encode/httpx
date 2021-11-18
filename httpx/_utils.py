@@ -120,7 +120,7 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
         if sample[1::2] == _null2:  # 2nd and 4th are null
             return "utf-16-le"
         # Did not detect 2 valid UTF-16 ascii-range characters
-    if nullcount == 3:
+    elif nullcount == 3:
         if sample[:3] == _null3:
             return "utf-32-be"
         if sample[1:] == _null3:
