@@ -38,6 +38,8 @@ class ByteStream(AsyncByteStream, SyncByteStream):
 
 
 class IteratorByteStream(SyncByteStream):
+    CHUNK_SIZE = 65_536
+
     def __init__(self, stream: Iterable[bytes]):
         self._stream = stream
         self._is_stream_consumed = False
@@ -48,12 +50,22 @@ class IteratorByteStream(SyncByteStream):
             raise StreamConsumed()
 
         self._is_stream_consumed = True
-        for part in self._stream:
-            for idx in range(0, len(part), 65_536):
-                yield part[idx : idx + 65_536]
+        if hasattr(self._stream, "read"):
+            # File-like interfaces should use 'read' directly.
+            chunk = self._stream.read(self.CHUNK_SIZE)  # type: ignore
+            while chunk:
+                yield chunk
+                chunk = self._stream.read(self.CHUNK_SIZE)  # type: ignore
+        else:
+            # Otherwise iterate, but enforce a maximum chunk size.
+            for part in self._stream:
+                for idx in range(0, len(part), self.CHUNK_SIZE):
+                    yield part[idx : idx + self.CHUNK_SIZE]
 
 
 class AsyncIteratorByteStream(AsyncByteStream):
+    CHUNK_SIZE = 65_536
+
     def __init__(self, stream: AsyncIterable[bytes]):
         self._stream = stream
         self._is_stream_consumed = False
@@ -64,9 +76,17 @@ class AsyncIteratorByteStream(AsyncByteStream):
             raise StreamConsumed()
 
         self._is_stream_consumed = True
-        async for part in self._stream:
-            for idx in range(0, len(part), 65_536):
-                yield part[idx : idx + 65_536]
+        if hasattr(self._stream, "aread"):
+            # File-like interfaces should use 'aread' directly.
+            chunk = await self._stream.aread(self.CHUNK_SIZE)  # type: ignore
+            while chunk:
+                yield chunk
+                chunk = await self._stream.aread(self.CHUNK_SIZE)  # type: ignore
+        else:
+            # Otherwise iterate, but enforce a maximum chunk size.
+            async for part in self._stream:
+                for idx in range(0, len(part), self.CHUNK_SIZE):
+                    yield part[idx : idx + self.CHUNK_SIZE]
 
 
 class UnattachedStream(AsyncByteStream, SyncByteStream):

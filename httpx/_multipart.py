@@ -71,6 +71,8 @@ class FileField:
     A single file field item, within a multipart form field.
     """
 
+    CHUNK_SIZE = 64 * 1024
+
     def __init__(self, name: str, value: FileTypes) -> None:
         self.name = name
 
@@ -142,10 +144,10 @@ class FileField:
             self.file.seek(0)
         self._consumed = True
 
-        for chunk in self.file:
-            chunk = to_bytes(chunk)
-            for idx in range(0, len(chunk), 65_536):
-                yield chunk[idx : idx + 65_536]
+        chunk = self.file.read(self.CHUNK_SIZE)
+        while chunk:
+            yield to_bytes(chunk)
+            chunk = self.file.read(self.CHUNK_SIZE)
 
     def render(self) -> typing.Iterator[bytes]:
         yield self.render_headers()
