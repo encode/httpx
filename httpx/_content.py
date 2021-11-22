@@ -57,10 +57,9 @@ class IteratorByteStream(SyncByteStream):
                 yield chunk
                 chunk = self._stream.read(self.CHUNK_SIZE)  # type: ignore
         else:
-            # Otherwise iterate, but enforce a maximum chunk size.
+            # Otherwise iterate.
             for part in self._stream:
-                for idx in range(0, len(part), self.CHUNK_SIZE):
-                    yield part[idx : idx + self.CHUNK_SIZE]
+                yield part
 
 
 class AsyncIteratorByteStream(AsyncByteStream):
@@ -83,10 +82,9 @@ class AsyncIteratorByteStream(AsyncByteStream):
                 yield chunk
                 chunk = await self._stream.aread(self.CHUNK_SIZE)  # type: ignore
         else:
-            # Otherwise iterate, but enforce a maximum chunk size.
+            # Otherwise iterate.
             async for part in self._stream:
-                for idx in range(0, len(part), self.CHUNK_SIZE):
-                    yield part[idx : idx + self.CHUNK_SIZE]
+                yield part
 
 
 class UnattachedStream(AsyncByteStream, SyncByteStream):
