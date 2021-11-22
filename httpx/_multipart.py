@@ -143,7 +143,9 @@ class FileField:
         self._consumed = True
 
         for chunk in self.file:
-            yield to_bytes(chunk)
+            chunk = to_bytes(chunk)
+            for idx in range(0, len(chunk), 65_536):
+                yield chunk[idx : idx + 65_536]
 
     def render(self) -> typing.Iterator[bytes]:
         yield self.render_headers()

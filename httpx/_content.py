@@ -49,7 +49,8 @@ class IteratorByteStream(SyncByteStream):
 
         self._is_stream_consumed = True
         for part in self._stream:
-            yield part
+            for idx in range(0, len(part), 65_536):
+                yield part[idx : idx + 65_536]
 
 
 class AsyncIteratorByteStream(AsyncByteStream):
@@ -64,7 +65,8 @@ class AsyncIteratorByteStream(AsyncByteStream):
 
         self._is_stream_consumed = True
         async for part in self._stream:
-            yield part
+            for idx in range(0, len(part), 65_536):
+                yield part[idx : idx + 65_536]
 
 
 class UnattachedStream(AsyncByteStream, SyncByteStream):
