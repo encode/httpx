@@ -370,7 +370,7 @@ class BaseClient:
         if merge_url.is_relative_url:
             # To merge URLs we always append to the base URL. To get this
             # behaviour correct we always ensure the base URL ends in a '/'
-            # seperator, and strip any leading '/' from the merge URL.
+            # separator, and strip any leading '/' from the merge URL.
             #
             # So, eg...
             #
