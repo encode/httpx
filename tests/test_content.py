@@ -61,6 +61,31 @@ async def test_bytesio_content():
 
 
 @pytest.mark.asyncio
+async def test_async_bytesio_content():
+    class AsyncBytesIO:
+        def __init__(self, content):
+            self._idx = 0
+            self._content = content
+
+        async def aread(self, chunk_size: int):
+            chunk = self._content[self._idx : self._idx + chunk_size]
+            self._idx = self._idx + chunk_size
+            return chunk
+
+        async def __aiter__(self):
+            yield self._content  # pragma: nocover
+
+    headers, stream = encode_request(content=AsyncBytesIO(b"Hello, world!"))
+    assert not isinstance(stream, typing.Iterable)
+    assert isinstance(stream, typing.AsyncIterable)
+
+    content = b"".join([part async for part in stream])
+
+    assert headers == {"Transfer-Encoding": "chunked"}
+    assert content == b"Hello, world!"
+
+
+@pytest.mark.asyncio
 async def test_iterator_content():
     def hello_world():
         yield b"Hello, "
