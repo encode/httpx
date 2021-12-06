@@ -4,12 +4,12 @@
 # Reference: https://github.com/encode/httpx/pull/1721#discussion_r661241588
 -e .[cli,http2,brotli]
 
-charset-normalizer==2.0.6
+charset-normalizer==2.0.9
 
 # Documentation
-mkdocs==1.2.2
+mkdocs==1.2.3
 mkautodoc==0.1.0
-mkdocs-material==7.2.6
+mkdocs-material==8.0.2
 
 # Packaging
 twine==3.4.2
