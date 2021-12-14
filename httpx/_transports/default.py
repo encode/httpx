@@ -9,7 +9,7 @@ The following additional keyword arguments are currently supported by httpcore..
 
 Example usages...
 
-# Disable HTTP/2 on a single specfic domain.
+# Disable HTTP/2 on a single specific domain.
 mounts = {
     "all://": httpx.HTTPTransport(http2=True),
     "all://*example.org": httpx.HTTPTransport()
