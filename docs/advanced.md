@@ -26,7 +26,7 @@ This can bring **significant performance improvements** compared to using the to
 
 `Client` instances also support features that aren't available at the top-level API, such as:
 
-- Cookie persistance across requests.
+- Cookie persistence across requests.
 - Applying configuration across all outgoing requests.
 - Sending requests through HTTP proxies.
 - Using [HTTP/2](http2.md).

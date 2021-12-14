@@ -1275,7 +1275,7 @@ class Client(BaseClient):
 
     def __del__(self) -> None:
         # We use 'getattr' here, to manage the case where '__del__()' is called
-        # on a partically initiallized instance that raised an exception during
+        # on a partially initiallized instance that raised an exception during
         # the call to '__init__()'.
         if getattr(self, "_state", None) == ClientState.OPENED:  # noqa: B009
             self.close()
@@ -1986,7 +1986,7 @@ class AsyncClient(BaseClient):
 
     def __del__(self) -> None:
         # We use 'getattr' here, to manage the case where '__del__()' is called
-        # on a partically initiallized instance that raised an exception during
+        # on a partially initiallized instance that raised an exception during
         # the call to '__init__()'.
         if getattr(self, "_state", None) == ClientState.OPENED:  # noqa: B009
             # Unlike the sync case, we cannot silently close the client when
