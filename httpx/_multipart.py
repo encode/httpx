@@ -105,7 +105,7 @@ class FileField:
         if content_type is not None:
             headers["Content-Type"] = content_type
 
-        if isinstance(fileobj, str) or isinstance(fileobj, io.StringIO):
+        if isinstance(fileobj, (str, io.StringIO)):
             raise TypeError(f"Expected bytes or bytes-like object got: {type(fileobj)}")
 
         self.filename = filename
