@@ -327,7 +327,7 @@ class URL:
         """
         The URL query string, as raw bytes, excluding the leading b"?".
 
-        This is neccessarily a bytewise interface, because we cannot
+        This is necessarily a bytewise interface, because we cannot
         perform URL decoding of this representation until we've parsed
         the keys and values into a QueryParams instance.
 
@@ -465,7 +465,7 @@ class URL:
             port = kwargs.pop("port", self.port)
 
             if host and ":" in host and host[0] != "[":
-                # IPv6 addresses need to be escaped within sqaure brackets.
+                # IPv6 addresses need to be escaped within square brackets.
                 host = f"[{host}]"
 
             kwargs["netloc"] = (
@@ -907,7 +907,7 @@ class Headers(typing.MutableMapping[str, str]):
     def items(self) -> typing.ItemsView[str, str]:
         """
         Return `(key, value)` items of headers. Concatenate headers
-        into a single comma seperated value when a key occurs multiple times.
+        into a single comma separated value when a key occurs multiple times.
         """
         values_dict: typing.Dict[str, str] = {}
         for _, key, value in self._list:
@@ -922,8 +922,8 @@ class Headers(typing.MutableMapping[str, str]):
     def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
         """
         Return a list of `(key, value)` pairs of headers. Allow multiple
-        occurences of the same key without concatenating into a single
-        comma seperated value.
+        occurrences of the same key without concatenating into a single
+        comma separated value.
         """
         return [
             (key.decode(self.encoding), value.decode(self.encoding))
@@ -932,7 +932,7 @@ class Headers(typing.MutableMapping[str, str]):
 
     def get(self, key: str, default: typing.Any = None) -> typing.Any:
         """
-        Return a header value. If multiple occurences of the header occur
+        Return a header value. If multiple occurrences of the header occur
         then concatenate them together with commas.
         """
         try:
@@ -943,7 +943,7 @@ class Headers(typing.MutableMapping[str, str]):
     def get_list(self, key: str, split_commas: bool = False) -> typing.List[str]:
         """
         Return a list of all header values for a given key.
-        If `split_commas=True` is passed, then any comma seperated header
+        If `split_commas=True` is passed, then any comma separated header
         values are split into multiple return strings.
         """
         get_header_key = key.lower().encode(self.encoding)
@@ -1302,7 +1302,7 @@ class Response:
             return codes.get_reason_phrase(self.status_code)
 
     @property
-    def url(self) -> typing.Optional[URL]:
+    def url(self) -> URL:
         """
         Returns the URL for which the request was made.
         """
@@ -1365,7 +1365,7 @@ class Response:
     @property
     def apparent_encoding(self) -> typing.Optional[str]:
         """
-        Return the encoding, as detemined by `charset_normalizer`.
+        Return the encoding, as determined by `charset_normalizer`.
         """
         content = getattr(self, "_content", b"")
         if len(content) < 32:

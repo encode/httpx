@@ -10,11 +10,8 @@ def url_to_origin(url: str):
     Given a URL string, return the origin in the raw tuple format that
     `httpcore` uses for it's representation.
     """
-    DEFAULT_PORTS = {b"http": 80, b"https": 443}
-    scheme, host, explicit_port = httpx.URL(url).raw[:3]
-    default_port = DEFAULT_PORTS[scheme]
-    port = default_port if explicit_port is None else explicit_port
-    return scheme, host, port
+    scheme, host, port = httpx.URL(url).raw[:3]
+    return httpcore.URL(scheme=scheme, host=host, port=port, target="/")
 
 
 @pytest.mark.parametrize(
@@ -44,8 +41,8 @@ def test_proxies_parameter(proxies, expected_proxies):
         assert pattern in client._mounts
         proxy = client._mounts[pattern]
         assert isinstance(proxy, httpx.HTTPTransport)
-        assert isinstance(proxy._pool, httpcore.SyncHTTPProxy)
-        assert proxy._pool.proxy_origin == url_to_origin(url)
+        assert isinstance(proxy._pool, httpcore.HTTPProxy)
+        assert proxy._pool._proxy_url == url_to_origin(url)
 
     assert len(expected_proxies) == len(client._mounts)
 
@@ -117,8 +114,8 @@ def test_transport_for_request(url, proxies, expected):
         assert transport is client._transport
     else:
         assert isinstance(transport, httpx.HTTPTransport)
-        assert isinstance(transport._pool, httpcore.SyncHTTPProxy)
-        assert transport._pool.proxy_origin == url_to_origin(expected)
+        assert isinstance(transport._pool, httpcore.HTTPProxy)
+        assert transport._pool._proxy_url == url_to_origin(expected)
 
 
 @pytest.mark.asyncio
@@ -228,7 +225,7 @@ def test_unsupported_proxy_scheme():
             {"ALL_PROXY": "http://localhost:123", "NO_PROXY": ".example1.com"},
             None,
         ),
-        # Proxied, because NO_PROXY subdomains only match if "." seperated.
+        # Proxied, because NO_PROXY subdomains only match if "." separated.
         (
             "https://www.example2.com",
             {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "ample2.com"},
@@ -253,7 +250,7 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
     if expected is None:
         assert transport == client._transport
     else:
-        assert transport._pool.proxy_origin == url_to_origin(expected)
+        assert transport._pool._proxy_url == url_to_origin(expected)
 
 
 @pytest.mark.parametrize(

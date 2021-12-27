@@ -323,6 +323,7 @@ class BaseClient:
         headers: HeaderTypes = None,
         cookies: CookieTypes = None,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Request:
         """
         Build and return a request instance.
@@ -339,9 +340,14 @@ class BaseClient:
         headers = self._merge_headers(headers)
         cookies = self._merge_cookies(cookies)
         params = self._merge_queryparams(params)
-        timeout = (
-            self.timeout if isinstance(timeout, UseClientDefault) else Timeout(timeout)
-        )
+        extensions = {} if extensions is None else extensions
+        if "timeout" not in extensions:
+            timeout = (
+                self.timeout
+                if isinstance(timeout, UseClientDefault)
+                else Timeout(timeout)
+            )
+            extensions["timeout"] = timeout.as_dict()
         return Request(
             method,
             url,
@@ -352,7 +358,7 @@ class BaseClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            extensions={"timeout": timeout.as_dict()},
+            extensions=extensions,
         )
 
     def _merge_url(self, url: URLTypes) -> URL:
@@ -364,7 +370,7 @@ class BaseClient:
         if merge_url.is_relative_url:
             # To merge URLs we always append to the base URL. To get this
             # behaviour correct we always ensure the base URL ends in a '/'
-            # seperator, and strip any leading '/' from the merge URL.
+            # separator, and strip any leading '/' from the merge URL.
             #
             # So, eg...
             #
@@ -459,7 +465,12 @@ class BaseClient:
         stream = self._redirect_stream(request, method)
         cookies = Cookies(self.cookies)
         return Request(
-            method=method, url=url, headers=headers, cookies=cookies, stream=stream
+            method=method,
+            url=url,
+            headers=headers,
+            cookies=cookies,
+            stream=stream,
+            extensions=request.extensions,
         )
 
     def _redirect_method(self, request: Request, response: Response) -> str:
@@ -749,6 +760,7 @@ class Client(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Build and send a request.
@@ -785,6 +797,7 @@ class Client(BaseClient):
             headers=headers,
             cookies=cookies,
             timeout=timeout,
+            extensions=extensions,
         )
         return self.send(request, auth=auth, follow_redirects=follow_redirects)
 
@@ -804,6 +817,7 @@ class Client(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> typing.Iterator[Response]:
         """
         Alternative to `httpx.request()` that streams the response body
@@ -826,6 +840,7 @@ class Client(BaseClient):
             headers=headers,
             cookies=cookies,
             timeout=timeout,
+            extensions=extensions,
         )
         response = self.send(
             request=request,
@@ -1000,6 +1015,7 @@ class Client(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `GET` request.
@@ -1015,6 +1031,7 @@ class Client(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     def options(
@@ -1027,6 +1044,7 @@ class Client(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send an `OPTIONS` request.
@@ -1042,6 +1060,7 @@ class Client(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     def head(
@@ -1054,6 +1073,7 @@ class Client(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `HEAD` request.
@@ -1069,6 +1089,7 @@ class Client(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     def post(
@@ -1085,6 +1106,7 @@ class Client(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `POST` request.
@@ -1104,6 +1126,7 @@ class Client(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     def put(
@@ -1120,6 +1143,7 @@ class Client(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `PUT` request.
@@ -1139,6 +1163,7 @@ class Client(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     def patch(
@@ -1155,6 +1180,7 @@ class Client(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `PATCH` request.
@@ -1174,6 +1200,7 @@ class Client(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     def delete(
@@ -1186,6 +1213,7 @@ class Client(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `DELETE` request.
@@ -1201,6 +1229,7 @@ class Client(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     def close(self) -> None:
@@ -1246,7 +1275,7 @@ class Client(BaseClient):
 
     def __del__(self) -> None:
         # We use 'getattr' here, to manage the case where '__del__()' is called
-        # on a partically initiallized instance that raised an exception during
+        # on a partially initiallized instance that raised an exception during
         # the call to '__init__()'.
         if getattr(self, "_state", None) == ClientState.OPENED:  # noqa: B009
             self.close()
@@ -1450,6 +1479,7 @@ class AsyncClient(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Build and send a request.
@@ -1478,6 +1508,7 @@ class AsyncClient(BaseClient):
             headers=headers,
             cookies=cookies,
             timeout=timeout,
+            extensions=extensions,
         )
         return await self.send(request, auth=auth, follow_redirects=follow_redirects)
 
@@ -1497,6 +1528,7 @@ class AsyncClient(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> typing.AsyncIterator[Response]:
         """
         Alternative to `httpx.request()` that streams the response body
@@ -1519,6 +1551,7 @@ class AsyncClient(BaseClient):
             headers=headers,
             cookies=cookies,
             timeout=timeout,
+            extensions=extensions,
         )
         response = await self.send(
             request=request,
@@ -1693,6 +1726,7 @@ class AsyncClient(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `GET` request.
@@ -1708,6 +1742,7 @@ class AsyncClient(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     async def options(
@@ -1720,6 +1755,7 @@ class AsyncClient(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send an `OPTIONS` request.
@@ -1735,6 +1771,7 @@ class AsyncClient(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     async def head(
@@ -1747,6 +1784,7 @@ class AsyncClient(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `HEAD` request.
@@ -1762,6 +1800,7 @@ class AsyncClient(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     async def post(
@@ -1778,6 +1817,7 @@ class AsyncClient(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `POST` request.
@@ -1797,6 +1837,7 @@ class AsyncClient(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     async def put(
@@ -1813,6 +1854,7 @@ class AsyncClient(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `PUT` request.
@@ -1832,6 +1874,7 @@ class AsyncClient(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     async def patch(
@@ -1848,6 +1891,7 @@ class AsyncClient(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `PATCH` request.
@@ -1867,6 +1911,7 @@ class AsyncClient(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     async def delete(
@@ -1879,6 +1924,7 @@ class AsyncClient(BaseClient):
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        extensions: dict = None,
     ) -> Response:
         """
         Send a `DELETE` request.
@@ -1894,6 +1940,7 @@ class AsyncClient(BaseClient):
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
+            extensions=extensions,
         )
 
     async def aclose(self) -> None:
@@ -1939,7 +1986,7 @@ class AsyncClient(BaseClient):
 
     def __del__(self) -> None:
         # We use 'getattr' here, to manage the case where '__del__()' is called
-        # on a partically initiallized instance that raised an exception during
+        # on a partially initiallized instance that raised an exception during
         # the call to '__init__()'.
         if getattr(self, "_state", None) == ClientState.OPENED:  # noqa: B009
             # Unlike the sync case, we cannot silently close the client when
