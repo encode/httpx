@@ -31,6 +31,12 @@ async def async_streaming_content(content, chunk_size: int = 5):
         yield bytes(chunk)
 
 
+def sync_streaming_content(content, chunk_size: int = 5):
+    contents = [iter(content)] * chunk_size
+    for chunk in zip(*contents):
+        yield bytes(chunk)
+
+
 def test_response():
     response = httpx.Response(
         200,
@@ -575,6 +581,21 @@ async def test_aiter_bytes_with_chunk_size_fix_lost_param():
 
     with patch.object(response, "aiter_raw") as mock:
         _ = [part async for part in response.aiter_bytes(chunk_size=20)]
+    mock.assert_called_with(20)
+
+
+def test_iter_bytes_with_chunk_size_fix_lost_param():
+    content = gzip.compress(b"Hello, world!")
+    response = httpx.Response(
+        200,
+        headers={"content-encoding": "gzip"},
+        content=sync_streaming_content(bytes(content), chunk_size=10),
+    )
+    parts = [part for part in response.iter_bytes(chunk_size=4)]
+    assert parts == [b"Hell", b"o, w", b"orld", b"!"]
+
+    with patch.object(response, "iter_raw") as mock:
+        _ = [part for part in response.iter_bytes(chunk_size=20)]
     mock.assert_called_with(20)
 
 

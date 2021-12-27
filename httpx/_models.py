@@ -1577,7 +1577,7 @@ class Response:
             decoder = self._get_content_decoder()
             chunker = ByteChunker(chunk_size=chunk_size)
             with request_context(request=self._request):
-                for raw_bytes in self.iter_raw():
+                for raw_bytes in self.iter_raw(chunk_size):
                     decoded = decoder.decode(raw_bytes)
                     for chunk in chunker.decode(decoded):
                         yield chunk
