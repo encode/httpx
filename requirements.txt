@@ -12,7 +12,7 @@ mkautodoc==0.1.0
 mkdocs-material==8.0.2
 
 # Packaging
-twine==3.4.2
+twine==3.7.1
 wheel==0.37.0
 
 # Tests & Linting
