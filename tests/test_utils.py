@@ -71,7 +71,7 @@ def test_get_netrc_login():
 
 def test_get_netrc_unknown():
     netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
-    assert netrc_info.get_credentials("nonexistant.org") is None
+    assert netrc_info.get_credentials("nonexistent.org") is None
 
 
 @pytest.mark.parametrize(

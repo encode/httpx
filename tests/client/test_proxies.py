@@ -225,7 +225,7 @@ def test_unsupported_proxy_scheme():
             {"ALL_PROXY": "http://localhost:123", "NO_PROXY": ".example1.com"},
             None,
         ),
-        # Proxied, because NO_PROXY subdomains only match if "." seperated.
+        # Proxied, because NO_PROXY subdomains only match if "." separated.
         (
             "https://www.example2.com",
             {"ALL_PROXY": "http://localhost:123", "NO_PROXY": "ample2.com"},

@@ -119,7 +119,7 @@ class SyncByteStream:
 
     def read(self) -> bytes:
         """
-        Simple cases can use `.read()` as a convience method for consuming
+        Simple cases can use `.read()` as a convenience method for consuming
         the entire stream and then closing it.
 
         Example:
