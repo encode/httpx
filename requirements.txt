@@ -19,7 +19,7 @@ wheel==0.37.0
 autoflake==1.4
 black==21.11b1
 coverage==6.0.2
-cryptography==3.4.8
+cryptography==36.0.1
 flake8==3.9.2
 flake8-bugbear==21.9.2
 flake8-pie==0.15.0; python_version>='3.7'
@@ -27,7 +27,7 @@ isort==5.9.3
 mypy==0.910
 types-certifi==2021.10.8.0
 pytest==6.2.5
-pytest-asyncio==0.15.1
+pytest-asyncio==0.16.0
 pytest-trio==0.7.0
 trio==0.19.0
 trio-typing==0.5.1
