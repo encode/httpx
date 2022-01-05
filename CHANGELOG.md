@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.21.2 (5th January, 2022)
+
+### Fixed
+
+* HTTP/2 support for tunnelled proxy cases. (#2009)
+* Improved the speed of large file uploads. (#1948)
+
 ## 0.21.1 (16th November, 2021)
 
 ### Fixed
