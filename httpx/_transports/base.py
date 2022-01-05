@@ -25,7 +25,7 @@ class BaseTransport:
 
         At this layer of API we're simply using plain primitives. No `Request` or
         `Response` models, no fancy `URL` or `Header` handling. This strict point
-        of cut-off provides a clear design seperation between the HTTPX API,
+        of cut-off provides a clear design separation between the HTTPX API,
         and the low-level network handling.
 
         Developers shouldn't typically ever need to call into this API directly,

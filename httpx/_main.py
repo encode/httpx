@@ -487,7 +487,7 @@ def main(
 
     except RequestError as exc:
         console = rich.console.Console()
-        console.print(f"[red]{type(exc).__name__}[/red]: {str(exc)}")
+        console.print(f"[red]{type(exc).__name__}[/red]: {exc}")
         sys.exit(1)
 
     sys.exit(0 if response.is_success else 1)

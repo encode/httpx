@@ -89,7 +89,7 @@ class FileField:
             fileobj = value
             content_type = guess_content_type(filename)
 
-        if isinstance(fileobj, str) or isinstance(fileobj, io.StringIO):
+        if isinstance(fileobj, (str, io.StringIO)):
             raise TypeError(f"Expected bytes or bytes-like object got: {type(fileobj)}")
 
         self.filename = filename
