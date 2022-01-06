@@ -27,7 +27,7 @@ isort==5.10.1
 mypy==0.910
 types-certifi==2021.10.8.0
 pytest==6.2.5
-pytest-asyncio==0.15.1
+pytest-asyncio==0.16.0
 pytest-trio==0.7.0
 trio==0.19.0
 trio-typing==0.5.1
