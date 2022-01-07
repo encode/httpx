@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-* Fix streaming uploads using `SyncByteStream` or `AsyncByteStream`. Regression in 0.12.2. (#2016)
+* Fix streaming uploads using `SyncByteStream` or `AsyncByteStream`. Regression in 0.21.2. (#2016)
 
 ## 0.21.2 (5th January, 2022)
 
