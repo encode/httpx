@@ -120,25 +120,30 @@ def test_multipart_file_tuple_headers(content_type: typing.Optional[str]):
         assert content == b"".join(stream)
 
 
-@pytest.mark.parametrize("content_type", [None, "text/plain"])
-@pytest.mark.parametrize(
-    "headers",
-    [
-        {"content-type": "text/plain"},
-        {"Content-Type": "text/plain"},
-        {"CONTENT-TYPE": "text/plain"},
-    ],
-)
-def test_multipart_headers_include_content_type(
-    content_type: typing.Optional[str], headers: typing.Dict[str, str]
-) -> None:
-    """Including contet-type in the multipart headers should not be allowed"""
-    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
+def test_multipart_headers_include_content_type() -> None:
+    """Content-Type from 4th tuple parameter (headers) should override the 3rd parameter (content_type)"""
+    file_name = "test.txt"
+    expected_content_type = "image/png"
+    headers = {"Content-Type": "image/png"}
 
-    files = {"file": ("test.txt", b"content", content_type, headers)}
-    pat = "Content-Type cannot be included in multipart headers"
-    with pytest.raises(ValueError, match=pat):
-        client.post("http://127.0.0.1:8000/", files=files)
+    files = {"file": (file_name, io.BytesIO(b"<file content>"), "text_plain", headers)}
+    with mock.patch("os.urandom", return_value=os.urandom(16)):
+        boundary = os.urandom(16).hex()
+
+        headers, stream = encode_request(data={}, files=files)
+        assert isinstance(stream, typing.Iterable)
+
+        content = (
+            f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
+            f'filename="{file_name}"\r\nContent-Type: '
+            f"{expected_content_type}\r\n\r\n<file content>\r\n--{boundary}--\r\n"
+            "".encode("ascii")
+        )
+        assert headers == {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(content)),
+        }
+        assert content == b"".join(stream)
 
 
 def test_multipart_encode(tmp_path: typing.Any) -> None:

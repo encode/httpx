@@ -81,20 +81,22 @@ class FileField:
         headers: typing.Dict[str, str] = {}
         content_type: typing.Optional[str] = None
 
+        # This large tuple based API largely mirror's requests' API
+        # It would be good to think of better APIs for this that we could include in httpx 2.0
+        # since variable length tuples (especially of 4 elements) are quite unwieldly
         if isinstance(value, tuple):
             try:
                 filename, fileobj, content_type, headers = value  # type: ignore
             except ValueError:
+                # 4th parameter (headers) not included
                 try:
                     filename, fileobj, content_type = value  # type: ignore
                 except ValueError:
+                    # neither the 3rd parameter (content_type) nor the 4th (headers) was included
                     filename, fileobj = value  # type: ignore
             else:
+                # corresponds to (filename, fileobj, content_type, headers)
                 headers = {k.title(): v for k, v in headers.items()}
-                if "Content-Type" in headers:
-                    raise ValueError(
-                        "Content-Type cannot be included in multipart headers"
-                    )
         else:
             filename = Path(str(getattr(value, "name", "upload"))).name
             fileobj = value
@@ -102,7 +104,10 @@ class FileField:
         if content_type is None:
             content_type = guess_content_type(filename)
 
-        if content_type is not None:
+        if content_type is not None and "Content-Type" not in headers:
+            # note that unlike requests, we ignore the content_type
+            # provided in the 3rd tuple element if it is also included in the headers
+            # requests does the opposite
             headers["Content-Type"] = content_type
 
         if isinstance(fileobj, (str, io.StringIO)):
