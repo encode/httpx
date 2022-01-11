@@ -85,17 +85,14 @@ class FileField:
         # It would be good to think of better APIs for this that we could include in httpx 2.0
         # since variable length tuples (especially of 4 elements) are quite unwieldly
         if isinstance(value, tuple):
-            try:
-                filename, fileobj, content_type, headers = value  # type: ignore
-            except ValueError:
-                # 4th parameter (headers) not included
-                try:
-                    filename, fileobj, content_type = value  # type: ignore
-                except ValueError:
-                    # neither the 3rd parameter (content_type) nor the 4th (headers) was included
-                    filename, fileobj = value  # type: ignore
+            if len(value) == 2:
+                # neither the 3rd parameter (content_type) nor the 4th (headers) was included
+                filename, fileobj = value  # type: ignore
+            elif len(value) == 3:
+                filename, fileobj, content_type = value  # type: ignore
             else:
-                # corresponds to (filename, fileobj, content_type, headers)
+                # all 4 parameters included
+                filename, fileobj, content_type, headers = value  # type: ignore
                 headers = {k.title(): v for k, v in headers.items()}
         else:
             filename = Path(str(getattr(value, "name", "upload"))).name
@@ -107,7 +104,7 @@ class FileField:
         if content_type is not None and "Content-Type" not in headers:
             # note that unlike requests, we ignore the content_type
             # provided in the 3rd tuple element if it is also included in the headers
-            # requests does the opposite
+            # requests does the opposite (it overwrites the header with the 3rd tuple element)
             headers["Content-Type"] = content_type
 
         if isinstance(fileobj, (str, io.StringIO)):
