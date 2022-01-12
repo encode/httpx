@@ -97,11 +97,12 @@ class FileField:
         else:
             filename = Path(str(getattr(value, "name", "upload"))).name
             fileobj = value
-
+        
         if content_type is None:
             content_type = guess_content_type(filename)
 
-        if content_type is not None and "Content-Type" not in headers:
+        has_content_type_header = any("content-type" in key.lower() for key in headers)
+        if content_type is not None and not has_content_type_header:
             # note that unlike requests, we ignore the content_type
             # provided in the 3rd tuple element if it is also included in the headers
             # requests does the opposite (it overwrites the header with the 3rd tuple element)
