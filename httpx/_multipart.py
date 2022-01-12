@@ -93,11 +93,10 @@ class FileField:
             else:
                 # all 4 parameters included
                 filename, fileobj, content_type, headers = value  # type: ignore
-                headers = {k.title(): v for k, v in headers.items()}
         else:
             filename = Path(str(getattr(value, "name", "upload"))).name
             fileobj = value
-        
+
         if content_type is None:
             content_type = guess_content_type(filename)
 
