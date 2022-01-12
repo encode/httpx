@@ -207,12 +207,6 @@ async def main():
 anyio.run(main, backend='trio')
 ```
 
-When instantiating a transport instance explicitly, for maximum consistency, the same `backend` parameter can be passed to `AsyncHTTPTransport`.
-```python
-transport = httpx.AsyncHTTPTransport(backend="trio")
-```
-
-
 ## Calling into Python Web Apps
 
 Just as `httpx.Client` allows you to call directly into WSGI web applications,
