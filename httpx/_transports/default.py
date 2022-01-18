@@ -137,37 +137,51 @@ class HTTPTransport(BaseTransport):
                 local_address=local_address,
                 retries=retries,
             )
-        else:
+        elif proxy.url.scheme in ("http", "https"):
+            self._pool = httpcore.HTTPProxy(
+                proxy_url=httpcore.URL(
+                    scheme=proxy.url.raw_scheme,
+                    host=proxy.url.raw_host,
+                    port=proxy.url.port,
+                    target=proxy.url.raw_path,
+                ),
+                proxy_auth=proxy.raw_auth,
+                proxy_headers=proxy.headers.raw,
+                ssl_context=ssl_context,
+                max_connections=limits.max_connections,
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
+                http1=http1,
+                http2=http2,
+            )
+        elif proxy.url.scheme == "socks5":
             try:
-                self._pool = httpcore.HTTPProxy(
-                    proxy_url=httpcore.URL(
-                        scheme=proxy.url.raw_scheme,
-                        host=proxy.url.raw_host,
-                        port=proxy.url.port,
-                        target=proxy.url.raw_path,
-                    ),
-                    proxy_headers=proxy.headers.raw,
-                    ssl_context=ssl_context,
-                    max_connections=limits.max_connections,
-                    max_keepalive_connections=limits.max_keepalive_connections,
-                    keepalive_expiry=limits.keepalive_expiry,
-                    http1=http1,
-                    http2=http2,
-                )
-            except TypeError:  # pragma: nocover
-                self._pool = httpcore.HTTPProxy(
-                    proxy_url=httpcore.URL(
-                        scheme=proxy.url.raw_scheme,
-                        host=proxy.url.raw_host,
-                        port=proxy.url.port,
-                        target=proxy.url.raw_path,
-                    ),
-                    proxy_headers=proxy.headers.raw,
-                    ssl_context=ssl_context,
-                    max_connections=limits.max_connections,
-                    max_keepalive_connections=limits.max_keepalive_connections,
-                    keepalive_expiry=limits.keepalive_expiry,
-                )
+                import socksio  # noqa
+            except ImportError:  # pragma: nocover
+                raise ImportError(
+                    "Using SOCKS proxy, but the 'socksio' package is not installed. "
+                    "Make sure to install httpx using `pip install httpx[socks]`."
+                ) from None
+
+            self._pool = httpcore.SOCKSProxy(
+                proxy_url=httpcore.URL(
+                    scheme=proxy.url.raw_scheme,
+                    host=proxy.url.raw_host,
+                    port=proxy.url.port,
+                    target=proxy.url.raw_path,
+                ),
+                proxy_auth=proxy.raw_auth,
+                ssl_context=ssl_context,
+                max_connections=limits.max_connections,
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
+                http1=http1,
+                http2=http2,
+            )
+        else:  # pragma: nocover
+            raise ValueError(
+                f"Proxy protocol must be either 'http', 'https', or 'socks5', but got {proxy.url.scheme!r}."
+            )
 
     def __enter__(self: T) -> T:  # Use generics for subclass support.
         self._pool.__enter__()
@@ -258,7 +272,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 local_address=local_address,
                 retries=retries,
             )
-        else:
+        elif proxy.url.scheme in ("http", "https"):
             self._pool = httpcore.AsyncHTTPProxy(
                 proxy_url=httpcore.URL(
                     scheme=proxy.url.raw_scheme,
@@ -266,11 +280,42 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                     port=proxy.url.port,
                     target=proxy.url.raw_path,
                 ),
+                proxy_auth=proxy.raw_auth,
                 proxy_headers=proxy.headers.raw,
                 ssl_context=ssl_context,
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
+                http1=http1,
+                http2=http2,
+            )
+        elif proxy.url.scheme == "socks5":
+            try:
+                import socksio  # noqa
+            except ImportError:  # pragma: nocover
+                raise ImportError(
+                    "Using SOCKS proxy, but the 'socksio' package is not installed. "
+                    "Make sure to install httpx using `pip install httpx[socks]`."
+                ) from None
+
+            self._pool = httpcore.AsyncSOCKSProxy(
+                proxy_url=httpcore.URL(
+                    scheme=proxy.url.raw_scheme,
+                    host=proxy.url.raw_host,
+                    port=proxy.url.port,
+                    target=proxy.url.raw_path,
+                ),
+                proxy_auth=proxy.raw_auth,
+                ssl_context=ssl_context,
+                max_connections=limits.max_connections,
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
+                http1=http1,
+                http2=http2,
+            )
+        else:  # pragma: nocover
+            raise ValueError(
+                f"Proxy protocol must be either 'http', 'https', or 'socks5', but got {proxy.url.scheme!r}."
             )
 
     async def __aenter__(self: A) -> A:  # Use generics for subclass support.
