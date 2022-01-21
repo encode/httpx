@@ -135,7 +135,6 @@ def test_header_repeated_items():
     ]
 
 
-
 def test_header_repeated_multi_items():
     url = "http://example.org/echo_headers"
     client = httpx.Client(
