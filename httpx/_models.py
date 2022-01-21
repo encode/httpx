@@ -12,7 +12,6 @@ import charset_normalizer
 import idna
 import rfc3986
 import rfc3986.exceptions
-from black import List
 
 from ._content import ByteStream, UnattachedStream, encode_request, encode_response
 from ._decoders import (
