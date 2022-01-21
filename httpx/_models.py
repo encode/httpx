@@ -1,4 +1,5 @@
 import cgi
+from collections import defaultdict
 import datetime
 import email.message
 import json as jsonlib
@@ -7,6 +8,7 @@ import urllib.request
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qs, quote, unquote, urlencode
+from black import List
 
 import charset_normalizer
 import idna
@@ -963,7 +965,11 @@ class Headers(typing.MutableMapping[str, str]):
         return split_values
 
     def update(self, headers: HeaderTypes = None) -> None:  # type: ignore
-        self._list.extend(Headers(headers)._list)
+        headers = Headers(headers)
+        for key in headers.keys():
+            if key in self:
+                self.pop(key)
+        self._list.extend(headers._list)
 
     def copy(self) -> "Headers":
         return Headers(self, encoding=self.encoding)
