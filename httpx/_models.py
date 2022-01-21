@@ -963,9 +963,7 @@ class Headers(typing.MutableMapping[str, str]):
         return split_values
 
     def update(self, headers: HeaderTypes = None) -> None:  # type: ignore
-        headers = Headers(headers)
-        for key, value in headers.raw:
-            self[key.decode(headers.encoding)] = value.decode(headers.encoding)
+        self._list.extend(Headers(headers)._list)
 
     def copy(self) -> "Headers":
         return Headers(self, encoding=self.encoding)
