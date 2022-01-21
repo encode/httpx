@@ -1,5 +1,4 @@
 import cgi
-from collections import defaultdict
 import datetime
 import email.message
 import json as jsonlib
@@ -8,12 +7,12 @@ import urllib.request
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qs, quote, unquote, urlencode
-from black import List
 
 import charset_normalizer
 import idna
 import rfc3986
 import rfc3986.exceptions
+from black import List
 
 from ._content import ByteStream, UnattachedStream, encode_request, encode_response
 from ._decoders import (
