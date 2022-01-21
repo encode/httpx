@@ -123,16 +123,17 @@ def test_header_update():
 def test_header_repeated_items():
     url = "http://example.org/echo_headers"
     client = httpx.Client(transport=httpx.MockTransport(echo_repeated_headers_items))
-    response = client.get(url, headers=[("x-header", "1"), ("x-header", "2")])
+    response = client.get(url, headers=[("x-header", "1"), ("x-header", "2,3")])
 
     assert response.status_code == 200
 
     echoed_headers = response.json()["headers"]
     # as per RFC 7230, the whitespace after a comma is insignificant
     # so we split and strip here so that we can do a safe comparison
-    assert ["x-header", ["1", "2"]] in [
+    assert ["x-header", ["1", "2", "3"]] in [
         [k, [subv.lstrip() for subv in v.split(",")]] for k, v in echoed_headers
     ]
+
 
 
 def test_header_repeated_multi_items():
@@ -140,13 +141,13 @@ def test_header_repeated_multi_items():
     client = httpx.Client(
         transport=httpx.MockTransport(echo_repeated_headers_multi_items)
     )
-    response = client.get(url, headers=[("x-header", "1"), ("x-header", "2")])
+    response = client.get(url, headers=[("x-header", "1"), ("x-header", "2,3")])
 
     assert response.status_code == 200
 
     echoed_headers = response.json()["headers"]
     assert ["x-header", "1"] in echoed_headers
-    assert ["x-header", "2"] in echoed_headers
+    assert ["x-header", "2,3"] in echoed_headers
 
 
 def test_remove_default_header():
