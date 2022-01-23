@@ -39,31 +39,46 @@ class codes(IntEnum):
             return ""
 
     @classmethod
-    def is_redirect(cls, value: int) -> bool:
-        return value in (
-            # 301 (Cacheable redirect. Method may change to GET.)
-            codes.MOVED_PERMANENTLY,
-            # 302 (Uncacheable redirect. Method may change to GET.)
-            codes.FOUND,
-            # 303 (Client should make a GET or HEAD request.)
-            codes.SEE_OTHER,
-            # 307 (Equiv. 302, but retain method)
-            codes.TEMPORARY_REDIRECT,
-            # 308 (Equiv. 301, but retain method)
-            codes.PERMANENT_REDIRECT,
-        )
+    def is_informational(cls, value: int) -> bool:
+        """
+        Returns `True` for 1xx status codes, `False` otherwise.
+        """
+        return 100 <= value <= 199
 
     @classmethod
-    def is_error(cls, value: int) -> bool:
-        return 400 <= value <= 599
+    def is_success(cls, value: int) -> bool:
+        """
+        Returns `True` for 2xx status codes, `False` otherwise.
+        """
+        return 200 <= value <= 299
+
+    @classmethod
+    def is_redirect(cls, value: int) -> bool:
+        """
+        Returns `True` for 3xx status codes, `False` otherwise.
+        """
+        return 300 <= value <= 399
 
     @classmethod
     def is_client_error(cls, value: int) -> bool:
+        """
+        Returns `True` for 4xx status codes, `False` otherwise.
+        """
         return 400 <= value <= 499
 
     @classmethod
     def is_server_error(cls, value: int) -> bool:
+        """
+        Returns `True` for 5xx status codes, `False` otherwise.
+        """
         return 500 <= value <= 599
+
+    @classmethod
+    def is_error(cls, value: int) -> bool:
+        """
+        Returns `True` for 4xx or 5xx status codes, `False` otherwise.
+        """
+        return 400 <= value <= 599
 
     # informational
     CONTINUE = 100, "Continue"

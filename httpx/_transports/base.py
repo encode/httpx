@@ -1,65 +1,10 @@
 import typing
 from types import TracebackType
 
+from .._models import Request, Response
+
 T = typing.TypeVar("T", bound="BaseTransport")
 A = typing.TypeVar("A", bound="AsyncBaseTransport")
-
-
-class SyncByteStream:
-    def __iter__(self) -> typing.Iterator[bytes]:
-        raise NotImplementedError(
-            "The '__iter__' method must be implemented."
-        )  # pragma: nocover
-        yield b""  # pragma: nocover
-
-    def close(self) -> None:
-        """
-        Subclasses can override this method to release any network resources
-        after a request/response cycle is complete.
-
-        Streaming cases should use a `try...finally` block to ensure that
-        the stream `close()` method is always called.
-
-        Example:
-
-            status_code, headers, stream, extensions = transport.handle_request(...)
-            try:
-                ...
-            finally:
-                stream.close()
-        """
-
-    def read(self) -> bytes:
-        """
-        Simple cases can use `.read()` as a convience method for consuming
-        the entire stream and then closing it.
-
-        Example:
-
-            status_code, headers, stream, extensions = transport.handle_request(...)
-            body = stream.read()
-        """
-        try:
-            return b"".join([part for part in self])
-        finally:
-            self.close()
-
-
-class AsyncByteStream:
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        raise NotImplementedError(
-            "The '__aiter__' method must be implemented."
-        )  # pragma: nocover
-        yield b""  # pragma: nocover
-
-    async def aclose(self) -> None:
-        pass
-
-    async def aread(self) -> bytes:
-        try:
-            return b"".join([part async for part in self])
-        finally:
-            await self.aclose()
 
 
 class BaseTransport:
@@ -74,22 +19,13 @@ class BaseTransport:
     ) -> None:
         self.close()
 
-    def handle_request(
-        self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: SyncByteStream,
-        extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
-    ]:
+    def handle_request(self, request: Request) -> Response:
         """
         Send a single HTTP request and return a response.
 
         At this layer of API we're simply using plain primitives. No `Request` or
         `Response` models, no fancy `URL` or `Header` handling. This strict point
-        of cut-off provides a clear design seperation between the HTTPX API,
+        of cut-off provides a clear design separation between the HTTPX API,
         and the low-level network handling.
 
         Developers shouldn't typically ever need to call into this API directly,
@@ -167,14 +103,8 @@ class AsyncBaseTransport:
 
     async def handle_async_request(
         self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: AsyncByteStream,
-        extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
-    ]:
+        request: Request,
+    ) -> Response:
         raise NotImplementedError(
             "The 'handle_async_request' method must be implemented."
         )  # pragma: nocover

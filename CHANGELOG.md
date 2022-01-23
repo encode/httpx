@@ -4,6 +4,137 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.21.3 (6th January, 2022)
+
+### Fixed
+
+* Fix streaming uploads using `SyncByteStream` or `AsyncByteStream`. Regression in 0.21.2. (#2016)
+
+## 0.21.2 (5th January, 2022)
+
+### Fixed
+
+* HTTP/2 support for tunnelled proxy cases. (#2009)
+* Improved the speed of large file uploads. (#1948)
+
+## 0.21.1 (16th November, 2021)
+
+### Fixed
+
+* The `response.url` property is now correctly annotated as `URL`, instead of `Optional[URL]`. (#1940)
+
+## 0.21.0 (15th November, 2021)
+
+The 0.21.0 release integrates against a newly redesigned `httpcore` backend.
+
+Both packages ought to automatically update to the required versions, but if you are
+seeing any issues, you should ensure that you have `httpx==0.21.*` and `httpcore==0.14.*` installed.
+
+### Added
+
+* The command-line client will now display connection information when `-v/--verbose` is used.
+* The command-line client will now display server certificate information when `-v/--verbose` is used.
+* The command-line client is now able to properly detect if the outgoing request
+should be formatted as HTTP/1.1 or HTTP/2, based on the result of the HTTP/2 negotiation.
+
+### Removed
+
+* Curio support is no longer currently included. Please get in touch if you require this, so that we can assess priorities.
+
+## 0.20.0 (13th October, 2021)
+
+The 0.20.0 release adds an integrated command-line client, and also includes some
+design changes. The most notable of these is that redirect responses are no longer
+automatically followed, unless specifically requested.
+
+This design decision prioritises a more explicit approach to redirects, in order
+to avoid code that unintentionally issues multiple requests as a result of
+misconfigured URLs.
+
+For example, previously a client configured to send requests to `http://api.github.com/`
+would end up sending every API request twice, as each request would be redirected to `https://api.github.com/`.
+
+If you do want auto-redirect behaviour, you can enable this either by configuring
+the client instance with `Client(follow_redirects=True)`, or on a per-request
+basis, with `.get(..., follow_redirects=True)`.
+
+This change is a classic trade-off between convenience and precision, with no "right"
+answer. See [discussion #1785](https://github.com/encode/httpx/discussions/1785) for more
+context.
+
+The other major design change is an update to the Transport API, which is the low-level
+interface against which requests are sent. Previously this interface used only primitive
+datastructures, like so...
+
+```python
+(status_code, headers, stream, extensions) = transport.handle_request(method, url, headers, stream, extensions)
+try
+    ...
+finally:
+    stream.close()
+```
+
+Now the interface is much simpler...
+
+```python
+response = transport.handle_request(request)
+try
+    ...
+finally:
+    response.close()
+```
+
+### Changed
+
+* The `allow_redirects` flag is now `follow_redirects` and defaults to `False`.
+* The `raise_for_status()` method will now raise an exception for any responses
+  except those with 2xx status codes. Previously only 4xx and 5xx status codes
+  would result in an exception.
+* The low-level transport API changes to the much simpler `response = transport.handle_request(request)`.
+* The `client.send()` method no longer accepts a `timeout=...` argument, but the
+  `client.build_request()` does. This required by the signature change of the
+  Transport API. The request timeout configuration is now stored on the request
+  instance, as `request.extensions['timeout']`.
+
+### Added
+
+* Added the `httpx` command-line client.
+* Response instances now include `.is_informational`, `.is_success`, `.is_redirect`, `.is_client_error`, and `.is_server_error`
+  properties for checking 1xx, 2xx, 3xx, 4xx, and 5xx response types. Note that the behaviour of `.is_redirect` is slightly different in that it now returns True for all 3xx responses, in order to allow for a consistent set of properties onto the different HTTP status code types. The `response.has_redirect_location` location may be used to determine responses with properly formed URL redirects.
+
+### Fixed
+
+* `response.iter_bytes()` no longer raises a ValueError when called on a response with no content. (Pull #1827)
+* The `'wsgi.error'` configuration now defaults to `sys.stderr`, and is corrected to be a `TextIO` interface, not a `BytesIO` interface. Additionally, the WSGITransport now accepts a `wsgi_error` configuration. (Pull #1828)
+* Follow the WSGI spec by properly closing the iterable returned by the application. (Pull #1830)
+
+## 0.19.0 (19th August, 2021)
+
+### Added
+
+* Add support for `Client(allow_redirects=<bool>)`. (Pull #1790)
+* Add automatic character set detection, when no `charset` is included in the response `Content-Type` header. (Pull #1791)
+
+### Changed
+
+* Event hooks are now also called for any additional redirect or auth requests/responses. (Pull #1806)
+* Strictly enforce that upload files must be opened in binary mode. (Pull #1736)
+* Strictly enforce that client instances can only be opened and closed once, and cannot be re-opened. (Pull #1800)
+* Drop `mode` argument from `httpx.Proxy(..., mode=...)`. (Pull #1795)
+
+## 0.18.2 (17th June, 2021)
+
+### Added
+
+* Support for Python 3.10. (Pull #1687)
+* Expose `httpx.USE_CLIENT_DEFAULT`, used as the default to `auth` and `timeout` parameters in request methods. (Pull #1634)
+* Support [HTTP/2 "prior knowledge"](https://python-hyper.org/projects/hyper-h2/en/v2.3.1/negotiating-http2.html#prior-knowledge), using `httpx.Client(http1=False, http2=True)`. (Pull #1624)
+
+### Fixed
+
+* Clean up some cases where warnings were being issued. (Pull #1687)
+* Prefer Content-Length over Transfer-Encoding: chunked for content=<file-like> cases. (Pull #1619)
+
 ## 0.18.1 (29th April, 2021)
 
 ### Changed
@@ -229,7 +360,7 @@ The following API changes have been issuing deprecation warnings since 0.17.0 on
 
 The 0.14 release includes a range of improvements to the public API, intended on preparing for our upcoming 1.0 release.
 
-* Our HTTP/2 support is now fully optional. **You now need to use `pip install httpx[http2]` if you want to include the HTTP/2 dependancies.**
+* Our HTTP/2 support is now fully optional. **You now need to use `pip install httpx[http2]` if you want to include the HTTP/2 dependencies.**
 * Our HSTS support has now been removed. Rewriting URLs from `http` to `https` if the host is on the HSTS list can be beneficial in avoiding roundtrips to incorrectly formed URLs, but on balance we've decided to remove this feature, on the principle of least surprise. Most programmatic clients do not include HSTS support, and for now we're opting to remove our support for it.
 * Our exception hierarchy has been overhauled. Most users will want to stick with their existing `httpx.HTTPError` usage, but we've got a clearer overall structure now. See https://www.python-httpx.org/exceptions/ for more details.
 
@@ -602,7 +733,7 @@ importing modules within the package.
 - The SSL configuration settings of `verify`, `cert`, and `trust_env` now raise warnings if used per-request when using a Client instance. They should always be set on the Client instance itself. (Pull #597)
 - Use plain strings "TUNNEL_ONLY" or "FORWARD_ONLY" on the HTTPProxy `proxy_mode` argument. The `HTTPProxyMode` enum still exists, but its usage will raise warnings. (#610)
 - Pool timeouts are now on the timeout configuration, not the pool limits configuration. (Pull #563)
-- The timeout configuration is now named `httpx.Timeout(...)`, not `httpx.TimeoutConfig(...)`. The old version currently remains as a synonym for backwards compatability.  (Pull #591)
+- The timeout configuration is now named `httpx.Timeout(...)`, not `httpx.TimeoutConfig(...)`. The old version currently remains as a synonym for backwards compatibility.  (Pull #591)
 
 ---
 
@@ -731,7 +862,7 @@ importing modules within the package.
 - Switch IDNA encoding from IDNA 2003 to IDNA 2008. (Pull #161)
 - Expose base classes for alternate concurrency backends. (Pull #178)
 - Improve Multipart parameter encoding. (Pull #167)
-- Add the `headers` proeprty to `BaseClient`. (Pull #159)
+- Add the `headers` property to `BaseClient`. (Pull #159)
 - Add support for Google's `brotli` library. (Pull #156)
 - Remove deprecated TLS versions (TLSv1 and TLSv1.1) from default `SSLConfig`. (Pull #155)
 - Fix `URL.join(...)` to work similarly to RFC 3986 URL joining. (Pull #144)

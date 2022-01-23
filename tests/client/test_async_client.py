@@ -265,8 +265,14 @@ async def test_client_closed_state_using_implicit_open():
     await client.aclose()
 
     assert client.is_closed
+    # Once we're close we cannot make any more requests.
     with pytest.raises(RuntimeError):
         await client.get("http://example.com")
+
+    # Once we're closed we cannot reopen the client.
+    with pytest.raises(RuntimeError):
+        async with client:
+            pass  # pragma: nocover
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -278,14 +284,6 @@ async def test_client_closed_state_using_with_block():
     assert client.is_closed
     with pytest.raises(RuntimeError):
         await client.get("http://example.com")
-
-
-@pytest.mark.usefixtures("async_environment")
-async def test_deleting_unclosed_async_client_causes_warning():
-    client = httpx.AsyncClient(transport=httpx.MockTransport(hello_world))
-    await client.get("http://example.com")
-    with pytest.warns(UserWarning):
-        del client
 
 
 def unmounted(request: httpx.Request) -> httpx.Response:

@@ -1,11 +1,11 @@
 import os
 import ssl
 import typing
-from base64 import b64encode
 from pathlib import Path
 
 import certifi
 
+from ._compat import set_minimum_tls_version_1_2
 from ._models import URL, Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._utils import get_ca_bundle_from_env, get_logger
@@ -90,8 +90,8 @@ class SSLConfig:
         Return an SSL context for unverified connections.
         """
         context = self._create_default_ssl_context()
-        context.verify_mode = ssl.CERT_NONE
         context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
         self._load_client_certs(context)
         return context
 
@@ -153,11 +153,8 @@ class SSLConfig:
         Creates the default SSLContext object that's used for both verified
         and unverified connections.
         """
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-        context.options |= ssl.OP_NO_SSLv2
-        context.options |= ssl.OP_NO_SSLv3
-        context.options |= ssl.OP_NO_TLSv1
-        context.options |= ssl.OP_NO_TLSv1_1
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        set_minimum_tls_version_1_2(context)
         context.options |= ssl.OP_NO_COMPRESSION
         context.set_ciphers(DEFAULT_CIPHERS)
 
@@ -319,40 +316,45 @@ class Limits:
 
 class Proxy:
     def __init__(
-        self, url: URLTypes, *, headers: HeaderTypes = None, mode: str = "DEFAULT"
+        self,
+        url: URLTypes,
+        *,
+        auth: typing.Tuple[str, str] = None,
+        headers: HeaderTypes = None,
     ):
         url = URL(url)
         headers = Headers(headers)
 
-        if url.scheme not in ("http", "https"):
+        if url.scheme not in ("http", "https", "socks5"):
             raise ValueError(f"Unknown scheme for proxy URL {url!r}")
-        if mode not in ("DEFAULT", "FORWARD_ONLY", "TUNNEL_ONLY"):
-            raise ValueError(f"Unknown proxy mode {mode!r}")
 
         if url.username or url.password:
-            headers.setdefault(
-                "Proxy-Authorization",
-                self._build_auth_header(url.username, url.password),
-            )
-            # Remove userinfo from the URL authority, e.g.:
-            # 'username:password@proxy_host:proxy_port' -> 'proxy_host:proxy_port'
+            # Remove any auth credentials from the URL.
+            auth = (url.username, url.password)
             url = url.copy_with(username=None, password=None)
 
         self.url = url
+        self.auth = auth
         self.headers = headers
-        self.mode = mode
 
-    def _build_auth_header(self, username: str, password: str) -> str:
-        userpass = (username.encode("utf-8"), password.encode("utf-8"))
-        token = b64encode(b":".join(userpass)).decode()
-        return f"Basic {token}"
+    @property
+    def raw_auth(self) -> typing.Optional[typing.Tuple[bytes, bytes]]:
+        # The proxy authentication as raw bytes.
+        return (
+            None
+            if self.auth is None
+            else (self.auth[0].encode("utf-8"), self.auth[1].encode("utf-8"))
+        )
 
     def __repr__(self) -> str:
-        return (
-            f"Proxy(url={str(self.url)!r}, "
-            f"headers={dict(self.headers)!r}, "
-            f"mode={self.mode!r})"
-        )
+        # The authentication is represented with the password component masked.
+        auth = (self.auth[0], "********") if self.auth else None
+
+        # Build a nice concise representation.
+        url_str = f"{str(self.url)!r}"
+        auth_str = f", auth={auth!r}" if auth else ""
+        headers_str = f", headers={dict(self.headers)!r}" if self.headers else ""
+        return f"Proxy({url_str}{auth_str}{headers_str})"
 
 
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)

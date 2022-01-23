@@ -20,7 +20,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
 _HTML5_FORM_ENCODING_REPLACEMENTS.update(
-    {chr(c): "%{:02X}".format(c) for c in range(0x00, 0x1F + 1) if c != 0x1B}
+    {chr(c): "%{:02X}".format(c) for c in range(0x1F + 1) if c != 0x1B}
 )
 _HTML5_FORM_ENCODING_RE = re.compile(
     r"|".join([re.escape(c) for c in _HTML5_FORM_ENCODING_REPLACEMENTS.keys()])
@@ -305,7 +305,7 @@ def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
         # on how names in `NO_PROXY` are handled.
         if hostname == "*":
             # If NO_PROXY=* is used or if "*" occurs as any one of the comma
-            # seperated hostnames, then we should just bypass any information
+            # separated hostnames, then we should just bypass any information
             # from HTTP_PROXY, HTTPS_PROXY, ALL_PROXY, and always ignore
             # proxies.
             return {}

@@ -190,6 +190,23 @@ curio.run(main)
 !!! important
     The `curio` package must be installed to use the Curio backend.
 
+
+### [AnyIO](https://github.com/agronholm/anyio)
+
+AnyIO is an [asynchronous networking and concurrency library](https://anyio.readthedocs.io/) that works on top of either `asyncio` or `trio`. It blends in with native libraries of your chosen backend (defaults to `asyncio`).
+
+```python
+import httpx
+import anyio
+
+async def main():
+    async with httpx.AsyncClient() as client:
+        response = await client.get('https://www.example.com/')
+        print(response)
+
+anyio.run(main, backend='trio')
+```
+
 ## Calling into Python Web Apps
 
 Just as `httpx.Client` allows you to call directly into WSGI web applications,

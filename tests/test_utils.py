@@ -71,7 +71,7 @@ def test_get_netrc_login():
 
 def test_get_netrc_unknown():
     netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
-    assert netrc_info.get_credentials("nonexistant.org") is None
+    assert netrc_info.get_credentials("nonexistent.org") is None
 
 
 @pytest.mark.parametrize(
@@ -120,7 +120,7 @@ async def test_logs_trace(server, capsys):
 @pytest.mark.asyncio
 async def test_logs_redirect_chain(server, capsys):
     with override_log_level("debug"):
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.get(server.url.copy_with(path="/redirect_301"))
             assert response.status_code == 200
 

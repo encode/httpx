@@ -48,6 +48,11 @@ An fast and powerful RPC framework based on ASGI/WSGI. Use HTTPX as the client o
 
 A utility for record and repeat an http request.
 
+### httpx-caching
+
+[Github](https://github.com/johtso/httpx-caching)
+
+This package adds caching functionality to HTTPX
 
 ## Gists
 

@@ -199,34 +199,24 @@ def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: noc
         assert context.keylog_filename is None  # type: ignore
 
 
-@pytest.mark.parametrize(
-    "url,expected_url,expected_headers,expected_mode",
-    [
-        ("https://example.com", "https://example.com", {}, "DEFAULT"),
-        (
-            "https://user:pass@example.com",
-            "https://example.com",
-            {"proxy-authorization": "Basic dXNlcjpwYXNz"},
-            "DEFAULT",
-        ),
-    ],
-)
-def test_proxy_from_url(url, expected_url, expected_headers, expected_mode):
-    proxy = httpx.Proxy(url)
+def test_proxy_from_url():
+    proxy = httpx.Proxy("https://example.com")
 
-    assert str(proxy.url) == expected_url
-    assert dict(proxy.headers) == expected_headers
-    assert proxy.mode == expected_mode
-    assert repr(proxy) == "Proxy(url='{}', headers={}, mode='{}')".format(
-        expected_url, str(expected_headers), expected_mode
-    )
+    assert str(proxy.url) == "https://example.com"
+    assert proxy.auth is None
+    assert proxy.headers == {}
+    assert repr(proxy) == "Proxy('https://example.com')"
+
+
+def test_proxy_with_auth_from_url():
+    proxy = httpx.Proxy("https://username:password@example.com")
+
+    assert str(proxy.url) == "https://example.com"
+    assert proxy.auth == ("username", "password")
+    assert proxy.headers == {}
+    assert repr(proxy) == "Proxy('https://example.com', auth=('username', '********'))"
 
 
 def test_invalid_proxy_scheme():
     with pytest.raises(ValueError):
         httpx.Proxy("invalid://example.com")
-
-
-def test_invalid_proxy_mode():
-    with pytest.raises(ValueError):
-        httpx.Proxy("https://example.com", mode="INVALID")

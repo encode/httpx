@@ -1,8 +1,8 @@
 import asyncio
 import typing
 
-from .._models import Request
-from .base import AsyncBaseTransport, AsyncByteStream, BaseTransport, SyncByteStream
+from .._models import Request, Response
+from .base import AsyncBaseTransport, BaseTransport
 
 
 class MockTransport(AsyncBaseTransport, BaseTransport):
@@ -11,47 +11,16 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
 
     def handle_request(
         self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: SyncByteStream,
-        extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], SyncByteStream, dict
-    ]:
-        request = Request(
-            method=method,
-            url=url,
-            headers=headers,
-            stream=stream,
-        )
+        request: Request,
+    ) -> Response:
         request.read()
-        response = self.handler(request)
-        return (
-            response.status_code,
-            response.headers.raw,
-            response.stream,
-            response.extensions,
-        )
+        return self.handler(request)
 
     async def handle_async_request(
         self,
-        method: bytes,
-        url: typing.Tuple[bytes, bytes, typing.Optional[int], bytes],
-        headers: typing.List[typing.Tuple[bytes, bytes]],
-        stream: AsyncByteStream,
-        extensions: dict,
-    ) -> typing.Tuple[
-        int, typing.List[typing.Tuple[bytes, bytes]], AsyncByteStream, dict
-    ]:
-        request = Request(
-            method=method,
-            url=url,
-            headers=headers,
-            stream=stream,
-        )
+        request: Request,
+    ) -> Response:
         await request.aread()
-
         response = self.handler(request)
 
         # Allow handler to *optionally* be an `async` function.
@@ -62,9 +31,4 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         if asyncio.iscoroutine(response):
             response = await response
 
-        return (
-            response.status_code,
-            response.headers.raw,
-            response.stream,
-            response.extensions,
-        )
+        return response

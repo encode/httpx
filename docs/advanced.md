@@ -26,7 +26,7 @@ This can bring **significant performance improvements** compared to using the to
 
 `Client` instances also support features that aren't available at the top-level API, such as:
 
-- Cookie persistance across requests.
+- Cookie persistence across requests.
 - Applying configuration across all outgoing requests.
 - Sending requests through HTTP proxies.
 - Using [HTTP/2](http2.md).
@@ -228,10 +228,10 @@ every time a particular type of event takes place.
 
 There are currently two event hooks:
 
-* `request` - Called once a request is about to be sent. Passed the `request` instance.
-* `response` - Called once the response has been returned. Passed the `response` instance.
+* `request` - Called after a request is fully prepared, but before it is sent to the network. Passed the `request` instance.
+* `response` - Called after the response has been fetched from the network, but before it is returned to the caller. Passed the `response` instance.
 
-These allow you to install client-wide functionality such as logging and monitoring.
+These allow you to install client-wide functionality such as logging, monitoring or tracing.
 
 ```python
 def log_request(request):
@@ -253,6 +253,22 @@ def raise_on_4xx_5xx(response):
     response.raise_for_status()
 
 client = httpx.Client(event_hooks={'response': [raise_on_4xx_5xx]})
+```
+
+!!! note
+    Response event hooks are called before determining if the response body
+    should be read or not.
+
+    If you need access to the response body inside an event hook, you'll
+    need to call `response.read()`, or for AsyncClients, `response.aread()`.
+
+The hooks are also allowed to modify `request` and `response` objects.
+
+```python
+def add_timestamp(request):
+    request.headers['x-request-timestamp'] = datetime.now(tz=datetime.utc).isoformat()
+
+client = httpx.Client(event_hooks={'request': [add_timestamp]})
 ```
 
 Event hooks must always be set as a **list of callables**, and you may register
@@ -361,7 +377,7 @@ password example-password
 ...
 ```
 
-When using `Client` instances, `trust_env` should be set on the client itself, rather that on the request methods:
+When using `Client` instances, `trust_env` should be set on the client itself, rather than on the request methods:
 
 ```python
 client = httpx.Client(trust_env=False)
@@ -370,8 +386,6 @@ client = httpx.Client(trust_env=False)
 ## HTTP Proxying
 
 HTTPX supports setting up [HTTP proxies](https://en.wikipedia.org/wiki/Proxy_server#Web_proxy_servers) via the `proxies` parameter to be passed on client initialization or top-level API functions like `httpx.get(..., proxies=...)`.
-
-_Note: SOCKS proxies are not supported yet._
 
 <div align="center">
     <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Open_proxy_h2g2bob.svg/480px-Open_proxy_h2g2bob.svg.png"/>
@@ -549,43 +563,33 @@ See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](environment_vari
 In general, the flow for making an HTTP request through a proxy is as follows:
 
 1. The client connects to the proxy (initial connection request).
-1. The proxy somehow transfers data to the server on your behalf.
+2. The proxy transfers data to the server on your behalf.
 
 How exactly step 2/ is performed depends on which of two proxying mechanisms is used:
 
 * **Forwarding**: the proxy makes the request for you, and sends back the response it obtained from the server.
-* **Tunneling**: the proxy establishes a TCP connection to the server on your behalf, and the client reuses this connection to send the request and receive the response. This is known as an [HTTP Tunnel](https://en.wikipedia.org/wiki/HTTP_tunnel). This mechanism is how you can access websites that use HTTPS from an HTTP proxy (the client "upgrades" the connection to HTTPS by performing the TLS handshake with the server over the TCP connection provided by the proxy).
-
-#### Default behavior
-
-Given the technical definitions above, by default (and regardless of whether you're using an HTTP or HTTPS proxy), HTTPX will:
-
-* Use forwarding for HTTP requests.
-* Use tunneling for HTTPS requests.
-
-This ensures that you can make HTTP and HTTPS requests in all cases (i.e. regardless of which type of proxy you're using).
-
-#### Forcing the proxy mechanism
-
-In most cases, the default behavior should work just fine as well as provide enough security.
-
-But if you know what you're doing and you want to force which mechanism to use, you can do so by passing an `httpx.Proxy()` instance, setting the `mode` to either `FORWARD_ONLY` or `TUNNEL_ONLY`. For example...
-
-```python
-# Route all requests through an HTTPS proxy, using tunneling only.
-proxies = httpx.Proxy(
-    url="https://localhost:8030",
-    mode="TUNNEL_ONLY",
-)
-
-with httpx.Client(proxies=proxies) as client:
-    # This HTTP request will be tunneled instead of forwarded.
-    r = client.get("http://example.com")
-```
+* **Tunnelling**: the proxy establishes a TCP connection to the server on your behalf, and the client reuses this connection to send the request and receive the response. This is known as an [HTTP Tunnel](https://en.wikipedia.org/wiki/HTTP_tunnel). This mechanism is how you can access websites that use HTTPS from an HTTP proxy (the client "upgrades" the connection to HTTPS by performing the TLS handshake with the server over the TCP connection provided by the proxy).
 
 ### Troubleshooting proxies
 
 If you encounter issues when setting up proxies, please refer to our [Troubleshooting guide](troubleshooting.md#proxies).
+
+## SOCKS
+
+In addition to HTTP proxies, `httpcore` also supports proxies using the SOCKS protocol.
+This is an optional feature that requires an additional third-party library be installed before use.
+
+You can install SOCKS support using `pip`:
+
+```shell
+$ pip install httpx[socks]
+```
+
+You can now configure a client to make requests via a proxy using the SOCKS protocol:
+
+```python
+httpx.Client(proxies='socks5://user:pass@host:port')
+```
 
 ## Timeout Configuration
 
@@ -1100,7 +1104,7 @@ def handler(request):
 
 
 # Switch to a mock transport, if the TESTING environment variable is set.
-if os.environ['TESTING'].upper() == "TRUE":
+if os.environ.get('TESTING', '').upper() == "TRUE":
     transport = httpx.MockTransport(handler)
 else:
     transport = httpx.HTTPTransport()

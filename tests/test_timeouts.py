@@ -23,6 +23,7 @@ async def test_write_timeout(server):
 
 
 @pytest.mark.usefixtures("async_environment")
+@pytest.mark.network
 async def test_connect_timeout(server):
     timeout = httpx.Timeout(None, connect=1e-6)
 
@@ -38,6 +39,6 @@ async def test_pool_timeout(server):
     timeout = httpx.Timeout(None, pool=1e-4)
 
     async with httpx.AsyncClient(limits=limits, timeout=timeout) as client:
-        async with client.stream("GET", server.url):
-            with pytest.raises(httpx.PoolTimeout):
-                await client.get("http://localhost:8000/")
+        with pytest.raises(httpx.PoolTimeout):
+            async with client.stream("GET", server.url):
+                await client.get(server.url)
