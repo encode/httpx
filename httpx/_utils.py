@@ -305,7 +305,7 @@ def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
         # on how names in `NO_PROXY` are handled.
         if hostname == "*":
             # If NO_PROXY=* is used or if "*" occurs as any one of the comma
-            # seperated hostnames, then we should just bypass any information
+            # separated hostnames, then we should just bypass any information
             # from HTTP_PROXY, HTTPS_PROXY, ALL_PROXY, and always ignore
             # proxies.
             return {}
