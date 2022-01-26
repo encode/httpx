@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.22.0 (26th January, 2022)
+
+### Added
+
+* Support for [the SOCKS5 proxy protocol](https://www.python-httpx.org/advanced/#socks). (#2034)
+* Support for custom headers in multipart/form-data requests (#1936)
+
+### Fixed
+
+* Don't perform unreliable close/warning on `__del__` with unclosed clients. (#2026)
+* Fix `Headers.update(...)` to correctly handle repeated headers (#2038)
+
 ## 0.21.3 (6th January, 2022)
 
 ### Fixed
