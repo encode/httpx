@@ -4,6 +4,7 @@ import sys
 import typing
 
 import click
+import httpcore
 import pygments.lexers
 import pygments.util
 import rich.console
@@ -12,7 +13,8 @@ import rich.syntax
 
 from ._client import Client
 from ._exceptions import RequestError
-from ._models import Request, Response
+from ._models import Response
+from ._status_codes import codes
 
 
 def print_help() -> None:
@@ -102,29 +104,38 @@ def get_lexer_for_response(response: Response) -> str:
     return ""  # pragma: nocover
 
 
-def format_request_headers(request: Request, http2: bool = False) -> str:
+def format_request_headers(request: httpcore.Request, http2: bool = False) -> str:
     version = "HTTP/2" if http2 else "HTTP/1.1"
     headers = [
-        (name.lower() if http2 else name, value) for name, value in request.headers.raw
+        (name.lower() if http2 else name, value) for name, value in request.headers
     ]
-    target = request.url.raw[-1].decode("ascii")
-    lines = [f"{request.method} {target} {version}"] + [
+    method = request.method.decode("ascii")
+    target = request.url.target.decode("ascii")
+    lines = [f"{method} {target} {version}"] + [
         f"{name.decode('ascii')}: {value.decode('ascii')}" for name, value in headers
     ]
     return "\n".join(lines)
 
 
-def format_response_headers(response: Response) -> str:
-    lines = [
-        f"{response.http_version} {response.status_code} {response.reason_phrase}"
-    ] + [
-        f"{name.decode('ascii')}: {value.decode('ascii')}"
-        for name, value in response.headers.raw
+def format_response_headers(
+    http_version: bytes,
+    status: int,
+    reason_phrase: typing.Optional[bytes],
+    headers: typing.List[typing.Tuple[bytes, bytes]],
+) -> str:
+    version = http_version.decode("ascii")
+    reason = (
+        codes.get_reason_phrase(status)
+        if reason_phrase is None
+        else reason_phrase.decode("ascii")
+    )
+    lines = [f"{version} {status} {reason}"] + [
+        f"{name.decode('ascii')}: {value.decode('ascii')}" for name, value in headers
     ]
     return "\n".join(lines)
 
 
-def print_request_headers(request: Request, http2: bool = False) -> None:
+def print_request_headers(request: httpcore.Request, http2: bool = False) -> None:
     console = rich.console.Console()
     http_text = format_request_headers(request, http2=http2)
     syntax = rich.syntax.Syntax(http_text, "http", theme="ansi_dark", word_wrap=True)
@@ -133,24 +144,18 @@ def print_request_headers(request: Request, http2: bool = False) -> None:
     console.print(syntax)
 
 
-def print_response_headers(response: Response) -> None:
+def print_response_headers(
+    http_version: bytes,
+    status: int,
+    reason_phrase: typing.Optional[bytes],
+    headers: typing.List[typing.Tuple[bytes, bytes]],
+) -> None:
     console = rich.console.Console()
-    http_text = format_response_headers(response)
+    http_text = format_response_headers(http_version, status, reason_phrase, headers)
     syntax = rich.syntax.Syntax(http_text, "http", theme="ansi_dark", word_wrap=True)
     console.print(syntax)
-
-
-def print_delimiter() -> None:
-    console = rich.console.Console()
     syntax = rich.syntax.Syntax("", "http", theme="ansi_dark", word_wrap=True)
     console.print(syntax)
-
-
-def print_redirects(response: Response) -> None:
-    if response.has_redirect_location:
-        response.read()
-        print_response_headers(response)
-        print_response(response)
 
 
 def print_response(response: Response) -> None:
@@ -169,6 +174,61 @@ def print_response(response: Response) -> None:
         console.print(syntax)
     else:  # pragma: nocover
         console.print(response.text)
+
+
+def format_certificate(cert: dict) -> str:  # pragma: nocover
+    lines = []
+    for key, value in cert.items():
+        if isinstance(value, (list, tuple)):
+            lines.append(f"*   {key}:")
+            for item in value:
+                if key in ("subject", "issuer"):
+                    for sub_item in item:
+                        lines.append(f"*     {sub_item[0]}: {sub_item[1]!r}")
+                elif isinstance(item, tuple) and len(item) == 2:
+                    lines.append(f"*     {item[0]}: {item[1]!r}")
+                else:
+                    lines.append(f"*     {item!r}")
+        else:
+            lines.append(f"*   {key}: {value!r}")
+    return "\n".join(lines)
+
+
+def trace(name: str, info: dict, verbose: bool = False) -> None:
+    console = rich.console.Console()
+    if name == "connection.connect_tcp.started" and verbose:
+        host = info["host"]
+        console.print(f"* Connecting to {host!r}")
+    elif name == "connection.connect_tcp.complete" and verbose:
+        stream = info["return_value"]
+        server_addr = stream.get_extra_info("server_addr")
+        console.print(f"* Connected to {server_addr[0]!r} on port {server_addr[1]}")
+    elif name == "connection.start_tls.complete" and verbose:  # pragma: nocover
+        stream = info["return_value"]
+        ssl_object = stream.get_extra_info("ssl_object")
+        version = ssl_object.version()
+        cipher = ssl_object.cipher()
+        server_cert = ssl_object.getpeercert()
+        alpn = ssl_object.selected_alpn_protocol()
+        console.print(f"* SSL established using {version!r} / {cipher[0]!r}")
+        console.print(f"* Selected ALPN protocol: {alpn!r}")
+        if server_cert:
+            console.print("* Server certificate:")
+            console.print(format_certificate(server_cert))
+    elif name == "http11.send_request_headers.started" and verbose:
+        request = info["request"]
+        print_request_headers(request, http2=False)
+    elif name == "http2.send_request_headers.started" and verbose:  # pragma: nocover
+        request = info["request"]
+        print_request_headers(request, http2=True)
+    elif name == "http11.receive_response_headers.complete":
+        http_version, status, reason_phrase, headers = info["return_value"]
+        print_response_headers(http_version, status, reason_phrase, headers)
+    elif name == "http2.receive_response_headers.complete":  # pragma: nocover
+        status, headers = info["return_value"]
+        http_version = b"HTTP/2"
+        reason_phrase = None
+        print_response_headers(http_version, status, reason_phrase, headers)
 
 
 def download_response(response: Response, download: typing.BinaryIO) -> None:
@@ -397,19 +457,12 @@ def main(
     if not method:
         method = "POST" if content or data or files or json else "GET"
 
-    event_hooks: typing.Dict[str, typing.List[typing.Callable]] = {}
-    if verbose:
-        event_hooks["request"] = [functools.partial(print_request_headers, http2=http2)]
-    if follow_redirects:
-        event_hooks["response"] = [print_redirects]
-
     try:
         with Client(
             proxies=proxies,
             timeout=timeout,
             verify=verify,
             http2=http2,
-            event_hooks=event_hooks,
         ) as client:
             with client.stream(
                 method,
@@ -423,20 +476,18 @@ def main(
                 cookies=dict(cookies),
                 auth=auth,
                 follow_redirects=follow_redirects,
+                extensions={"trace": functools.partial(trace, verbose=verbose)},
             ) as response:
-                print_response_headers(response)
-
                 if download is not None:
                     download_response(response, download)
                 else:
                     response.read()
                     if response.content:
-                        print_delimiter()
                         print_response(response)
 
     except RequestError as exc:
         console = rich.console.Console()
-        console.print(f"{type(exc).__name__}: {exc}")
+        console.print(f"[red]{type(exc).__name__}[/red]: {exc}")
         sys.exit(1)
 
     sys.exit(0 if response.is_success else 1)

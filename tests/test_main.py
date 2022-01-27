@@ -62,6 +62,7 @@ def test_redirects(server):
         "server: uvicorn",
         "location: /",
         "Transfer-Encoding: chunked",
+        "",
     ]
 
 
@@ -106,6 +107,8 @@ def test_verbose(server):
     result = runner.invoke(httpx.main, [url, "-v"])
     assert result.exit_code == 0
     assert remove_date_header(splitlines(result.output)) == [
+        "* Connecting to '127.0.0.1'",
+        "* Connected to '127.0.0.1' on port 8000",
         "GET / HTTP/1.1",
         f"Host: {server.url.netloc.decode('ascii')}",
         "Accept: */*",
@@ -129,6 +132,8 @@ def test_auth(server):
     print(result.output)
     assert result.exit_code == 0
     assert remove_date_header(splitlines(result.output)) == [
+        "* Connecting to '127.0.0.1'",
+        "* Connected to '127.0.0.1' on port 8000",
         "GET / HTTP/1.1",
         f"Host: {server.url.netloc.decode('ascii')}",
         "Accept: */*",

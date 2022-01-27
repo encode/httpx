@@ -28,6 +28,18 @@ def test_post_byte_iterator(server):
     assert response.reason_phrase == "OK"
 
 
+def test_post_byte_stream(server):
+    class Data(httpx.SyncByteStream):
+        def __iter__(self):
+            yield b"Hello"
+            yield b", "
+            yield b"world!"
+
+    response = httpx.post(server.url, content=Data())
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
 def test_options(server):
     response = httpx.options(server.url)
     assert response.status_code == 200
