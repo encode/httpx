@@ -1,6 +1,7 @@
 import cgi
 import io
 import os
+import tempfile
 import typing
 from unittest import mock
 
@@ -337,6 +338,25 @@ def test_multipart_encode_non_seekable_filelike() -> None:
         "Content-Length": str(len(content)),
     }
     assert content == b"".join(stream)
+
+
+def test_multipart_rewinds_files():
+    with tempfile.TemporaryFile() as upload:
+        upload.write(b"Hello, world!")
+
+        transport = httpx.MockTransport(echo_request_content)
+        client = httpx.Client(transport=transport)
+
+        files = {"file": upload}
+        response = client.post("http://127.0.0.1:8000/", files=files)
+        assert response.status_code == 200
+        assert b"\r\nHello, world!\r\n" in response.content
+
+        # POSTing the same file instance a second time should have the same content.
+        files = {"file": upload}
+        response = client.post("http://127.0.0.1:8000/", files=files)
+        assert response.status_code == 200
+        assert b"\r\nHello, world!\r\n" in response.content
 
 
 class TestHeaderParamHTML5Formatting:

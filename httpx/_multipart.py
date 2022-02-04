@@ -113,7 +113,6 @@ class FileField:
         self.filename = filename
         self.file = fileobj
         self.headers = headers
-        self._consumed = False
 
     def get_length(self) -> int:
         headers = self.render_headers()
@@ -158,9 +157,8 @@ class FileField:
             yield self._data
             return
 
-        if self._consumed:  # pragma: nocover
+        if hasattr(self.file, "seek"):
             self.file.seek(0)
-        self._consumed = True
 
         chunk = self.file.read(self.CHUNK_SIZE)
         while chunk:
