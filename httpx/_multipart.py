@@ -157,7 +157,7 @@ class FileField:
             yield self._data
             return
 
-        if hasattr(self.file, 'seek'):
+        if hasattr(self.file, "seek"):
             self.file.seek(0)
 
         chunk = self.file.read(self.CHUNK_SIZE)
