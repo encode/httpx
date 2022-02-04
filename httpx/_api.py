@@ -183,8 +183,8 @@ def get(
 
     **Parameters**: See `httpx.request`.
 
-    Note that the `data`, `files`, and `json` parameters are not available on
-    this function, as `GET` requests should not include a request body.
+    Note that the `data`, `files`, `json` and `content` parameters are not available
+    on this function, as `GET` requests should not include a request body.
     """
     return request(
         "GET",
@@ -221,8 +221,8 @@ def options(
 
     **Parameters**: See `httpx.request`.
 
-    Note that the `data`, `files`, and `json` parameters are not available on
-    this function, as `OPTIONS` requests should not include a request body.
+    Note that the `data`, `files`, `json` and `content` parameters are not available
+    on this function, as `OPTIONS` requests should not include a request body.
     """
     return request(
         "OPTIONS",
@@ -259,8 +259,8 @@ def head(
 
     **Parameters**: See `httpx.request`.
 
-    Note that the `data`, `files`, and `json` parameters are not available on
-    this function, as `HEAD` requests should not include a request body.
+    Note that the `data`, `files`, `json` and `content` parameters are not available
+    on this function, as `HEAD` requests should not include a request body.
     """
     return request(
         "HEAD",
@@ -426,8 +426,8 @@ def delete(
 
     **Parameters**: See `httpx.request`.
 
-    Note that the `data`, `files`, and `json` parameters are not available on
-    this function, as `DELETE` requests should not include a request body.
+    Note that the `data`, `files`, `json` and `content` parameters are not available
+    on this function, as `DELETE` requests should not include a request body.
     """
     return request(
         "DELETE",

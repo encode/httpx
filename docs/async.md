@@ -109,7 +109,7 @@ When sending a streaming request body with an `AsyncClient` instance, you should
 async def upload_bytes():
     ...  # yield byte content
 
-await client.post(url, data=upload_bytes())
+await client.post(url, content=upload_bytes())
 ```
 
 ### Explicit transport instances
