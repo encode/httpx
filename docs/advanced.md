@@ -1051,10 +1051,8 @@ subclass `httpx.BaseTransport` to implement a transport to use with `Client`,
 or subclass `httpx.AsyncBaseTransport` to implement a transport to
 use with `AsyncClient`.
 
-At the layer of the transport API we're using plain primitives.
-No `Request` or `Response` models, no fancy `URL` or `Header` handling.
-This strict point of cut-off provides a clear design separation between the
-HTTPX API, and the low-level network handling.
+At the layer of the transport API we're using the familiar `Request` and
+`Response` models.
 
 See the `handle_request` and `handle_async_request` docstrings for more details
 on the specifics of the Transport API.
@@ -1071,13 +1069,12 @@ class HelloWorldTransport(httpx.BaseTransport):
     A mock transport that always returns a JSON "Hello, world!" response.
     """
 
-    def handle_request(self, method, url, headers, stream, extensions):
+    def handle_request(self, request):
         message = {"text": "Hello, world!"}
         content = json.dumps(message).encode("utf-8")
         stream = httpx.ByteStream(content)
         headers = [(b"content-type", b"application/json")]
-        extensions = {}
-        return 200, headers, stream, extensions
+        return httpx.Response(200, headers=headers, stream=stream)
 ```
 
 Which we can use in the same way:
