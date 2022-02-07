@@ -396,6 +396,19 @@ def test_iter_raw_with_chunksize():
     assert parts == [b"Hello, world!"]
 
 
+def test_iter_raw_doesnt_return_empty_chunks():
+    def streaming_body_with_empty_chunks():
+        yield b"Hello, "
+        yield b""
+        yield b"world!"
+        yield b""
+
+    response = httpx.Response(200, content=streaming_body_with_empty_chunks())
+
+    parts = [part for part in response.iter_raw()]
+    assert parts == [b"Hello, ", b"world!"]
+
+
 def test_iter_raw_on_iterable():
     response = httpx.Response(
         200,
@@ -524,6 +537,19 @@ def test_iter_bytes_with_empty_response():
     response = httpx.Response(200, content=b"")
     parts = [part for part in response.iter_bytes()]
     assert parts == []
+
+
+def test_iter_bytes_doesnt_return_empty_chunks():
+    def streaming_body_with_empty_chunks():
+        yield b"Hello, "
+        yield b""
+        yield b"world!"
+        yield b""
+
+    response = httpx.Response(200, content=streaming_body_with_empty_chunks())
+
+    parts = [part for part in response.iter_bytes()]
+    assert parts == [b"Hello, ", b"world!"]
 
 
 @pytest.mark.asyncio

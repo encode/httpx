@@ -1585,7 +1585,7 @@ class Response:
                         yield chunk
                 decoded = decoder.flush()
                 for chunk in chunker.decode(decoded):
-                    yield chunk
+                    yield chunk  # pragma: nocover
                 for chunk in chunker.flush():
                     yield chunk
 
@@ -1683,7 +1683,7 @@ class Response:
                         yield chunk
                 decoded = decoder.flush()
                 for chunk in chunker.decode(decoded):
-                    yield chunk
+                    yield chunk  # pragma: nocover
                 for chunk in chunker.flush():
                     yield chunk
 
