@@ -172,7 +172,7 @@ class ByteChunker:
 
     def decode(self, content: bytes) -> typing.List[bytes]:
         if self._chunk_size is None:
-            return [content]
+            return [content] if content else []
 
         self._buffer.write(content)
         if self._buffer.tell() >= self._chunk_size:
