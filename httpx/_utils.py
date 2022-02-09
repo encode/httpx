@@ -282,6 +282,21 @@ def same_origin(url: "URL", other: "URL") -> bool:
     )
 
 
+def is_https_redirect(url: "URL", location: "URL") -> bool:
+    """
+    Return 'True' if 'location' is a HTTPS upgrade of 'url'
+    """
+    if url.host != location.host:
+        return False
+
+    return (
+        url.scheme == "http"
+        and port_or_default(url) == 80
+        and location.scheme == "https"
+        and port_or_default(location) == 443
+    )
+
+
 def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
     """Gets proxy information from the environment"""
 
