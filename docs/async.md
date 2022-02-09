@@ -109,7 +109,7 @@ When sending a streaming request body with an `AsyncClient` instance, you should
 async def upload_bytes():
     ...  # yield byte content
 
-await client.post(url, data=upload_bytes())
+await client.post(url, content=upload_bytes())
 ```
 
 ### Explicit transport instances
@@ -206,12 +206,6 @@ async def main():
 
 anyio.run(main, backend='trio')
 ```
-
-When instantiating a transport instance explicitly, for maximum consistency, the same `backend` parameter can be passed to `AsyncHTTPTransport`.
-```python
-transport = httpx.AsyncHTTPTransport(backend="trio")
-```
-
 
 ## Calling into Python Web Apps
 

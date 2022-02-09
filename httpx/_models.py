@@ -964,8 +964,10 @@ class Headers(typing.MutableMapping[str, str]):
 
     def update(self, headers: HeaderTypes = None) -> None:  # type: ignore
         headers = Headers(headers)
-        for key, value in headers.raw:
-            self[key.decode(headers.encoding)] = value.decode(headers.encoding)
+        for key in headers.keys():
+            if key in self:
+                self.pop(key)
+        self._list.extend(headers._list)
 
     def copy(self) -> "Headers":
         return Headers(self, encoding=self.encoding)
@@ -1583,7 +1585,7 @@ class Response:
                         yield chunk
                 decoded = decoder.flush()
                 for chunk in chunker.decode(decoded):
-                    yield chunk
+                    yield chunk  # pragma: nocover
                 for chunk in chunker.flush():
                     yield chunk
 
@@ -1681,7 +1683,7 @@ class Response:
                         yield chunk
                 decoded = decoder.flush()
                 for chunk in chunker.decode(decoded):
-                    yield chunk
+                    yield chunk  # pragma: nocover
                 for chunk in chunker.flush():
                     yield chunk
 

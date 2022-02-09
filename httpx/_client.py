@@ -51,6 +51,7 @@ from ._utils import (
     URLPattern,
     get_environment_proxies,
     get_logger,
+    is_https_redirect,
     same_origin,
 )
 
@@ -532,9 +533,10 @@ class BaseClient:
         headers = Headers(request.headers)
 
         if not same_origin(url, request.url):
-            # Strip Authorization headers when responses are redirected away from
-            # the origin.
-            headers.pop("Authorization", None)
+            if not is_https_redirect(request.url, url):
+                # Strip Authorization headers when responses are redirected
+                # away from the origin. (Except for direct HTTP to HTTPS redirects.)
+                headers.pop("Authorization", None)
 
             # Update the Host header.
             headers["Host"] = url.netloc.decode("ascii")
@@ -1273,13 +1275,6 @@ class Client(BaseClient):
             if transport is not None:
                 transport.__exit__(exc_type, exc_value, traceback)
 
-    def __del__(self) -> None:
-        # We use 'getattr' here, to manage the case where '__del__()' is called
-        # on a partially initiallized instance that raised an exception during
-        # the call to '__init__()'.
-        if getattr(self, "_state", None) == ClientState.OPENED:  # noqa: B009
-            self.close()
-
 
 class AsyncClient(BaseClient):
     """
@@ -1983,34 +1978,3 @@ class AsyncClient(BaseClient):
         for proxy in self._mounts.values():
             if proxy is not None:
                 await proxy.__aexit__(exc_type, exc_value, traceback)
-
-    def __del__(self) -> None:
-        # We use 'getattr' here, to manage the case where '__del__()' is called
-        # on a partially initiallized instance that raised an exception during
-        # the call to '__init__()'.
-        if getattr(self, "_state", None) == ClientState.OPENED:  # noqa: B009
-            # Unlike the sync case, we cannot silently close the client when
-            # it is garbage collected, because `.aclose()` is an async operation,
-            # but `__del__` is not.
-            #
-            # For this reason we require explicit close management for
-            # `AsyncClient`, and issue a warning on unclosed clients.
-            #
-            # The context managed style is usually preferable, because it neatly
-            # ensures proper resource cleanup:
-            #
-            #     async with httpx.AsyncClient() as client:
-            #         ...
-            #
-            # However, an explicit call to `aclose()` is also sufficient:
-            #
-            #    client = httpx.AsyncClient()
-            #    try:
-            #        ...
-            #    finally:
-            #        await client.aclose()
-            warnings.warn(
-                f"Unclosed {self!r}. "
-                "See https://www.python-httpx.org/async/#opening-and-closing-clients "
-                "for details."
-            )

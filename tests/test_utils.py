@@ -10,6 +10,7 @@ from httpx._utils import (
     get_ca_bundle_from_env,
     get_environment_proxies,
     guess_json_utf,
+    is_https_redirect,
     obfuscate_sensitive_headers,
     parse_header_links,
     same_origin,
@@ -219,6 +220,24 @@ def test_not_same_origin():
     origin1 = httpx.URL("https://example.com")
     origin2 = httpx.URL("HTTP://EXAMPLE.COM")
     assert not same_origin(origin1, origin2)
+
+
+def test_is_https_redirect():
+    url = httpx.URL("http://example.com")
+    location = httpx.URL("https://example.com")
+    assert is_https_redirect(url, location)
+
+
+def test_is_not_https_redirect():
+    url = httpx.URL("http://example.com")
+    location = httpx.URL("https://www.example.com")
+    assert not is_https_redirect(url, location)
+
+
+def test_is_not_https_redirect_if_not_default_ports():
+    url = httpx.URL("http://example.com:9999")
+    location = httpx.URL("https://example.com:1337")
+    assert not is_https_redirect(url, location)
 
 
 @pytest.mark.parametrize(
