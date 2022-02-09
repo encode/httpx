@@ -51,6 +51,7 @@ from ._utils import (
     URLPattern,
     get_environment_proxies,
     get_logger,
+    is_https_redirect,
     same_origin,
 )
 
@@ -532,9 +533,10 @@ class BaseClient:
         headers = Headers(request.headers)
 
         if not same_origin(url, request.url):
-            # Strip Authorization headers when responses are redirected away from
-            # the origin.
-            headers.pop("Authorization", None)
+            if not is_https_redirect(request.url, url):
+                # Strip Authorization headers when responses are redirected
+                # away from the origin. (Except for direct HTTP to HTTPS redirects.)
+                headers.pop("Authorization", None)
 
             # Update the Host header.
             headers["Host"] = url.netloc.decode("ascii")
