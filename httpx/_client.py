@@ -535,8 +535,7 @@ class BaseClient:
         if not same_origin(url, request.url):
             if not is_https_redirect(request.url, url):
                 # Strip Authorization headers when responses are redirected
-                # away from the origin, but keep them if it is a HTTPS
-                # redirect.
+                # away from the origin. (Except for direct HTTP to HTTPS redirects.)
                 headers.pop("Authorization", None)
 
             # Update the Host header.
