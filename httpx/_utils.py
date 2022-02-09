@@ -23,7 +23,7 @@ _HTML5_FORM_ENCODING_REPLACEMENTS.update(
     {chr(c): "%{:02X}".format(c) for c in range(0x1F + 1) if c != 0x1B}
 )
 _HTML5_FORM_ENCODING_RE = re.compile(
-    r"|".join([re.escape(c) for c in _HTML5_FORM_ENCODING_REPLACEMENTS])
+    r"|".join([re.escape(c) for c in _HTML5_FORM_ENCODING_REPLACEMENTS.keys()])
 )
 
 
