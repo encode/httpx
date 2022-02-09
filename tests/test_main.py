@@ -52,6 +52,22 @@ def test_json(server):
     ]
 
 
+def test_binary(server):
+    url = str(server.url.copy_with(path="/echo_binary"))
+    runner = CliRunner()
+    content = "Hello, world!"
+    result = runner.invoke(httpx.main, [url, "-c", content])
+    assert result.exit_code == 0
+    assert remove_date_header(splitlines(result.output)) == [
+        "HTTP/1.1 200 OK",
+        "server: uvicorn",
+        "content-type: application/octet-stream",
+        "Transfer-Encoding: chunked",
+        "",
+        f"<{len(content)} bytes of binary data>",
+    ]
+
+
 def test_redirects(server):
     url = str(server.url.copy_with(path="/redirect_301"))
     runner = CliRunner()
