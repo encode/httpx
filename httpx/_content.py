@@ -38,6 +38,8 @@ class ByteStream(AsyncByteStream, SyncByteStream):
 
 
 class IteratorByteStream(SyncByteStream):
+    CHUNK_SIZE = 65_536
+
     def __init__(self, stream: Iterable[bytes]):
         self._stream = stream
         self._is_stream_consumed = False
@@ -48,11 +50,23 @@ class IteratorByteStream(SyncByteStream):
             raise StreamConsumed()
 
         self._is_stream_consumed = True
-        for part in self._stream:
-            yield part
+        if hasattr(self._stream, "read") and not isinstance(
+            self._stream, SyncByteStream
+        ):
+            # File-like interfaces should use 'read' directly.
+            chunk = self._stream.read(self.CHUNK_SIZE)  # type: ignore
+            while chunk:
+                yield chunk
+                chunk = self._stream.read(self.CHUNK_SIZE)  # type: ignore
+        else:
+            # Otherwise iterate.
+            for part in self._stream:
+                yield part
 
 
 class AsyncIteratorByteStream(AsyncByteStream):
+    CHUNK_SIZE = 65_536
+
     def __init__(self, stream: AsyncIterable[bytes]):
         self._stream = stream
         self._is_stream_consumed = False
@@ -63,8 +77,18 @@ class AsyncIteratorByteStream(AsyncByteStream):
             raise StreamConsumed()
 
         self._is_stream_consumed = True
-        async for part in self._stream:
-            yield part
+        if hasattr(self._stream, "aread") and not isinstance(
+            self._stream, AsyncByteStream
+        ):
+            # File-like interfaces should use 'aread' directly.
+            chunk = await self._stream.aread(self.CHUNK_SIZE)  # type: ignore
+            while chunk:
+                yield chunk
+                chunk = await self._stream.aread(self.CHUNK_SIZE)  # type: ignore
+        else:
+            # Otherwise iterate.
+            async for part in self._stream:
+                yield part
 
 
 class UnattachedStream(AsyncByteStream, SyncByteStream):
@@ -168,7 +192,7 @@ def encode_request(
     returning a two-tuple of (<headers>, <stream>).
     """
     if data is not None and not isinstance(data, dict):
-        # We prefer to seperate `content=<bytes|str|byte iterator|bytes aiterator>`
+        # We prefer to separate `content=<bytes|str|byte iterator|bytes aiterator>`
         # for raw request content, and `data=<form data>` for url encoded or
         # multipart form content.
         #

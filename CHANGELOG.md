@@ -4,6 +4,55 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.22.0 (26th January, 2022)
+
+### Added
+
+* Support for [the SOCKS5 proxy protocol](https://www.python-httpx.org/advanced/#socks) via [the `socksio` package](https://github.com/sethmlarson/socksio). (#2034)
+* Support for custom headers in multipart/form-data requests (#1936)
+
+### Fixed
+
+* Don't perform unreliable close/warning on `__del__` with unclosed clients. (#2026)
+* Fix `Headers.update(...)` to correctly handle repeated headers (#2038)
+
+## 0.21.3 (6th January, 2022)
+
+### Fixed
+
+* Fix streaming uploads using `SyncByteStream` or `AsyncByteStream`. Regression in 0.21.2. (#2016)
+
+## 0.21.2 (5th January, 2022)
+
+### Fixed
+
+* HTTP/2 support for tunnelled proxy cases. (#2009)
+* Improved the speed of large file uploads. (#1948)
+
+## 0.21.1 (16th November, 2021)
+
+### Fixed
+
+* The `response.url` property is now correctly annotated as `URL`, instead of `Optional[URL]`. (#1940)
+
+## 0.21.0 (15th November, 2021)
+
+The 0.21.0 release integrates against a newly redesigned `httpcore` backend.
+
+Both packages ought to automatically update to the required versions, but if you are
+seeing any issues, you should ensure that you have `httpx==0.21.*` and `httpcore==0.14.*` installed.
+
+### Added
+
+* The command-line client will now display connection information when `-v/--verbose` is used.
+* The command-line client will now display server certificate information when `-v/--verbose` is used.
+* The command-line client is now able to properly detect if the outgoing request
+should be formatted as HTTP/1.1 or HTTP/2, based on the result of the HTTP/2 negotiation.
+
+### Removed
+
+* Curio support is no longer currently included. Please get in touch if you require this, so that we can assess priorities.
+
 ## 0.20.0 (13th October, 2021)
 
 The 0.20.0 release adds an integrated command-line client, and also includes some
@@ -68,7 +117,7 @@ finally:
 ### Fixed
 
 * `response.iter_bytes()` no longer raises a ValueError when called on a response with no content. (Pull #1827)
-* The `'wsgi.error'` configuration now defaults to `sys.stderr`, and is corrected to be a `TextIO` interface, not a `BytesIO` interface. Additionally, the WSGITransport now accepts a `wsgi_error` confguration. (Pull #1828)
+* The `'wsgi.error'` configuration now defaults to `sys.stderr`, and is corrected to be a `TextIO` interface, not a `BytesIO` interface. Additionally, the WSGITransport now accepts a `wsgi_error` configuration. (Pull #1828)
 * Follow the WSGI spec by properly closing the iterable returned by the application. (Pull #1830)
 
 ## 0.19.0 (19th August, 2021)
@@ -323,7 +372,7 @@ The following API changes have been issuing deprecation warnings since 0.17.0 on
 
 The 0.14 release includes a range of improvements to the public API, intended on preparing for our upcoming 1.0 release.
 
-* Our HTTP/2 support is now fully optional. **You now need to use `pip install httpx[http2]` if you want to include the HTTP/2 dependancies.**
+* Our HTTP/2 support is now fully optional. **You now need to use `pip install httpx[http2]` if you want to include the HTTP/2 dependencies.**
 * Our HSTS support has now been removed. Rewriting URLs from `http` to `https` if the host is on the HSTS list can be beneficial in avoiding roundtrips to incorrectly formed URLs, but on balance we've decided to remove this feature, on the principle of least surprise. Most programmatic clients do not include HSTS support, and for now we're opting to remove our support for it.
 * Our exception hierarchy has been overhauled. Most users will want to stick with their existing `httpx.HTTPError` usage, but we've got a clearer overall structure now. See https://www.python-httpx.org/exceptions/ for more details.
 
@@ -696,7 +745,7 @@ importing modules within the package.
 - The SSL configuration settings of `verify`, `cert`, and `trust_env` now raise warnings if used per-request when using a Client instance. They should always be set on the Client instance itself. (Pull #597)
 - Use plain strings "TUNNEL_ONLY" or "FORWARD_ONLY" on the HTTPProxy `proxy_mode` argument. The `HTTPProxyMode` enum still exists, but its usage will raise warnings. (#610)
 - Pool timeouts are now on the timeout configuration, not the pool limits configuration. (Pull #563)
-- The timeout configuration is now named `httpx.Timeout(...)`, not `httpx.TimeoutConfig(...)`. The old version currently remains as a synonym for backwards compatability.  (Pull #591)
+- The timeout configuration is now named `httpx.Timeout(...)`, not `httpx.TimeoutConfig(...)`. The old version currently remains as a synonym for backwards compatibility.  (Pull #591)
 
 ---
 
@@ -825,7 +874,7 @@ importing modules within the package.
 - Switch IDNA encoding from IDNA 2003 to IDNA 2008. (Pull #161)
 - Expose base classes for alternate concurrency backends. (Pull #178)
 - Improve Multipart parameter encoding. (Pull #167)
-- Add the `headers` proeprty to `BaseClient`. (Pull #159)
+- Add the `headers` property to `BaseClient`. (Pull #159)
 - Add support for Google's `brotli` library. (Pull #156)
 - Remove deprecated TLS versions (TLSv1 and TLSv1.1) from default `SSLConfig`. (Pull #155)
 - Fix `URL.join(...)` to work similarly to RFC 3986 URL joining. (Pull #144)

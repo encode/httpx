@@ -89,6 +89,8 @@ FileTypes = Union[
     Tuple[Optional[str], FileContent],
     # (filename, file (or bytes), content_type)
     Tuple[Optional[str], FileContent, Optional[str]],
+    # (filename, file (or bytes), content_type, headers)
+    Tuple[Optional[str], FileContent, Optional[str], Mapping[str, str]],
 ]
 RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
 
@@ -119,7 +121,7 @@ class SyncByteStream:
 
     def read(self) -> bytes:
         """
-        Simple cases can use `.read()` as a convience method for consuming
+        Simple cases can use `.read()` as a convenience method for consuming
         the entire stream and then closing it.
 
         Example:

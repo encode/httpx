@@ -71,29 +71,48 @@ class FileField:
     A single file field item, within a multipart form field.
     """
 
+    CHUNK_SIZE = 64 * 1024
+
     def __init__(self, name: str, value: FileTypes) -> None:
         self.name = name
 
         fileobj: FileContent
 
+        headers: typing.Dict[str, str] = {}
+        content_type: typing.Optional[str] = None
+
+        # This large tuple based API largely mirror's requests' API
+        # It would be good to think of better APIs for this that we could include in httpx 2.0
+        # since variable length tuples (especially of 4 elements) are quite unwieldly
         if isinstance(value, tuple):
-            try:
-                filename, fileobj, content_type = value  # type: ignore
-            except ValueError:
+            if len(value) == 2:
+                # neither the 3rd parameter (content_type) nor the 4th (headers) was included
                 filename, fileobj = value  # type: ignore
-                content_type = guess_content_type(filename)
+            elif len(value) == 3:
+                filename, fileobj, content_type = value  # type: ignore
+            else:
+                # all 4 parameters included
+                filename, fileobj, content_type, headers = value  # type: ignore
         else:
             filename = Path(str(getattr(value, "name", "upload"))).name
             fileobj = value
+
+        if content_type is None:
             content_type = guess_content_type(filename)
 
-        if isinstance(fileobj, str) or isinstance(fileobj, io.StringIO):
+        has_content_type_header = any("content-type" in key.lower() for key in headers)
+        if content_type is not None and not has_content_type_header:
+            # note that unlike requests, we ignore the content_type
+            # provided in the 3rd tuple element if it is also included in the headers
+            # requests does the opposite (it overwrites the header with the 3rd tuple element)
+            headers["Content-Type"] = content_type
+
+        if isinstance(fileobj, (str, io.StringIO)):
             raise TypeError(f"Expected bytes or bytes-like object got: {type(fileobj)}")
 
         self.filename = filename
         self.file = fileobj
-        self.content_type = content_type
-        self._consumed = False
+        self.headers = headers
 
     def get_length(self) -> int:
         headers = self.render_headers()
@@ -120,9 +139,9 @@ class FileField:
             if self.filename:
                 filename = format_form_param("filename", self.filename)
                 parts.extend([b"; ", filename])
-            if self.content_type is not None:
-                content_type = self.content_type.encode()
-                parts.extend([b"\r\nContent-Type: ", content_type])
+            for header_name, header_value in self.headers.items():
+                key, val = f"\r\n{header_name}: ".encode(), header_value.encode()
+                parts.extend([key, val])
             parts.append(b"\r\n\r\n")
             self._headers = b"".join(parts)
 
@@ -138,12 +157,13 @@ class FileField:
             yield self._data
             return
 
-        if self._consumed:  # pragma: nocover
+        if hasattr(self.file, "seek"):
             self.file.seek(0)
-        self._consumed = True
 
-        for chunk in self.file:
+        chunk = self.file.read(self.CHUNK_SIZE)
+        while chunk:
             yield to_bytes(chunk)
+            chunk = self.file.read(self.CHUNK_SIZE)
 
     def render(self) -> typing.Iterator[bytes]:
         yield self.render_headers()

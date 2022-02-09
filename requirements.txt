@@ -2,34 +2,34 @@
 # On the other hand, we're not pinning package dependencies, because our tests
 # needs to pass with the latest version of the packages.
 # Reference: https://github.com/encode/httpx/pull/1721#discussion_r661241588
--e .[cli,http2,brotli]
+-e .[brotli,cli,http2,socks]
 
 charset-normalizer==2.0.6
 
 # Documentation
-mkdocs==1.2.2
+mkdocs==1.2.3
 mkautodoc==0.1.0
-mkdocs-material==7.2.6
+mkdocs-material==8.1.4
 
 # Packaging
-twine==3.4.2
+twine==3.7.1
 wheel==0.37.0
 
 # Tests & Linting
 autoflake==1.4
-black==21.9b0
+black==21.11b1
 coverage==6.0.2
-cryptography==3.4.8
+cryptography==36.0.1
 flake8==3.9.2
-flake8-bugbear==21.4.3
+flake8-bugbear==21.9.2
 flake8-pie==0.15.0; python_version>='3.7'
-isort==5.9.3
+isort==5.10.1
 mypy==0.910
-types-certifi==0.1.4
-pytest==6.2.4
-pytest-asyncio==0.15.1
+types-certifi==2021.10.8.0
+pytest==6.2.5
+pytest-asyncio==0.16.0
 pytest-trio==0.7.0
 trio==0.19.0
 trio-typing==0.5.1
-trustme==0.8.0
+trustme==0.9.0
 uvicorn==0.14.0

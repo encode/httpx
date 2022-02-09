@@ -270,6 +270,15 @@ def test_cross_domain_redirect_with_auth_header():
     assert "authorization" not in response.json()["headers"]
 
 
+def test_cross_domain_https_redirect_with_auth_header():
+    client = httpx.Client(transport=httpx.MockTransport(redirects))
+    url = "http://example.com/cross_domain"
+    headers = {"Authorization": "abc"}
+    response = client.get(url, headers=headers, follow_redirects=True)
+    assert response.url == "https://example.org/cross_domain_target"
+    assert "authorization" not in response.json()["headers"]
+
+
 def test_cross_domain_redirect_with_auth():
     client = httpx.Client(transport=httpx.MockTransport(redirects))
     url = "https://example.com/cross_domain"
@@ -281,6 +290,15 @@ def test_cross_domain_redirect_with_auth():
 def test_same_domain_redirect():
     client = httpx.Client(transport=httpx.MockTransport(redirects))
     url = "https://example.org/cross_domain"
+    headers = {"Authorization": "abc"}
+    response = client.get(url, headers=headers, follow_redirects=True)
+    assert response.url == "https://example.org/cross_domain_target"
+    assert response.json()["headers"]["authorization"] == "abc"
+
+
+def test_same_domain_https_redirect_with_auth_header():
+    client = httpx.Client(transport=httpx.MockTransport(redirects))
+    url = "http://example.org/cross_domain"
     headers = {"Authorization": "abc"}
     response = client.get(url, headers=headers, follow_redirects=True)
     assert response.url == "https://example.org/cross_domain_target"

@@ -16,7 +16,7 @@ You can still enable behaviour to automatically follow redirects, but you need t
 do so explicitly...
 
 ```python
-respose = client.get(url, follow_redirects=True)
+response = client.get(url, follow_redirects=True)
 ```
 
 Or else instantiate a client, with redirect following enabled by default...
@@ -97,7 +97,7 @@ opened in text mode.
 
 ## Content encoding
 
-HTTPX uses `utf-8` for encoding `str` request bodies. For example, when using `content=<str>` the request body will be encoded to `utf-8` before being sent over the wire. This differs from Requests which uses `latin1`. If you need an explicit encoding, pass encoded bytes explictly, e.g. `content=<str>.encode("latin1")`.
+HTTPX uses `utf-8` for encoding `str` request bodies. For example, when using `content=<str>` the request body will be encoded to `utf-8` before being sent over the wire. This differs from Requests which uses `latin1`. If you need an explicit encoding, pass encoded bytes explicitly, e.g. `content=<str>.encode("latin1")`.
 For response bodies, assuming the server didn't send an explicit encoding then HTTPX will do its best to figure out an appropriate encoding. HTTPX makes a guess at the encoding to use for decoding the response using `charset_normalizer`. Fallback to that or any content with less than 32 octets will be decoded using `utf-8` with the `error="replace"` decoder strategy.
 
 ## Cookies

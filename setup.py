@@ -60,18 +60,19 @@ setup(
         "charset_normalizer",
         "sniffio",
         "rfc3986[idna2008]>=1.3,<2",
-        "httpcore>=0.13.3,<0.14.0",
+        "httpcore>=0.14.5,<0.15.0",
         "async_generator; python_version < '3.7'"
     ],
     extras_require={
         "http2": "h2>=3,<5",
+        "socks": "socksio==1.*",
         "brotli": [
             "brotli; platform_python_implementation == 'CPython'",
             "brotlicffi; platform_python_implementation != 'CPython'"
         ],
         "cli": [
             "click==8.*",
-            "rich==10.*",
+            "rich>=10,<12",
             "pygments==2.*"
         ]
     },
