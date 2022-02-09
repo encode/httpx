@@ -81,7 +81,7 @@ except httpx.HTTPStatusError as exc:
     * StreamConsumed
     * ResponseNotRead
     * RequestNotRead
-    * ResponseClosed
+    * StreamClosed
 
 ---
 
