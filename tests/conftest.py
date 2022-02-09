@@ -80,6 +80,8 @@ async def app(scope, receive, send):
         await status_code(scope, receive, send)
     elif scope["path"].startswith("/echo_body"):
         await echo_body(scope, receive, send)
+    elif scope["path"].startswith("/echo_binary"):
+        await echo_binary(scope, receive, send)
     elif scope["path"].startswith("/echo_headers"):
         await echo_headers(scope, receive, send)
     elif scope["path"].startswith("/redirect_301"):
@@ -150,6 +152,25 @@ async def echo_body(scope, receive, send):
             "type": "http.response.start",
             "status": 200,
             "headers": [[b"content-type", b"text/plain"]],
+        }
+    )
+    await send({"type": "http.response.body", "body": body})
+
+
+async def echo_binary(scope, receive, send):
+    body = b""
+    more_body = True
+
+    while more_body:
+        message = await receive()
+        body += message.get("body", b"")
+        more_body = message.get("more_body", False)
+
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [[b"content-type", b"application/octet-stream"]],
         }
     )
     await send({"type": "http.response.body", "body": body})

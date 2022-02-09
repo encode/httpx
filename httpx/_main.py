@@ -172,10 +172,11 @@ def print_response(response: Response) -> None:
                 text = response.text
         else:
             text = response.text
+
         syntax = rich.syntax.Syntax(text, lexer_name, theme="ansi_dark", word_wrap=True)
         console.print(syntax)
-    else:  # pragma: nocover
-        console.print(rich.markup.escape(response.text))
+    else:
+        console.print(f"<{len(response.content)} bytes of binary data>")
 
 
 def format_certificate(cert: dict) -> str:  # pragma: nocover
