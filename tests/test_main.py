@@ -167,6 +167,35 @@ def test_auth(server):
     ]
 
 
+def test_connect_to(server):
+    hostname = "never.in.dns:8000"
+    url = f"http://{hostname}/"
+    runner = CliRunner()
+    result = runner.invoke(
+        httpx.main,
+        [url, "-v", "--x-connect-to", "127.0.0.1", "--x-sni-hostname", "invalid.cert"],
+    )
+    print(result.output)
+    assert result.exit_code == 0
+    assert remove_date_header(splitlines(result.output)) == [
+        "* Connecting to '127.0.0.1'",
+        "* Connected to '127.0.0.1' on port 8000",
+        "GET / HTTP/1.1",
+        f"Host: {hostname}",
+        "Accept: */*",
+        "Accept-Encoding: gzip, deflate, br",
+        "Connection: keep-alive",
+        f"User-Agent: python-httpx/{httpx.__version__}",
+        "",
+        "HTTP/1.1 200 OK",
+        "server: uvicorn",
+        "content-type: text/plain",
+        "Transfer-Encoding: chunked",
+        "",
+        "Hello, world!",
+    ]
+
+
 def test_download(server):
     url = str(server.url)
     runner = CliRunner()
