@@ -80,8 +80,13 @@ def print_help() -> None:
     )
 
     table.add_row("--follow-redirects", "Automatically follow redirects.")
-    table.add_row("--x-connect-to", "Use alternative hostname for tcp connection.")
-    table.add_row("--x-sni-hostname", "Use alternative hostname for TLS handshake.")
+    table.add_row(
+        "--x-connect-to [cyan]HOSTNAME", "Use alternative hostname for tcp connection."
+    )
+    table.add_row(
+        "--x-sni-hostname  [cyan]HOSTNAME",
+        "Use alternative hostname for TLS handshake.",
+    )
 
     table.add_row("--no-verify", "Disable SSL verification.")
     table.add_row(
@@ -487,7 +492,9 @@ def main(
             verify=verify,
             http2=http2,
         ) as client:
-            extensions = {"trace": functools.partial(trace, verbose=verbose)}
+            extensions: typing.Dict[str, typing.Any] = {
+                "trace": functools.partial(trace, verbose=verbose)
+            }
             if x_connect_to is not None:
                 extensions["connect_to"] = x_connect_to
             if x_sni_hostname is not None:
