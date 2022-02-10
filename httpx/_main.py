@@ -492,9 +492,7 @@ def main(
             verify=verify,
             http2=http2,
         ) as client:
-            extensions: typing.Dict[str, typing.Any] = {
-                "trace": functools.partial(trace, verbose=verbose)
-            }
+            extensions: dict = {"trace": functools.partial(trace, verbose=verbose)}
             if x_connect_to is not None:
                 extensions["connect_to"] = x_connect_to
             if x_sni_hostname is not None:
