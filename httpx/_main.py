@@ -80,6 +80,9 @@ def print_help() -> None:
     )
 
     table.add_row("--follow-redirects", "Automatically follow redirects.")
+    table.add_row("--x-connect-to", "Use alternative hostname for tcp connection.")
+    table.add_row("--x-sni-hostname", "Use alternative hostname for TLS handshake.")
+
     table.add_row("--no-verify", "Disable SSL verification.")
     table.add_row(
         "--http2", "Send the request using HTTP/2, if the remote server supports it."
@@ -400,6 +403,20 @@ def handle_help(
     help="Automatically follow redirects.",
 )
 @click.option(
+    "--x-connect-to",
+    "x_connect_to",
+    type=str,
+    default=None,
+    help="Use alternative hostname to connect to.",
+)
+@click.option(
+    "--x-sni-hostname",
+    "x_sni_hostname",
+    type=str,
+    default=None,
+    help="Use alternative hostname within TLS handshake.",
+)
+@click.option(
     "--no-verify",
     "verify",
     is_flag=True,
@@ -449,6 +466,8 @@ def main(
     proxies: str,
     timeout: float,
     follow_redirects: bool,
+    x_connect_to: str,
+    x_sni_hostname: str,
     verify: bool,
     http2: bool,
     download: typing.Optional[typing.BinaryIO],
@@ -468,6 +487,11 @@ def main(
             verify=verify,
             http2=http2,
         ) as client:
+            extensions = {"trace": functools.partial(trace, verbose=verbose)}
+            if x_connect_to is not None:
+                extensions["connect_to"] = x_connect_to
+            if x_sni_hostname is not None:
+                extensions["sni_hostname"] = x_sni_hostname
             with client.stream(
                 method,
                 url,
@@ -480,7 +504,7 @@ def main(
                 cookies=dict(cookies),
                 auth=auth,
                 follow_redirects=follow_redirects,
-                extensions={"trace": functools.partial(trace, verbose=verbose)},
+                extensions=extensions,
             ) as response:
                 if download is not None:
                     download_response(response, download)
