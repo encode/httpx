@@ -24,7 +24,8 @@ from typing import (
 if TYPE_CHECKING:  # pragma: no cover
     from ._auth import Auth  # noqa: F401
     from ._config import Proxy, Timeout  # noqa: F401
-    from ._models import URL, Cookies, Headers, QueryParams, Request  # noqa: F401
+    from ._models import Cookies, Headers, Request  # noqa: F401
+    from ._urls import URL, QueryParams  # noqa: F401
 
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
