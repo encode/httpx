@@ -34,7 +34,7 @@ from ._exceptions import (
     WriteError,
     WriteTimeout,
 )
-from ._models import URL, Cookies, Headers, QueryParams, Request, Response
+from ._models import Cookies, Headers, Request, Response
 from ._status_codes import codes
 from ._transports.asgi import ASGITransport
 from ._transports.base import AsyncBaseTransport, BaseTransport
@@ -42,6 +42,7 @@ from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.mock import MockTransport
 from ._transports.wsgi import WSGITransport
 from ._types import AsyncByteStream, SyncByteStream
+from ._urls import URL, QueryParams
 
 try:
     from ._main import main
