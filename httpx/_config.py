@@ -284,6 +284,7 @@ class Limits:
     * **max_keepalive_connections** - Allow the connection pool to maintain
             keep-alive connections below this point. Should be less than or equal
             to `max_connections`.
+    * **keepalive_expiry** - Time limit on idle keep-alive connections in seconds.
     """
 
     def __init__(
