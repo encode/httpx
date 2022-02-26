@@ -2,12 +2,11 @@ import datetime
 import enum
 import typing
 import warnings
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from types import TracebackType
 
 from .__version__ import __version__
 from ._auth import Auth, BasicAuth, FunctionAuth
-from ._compat import asynccontextmanager
 from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
