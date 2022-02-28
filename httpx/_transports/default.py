@@ -113,14 +113,14 @@ class HTTPTransport(BaseTransport):
     def __init__(
         self,
         verify: VerifyTypes = True,
-        cert: CertTypes = None,
+        cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
-        proxy: Proxy = None,
-        uds: str = None,
-        local_address: str = None,
+        proxy: typing.Optional[Proxy] = None,
+        uds: typing.Optional[str] = None,
+        local_address: typing.Optional[str] = None,
         retries: int = 0,
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
@@ -189,9 +189,9 @@ class HTTPTransport(BaseTransport):
 
     def __exit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
+        exc_type: typing.Optional[typing.Type[BaseException]] = None,
+        exc_value: typing.Optional[BaseException] = None,
+        traceback: typing.Optional[TracebackType] = None,
     ) -> None:
         with map_httpcore_exceptions():
             self._pool.__exit__(exc_type, exc_value, traceback)
@@ -248,14 +248,14 @@ class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
         verify: VerifyTypes = True,
-        cert: CertTypes = None,
+        cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
-        proxy: Proxy = None,
-        uds: str = None,
-        local_address: str = None,
+        proxy: typing.Optional[Proxy] = None,
+        uds: typing.Optional[str] = None,
+        local_address: typing.Optional[str] = None,
         retries: int = 0,
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
@@ -324,9 +324,9 @@ class AsyncHTTPTransport(AsyncBaseTransport):
 
     async def __aexit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
+        exc_type: typing.Optional[typing.Type[BaseException]] = None,
+        exc_value: typing.Optional[BaseException] = None,
+        traceback: typing.Optional[TracebackType] = None,
     ) -> None:
         with map_httpcore_exceptions():
             await self._pool.__aexit__(exc_type, exc_value, traceback)
