@@ -157,14 +157,16 @@ class BaseClient:
     def __init__(
         self,
         *,
-        auth: AuthTypes = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        auth: typing.Optional[AuthTypes] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
+        event_hooks: typing.Optional[
+            typing.Mapping[str, typing.List[typing.Callable]]
+        ] = None,
         base_url: URLTypes = "",
         trust_env: bool = True,
     ):
@@ -317,15 +319,15 @@ class BaseClient:
         method: str,
         url: URLTypes,
         *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Request:
         """
         Build and return a request instance.
@@ -386,7 +388,7 @@ class BaseClient:
         return merge_url
 
     def _merge_cookies(
-        self, cookies: CookieTypes = None
+        self, cookies: typing.Optional[CookieTypes] = None
     ) -> typing.Optional[CookieTypes]:
         """
         Merge a cookies argument together with any cookies on the client,
@@ -399,7 +401,7 @@ class BaseClient:
         return cookies
 
     def _merge_headers(
-        self, headers: HeaderTypes = None
+        self, headers: typing.Optional[HeaderTypes] = None
     ) -> typing.Optional[HeaderTypes]:
         """
         Merge a headers argument together with any headers on the client,
@@ -410,7 +412,7 @@ class BaseClient:
         return merged_headers
 
     def _merge_queryparams(
-        self, params: QueryParamTypes = None
+        self, params: typing.Optional[QueryParamTypes] = None
     ) -> typing.Optional[QueryParamTypes]:
         """
         Merge a queryparams argument together with any queryparams on the client,
@@ -421,7 +423,7 @@ class BaseClient:
             return merged_queryparams.merge(params)
         return params
 
-    def _build_auth(self, auth: AuthTypes) -> typing.Optional[Auth]:
+    def _build_auth(self, auth: typing.Optional[AuthTypes]) -> typing.Optional[Auth]:
         if auth is None:
             return None
         elif isinstance(auth, tuple):
@@ -436,7 +438,7 @@ class BaseClient:
     def _build_request_auth(
         self,
         request: Request,
-        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
     ) -> Auth:
         auth = (
             self._auth if isinstance(auth, UseClientDefault) else self._build_auth(auth)
@@ -615,24 +617,26 @@ class Client(BaseClient):
     def __init__(
         self,
         *,
-        auth: AuthTypes = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        auth: typing.Optional[AuthTypes] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         verify: VerifyTypes = True,
-        cert: CertTypes = None,
+        cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
-        proxies: ProxiesTypes = None,
-        mounts: typing.Mapping[str, BaseTransport] = None,
+        proxies: typing.Optional[ProxiesTypes] = None,
+        mounts: typing.Optional[typing.Mapping[str, BaseTransport]] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
+        event_hooks: typing.Optional[
+            typing.Mapping[str, typing.List[typing.Callable]]
+        ] = None,
         base_url: URLTypes = "",
-        transport: BaseTransport = None,
-        app: typing.Callable = None,
+        transport: typing.Optional[BaseTransport] = None,
+        app: typing.Optional[typing.Callable] = None,
         trust_env: bool = True,
     ):
         super().__init__(
@@ -694,12 +698,12 @@ class Client(BaseClient):
     def _init_transport(
         self,
         verify: VerifyTypes = True,
-        cert: CertTypes = None,
+        cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        transport: BaseTransport = None,
-        app: typing.Callable = None,
+        transport: typing.Optional[BaseTransport] = None,
+        app: typing.Optional[typing.Callable] = None,
         trust_env: bool = True,
     ) -> BaseTransport:
         if transport is not None:
@@ -721,7 +725,7 @@ class Client(BaseClient):
         self,
         proxy: Proxy,
         verify: VerifyTypes = True,
-        cert: CertTypes = None,
+        cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -753,17 +757,17 @@ class Client(BaseClient):
         method: str,
         url: URLTypes,
         *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
+        auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Build and send a request.
@@ -810,17 +814,17 @@ class Client(BaseClient):
         method: str,
         url: URLTypes,
         *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
+        auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> typing.Iterator[Response]:
         """
         Alternative to `httpx.request()` that streams the response body
@@ -861,7 +865,7 @@ class Client(BaseClient):
         request: Request,
         *,
         stream: bool = False,
-        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
@@ -1012,13 +1016,13 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `GET` request.
@@ -1041,13 +1045,13 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send an `OPTIONS` request.
@@ -1070,13 +1074,13 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `HEAD` request.
@@ -1099,17 +1103,17 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `POST` request.
@@ -1136,17 +1140,17 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `PUT` request.
@@ -1173,17 +1177,17 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `PATCH` request.
@@ -1210,13 +1214,13 @@ class Client(BaseClient):
         self,
         url: URLTypes,
         *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `DELETE` request.
@@ -1265,9 +1269,9 @@ class Client(BaseClient):
 
     def __exit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
+        exc_type: typing.Optional[typing.Type[BaseException]] = None,
+        exc_value: typing.Optional[BaseException] = None,
+        traceback: typing.Optional[TracebackType] = None,
     ) -> None:
         self._state = ClientState.CLOSED
 
@@ -1328,24 +1332,26 @@ class AsyncClient(BaseClient):
     def __init__(
         self,
         *,
-        auth: AuthTypes = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        auth: typing.Optional[AuthTypes] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         verify: VerifyTypes = True,
-        cert: CertTypes = None,
+        cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
-        proxies: ProxiesTypes = None,
-        mounts: typing.Mapping[str, AsyncBaseTransport] = None,
+        proxies: typing.Optional[ProxiesTypes] = None,
+        mounts: typing.Optional[typing.Mapping[str, AsyncBaseTransport]] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
+        event_hooks: typing.Optional[
+            typing.Mapping[str, typing.List[typing.Callable]]
+        ] = None,
         base_url: URLTypes = "",
-        transport: AsyncBaseTransport = None,
-        app: typing.Callable = None,
+        transport: typing.Optional[AsyncBaseTransport] = None,
+        app: typing.Optional[typing.Callable] = None,
         trust_env: bool = True,
     ):
         super().__init__(
@@ -1407,12 +1413,12 @@ class AsyncClient(BaseClient):
     def _init_transport(
         self,
         verify: VerifyTypes = True,
-        cert: CertTypes = None,
+        cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        transport: AsyncBaseTransport = None,
-        app: typing.Callable = None,
+        transport: typing.Optional[AsyncBaseTransport] = None,
+        app: typing.Optional[typing.Callable] = None,
         trust_env: bool = True,
     ) -> AsyncBaseTransport:
         if transport is not None:
@@ -1434,7 +1440,7 @@ class AsyncClient(BaseClient):
         self,
         proxy: Proxy,
         verify: VerifyTypes = True,
-        cert: CertTypes = None,
+        cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -1465,17 +1471,17 @@ class AsyncClient(BaseClient):
         method: str,
         url: URLTypes,
         *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
+        auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Build and send a request.
@@ -1514,17 +1520,17 @@ class AsyncClient(BaseClient):
         method: str,
         url: URLTypes,
         *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> typing.AsyncIterator[Response]:
         """
         Alternative to `httpx.request()` that streams the response body
@@ -1565,7 +1571,7 @@ class AsyncClient(BaseClient):
         request: Request,
         *,
         stream: bool = False,
-        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
@@ -1716,13 +1722,13 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
+        auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `GET` request.
@@ -1745,13 +1751,13 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send an `OPTIONS` request.
@@ -1774,13 +1780,13 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `HEAD` request.
@@ -1803,17 +1809,17 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `POST` request.
@@ -1840,17 +1846,17 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `PUT` request.
@@ -1877,17 +1883,17 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `PATCH` request.
@@ -1914,13 +1920,13 @@ class AsyncClient(BaseClient):
         self,
         url: URLTypes,
         *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
-        extensions: dict = None,
+        extensions: typing.Optional[dict] = None,
     ) -> Response:
         """
         Send a `DELETE` request.
@@ -1969,9 +1975,9 @@ class AsyncClient(BaseClient):
 
     async def __aexit__(
         self,
-        exc_type: typing.Type[BaseException] = None,
-        exc_value: BaseException = None,
-        traceback: TracebackType = None,
+        exc_type: typing.Optional[typing.Type[BaseException]] = None,
+        exc_value: typing.Optional[BaseException] = None,
+        traceback: typing.Optional[TracebackType] = None,
     ) -> None:
         self._state = ClientState.CLOSED
 

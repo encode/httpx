@@ -58,7 +58,11 @@ class Headers(typing.MutableMapping[str, str]):
     HTTP headers, as a case-insensitive multi-dict.
     """
 
-    def __init__(self, headers: HeaderTypes = None, encoding: str = None) -> None:
+    def __init__(
+        self,
+        headers: typing.Optional[HeaderTypes] = None,
+        encoding: typing.Optional[str] = None,
+    ) -> None:
         if headers is None:
             self._list = []  # type: typing.List[typing.Tuple[bytes, bytes, bytes]]
         elif isinstance(headers, Headers):
@@ -192,7 +196,7 @@ class Headers(typing.MutableMapping[str, str]):
             split_values.extend([item.strip() for item in value.split(",")])
         return split_values
 
-    def update(self, headers: HeaderTypes = None) -> None:  # type: ignore
+    def update(self, headers: typing.Optional[HeaderTypes] = None) -> None:  # type: ignore
         headers = Headers(headers)
         for key in headers.keys():
             if key in self:
@@ -306,15 +310,15 @@ class Request:
         method: typing.Union[str, bytes],
         url: typing.Union["URL", str, RawURL],
         *,
-        params: QueryParamTypes = None,
-        headers: HeaderTypes = None,
-        cookies: CookieTypes = None,
-        content: RequestContent = None,
-        data: RequestData = None,
-        files: RequestFiles = None,
-        json: typing.Any = None,
-        stream: typing.Union[SyncByteStream, AsyncByteStream] = None,
-        extensions: dict = None,
+        params: typing.Optional[QueryParamTypes] = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        cookies: typing.Optional[CookieTypes] = None,
+        content: typing.Optional[RequestContent] = None,
+        data: typing.Optional[RequestData] = None,
+        files: typing.Optional[RequestFiles] = None,
+        json: typing.Optional[typing.Any] = None,
+        stream: typing.Union[SyncByteStream, AsyncByteStream, None] = None,
+        extensions: typing.Optional[dict] = None,
     ):
         self.method = (
             method.decode("ascii").upper()
@@ -432,15 +436,15 @@ class Response:
         self,
         status_code: int,
         *,
-        headers: HeaderTypes = None,
-        content: ResponseContent = None,
-        text: str = None,
-        html: str = None,
+        headers: typing.Optional[HeaderTypes] = None,
+        content: typing.Optional[ResponseContent] = None,
+        text: typing.Optional[str] = None,
+        html: typing.Optional[str] = None,
         json: typing.Any = None,
-        stream: typing.Union[SyncByteStream, AsyncByteStream] = None,
-        request: Request = None,
-        extensions: dict = None,
-        history: typing.List["Response"] = None,
+        stream: typing.Union[SyncByteStream, AsyncByteStream, None] = None,
+        request: typing.Optional[Request] = None,
+        extensions: typing.Optional[dict] = None,
+        history: typing.Optional[typing.List["Response"]] = None,
     ):
         self.status_code = status_code
         self.headers = Headers(headers)
@@ -796,7 +800,9 @@ class Response:
             self._content = b"".join(self.iter_bytes())
         return self._content
 
-    def iter_bytes(self, chunk_size: int = None) -> typing.Iterator[bytes]:
+    def iter_bytes(
+        self, chunk_size: typing.Optional[int] = None
+    ) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
@@ -819,7 +825,9 @@ class Response:
                 for chunk in chunker.flush():
                     yield chunk
 
-    def iter_text(self, chunk_size: int = None) -> typing.Iterator[str]:
+    def iter_text(
+        self, chunk_size: typing.Optional[int] = None
+    ) -> typing.Iterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
@@ -847,7 +855,9 @@ class Response:
             for line in decoder.flush():
                 yield line
 
-    def iter_raw(self, chunk_size: int = None) -> typing.Iterator[bytes]:
+    def iter_raw(
+        self, chunk_size: typing.Optional[int] = None
+    ) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the raw response content.
         """
@@ -894,7 +904,9 @@ class Response:
             self._content = b"".join([part async for part in self.aiter_bytes()])
         return self._content
 
-    async def aiter_bytes(self, chunk_size: int = None) -> typing.AsyncIterator[bytes]:
+    async def aiter_bytes(
+        self, chunk_size: typing.Optional[int] = None
+    ) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
@@ -917,7 +929,9 @@ class Response:
                 for chunk in chunker.flush():
                     yield chunk
 
-    async def aiter_text(self, chunk_size: int = None) -> typing.AsyncIterator[str]:
+    async def aiter_text(
+        self, chunk_size: typing.Optional[int] = None
+    ) -> typing.AsyncIterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
@@ -945,7 +959,9 @@ class Response:
             for line in decoder.flush():
                 yield line
 
-    async def aiter_raw(self, chunk_size: int = None) -> typing.AsyncIterator[bytes]:
+    async def aiter_raw(
+        self, chunk_size: typing.Optional[int] = None
+    ) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the raw response content.
         """
@@ -990,7 +1006,7 @@ class Cookies(MutableMapping):
     HTTP Cookies, as a mutable mapping.
     """
 
-    def __init__(self, cookies: CookieTypes = None) -> None:
+    def __init__(self, cookies: typing.Optional[CookieTypes] = None) -> None:
         if cookies is None or isinstance(cookies, dict):
             self.jar = CookieJar()
             if isinstance(cookies, dict):
@@ -1050,7 +1066,11 @@ class Cookies(MutableMapping):
         self.jar.set_cookie(cookie)
 
     def get(  # type: ignore
-        self, name: str, default: str = None, domain: str = None, path: str = None
+        self,
+        name: str,
+        default: typing.Optional[str] = None,
+        domain: typing.Optional[str] = None,
+        path: typing.Optional[str] = None,
     ) -> typing.Optional[str]:
         """
         Get a cookie by name. May optionally include domain and path
@@ -1070,7 +1090,12 @@ class Cookies(MutableMapping):
             return default
         return value
 
-    def delete(self, name: str, domain: str = None, path: str = None) -> None:
+    def delete(
+        self,
+        name: str,
+        domain: typing.Optional[str] = None,
+        path: typing.Optional[str] = None,
+    ) -> None:
         """
         Delete a cookie by name. May optionally include domain and path
         in order to specify exactly which cookie to delete.
@@ -1089,7 +1114,9 @@ class Cookies(MutableMapping):
         for cookie in remove:
             self.jar.clear(cookie.domain, cookie.path, cookie.name)
 
-    def clear(self, domain: str = None, path: str = None) -> None:
+    def clear(
+        self, domain: typing.Optional[str] = None, path: typing.Optional[str] = None
+    ) -> None:
         """
         Delete all cookies. Optionally include a domain and path in
         order to only delete a subset of all the cookies.
@@ -1102,7 +1129,7 @@ class Cookies(MutableMapping):
             args.append(path)
         self.jar.clear(*args)
 
-    def update(self, cookies: CookieTypes = None) -> None:  # type: ignore
+    def update(self, cookies: typing.Optional[CookieTypes] = None) -> None:  # type: ignore
         cookies = Cookies(cookies)
         for cookie in cookies.jar:
             self.jar.set_cookie(cookie)
