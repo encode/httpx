@@ -21,7 +21,7 @@ black==21.11b1
 coverage==6.0.2
 cryptography==36.0.1
 flake8==3.9.2
-flake8-bugbear==21.9.2
+flake8-bugbear==22.1.11
 flake8-pie==0.15.0; python_version>='3.7'
 isort==5.10.1
 mypy==0.910
