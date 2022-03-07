@@ -56,7 +56,7 @@ This package adds caching functionality to HTTPX
 
 ### robox
 
-[Github](https://github.com/danclaudiupop/httpx)
+[Github](https://github.com/danclaudiupop/robox)
 
 A library for scraping the web built on top of HTTPX.
 
