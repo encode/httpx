@@ -54,6 +54,12 @@ A utility for record and repeat an http request.
 
 This package adds caching functionality to HTTPX
 
+### robox
+
+[Github](https://github.com/danclaudiupop/httpx)
+
+A library for scraping the web built on top of HTTPX.
+
 ## Gists
 
 <!-- NOTE: this list is in alphabetical order. -->
