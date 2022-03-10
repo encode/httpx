@@ -72,7 +72,7 @@ setup(
         ],
         "cli": [
             "click==8.*",
-            "rich>=10,<12",
+            "rich>=10,<13",
             "pygments==2.*"
         ]
     },
