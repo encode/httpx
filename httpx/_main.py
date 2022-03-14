@@ -69,7 +69,7 @@ def print_help() -> None:
     )
 
     table.add_row(
-        "--proxy [cyan]URL",
+        "--proxies [cyan]URL",
         "Send the request via a proxy. Should be the URL giving the proxy address.",
     )
 
