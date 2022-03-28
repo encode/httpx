@@ -338,10 +338,18 @@ async def test_server_extensions(server):
 async def test_cancelled_response(server):
     async with httpx.AsyncClient() as client:
         url = server.url.join("/drip?delay=0&duration=0.1")
-        response = await asyncio.wait_for(client.get(url), 0.2)
+        task = asyncio.create_task(client.get(url))
+        await asyncio.sleep(0.2)
+        assert task.done()
+        response = await task
         assert response.status_code == 200
         assert response.content == b"*"
     async with httpx.AsyncClient() as client:
         url = server.url.join("/drip?delay=0&duration=0.5")
-        with pytest.raises(asyncio.TimeoutError):
-            await asyncio.wait_for(client.get(url), 0.2)
+        task = asyncio.create_task(client.get(url))
+        await asyncio.sleep(0.2)
+        assert not task.done()
+        # Cancel the task when it is reading response body
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
