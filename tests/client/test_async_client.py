@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import typing
 from datetime import timedelta
 
@@ -335,6 +336,7 @@ async def test_server_extensions(server):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7 or higher")
 async def test_cancelled_response(server):
     async with httpx.AsyncClient() as client:
         url = server.url.join("/drip?delay=0&duration=0.1")
@@ -342,6 +344,6 @@ async def test_cancelled_response(server):
         assert response.status_code == 200
         assert response.content == b"*"
     async with httpx.AsyncClient() as client:
-        url = server.url.join("/drip?delay=0&duration=0.5")
+        url = server.url.join("/drip?delay=0&duration=0.3")
         with pytest.raises(asyncio.TimeoutError):
             await asyncio.wait_for(client.get(url), 0.2)
