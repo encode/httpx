@@ -129,7 +129,7 @@ async def slow_response(scope, receive, send):
     await send({"type": "http.response.body", "body": b"Hello, world!"})
 
 
-async def drip_response(scope, receive, send):
+async def drip_response(scope, receive, send):  # pragma: nocover
     """
     Drips data over a duration after an optional initial delay.
     eg: https://httpbin.org/drip?delay=0&duration=1

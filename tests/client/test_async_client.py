@@ -337,7 +337,7 @@ async def test_server_extensions(server):
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(sys.version_info < (3, 7), reason="requires python3.7 or higher")
-async def test_cancelled_response(server):
+async def test_cancelled_response(server):  # pragma: nocover
     async with httpx.AsyncClient() as client:
         url = server.url.join("/drip?delay=0&duration=0.1")
         response = await asyncio.wait_for(client.get(url), 0.2)
