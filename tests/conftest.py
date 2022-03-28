@@ -77,7 +77,7 @@ async def app(scope, receive, send):
     assert scope["type"] == "http"
     if scope["path"].startswith("/slow_response"):
         await slow_response(scope, receive, send)
-    if scope["path"].startswith("/drip"):
+    if scope["path"].startswith("/drip"):  # pragma: nocover
         await drip_response(scope, receive, send)
     elif scope["path"].startswith("/status"):
         await status_code(scope, receive, send)
