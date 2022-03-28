@@ -4,6 +4,7 @@ import os
 import threading
 import time
 import typing
+import urllib.parse
 
 import pytest
 import trustme
@@ -76,6 +77,8 @@ async def app(scope, receive, send):
     assert scope["type"] == "http"
     if scope["path"].startswith("/slow_response"):
         await slow_response(scope, receive, send)
+    if scope["path"].startswith("/drip"):
+        await drip_response(scope, receive, send)
     elif scope["path"].startswith("/status"):
         await status_code(scope, receive, send)
     elif scope["path"].startswith("/echo_body"):
@@ -124,6 +127,29 @@ async def slow_response(scope, receive, send):
         }
     )
     await send({"type": "http.response.body", "body": b"Hello, world!"})
+
+
+async def drip_response(scope, receive, send):
+    """
+    Drips data over a duration after an optional initial delay.
+    eg: https://httpbin.org/drip?delay=0&duration=1
+    """
+    qs = urllib.parse.parse_qs(scope["query_string"].decode())
+    delay = float(qs.get("delay", ["0"])[0])
+    duration = float(qs.get("duration", ["1"])[0])
+    await sleep(delay)
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [[b"content-type", b"text/plain"]],
+        }
+    )
+    drip = {"type": "http.response.body", "body": b"*", "more_body": True}
+    for _ in range(int(duration * 10)):
+        await send(drip)
+        await sleep(0.1)
+    await send({"type": "http.response.body", "body": b""})
 
 
 async def status_code(scope, receive, send):

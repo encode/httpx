@@ -1,3 +1,4 @@
+import asyncio
 import typing
 from datetime import timedelta
 
@@ -331,3 +332,16 @@ async def test_server_extensions(server):
         response = await client.get(url)
     assert response.status_code == 200
     assert response.extensions["http_version"] == b"HTTP/1.1"
+
+
+@pytest.mark.asyncio
+async def test_cancelled_response(server):
+    async with httpx.AsyncClient() as client:
+        url = server.url.join("/drip?delay=0&duration=0.1")
+        response = await asyncio.wait_for(client.get(url), 0.2)
+        assert response.status_code == 200
+        assert response.content == b"*"
+    async with httpx.AsyncClient() as client:
+        url = server.url.join("/drip?delay=0&duration=0.5")
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(client.get(url), 0.2)
