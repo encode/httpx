@@ -167,6 +167,7 @@ class BaseClient:
         event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         trust_env: bool = True,
+        default_encoding: str = "utf-8",
     ):
         event_hooks = {} if event_hooks is None else event_hooks
 
@@ -184,6 +185,7 @@ class BaseClient:
             "response": list(event_hooks.get("response", [])),
         }
         self._trust_env = trust_env
+        self._default_encoding = default_encoding
         self._netrc = NetRCInfo()
         self._state = ClientState.UNOPENED
 
@@ -998,6 +1000,7 @@ class Client(BaseClient):
         response.stream = BoundSyncStream(
             response.stream, response=response, timer=timer
         )
+        response.default_encoding = self._default_encoding
         self.cookies.extract_cookies(response)
 
         status = f"{response.status_code} {response.reason_phrase}"
@@ -1702,6 +1705,7 @@ class AsyncClient(BaseClient):
         response.stream = BoundAsyncStream(
             response.stream, response=response, timer=timer
         )
+        response.default_encoding = self._default_encoding
         self.cookies.extract_cookies(response)
 
         status = f"{response.status_code} {response.reason_phrase}"
