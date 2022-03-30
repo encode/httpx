@@ -555,8 +555,7 @@ class Response:
             if not content:
                 self._text = ""
             else:
-                codec = codecs.lookup(self.encoding)
-                self._text = codec.decode(self.content, errors="replace")
+                self._text = self.content.decode(self.encoding, errors="replace")
         return self._text
 
     @property
