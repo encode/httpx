@@ -763,7 +763,7 @@ class MyCustomAuth(httpx.Auth):
         yield request
 ```
 
-If the auth flow requires more that one request, you can issue multiple yields, and obtain the response in each case...
+If the auth flow requires more than one request, you can issue multiple yields, and obtain the response in each case...
 
 ```python
 class MyCustomAuth(httpx.Auth):
