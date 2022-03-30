@@ -195,9 +195,7 @@ async def test_charset_autodetection(data, encoding):
 
     # Accessing `.text` on a read response.
     response = httpx.Response(
-        200,
-        content=iterator(),
-        default_encoding="charset_normalizer"
+        200, content=iterator(), default_encoding="charset_normalizer"
     )
     await response.aread()
     assert response.text == (b"".join(data)).decode(encoding)

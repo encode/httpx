@@ -235,10 +235,7 @@ def test_response_no_charset_with_iso_8859_1_content():
     content = "Accented: Österreich abcdefghijklmnopqrstuzwxyz".encode("iso-8859-1")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
-        200,
-        content=content,
-        headers=headers,
-        default_encoding="charset_normalizer"
+        200, content=content, headers=headers, default_encoding="charset_normalizer"
     )
     assert response.text == "Accented: Österreich abcdefghijklmnopqrstuzwxyz"
     assert response.charset_encoding is None
@@ -256,10 +253,7 @@ def test_response_no_charset_with_cp_1252_content():
     content = "Euro Currency: € abcdefghijklmnopqrstuzwxyz".encode("cp1252")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
-        200,
-        content=content,
-        headers=headers,
-        default_encoding="charset_normalizer"
+        200, content=content, headers=headers, default_encoding="charset_normalizer"
     )
     assert response.text == "Euro Currency: € abcdefghijklmnopqrstuzwxyz"
     assert response.charset_encoding is None
