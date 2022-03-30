@@ -7,7 +7,7 @@ name = "httpx"
 description = "The next generation HTTP client."
 authors = [{ name = "Tom Christie", email = "tom@tomchristie.com" }]
 license = { text = "BSD 3-Clause License" }
-requires-python = ">=3.6"
+requires-python = ">=3.7"
 dependencies = [
     "certifi",
     "charset_normalizer",
