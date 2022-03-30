@@ -73,7 +73,7 @@ You can inspect what encoding will be used to decode the response.
 ```
 
 In some cases the response may not contain an explicit encoding, in which case HTTPX
-will attempt to automatically determine an encoding to use.
+will default to using "utf-8".
 
 ```pycon
 >>> r.encoding

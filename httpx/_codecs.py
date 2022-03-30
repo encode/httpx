@@ -37,7 +37,7 @@ formatted Content-Type header, including a charset encoding. And in most cases
 where no charset encoding is included, UTF-8 is very likely to be used,
 since it is now so widely adopted.
 
-## Using an explict encoding.
+## Using an explicit encoding.
 
 In some cases we might be making requests to a site, where no character
 set information is being set explicitly by the server, but we know what
