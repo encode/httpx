@@ -1,5 +1,4 @@
 import cgi
-import codecs
 import datetime
 import email.message
 import json as jsonlib
