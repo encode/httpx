@@ -6,6 +6,7 @@ import pytest
 import httpx
 from httpx._utils import (
     NetRCInfo,
+    ServerSentEventsParser,
     URLPattern,
     get_ca_bundle_from_env,
     get_environment_proxies,
@@ -276,3 +277,29 @@ def test_pattern_priority():
         URLPattern("http://"),
         URLPattern("all://"),
     ]
+
+
+def test_server_send_events_parser():
+    parser = ServerSentEventsParser()
+
+    parser.feed("data: hello\n")
+    assert parser.feed("\n") == {"data": "hello"}
+
+    parser.feed("data: hello\n")
+    parser.feed("data: world\n")
+    assert parser.feed("\n") == {"data": "hello\nworld"}
+
+    parser.feed(": ping\n")
+    assert parser.feed("\n") == {}
+
+    parser.feed("retry: 1\n")
+    assert parser.feed("\n") == {"retry": 1}
+
+    parser.feed("retry: p1\n")
+    assert parser.feed("\n") == {}
+
+    parser.feed("undefined")
+    assert parser.feed("\n") == {}
+
+    parser.feed("event")
+    assert parser.feed("\n") == {"event": ""}

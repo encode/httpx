@@ -151,3 +151,8 @@ class AsyncByteStream:
             return b"".join([part async for part in self])
         finally:
             await self.aclose()
+
+
+# Server-sent Event
+# https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events
+ServerSentEvent = Dict[str, Union[str, int]]

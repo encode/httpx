@@ -78,6 +78,7 @@ The async response streaming methods are:
 * `Response.aiter_bytes()` - For streaming the response content as bytes.
 * `Response.aiter_text()` - For streaming the response content as text.
 * `Response.aiter_lines()` - For streaming the response content as lines of text.
+* `Response.aiter_sse()` - For streaming the Server-sent events response.
 * `Response.aiter_raw()` - For streaming the raw response bytes, without applying content decoding.
 * `Response.aclose()` - For closing the response. You don't usually need this, since `.stream` block closes the response automatically on exit.
 

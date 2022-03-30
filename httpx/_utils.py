@@ -12,7 +12,7 @@ from urllib.request import getproxies
 
 import sniffio
 
-from ._types import PrimitiveData
+from ._types import PrimitiveData, ServerSentEvent
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._models import URL
@@ -520,3 +520,38 @@ class URLPattern:
 
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, URLPattern) and self.pattern == other.pattern
+
+
+class ServerSentEventsParser:
+    def __init__(self) -> None:
+        self.message: ServerSentEvent = {}
+
+    def feed(self, line: str) -> typing.Optional[ServerSentEvent]:
+        if line == "\n":  # event split line
+            event = self.message
+            self.message = {}
+            return event
+
+        if line[0] == ":":  # ignore comment
+            return None
+
+        try:
+            key, value = map(str.strip, line.split(":", maxsplit=1))
+        except ValueError:
+            key = line.strip()
+            value = ""
+
+        if key not in ("data", "event", "id", "retry"):  # ignore undefined key
+            return None
+
+        if key == "data" and key in self.message:
+            self.message["data"] = f'{self.message["data"]}\n{value}'
+        elif key == "retry":
+            try:
+                self.message["retry"] = int(value)
+            except ValueError:
+                pass  # ignore non-integer retry value
+        else:
+            self.message[key] = value  # type: ignore[literal-required]
+
+        return None

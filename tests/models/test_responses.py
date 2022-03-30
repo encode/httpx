@@ -643,6 +643,12 @@ def test_iter_lines():
     assert content == ["Hello,\n", "world!"]
 
 
+def test_iter_sse():
+    response = httpx.Response(200, content=b"data: hello\n\n")
+    events = [event for event in response.iter_sse()]
+    assert events == [{"data": "hello"}]
+
+
 @pytest.mark.asyncio
 async def test_aiter_lines():
     response = httpx.Response(
@@ -654,6 +660,13 @@ async def test_aiter_lines():
     async for line in response.aiter_lines():
         content.append(line)
     assert content == ["Hello,\n", "world!"]
+
+
+@pytest.mark.asyncio
+async def test_aiter_sse():
+    response = httpx.Response(200, content=b"data: hello\n\n")
+    events = [event async for event in response.aiter_sse()]
+    assert events == [{"data": "hello"}]
 
 
 def test_sync_streaming_response():

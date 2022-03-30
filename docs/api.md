@@ -77,6 +77,7 @@
 * `def .iter_bytes()` - **bytes iterator**
 * `def .iter_text()` - **text iterator**
 * `def .iter_lines()` - **text iterator**
+* `def .iter_sse()` - **Iterator[ServerSentEvent]**
 * `def .close()` - **None**
 * `def .next()` - **Response**
 * `def .aread()` - **bytes**
@@ -84,6 +85,7 @@
 * `def .aiter_bytes()` - **async bytes iterator**
 * `def .aiter_text()` - **async text iterator**
 * `def .aiter_lines()` - **async text iterator**
+* `def .aiter_sse()` - **`AsyncIterator[ServerSentEvent]`**
 * `def .aclose()` - **None**
 * `def .anext()` - **Response**
 

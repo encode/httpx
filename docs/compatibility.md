@@ -142,6 +142,7 @@ Within a `stream()` block request data is made available with:
 * `.iter_bytes()` - Instead of `response.iter_content()`
 * `.iter_text()` - Instead of `response.iter_content(decode_unicode=True)`
 * `.iter_lines()` - Corresponding to `response.iter_lines()`
+* `.iter_sse()` - For streaming the Server-sent events response.
 * `.iter_raw()` - Use this instead of `response.raw`
 * `.read()` - Read the entire response body, making `request.text` and `response.content` available.
 

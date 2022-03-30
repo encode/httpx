@@ -40,10 +40,12 @@ from ._types import (
     RequestData,
     RequestFiles,
     ResponseContent,
+    ServerSentEvent,
     SyncByteStream,
 )
 from ._urls import URL
 from ._utils import (
+    ServerSentEventsParser,
     guess_json_utf,
     is_known_encoding,
     normalize_header_key,
@@ -847,6 +849,13 @@ class Response:
             for line in decoder.flush():
                 yield line
 
+    def iter_sse(self) -> typing.Iterator[ServerSentEvent]:
+        parser = ServerSentEventsParser()
+        for line in self.iter_lines():
+            event = parser.feed(line)
+            if event is not None:
+                yield event
+
     def iter_raw(self, chunk_size: int = None) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the raw response content.
@@ -944,6 +953,13 @@ class Response:
                     yield line
             for line in decoder.flush():
                 yield line
+
+    async def aiter_sse(self) -> typing.AsyncIterator[ServerSentEvent]:
+        parser = ServerSentEventsParser()
+        async for line in self.aiter_lines():
+            event = parser.feed(line)
+            if event is not None:
+                yield event
 
     async def aiter_raw(self, chunk_size: int = None) -> typing.AsyncIterator[bytes]:
         """

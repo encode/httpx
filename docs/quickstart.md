@@ -372,6 +372,14 @@ If you're using streaming responses in any of these ways then the `response.cont
 ...         print(r.text)
 ```
 
+## Server-sent Events Response
+
+```pycon
+>>> with httpx.stream("GET", "https://www.example.com") as r:
+...     for event in r.iter_sse():
+...         print(event)
+```
+
 ## Cookies
 
 Any cookies that are set on the response can be easily accessed:
