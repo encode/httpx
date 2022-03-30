@@ -1,4 +1,5 @@
 import cgi
+import codecs
 import datetime
 import email.message
 import json as jsonlib
@@ -554,8 +555,8 @@ class Response:
             if not content:
                 self._text = ""
             else:
-                decoder = TextDecoder(encoding=self.encoding)
-                self._text = "".join([decoder.decode(self.content), decoder.flush()])
+                codec = codecs.lookup(self.encoding)
+                self._text = codec.decode(self.content, errors="replace")
         return self._text
 
     @property
