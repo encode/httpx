@@ -177,7 +177,7 @@ def test_response_default_encoding():
     assert response.encoding == "utf-8"
 
 
-def test_response_fallback_to_autodetect():
+def test_response_fallback_to_utf8():
     """
     Fallback to default encoding if we get an invalid charset in the Content-Type header.
     """
@@ -228,16 +228,17 @@ def test_response_no_charset_with_utf8_content():
 def test_response_no_charset_with_iso_8859_1_content():
     """
     A response with ISO 8859-1 encoded content should decode correctly,
-    even with no charset specified.
-
-    TODO: nope
+    even with no charset specified, if charset autodetection is enabled.
     """
+    codecs.register(httpx.charset_autodetect)
+
     content = "Accented: Österreich abcdefghijklmnopqrstuzwxyz".encode("iso-8859-1")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
         200,
         content=content,
         headers=headers,
+        default_encoding="charset_normalizer"
     )
     assert response.text == "Accented: Österreich abcdefghijklmnopqrstuzwxyz"
     assert response.charset_encoding is None
@@ -248,16 +249,17 @@ def test_response_no_charset_with_iso_8859_1_content():
 def test_response_no_charset_with_cp_1252_content():
     """
     A response with Windows 1252 encoded content should decode correctly,
-    even with no charset specified.
-
-    TODO: nope
+    even with no charset specified, if charset autodetection is enabled.
     """
+    codecs.register(httpx.charset_autodetect)
+
     content = "Euro Currency: € abcdefghijklmnopqrstuzwxyz".encode("cp1252")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
         200,
         content=content,
         headers=headers,
+        default_encoding="charset_normalizer"
     )
     assert response.text == "Euro Currency: € abcdefghijklmnopqrstuzwxyz"
     assert response.charset_encoding is None

@@ -1,3 +1,4 @@
+import codecs
 import zlib
 
 import pytest
@@ -184,16 +185,19 @@ def test_decoding_errors(header_value):
     ],
 )
 @pytest.mark.asyncio
-async def test_text_decoder(data, encoding):
+async def test_charset_autodetection(data, encoding):
     async def iterator():
         nonlocal data
         for chunk in data:
             yield chunk
 
+    codecs.register(httpx.charset_autodetect)
+
     # Accessing `.text` on a read response.
     response = httpx.Response(
         200,
         content=iterator(),
+        default_encoding="charset_normalizer"
     )
     await response.aread()
     assert response.text == (b"".join(data)).decode(encoding)
