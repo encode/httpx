@@ -200,13 +200,6 @@ async def test_charset_autodetection(data, encoding):
     await response.aread()
     assert response.text == (b"".join(data)).decode(encoding)
 
-    # Streaming `.aiter_text` iteratively.
-    # Note that if we streamed the text *without* having read it first, then
-    # we won't get a `charset_normalizer` guess, and will instead always rely
-    # on utf-8 if no charset is specified.
-    text = "".join([part async for part in response.aiter_text()])
-    assert text == (b"".join(data)).decode(encoding)
-
 
 @pytest.mark.asyncio
 async def test_text_decoder_known_encoding():
