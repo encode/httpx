@@ -1,3 +1,4 @@
+import codecs
 import json
 import pickle
 
