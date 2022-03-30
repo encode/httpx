@@ -92,7 +92,9 @@ import typing
 
 class ChardetCodec(codecs.Codec):
     def encode(self, input, errors="strict"):  # type: ignore
-        raise RuntimeError("The 'chardet' codec does not support encoding.")
+        raise RuntimeError(
+            "The 'chardet' codec does not support encoding."
+        )  # pragma: nocover
 
     def decode(self, input, errors="strict"):  # type: ignore
         import chardet
@@ -105,7 +107,9 @@ class ChardetCodec(codecs.Codec):
 
 class CharsetNormalizerCodec(codecs.Codec):
     def encode(self, input, errors="strict"):  # type: ignore
-        raise RuntimeError("The 'charset_normalizer' codec does not support encoding.")
+        raise RuntimeError(
+            "The 'charset_normalizer' codec does not support encoding."
+        )  # pragma: nocover
 
     def decode(self, input, errors="strict"):  # type: ignore
         import charset_normalizer
@@ -118,7 +122,7 @@ class CharsetNormalizerCodec(codecs.Codec):
 
 class NullIncrementalEncoder(codecs.IncrementalEncoder):
     def encode(self, input, final=False):  # type: ignore
-        raise RuntimeError("This codec does not support encoding.")
+        raise RuntimeError("This codec does not support encoding.")  # pragma: nocover
 
 
 def charset_autodetect(encoding_name: str) -> typing.Optional[codecs.CodecInfo]:

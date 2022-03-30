@@ -226,10 +226,11 @@ def test_response_no_charset_with_utf8_content():
     assert response.encoding == "utf-8"
 
 
-def test_response_no_charset_with_iso_8859_1_content():
+def test_response_no_charset_with_iso_8859_1_content_normalizer():
     """
     A response with ISO 8859-1 encoded content should decode correctly,
-    even with no charset specified, if charset autodetection is enabled.
+    even with no charset specified, if charset autodetection is enabled,
+    using charset_normalizer.
     """
     codecs.register(httpx.charset_autodetect)
 
@@ -242,6 +243,25 @@ def test_response_no_charset_with_iso_8859_1_content():
     assert response.charset_encoding is None
     assert response.default_encoding == "charset_normalizer"
     assert response.encoding == "charset_normalizer"
+
+
+def test_response_no_charset_with_iso_8859_1_content_chardet():
+    """
+    A response with ISO 8859-1 encoded content should decode correctly,
+    even with no charset specified, if charset autodetection is enabled,
+    using chardet.
+    """
+    codecs.register(httpx.charset_autodetect)
+
+    content = "Accented: Österreich abcdefghijklmnopqrstuzwxyz".encode("iso-8859-1")
+    headers = {"Content-Type": "text/plain"}
+    response = httpx.Response(
+        200, content=content, headers=headers, default_encoding="chardet"
+    )
+    assert response.text == "Accented: Österreich abcdefghijklmnopqrstuzwxyz"
+    assert response.charset_encoding is None
+    assert response.default_encoding == "chardet"
+    assert response.encoding == "chardet"
 
 
 def test_response_no_charset_with_cp_1252_content():
