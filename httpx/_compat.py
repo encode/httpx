@@ -36,7 +36,6 @@ if sys.version_info >= (3, 10) or (
         # https://docs.python.org/3.7/library/ssl.html#ssl.SSLContext.minimum_version
         context.minimum_version = ssl.TLSVersion.TLSv1_2
 
-
 else:
 
     def set_minimum_tls_version_1_2(context: ssl.SSLContext) -> None:
