@@ -352,7 +352,9 @@ async def test_cancellation_during_stream():
                 nonlocal stream_was_closed
                 stream_was_closed = True
 
-        return httpx.Response(200, headers={"Content-Length": "12"}, stream=CancelledStream())
+        return httpx.Response(
+            200, headers={"Content-Length": "12"}, stream=CancelledStream()
+        )
 
     transport = httpx.MockTransport(response_with_cancel_during_stream)
 
