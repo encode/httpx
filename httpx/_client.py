@@ -900,7 +900,7 @@ class Client(BaseClient):
 
             return response
 
-        except Exception as exc:
+        except BaseException as exc:
             response.close()
             raise exc
 
@@ -932,7 +932,7 @@ class Client(BaseClient):
                     request = next_request
                     history.append(response)
 
-                except Exception as exc:
+                except BaseException as exc:
                     response.close()
                     raise exc
         finally:
@@ -971,7 +971,7 @@ class Client(BaseClient):
                     response.next_request = request
                     return response
 
-            except Exception as exc:
+            except BaseException as exc:
                 response.close()
                 raise exc
 
@@ -1604,7 +1604,7 @@ class AsyncClient(BaseClient):
 
             return response
 
-        except Exception as exc:  # pragma: no cover
+        except BaseException as exc:  # pragma: no cover
             await response.aclose()
             raise exc
 
@@ -1636,7 +1636,7 @@ class AsyncClient(BaseClient):
                     request = next_request
                     history.append(response)
 
-                except Exception as exc:
+                except BaseException as exc:
                     await response.aclose()
                     raise exc
         finally:
@@ -1676,7 +1676,7 @@ class AsyncClient(BaseClient):
                     response.next_request = request
                     return response
 
-            except Exception as exc:
+            except BaseException as exc:
                 await response.aclose()
                 raise exc
 
