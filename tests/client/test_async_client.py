@@ -341,22 +341,23 @@ async def test_cancellation_during_stream():
     """
     stream_was_closed = False
 
-    def response_with_cancel_during_stream():
+    def response_with_cancel_during_stream(request):
         class CancelledStream(httpx.AsyncByteStream):
-            async def __aiter__(self) -> AsyncIterator[bytes]:
-                yield b"Hello, world"
-                raise BaseException()
+            async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+                yield b"Hello"
+                raise KeyboardInterrupt()
+                yield b", world"  # pragma: nocover
 
-            async def __aclose__(self) -> None:
+            async def aclose(self) -> None:
                 nonlocal stream_was_closed
                 stream_was_closed = True
 
-        return httpx.Response(200, stream=CancelledStream())
+        return httpx.Response(200, headers={"Content-Length": "12"}, stream=CancelledStream())
 
     transport = httpx.MockTransport(response_with_cancel_during_stream)
 
     async with httpx.AsyncClient(transport=transport) as client:
-        with pytest.raises(BaseException):
+        with pytest.raises(KeyboardInterrupt):
             await client.get("https://www.example.com")
         assert stream_was_closed
 
