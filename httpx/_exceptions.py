@@ -58,6 +58,17 @@ class HTTPError(Exception):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+        self._request: typing.Optional["Request"] = None
+
+    @property
+    def request(self) -> "Request":
+        if self._request is None:
+            raise RuntimeError("The .request property has not been set.")
+        return self._request
+
+    @request.setter
+    def request(self, request: "Request") -> None:
+        self._request = request
 
 
 class RequestError(HTTPError):
@@ -73,16 +84,6 @@ class RequestError(HTTPError):
         # The 'request_context' context manager is used within the Client and
         # Response methods in order to ensure that any raised exceptions
         # have a `.request` property set on them.
-        self._request = request
-
-    @property
-    def request(self) -> "Request":
-        if self._request is None:
-            raise RuntimeError("The .request property has not been set.")
-        return self._request
-
-    @request.setter
-    def request(self, request: "Request") -> None:
         self._request = request
 
 
