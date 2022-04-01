@@ -14,7 +14,7 @@ except httpx.RequestError as exc:
     print(f"An error occurred while requesting {exc.request.url!r}.")
 ```
 
-The `HTTPStatusError` class is raised by `response.raise_for_status()` on 4xx and 5xx responses.
+The `HTTPStatusError` class is raised by `response.raise_for_status()` on responses which are not a 2xx success code.
 These exceptions include both a `.request` and a `.response` attribute.
 
 ```python
