@@ -86,7 +86,7 @@ HTTPX将并为您提供以下功能:
 * 支持HTTP(S) 代理
 * 支持设定timeout
 * 流式下载
-* 支持 .netrc 
+* 支持 .netrc
 * 接收Chunked编码
 
 ## 安装
@@ -111,7 +111,7 @@ HTTPX 要求 Python 3.6版本或更高.
 
 想学习基础知识？请访问 [快速开始](https://www.python-httpx.org/quickstart/).
 
-想获得进阶帮助？ 请访问 [Advanced Usage](https://www.python-httpx.org/advanced/) 来获得答案, 不妨来看看 [异步支持](https://www.python-httpx.org/async/) 或者 [HTTP/2](https://www.python-httpx.org/http2/) 
+想获得进阶帮助？ 请访问 [Advanced Usage](https://www.python-httpx.org/advanced/) 来获得答案, 不妨来看看 [异步支持](https://www.python-httpx.org/async/) 或者 [HTTP/2](https://www.python-httpx.org/http2/)
 
 [Developer Interface](https://www.python-httpx.org/api/) 提供了全面的API参考。
 
@@ -136,7 +136,6 @@ HTTPX项目依赖于这些优秀的库:
 * `rich` - Rich terminal support. *(Optional, with `httpx[cli]`)*
 * `click` - Command line client support. *(Optional, with `httpx[cli]`)*
 * `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx[brotli]`)*
-* `async_generator` - Backport support for `contextlib.asynccontextmanager`. *(Only required for Python 3.6)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design

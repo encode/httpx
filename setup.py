@@ -37,7 +37,7 @@ def get_packages(package):
 
 setup(
     name="httpx",
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     version=get_version("httpx"),
     url="https://github.com/encode/httpx",
     project_urls={
@@ -72,7 +72,7 @@ setup(
         ],
         "cli": [
             "click==8.*",
-            "rich>=10,<12",
+            "rich>=10,<13",
             "pygments==2.*"
         ]
     },

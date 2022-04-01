@@ -5,13 +5,6 @@ Python environments. It is excluded from the code coverage checks.
 import ssl
 import sys
 
-# `contextlib.asynccontextmanager` exists from Python 3.7 onwards.
-# For 3.6 we require the `async_generator` package for a backported version.
-if sys.version_info >= (3, 7):
-    from contextlib import asynccontextmanager  # type: ignore
-else:
-    from async_generator import asynccontextmanager  # type: ignore # noqa
-
 # Brotli support is optional
 # The C bindings in `brotli` are recommended for CPython.
 # The CFFI bindings in `brotlicffi` are recommended for PyPy and everything else.
@@ -35,7 +28,6 @@ if sys.version_info >= (3, 10) or (
         # https://docs.python.org/3.10/library/ssl.html#ssl.SSLContext.minimum_version
         # https://docs.python.org/3.7/library/ssl.html#ssl.SSLContext.minimum_version
         context.minimum_version = ssl.TLSVersion.TLSv1_2
-
 
 else:
 
