@@ -441,6 +441,7 @@ class Response:
         request: Request = None,
         extensions: dict = None,
         history: typing.List["Response"] = None,
+        default_encoding: str = "autodetect",
     ):
         self.status_code = status_code
         self.headers = Headers(headers)
@@ -456,6 +457,8 @@ class Response:
 
         self.is_closed = False
         self.is_stream_consumed = False
+
+        self.default_encoding = default_encoding
 
         if stream is None:
             headers, stream = encode_response(content, text, html, json)
@@ -565,13 +568,17 @@ class Response:
 
         * `.encoding = <>` has been set explicitly.
         * The encoding as specified by the charset parameter in the Content-Type header.
-        * The encoding as determined by `charset_normalizer`.
-        * UTF-8.
+        * The encoding as determined by `default_encoding`, which may either be
+          a string like "utf-8" indicating the encoding to use, or may be the
+          special string "autodetect" which enables charset autodetection.
         """
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
-                encoding = self.apparent_encoding
+                if self.default_encoding == "autodetect":
+                    encoding = self.apparent_encoding
+                else:
+                    encoding = self.default_encoding
             self._encoding = encoding
         return self._encoding
 
