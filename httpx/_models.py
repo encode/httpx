@@ -441,7 +441,7 @@ class Response:
         request: Request = None,
         extensions: dict = None,
         history: typing.List["Response"] = None,
-        default_encoding: str = "autodetect",
+        default_encoding: str = "utf-8",
     ):
         self.status_code = status_code
         self.headers = Headers(headers)
