@@ -109,7 +109,6 @@ The HTTPX project relies on these excellent libraries:
 * `httpcore` - The underlying transport implementation for `httpx`.
   * `h11` - HTTP/1.1 support.
 * `certifi` - SSL certificates.
-* `charset_normalizer` - Charset auto-detection.
 * `rfc3986` - URL parsing & normalization.
   * `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.
@@ -121,6 +120,7 @@ As well as these optional installs:
 * `rich` - Rich terminal support. *(Optional, with `httpx[cli]`)*
 * `click` - Command line client support. *(Optional, with `httpx[cli]`)*
 * `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx[brotli]`)*
+* `charset_normalizer` - Charset auto-detection. *(Optional, with `httpx[autodetect]`)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design

@@ -145,6 +145,81 @@ URL('http://httpbin.org/headers')
 
 For a list of all available client parameters, see the [`Client`](api.md#client) API reference.
 
+---
+
+ ## Character set encodings and auto-detection
+
+When accessing `response.text`, we need to decode the response bytes into a unicode text representation.
+
+By default `httpx` will use `"charset"` information included in the response `Content-Type` header to determine how the response bytes should be decoded into text.
+
+In cases where no charset information is included on the response, the default behaviour is to assume "utf-8" encoding, which is by far the most widely used text encoding on the internet.
+
+ ### Using the default encoding
+
+ To understand this better let's start by looking at the default behaviour for text decoding...
+
+ ```python
+ import httpx
+
+ # Instantiate a client with the default configuration.
+ client = httpx.Client()
+
+ # Using the client...
+ response = client.get(...)
+ print(response.encoding)  # This will either print the charset given in
+                           # the Content-Type charset, or else "utf-8".
+ print(response.text)  # The text will either be decoded with the Content-Type
+                       # charset, or using "utf-8".
+ ```
+
+ This is normally absolutely fine. Most servers will respond with a properly formatted Content-Type header, including a charset encoding. And in most cases where no charset encoding is included, UTF-8 is very likely to be used, since it is so widely adopted.
+
+ ### Using an explicit encoding.
+
+ In some cases we might be making requests to a site where no character set information is being set explicitly by the server, but we know what the encoding is. In this case it's best to set the default encoding explicitly on the client.
+
+ ```python
+ import httpx
+
+ # Instantiate a client with a Japanese character set as the default encoding.
+ client = httpx.Client(default_encoding="shift-jis")
+
+ # Using the client...
+ response = client.get(...)
+ print(response.encoding)  # This will either print the charset given in
+                           # the Content-Type charset, or else "shift-jis".
+ print(response.text)  # The text will either be decoded with the Content-Type
+                       # charset, or using "shift-jis".
+ ```
+
+ ### Using character set auto-detection
+
+ In cases where the server is not reliably including character set information, and where we don't know what encoding is being used, we can enable auto-detection to make a best-guess attempt when decoding from bytes to text.
+
+To use auto-detection you need to make sure to install [the `charset_normalizer` dependancy](https://charset-normalizer.readthedocs.io/). You can either install this directly, or using the "autodetect" specifier on the `httpx` package:
+
+```shell
+$ pip install httpx[autodetect]
+```
+
+Once `charset_normalizer` is installed, we can configure a client to use character-set autodetection.
+
+ ```python
+ import httpx
+
+ # Using a client with character-set autodetection enabled.
+ client = httpx.Client(default_encoding="autodetect")
+ response = client.get(...)
+
+ print(response.encoding)  # This will either print the charset given in
+                           # the Content-Type charset, or else the auto-detected
+                           # character set.
+ print(response.text)
+ ```
+
+ ---
+
 ## Calling into Python Web Apps
 
 You can configure an `httpx` client to call directly into a Python web application using the WSGI protocol.
