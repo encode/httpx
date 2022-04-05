@@ -7,8 +7,6 @@ import urllib.request
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 
-import charset_normalizer
-
 from ._content import ByteStream, UnattachedStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
@@ -606,12 +604,15 @@ class Response:
         """
         Return the encoding, as determined by `charset_normalizer`.
         """
+        import charset_normalizer
+
         content = getattr(self, "_content", b"")
         if len(content) < 32:
             # charset_normalizer will issue warnings if we run it with
             # fewer bytes than this cutoff.
             return None
-        match = charset_normalizer.from_bytes(self.content).best()
+
+        match = charset_normalizer.from_bytes(content).best()
         return None if match is None else match.encoding
 
     def _get_content_decoder(self) -> ContentDecoder:
