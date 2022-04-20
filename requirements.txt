@@ -32,4 +32,4 @@ pytest-trio==0.7.0
 trio==0.19.0
 trio-typing==0.5.1
 trustme==0.9.0
-uvicorn==0.14.0
+uvicorn==0.17.6
