@@ -484,7 +484,11 @@ class URL:
         #  \_/   \______________/\_________/ \_________/ \__/
         #   |           |            |            |        |
         # scheme     authority       path        query   fragment
-        return URL(self._uri_reference.copy_with(**kwargs).unsplit())
+        new_url = URL(self)
+        new_url._uri_reference = self._uri_reference.copy_with(**kwargs)
+        if new_url.is_absolute_url:
+            new_url._uri_reference = new_url._uri_reference.normalize()
+        return URL(new_url)
 
     def copy_set_param(self, key: str, value: typing.Any = None) -> "URL":
         return self.copy_with(params=self.params.set(key, value))
