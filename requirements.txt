@@ -26,7 +26,7 @@ flake8-pie==0.15.0; python_version>='3.7'
 isort==5.10.1
 mypy==0.910
 types-certifi==2021.10.8.0
-pytest==7.0.1
+pytest==7.1.2
 pytest-asyncio==0.16.0
 pytest-trio==0.7.0
 trio==0.19.0
