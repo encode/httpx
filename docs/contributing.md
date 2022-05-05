@@ -213,7 +213,7 @@ this is where our previously generated `client.pem` comes in:
 ```
 import httpx
 
-proxies = {"all": "http://127.0.0.1:8080/"}
+proxies = {"all://": "http://127.0.0.1:8080/"}
 
 with httpx.Client(proxies=proxies, verify="/path/to/client.pem") as client:
     response = client.get("https://example.org")
