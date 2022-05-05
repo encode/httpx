@@ -30,6 +30,6 @@ pytest==7.1.2
 pytest-asyncio==0.16.0
 pytest-trio==0.7.0
 trio==0.20.0
-trio-typing==0.5.1
+trio-typing==0.7.0
 trustme==0.9.0
 uvicorn==0.17.6
