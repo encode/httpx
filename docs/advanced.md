@@ -823,7 +823,7 @@ When issuing requests or instantiating a client, the `auth` argument can be used
 * A two-tuple of `username`/`password`, to be used with basic authentication.
 * An instance of `httpx.BasicAuth()` or `httpx.DigestAuth()`.
 * A callable, accepting a request and returning an authenticated request instance.
-* A subclass of `httpx.Auth`.
+* An instance of subclasses of `httpx.Auth`.
 
 The most involved of these is the last, which allows you to create authentication flows involving one or more requests. A subclass of `httpx.Auth` should implement `def auth_flow(request)`, and yield any requests that need to be made...
 

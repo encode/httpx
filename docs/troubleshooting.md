@@ -20,8 +20,8 @@ httpx.ProxyError: _ssl.c:1091: The handshake operation timed out
 
 ```python
 proxies = {
-  "http": "http://myproxy.org",
-  "https": "https://myproxy.org",
+  "http://": "http://myproxy.org",
+  "https://": "https://myproxy.org",
 }
 ```
 
@@ -33,8 +33,8 @@ Change the scheme of your HTTPS proxy to `http://...` instead of `https://...`:
 
 ```python
 proxies = {
-  "http": "http://myproxy.org",
-  "https": "http://myproxy.org",
+  "http://": "http://myproxy.org",
+  "https://": "http://myproxy.org",
 }
 ```
 
