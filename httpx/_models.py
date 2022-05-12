@@ -439,7 +439,7 @@ class Response:
         request: Request = None,
         extensions: dict = None,
         history: typing.List["Response"] = None,
-        default_encoding: str = "utf-8",
+        default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
     ):
         self.status_code = status_code
         self.headers = Headers(headers)
@@ -567,17 +567,17 @@ class Response:
         * `.encoding = <>` has been set explicitly.
         * The encoding as specified by the charset parameter in the Content-Type header.
         * The encoding as determined by `default_encoding`, which may either be
-          a string like "utf-8" indicating the encoding to use, or may be the
-          special string "autodetect" which enables charset autodetection.
+          a string like "utf-8" indicating the encoding to use, or may be a callable
+          which enables charset autodetection.
         """
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
-                if self.default_encoding == "autodetect":
-                    encoding = self.apparent_encoding
-                else:
+                if isinstance(self.default_encoding, str):
                     encoding = self.default_encoding
-            self._encoding = encoding
+                elif hasattr(self, "_content"):
+                    encoding = self.default_encoding(self._content)
+            self._encoding = encoding or "utf-8"
         return self._encoding
 
     @encoding.setter
@@ -598,22 +598,6 @@ class Response:
             return None
 
         return params["charset"].strip("'\"")
-
-    @property
-    def apparent_encoding(self) -> typing.Optional[str]:
-        """
-        Return the encoding, as determined by `charset_normalizer`.
-        """
-        import charset_normalizer
-
-        content = getattr(self, "_content", b"")
-        if len(content) < 32:
-            # charset_normalizer will issue warnings if we run it with
-            # fewer bytes than this cutoff.
-            return None
-
-        match = charset_normalizer.from_bytes(content).best()
-        return None if match is None else match.encoding
 
     def _get_content_decoder(self) -> ContentDecoder:
         """

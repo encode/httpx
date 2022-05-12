@@ -237,7 +237,6 @@ def test_response_no_charset_with_iso_8859_1_content():
     )
     assert response.text == "Accented: Österreich abcdefghijklmnopqrstuzwxyz"
     assert response.charset_encoding is None
-    assert response.apparent_encoding is not None
 
 
 def test_response_no_charset_with_cp_1252_content():
@@ -252,7 +251,6 @@ def test_response_no_charset_with_cp_1252_content():
     )
     assert response.text == "Euro Currency: € abcdefghijklmnopqrstuzwxyz"
     assert response.charset_encoding is None
-    assert response.apparent_encoding is not None
 
 
 def test_response_non_text_encoding():

@@ -166,7 +166,7 @@ class BaseClient:
         event_hooks: typing.Mapping[str, typing.List[typing.Callable]] = None,
         base_url: URLTypes = "",
         trust_env: bool = True,
-        default_encoding: str = "autodetect",
+        default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
     ):
         event_hooks = {} if event_hooks is None else event_hooks
 
