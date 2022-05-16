@@ -1,6 +1,7 @@
 import json
 import pickle
 
+import chardet
 import pytest
 
 import httpx
@@ -21,6 +22,10 @@ def streaming_body():
 async def async_streaming_body():
     yield b"Hello, "
     yield b"world!"
+
+
+def autodetect(content):
+    return chardet.detect(content).get("encoding")
 
 
 def test_response():
@@ -233,7 +238,7 @@ def test_response_no_charset_with_iso_8859_1_content():
     content = "Accented: Österreich abcdefghijklmnopqrstuzwxyz".encode("iso-8859-1")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
-        200, content=content, headers=headers, default_encoding="autodetect"
+        200, content=content, headers=headers, default_encoding=autodetect
     )
     assert response.text == "Accented: Österreich abcdefghijklmnopqrstuzwxyz"
     assert response.charset_encoding is None
@@ -247,7 +252,7 @@ def test_response_no_charset_with_cp_1252_content():
     content = "Euro Currency: € abcdefghijklmnopqrstuzwxyz".encode("cp1252")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
-        200, content=content, headers=headers, default_encoding="autodetect"
+        200, content=content, headers=headers, default_encoding=autodetect
     )
     assert response.text == "Euro Currency: € abcdefghijklmnopqrstuzwxyz"
     assert response.charset_encoding is None
@@ -969,8 +974,7 @@ def test_response_decode_text_using_autodetect():
     # encoding autodetection to be used when no "Content-Type: text/plain; charset=..."
     # info is present.
     #
-    # Here we have some french text encoded with Windows-1252, rather than UTF-8.
-    # https://en.wikipedia.org/wiki/Windows-1252
+    # Here we have some french text encoded with ISO-8859-1, rather than UTF-8.
     text = (
         "Non-seulement Despréaux ne se trompait pas, mais de tous les écrivains "
         "que la France a produits, sans excepter Voltaire lui-même, imprégné de "
@@ -978,12 +982,12 @@ def test_response_decode_text_using_autodetect():
         "Molière ou Poquelin qui reproduit avec l'exactitude la plus vive et la "
         "plus complète le fond du génie français."
     )
-    content = text.encode("cp1252")
-    response = httpx.Response(200, content=content, default_encoding="autodetect")
+    content = text.encode("ISO-8859-1")
+    response = httpx.Response(200, content=content, default_encoding=autodetect)
 
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
-    assert response.encoding == "cp1252"
+    assert response.encoding == "ISO-8859-1"
     assert response.text == text
 
 

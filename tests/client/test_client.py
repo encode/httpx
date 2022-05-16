@@ -1,9 +1,14 @@
 import typing
 from datetime import timedelta
 
+import chardet
 import pytest
 
 import httpx
+
+
+def autodetect(content):
+    return chardet.detect(content).get("encoding")
 
 
 def test_get(server):
@@ -401,12 +406,11 @@ def test_server_extensions(server):
 
 
 def test_client_decode_text_using_autodetect():
-    # Ensure that a 'default_encoding="autodetect"' on the response allows for
+    # Ensure that a 'default_encoding=autodetect' on the response allows for
     # encoding autodetection to be used when no "Content-Type: text/plain; charset=..."
     # info is present.
     #
-    # Here we have some french text encoded with Windows-1252, rather than UTF-8.
-    # https://en.wikipedia.org/wiki/Windows-1252
+    # Here we have some french text encoded with ISO-8859-1, rather than UTF-8.
     text = (
         "Non-seulement Despréaux ne se trompait pas, mais de tous les écrivains "
         "que la France a produits, sans excepter Voltaire lui-même, imprégné de "
@@ -416,16 +420,16 @@ def test_client_decode_text_using_autodetect():
     )
 
     def cp1252_but_no_content_type(request):
-        content = text.encode("cp1252")
+        content = text.encode("ISO-8859-1")
         return httpx.Response(200, content=content)
 
     transport = httpx.MockTransport(cp1252_but_no_content_type)
-    with httpx.Client(transport=transport, default_encoding="autodetect") as client:
+    with httpx.Client(transport=transport, default_encoding=autodetect) as client:
         response = client.get("http://www.example.com")
 
         assert response.status_code == 200
         assert response.reason_phrase == "OK"
-        assert response.encoding == "cp1252"
+        assert response.encoding == "ISO-8859-1"
         assert response.text == text
 
 
@@ -433,8 +437,7 @@ def test_client_decode_text_using_explicit_encoding():
     # Ensure that a 'default_encoding="..."' on the response is used for text decoding
     # when no "Content-Type: text/plain; charset=..."" info is present.
     #
-    # Here we have some french text encoded with Windows-1252, rather than UTF-8.
-    # https://en.wikipedia.org/wiki/Windows-1252
+    # Here we have some french text encoded with ISO-8859-1, rather than UTF-8.
     text = (
         "Non-seulement Despréaux ne se trompait pas, mais de tous les écrivains "
         "que la France a produits, sans excepter Voltaire lui-même, imprégné de "
@@ -444,14 +447,14 @@ def test_client_decode_text_using_explicit_encoding():
     )
 
     def cp1252_but_no_content_type(request):
-        content = text.encode("cp1252")
+        content = text.encode("ISO-8859-1")
         return httpx.Response(200, content=content)
 
     transport = httpx.MockTransport(cp1252_but_no_content_type)
-    with httpx.Client(transport=transport, default_encoding="autodetect") as client:
+    with httpx.Client(transport=transport, default_encoding=autodetect) as client:
         response = client.get("http://www.example.com")
 
         assert response.status_code == 200
         assert response.reason_phrase == "OK"
-        assert response.encoding == "cp1252"
+        assert response.encoding == "ISO-8859-1"
         assert response.text == text

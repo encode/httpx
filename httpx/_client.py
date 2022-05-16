@@ -613,7 +613,7 @@ class Client(BaseClient):
     variables for configuration.
     * **default_encoding** - *(optional)* The default encoding to use for decoding
     response text, if no charset information is included in a response Content-Type
-    header. Set to "autodetect" for automatic character set detection. Default: "utf-8".
+    header. Set to a callable for automatic character set detection. Default: "utf-8".
     """
 
     def __init__(
@@ -638,7 +638,7 @@ class Client(BaseClient):
         transport: BaseTransport = None,
         app: typing.Callable = None,
         trust_env: bool = True,
-        default_encoding: str = "utf-8",
+        default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
     ):
         super().__init__(
             auth=auth,
@@ -1332,7 +1332,7 @@ class AsyncClient(BaseClient):
     variables for configuration.
     * **default_encoding** - *(optional)* The default encoding to use for decoding
     response text, if no charset information is included in a response Content-Type
-    header. Set to "autodetect" for automatic character set detection. Default: "utf-8".
+    header. Set to a callable for automatic character set detection. Default: "utf-8".
     """
 
     def __init__(

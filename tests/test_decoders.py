@@ -1,5 +1,6 @@
 import zlib
 
+import chardet
 import pytest
 
 import httpx
@@ -190,8 +191,11 @@ async def test_text_decoder_with_autodetect(data, encoding):
         for chunk in data:
             yield chunk
 
+    def autodetect(content):
+        return chardet.detect(content).get("encoding")
+
     # Accessing `.text` on a read response.
-    response = httpx.Response(200, content=iterator(), default_encoding="autodetect")
+    response = httpx.Response(200, content=iterator(), default_encoding=autodetect)
     await response.aread()
     assert response.text == (b"".join(data)).decode(encoding)
 
