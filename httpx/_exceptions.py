@@ -21,7 +21,6 @@ Our exception hierarchy:
       - UnsupportedProtocol
     + DecodingError
     + TooManyRedirects
-    + RequestBodyUnavailable
   x HTTPStatusError
 * InvalidURL
 * CookieConflict
