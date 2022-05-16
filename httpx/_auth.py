@@ -210,7 +210,7 @@ class DigestAuth(Auth):
     def _build_auth_header(
         self, request: Request, challenge: "_DigestAuthChallenge"
     ) -> str:
-        hash_func = self._ALGORITHM_TO_HASH_FUNCTION[challenge.algorithm]
+        hash_func = self._ALGORITHM_TO_HASH_FUNCTION[challenge.algorithm.upper()]
 
         def digest(data: bytes) -> bytes:
             return hash_func(data).hexdigest().encode()
