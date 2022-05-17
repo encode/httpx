@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 * Drop support for Python 3.6. (#2097)
+* Use `utf-8` as the default character set, instead of falling back to `charset-normalizer` for auto detection. To enable automatic character set recognition, see [the documentation](https://www.python-httpx.org/advanced/#character-set-encodings-and-auto-detection). (#2165)
 
 ### Fixed
 
