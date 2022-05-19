@@ -170,11 +170,11 @@ class HTTPTransport(BaseTransport):
                     port=proxy.url.port,
                     target=proxy.url.raw_path,
                 ),
-                proxy_auth=proxy.raw_auth,  # type: ignore[arg-type]
+                proxy_auth=proxy.raw_auth,
                 ssl_context=ssl_context,
                 max_connections=limits.max_connections,
-                max_keepalive_connections=limits.max_keepalive_connections,  # type: ignore[arg-type]
-                keepalive_expiry=limits.keepalive_expiry,  # type: ignore[arg-type]
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
             )
@@ -264,12 +264,12 @@ class AsyncHTTPTransport(AsyncBaseTransport):
             self._pool = httpcore.AsyncConnectionPool(
                 ssl_context=ssl_context,
                 max_connections=limits.max_connections,
-                max_keepalive_connections=limits.max_keepalive_connections,  # type: ignore[arg-type]
-                keepalive_expiry=limits.keepalive_expiry,  # type: ignore[arg-type]
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
-                uds=uds,  # type: ignore[arg-type]
-                local_address=local_address,  # type: ignore[arg-type]
+                uds=uds,
+                local_address=local_address,
                 retries=retries,
             )
         elif proxy.url.scheme in ("http", "https"):
@@ -280,12 +280,12 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                     port=proxy.url.port,
                     target=proxy.url.raw_path,
                 ),
-                proxy_auth=proxy.raw_auth,  # type: ignore[arg-type]
+                proxy_auth=proxy.raw_auth,
                 proxy_headers=proxy.headers.raw,
                 ssl_context=ssl_context,
                 max_connections=limits.max_connections,
-                max_keepalive_connections=limits.max_keepalive_connections,  # type: ignore[arg-type]
-                keepalive_expiry=limits.keepalive_expiry,  # type: ignore[arg-type]
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
             )
@@ -305,11 +305,11 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                     port=proxy.url.port,
                     target=proxy.url.raw_path,
                 ),
-                proxy_auth=proxy.raw_auth,  # type: ignore[arg-type]
+                proxy_auth=proxy.raw_auth,
                 ssl_context=ssl_context,
                 max_connections=limits.max_connections,
-                max_keepalive_connections=limits.max_keepalive_connections,  # type: ignore[arg-type]
-                keepalive_expiry=limits.keepalive_expiry,  # type: ignore[arg-type]
+                max_keepalive_connections=limits.max_keepalive_connections,
+                keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
             )
@@ -329,7 +329,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         traceback: typing.Optional[TracebackType] = None,
     ) -> None:
         with map_httpcore_exceptions():
-            await self._pool.__aexit__(exc_type, exc_value, traceback)  # type: ignore[arg-type]
+            await self._pool.__aexit__(exc_type, exc_value, traceback)
 
     async def handle_async_request(
         self,
