@@ -557,7 +557,9 @@ class QueryParams(typing.Mapping[str, str]):
     URL query parameters, as a multi-dict.
     """
 
-    def __init__(self, *args: QueryParamTypes, **kwargs: typing.Any) -> None:
+    def __init__(
+        self, *args: typing.Optional[QueryParamTypes], **kwargs: typing.Any
+    ) -> None:
         assert len(args) < 2, "Too many arguments."
         assert not (args and kwargs), "Cannot mix named and unnamed arguments."
 
@@ -715,7 +717,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict.pop(str(key), None)
         return q
 
-    def merge(self, params: QueryParamTypes = None) -> "QueryParams":
+    def merge(self, params: typing.Optional[QueryParamTypes] = None) -> "QueryParams":
         """
         Return a new QueryParams instance, updated with.
 
@@ -764,7 +766,7 @@ class QueryParams(typing.Mapping[str, str]):
         query_string = str(self)
         return f"{class_name}({query_string!r})"
 
-    def update(self, params: QueryParamTypes = None) -> None:
+    def update(self, params: typing.Optional[QueryParamTypes] = None) -> None:
         raise RuntimeError(
             "QueryParams are immutable since 0.18.0. "
             "Use `q = q.merge(...)` to create an updated copy."
