@@ -166,7 +166,7 @@ class ByteChunker:
     Handles returning byte content in fixed-size chunks.
     """
 
-    def __init__(self, chunk_size: int = None) -> None:
+    def __init__(self, chunk_size: typing.Optional[int] = None) -> None:
         self._buffer = io.BytesIO()
         self._chunk_size = chunk_size
 
@@ -205,7 +205,7 @@ class TextChunker:
     Handles returning text content in fixed-size chunks.
     """
 
-    def __init__(self, chunk_size: int = None) -> None:
+    def __init__(self, chunk_size: typing.Optional[int] = None) -> None:
         self._buffer = io.StringIO()
         self._chunk_size = chunk_size
 
