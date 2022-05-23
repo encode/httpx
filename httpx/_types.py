@@ -30,8 +30,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
-RawURL = Tuple[bytes, bytes, Optional[int], bytes]
-
 URLTypes = Union["URL", str]
 
 QueryParamTypes = Union[
