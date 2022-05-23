@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.23.0 (17th May, 2022)
+## 0.23.0 (23rd May, 2022)
 
 ### Changed
 
