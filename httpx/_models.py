@@ -7,8 +7,6 @@ import urllib.request
 from collections.abc import MutableMapping
 from http.cookiejar import Cookie, CookieJar
 
-import charset_normalizer
-
 from ._content import ByteStream, UnattachedStream, encode_request, encode_response
 from ._decoders import (
     SUPPORTED_DECODERS,
@@ -445,6 +443,7 @@ class Response:
         request: typing.Optional[Request] = None,
         extensions: typing.Optional[dict] = None,
         history: typing.Optional[typing.List["Response"]] = None,
+        default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
     ):
         self.status_code = status_code
         self.headers = Headers(headers)
@@ -460,6 +459,8 @@ class Response:
 
         self.is_closed = False
         self.is_stream_consumed = False
+
+        self.default_encoding = default_encoding
 
         if stream is None:
             headers, stream = encode_response(content, text, html, json)
@@ -569,14 +570,18 @@ class Response:
 
         * `.encoding = <>` has been set explicitly.
         * The encoding as specified by the charset parameter in the Content-Type header.
-        * The encoding as determined by `charset_normalizer`.
-        * UTF-8.
+        * The encoding as determined by `default_encoding`, which may either be
+          a string like "utf-8" indicating the encoding to use, or may be a callable
+          which enables charset autodetection.
         """
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
             if encoding is None or not is_known_encoding(encoding):
-                encoding = self.apparent_encoding
-            self._encoding = encoding
+                if isinstance(self.default_encoding, str):
+                    encoding = self.default_encoding
+                elif hasattr(self, "_content"):
+                    encoding = self.default_encoding(self._content)
+            self._encoding = encoding or "utf-8"
         return self._encoding
 
     @encoding.setter
@@ -597,19 +602,6 @@ class Response:
             return None
 
         return params["charset"].strip("'\"")
-
-    @property
-    def apparent_encoding(self) -> typing.Optional[str]:
-        """
-        Return the encoding, as determined by `charset_normalizer`.
-        """
-        content = getattr(self, "_content", b"")
-        if len(content) < 32:
-            # charset_normalizer will issue warnings if we run it with
-            # fewer bytes than this cutoff.
-            return None
-        match = charset_normalizer.from_bytes(self.content).best()
-        return None if match is None else match.encoding
 
     def _get_content_decoder(self) -> ContentDecoder:
         """

@@ -4,7 +4,10 @@
 # Reference: https://github.com/encode/httpx/pull/1721#discussion_r661241588
 -e .[brotli,cli,http2,socks]
 
-charset-normalizer==2.0.6
+# Optional charset auto-detection
+# Used in our test cases
+chardet==4.0.0
+types-chardet==4.0.4
 
 # Documentation
 mkdocs==1.3.0
