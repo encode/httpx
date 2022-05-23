@@ -60,7 +60,7 @@ setup(
         "charset_normalizer",
         "sniffio",
         "rfc3986[idna2008]>=1.3,<2",
-        "httpcore>=0.15.0",
+        "httpcore>=0.15.0,<0.16.0",
     ],
     extras_require={
         "http2": "h2>=3,<5",

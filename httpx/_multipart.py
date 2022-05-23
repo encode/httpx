@@ -175,7 +175,9 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
     Request content as streaming multipart encoded form data.
     """
 
-    def __init__(self, data: dict, files: RequestFiles, boundary: bytes = None) -> None:
+    def __init__(
+        self, data: dict, files: RequestFiles, boundary: typing.Optional[bytes] = None
+    ) -> None:
         if boundary is None:
             boundary = binascii.hexlify(os.urandom(16))
 
