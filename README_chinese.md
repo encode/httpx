@@ -129,7 +129,6 @@ HTTPX项目依赖于这些优秀的库:
   * `h11` - HTTP/1.1 support.
   * `h2` - HTTP/2 support. *(Optional, with `httpx[http2]`)*
 * `certifi` - SSL certificates.
-* `charset_normalizer` - Charset auto-detection.
 * `rfc3986` - URL parsing & normalization.
   * `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.

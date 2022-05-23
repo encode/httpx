@@ -168,6 +168,7 @@ class BaseClient:
         ] = None,
         base_url: URLTypes = "",
         trust_env: bool = True,
+        default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
     ):
         event_hooks = {} if event_hooks is None else event_hooks
 
@@ -185,6 +186,7 @@ class BaseClient:
             "response": list(event_hooks.get("response", [])),
         }
         self._trust_env = trust_env
+        self._default_encoding = default_encoding
         self._netrc = NetRCInfo()
         self._state = ClientState.UNOPENED
 
@@ -611,6 +613,9 @@ class Client(BaseClient):
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
+    * **default_encoding** - *(optional)* The default encoding to use for decoding
+    response text, if no charset information is included in a response Content-Type
+    header. Set to a callable for automatic character set detection. Default: "utf-8".
     """
 
     def __init__(
@@ -637,6 +642,7 @@ class Client(BaseClient):
         transport: typing.Optional[BaseTransport] = None,
         app: typing.Optional[typing.Callable] = None,
         trust_env: bool = True,
+        default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
     ):
         super().__init__(
             auth=auth,
@@ -649,6 +655,7 @@ class Client(BaseClient):
             event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
+            default_encoding=default_encoding,
         )
 
         if http2:
@@ -1002,6 +1009,7 @@ class Client(BaseClient):
             response.stream, response=response, timer=timer
         )
         self.cookies.extract_cookies(response)
+        response.default_encoding = self._default_encoding
 
         status = f"{response.status_code} {response.reason_phrase}"
         response_line = f"{response.http_version} {status}"
@@ -1326,6 +1334,9 @@ class AsyncClient(BaseClient):
     rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
+    * **default_encoding** - *(optional)* The default encoding to use for decoding
+    response text, if no charset information is included in a response Content-Type
+    header. Set to a callable for automatic character set detection. Default: "utf-8".
     """
 
     def __init__(
@@ -1352,6 +1363,7 @@ class AsyncClient(BaseClient):
         transport: typing.Optional[AsyncBaseTransport] = None,
         app: typing.Optional[typing.Callable] = None,
         trust_env: bool = True,
+        default_encoding: str = "utf-8",
     ):
         super().__init__(
             auth=auth,
@@ -1364,6 +1376,7 @@ class AsyncClient(BaseClient):
             event_hooks=event_hooks,
             base_url=base_url,
             trust_env=trust_env,
+            default_encoding=default_encoding,
         )
 
         if http2:
@@ -1708,6 +1721,7 @@ class AsyncClient(BaseClient):
             response.stream, response=response, timer=timer
         )
         self.cookies.extract_cookies(response)
+        response.default_encoding = self._default_encoding
 
         status = f"{response.status_code} {response.reason_phrase}"
         response_line = f"{response.http_version} {status}"
