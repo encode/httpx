@@ -27,7 +27,7 @@ flake8==3.9.2
 flake8-bugbear==22.1.11
 flake8-pie==0.15.0; python_version>='3.7'
 isort==5.10.1
-mypy==0.910
+mypy==0.950
 types-certifi==2021.10.8.2
 pytest==7.1.2
 pytest-asyncio==0.16.0
