@@ -116,7 +116,7 @@ async def test_asgi_raw_path():
         response = await client.get(url)
 
     assert response.status_code == 200
-    assert response.json() == {"raw_path": "/user%40example.org"}
+    assert response.json() == {"raw_path": "/user@example.org"}
 
 
 @pytest.mark.usefixtures("async_environment")

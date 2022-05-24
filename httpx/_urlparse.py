@@ -241,7 +241,11 @@ def encode_host(host: str) -> str:
         return ""
 
     elif IPv4_STYLE_HOSTNAME.match(host):
-        # Validate hostnames like #.#.#.#
+        # Validate IPv4 hostnames like #.#.#.#
+        #
+        # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2
+        #
+        # IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
         try:
             ipaddress.IPv4Address(host)
         except ipaddress.AddressValueError:
@@ -249,8 +253,14 @@ def encode_host(host: str) -> str:
         return host
 
     elif IPv6_STYLE_HOSTNAME.match(host):
-        # Validate hostnames like [...]
-        # (IPv6 hostnames must always be enclosed within square brackets)
+        # Validate IPv6 hostnames like [...]
+        #
+        # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2
+        #
+        # "A host identified by an Internet Protocol literal address, version 6
+        # [RFC3513] or later, is distinguished by enclosing the IP literal
+        # within square brackets ("[" and "]").  This is the only place where
+        # square bracket characters are allowed in the URI syntax."
         try:
             ipaddress.IPv6Address(host[1:-1])
         except ipaddress.AddressValueError:
@@ -259,7 +269,11 @@ def encode_host(host: str) -> str:
 
     elif all(ord(char) <= 127 for char in host):
         # Regular ASCII hostnames
-        return quote(host.lower())
+        #
+        # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2
+        #
+        # reg-name    = *( unreserved / pct-encoded / sub-delims )
+        return quote(host.lower(), safe=SUB_DELIMS)
 
     # IDNA hostnames
     try:
@@ -271,15 +285,15 @@ def encode_host(host: str) -> str:
 def normalize_port(
     port: typing.Optional[typing.Union[str, int]], scheme: str
 ) -> typing.Optional[int]:
-    # https://tools.ietf.org/html/rfc3986#section-3.2.3
+    # From https://tools.ietf.org/html/rfc3986#section-3.2.3
     #
-    # A scheme may define a default port.  For example, the "http" scheme
+    # "A scheme may define a default port.  For example, the "http" scheme
     # defines a default port of "80", corresponding to its reserved TCP
     # port number.  The type of port designated by the port number (e.g.,
     # TCP, UDP, SCTP) is defined by the URI scheme.  URI producers and
     # normalizers should omit the port component and its ":" delimiter if
     # port is empty or if its value would be the same as that of the
-    # scheme's default.
+    # scheme's default."
     if not port:
         return None
 
@@ -288,7 +302,8 @@ def normalize_port(
     except ValueError:
         raise InvalidURL("Invalid port")
 
-    default_port = {"http": 80, "https": 443}.get(scheme)
+    # See https://url.spec.whatwg.org/#url-miscellaneous
+    default_port = {"ftp": 21, "http": 80, "https": 443, "ws": 80, "wss": 443}.get(scheme)
     if port_as_int == default_port:
         return None
     return port_as_int
