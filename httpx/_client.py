@@ -1363,7 +1363,7 @@ class AsyncClient(BaseClient):
         transport: typing.Optional[AsyncBaseTransport] = None,
         app: typing.Optional[typing.Callable] = None,
         trust_env: bool = True,
-        default_encoding: str = "utf-8",
+        default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
     ):
         super().__init__(
             auth=auth,
