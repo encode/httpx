@@ -12,7 +12,9 @@ from ._exceptions import InvalidURL
 MAX_URL_LENGTH = 65536
 
 # https://datatracker.ietf.org/doc/html/rfc3986.html#section-2.3
-UNRESERVED_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+UNRESERVED_CHARACTERS = (
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+)
 SUB_DELIMS = "!$&'()*+,;="
 
 PERCENT_ENCODED_REGEX = re.compile("%[A-Fa-f0-9]{2}")
@@ -46,10 +48,10 @@ AUTHORITY_REGEX = re.compile(
     (
         r"(?:(?P<userinfo>{userinfo})@)?" r"(?P<host>{host})" r":?(?P<port>{port})?"
     ).format(
-        userinfo="[^@]*",         # Any character sequence not including '@'.
+        userinfo="[^@]*",  # Any character sequence not including '@'.
         host="(\\[.*\\]|[^:]*)",  # Either any character sequence not including ':',
-                                  # or an IPv6 address enclosed within square brackets.
-        port=".*"                 # Any character sequence.
+        # or an IPv6 address enclosed within square brackets.
+        port=".*",  # Any character sequence.
     )
 )
 
@@ -65,7 +67,7 @@ COMPONENT_REGEX = {
     "fragment": re.compile(".*"),
     "userinfo": re.compile("[^@]*"),
     "host": re.compile("(\\[.*\\]|[^:]*)"),
-    "port": re.compile(".*")
+    "port": re.compile(".*"),
 }
 
 
@@ -96,25 +98,31 @@ class ParseResult(typing.NamedTuple):
 
     @property
     def authority(self) -> str:
-        return "".join([
-            f"{self.userinfo}@" if self.userinfo else "",
-            f"[{self.host}]" if ":" in self.host else self.host,
-            f":{self.port}" if self.port is not None else ""
-        ])
+        return "".join(
+            [
+                f"{self.userinfo}@" if self.userinfo else "",
+                f"[{self.host}]" if ":" in self.host else self.host,
+                f":{self.port}" if self.port is not None else "",
+            ]
+        )
 
     @property
     def netloc(self) -> str:
-        return "".join([
-            f"[{self.host}]" if ":" in self.host else self.host,
-            f":{self.port}" if self.port is not None else ""
-        ])
+        return "".join(
+            [
+                f"[{self.host}]" if ":" in self.host else self.host,
+                f":{self.port}" if self.port is not None else "",
+            ]
+        )
 
     @property
     def full_path(self) -> str:
-        return "".join([
-            self.path,
-            f"?{self.query}" if self.query is not None else "",
-        ])
+        return "".join(
+            [
+                self.path,
+                f"?{self.query}" if self.query is not None else "",
+            ]
+        )
 
     def copy_with(self, **kwargs: typing.Optional[str]) -> "ParseResult":
         if not kwargs:
@@ -125,60 +133,97 @@ class ParseResult(typing.NamedTuple):
             "authority": self.authority,
             "path": self.path,
             "query": self.query,
-            "fragment": self.fragment
+            "fragment": self.fragment,
         }
         defaults.update(kwargs)
         return urlparse("", **defaults)
 
     def __str__(self) -> str:
         authority = self.authority
-        return "".join([
-            f"{self.scheme}:" if self.scheme else "",
-            f"//{authority}" if authority else "",
-            self.path,
-            f"?{self.query}" if self.query is not None else "",
-            f"#{self.fragment}" if self.fragment is not None else "",
-        ])
+        return "".join(
+            [
+                f"{self.scheme}:" if self.scheme else "",
+                f"//{authority}" if authority else "",
+                self.path,
+                f"?{self.query}" if self.query is not None else "",
+                f"#{self.fragment}" if self.fragment is not None else "",
+            ]
+        )
 
 
 def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
+    # Initial basic checks on allowable URLs.
+    # ---------------------------------------
+
+    # Hard limit the maximum allowable URL length.
     if len(url) > MAX_URL_LENGTH:
         raise InvalidURL("URL too long")
+
+    # If a URL includes any control characters including \t, \r, \n,
+    # then treat it as invalid.
     if not url.isprintable():
-        # If a URL includes any control characters including \t, \r, \n,
-        # then treat it as invalid.
         raise InvalidURL("Invalid non-printable character in URL")
 
+    # Some keyword arguments require special handling.
+    # ------------------------------------------------
+
+    # Coerce "port" to a string, if it is provided as an integer.
     if "port" in kwargs:
         port = kwargs["port"]
         kwargs["port"] = str(port) if isinstance(port, int) else port
 
+    # Replace "netloc" with "host and "port".
     if "netloc" in kwargs:
         netloc = kwargs.pop("netloc") or ""
         kwargs["host"], _, kwargs["port"] = netloc.partition(":")
 
+    # Replace "username" and/or "password" with "userinfo".
     if "username" in kwargs or "password" in kwargs:
         username = quote(kwargs.pop("username", "") or "")
         password = quote(kwargs.pop("password", "") or "")
         kwargs["userinfo"] = f"{username}:{password}" if password else username
 
+    # Replace "full_path" with "path" and "query".
     if "full_path" in kwargs:
         full_path = kwargs.pop("full_path") or ""
         kwargs["path"], seperator, kwargs["query"] = full_path.partition("?")
         if not seperator:
-            kwargs.pop("query")
+            kwargs["query"] = None
+
+    # Ensure that IPv6 "host" addresses are always escaped with "[...]".
+    if "host" in kwargs:
+        host = kwargs.get("host") or ""
+        if ":" in host and not (host.startswith("[") and host.endswith("]")):
+            kwargs["host"] = f"[{host}]"
+
+    # If any keyword arguments are provided, ensure they are valid.
+    # -------------------------------------------------------------
 
     for key, value in kwargs.items():
-        if key not in ("scheme", "authority", "path", "query", "fragment", "userinfo", "host", "port"):
+        if key not in (
+            "scheme",
+            "authority",
+            "path",
+            "query",
+            "fragment",
+            "userinfo",
+            "host",
+            "port",
+        ):
             raise TypeError(f"'{key}' is an invalid keyword argument for urlparse()")
 
         if value is not None:
             if len(value) > MAX_URL_LENGTH:
                 raise InvalidURL(f"URL component '{key}' too long")
+
+            # If a component includes any control characters including \t, \r, \n,
+            # then treat it as invalid.
             if not value.isprintable():
-                # If a component includes any control characters including \t, \r, \n,
-                # then treat it as invalid.
-                raise InvalidURL(f"Invalid non-printable character in URL component '{key}'")
+                raise InvalidURL(
+                    f"Invalid non-printable character in URL component '{key}'"
+                )
+
+            # Ensure that keyword arguments match as a valid regex.
             if not COMPONENT_REGEX[key].fullmatch(value):
                 raise InvalidURL(f"Invalid URL component '{key}'")
 
@@ -220,8 +265,12 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
         validate_absolute_path(path)
         path = normalize_path(path)
     parsed_path: str = quote(path, safe=SUB_DELIMS + ":@/")
-    parsed_query: typing.Optional[str] = None if query is None else quote(query, safe=SUB_DELIMS + "/?")
-    parsed_fragment: typing.Optional[str] = None if fragment is None else quote(fragment, safe=SUB_DELIMS + "/?")
+    parsed_query: typing.Optional[str] = (
+        None if query is None else quote(query, safe=SUB_DELIMS + "/?")
+    )
+    parsed_fragment: typing.Optional[str] = (
+        None if fragment is None else quote(fragment, safe=SUB_DELIMS + "/?")
+    )
 
     # The parsed ASCII bytestrings are our canonical form.
     # All properties of the URL are derived from these.
@@ -294,7 +343,7 @@ def normalize_port(
     # normalizers should omit the port component and its ":" delimiter if
     # port is empty or if its value would be the same as that of the
     # scheme's default."
-    if not port:
+    if port is None or port == "":
         return None
 
     try:
@@ -303,7 +352,9 @@ def normalize_port(
         raise InvalidURL("Invalid port")
 
     # See https://url.spec.whatwg.org/#url-miscellaneous
-    default_port = {"ftp": 21, "http": 80, "https": 443, "ws": 80, "wss": 443}.get(scheme)
+    default_port = {"ftp": 21, "http": 80, "https": 443, "ws": 80, "wss": 443}.get(
+        scheme
+    )
     if port_as_int == default_port:
         return None
     return port_as_int
@@ -356,15 +407,12 @@ def percent_encode(char: str) -> str:
 
 
 def quote(string: str, safe: str = "/") -> str:
-    ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
     if string.count("%") == len(PERCENT_ENCODED_REGEX.findall(string)):
         # If all occurances of '%' are valid '%xx' escapes, then treat
         # percent as a non-escaping character.
-        ESCAPED_CHARS += "%"
+        NON_ESCAPED_CHARS += "%"
 
     return "".join(
-        [
-            char if char in ESCAPED_CHARS else percent_encode(char)
-            for char in string
-        ]
+        [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]
     )

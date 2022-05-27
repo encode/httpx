@@ -384,7 +384,7 @@ class URL:
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         url_str = str(self)
-        if self._uri_reference.userinfo:
+        if self._uri_reference.password:
             # Mask any password component in the URL representation, to lower the
             # risk of unintended leakage, such as in debug information and logging.
             username = quote(self.username)
