@@ -33,7 +33,6 @@ from ._types import (
     CookieTypes,
     HeaderTypes,
     QueryParamTypes,
-    RawURL,
     RequestContent,
     RequestData,
     RequestFiles,
@@ -306,7 +305,7 @@ class Request:
     def __init__(
         self,
         method: typing.Union[str, bytes],
-        url: typing.Union["URL", str, RawURL],
+        url: typing.Union["URL", str],
         *,
         params: typing.Optional[QueryParamTypes] = None,
         headers: typing.Optional[HeaderTypes] = None,
