@@ -1,5 +1,5 @@
 import typing
-from urllib.parse import parse_qs, quote, unquote, urlencode
+from urllib.parse import parse_qs, unquote, urlencode
 
 import idna
 
@@ -71,6 +71,47 @@ class URL:
     def __init__(
         self, url: typing.Union["URL", str] = "", **kwargs: typing.Any
     ) -> None:
+        if kwargs:
+            allowed = {
+                "scheme": str,
+                "username": str,
+                "password": str,
+                "userinfo": bytes,
+                "host": str,
+                "port": int,
+                "netloc": bytes,
+                "path": str,
+                "query": bytes,
+                "raw_path": bytes,
+                "fragment": str,
+                "params": object,
+            }
+
+            # Perform type checking for all supported keyword arguments.
+            for key, value in kwargs.items():
+                if key not in allowed:
+                    message = f"{key!r} is an invalid keyword argument for URL()"
+                    raise TypeError(message)
+                if value is not None and not isinstance(value, allowed[key]):
+                    expected = allowed[key].__name__
+                    seen = type(value).__name__
+                    message = f"Argument {key!r} must be {expected} but got {seen}"
+                    raise TypeError(message)
+                if isinstance(value, bytes):
+                    kwargs[key] = value.decode("ascii")
+
+            if "raw_path" in kwargs:
+                kwargs["full_path"] = kwargs.pop("raw_path")
+
+            if "params" in kwargs:
+                # Replace any "params" keyword with the raw "query" instead.
+                #
+                # Ensure that empty params use `kwargs["query"] = None` rather
+                # than `kwargs["query"] = ""`, so that generated URLs do not
+                # include an empty trailing "?".
+                params = kwargs.pop("params")
+                kwargs["query"] = None if not params else str(QueryParams(params))
+
         if isinstance(url, str):
             self._uri_reference = urlparse(url, **kwargs)
         elif isinstance(url, URL):
@@ -302,49 +343,7 @@ class URL:
         url = httpx.URL("https://www.example.com").copy_with(username="jo@gmail.com", password="a secret")
         assert url == "https://jo%40email.com:a%20secret@www.example.com"
         """
-        allowed = {
-            "scheme": str,
-            "username": str,
-            "password": str,
-            "userinfo": bytes,
-            "host": str,
-            "port": int,
-            "netloc": bytes,
-            "path": str,
-            "query": bytes,
-            "raw_path": bytes,
-            "fragment": str,
-            "params": object,
-        }
-
-        # Perform type checking for all supported keyword arguments.
-        for key, value in kwargs.items():
-            if key not in allowed:
-                message = f"{key!r} is an invalid keyword argument for copy_with()"
-                raise TypeError(message)
-            if value is not None and not isinstance(value, allowed[key]):
-                expected = allowed[key].__name__
-                seen = type(value).__name__
-                message = f"Argument {key!r} must be {expected} but got {seen}"
-                raise TypeError(message)
-            if isinstance(value, bytes):
-                kwargs[key] = value.decode("ascii")
-
-        if "raw_path" in kwargs:
-            kwargs["full_path"] = kwargs.pop("raw_path")
-
-        if "params" in kwargs:
-            # Replace any "params" keyword with the raw "query" instead.
-            #
-            # Ensure that empty params use `kwargs["query"] = None` rather
-            # than `kwargs["query"] = ""`, so that generated URLs do not
-            # include an empty trailing "?".
-            params = kwargs.pop("params")
-            kwargs["query"] = None if not params else str(QueryParams(params))
-
-        new_url = URL(self)
-        new_url._uri_reference = self._uri_reference.copy_with(**kwargs)
-        return new_url
+        return URL(self, **kwargs)
 
     def copy_set_param(self, key: str, value: typing.Any = None) -> "URL":
         return self.copy_with(params=self.params.set(key, value))
@@ -382,14 +381,30 @@ class URL:
         return str(self._uri_reference)
 
     def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        url_str = str(self)
-        if self._uri_reference.password:
-            # Mask any password component in the URL representation, to lower the
-            # risk of unintended leakage, such as in debug information and logging.
-            username = quote(self.username)
-            url_str = str(self.copy_with(userinfo=f"{username}:[secure]"))
-        return f"{class_name}({url_str!r})"
+        scheme, userinfo, host, port, path, query, fragment = self._uri_reference
+
+        if ":" in userinfo:
+            # Mask any password component.
+            userinfo = f'{userinfo.split(":")[0]}:[secure]'
+
+        authority = "".join(
+            [
+                f"{userinfo}@" if userinfo else "",
+                f"[{host}]" if ":" in host else host,
+                f":{port}" if port is not None else "",
+            ]
+        )
+        url = "".join(
+            [
+                f"{self.scheme}:" if scheme else "",
+                f"//{authority}" if authority else "",
+                path,
+                f"?{query}" if query is not None else "",
+                f"#{fragment}" if fragment is not None else "",
+            ]
+        )
+
+        return f"{self.__class__.__name__}({url!r})"
 
 
 class QueryParams(typing.Mapping[str, str]):
