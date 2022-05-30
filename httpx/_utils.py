@@ -30,7 +30,7 @@ _HTML5_FORM_ENCODING_RE = re.compile(
 def normalize_header_key(
     value: typing.Union[str, bytes],
     lower: bool,
-    encoding: str = None,
+    encoding: typing.Optional[str] = None,
 ) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header key.
@@ -44,7 +44,7 @@ def normalize_header_key(
 
 
 def normalize_header_value(
-    value: typing.Union[str, bytes], encoding: str = None
+    value: typing.Union[str, bytes], encoding: typing.Optional[str] = None
 ) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header value.

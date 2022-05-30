@@ -39,7 +39,6 @@ QueryParamTypes = Union[
     Tuple[Tuple[str, PrimitiveData], ...],
     str,
     bytes,
-    None,
 ]
 
 HeaderTypes = Union[
@@ -72,7 +71,6 @@ AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
     Callable[["Request"], "Request"],
     "Auth",
-    None,
 ]
 
 RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]

@@ -170,27 +170,6 @@ trio.run(main)
     The `trio` package must be installed to use the Trio backend.
 
 
-### [Curio](https://github.com/dabeaz/curio)
-
-Curio is a [coroutine-based library](https://curio.readthedocs.io/en/latest/tutorial.html)
-for concurrent Python systems programming.
-
-```python
-import httpx
-import curio
-
-async def main():
-    async with httpx.AsyncClient() as client:
-        response = await client.get('https://www.example.com/')
-        print(response)
-
-curio.run(main)
-```
-
-!!! important
-    The `curio` package must be installed to use the Curio backend.
-
-
 ### [AnyIO](https://github.com/agronholm/anyio)
 
 AnyIO is an [asynchronous networking and concurrency library](https://anyio.readthedocs.io/) that works on top of either `asyncio` or `trio`. It blends in with native libraries of your chosen backend (defaults to `asyncio`).
