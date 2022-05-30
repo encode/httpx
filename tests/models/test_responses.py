@@ -1,6 +1,7 @@
 import json
 import pickle
 
+import chardet
 import pytest
 
 import httpx
@@ -21,6 +22,10 @@ def streaming_body():
 async def async_streaming_body():
     yield b"Hello, "
     yield b"world!"
+
+
+def autodetect(content):
+    return chardet.detect(content).get("encoding")
 
 
 def test_response():
@@ -164,9 +169,9 @@ def test_response_content_type_encoding():
     assert response.encoding == "latin-1"
 
 
-def test_response_autodetect_encoding():
+def test_response_default_to_utf8_encoding():
     """
-    Autodetect encoding if there is no Content-Type header.
+    Default to utf-8 encoding if there is no Content-Type header.
     """
     content = "おはようございます。".encode("utf-8")
     response = httpx.Response(
@@ -174,12 +179,12 @@ def test_response_autodetect_encoding():
         content=content,
     )
     assert response.text == "おはようございます。"
-    assert response.encoding is None
+    assert response.encoding == "utf-8"
 
 
-def test_response_fallback_to_autodetect():
+def test_response_fallback_to_utf8_encoding():
     """
-    Fallback to autodetection if we get an invalid charset in the Content-Type header.
+    Fallback to utf-8 if we get an invalid charset in the Content-Type header.
     """
     headers = {"Content-Type": "text-plain; charset=invalid-codec-name"}
     content = "おはようございます。".encode("utf-8")
@@ -189,7 +194,7 @@ def test_response_fallback_to_autodetect():
         headers=headers,
     )
     assert response.text == "おはようございます。"
-    assert response.encoding is None
+    assert response.encoding == "utf-8"
 
 
 def test_response_no_charset_with_ascii_content():
@@ -205,7 +210,7 @@ def test_response_no_charset_with_ascii_content():
         headers=headers,
     )
     assert response.status_code == 200
-    assert response.encoding is None
+    assert response.encoding == "utf-8"
     assert response.text == "Hello, world!"
 
 
@@ -222,46 +227,40 @@ def test_response_no_charset_with_utf8_content():
         headers=headers,
     )
     assert response.text == "Unicode Snowman: ☃"
-    assert response.encoding is None
+    assert response.encoding == "utf-8"
 
 
 def test_response_no_charset_with_iso_8859_1_content():
     """
     A response with ISO 8859-1 encoded content should decode correctly,
-    even with no charset specified.
+    even with no charset specified, if autodetect is enabled.
     """
     content = "Accented: Österreich abcdefghijklmnopqrstuzwxyz".encode("iso-8859-1")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
-        200,
-        content=content,
-        headers=headers,
+        200, content=content, headers=headers, default_encoding=autodetect
     )
     assert response.text == "Accented: Österreich abcdefghijklmnopqrstuzwxyz"
     assert response.charset_encoding is None
-    assert response.apparent_encoding is not None
 
 
 def test_response_no_charset_with_cp_1252_content():
     """
     A response with Windows 1252 encoded content should decode correctly,
-    even with no charset specified.
+    even with no charset specified, if autodetect is enabled.
     """
     content = "Euro Currency: € abcdefghijklmnopqrstuzwxyz".encode("cp1252")
     headers = {"Content-Type": "text/plain"}
     response = httpx.Response(
-        200,
-        content=content,
-        headers=headers,
+        200, content=content, headers=headers, default_encoding=autodetect
     )
     assert response.text == "Euro Currency: € abcdefghijklmnopqrstuzwxyz"
     assert response.charset_encoding is None
-    assert response.apparent_encoding is not None
 
 
 def test_response_non_text_encoding():
     """
-    Default to apparent encoding for non-text content-type headers.
+    Default to attempting utf-8 encoding for non-text content-type headers.
     """
     headers = {"Content-Type": "image/png"}
     response = httpx.Response(
@@ -270,7 +269,7 @@ def test_response_non_text_encoding():
         headers=headers,
     )
     assert response.text == "xyz"
-    assert response.encoding is None
+    assert response.encoding == "utf-8"
 
 
 def test_response_set_explicit_encoding():
@@ -307,7 +306,7 @@ def test_read():
 
     assert response.status_code == 200
     assert response.text == "Hello, world!"
-    assert response.encoding is None
+    assert response.encoding == "utf-8"
     assert response.is_closed
 
     content = response.read()
@@ -322,7 +321,7 @@ def test_empty_read():
 
     assert response.status_code == 200
     assert response.text == ""
-    assert response.encoding is None
+    assert response.encoding == "utf-8"
     assert response.is_closed
 
     content = response.read()
@@ -341,7 +340,7 @@ async def test_aread():
 
     assert response.status_code == 200
     assert response.text == "Hello, world!"
-    assert response.encoding is None
+    assert response.encoding == "utf-8"
     assert response.is_closed
 
     content = await response.aread()
@@ -357,7 +356,7 @@ async def test_empty_aread():
 
     assert response.status_code == 200
     assert response.text == ""
-    assert response.encoding is None
+    assert response.encoding == "utf-8"
     assert response.is_closed
 
     content = await response.aread()
@@ -968,3 +967,47 @@ async def test_response_async_streaming_picklable():
     assert pickle_response.is_stream_consumed is True
     assert pickle_response.content == b"Hello, world!"
     assert pickle_response.num_bytes_downloaded == 13
+
+
+def test_response_decode_text_using_autodetect():
+    # Ensure that a 'default_encoding="autodetect"' on the response allows for
+    # encoding autodetection to be used when no "Content-Type: text/plain; charset=..."
+    # info is present.
+    #
+    # Here we have some french text encoded with ISO-8859-1, rather than UTF-8.
+    text = (
+        "Non-seulement Despréaux ne se trompait pas, mais de tous les écrivains "
+        "que la France a produits, sans excepter Voltaire lui-même, imprégné de "
+        "l'esprit anglais par son séjour à Londres, c'est incontestablement "
+        "Molière ou Poquelin qui reproduit avec l'exactitude la plus vive et la "
+        "plus complète le fond du génie français."
+    )
+    content = text.encode("ISO-8859-1")
+    response = httpx.Response(200, content=content, default_encoding=autodetect)
+
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+    assert response.encoding == "ISO-8859-1"
+    assert response.text == text
+
+
+def test_response_decode_text_using_explicit_encoding():
+    # Ensure that a 'default_encoding="..."' on the response is used for text decoding
+    # when no "Content-Type: text/plain; charset=..."" info is present.
+    #
+    # Here we have some french text encoded with Windows-1252, rather than UTF-8.
+    # https://en.wikipedia.org/wiki/Windows-1252
+    text = (
+        "Non-seulement Despréaux ne se trompait pas, mais de tous les écrivains "
+        "que la France a produits, sans excepter Voltaire lui-même, imprégné de "
+        "l'esprit anglais par son séjour à Londres, c'est incontestablement "
+        "Molière ou Poquelin qui reproduit avec l'exactitude la plus vive et la "
+        "plus complète le fond du génie français."
+    )
+    content = text.encode("cp1252")
+    response = httpx.Response(200, content=content, default_encoding="cp1252")
+
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+    assert response.encoding == "cp1252"
+    assert response.text == text

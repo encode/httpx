@@ -41,7 +41,7 @@ UNSET = UnsetType()
 
 
 def create_ssl_context(
-    cert: CertTypes = None,
+    cert: typing.Optional[CertTypes] = None,
     verify: VerifyTypes = True,
     trust_env: bool = True,
     http2: bool = False,
@@ -61,7 +61,7 @@ class SSLConfig:
     def __init__(
         self,
         *,
-        cert: CertTypes = None,
+        cert: typing.Optional[CertTypes] = None,
         verify: VerifyTypes = True,
         trust_env: bool = True,
         http2: bool = False,
@@ -290,8 +290,8 @@ class Limits:
     def __init__(
         self,
         *,
-        max_connections: int = None,
-        max_keepalive_connections: int = None,
+        max_connections: typing.Optional[int] = None,
+        max_keepalive_connections: typing.Optional[int] = None,
         keepalive_expiry: typing.Optional[float] = 5.0,
     ):
         self.max_connections = max_connections
@@ -320,8 +320,8 @@ class Proxy:
         self,
         url: URLTypes,
         *,
-        auth: typing.Tuple[str, str] = None,
-        headers: HeaderTypes = None,
+        auth: typing.Optional[typing.Tuple[str, str]] = None,
+        headers: typing.Optional[HeaderTypes] = None,
     ):
         url = URL(url)
         headers = Headers(headers)

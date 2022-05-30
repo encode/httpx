@@ -8,6 +8,7 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
+    Optional,
     Tuple,
     Union,
 )
@@ -149,7 +150,7 @@ def encode_urlencoded_data(
 
 
 def encode_multipart_data(
-    data: dict, files: RequestFiles, boundary: bytes = None
+    data: dict, files: RequestFiles, boundary: Optional[bytes] = None
 ) -> Tuple[Dict[str, str], MultipartStream]:
     multipart = MultipartStream(data=data, files=files, boundary=boundary)
     headers = multipart.get_headers()
@@ -181,11 +182,11 @@ def encode_json(json: Any) -> Tuple[Dict[str, str], ByteStream]:
 
 
 def encode_request(
-    content: RequestContent = None,
-    data: RequestData = None,
-    files: RequestFiles = None,
-    json: Any = None,
-    boundary: bytes = None,
+    content: Optional[RequestContent] = None,
+    data: Optional[RequestData] = None,
+    files: Optional[RequestFiles] = None,
+    json: Optional[Any] = None,
+    boundary: Optional[bytes] = None,
 ) -> Tuple[Dict[str, str], Union[SyncByteStream, AsyncByteStream]]:
     """
     Handles encoding the given `content`, `data`, `files`, and `json`,
@@ -216,10 +217,10 @@ def encode_request(
 
 
 def encode_response(
-    content: ResponseContent = None,
-    text: str = None,
-    html: str = None,
-    json: Any = None,
+    content: Optional[ResponseContent] = None,
+    text: Optional[str] = None,
+    html: Optional[str] = None,
+    json: Optional[Any] = None,
 ) -> Tuple[Dict[str, str], Union[SyncByteStream, AsyncByteStream]]:
     """
     Handles encoding the given `content`, returning a two-tuple of

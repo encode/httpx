@@ -75,7 +75,9 @@ class RequestError(HTTPError):
     Base class for all exceptions that may occur when issuing a `.request()`.
     """
 
-    def __init__(self, message: str, *, request: "Request" = None) -> None:
+    def __init__(
+        self, message: str, *, request: typing.Optional["Request"] = None
+    ) -> None:
         super().__init__(message)
         # At the point an exception is raised we won't typically have a request
         # instance to associate it with.
@@ -326,7 +328,9 @@ class RequestNotRead(StreamError):
 
 
 @contextlib.contextmanager
-def request_context(request: "Request" = None) -> typing.Iterator[None]:
+def request_context(
+    request: typing.Optional["Request"] = None,
+) -> typing.Iterator[None]:
     """
     A context manager that can be used to attach the given request context
     to any `RequestError` exceptions that are raised within the block.
