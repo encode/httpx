@@ -312,49 +312,13 @@ def test_url_copywith_security():
     """
     Prevent unexpected changes on URL after calling copy_with (CVE-2021-41945)
     """
-    url = httpx.URL("https://u:p@[invalid!]//evilHost/path?t=w#tw")
-    original_scheme = url.scheme
-    original_userinfo = url.userinfo
-    original_netloc = url.netloc
-    original_raw_path = url.raw_path
-    original_query = url.query
-    original_fragment = url.fragment
-    url = url.copy_with()
-    assert url.scheme == original_scheme
-    assert url.userinfo == original_userinfo
-    assert url.netloc == original_netloc
-    assert url.raw_path == original_raw_path
-    assert url.query == original_query
-    assert url.fragment == original_fragment
-
-    url = httpx.URL("https://u:p@[invalid!]//evilHost/path?t=w#tw")
-    original_scheme = url.scheme
-    original_netloc = url.netloc
-    original_raw_path = url.raw_path
-    original_query = url.query
-    original_fragment = url.fragment
-    url = url.copy_with(userinfo=b"")
-    assert url.scheme == original_scheme
-    assert url.userinfo == b""
-    assert url.netloc == original_netloc
-    assert url.raw_path == original_raw_path
-    assert url.query == original_query
-    assert url.fragment == original_fragment
+    with pytest.raises(httpx.InvalidURL):
+        httpx.URL("https://u:p@[invalid!]//evilHost/path?t=w#tw")
 
     url = httpx.URL("https://example.com/path?t=w#tw")
-    original_userinfo = url.userinfo
-    original_netloc = url.netloc
-    original_raw_path = url.raw_path
-    original_query = url.query
-    original_fragment = url.fragment
     bad = "https://xxxx:xxxx@xxxxxxx/xxxxx/xxx?x=x#xxxxx"
-    url = url.copy_with(scheme=bad)
-    assert url.scheme == bad
-    assert url.userinfo == original_userinfo
-    assert url.netloc == original_netloc
-    assert url.raw_path == original_raw_path
-    assert url.query == original_query
-    assert url.fragment == original_fragment
+    with pytest.raises(httpx.InvalidURL):
+        url.copy_with(scheme=bad)
 
 
 def test_url_invalid():

@@ -131,13 +131,16 @@ def test_urlparse_excessively_long_component():
 def test_urlparse_non_printing_character_in_url():
     with pytest.raises(httpx.InvalidURL) as exc:
         urlparse("https://www.example.com/\n")
-    assert str(exc.value) == "Invalid non-printable character in URL"
+    assert str(exc.value) == "Invalid non-printable ASCII character in URL"
 
 
 def test_urlparse_non_printing_character_in_component():
     with pytest.raises(httpx.InvalidURL) as exc:
         urlparse("https://www.example.com", path="/\n")
-    assert str(exc.value) == "Invalid non-printable character in URL component 'path'"
+    assert (
+        str(exc.value)
+        == "Invalid non-printable ASCII character in URL component 'path'"
+    )
 
 
 # Test for urlparse components

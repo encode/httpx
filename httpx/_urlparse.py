@@ -159,10 +159,10 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     if len(url) > MAX_URL_LENGTH:
         raise InvalidURL("URL too long")
 
-    # If a URL includes any control characters including \t, \r, \n,
+    # If a URL includes any ASCII control characters including \t, \r, \n,
     # then treat it as invalid.
-    if not url.isprintable():
-        raise InvalidURL("Invalid non-printable character in URL")
+    if any(char.isascii() and not char.isprintable() for char in url):
+        raise InvalidURL("Invalid non-printable ASCII character in URL")
 
     # Some keyword arguments require special handling.
     # ------------------------------------------------
@@ -216,11 +216,11 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
             if len(value) > MAX_URL_LENGTH:
                 raise InvalidURL(f"URL component '{key}' too long")
 
-            # If a component includes any control characters including \t, \r, \n,
+            # If a component includes any ASCII control characters including \t, \r, \n,
             # then treat it as invalid.
-            if not value.isprintable():
+            if any(char.isascii() and not char.isprintable() for char in value):
                 raise InvalidURL(
-                    f"Invalid non-printable character in URL component '{key}'"
+                    f"Invalid non-printable ASCII character in URL component '{key}'"
                 )
 
             # Ensure that keyword arguments match as a valid regex.
