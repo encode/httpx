@@ -1,6 +1,20 @@
-# TODO?
-# * Make idna optional
-# * hostname synonm?
+"""
+An implementation of `urlparse` that provides URL validation and normalization
+as described by RFC3986.
+
+We rely on this implementation rather than the one in Python's stdlib, because:
+
+* It provides more complete URL validation.
+* It properly differentiates between an empty querystring and an absent querystring,
+  to distinguish URLs with a trailing '?'.
+* It handles scheme, hostname, port, and path normalization.
+* It supports IDNA hostnames, normalizing them to their encoded form.
+* The API supports passing individual components, as well as the complete URL string.
+
+Previously we relied on the excellent `rfc3986` package to handle URL parsing and
+validation, but this module provides a simpler alternative, with less indirection
+required.
+"""
 import ipaddress
 import re
 import typing
@@ -12,9 +26,7 @@ from ._exceptions import InvalidURL
 MAX_URL_LENGTH = 65536
 
 # https://datatracker.ietf.org/doc/html/rfc3986.html#section-2.3
-UNRESERVED_CHARACTERS = (
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
-)
+UNRESERVED_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
 SUB_DELIMS = "!$&'()*+,;="
 
 PERCENT_ENCODED_REGEX = re.compile("%[A-Fa-f0-9]{2}")
@@ -48,10 +60,10 @@ AUTHORITY_REGEX = re.compile(
     (
         r"(?:(?P<userinfo>{userinfo})@)?" r"(?P<host>{host})" r":?(?P<port>{port})?"
     ).format(
-        userinfo="[^@]*",  # Any character sequence not including '@'.
+        userinfo="[^@]*",         # Any character sequence not including '@'.
         host="(\\[.*\\]|[^:]*)",  # Either any character sequence not including ':',
-        # or an IPv6 address enclosed within square brackets.
-        port=".*",  # Any character sequence.
+                                  # or an IPv6 address enclosed within square brackets.
+        port=".*"                 # Any character sequence.
     )
 )
 
@@ -67,7 +79,7 @@ COMPONENT_REGEX = {
     "fragment": re.compile(".*"),
     "userinfo": re.compile("[^@]*"),
     "host": re.compile("(\\[.*\\]|[^:]*)"),
-    "port": re.compile(".*"),
+    "port": re.compile(".*")
 }
 
 
@@ -98,31 +110,25 @@ class ParseResult(typing.NamedTuple):
 
     @property
     def authority(self) -> str:
-        return "".join(
-            [
-                f"{self.userinfo}@" if self.userinfo else "",
-                f"[{self.host}]" if ":" in self.host else self.host,
-                f":{self.port}" if self.port is not None else "",
-            ]
-        )
+        return "".join([
+            f"{self.userinfo}@" if self.userinfo else "",
+            f"[{self.host}]" if ":" in self.host else self.host,
+            f":{self.port}" if self.port is not None else ""
+        ])
 
     @property
     def netloc(self) -> str:
-        return "".join(
-            [
-                f"[{self.host}]" if ":" in self.host else self.host,
-                f":{self.port}" if self.port is not None else "",
-            ]
-        )
+        return "".join([
+            f"[{self.host}]" if ":" in self.host else self.host,
+            f":{self.port}" if self.port is not None else ""
+        ])
 
     @property
     def full_path(self) -> str:
-        return "".join(
-            [
-                self.path,
-                f"?{self.query}" if self.query is not None else "",
-            ]
-        )
+        return "".join([
+            self.path,
+            f"?{self.query}" if self.query is not None else "",
+        ])
 
     def copy_with(self, **kwargs: typing.Optional[str]) -> "ParseResult":
         if not kwargs:
@@ -133,22 +139,20 @@ class ParseResult(typing.NamedTuple):
             "authority": self.authority,
             "path": self.path,
             "query": self.query,
-            "fragment": self.fragment,
+            "fragment": self.fragment
         }
         defaults.update(kwargs)
         return urlparse("", **defaults)
 
     def __str__(self) -> str:
         authority = self.authority
-        return "".join(
-            [
-                f"{self.scheme}:" if self.scheme else "",
-                f"//{authority}" if authority else "",
-                self.path,
-                f"?{self.query}" if self.query is not None else "",
-                f"#{self.fragment}" if self.fragment is not None else "",
-            ]
-        )
+        return "".join([
+            f"{self.scheme}:" if self.scheme else "",
+            f"//{authority}" if authority else "",
+            self.path,
+            f"?{self.query}" if self.query is not None else "",
+            f"#{self.fragment}" if self.fragment is not None else "",
+        ])
 
 
 def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
@@ -200,16 +204,7 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     # -------------------------------------------------------------
 
     for key, value in kwargs.items():
-        if key not in (
-            "scheme",
-            "authority",
-            "path",
-            "query",
-            "fragment",
-            "userinfo",
-            "host",
-            "port",
-        ):
+        if key not in ("scheme", "authority", "path", "query", "fragment", "userinfo", "host", "port"):
             raise TypeError(f"'{key}' is an invalid keyword argument for urlparse()")
 
         if value is not None:
@@ -219,9 +214,7 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
             # If a component includes any ASCII control characters including \t, \r, \n,
             # then treat it as invalid.
             if any(char.isascii() and not char.isprintable() for char in value):
-                raise InvalidURL(
-                    f"Invalid non-printable ASCII character in URL component '{key}'"
-                )
+                raise InvalidURL(f"Invalid non-printable ASCII character in URL component '{key}'")
 
             # Ensure that keyword arguments match as a valid regex.
             if not COMPONENT_REGEX[key].fullmatch(value):
@@ -265,12 +258,8 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
         validate_absolute_path(path)
         path = normalize_path(path)
     parsed_path: str = quote(path, safe=SUB_DELIMS + ":@/")
-    parsed_query: typing.Optional[str] = (
-        None if query is None else quote(query, safe=SUB_DELIMS + "/?")
-    )
-    parsed_fragment: typing.Optional[str] = (
-        None if fragment is None else quote(fragment, safe=SUB_DELIMS + "/?")
-    )
+    parsed_query: typing.Optional[str] = None if query is None else quote(query, safe=SUB_DELIMS + "/?")
+    parsed_fragment: typing.Optional[str] = None if fragment is None else quote(fragment, safe=SUB_DELIMS + "/?")
 
     # The parsed ASCII bytestrings are our canonical form.
     # All properties of the URL are derived from these.
@@ -352,9 +341,7 @@ def normalize_port(
         raise InvalidURL("Invalid port")
 
     # See https://url.spec.whatwg.org/#url-miscellaneous
-    default_port = {"ftp": 21, "http": 80, "https": 443, "ws": 80, "wss": 443}.get(
-        scheme
-    )
+    default_port = {"ftp": 21, "http": 80, "https": 443, "ws": 80, "wss": 443}.get(scheme)
     if port_as_int == default_port:
         return None
     return port_as_int
@@ -414,5 +401,8 @@ def quote(string: str, safe: str = "/") -> str:
         NON_ESCAPED_CHARS += "%"
 
     return "".join(
-        [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]
+        [
+            char if char in NON_ESCAPED_CHARS else percent_encode(char)
+            for char in string
+        ]
     )
