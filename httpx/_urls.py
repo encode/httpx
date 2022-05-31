@@ -127,7 +127,7 @@ class URL:
         The URL scheme, such as "http", "https".
         Always normalised to lowercase.
         """
-        return self._uri_reference.scheme or ""
+        return self._uri_reference.scheme
 
     @property
     def raw_scheme(self) -> bytes:
@@ -135,7 +135,7 @@ class URL:
         The raw bytes representation of the URL scheme, such as b"http", b"https".
         Always normalised to lowercase.
         """
-        return self.scheme.encode("ascii")
+        return self._uri_reference.scheme.encode("ascii")
 
     @property
     def userinfo(self) -> bytes:
@@ -143,8 +143,7 @@ class URL:
         The URL userinfo as a raw bytestring.
         For example: b"jo%40email.com:a%20secret".
         """
-        userinfo = self._uri_reference.userinfo or ""
-        return userinfo.encode("ascii")
+        return self._uri_reference.userinfo.encode("ascii")
 
     @property
     def username(self) -> str:
@@ -211,8 +210,7 @@ class URL:
         url = httpx.URL("https://[::ffff:192.168.0.1]")
         assert url.raw_host == b"::ffff:192.168.0.1"
         """
-        host: str = self._uri_reference.host or ""
-        return host.encode("ascii")
+        return self._uri_reference.host.encode("ascii")
 
     @property
     def port(self) -> typing.Optional[int]:
@@ -228,8 +226,7 @@ class URL:
         assert httpx.URL("http://www.example.com") == httpx.URL("http://www.example.com:80")
         assert httpx.URL("http://www.example.com:80").port is None
         """
-        port = self._uri_reference.port
-        return int(port) if port else None
+        return self._uri_reference.port
 
     @property
     def netloc(self) -> bytes:
@@ -240,14 +237,7 @@ class URL:
         This property may be used for generating the value of a request
         "Host" header.
         """
-        host = self._uri_reference.host or ""
-        port = self._uri_reference.port
-        netloc = host.encode("ascii")
-        if b":" in netloc:
-            netloc = b"[" + netloc + b"]"
-        if port is not None:
-            netloc = netloc + b":" + str(port).encode("ascii")
-        return netloc
+        return self._uri_reference.netloc.encode("ascii")
 
     @property
     def path(self) -> str:

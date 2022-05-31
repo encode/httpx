@@ -101,16 +101,6 @@ class ParseResult(typing.NamedTuple):
     fragment: typing.Optional[str]
 
     @property
-    def username(self) -> str:
-        username, _, password = self.userinfo.partition(":")
-        return username
-
-    @property
-    def password(self) -> str:
-        username, _, password = self.userinfo.partition(":")
-        return password
-
-    @property
     def authority(self) -> str:
         return "".join(
             [
@@ -126,15 +116,6 @@ class ParseResult(typing.NamedTuple):
             [
                 f"[{self.host}]" if ":" in self.host else self.host,
                 f":{self.port}" if self.port is not None else "",
-            ]
-        )
-
-    @property
-    def full_path(self) -> str:
-        return "".join(
-            [
-                self.path,
-                f"?{self.query}" if self.query is not None else "",
             ]
         )
 
