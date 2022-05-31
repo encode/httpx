@@ -47,7 +47,7 @@ URL_REGEX = re.compile(
         r"(?:\?(?P<query>{query}))?"
         r"(?:#(?P<fragment>{fragment}))?"
     ).format(
-        scheme="[a-zA-Z][a-zA-Z0-9+.-]*",
+        scheme="([a-zA-Z][a-zA-Z0-9+.-]*)?",
         authority="[^/?#]*",
         path="[^?#]*",
         query="[^#]*",
@@ -256,9 +256,15 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     parsed_userinfo: str = quote(userinfo, safe=SUB_DELIMS + ":")
     parsed_host: str = encode_host(host)
     parsed_port: typing.Optional[int] = normalize_port(port, scheme)
-    if userinfo or host or port:
-        validate_absolute_path(path)
+
+    has_scheme = parsed_scheme != ""
+    has_authority = (
+        parsed_userinfo != "" or parsed_host != "" or parsed_port is not None
+    )
+    validate_path(path, has_scheme=has_scheme, has_authority=has_authority)
+    if has_authority:
         path = normalize_path(path)
+
     parsed_path: str = quote(path, safe=SUB_DELIMS + ":@/")
     parsed_query: typing.Optional[str] = (
         None if query is None else quote(query, safe=SUB_DELIMS + "/?")
@@ -355,14 +361,30 @@ def normalize_port(
     return port_as_int
 
 
-def validate_absolute_path(path: str) -> None:
-    # For absolute URLs the path must either be empty or start
-    # with a '/' character.
-    #
-    # https://datatracker.ietf.org/doc/html/rfc3986/#section-3
-    # https://datatracker.ietf.org/doc/html/rfc3986/#section-3.3
-    if path and not path.startswith("/"):
-        raise InvalidURL("For absolute URLs, path must be empty or begin with '/'")
+def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:
+    """
+    Path validation rules that depend on if the URL contains a scheme or authority component.
+
+    See https://datatracker.ietf.org/doc/html/rfc3986.html#section-3.3
+    """
+    if has_authority:
+        # > If a URI contains an authority component, then the path component
+        # > must either be empty or begin with a slash ("/") character."
+        if path and not path.startswith("/"):
+            raise InvalidURL("For absolute URLs, path must be empty or begin with '/'")
+    else:
+        # > If a URI does not contain an authority component, then the path cannot begin
+        # > with two slash characters ("//").
+        if path.startswith("//"):
+            raise InvalidURL(
+                "URLs with no authority component cannot have a path starting with '//'"
+            )
+        # > In addition, a URI reference (Section 4.1) may be a relative-path reference, in which
+        # > case the first path segment cannot contain a colon (":") character.
+        if path.startswith(":") and not has_scheme:
+            raise InvalidURL(
+                "URLs with no scheme component cannot have a path starting with ':'"
+            )
 
 
 def normalize_path(path: str) -> str:

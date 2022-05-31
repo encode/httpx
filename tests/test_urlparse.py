@@ -19,6 +19,20 @@ def test_urlparse():
     assert str(url) == "https://www.example.com/"
 
 
+def test_urlparse_no_scheme():
+    url = urlparse("://example.com")
+    assert url.scheme == ""
+    assert url.host == "example.com"
+    assert url.path == ""
+
+
+def test_urlparse_no_authority():
+    url = urlparse("http://")
+    assert url.scheme == "http"
+    assert url.host == ""
+    assert url.path == ""
+
+
 # Tests for different host types
 
 
@@ -176,6 +190,20 @@ def test_urlparse_with_invalid_path():
     with pytest.raises(httpx.InvalidURL) as exc:
         urlparse(scheme="https", host="www.example.com", path="abc")
     assert str(exc.value) == "For absolute URLs, path must be empty or begin with '/'"
+
+    with pytest.raises(httpx.InvalidURL) as exc:
+        urlparse(path="//abc")
+    assert (
+        str(exc.value)
+        == "URLs with no authority component cannot have a path starting with '//'"
+    )
+
+    with pytest.raises(httpx.InvalidURL) as exc:
+        urlparse(path=":abc")
+    assert (
+        str(exc.value)
+        == "URLs with no scheme component cannot have a path starting with ':'"
+    )
 
 
 def test_urlparse_with_relative_path():

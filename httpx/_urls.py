@@ -151,7 +151,7 @@ class URL:
         The URL username as a string, with URL decoding applied.
         For example: "jo@email.com"
         """
-        userinfo = self._uri_reference.userinfo or ""
+        userinfo = self._uri_reference.userinfo
         return unquote(userinfo.partition(":")[0])
 
     @property
@@ -160,7 +160,7 @@ class URL:
         The URL password as a string, with URL decoding applied.
         For example: "a secret"
         """
-        userinfo = self._uri_reference.userinfo or ""
+        userinfo = self._uri_reference.userinfo
         return unquote(userinfo.partition(":")[2])
 
     @property
@@ -183,7 +183,7 @@ class URL:
         url = httpx.URL("https://[::ffff:192.168.0.1]")
         assert url.host == "::ffff:192.168.0.1"
         """
-        host: str = self._uri_reference.host or ""
+        host: str = self._uri_reference.host
 
         if host.startswith("xn--"):
             host = idna.decode(host)
