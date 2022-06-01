@@ -58,7 +58,7 @@ setup(
     install_requires=[
         "certifi",
         "sniffio",
-        "rfc3986[idna2008]>=1.3,<2",
+        "idna",
         "httpcore>=0.15.0,<0.16.0",
     ],
     extras_require={
