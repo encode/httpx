@@ -327,7 +327,7 @@ def encode_host(host: str) -> str:
 
     # IDNA hostnames
     try:
-        return idna.encode(host).decode("ascii").lower()
+        return idna.encode(host.lower()).decode("ascii")
     except idna.IDNAError:
         raise InvalidURL("Invalid IDNA hostname")
 
