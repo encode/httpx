@@ -100,9 +100,6 @@ class URL:
                 if isinstance(value, bytes):
                     kwargs[key] = value.decode("ascii")
 
-            if "raw_path" in kwargs:
-                kwargs["full_path"] = kwargs.pop("raw_path")
-
             if "params" in kwargs:
                 # Replace any "params" keyword with the raw "query" instead.
                 #
