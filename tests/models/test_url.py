@@ -388,3 +388,11 @@ def test_ipv6_url_from_raw_url(host):
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]"
     assert str(url) == "https://[::ffff:192.168.0.1]/"
+
+
+def test_resolution_error_1833():
+    """
+    See https://github.com/encode/httpx/issues/1833
+    """
+    url = httpx.URL("https://example.com/?[]")
+    assert url.join("/") == "https://example.com/"
