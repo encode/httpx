@@ -317,7 +317,7 @@ def encode_host(host: str) -> str:
             raise InvalidURL("Invalid IPv6 address")
         return host[1:-1]
 
-    elif all(ord(char) <= 127 for char in host):
+    elif host.isascii():
         # Regular ASCII hostnames
         #
         # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2
@@ -327,7 +327,7 @@ def encode_host(host: str) -> str:
 
     # IDNA hostnames
     try:
-        return idna.encode(host.lower()).decode("ascii")
+        return idna.encode(host).decode("ascii").lower()
     except idna.IDNAError:
         raise InvalidURL("Invalid IDNA hostname")
 
