@@ -21,7 +21,7 @@ wheel==0.37.1
 # Tests & Linting
 autoflake==1.4
 black==22.3.0
-coverage==6.0.2
+coverage==6.4
 cryptography==37.0.2
 flake8==3.9.2
 flake8-bugbear==22.1.11
