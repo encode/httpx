@@ -19,9 +19,8 @@ def get_long_description():
     """
     Return the README.
     """
-    long_description = ""
     with open("README.md", encoding="utf8") as f:
-        long_description += f.read()
+        long_description = f.read()
     long_description += "\n\n"
     with open("CHANGELOG.md", encoding="utf8") as f:
         long_description += f.read()
@@ -74,9 +73,7 @@ setup(
             "pygments==2.*"
         ]
     },
-    entry_points = {
-        "console_scripts": "httpx=httpx:main"
-    },
+    entry_points = {"console_scripts": "httpx=httpx:main"},
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Web Environment",
