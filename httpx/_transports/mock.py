@@ -1,6 +1,6 @@
-import asyncio
 import typing
 
+from .._compat import iscoroutine
 from .._models import Request, Response
 from .base import AsyncBaseTransport, BaseTransport
 
@@ -28,7 +28,7 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         # return the result.
 
         # https://simonwillison.net/2020/Sep/2/await-me-maybe/
-        if asyncio.iscoroutine(response):
+        if iscoroutine(response):
             response = await response
 
         return response
