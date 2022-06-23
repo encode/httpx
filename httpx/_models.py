@@ -27,6 +27,7 @@ from ._exceptions import (
     StreamConsumed,
     request_context,
 )
+from ._multipart import get_multipart_boundary_from_content_type
 from ._status_codes import codes
 from ._types import (
     AsyncByteStream,
@@ -332,7 +333,15 @@ class Request:
             Cookies(cookies).set_cookie_header(self)
 
         if stream is None:
-            headers, stream = encode_request(content, data, files, json)
+            if "content-type" in self.headers:
+                boundary = get_multipart_boundary_from_content_type(
+                    self.headers["content-type"]
+                )
+            else:
+                boundary = None
+            headers, stream = encode_request(
+                content, data, files, json, boundary=boundary
+            )
             self._prepare(headers)
             self.stream = stream
             # Load the request body, except for streaming content.

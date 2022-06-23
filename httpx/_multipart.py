@@ -20,6 +20,16 @@ from ._utils import (
 )
 
 
+def get_multipart_boundary_from_content_type(
+    content_type: str,
+) -> typing.Optional[bytes]:
+    if ";" in content_type:
+        for section in content_type.split(";"):
+            if section.strip().startswith("boundary="):
+                return section.strip().split("boundary=")[-1].encode("latin-1")
+    return None
+
+
 class DataField:
     """
     A single form field item, within a multipart form field.

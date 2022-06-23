@@ -42,6 +42,30 @@ def test_multipart(value, output):
     assert multipart["file"] == [b"<file content>"]
 
 
+def test_multipart_explicit_boundary() -> None:
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
+
+    files = {"file": io.BytesIO(b"<file content>")}
+    headers = {"content-type": "multipart/form-data; boundary=+++"}
+    response = client.post("http://127.0.0.1:8000/", files=files, headers=headers)
+    assert response.status_code == 200
+
+    # We're using the cgi module to verify the behavior here, which is a
+    # bit grungy, but sufficient just for our testing purposes.
+    boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
+    assert boundary == "+++"
+    content_length = response.request.headers["Content-Length"]
+    pdict: dict = {
+        "boundary": boundary.encode("ascii"),
+        "CONTENT-LENGTH": content_length,
+    }
+    multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
+
+    # Note that the expected return type for text fields
+    # appears to differs from 3.6 to 3.7+
+    assert multipart["file"] == [b"<file content>"]
+
+
 @pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))
 def test_multipart_invalid_key(key):
     client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
