@@ -84,20 +84,8 @@ def test_multipart_header_without_boundary(header: str) -> None:
 
     files = {"file": io.BytesIO(b"<file content>")}
     headers = {"content-type": header}
-    response = client.post("http://127.0.0.1:8000/", files=files, headers=headers)
-    assert response.status_code == 200
-
-    # We're using the cgi module to verify the behavior here, which is a
-    # bit grungy, but sufficient just for our testing purposes.
-    boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
-    content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
-        "boundary": boundary.encode("ascii"),
-        "CONTENT-LENGTH": content_length,
-    }
-    multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
-
-    assert multipart["file"] == [b"<file content>"]
+    with pytest.raises(ValueError, match=r"Missing boundary"):
+        client.post("http://127.0.0.1:8000/", files=files, headers=headers)
 
 
 @pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))

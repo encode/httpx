@@ -333,14 +333,12 @@ class Request:
             Cookies(cookies).set_cookie_header(self)
 
         if stream is None:
-            if "content-type" in self.headers:
-                boundary = get_multipart_boundary_from_content_type(
-                    self.headers["content-type"]
-                )
-            else:
-                boundary = None
             headers, stream = encode_request(
-                content, data, files, json, boundary=boundary
+                content=content,
+                data=data,
+                files=files,
+                json=json,
+                headers=self.headers,
             )
             self._prepare(headers)
             self.stream = stream

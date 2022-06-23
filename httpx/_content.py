@@ -8,6 +8,7 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
+    Mapping,
     Optional,
     Tuple,
     Union,
@@ -15,7 +16,7 @@ from typing import (
 from urllib.parse import urlencode
 
 from ._exceptions import StreamClosed, StreamConsumed
-from ._multipart import MultipartStream
+from ._multipart import MultipartStream, get_multipart_boundary_from_content_type
 from ._types import (
     AsyncByteStream,
     RequestContent,
@@ -150,11 +151,21 @@ def encode_urlencoded_data(
 
 
 def encode_multipart_data(
-    data: dict, files: RequestFiles, boundary: Optional[bytes] = None
+    data: dict,
+    files: RequestFiles,
+    boundary: Optional[bytes] = None,
+    headers: Optional[Mapping[str, str]] = None,
 ) -> Tuple[Dict[str, str], MultipartStream]:
+    if headers and boundary is None and "content-type" in headers:
+        content_type = headers["content-type"]
+        if not content_type.startswith("multipart/form-data"):
+            raise ValueError(
+                f"Invalid content-type header for multipart request: {content_type}"
+            )
+        boundary = get_multipart_boundary_from_content_type(content_type)
     multipart = MultipartStream(data=data, files=files, boundary=boundary)
-    headers = multipart.get_headers()
-    return headers, multipart
+    new_headers = multipart.get_headers()
+    return new_headers, multipart
 
 
 def encode_text(text: str) -> Tuple[Dict[str, str], ByteStream]:
@@ -187,6 +198,7 @@ def encode_request(
     files: Optional[RequestFiles] = None,
     json: Optional[Any] = None,
     boundary: Optional[bytes] = None,
+    headers: Optional[Mapping[str, str]] = None,
 ) -> Tuple[Dict[str, str], Union[SyncByteStream, AsyncByteStream]]:
     """
     Handles encoding the given `content`, `data`, `files`, and `json`,
@@ -207,7 +219,7 @@ def encode_request(
     if content is not None:
         return encode_content(content)
     elif files:
-        return encode_multipart_data(data or {}, files, boundary)
+        return encode_multipart_data(data or {}, files, boundary, headers)
     elif data:
         return encode_urlencoded_data(data)
     elif json is not None:
