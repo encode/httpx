@@ -15,22 +15,22 @@ mkautodoc==0.1.0
 mkdocs-material==8.2.14
 
 # Packaging
-twine==4.0.0
+twine==4.0.1
 wheel==0.37.1
 
 # Tests & Linting
 autoflake==1.4
 black==22.3.0
-coverage==6.0.2
+coverage==6.4.1
 cryptography==37.0.2
 flake8==3.9.2
-flake8-bugbear==22.1.11
+flake8-bugbear==22.4.25
 flake8-pie==0.15.0; python_version>='3.7'
 isort==5.10.1
-mypy==0.910
+mypy==0.961
 types-certifi==2021.10.8.2
 pytest==7.1.2
-pytest-asyncio==0.16.0
+pytest-asyncio==0.18.3
 pytest-trio==0.7.0
 trio==0.20.0
 trio-typing==0.7.0
