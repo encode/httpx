@@ -8,7 +8,6 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
-    Mapping,
     Optional,
     Tuple,
     Union,
@@ -154,10 +153,9 @@ def encode_multipart_data(
     data: dict,
     files: RequestFiles,
     boundary: Optional[bytes] = None,
-    headers: Optional[Mapping[str, str]] = None,
+    content_type: Optional[str] = None,
 ) -> Tuple[Dict[str, str], MultipartStream]:
-    if headers and boundary is None and "content-type" in headers:
-        content_type = headers["content-type"]
+    if content_type:
         if not content_type.startswith("multipart/form-data"):
             raise ValueError(
                 f"Invalid content-type header for multipart request: {content_type}"
@@ -198,7 +196,7 @@ def encode_request(
     files: Optional[RequestFiles] = None,
     json: Optional[Any] = None,
     boundary: Optional[bytes] = None,
-    headers: Optional[Mapping[str, str]] = None,
+    content_type: Optional[str] = None,
 ) -> Tuple[Dict[str, str], Union[SyncByteStream, AsyncByteStream]]:
     """
     Handles encoding the given `content`, `data`, `files`, and `json`,
@@ -219,7 +217,7 @@ def encode_request(
     if content is not None:
         return encode_content(content)
     elif files:
-        return encode_multipart_data(data or {}, files, boundary, headers)
+        return encode_multipart_data(data or {}, files, boundary, content_type)
     elif data:
         return encode_urlencoded_data(data)
     elif json is not None:

@@ -337,7 +337,7 @@ class Request:
                 data=data,
                 files=files,
                 json=json,
-                headers=self.headers,
+                content_type=self.headers.get("content-type"),
             )
             self._prepare(headers)
             self.stream = stream
