@@ -84,8 +84,10 @@ def test_multipart_header_without_boundary(header: str) -> None:
 
     files = {"file": io.BytesIO(b"<file content>")}
     headers = {"content-type": header}
-    with pytest.raises(ValueError, match=r"Missing boundary"):
-        client.post("http://127.0.0.1:8000/", files=files, headers=headers)
+    response = client.post("http://127.0.0.1:8000/", files=files, headers=headers)
+
+    assert response.status_code == 200
+    assert response.request.headers["Content-Type"] == header
 
 
 @pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))

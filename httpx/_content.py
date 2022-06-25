@@ -156,10 +156,6 @@ def encode_multipart_data(
     content_type: Optional[str] = None,
 ) -> Tuple[Dict[str, str], MultipartStream]:
     if content_type:
-        if not content_type.startswith("multipart/form-data"):
-            raise ValueError(
-                f"Invalid content-type header for multipart request: {content_type}"
-            )
         boundary = get_multipart_boundary_from_content_type(content_type)
     multipart = MultipartStream(data=data, files=files, boundary=boundary)
     new_headers = multipart.get_headers()

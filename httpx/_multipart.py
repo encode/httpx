@@ -22,12 +22,12 @@ from ._utils import (
 
 def get_multipart_boundary_from_content_type(
     content_type: str,
-) -> bytes:
+) -> typing.Optional[bytes]:
     if ";" in content_type:
         for section in content_type.split(";"):
             if section.strip().startswith("boundary="):
                 return section.strip().split("boundary=")[-1].encode("latin-1")
-    raise ValueError("Missing boundary in multipart/form-data content-type header")
+    return None
 
 
 class DataField:
