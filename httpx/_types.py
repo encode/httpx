@@ -7,6 +7,7 @@ from http.cookiejar import CookieJar
 from typing import (
     IO,
     TYPE_CHECKING,
+    Any,
     AsyncIterable,
     AsyncIterator,
     Callable,
@@ -76,7 +77,7 @@ AuthTypes = Union[
 RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 
-RequestData = dict
+RequestData = Dict[Any, Any]
 
 FileContent = Union[IO[bytes], bytes]
 FileTypes = Union[
