@@ -308,6 +308,55 @@ def test_url_copywith_raw_path():
     assert url.raw_path == b"/some/path?a=123"
 
 
+def test_url_copywith_security():
+    """
+    Prevent unexpected changes on URL after calling copy_with (CVE-2021-41945)
+    """
+    url = httpx.URL("https://u:p@[invalid!]//evilHost/path?t=w#tw")
+    original_scheme = url.scheme
+    original_userinfo = url.userinfo
+    original_netloc = url.netloc
+    original_raw_path = url.raw_path
+    original_query = url.query
+    original_fragment = url.fragment
+    url = url.copy_with()
+    assert url.scheme == original_scheme
+    assert url.userinfo == original_userinfo
+    assert url.netloc == original_netloc
+    assert url.raw_path == original_raw_path
+    assert url.query == original_query
+    assert url.fragment == original_fragment
+
+    url = httpx.URL("https://u:p@[invalid!]//evilHost/path?t=w#tw")
+    original_scheme = url.scheme
+    original_netloc = url.netloc
+    original_raw_path = url.raw_path
+    original_query = url.query
+    original_fragment = url.fragment
+    url = url.copy_with(userinfo=b"")
+    assert url.scheme == original_scheme
+    assert url.userinfo == b""
+    assert url.netloc == original_netloc
+    assert url.raw_path == original_raw_path
+    assert url.query == original_query
+    assert url.fragment == original_fragment
+
+    url = httpx.URL("https://example.com/path?t=w#tw")
+    original_userinfo = url.userinfo
+    original_netloc = url.netloc
+    original_raw_path = url.raw_path
+    original_query = url.query
+    original_fragment = url.fragment
+    bad = "https://xxxx:xxxx@xxxxxxx/xxxxx/xxx?x=x#xxxxx"
+    url = url.copy_with(scheme=bad)
+    assert url.scheme == bad
+    assert url.userinfo == original_userinfo
+    assert url.netloc == original_netloc
+    assert url.raw_path == original_raw_path
+    assert url.query == original_query
+    assert url.fragment == original_fragment
+
+
 def test_url_invalid():
     with pytest.raises(httpx.InvalidURL):
         httpx.URL("https://😇/")
@@ -368,10 +417,9 @@ def test_ipv6_url_copy_with_host(url_str, new_host):
     assert str(url) == "http://[::ffff:192.168.0.1]:1234"
 
 
-@pytest.mark.parametrize("host", [b"[::ffff:192.168.0.1]", b"::ffff:192.168.0.1"])
+@pytest.mark.parametrize("host", ["[::ffff:192.168.0.1]", "::ffff:192.168.0.1"])
 def test_ipv6_url_from_raw_url(host):
-    raw_url = (b"https", host, 443, b"/")
-    url = httpx.URL(raw_url)
+    url = httpx.URL(scheme="https", host=host, port=443, path="/")
 
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]"

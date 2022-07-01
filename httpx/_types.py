@@ -30,8 +30,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
-RawURL = Tuple[bytes, bytes, Optional[int], bytes]
-
 URLTypes = Union["URL", str]
 
 QueryParamTypes = Union[
@@ -41,7 +39,6 @@ QueryParamTypes = Union[
     Tuple[Tuple[str, PrimitiveData], ...],
     str,
     bytes,
-    None,
 ]
 
 HeaderTypes = Union[
@@ -74,7 +71,6 @@ AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
     Callable[["Request"], "Request"],
     "Auth",
-    None,
 ]
 
 RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]

@@ -6,7 +6,7 @@ import rfc3986
 import rfc3986.exceptions
 
 from ._exceptions import InvalidURL
-from ._types import PrimitiveData, QueryParamTypes, RawURL, URLTypes
+from ._types import PrimitiveData, QueryParamTypes, URLTypes
 from ._utils import primitive_value_to_str
 
 
@@ -71,22 +71,9 @@ class URL:
     """
 
     def __init__(
-        self, url: typing.Union["URL", str, RawURL] = "", **kwargs: typing.Any
+        self, url: typing.Union["URL", str] = "", **kwargs: typing.Any
     ) -> None:
-        if isinstance(url, (str, tuple)):
-            if isinstance(url, tuple):
-                raw_scheme, raw_host, port, raw_path = url
-                scheme = raw_scheme.decode("ascii")
-                host = raw_host.decode("ascii")
-                if host and ":" in host and host[0] != "[":
-                    # it's an IPv6 address, so it should be enclosed in "[" and "]"
-                    # ref: https://tools.ietf.org/html/rfc2732#section-2
-                    # ref: https://tools.ietf.org/html/rfc3986#section-3.2.2
-                    host = f"[{host}]"
-                port_str = "" if port is None else f":{port}"
-                path = raw_path.decode("ascii")
-                url = f"{scheme}://{host}{port_str}{path}"
-
+        if isinstance(url, str):
             try:
                 self._uri_reference = rfc3986.iri_reference(url).encode()
             except rfc3986.exceptions.InvalidAuthority as exc:
@@ -323,21 +310,6 @@ class URL:
         return unquote(self._uri_reference.fragment or "")
 
     @property
-    def raw(self) -> RawURL:
-        """
-        The URL in the raw representation used by the low level
-        transport API. See `BaseTransport.handle_request`.
-
-        Provides the (scheme, host, port, target) for the outgoing request.
-        """
-        return (
-            self.raw_scheme,
-            self.raw_host,
-            self.port,
-            self.raw_path,
-        )
-
-    @property
     def is_absolute_url(self) -> bool:
         """
         Return `True` for absolute URLs such as 'http://example.com/path',
@@ -484,7 +456,11 @@ class URL:
         #  \_/   \______________/\_________/ \_________/ \__/
         #   |           |            |            |        |
         # scheme     authority       path        query   fragment
-        return URL(self._uri_reference.copy_with(**kwargs).unsplit())
+        new_url = URL(self)
+        new_url._uri_reference = self._uri_reference.copy_with(**kwargs)
+        if new_url.is_absolute_url:
+            new_url._uri_reference = new_url._uri_reference.normalize()
+        return URL(new_url)
 
     def copy_set_param(self, key: str, value: typing.Any = None) -> "URL":
         return self.copy_with(params=self.params.set(key, value))
@@ -553,7 +529,9 @@ class QueryParams(typing.Mapping[str, str]):
     URL query parameters, as a multi-dict.
     """
 
-    def __init__(self, *args: QueryParamTypes, **kwargs: typing.Any) -> None:
+    def __init__(
+        self, *args: typing.Optional[QueryParamTypes], **kwargs: typing.Any
+    ) -> None:
         assert len(args) < 2, "Too many arguments."
         assert not (args and kwargs), "Cannot mix named and unnamed arguments."
 
@@ -711,7 +689,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict.pop(str(key), None)
         return q
 
-    def merge(self, params: QueryParamTypes = None) -> "QueryParams":
+    def merge(self, params: typing.Optional[QueryParamTypes] = None) -> "QueryParams":
         """
         Return a new QueryParams instance, updated with.
 
@@ -760,7 +738,7 @@ class QueryParams(typing.Mapping[str, str]):
         query_string = str(self)
         return f"{class_name}({query_string!r})"
 
-    def update(self, params: QueryParamTypes = None) -> None:
+    def update(self, params: typing.Optional[QueryParamTypes] = None) -> None:
         raise RuntimeError(
             "QueryParams are immutable since 0.18.0. "
             "Use `q = q.merge(...)` to create an updated copy."
