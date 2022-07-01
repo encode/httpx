@@ -16,7 +16,7 @@ mkdocs-material==8.2.14
 
 # Packaging
 twine==4.0.1
-wheel==0.37.0
+wheel==0.37.1
 build==0.8.0
 
 # Tests & Linting
