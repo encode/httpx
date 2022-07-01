@@ -14,7 +14,7 @@ mkdocs-material==8.1.4
 # Packaging
 twine==3.7.1
 wheel==0.37.0
-build==0.7.0
+build==0.8.0
 
 # Tests & Linting
 autoflake==1.4
