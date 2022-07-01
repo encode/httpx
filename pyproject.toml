@@ -61,4 +61,4 @@ httpx = "httpx:main"
 
 [tool.setuptools.dynamic]
 version = { attr = "httpx.__version__.__version__" }
-readme = { file = ["README.md", "CHANGELOG.md"] }
+readme = { file = ["README.md", "CHANGELOG.md"], content-type = "text/markdown" }
