@@ -6,7 +6,7 @@
 
 # Optional charset auto-detection
 # Used in our test cases
-chardet==4.0.0
+chardet==5.0.0
 types-chardet==4.0.4
 
 # Documentation
