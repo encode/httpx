@@ -4,7 +4,7 @@ import email.message
 import json as jsonlib
 import typing
 import urllib.request
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from http.cookiejar import Cookie, CookieJar
 
 from ._content import ByteStream, UnattachedStream, encode_request, encode_response
@@ -64,7 +64,7 @@ class Headers(typing.MutableMapping[str, str]):
             self._list = []  # type: typing.List[typing.Tuple[bytes, bytes, bytes]]
         elif isinstance(headers, Headers):
             self._list = list(headers._list)
-        elif isinstance(headers, dict):
+        elif isinstance(headers, Mapping):
             self._list = [
                 (
                     normalize_header_key(k, lower=False, encoding=encoding),
