@@ -13,6 +13,7 @@ types-chardet==4.0.4
 mkdocs==1.3.0
 mkautodoc==0.1.0
 mkdocs-material==8.3.8
+markdown==3.3.7  # Pin until backwards-incompatible changes here are addressed in mkautodoc: https://python-markdown.github.io/change_log/release-3.4/
 
 # Packaging
 twine==4.0.1
