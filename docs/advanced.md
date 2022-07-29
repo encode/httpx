@@ -1093,7 +1093,7 @@ class directly, and pass it to the client instance. One example is the
 >>> client = httpx.Client(transport=transport)
 ```
 
-Connection retries are also available via this interface.
+Connection retries are also available via this interface. Requests will be retried the given number of times in case an `httpx.ConnectError` or an `httpx.ConnectTimeout` occurs, allowing smoother operation under flaky networks. If you need other forms of retry behaviors, such as handling read/write errors or reacting to `503 Service Unavailable`, consider general-purpose tools such as [tenacity](https://github.com/jd/tenacity).
 
 ```pycon
 >>> import httpx
