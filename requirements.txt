@@ -24,7 +24,7 @@ autoflake==1.4
 black==22.6.0
 coverage==6.4.1
 cryptography==37.0.2
-flake8==3.9.2
+flake8==5.0.2
 flake8-bugbear==22.7.1
 flake8-pie==0.15.0; python_version>='3.7'
 isort==5.10.1
