@@ -4,6 +4,8 @@ site_url: https://www.python-httpx.org/
 
 theme:
     name: 'material'
+    features:
+        - navigation.sections
 
 repo_name: encode/httpx
 repo_url: https://github.com/encode/httpx/
@@ -11,18 +13,22 @@ edit_uri: ""
 
 nav:
     - Introduction: 'index.md'
-    - QuickStart: 'quickstart.md'
-    - Advanced Usage: 'advanced.md'
-    - Async Support: 'async.md'
-    - HTTP/2 Support: 'http2.md'
-    - Environment Variables: 'environment_variables.md'
-    - Requests Compatibility: 'compatibility.md'
-    - Developer Interface: 'api.md'
-    - Exceptions: 'exceptions.md'
-    - Troubleshooting: 'troubleshooting.md'
-    - Third Party Packages: 'third_party_packages.md'
-    - Contributing: 'contributing.md'
-    - Code of Conduct: 'code_of_conduct.md'
+    - Usage:
+        - QuickStart: 'quickstart.md'
+        - Advanced Usage: 'advanced.md'
+    - Guides:
+        - Async Support: 'async.md'
+        - HTTP/2 Support: 'http2.md'
+        - Requests Compatibility: 'compatibility.md'
+        - Troubleshooting: 'troubleshooting.md'
+    - API Reference:
+        - Developer Interface: 'api.md'
+        - Exceptions: 'exceptions.md'
+        - Environment Variables: 'environment_variables.md'
+    - Community:
+        - Third Party Packages: 'third_party_packages.md'
+        - Contributing: 'contributing.md'
+        - Code of Conduct: 'code_of_conduct.md'
 
 markdown_extensions:
   - admonition
