@@ -152,9 +152,12 @@ def encode_urlencoded_data(
 def encode_multipart_data(
     data: dict,
     files: RequestFiles,
-    boundary: Optional[bytes] = None,
-    content_type: Optional[str] = None,
+    boundary: Optional[bytes],
+    content_type: Optional[str],
 ) -> Tuple[Dict[str, str], MultipartStream]:
+    # note: we are the only ones calling into this function
+    # (not users) so there should never be a situation where
+    # both content_type and boundary are set
     if content_type:
         boundary = get_multipart_boundary_from_content_type(content_type)
     multipart = MultipartStream(data=data, files=files, boundary=boundary)
