@@ -21,8 +21,10 @@ from ._utils import (
 
 
 def get_multipart_boundary_from_content_type(
-    content_type: str,
+    content_type: typing.Optional[str],
 ) -> typing.Optional[bytes]:
+    if not content_type or not content_type.startswith("multipart/form-data"):
+        return None
     if ";" in content_type:
         for section in content_type.split(";"):
             if section.strip().startswith("boundary="):

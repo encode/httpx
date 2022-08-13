@@ -27,6 +27,7 @@ from ._exceptions import (
     StreamConsumed,
     request_context,
 )
+from ._multipart import get_multipart_boundary_from_content_type
 from ._status_codes import codes
 from ._types import (
     AsyncByteStream,
@@ -337,7 +338,9 @@ class Request:
                 data=data,
                 files=files,
                 json=json,
-                content_type=self.headers.get("content-type"),
+                boundary=get_multipart_boundary_from_content_type(
+                    self.headers.get("content-type")
+                ),
             )
             self._prepare(headers)
             self.stream = stream

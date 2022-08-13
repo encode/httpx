@@ -15,7 +15,7 @@ from typing import (
 from urllib.parse import urlencode
 
 from ._exceptions import StreamClosed, StreamConsumed
-from ._multipart import MultipartStream, get_multipart_boundary_from_content_type
+from ._multipart import MultipartStream
 from ._types import (
     AsyncByteStream,
     RequestContent,
@@ -153,13 +153,7 @@ def encode_multipart_data(
     data: dict,
     files: RequestFiles,
     boundary: Optional[bytes],
-    content_type: Optional[str],
 ) -> Tuple[Dict[str, str], MultipartStream]:
-    # note: we are the only ones calling into this function
-    # (not users) so there should never be a situation where
-    # both content_type and boundary are set
-    if content_type:
-        boundary = get_multipart_boundary_from_content_type(content_type)
     multipart = MultipartStream(data=data, files=files, boundary=boundary)
     new_headers = multipart.get_headers()
     return new_headers, multipart
@@ -216,7 +210,7 @@ def encode_request(
     if content is not None:
         return encode_content(content)
     elif files:
-        return encode_multipart_data(data or {}, files, boundary, content_type)
+        return encode_multipart_data(data or {}, files, boundary)
     elif data:
         return encode_urlencoded_data(data)
     elif json is not None:
