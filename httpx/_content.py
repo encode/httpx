@@ -150,13 +150,11 @@ def encode_urlencoded_data(
 
 
 def encode_multipart_data(
-    data: dict,
-    files: RequestFiles,
-    boundary: Optional[bytes],
+    data: dict, files: RequestFiles, boundary: Optional[bytes]
 ) -> Tuple[Dict[str, str], MultipartStream]:
     multipart = MultipartStream(data=data, files=files, boundary=boundary)
-    new_headers = multipart.get_headers()
-    return new_headers, multipart
+    headers = multipart.get_headers()
+    return headers, multipart
 
 
 def encode_text(text: str) -> Tuple[Dict[str, str], ByteStream]:
@@ -189,7 +187,6 @@ def encode_request(
     files: Optional[RequestFiles] = None,
     json: Optional[Any] = None,
     boundary: Optional[bytes] = None,
-    content_type: Optional[str] = None,
 ) -> Tuple[Dict[str, str], Union[SyncByteStream, AsyncByteStream]]:
     """
     Handles encoding the given `content`, `data`, `files`, and `json`,
