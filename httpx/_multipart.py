@@ -21,14 +21,21 @@ from ._utils import (
 
 
 def get_multipart_boundary_from_content_type(
-    content_type: typing.Optional[str],
+    content_type: typing.Optional[bytes],
 ) -> typing.Optional[bytes]:
-    if not content_type or not content_type.startswith("multipart/form-data"):
+    if not content_type or not content_type.startswith(b"multipart/form-data"):
         return None
-    if ";" in content_type:
-        for section in content_type.split(";"):
-            if section.strip().startswith("boundary="):
-                return section.strip().split("boundary=")[-1].encode("latin-1")
+    # parse boundary according to
+    # https://www.rfc-editor.org/rfc/rfc2046#section-5.1.1
+    if b";" in content_type:
+        for section in content_type.split(b";"):
+            if section.strip().startswith(b"boundary="):
+                return (
+                    section.strip()
+                    .split(b"boundary=")[-1]
+                    .strip(b'"')
+                    .strip(b"'")
+                )
     return None
 
 
