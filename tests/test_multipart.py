@@ -49,10 +49,10 @@ def test_multipart(value, output):
         "multipart/form-data; charset=utf-8; boundary=+++",
         "multipart/form-data; boundary=+++",
         "multipart/form-data; boundary=+++ ;",
-        "multipart/form-data; boundary=\"+++\"; charset=utf-8",
-        "multipart/form-data; charset=utf-8; boundary=\"+++\"",
-        "multipart/form-data; boundary=\"+++\"",
-        "multipart/form-data; boundary=\"+++\" ;",
+        'multipart/form-data; boundary="+++"; charset=utf-8',
+        'multipart/form-data; charset=utf-8; boundary="+++"',
+        'multipart/form-data; boundary="+++"',
+        'multipart/form-data; boundary="+++" ;',
     ],
 )
 def test_multipart_explicit_boundary(header: str) -> None:
