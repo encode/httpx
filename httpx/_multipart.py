@@ -29,8 +29,8 @@ def get_multipart_boundary_from_content_type(
     # https://www.rfc-editor.org/rfc/rfc2046#section-5.1.1
     if b";" in content_type:
         for section in content_type.split(b";"):
-            if section.strip().startswith(b"boundary="):
-                return section.strip().split(b"boundary=")[-1].strip(b'"')
+            if section.strip().lower().startswith(b"boundary="):
+                return section.strip()[len(b"boundary="):].strip(b'"')
     return None
 
 
