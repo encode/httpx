@@ -30,7 +30,7 @@ def get_multipart_boundary_from_content_type(
     if b";" in content_type:
         for section in content_type.split(b";"):
             if section.strip().lower().startswith(b"boundary="):
-                return section.strip()[len(b"boundary="):].strip(b'"')
+                return section.strip()[len(b"boundary=") :].strip(b'"')
     return None
 
 
