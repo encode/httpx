@@ -14,7 +14,7 @@ stream to handle multiple concurrent requests.
 HTTP/2 also provides support for functionality such as response prioritization,
 and server push.
 
-For a comprehensive guide to HTTP/2 you may want to check out "[HTTP2 Explained](https://http2-explained.haxx.se/content/en/)".
+For a comprehensive guide to HTTP/2 you may want to check out "[http2 explained](https://http2-explained.haxx.se/)".
 
 ## Enabling HTTP/2
 

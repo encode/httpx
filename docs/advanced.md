@@ -1064,7 +1064,7 @@ When making requests to local servers, such as a development server running on `
 
 If you do need to make HTTPS connections to a local server, for example to test an HTTPS-only service, you will need to create and use your own certificates. Here's one way to do it:
 
-1. Use [trustme-cli](https://github.com/sethmlarson/trustme-cli/) to generate a pair of server key/cert files, and a client cert file.
+1. Use [trustme](https://github.com/python-trio/trustme) to generate a pair of server key/cert files, and a client cert file.
 1. Pass the server key/cert files when starting your local server. (This depends on the particular web server you're using. For example, [Uvicorn](https://www.uvicorn.org) provides the `--ssl-keyfile` and `--ssl-certfile` options.)
 1. Tell HTTPX to use the certificates stored in `client.pem`:
 
@@ -1093,7 +1093,7 @@ class directly, and pass it to the client instance. One example is the
 >>> client = httpx.Client(transport=transport)
 ```
 
-Connection retries are also available via this interface.
+Connection retries are also available via this interface. Requests will be retried the given number of times in case an `httpx.ConnectError` or an `httpx.ConnectTimeout` occurs, allowing smoother operation under flaky networks. If you need other forms of retry behaviors, such as handling read/write errors or reacting to `503 Service Unavailable`, consider general-purpose tools such as [tenacity](https://github.com/jd/tenacity).
 
 ```pycon
 >>> import httpx

@@ -145,6 +145,6 @@ To include the optional brotli decoder support, use:
 $ pip install httpx[brotli]
 ```
 
-HTTPX requires Python 3.6+
+HTTPX requires Python 3.7+
 
 [sync-support]: https://github.com/encode/httpx/issues/572
