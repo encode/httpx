@@ -215,10 +215,7 @@ def parse_content_type_charset(content_type: str) -> typing.Optional[str]:
     # See: https://peps.python.org/pep-0594/#cgi
     msg = email.message.Message()
     msg["content-type"] = content_type
-    charset = msg.get_param("charset")
-    if charset is None:
-        return None
-    return str(charset).strip("'\"")
+    return msg.get_content_charset(failobj=None)
 
 
 SENSITIVE_HEADERS = {"authorization", "proxy-authorization"}
