@@ -1,4 +1,5 @@
 import codecs
+import email.message
 import logging
 import mimetypes
 import netrc
@@ -207,6 +208,14 @@ def parse_header_links(value: str) -> typing.List[typing.Dict[str, str]]:
             link[key.strip(replace_chars)] = value.strip(replace_chars)
         links.append(link)
     return links
+
+
+def parse_content_type_charset(content_type: str) -> typing.Optional[str]:
+    # We used to use `cgi.parse_header()` here, but `cgi` became a dead battery.
+    # See: https://peps.python.org/pep-0594/#cgi
+    msg = email.message.Message()
+    msg["content-type"] = content_type
+    return msg.get_content_charset(failobj=None)
 
 
 SENSITIVE_HEADERS = {"authorization", "proxy-authorization"}
