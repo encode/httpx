@@ -8,6 +8,6 @@ fi
 
 set -x
 
-${PREFIX}python -m build
+${PREFIX}python setup.py sdist bdist_wheel
 ${PREFIX}twine check dist/*
 ${PREFIX}mkdocs build
