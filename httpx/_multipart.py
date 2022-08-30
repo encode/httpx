@@ -205,7 +205,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
         self, data: dict, files: RequestFiles
     ) -> typing.Iterator[typing.Union[FileField, DataField]]:
         for name, value in data.items():
-            if isinstance(value, list):
+            if isinstance(value, (tuple, list)):
                 for item in value:
                     yield DataField(name=name, value=item)
             else:
