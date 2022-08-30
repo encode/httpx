@@ -1,4 +1,3 @@
-import cgi
 import datetime
 import email.message
 import json as jsonlib
@@ -27,6 +26,7 @@ from ._exceptions import (
     StreamConsumed,
     request_context,
 )
+from ._multipart import get_multipart_boundary_from_content_type
 from ._status_codes import codes
 from ._types import (
     AsyncByteStream,
@@ -46,6 +46,7 @@ from ._utils import (
     normalize_header_key,
     normalize_header_value,
     obfuscate_sensitive_headers,
+    parse_content_type_charset,
     parse_header_links,
 )
 
@@ -332,7 +333,18 @@ class Request:
             Cookies(cookies).set_cookie_header(self)
 
         if stream is None:
-            headers, stream = encode_request(content, data, files, json)
+            content_type: typing.Optional[str] = self.headers.get("content-type")
+            headers, stream = encode_request(
+                content=content,
+                data=data,
+                files=files,
+                json=json,
+                boundary=get_multipart_boundary_from_content_type(
+                    content_type=content_type.encode(self.headers.encoding)
+                    if content_type
+                    else None
+                ),
+            )
             self._prepare(headers)
             self.stream = stream
             # Load the request body, except for streaming content.
@@ -596,11 +608,7 @@ class Response:
         if content_type is None:
             return None
 
-        _, params = cgi.parse_header(content_type)
-        if "charset" not in params:
-            return None
-
-        return params["charset"].strip("'\"")
+        return parse_content_type_charset(content_type)
 
     def _get_content_decoder(self) -> ContentDecoder:
         """

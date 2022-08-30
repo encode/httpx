@@ -1,0 +1,11 @@
+#!/bin/sh -e
+
+SEMVER_REGEX="([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?"
+CHANGELOG_VERSION=$(grep -o -E $SEMVER_REGEX CHANGELOG.md | sed -n 2p)
+VERSION=$(grep -o -E $SEMVER_REGEX httpx/__version__.py | head -1)
+echo "CHANGELOG_VERSION: $CHANGELOG_VERSION"
+echo "VERSION: $VERSION"
+if [ "$CHANGELOG_VERSION" != "$VERSION" ]; then
+    echo "Version in changelog does not match version in httpx/__version__.py!"
+    exit 1
+fi

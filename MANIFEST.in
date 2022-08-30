@@ -1,4 +1,0 @@
-include README.md
-include CHANGELOG.md
-include LICENSE.md
-include httpx/py.typed

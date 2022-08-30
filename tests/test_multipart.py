@@ -42,6 +42,58 @@ def test_multipart(value, output):
     assert multipart["file"] == [b"<file content>"]
 
 
+@pytest.mark.parametrize(
+    "header",
+    [
+        "multipart/form-data; boundary=+++; charset=utf-8",
+        "multipart/form-data; charset=utf-8; boundary=+++",
+        "multipart/form-data; boundary=+++",
+        "multipart/form-data; boundary=+++ ;",
+        'multipart/form-data; boundary="+++"; charset=utf-8',
+        'multipart/form-data; charset=utf-8; boundary="+++"',
+        'multipart/form-data; boundary="+++"',
+        'multipart/form-data; boundary="+++" ;',
+    ],
+)
+def test_multipart_explicit_boundary(header: str) -> None:
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
+
+    files = {"file": io.BytesIO(b"<file content>")}
+    headers = {"content-type": header}
+    response = client.post("http://127.0.0.1:8000/", files=files, headers=headers)
+    assert response.status_code == 200
+
+    # We're using the cgi module to verify the behavior here, which is a
+    # bit grungy, but sufficient just for our testing purposes.
+    assert response.request.headers["Content-Type"] == header
+    content_length = response.request.headers["Content-Length"]
+    pdict: dict = {
+        "boundary": b"+++",
+        "CONTENT-LENGTH": content_length,
+    }
+    multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
+
+    assert multipart["file"] == [b"<file content>"]
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "multipart/form-data; charset=utf-8",
+        "multipart/form-data; charset=utf-8; ",
+    ],
+)
+def test_multipart_header_without_boundary(header: str) -> None:
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
+
+    files = {"file": io.BytesIO(b"<file content>")}
+    headers = {"content-type": header}
+    response = client.post("http://127.0.0.1:8000/", files=files, headers=headers)
+
+    assert response.status_code == 200
+    assert response.request.headers["Content-Type"] == header
+
+
 @pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))
 def test_multipart_invalid_key(key):
     client = httpx.Client(transport=httpx.MockTransport(echo_request_content))

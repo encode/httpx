@@ -150,7 +150,7 @@ def encode_urlencoded_data(
 
 
 def encode_multipart_data(
-    data: dict, files: RequestFiles, boundary: Optional[bytes] = None
+    data: dict, files: RequestFiles, boundary: Optional[bytes]
 ) -> Tuple[Dict[str, str], MultipartStream]:
     multipart = MultipartStream(data=data, files=files, boundary=boundary)
     headers = multipart.get_headers()
