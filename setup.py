@@ -1,5 +1,7 @@
 import sys
 
+from setuptools import setup
+
 sys.stderr.write(
     """
 ===============================
