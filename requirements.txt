@@ -20,7 +20,7 @@ twine==4.0.1
 
 # Tests & Linting
 autoflake==1.4
-black==22.6.0
+black==22.8.0
 coverage==6.4.1
 cryptography==37.0.2
 flake8==3.9.2
