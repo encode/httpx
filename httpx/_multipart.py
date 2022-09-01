@@ -121,8 +121,12 @@ class FileField:
             # requests does the opposite (it overwrites the header with the 3rd tuple element)
             headers["Content-Type"] = content_type
 
-        if isinstance(fileobj, (str, io.StringIO)):
-            raise TypeError(f"Expected bytes or bytes-like object got: {type(fileobj)}")
+        if isinstance(fileobj, io.TextIOBase):
+            # Both `StringIO` and `TextIOWrapper` inerit from `TextIOBase`.
+            # This allows to pass plain `str` content, but not a text buffer or text file.
+            raise TypeError(
+                f"Expected bytes, bytes-like or str object, got: {type(fileobj)}"
+            )
 
         self.filename = filename
         self.file = fileobj

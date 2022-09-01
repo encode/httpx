@@ -339,12 +339,11 @@ def test_multipart_encode_files_allows_bytes_content() -> None:
         assert content == b"".join(stream)
 
 
-def test_multipart_encode_files_raises_exception_with_str_content() -> None:
+def test_multipart_encode_files_accepts_str_content() -> None:
     files = {"file": ("test.txt", "<bytes content>", "text/plain")}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
 
-        with pytest.raises(TypeError):
-            encode_request(data={}, files=files)  # type: ignore
+        assert encode_request(data={}, files=files)  # type: ignore
 
 
 def test_multipart_encode_files_raises_exception_with_StringIO_content() -> None:
@@ -353,6 +352,26 @@ def test_multipart_encode_files_raises_exception_with_StringIO_content() -> None
 
         with pytest.raises(TypeError):
             encode_request(data={}, files=files)  # type: ignore
+
+
+def test_multipart_encode_files_raises_exception_with_TextIOWrapper_content() -> None:
+    files = {
+        "file": ("test.txt", io.TextIOWrapper(io.BytesIO(b"content")), "text/plain")
+    }
+    with mock.patch("os.urandom", return_value=os.urandom(16)):
+
+        with pytest.raises(TypeError):
+            encode_request(data={}, files=files)  # type: ignore
+
+
+def test_multipart_encode_files_raises_exception_with_file_in_text_mode() -> None:
+    with tempfile.TemporaryFile("r") as f:
+
+        files = {"file": f}
+        with mock.patch("os.urandom", return_value=os.urandom(16)):
+
+            with pytest.raises(TypeError):
+                encode_request(data={}, files=files)  # type: ignore
 
 
 def test_multipart_encode_non_seekable_filelike() -> None:
