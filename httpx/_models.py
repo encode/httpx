@@ -329,7 +329,7 @@ class Request:
         if params is not None:
             self.url = self.url.copy_merge_params(params=params)
         self.headers = Headers(headers)
-        self.extensions = dict({} if extensions is None else extensions)
+        self.extensions = {} if extensions is None else extensions
 
         if cookies:
             Cookies(cookies).set_cookie_header(self)
@@ -467,7 +467,7 @@ class Response:
         # the client will set `response.next_request`.
         self.next_request: typing.Optional[Request] = None
 
-        self.extensions = dict({} if extensions is None else extensions)
+        self.extensions = {} if extensions is None else extensions
         self.history = [] if history is None else list(history)
 
         self.is_closed = False
