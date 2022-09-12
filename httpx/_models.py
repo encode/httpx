@@ -35,8 +35,10 @@ from ._types import (
     QueryParamTypes,
     RequestContent,
     RequestData,
+    RequestExtensions,
     RequestFiles,
     ResponseContent,
+    ResponseExtensions,
     SyncByteStream,
 )
 from ._urls import URL
@@ -316,7 +318,7 @@ class Request:
         files: typing.Optional[RequestFiles] = None,
         json: typing.Optional[typing.Any] = None,
         stream: typing.Union[SyncByteStream, AsyncByteStream, None] = None,
-        extensions: typing.Optional[dict] = None,
+        extensions: typing.Optional[RequestExtensions] = None,
     ):
         self.method = (
             method.decode("ascii").upper()
@@ -327,7 +329,7 @@ class Request:
         if params is not None:
             self.url = self.url.copy_merge_params(params=params)
         self.headers = Headers(headers)
-        self.extensions = {} if extensions is None else extensions
+        self.extensions = dict({} if extensions is None else extensions)
 
         if cookies:
             Cookies(cookies).set_cookie_header(self)
@@ -452,7 +454,7 @@ class Response:
         json: typing.Any = None,
         stream: typing.Union[SyncByteStream, AsyncByteStream, None] = None,
         request: typing.Optional[Request] = None,
-        extensions: typing.Optional[dict] = None,
+        extensions: typing.Optional[ResponseExtensions] = None,
         history: typing.Optional[typing.List["Response"]] = None,
         default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
     ):
@@ -465,7 +467,7 @@ class Response:
         # the client will set `response.next_request`.
         self.next_request: typing.Optional[Request] = None
 
-        self.extensions = {} if extensions is None else extensions
+        self.extensions = dict({} if extensions is None else extensions)
         self.history = [] if history is None else list(history)
 
         self.is_closed = False
