@@ -346,7 +346,7 @@ class BaseClient:
         headers = self._merge_headers(headers)
         cookies = self._merge_cookies(cookies)
         params = self._merge_queryparams(params)
-        extensions = dict({} if extensions is None else extensions)
+        extensions = {} if extensions is None else extensions
         if "timeout" not in extensions:
             timeout = (
                 self.timeout
