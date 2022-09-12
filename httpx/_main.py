@@ -197,7 +197,9 @@ def format_certificate(cert: dict) -> str:  # pragma: nocover
     return "\n".join(lines)
 
 
-def trace(name: str, info: typing.Mapping[str, typing.Any], verbose: bool = False) -> None:
+def trace(
+    name: str, info: typing.Mapping[str, typing.Any], verbose: bool = False
+) -> None:
     console = rich.console.Console()
     if name == "connection.connect_tcp.started" and verbose:
         host = info["host"]
