@@ -7,6 +7,7 @@ from http.cookiejar import CookieJar
 from typing import (
     IO,
     TYPE_CHECKING,
+    Any,
     AsyncIterable,
     AsyncIterator,
     Callable,
@@ -75,8 +76,9 @@ AuthTypes = Union[
 
 RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+ResponseExtensions = Dict[str, Any]
 
-RequestData = dict
+RequestData = Mapping[str, Any]
 
 FileContent = Union[IO[bytes], bytes]
 FileTypes = Union[
@@ -90,6 +92,8 @@ FileTypes = Union[
     Tuple[Optional[str], FileContent, Optional[str], Mapping[str, str]],
 ]
 RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
+
+RequestExtensions = Dict[str, Any]
 
 
 class SyncByteStream:
