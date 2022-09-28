@@ -574,6 +574,8 @@ class Client(BaseClient):
     """
     An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.
 
+    It can be shared between threads.
+
     Usage:
 
     ```python
