@@ -44,8 +44,8 @@ QueryParamTypes = Union[
 
 HeaderTypes = Union[
     "Headers",
-    Dict[str, str],
-    Dict[bytes, bytes],
+    Mapping[str, str],
+    Mapping[bytes, bytes],
     Sequence[Tuple[str, str]],
     Sequence[Tuple[bytes, bytes]],
 ]
@@ -76,8 +76,9 @@ AuthTypes = Union[
 
 RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+ResponseExtensions = Dict[str, Any]
 
-RequestData = Dict[Any, Any]
+RequestData = Mapping[str, Any]
 
 FileContent = Union[IO[bytes], bytes]
 FileTypes = Union[
@@ -91,6 +92,8 @@ FileTypes = Union[
     Tuple[Optional[str], FileContent, Optional[str], Mapping[str, str]],
 ]
 RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
+
+RequestExtensions = Dict[str, Any]
 
 
 class SyncByteStream:

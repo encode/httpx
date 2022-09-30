@@ -11,17 +11,17 @@ types-chardet==5.0.3
 
 # Documentation
 mkdocs==1.3.1
-mkautodoc==0.1.0
+mkautodoc==0.2.0
 mkdocs-material==8.3.8
 
 # Packaging
+build==0.8.0
 twine==4.0.1
-wheel==0.37.1
 
 # Tests & Linting
 autoflake==1.4
-black==22.6.0
-coverage==6.4.1
+black==22.8.0
+coverage==6.4.4
 cryptography==37.0.2
 flake8==3.9.2
 flake8-bugbear==22.7.1
@@ -32,7 +32,7 @@ types-certifi==2021.10.8.2
 pytest==7.1.2
 pytest-asyncio==0.19.0
 pytest-trio==0.7.0
-trio==0.20.0
+trio==0.21.0
 trio-typing==0.7.0
 trustme==0.9.0
-uvicorn==0.18.2
+uvicorn==0.18.3
