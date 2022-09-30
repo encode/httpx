@@ -167,7 +167,10 @@ class FileField:
             return
 
         if hasattr(self.file, "seek"):
-            self.file.seek(0)
+            try:
+                self.file.seek(0)
+            except io.UnsupportedOperation:
+                pass
 
         chunk = self.file.read(self.CHUNK_SIZE)
         while chunk:
