@@ -26,6 +26,7 @@ cryptography==38.0.1
 flake8==3.9.2
 flake8-bugbear==22.7.1
 flake8-pie==0.16.0; python_version>='3.7'
+importlib-metadata==4.13.0; python_version>='3.7'
 isort==5.10.1
 mypy==0.971
 types-certifi==2021.10.8.2
