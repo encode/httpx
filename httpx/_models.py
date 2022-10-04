@@ -1,10 +1,9 @@
-import cgi
 import datetime
 import email.message
 import json as jsonlib
 import typing
 import urllib.request
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from http.cookiejar import Cookie, CookieJar
 
 from ._content import ByteStream, UnattachedStream, encode_request, encode_response
@@ -27,6 +26,7 @@ from ._exceptions import (
     StreamConsumed,
     request_context,
 )
+from ._multipart import get_multipart_boundary_from_content_type
 from ._status_codes import codes
 from ._types import (
     AsyncByteStream,
@@ -35,8 +35,10 @@ from ._types import (
     QueryParamTypes,
     RequestContent,
     RequestData,
+    RequestExtensions,
     RequestFiles,
     ResponseContent,
+    ResponseExtensions,
     SyncByteStream,
 )
 from ._urls import URL
@@ -46,6 +48,7 @@ from ._utils import (
     normalize_header_key,
     normalize_header_value,
     obfuscate_sensitive_headers,
+    parse_content_type_charset,
     parse_header_links,
 )
 
@@ -64,7 +67,7 @@ class Headers(typing.MutableMapping[str, str]):
             self._list = []  # type: typing.List[typing.Tuple[bytes, bytes, bytes]]
         elif isinstance(headers, Headers):
             self._list = list(headers._list)
-        elif isinstance(headers, dict):
+        elif isinstance(headers, Mapping):
             self._list = [
                 (
                     normalize_header_key(k, lower=False, encoding=encoding),
@@ -315,7 +318,7 @@ class Request:
         files: typing.Optional[RequestFiles] = None,
         json: typing.Optional[typing.Any] = None,
         stream: typing.Union[SyncByteStream, AsyncByteStream, None] = None,
-        extensions: typing.Optional[dict] = None,
+        extensions: typing.Optional[RequestExtensions] = None,
     ):
         self.method = (
             method.decode("ascii").upper()
@@ -332,7 +335,18 @@ class Request:
             Cookies(cookies).set_cookie_header(self)
 
         if stream is None:
-            headers, stream = encode_request(content, data, files, json)
+            content_type: typing.Optional[str] = self.headers.get("content-type")
+            headers, stream = encode_request(
+                content=content,
+                data=data,
+                files=files,
+                json=json,
+                boundary=get_multipart_boundary_from_content_type(
+                    content_type=content_type.encode(self.headers.encoding)
+                    if content_type
+                    else None
+                ),
+            )
             self._prepare(headers)
             self.stream = stream
             # Load the request body, except for streaming content.
@@ -440,7 +454,7 @@ class Response:
         json: typing.Any = None,
         stream: typing.Union[SyncByteStream, AsyncByteStream, None] = None,
         request: typing.Optional[Request] = None,
-        extensions: typing.Optional[dict] = None,
+        extensions: typing.Optional[ResponseExtensions] = None,
         history: typing.Optional[typing.List["Response"]] = None,
         default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
     ):
@@ -596,11 +610,7 @@ class Response:
         if content_type is None:
             return None
 
-        _, params = cgi.parse_header(content_type)
-        if "charset" not in params:
-            return None
-
-        return params["charset"].strip("'\"")
+        return parse_content_type_charset(content_type)
 
     def _get_content_decoder(self) -> ContentDecoder:
         """

@@ -76,6 +76,17 @@ def test_queryparam_types():
     assert str(q) == "a=1&a=2"
 
 
+def test_empty_query_params():
+    q = httpx.QueryParams({"a": ""})
+    assert str(q) == "a="
+
+    q = httpx.QueryParams("a=")
+    assert str(q) == "a="
+
+    q = httpx.QueryParams("a")
+    assert str(q) == "a="
+
+
 def test_queryparam_update_is_hard_deprecated():
     q = httpx.QueryParams("a=123")
     with pytest.raises(RuntimeError):

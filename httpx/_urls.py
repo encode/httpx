@@ -410,7 +410,7 @@ class QueryParams(typing.Mapping[str, str]):
         items: typing.Sequence[typing.Tuple[str, PrimitiveData]]
         if value is None or isinstance(value, (str, bytes)):
             value = value.decode("ascii") if isinstance(value, bytes) else value
-            self._dict = parse_qs(value)
+            self._dict = parse_qs(value, keep_blank_values=True)
         elif isinstance(value, QueryParams):
             self._dict = {k: list(v) for k, v in value._dict.items()}
         else:

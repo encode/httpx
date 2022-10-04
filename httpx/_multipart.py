@@ -8,6 +8,7 @@ from ._types import (
     AsyncByteStream,
     FileContent,
     FileTypes,
+    RequestData,
     RequestFiles,
     SyncByteStream,
 )
@@ -18,6 +19,20 @@ from ._utils import (
     primitive_value_to_str,
     to_bytes,
 )
+
+
+def get_multipart_boundary_from_content_type(
+    content_type: typing.Optional[bytes],
+) -> typing.Optional[bytes]:
+    if not content_type or not content_type.startswith(b"multipart/form-data"):
+        return None
+    # parse boundary according to
+    # https://www.rfc-editor.org/rfc/rfc2046#section-5.1.1
+    if b";" in content_type:
+        for section in content_type.split(b";"):
+            if section.strip().lower().startswith(b"boundary="):
+                return section.strip()[len(b"boundary=") :].strip(b'"')
+    return None
 
 
 class DataField:
@@ -176,7 +191,10 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
     """
 
     def __init__(
-        self, data: dict, files: RequestFiles, boundary: typing.Optional[bytes] = None
+        self,
+        data: RequestData,
+        files: RequestFiles,
+        boundary: typing.Optional[bytes] = None,
     ) -> None:
         if boundary is None:
             boundary = binascii.hexlify(os.urandom(16))
@@ -188,10 +206,10 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
         self.fields = list(self._iter_fields(data, files))
 
     def _iter_fields(
-        self, data: dict, files: RequestFiles
+        self, data: RequestData, files: RequestFiles
     ) -> typing.Iterator[typing.Union[FileField, DataField]]:
         for name, value in data.items():
-            if isinstance(value, list):
+            if isinstance(value, (tuple, list)):
                 for item in value:
                     yield DataField(name=name, value=item)
             else:

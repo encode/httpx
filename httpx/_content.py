@@ -8,6 +8,7 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
+    Mapping,
     Optional,
     Tuple,
     Union,
@@ -134,7 +135,7 @@ def encode_content(
 
 
 def encode_urlencoded_data(
-    data: dict,
+    data: RequestData,
 ) -> Tuple[Dict[str, str], ByteStream]:
     plain_data = []
     for key, value in data.items():
@@ -150,7 +151,7 @@ def encode_urlencoded_data(
 
 
 def encode_multipart_data(
-    data: dict, files: RequestFiles, boundary: Optional[bytes] = None
+    data: RequestData, files: RequestFiles, boundary: Optional[bytes]
 ) -> Tuple[Dict[str, str], MultipartStream]:
     multipart = MultipartStream(data=data, files=files, boundary=boundary)
     headers = multipart.get_headers()
@@ -192,7 +193,7 @@ def encode_request(
     Handles encoding the given `content`, `data`, `files`, and `json`,
     returning a two-tuple of (<headers>, <stream>).
     """
-    if data is not None and not isinstance(data, dict):
+    if data is not None and not isinstance(data, Mapping):  # type: ignore
         # We prefer to separate `content=<bytes|str|byte iterator|bytes aiterator>`
         # for raw request content, and `data=<form data>` for url encoded or
         # multipart form content.
