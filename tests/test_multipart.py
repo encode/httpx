@@ -339,18 +339,37 @@ def test_multipart_encode_files_allows_bytes_content() -> None:
         assert content == b"".join(stream)
 
 
-def test_multipart_encode_files_raises_exception_with_str_content() -> None:
-    files = {"file": ("test.txt", "<bytes content>", "text/plain")}
+def test_multipart_encode_files_allows_str_content() -> None:
+    files = {"file": ("test.txt", "<str content>", "text/plain")}
     with mock.patch("os.urandom", return_value=os.urandom(16)):
+        boundary = os.urandom(16).hex()
 
-        with pytest.raises(TypeError):
-            encode_request(data={}, files=files)  # type: ignore
+        headers, stream = encode_request(data={}, files=files)
+        assert isinstance(stream, typing.Iterable)
+
+        content = (
+            '--{0}\r\nContent-Disposition: form-data; name="file"; '
+            'filename="test.txt"\r\n'
+            "Content-Type: text/plain\r\n\r\n<str content>\r\n"
+            "--{0}--\r\n"
+            "".format(boundary).encode("ascii")
+        )
+        assert headers == {
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(content)),
+        }
+        assert content == b"".join(stream)
 
 
 def test_multipart_encode_files_raises_exception_with_StringIO_content() -> None:
     files = {"file": ("test.txt", io.StringIO("content"), "text/plain")}
-    with mock.patch("os.urandom", return_value=os.urandom(16)):
+    with pytest.raises(TypeError):
+        encode_request(data={}, files=files)  # type: ignore
 
+
+def test_multipart_encode_files_raises_exception_with_text_mode_file() -> None:
+    with tempfile.TemporaryFile(mode="w") as upload:
+        files = {"file": ("test.txt", upload, "text/plain")}
         with pytest.raises(TypeError):
             encode_request(data={}, files=files)  # type: ignore
 
