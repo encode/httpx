@@ -4,6 +4,18 @@ site_url: https://www.python-httpx.org/
 
 theme:
     name: 'material'
+    palette:
+      - scheme: 'default'
+        media: '(prefers-color-scheme: light)'
+        toggle:
+          icon: 'material/lightbulb'
+          name: "Switch to dark mode"
+      - scheme: 'slate'
+        media: '(prefers-color-scheme: dark)'
+        primary: 'blue'
+        toggle:
+          icon: 'material/lightbulb-outline'
+          name: 'Switch to light mode'
     features:
         - navigation.sections
 

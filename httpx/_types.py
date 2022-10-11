@@ -80,7 +80,7 @@ ResponseExtensions = Dict[str, Any]
 
 RequestData = Mapping[str, Any]
 
-FileContent = Union[IO[bytes], bytes]
+FileContent = Union[IO[bytes], bytes, str]
 FileTypes = Union[
     # file (or bytes)
     FileContent,
