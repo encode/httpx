@@ -8,6 +8,7 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
+    List,
     Mapping,
     Optional,
     Tuple,
@@ -18,6 +19,7 @@ from urllib.parse import urlencode
 from ._exceptions import StreamClosed, StreamConsumed
 from ._multipart import MultipartStream
 from ._types import (
+    PRIMITIVE_DATA_TYPES,
     AsyncByteStream,
     RequestContent,
     RequestData,
@@ -137,12 +139,12 @@ def encode_content(
 def encode_urlencoded_data(
     data: RequestData,
 ) -> Tuple[Dict[str, str], ByteStream]:
-    plain_data = []
+    plain_data: "List[Tuple[str, str]]" = []
     for key, value in data.items():
-        if isinstance(value, (list, tuple)):
-            plain_data.extend([(key, primitive_value_to_str(item)) for item in value])
-        else:
+        if value is None or isinstance(value, PRIMITIVE_DATA_TYPES):
             plain_data.append((key, primitive_value_to_str(value)))
+        else:
+            plain_data.extend([(key, primitive_value_to_str(item)) for item in value])
     body = urlencode(plain_data, doseq=True).encode("utf-8")
     content_length = str(len(body))
     content_type = "application/x-www-form-urlencoded"

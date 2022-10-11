@@ -5,9 +5,11 @@ import typing
 from pathlib import Path
 
 from ._types import (
+    PRIMITIVE_DATA_TYPES,
     AsyncByteStream,
     FileContent,
     FileTypes,
+    PrimitiveData,
     RequestData,
     RequestFiles,
     SyncByteStream,
@@ -40,17 +42,7 @@ class DataField:
     A single form field item, within a multipart form field.
     """
 
-    def __init__(
-        self, name: str, value: typing.Union[str, bytes, int, float, None]
-    ) -> None:
-        if not isinstance(name, str):
-            raise TypeError(
-                f"Invalid type for name. Expected str, got {type(name)}: {name!r}"
-            )
-        if value is not None and not isinstance(value, (str, bytes, int, float)):
-            raise TypeError(
-                f"Invalid type for value. Expected primitive type, got {type(value)}: {value!r}"
-            )
+    def __init__(self, name: str, value: PrimitiveData) -> None:
         self.name = name
         self.value: typing.Union[str, bytes] = (
             value if isinstance(value, bytes) else primitive_value_to_str(value)
@@ -214,16 +206,16 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
     def _iter_fields(
         self, data: RequestData, files: RequestFiles
     ) -> typing.Iterator[typing.Union[FileField, DataField]]:
-        for name, value in data.items():
-            if isinstance(value, (tuple, list)):
-                for item in value:
-                    yield DataField(name=name, value=item)
+        for name, data_value in data.items():
+            if data_value is None or isinstance(data_value, PRIMITIVE_DATA_TYPES):
+                yield DataField(name=name, value=data_value)
             else:
-                yield DataField(name=name, value=value)
+                for item in data_value:
+                    yield DataField(name=name, value=item)
 
         file_items = files.items() if isinstance(files, typing.Mapping) else files
-        for name, value in file_items:
-            yield FileField(name=name, value=value)
+        for name, file_value in file_items:
+            yield FileField(name=name, value=file_value)
 
     def iter_chunks(self) -> typing.Iterator[bytes]:
         for field in self.fields:

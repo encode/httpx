@@ -17,7 +17,7 @@ def echo_request_content(request: httpx.Request) -> httpx.Response:
 
 
 @pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
-def test_multipart(value, output):
+def test_multipart(value: str, output: bytes):
     client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
 
     # Test with a single-value 'data' argument, and a plain file 'files' argument.
@@ -30,7 +30,7 @@ def test_multipart(value, output):
     # bit grungy, but sufficient just for our testing purposes.
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
     content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
+    pdict: typing.Dict[str, typing.Any] = {
         "boundary": boundary.encode("ascii"),
         "CONTENT-LENGTH": content_length,
     }
@@ -67,7 +67,7 @@ def test_multipart_explicit_boundary(header: str) -> None:
     # bit grungy, but sufficient just for our testing purposes.
     assert response.request.headers["Content-Type"] == header
     content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
+    pdict: typing.Dict[str, typing.Any] = {
         "boundary": b"+++",
         "CONTENT-LENGTH": content_length,
     }
@@ -94,24 +94,8 @@ def test_multipart_header_without_boundary(header: str) -> None:
     assert response.request.headers["Content-Type"] == header
 
 
-@pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))
-def test_multipart_invalid_key(key):
-    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
-
-    data = {key: "abc"}
-    files = {"file": io.BytesIO(b"<file content>")}
-    with pytest.raises(TypeError) as e:
-        client.post(
-            "http://127.0.0.1:8000/",
-            data=data,
-            files=files,
-        )
-    assert "Invalid type for name" in str(e.value)
-    assert repr(key) in str(e.value)
-
-
 @pytest.mark.parametrize(("value"), (object(), {"key": "value"}))
-def test_multipart_invalid_value(value):
+def test_multipart_invalid_value(value: typing.Any):
     client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
 
     data = {"text": value}
@@ -135,7 +119,7 @@ def test_multipart_file_tuple():
     # bit grungy, but sufficient just for our testing purposes.
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
     content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
+    pdict: typing.Dict[str, typing.Any] = {
         "boundary": boundary.encode("ascii"),
         "CONTENT-LENGTH": content_length,
     }
@@ -204,7 +188,7 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
     with open(path, "wb") as f:
         f.write(b"<file content>")
 
-    data = {
+    data: typing.Dict[str, typing.Any] = {
         "a": "1",
         "b": b"C",
         "c": ["11", "22", "33"],

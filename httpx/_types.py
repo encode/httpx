@@ -29,6 +29,12 @@ if TYPE_CHECKING:  # pragma: no cover
     from ._urls import URL, QueryParams  # noqa: F401
 
 
+PRIMITIVE_DATA_TYPES = (
+    str,
+    int,
+    float,
+    bool,
+)
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
 URLTypes = Union["URL", str]
@@ -76,9 +82,13 @@ AuthTypes = Union[
 
 RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
-ResponseExtensions = Mapping[str, Any]
+ResponseExtensions = Dict[str, Any]
 
-RequestData = Mapping[str, PrimitiveData]
+RequestDataValue = Union[
+    PrimitiveData,
+    Sequence[PrimitiveData],
+]
+RequestData = Mapping[str, RequestDataValue]
 
 FileContent = Union[IO[bytes], bytes, str]
 FileTypes = Union[
@@ -93,7 +103,7 @@ FileTypes = Union[
 ]
 RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
 
-RequestExtensions = Mapping[str, Any]
+RequestExtensions = Dict[str, Any]
 
 
 class SyncByteStream:
