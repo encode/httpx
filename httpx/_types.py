@@ -1,6 +1,7 @@
 """
 Type definitions for type checking purposes.
 """
+from __future__ import annotations
 
 import ssl
 from http.cookiejar import CookieJar
@@ -23,18 +24,18 @@ from typing import (
 )
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ._auth import Auth  # noqa: F401
-    from ._config import Proxy, Timeout  # noqa: F401
-    from ._models import Cookies, Headers, Request  # noqa: F401
-    from ._urls import URL, QueryParams  # noqa: F401
+    from ._auth import Auth
+    from ._config import Proxy, Timeout
+    from ._models import Cookies, Headers, Request
+    from ._urls import URL, QueryParams
 
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
-URLTypes = Union["URL", str]
+URLTypes = Union[URL, str]
 
 QueryParamTypes = Union[
-    "QueryParams",
+    QueryParams,
     Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
     List[Tuple[str, PrimitiveData]],
     Tuple[Tuple[str, PrimitiveData], ...],
@@ -43,14 +44,14 @@ QueryParamTypes = Union[
 ]
 
 HeaderTypes = Union[
-    "Headers",
+    Headers,
     Mapping[str, str],
     Mapping[bytes, bytes],
     Sequence[Tuple[str, str]],
     Sequence[Tuple[bytes, bytes]],
 ]
 
-CookieTypes = Union["Cookies", CookieJar, Dict[str, str], List[Tuple[str, str]]]
+CookieTypes = Union[Cookies, CookieJar, Dict[str, str], List[Tuple[str, str]]]
 
 CertTypes = Union[
     # certfile
@@ -64,14 +65,14 @@ VerifyTypes = Union[str, bool, ssl.SSLContext]
 TimeoutTypes = Union[
     Optional[float],
     Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
-    "Timeout",
+    Timeout,
 ]
-ProxiesTypes = Union[URLTypes, "Proxy", Dict[URLTypes, Union[None, URLTypes, "Proxy"]]]
+ProxiesTypes = Union[URLTypes, Proxy, Dict[URLTypes, Union[None, URLTypes, Proxy]]]
 
 AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
-    Callable[["Request"], "Request"],
-    "Auth",
+    Callable[[Request], Request],
+    Auth,
 ]
 
 RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
