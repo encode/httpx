@@ -76,9 +76,9 @@ AuthTypes = Union[
 
 RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
-ResponseExtensions = Dict[str, Any]
+ResponseExtensions = Mapping[str, Any]
 
-RequestData = Mapping[str, Any]
+RequestData = Mapping[str, PrimitiveData]
 
 FileContent = Union[IO[bytes], bytes, str]
 FileTypes = Union[
@@ -93,7 +93,7 @@ FileTypes = Union[
 ]
 RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
 
-RequestExtensions = Dict[str, Any]
+RequestExtensions = Mapping[str, Any]
 
 
 class SyncByteStream:
