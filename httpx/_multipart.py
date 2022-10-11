@@ -42,7 +42,7 @@ class DataField:
     A single form field item, within a multipart form field.
     """
 
-    def __init__(self, name: str, value: PrimitiveData) -> None:
+    def __init__(self, name: str, value: typing.Union[PrimitiveData, bytes]) -> None:
         self.name = name
         self.value: typing.Union[str, bytes] = (
             value if isinstance(value, bytes) else primitive_value_to_str(value)
@@ -207,7 +207,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
         self, data: RequestData, files: RequestFiles
     ) -> typing.Iterator[typing.Union[FileField, DataField]]:
         for name, data_value in data.items():
-            if data_value is None or isinstance(data_value, PRIMITIVE_DATA_TYPES):
+            if data_value is None or isinstance(data_value, (*PRIMITIVE_DATA_TYPES, bytes)):
                 yield DataField(name=name, value=data_value)
             else:
                 for item in data_value:
