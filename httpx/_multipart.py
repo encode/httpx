@@ -122,8 +122,14 @@ class FileField:
             # requests does the opposite (it overwrites the header with the 3rd tuple element)
             headers["Content-Type"] = content_type
 
-        if isinstance(fileobj, (str, io.StringIO)):
-            raise TypeError(f"Expected bytes or bytes-like object got: {type(fileobj)}")
+        if "b" not in getattr(fileobj, "mode", "b"):
+            raise TypeError(
+                "Multipart file uploads must be opened in binary mode, not text mode."
+            )
+        if isinstance(fileobj, io.StringIO):
+            raise TypeError(
+                "Multipart file uploads require 'io.BytesIO', not 'io.StringIO'."
+            )
 
         self.filename = filename
         self.file = fileobj

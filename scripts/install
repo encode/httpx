@@ -15,5 +15,5 @@ else
     PIP="pip"
 fi
 
+"$PIP" install -U pip
 "$PIP" install -r "$REQUIREMENTS"
-"$PIP" install -e .
