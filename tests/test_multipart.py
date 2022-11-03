@@ -1,4 +1,3 @@
-import cgi
 import io
 import os
 import tempfile
@@ -6,6 +5,7 @@ import typing
 from unittest import mock
 
 import pytest
+from multipart import MultipartParser
 
 import httpx
 from httpx._content import encode_request
@@ -26,15 +26,14 @@ def test_multipart(value, output):
     response = client.post("http://127.0.0.1:8000/", data=data, files=files)
     assert response.status_code == 200
 
-    # We're using the cgi module to verify the behavior here, which is a
-    # bit grungy, but sufficient just for our testing purposes.
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
-    content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
-        "boundary": boundary.encode("ascii"),
-        "CONTENT-LENGTH": content_length,
-    }
-    multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
+    content_length = int(response.request.headers["Content-Length"])
+
+    multipart = {}
+    for part in MultipartParser(
+        io.BytesIO(response.content), boundary=boundary, content_length=content_length
+    ):
+        multipart[part.name] = [part.raw]
 
     # Note that the expected return type for text fields
     # appears to differs from 3.6 to 3.7+
@@ -63,15 +62,14 @@ def test_multipart_explicit_boundary(header: str) -> None:
     response = client.post("http://127.0.0.1:8000/", files=files, headers=headers)
     assert response.status_code == 200
 
-    # We're using the cgi module to verify the behavior here, which is a
-    # bit grungy, but sufficient just for our testing purposes.
     assert response.request.headers["Content-Type"] == header
-    content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
-        "boundary": b"+++",
-        "CONTENT-LENGTH": content_length,
-    }
-    multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
+    content_length = int(response.request.headers["Content-Length"])
+
+    multipart = {}
+    for part in MultipartParser(
+        io.BytesIO(response.content), boundary="+++", content_length=content_length
+    ):
+        multipart[part.name] = [part.raw]
 
     assert multipart["file"] == [b"<file content>"]
 
@@ -104,15 +102,14 @@ def test_multipart_file_tuple():
     response = client.post("http://127.0.0.1:8000/", data=data, files=files)
     assert response.status_code == 200
 
-    # We're using the cgi module to verify the behavior here, which is a
-    # bit grungy, but sufficient just for our testing purposes.
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
-    content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
-        "boundary": boundary.encode("ascii"),
-        "CONTENT-LENGTH": content_length,
-    }
-    multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
+    content_length = int(response.request.headers["Content-Length"])
+
+    multipart = {}
+    for part in MultipartParser(
+        io.BytesIO(response.content), boundary=boundary, content_length=content_length
+    ):
+        multipart[part.name] = [part.raw]
 
     # Note that the expected return type for text fields
     # appears to differs from 3.6 to 3.7+
