@@ -52,9 +52,7 @@ class IteratorByteStream(SyncByteStream):
             raise StreamConsumed()
 
         self._is_stream_consumed = True
-        if hasattr(self._stream, "read") and not isinstance(
-            self._stream, SyncByteStream
-        ):
+        if hasattr(self._stream, "read"):
             # File-like interfaces should use 'read' directly.
             chunk = self._stream.read(self.CHUNK_SIZE)  # type: ignore
             while chunk:
@@ -79,9 +77,7 @@ class AsyncIteratorByteStream(AsyncByteStream):
             raise StreamConsumed()
 
         self._is_stream_consumed = True
-        if hasattr(self._stream, "aread") and not isinstance(
-            self._stream, AsyncByteStream
-        ):
+        if hasattr(self._stream, "aread"):
             # File-like interfaces should use 'aread' directly.
             chunk = await self._stream.aread(self.CHUNK_SIZE)  # type: ignore
             while chunk:

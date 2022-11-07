@@ -13,8 +13,8 @@ async def test_empty_content():
     assert isinstance(stream, httpx.SyncByteStream)
     assert isinstance(stream, httpx.AsyncByteStream)
 
-    sync_content = stream.read()
-    async_content = await stream.aread()
+    sync_content = b"".join([part for part in stream])
+    async_content = b"".join([part async for part in stream])
 
     assert headers == {}
     assert sync_content == b""

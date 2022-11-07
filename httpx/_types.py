@@ -107,33 +107,7 @@ class SyncByteStream:
         """
         Subclasses can override this method to release any network resources
         after a request/response cycle is complete.
-
-        Streaming cases should use a `try...finally` block to ensure that
-        the stream `close()` method is always called.
-
-        Example:
-
-            status_code, headers, stream, extensions = transport.handle_request(...)
-            try:
-                ...
-            finally:
-                stream.close()
         """
-
-    def read(self) -> bytes:
-        """
-        Simple cases can use `.read()` as a convenience method for consuming
-        the entire stream and then closing it.
-
-        Example:
-
-            status_code, headers, stream, extensions = transport.handle_request(...)
-            body = stream.read()
-        """
-        try:
-            return b"".join([part for part in self])
-        finally:
-            self.close()
 
 
 class AsyncByteStream:
@@ -145,9 +119,3 @@ class AsyncByteStream:
 
     async def aclose(self) -> None:
         pass
-
-    async def aread(self) -> bytes:
-        try:
-            return b"".join([part async for part in self])
-        finally:
-            await self.aclose()
