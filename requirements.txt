@@ -19,16 +19,17 @@ build==0.8.0
 twine==4.0.1
 
 # Tests & Linting
-autoflake==1.4
-black==22.8.0
-coverage==6.4.4
+autoflake==1.7.7
+black==22.10.0
+coverage==6.5.0
 cryptography==38.0.1
 flake8==3.9.2
 flake8-bugbear==22.7.1
 flake8-pie==0.16.0; python_version>='3.7'
 importlib-metadata==4.13.0; python_version>='3.7'
 isort==5.10.1
-mypy==0.971
+multipart==0.2.4
+mypy==0.982
 types-certifi==2021.10.8.2
 pytest==7.1.2
 pytest-asyncio==0.19.0
@@ -36,4 +37,4 @@ pytest-trio==0.7.0
 trio==0.21.0
 trio-typing==0.7.0
 trustme==0.9.0
-uvicorn==0.18.3
+uvicorn==0.19.0
