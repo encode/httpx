@@ -145,6 +145,16 @@ Within a `stream()` block request data is made available with:
 * `.iter_raw()` - Use this instead of `response.raw`
 * `.read()` - Read the entire response body, making `request.text` and `response.content` available.
 
+## Timeouts
+
+HTTPX defaults to including reasonable [timeouts](quickstart.md#timeouts) for all network operations, while Requests has no timeouts by default.
+
+To get the same behavior as Requests, set the `timeout` parameter to `None`:
+
+```python
+httpx.get('https://www.example.com', timeout=None)
+```
+
 ## Proxy keys
 
 When using `httpx.Client(proxies={...})` to map to a selection of different proxies, we use full URL schemes, such as `proxies={"http://": ..., "https://": ...}`.
