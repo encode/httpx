@@ -191,3 +191,29 @@ async def test_asgi_disconnect_after_response_complete():
 
     assert response.status_code == 200
     assert disconnect
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_streaming():
+    client = httpx.AsyncClient(app=hello_world)
+    async with client.stream("GET", "http://www.example.org/") as response:
+        assert response.status_code == 200
+        text = "".join([chunk async for chunk in response.aiter_text()])
+        assert text == "Hello, World!"
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_streaming_exc():
+    client = httpx.AsyncClient(app=raise_exc)
+    with pytest.raises(ValueError):
+        async with client.stream("GET", "http://www.example.org/"):
+            pass  # pragma: no cover
+
+
+@pytest.mark.usefixtures("async_environment")
+async def test_asgi_streaming_exc_after_response():
+    client = httpx.AsyncClient(app=raise_exc_after_response)
+    with pytest.raises(ValueError):
+        async with client.stream("GET", "http://www.example.org/") as response:
+            async for _ in response.aiter_bytes():
+                pass  # pragma: no cover
