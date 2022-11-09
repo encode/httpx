@@ -63,6 +63,12 @@ class WSGITransport(BaseTransport):
     ```
     """
 
+    app: WSGIApplication
+    raise_app_exceptions: bool
+    script_name: str
+    remote_addr: str
+    wsgi_errors: typing.Optional[typing.TextIO]
+
     def __init__(
         self,
         app: typing.Callable,

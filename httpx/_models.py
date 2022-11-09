@@ -305,6 +305,12 @@ class Headers(typing.MutableMapping[str, str]):
 
 
 class Request:
+    method: str
+    url: URL
+    headers: Headers
+    extensions: RequestExtensions
+    stream: typing.Union[SyncByteStream, AsyncByteStream]
+
     def __init__(
         self,
         method: typing.Union[str, bytes],
@@ -443,6 +449,16 @@ class Request:
 
 
 class Response:
+    status_code: int
+    headers: Headers
+    next_request: typing.Optional[Request]
+    extensions: ResponseExtensions
+    history: typing.List["Response"]
+    is_closed: bool
+    is_stream_consumed: bool
+    default_encoding: typing.Union[str, typing.Callable[[bytes], str]]
+    stream: typing.Union[SyncByteStream, AsyncByteStream]
+
     def __init__(
         self,
         status_code: int,
@@ -1006,6 +1022,8 @@ class Cookies(MutableMapping):
     """
     HTTP Cookies, as a mutable mapping.
     """
+
+    jar: CookieJar
 
     def __init__(self, cookies: typing.Optional[CookieTypes] = None) -> None:
         if cookies is None or isinstance(cookies, dict):
