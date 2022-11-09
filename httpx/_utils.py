@@ -508,7 +508,7 @@ class URLPattern:
         return True
 
     @property
-    def priority(self) -> tuple:
+    def priority(self) -> typing.Tuple[int, int, int]:
         """
         The priority allows URLPattern instances to be sortable, so that
         we can match from most specific to least specific.
