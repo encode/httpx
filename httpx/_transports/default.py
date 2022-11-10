@@ -153,6 +153,7 @@ class HTTPTransport(BaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                retries=retries,
             )
         elif proxy.url.scheme == "socks5":
             try:
@@ -177,6 +178,7 @@ class HTTPTransport(BaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                retries=retries,
             )
         else:  # pragma: nocover
             raise ValueError(
@@ -288,6 +290,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                retries=retries,
             )
         elif proxy.url.scheme == "socks5":
             try:
@@ -312,6 +315,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                retries=retries,
             )
         else:  # pragma: nocover
             raise ValueError(

@@ -635,6 +635,7 @@ class Client(BaseClient):
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
+        connect_retries: int = 0,
         proxies: typing.Optional[ProxiesTypes] = None,
         mounts: typing.Optional[typing.Mapping[str, BaseTransport]] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -681,6 +682,7 @@ class Client(BaseClient):
             cert=cert,
             http1=http1,
             http2=http2,
+            retries=connect_retries,
             limits=limits,
             transport=transport,
             app=app,
@@ -695,6 +697,7 @@ class Client(BaseClient):
                 cert=cert,
                 http1=http1,
                 http2=http2,
+                retries=connect_retries,
                 limits=limits,
                 trust_env=trust_env,
             )
@@ -713,6 +716,7 @@ class Client(BaseClient):
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
+        retries: int = 0,
         limits: Limits = DEFAULT_LIMITS,
         transport: typing.Optional[BaseTransport] = None,
         app: typing.Optional[typing.Callable[..., typing.Any]] = None,
@@ -729,6 +733,7 @@ class Client(BaseClient):
             cert=cert,
             http1=http1,
             http2=http2,
+            retries=retries,
             limits=limits,
             trust_env=trust_env,
         )
@@ -740,6 +745,7 @@ class Client(BaseClient):
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
+        retries: int = 0,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> BaseTransport:
@@ -748,6 +754,7 @@ class Client(BaseClient):
             cert=cert,
             http1=http1,
             http2=http2,
+            retries=retries,
             limits=limits,
             trust_env=trust_env,
             proxy=proxy,
@@ -1357,6 +1364,7 @@ class AsyncClient(BaseClient):
         http1: bool = True,
         http2: bool = False,
         proxies: typing.Optional[ProxiesTypes] = None,
+        connect_retries: int = 0,
         mounts: typing.Optional[typing.Mapping[str, AsyncBaseTransport]] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
@@ -1402,6 +1410,7 @@ class AsyncClient(BaseClient):
             cert=cert,
             http1=http1,
             http2=http2,
+            retries=connect_retries,
             limits=limits,
             transport=transport,
             app=app,
@@ -1417,6 +1426,7 @@ class AsyncClient(BaseClient):
                 cert=cert,
                 http1=http1,
                 http2=http2,
+                retries=connect_retries,
                 limits=limits,
                 trust_env=trust_env,
             )
@@ -1434,6 +1444,7 @@ class AsyncClient(BaseClient):
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
+        retries: int = 0,
         limits: Limits = DEFAULT_LIMITS,
         transport: typing.Optional[AsyncBaseTransport] = None,
         app: typing.Optional[typing.Callable[..., typing.Any]] = None,
@@ -1452,6 +1463,7 @@ class AsyncClient(BaseClient):
             http2=http2,
             limits=limits,
             trust_env=trust_env,
+            retries=retries,
         )
 
     def _init_proxy_transport(
@@ -1461,6 +1473,7 @@ class AsyncClient(BaseClient):
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
+        retries: int = 0,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> AsyncBaseTransport:
@@ -1471,6 +1484,7 @@ class AsyncClient(BaseClient):
             limits=limits,
             trust_env=trust_env,
             proxy=proxy,
+            retries=retries,
         )
 
     def _transport_for_url(self, url: URL) -> AsyncBaseTransport:
