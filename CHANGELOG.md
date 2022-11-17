@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
-* Drop `.read`/`.aread` from SyncByteStream/AsyncByteStream (#2407)
+* Drop `.read`/`.aread` from SyncByteStream/AsyncByteStream. (#2407)
 * Drop `RawURL`. (#2241)
 
 ## 0.23.0 (23rd May, 2022)
