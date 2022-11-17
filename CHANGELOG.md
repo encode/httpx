@@ -8,9 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+* Support for Python 3.11. (#2420)
 * Allow setting an explicit multipart boundary in `Content-Type` header. (#2278)
 * Allow `tuple` or `list` for multipart values, not just `list`. (#2355)
 * Allow `str` content for multipart upload files. (#2400)
+* Support connection upgrades. See https://www.encode.io/httpcore/extensions/#upgrade-requests
 
 ### Fixed
 
