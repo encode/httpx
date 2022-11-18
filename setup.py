@@ -26,6 +26,6 @@ setup(
         "certifi",
         "sniffio",
         "rfc3986[idna2008]>=1.3,<2",
-        "httpcore>=0.15.0,<0.16.0",
+        "httpcore>=0.15.0,<0.17.0",
     ],
 )
