@@ -52,8 +52,6 @@ finally:
     client.close()
 ```
 
-The `AsyncClient()` or `Client()` instances have an internal conneciton pool that allows re-using connections when sending repeated requests to the same server.
-This is much more efficient than re-establishing the connection every time since connections are quite expesive.
 There is some overhead to managing these connections, so you should try to persist your client as much as possible.
 For example, in an ASGI web application like Starlette or FastAPI you should create the client in the lifespan event so that it gets re-used for each request.
 If you know what servers you are going to be connecting to it is also good practice to create a client instance per server.
