@@ -52,6 +52,23 @@ finally:
     client.close()
 ```
 
+The `AsyncClient()` or `Client()` instances have an internal conneciton pool that allows re-using connections when sending repeated requests to the same server.
+This is much more efficient than re-establishing the connection every time since connections are quite expesive.
+There is some overhead to managing these connections, so you should try to persist your client as much as possible.
+For example, in an ASGI web application like Starlette or FastAPI you should create the client in the lifespan event so that it gets re-used for each request.
+If you know what servers you are going to be connecting to it is also good practice to create a client instance per server.
+This maximizes connection re-use and minimizes connection turnover.
+
+For example, if you are connecting to `http://auth.example.com` and `http://service.example.com` you would create two distinct client instances:
+
+```python
+with httpx.Client(base_url="http://auth.example.com") as auth_client:
+    with httpx.Client(base_url="http://service.example.com") as service_client:
+        resp = auth_client.get("/.well-known/jwks.json")        
+        ...
+        resp = service_client.get("/endpoint")
+```
+
 ### Making requests
 
 Once you have a `Client`, you can send requests using `.get()`, `.post()`, etc. For example:
