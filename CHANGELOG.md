@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## 0.23.1
 
+**Note**: The 0.23.1 release should have used a proper version bump, rather than a minor point release. 
+There are API surface area changes that may affect some users.
+See the "Removed" section of these release notes for details.
+
 ### Added
 
 * Support for Python 3.11. (#2420)
@@ -20,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
+* Upload files *must* always be opened in binary mode. (#2400)
 * Drop `.read`/`.aread` from `SyncByteStream`/`AsyncByteStream`. (#2407)
 * Drop `RawURL`. (#2241)
 
