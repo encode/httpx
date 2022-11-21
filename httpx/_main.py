@@ -179,7 +179,7 @@ def print_response(response: Response) -> None:
         console.print(f"<{len(response.content)} bytes of binary data>")
 
 
-def format_certificate(cert: dict) -> str:  # pragma: nocover
+def format_certificate(cert: typing.Dict[str, typing.Any]) -> str:  # pragma: nocover
     lines = []
     for key, value in cert.items():
         if isinstance(value, (list, tuple)):

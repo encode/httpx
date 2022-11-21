@@ -7,8 +7,14 @@ from .._models import Request, Response
 from .._types import SyncByteStream
 from .base import BaseTransport
 
+if typing.TYPE_CHECKING:
+    from _typeshed import OptExcInfo
+    from _typeshed.wsgi import WSGIApplication
 
-def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
+    _T = typing.TypeVar("_T")
+
+
+def _skip_leading_empty_chunks(body: typing.Iterable["_T"]) -> typing.Iterable["_T"]:
     body = iter(body)
     for chunk in body:
         if chunk:
@@ -65,7 +71,7 @@ class WSGITransport(BaseTransport):
 
     def __init__(
         self,
-        app: typing.Callable,
+        app: "WSGIApplication",
         raise_app_exceptions: bool = True,
         script_name: str = "",
         remote_addr: str = "127.0.0.1",
@@ -106,15 +112,18 @@ class WSGITransport(BaseTransport):
 
         seen_status = None
         seen_response_headers = None
-        seen_exc_info = None
+        seen_exc_info: typing.Optional[OptExcInfo] = None
 
         def start_response(
-            status: str, response_headers: list, exc_info: typing.Any = None
-        ) -> None:
+            status: str,
+            response_headers: typing.List[typing.Tuple[str, str]],
+            exc_info: typing.Optional[OptExcInfo] = None,
+        ) -> typing.Callable[[bytes], object]:
             nonlocal seen_status, seen_response_headers, seen_exc_info
             seen_status = status
             seen_response_headers = response_headers
             seen_exc_info = exc_info
+            return lambda _: None
 
         result = self.app(environ, start_response)
 
@@ -122,7 +131,7 @@ class WSGITransport(BaseTransport):
 
         assert seen_status is not None
         assert seen_response_headers is not None
-        if seen_exc_info and self.raise_app_exceptions:
+        if seen_exc_info and seen_exc_info[0] and self.raise_app_exceptions:
             raise seen_exc_info[1]
 
         status_code = int(seen_status.split()[0])

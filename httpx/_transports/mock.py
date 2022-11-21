@@ -1,12 +1,12 @@
 import typing
+from asyncio import iscoroutine
 
-from .._compat import iscoroutine
 from .._models import Request, Response
 from .base import AsyncBaseTransport, BaseTransport
 
 
 class MockTransport(AsyncBaseTransport, BaseTransport):
-    def __init__(self, handler: typing.Callable) -> None:
+    def __init__(self, handler: typing.Callable[[Request], Response]) -> None:
         self.handler = handler
 
     def handle_request(
