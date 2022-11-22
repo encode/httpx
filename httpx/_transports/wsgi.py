@@ -8,13 +8,13 @@ from .._types import SyncByteStream
 from .base import BaseTransport
 
 if typing.TYPE_CHECKING:
-    from _typeshed import OptExcInfo
-    from _typeshed.wsgi import WSGIApplication
+    from _typeshed import OptExcInfo  # pragma: no cover
+    from _typeshed.wsgi import WSGIApplication  # pragma: no cover
 
-    _T = typing.TypeVar("_T")
+_T = typing.TypeVar("_T")
 
 
-def _skip_leading_empty_chunks(body: typing.Iterable["_T"]) -> typing.Iterable["_T"]:
+def _skip_leading_empty_chunks(body: typing.Iterable[_T]) -> typing.Iterable[_T]:
     body = iter(body)
     for chunk in body:
         if chunk:
