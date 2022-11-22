@@ -112,12 +112,12 @@ class WSGITransport(BaseTransport):
 
         seen_status = None
         seen_response_headers = None
-        seen_exc_info: typing.Optional[OptExcInfo] = None
+        seen_exc_info: typing.Optional["OptExcInfo"] = None
 
         def start_response(
             status: str,
             response_headers: typing.List[typing.Tuple[str, str]],
-            exc_info: typing.Optional[OptExcInfo] = None,
+            exc_info: typing.Optional["OptExcInfo"] = None,
         ) -> typing.Callable[[bytes], object]:
             nonlocal seen_status, seen_response_headers, seen_exc_info
             seen_status = status

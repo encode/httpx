@@ -122,7 +122,7 @@ class ASGITransport(AsyncBaseTransport):
 
         # ASGI callables.
 
-        async def receive() -> Message:
+        async def receive() -> "Message":
             nonlocal request_complete
 
             if request_complete:
@@ -136,7 +136,7 @@ class ASGITransport(AsyncBaseTransport):
                 return {"type": "http.request", "body": b"", "more_body": False}
             return {"type": "http.request", "body": body, "more_body": True}
 
-        async def send(message: Message) -> None:
+        async def send(message: "Message") -> None:
             nonlocal status_code, response_headers, response_started
 
             if message["type"] == "http.response.start":
