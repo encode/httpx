@@ -527,6 +527,47 @@ async def test_digest_auth_incorrect_credentials() -> None:
     assert len(response.history) == 1
 
 
+@pytest.mark.asyncio
+async def test_digest_auth_reuses_challenge() -> None:
+    url = "https://example.org/"
+    auth = DigestAuth(username="tomchristie", password="password123")
+    app = DigestApp()
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
+        response_1 = await client.get(url, auth=auth)
+        response_2 = await client.get(url, auth=auth)
+
+        assert response_1.status_code == 200
+        assert response_2.status_code == 200
+
+        assert len(response_1.history) == 1
+        assert len(response_2.history) == 0
+
+
+@pytest.mark.asyncio
+async def test_digest_auth_resets_nonce_count_after_401() -> None:
+    url = "https://example.org/"
+    auth = DigestAuth(username="tomchristie", password="password123")
+    app = DigestApp()
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
+        response_1 = await client.get(url, auth=auth)
+        assert response_1.status_code == 200
+        assert len(response_1.history) == 1
+        first_nonce = response_1.json()["auth"].split("nonce=")[1].split(",")[0]
+        first_nc = response_1.json()["auth"].split("nc=")[1].split(",")[0]
+
+        app.send_response_after_attempt = 2
+        response_2 = await client.get(url, auth=auth)
+        assert response_1.status_code == 200
+        assert len(response_2.history) == 1
+        second_nonce = response_2.json()["auth"].split("nonce=")[1].split(",")[0]
+        second_nc = response_2.json()["auth"].split("nc=")[1].split(",")[0]
+
+    assert first_nonce != second_nonce
+    assert first_nc == second_nc
+
+
 @pytest.mark.parametrize(
     "auth_header",
     [
