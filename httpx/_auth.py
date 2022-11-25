@@ -160,7 +160,9 @@ class DigestAuth(Auth):
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         if self._last_challenge:
-            request.headers["Authorization"] = self._build_auth_header(request, self._last_challenge)
+            request.headers["Authorization"] = self._build_auth_header(
+                request, self._last_challenge
+            )
 
         response = yield request
 
@@ -180,7 +182,9 @@ class DigestAuth(Auth):
         self._last_challenge = self._parse_challenge(request, response, auth_header)
         self._nonce_count = 1
 
-        request.headers["Authorization"] = self._build_auth_header(request, self._last_challenge)
+        request.headers["Authorization"] = self._build_auth_header(
+            request, self._last_challenge
+        )
         yield request
 
     def _parse_challenge(
