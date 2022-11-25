@@ -559,7 +559,7 @@ async def test_digest_auth_resets_nonce_count_after_401() -> None:
 
         app.send_response_after_attempt = 2
         response_2 = await client.get(url, auth=auth)
-        assert response_1.status_code == 200
+        assert response_2.status_code == 200
         assert len(response_2.history) == 1
         second_nonce = response_2.json()["auth"].split("nonce=")[1].split(",")[0]
         second_nc = response_2.json()["auth"].split("nc=")[1].split(",")[0]
