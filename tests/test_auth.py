@@ -3,6 +3,8 @@ Unit tests for auth classes.
 
 Integration tests also exist in tests/client/test_auth.py
 """
+from urllib.request import parse_keqv_list
+
 import pytest
 
 import httpx
@@ -89,9 +91,11 @@ def test_digest_auth_with_401_nonce_counting():
     assert second_request.headers["Authorization"].startswith("Digest")
 
     # ... and the client nonce count (nc) is increased
-    first_nonce = first_request.headers["Authorization"].split(",")[-2].split("=")[1]
-    second_nonce = second_request.headers["Authorization"].split(",")[-2].split("=")[1]
-    assert int(first_nonce, 16) + 1 == int(second_nonce, 16)
+    first_nc = parse_keqv_list(first_request.headers["Authorization"].split(", "))["nc"]
+    second_nc = parse_keqv_list(second_request.headers["Authorization"].split(", "))[
+        "nc"
+    ]
+    assert int(first_nc, 16) + 1 == int(second_nc, 16)
 
     # No other requests are made.
     response = httpx.Response(content=b"Hello, world!", status_code=200)
