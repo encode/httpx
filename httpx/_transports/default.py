@@ -223,7 +223,7 @@ class HTTPTransport(BaseTransport):
             status_code=resp.status,
             headers=resp.headers,
             stream=ResponseStream(resp.stream),
-            extensions=resp.extensions,
+            extensions=resp.extensions,  # type: ignore
         )
 
     def close(self) -> None:
@@ -358,7 +358,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
             status_code=resp.status,
             headers=resp.headers,
             stream=AsyncResponseStream(resp.stream),
-            extensions=resp.extensions,
+            extensions=resp.extensions,  # type: ignore
         )
 
     async def aclose(self) -> None:
