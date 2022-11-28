@@ -93,7 +93,7 @@ FileTypes = Union[
 ]
 RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
 
-RequestExtensions = Dict[str, Any]
+RequestExtensions = Mapping[str, Any]
 
 
 class SyncByteStream:

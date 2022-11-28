@@ -356,7 +356,7 @@ class BaseClient:
                 if isinstance(timeout, UseClientDefault)
                 else Timeout(timeout)
             )
-            extensions["timeout"] = timeout.as_dict()
+            extensions = dict(**extensions, timeout=timeout.as_dict())
         return Request(
             method,
             url,
