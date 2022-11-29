@@ -179,7 +179,12 @@ def print_response(response: Response) -> None:
         console.print(f"<{len(response.content)} bytes of binary data>")
 
 
-def format_certificate(cert: dict) -> str:  # pragma: no cover
+_PCTRTT = typing.Tuple[typing.Tuple[str, str], ...]
+_PCTRTTT = typing.Tuple[_PCTRTT, ...]
+_PeerCertRetDictType = typing.Dict[str, typing.Union[str, _PCTRTTT, _PCTRTT]]
+
+
+def format_certificate(cert: _PeerCertRetDictType) -> str:  # pragma: no cover
     lines = []
     for key, value in cert.items():
         if isinstance(value, (list, tuple)):

@@ -3,7 +3,7 @@ import email.message
 import json as jsonlib
 import typing
 import urllib.request
-from collections.abc import Mapping, MutableMapping
+from collections.abc import Mapping
 from http.cookiejar import Cookie, CookieJar
 
 from ._content import ByteStream, UnattachedStream, encode_request, encode_response
@@ -1002,7 +1002,7 @@ class Response:
                 await self.stream.aclose()
 
 
-class Cookies(MutableMapping):
+class Cookies(typing.MutableMapping[str, str]):
     """
     HTTP Cookies, as a mutable mapping.
     """
