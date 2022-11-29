@@ -29,6 +29,6 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
 
         # https://simonwillison.net/2020/Sep/2/await-me-maybe/
         if iscoroutine(response):
-            response = await response
+            response = await response  # type: ignore[func-returns-value,assignment]
 
         return response
