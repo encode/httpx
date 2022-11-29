@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.serialization import (
     load_pem_private_key,
 )
 from uvicorn.config import Config
-from uvicorn.main import Server
+from uvicorn.server import Server
 
 from httpx import URL
 from tests.concurrency import sleep
