@@ -4,8 +4,6 @@ import sys
 import types
 import typing
 
-import typing_extensions as te
-
 from .._models import Request, Response
 from .._types import SyncByteStream
 from .base import BaseTransport
@@ -14,17 +12,12 @@ _T = typing.TypeVar("_T")
 _ExcInfo = typing.Tuple[typing.Type[BaseException], BaseException, types.TracebackType]
 _OptExcInfo = typing.Union[_ExcInfo, typing.Tuple[None, None, None]]
 
+
 # backported wsgiref.types definitions from Python 3.11
-
-
-class StartResponse(te.Protocol):
-    def __call__(
-        self,
-        __status: str,
-        __headers: typing.List[typing.Tuple[str, str]],
-        __exc_info: typing.Optional[_OptExcInfo] = ...,
-    ) -> typing.Callable[[bytes], object]:  # pragma: no cover
-        ...
+StartResponse = typing.Callable[
+    [str, typing.List[typing.Tuple[str, str]], typing.Optional[_OptExcInfo]],
+    typing.Callable[[bytes], object],
+]
 
 
 WSGIApplication = typing.Callable[
