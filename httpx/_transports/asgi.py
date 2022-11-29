@@ -14,6 +14,16 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     Event = typing.Union[asyncio.Event, trio.Event]
 
 
+_Message = typing.Dict[str, typing.Any]
+_Receive = typing.Callable[[], typing.Awaitable[_Message]]
+_Send = typing.Callable[
+    [typing.Dict[str, typing.Any]], typing.Coroutine[None, None, None]
+]
+_ASGIApp = typing.Callable[
+    [typing.Dict[str, typing.Any], _Receive, _Send], typing.Coroutine[None, None, None]
+]
+
+
 def create_event() -> "Event":
     if sniffio.current_async_library() == "trio":
         import trio
@@ -68,7 +78,7 @@ class ASGITransport(AsyncBaseTransport):
 
     def __init__(
         self,
-        app: typing.Callable,
+        app: _ASGIApp,
         raise_app_exceptions: bool = True,
         root_path: str = "",
         client: typing.Tuple[str, int] = ("127.0.0.1", 123),
@@ -113,7 +123,7 @@ class ASGITransport(AsyncBaseTransport):
 
         # ASGI callables.
 
-        async def receive() -> dict:
+        async def receive() -> typing.Dict[str, typing.Any]:
             nonlocal request_complete
 
             if request_complete:
@@ -127,7 +137,7 @@ class ASGITransport(AsyncBaseTransport):
                 return {"type": "http.request", "body": b"", "more_body": False}
             return {"type": "http.request", "body": body, "more_body": True}
 
-        async def send(message: dict) -> None:
+        async def send(message: typing.Dict[str, typing.Any]) -> None:
             nonlocal status_code, response_headers, response_started
 
             if message["type"] == "http.response.start":

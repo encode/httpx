@@ -264,7 +264,7 @@ class TestServer(Server):
         }
         await asyncio.wait(tasks)
 
-    async def restart(self) -> None:  # pragma: nocover
+    async def restart(self) -> None:  # pragma: no cover
         # This coroutine may be called from a different thread than the one the
         # server is running on, and from an async environment that's not asyncio.
         # For this reason, we use an event to coordinate with the server
@@ -275,7 +275,7 @@ class TestServer(Server):
         while not self.started:
             await sleep(0.2)
 
-    async def watch_restarts(self):  # pragma: nocover
+    async def watch_restarts(self):  # pragma: no cover
         while True:
             if self.should_exit:
                 return
