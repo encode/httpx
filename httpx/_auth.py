@@ -11,7 +11,11 @@ from ._models import Request, Response
 from ._utils import to_bytes, to_str, unquote
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from hashlib import _Hash
+    from typing import Protocol
+
+    class SupportsHexDigest(Protocol):
+        def hexdigest(self) -> str:
+            ...
 
 
 class Auth:
@@ -142,7 +146,9 @@ class BasicAuth(Auth):
 
 
 class DigestAuth(Auth):
-    _ALGORITHM_TO_HASH_FUNCTION: typing.Dict[str, typing.Callable[[bytes], "_Hash"]] = {
+    _ALGORITHM_TO_HASH_FUNCTION: typing.Dict[
+        str, typing.Callable[[bytes], "SupportsHexDigest"]
+    ] = {
         "MD5": hashlib.md5,
         "MD5-SESS": hashlib.md5,
         "SHA": hashlib.sha1,
