@@ -916,7 +916,7 @@ def test_cannot_access_unset_request():
 
 def test_generator_with_transfer_encoding_header():
     def content():
-        yield b"test 123"  # pragma: nocover
+        yield b"test 123"  # pragma: no cover
 
     response = httpx.Response(200, content=content())
     assert response.headers == {"Transfer-Encoding": "chunked"}
@@ -924,7 +924,7 @@ def test_generator_with_transfer_encoding_header():
 
 def test_generator_with_content_length_header():
     def content():
-        yield b"test 123"  # pragma: nocover
+        yield b"test 123"  # pragma: no cover
 
     headers = {"Content-Length": "8"}
     response = httpx.Response(200, content=content(), headers=headers)

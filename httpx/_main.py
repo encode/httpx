@@ -101,9 +101,9 @@ def get_lexer_for_response(response: Response) -> str:
         mime_type, _, _ = content_type.partition(";")
         try:
             return pygments.lexers.get_lexer_for_mimetype(mime_type.strip()).name
-        except pygments.util.ClassNotFound:  # pragma: nocover
+        except pygments.util.ClassNotFound:  # pragma: no cover
             pass
-    return ""  # pragma: nocover
+    return ""  # pragma: no cover
 
 
 def format_request_headers(request: httpcore.Request, http2: bool = False) -> str:
@@ -168,7 +168,7 @@ def print_response(response: Response) -> None:
             try:
                 data = response.json()
                 text = json.dumps(data, indent=4)
-            except ValueError:  # pragma: nocover
+            except ValueError:  # pragma: no cover
                 text = response.text
         else:
             text = response.text
@@ -179,7 +179,7 @@ def print_response(response: Response) -> None:
         console.print(f"<{len(response.content)} bytes of binary data>")
 
 
-def format_certificate(cert: dict) -> str:  # pragma: nocover
+def format_certificate(cert: dict) -> str:  # pragma: no cover
     lines = []
     for key, value in cert.items():
         if isinstance(value, (list, tuple)):
@@ -208,7 +208,7 @@ def trace(
         stream = info["return_value"]
         server_addr = stream.get_extra_info("server_addr")
         console.print(f"* Connected to {server_addr[0]!r} on port {server_addr[1]}")
-    elif name == "connection.start_tls.complete" and verbose:  # pragma: nocover
+    elif name == "connection.start_tls.complete" and verbose:  # pragma: no cover
         stream = info["return_value"]
         ssl_object = stream.get_extra_info("ssl_object")
         version = ssl_object.version()
@@ -223,13 +223,13 @@ def trace(
     elif name == "http11.send_request_headers.started" and verbose:
         request = info["request"]
         print_request_headers(request, http2=False)
-    elif name == "http2.send_request_headers.started" and verbose:  # pragma: nocover
+    elif name == "http2.send_request_headers.started" and verbose:  # pragma: no cover
         request = info["request"]
         print_request_headers(request, http2=True)
     elif name == "http11.receive_response_headers.complete":
         http_version, status, reason_phrase, headers = info["return_value"]
         print_response_headers(http_version, status, reason_phrase, headers)
-    elif name == "http2.receive_response_headers.complete":  # pragma: nocover
+    elif name == "http2.receive_response_headers.complete":  # pragma: no cover
         status, headers = info["return_value"]
         http_version = b"HTTP/2"
         reason_phrase = None
@@ -268,7 +268,7 @@ def validate_json(
 
     try:
         return json.loads(value)
-    except json.JSONDecodeError:  # pragma: nocover
+    except json.JSONDecodeError:  # pragma: no cover
         raise click.BadParameter("Not valid JSON")
 
 
@@ -281,7 +281,7 @@ def validate_auth(
         return None
 
     username, password = value
-    if password == "-":  # pragma: nocover
+    if password == "-":  # pragma: no cover
         password = click.prompt("Password", hide_input=True)
     return (username, password)
 

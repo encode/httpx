@@ -10,7 +10,7 @@ import sys
 # The CFFI bindings in `brotlicffi` are recommended for PyPy and everything else.
 try:
     import brotlicffi as brotli
-except ImportError:  # pragma: nocover
+except ImportError:  # pragma: no cover
     try:
         import brotli
     except ImportError:
