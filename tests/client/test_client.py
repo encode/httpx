@@ -120,7 +120,7 @@ def test_raw_iterator(server):
 
 
 def test_cannot_stream_async_request(server):
-    async def hello_world():  # pragma: nocover
+    async def hello_world():  # pragma: no cover
         yield b"Hello, "
         yield b"world!"
 
@@ -318,7 +318,7 @@ def test_client_closed_state_using_implicit_open():
     # Once we're closed we cannot reopen the client.
     with pytest.raises(RuntimeError):
         with client:
-            pass  # pragma: nocover
+            pass  # pragma: no cover
 
 
 def test_client_closed_state_using_with_block():
