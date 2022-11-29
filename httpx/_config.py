@@ -35,7 +35,7 @@ logger = get_logger(__name__)
 
 
 class UnsetType:
-    pass  # pragma: nocover
+    pass  # pragma: no cover
 
 
 UNSET = UnsetType()
@@ -136,7 +136,7 @@ class SSLConfig:
         # when the 'subjectAltName' extension isn't available.
         try:
             context.hostname_checks_common_name = False
-        except AttributeError:  # pragma: nocover
+        except AttributeError:  # pragma: no cover
             pass
 
         if ca_bundle_path.is_file():

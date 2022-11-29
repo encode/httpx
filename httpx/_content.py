@@ -101,7 +101,7 @@ class UnattachedStream(AsyncByteStream, SyncByteStream):
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
         raise StreamClosed()
-        yield b""  # pragma: nocover
+        yield b""  # pragma: no cover
 
 
 def encode_content(
