@@ -5,7 +5,6 @@ import typing
 from unittest import mock
 
 import pytest
-from multipart import MultipartParser
 
 import httpx
 from httpx._content import encode_request
@@ -24,21 +23,24 @@ def test_multipart(value: str, output: bytes):
     data = {"text": value}
     files = {"file": io.BytesIO(b"<file content>")}
     response = client.post("http://127.0.0.1:8000/", data=data, files=files)
-    assert response.status_code == 200
-
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
-    content_length = int(response.request.headers["Content-Length"])
+    boundary_bytes = boundary.encode("ascii")
 
-    multipart = {}
-    for part in MultipartParser(
-        io.BytesIO(response.content), boundary=boundary, content_length=content_length
-    ):
-        multipart[part.name] = [part.raw]
-
-    # Note that the expected return type for text fields
-    # appears to differs from 3.6 to 3.7+
-    assert multipart["text"] == [output.decode()] or multipart["text"] == [output]
-    assert multipart["file"] == [b"<file content>"]
+    assert response.status_code == 200
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="text"\r\n',
+            b"\r\n",
+            b"abc\r\n",
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
+            b"Content-Type: application/octet-stream\r\n",
+            b"\r\n",
+            b"<file content>\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
 
 
 @pytest.mark.parametrize(
@@ -60,18 +62,20 @@ def test_multipart_explicit_boundary(header: str) -> None:
     files = {"file": io.BytesIO(b"<file content>")}
     headers = {"content-type": header}
     response = client.post("http://127.0.0.1:8000/", files=files, headers=headers)
+    boundary_bytes = b"+++"
+
     assert response.status_code == 200
-
     assert response.request.headers["Content-Type"] == header
-    content_length = int(response.request.headers["Content-Length"])
-
-    multipart = {}
-    for part in MultipartParser(
-        io.BytesIO(response.content), boundary="+++", content_length=content_length
-    ):
-        multipart[part.name] = [part.raw]
-
-    assert multipart["file"] == [b"<file content>"]
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
+            b"Content-Type: application/octet-stream\r\n",
+            b"\r\n",
+            b"<file content>\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
 
 
 @pytest.mark.parametrize(
@@ -125,21 +129,24 @@ def test_multipart_file_tuple():
     data = {"text": ["abc"]}
     files = {"file": ("name.txt", io.BytesIO(b"<file content>"))}
     response = client.post("http://127.0.0.1:8000/", data=data, files=files)
-    assert response.status_code == 200
-
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
-    content_length = int(response.request.headers["Content-Length"])
+    boundary_bytes = boundary.encode("ascii")
 
-    multipart = {}
-    for part in MultipartParser(
-        io.BytesIO(response.content), boundary=boundary, content_length=content_length
-    ):
-        multipart[part.name] = [part.raw]
-
-    # Note that the expected return type for text fields
-    # appears to differs from 3.6 to 3.7+
-    assert multipart["text"] == ["abc"] or multipart["text"] == [b"abc"]
-    assert multipart["file"] == [b"<file content>"]
+    assert response.status_code == 200
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="text"\r\n',
+            b"\r\n",
+            b"abc\r\n",
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="name.txt"\r\n',
+            b"Content-Type: text/plain\r\n",
+            b"\r\n",
+            b"<file content>\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
 
 
 @pytest.mark.parametrize("content_type", [None, "text/plain"])
