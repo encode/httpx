@@ -8,7 +8,7 @@ from .._types import SyncByteStream
 from .base import BaseTransport
 
 
-def _skip_leading_empty_chunks(body: typing.Iterable) -> typing.Iterable:
+def _skip_leading_empty_chunks(body: typing.Iterable[bytes]) -> typing.Iterable[bytes]:
     body = iter(body)
     for chunk in body:
         if chunk:
@@ -71,7 +71,7 @@ class WSGITransport(BaseTransport):
 
     def __init__(
         self,
-        app: typing.Callable,
+        app: typing.Callable[..., typing.Any],
         raise_app_exceptions: bool = True,
         script_name: str = "",
         remote_addr: str = "127.0.0.1",
@@ -115,7 +115,9 @@ class WSGITransport(BaseTransport):
         seen_exc_info = None
 
         def start_response(
-            status: str, response_headers: list, exc_info: typing.Any = None
+            status: str,
+            response_headers: typing.List[typing.Tuple[str, str]],
+            exc_info: typing.Any = None,
         ) -> None:
             nonlocal seen_status, seen_response_headers, seen_exc_info
             seen_status = status

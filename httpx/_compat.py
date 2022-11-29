@@ -2,20 +2,15 @@
 The _compat module is used for code which requires branching between different
 Python environments. It is excluded from the code coverage checks.
 """
-import asyncio
 import ssl
 import sys
-import typing
-
-if typing.TYPE_CHECKING:  # pragma: no cover
-    import typing_extensions
 
 # Brotli support is optional
 # The C bindings in `brotli` are recommended for CPython.
 # The CFFI bindings in `brotlicffi` are recommended for PyPy and everything else.
 try:
     import brotlicffi as brotli
-except ImportError:  # pragma: nocover
+except ImportError:  # pragma: no cover
     try:
         import brotli
     except ImportError:
@@ -43,8 +38,3 @@ else:
         context.options |= ssl.OP_NO_SSLv3
         context.options |= ssl.OP_NO_TLSv1
         context.options |= ssl.OP_NO_TLSv1_1
-
-
-def iscoroutine(coro: object) -> "typing_extensions.TypeGuard[typing.Coroutine]":
-    # Drop when this is resolved: https://github.com/python/typeshed/pull/8104
-    return asyncio.iscoroutine(coro)

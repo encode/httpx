@@ -570,7 +570,7 @@ class QueryParams(typing.Mapping[str, str]):
                 for k, v in dict_value.items()
             }
 
-    def keys(self) -> typing.KeysView:
+    def keys(self) -> typing.KeysView[str]:
         """
         Return all the keys in the query params.
 
@@ -581,7 +581,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return self._dict.keys()
 
-    def values(self) -> typing.ValuesView:
+    def values(self) -> typing.ValuesView[str]:
         """
         Return all the values in the query params. If a key occurs more than once
         only the first item for that key is returned.
@@ -593,7 +593,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return {k: v[0] for k, v in self._dict.items()}.values()
 
-    def items(self) -> typing.ItemsView:
+    def items(self) -> typing.ItemsView[str, str]:
         """
         Return all items in the query params. If a key occurs more than once
         only the first item for that key is returned.
