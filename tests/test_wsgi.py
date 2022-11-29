@@ -149,7 +149,7 @@ def test_wsgi_server_port(url: str, expected_server_port: int):
     SERVER_PORT is populated correctly from the requested URL.
     """
     hello_world_app = application_factory([b"Hello, World!"])
-    server_port: str
+    server_port: str = "placeholder"
 
     def app(environ, start_response):
         nonlocal server_port
@@ -160,4 +160,4 @@ def test_wsgi_server_port(url: str, expected_server_port: int):
     response = client.get(url)
     assert response.status_code == 200
     assert response.text == "Hello, World!"
-    assert server_port == expected_server_port
+    assert int(server_port) == expected_server_port

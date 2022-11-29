@@ -2,7 +2,7 @@ import httpx
 
 
 def test_status_code_as_int():
-    assert httpx.codes.NOT_FOUND == 404
+    assert httpx.codes.NOT_FOUND == 404  # type: ignore[comparison-overlap]
     assert str(httpx.codes.NOT_FOUND) == "404"
 
 
