@@ -152,7 +152,7 @@ def test_multipart_file_tuple():
 
 
 @pytest.mark.parametrize("content_type", [None, "text/plain"])
-def test_multipart_file_tuple_headers(content_type: typing.Optional[str]):
+def test_multipart_file_tuple_headers(content_type: typing.Optional[str]) -> None:
     file_name = "test.txt"
     expected_content_type = "text/plain"
     headers = {"Expires": "0"}
