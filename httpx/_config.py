@@ -126,7 +126,7 @@ class SSLConfig:
 
         # Signal to server support for PHA in TLS 1.3. Raises an
         # AttributeError if only read-only access is implemented.
-        if sys.version_info >= (3, 8):
+        if sys.version_info >= (3, 8):  # pragma: no cover
             try:
                 context.post_handshake_auth = True
             except AttributeError:  # pragma: no cover
@@ -164,7 +164,7 @@ class SSLConfig:
             alpn_idents = ["http/1.1", "h2"] if self.http2 else ["http/1.1"]
             context.set_alpn_protocols(alpn_idents)
 
-        if sys.version_info >= (3, 8):
+        if sys.version_info >= (3, 8):  # pragma: no cover
             keylogfile = os.environ.get("SSLKEYLOGFILE")
             if keylogfile and self.trust_env:
                 context.keylog_filename = keylogfile
