@@ -52,7 +52,7 @@ class BaseTransport:
         """
         raise NotImplementedError(
             "The 'handle_request' method must be implemented."
-        )  # pragma: nocover
+        )  # pragma: no cover
 
     def close(self) -> None:
         pass
@@ -76,7 +76,7 @@ class AsyncBaseTransport:
     ) -> Response:
         raise NotImplementedError(
             "The 'handle_async_request' method must be implemented."
-        )  # pragma: nocover
+        )  # pragma: no cover
 
     async def aclose(self) -> None:
         pass
