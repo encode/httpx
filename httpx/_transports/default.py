@@ -212,7 +212,9 @@ class HTTPTransport(BaseTransport):
             ),
             headers=request.headers.raw,
             content=request.stream,
-            extensions=request.extensions,
+            extensions=dict(request.extensions)
+            if request.extensions is not None
+            else None,
         )
         with map_httpcore_exceptions():
             resp = self._pool.handle_request(req)
@@ -347,7 +349,9 @@ class AsyncHTTPTransport(AsyncBaseTransport):
             ),
             headers=request.headers.raw,
             content=request.stream,
-            extensions=request.extensions,
+            extensions=dict(request.extensions)
+            if request.extensions is not None
+            else None,
         )
         with map_httpcore_exceptions():
             resp = await self._pool.handle_async_request(req)
