@@ -100,7 +100,7 @@ async def test_stream_request(server):
 
 @pytest.mark.usefixtures("async_environment")
 async def test_cannot_stream_sync_request(server):
-    def hello_world():  # pragma: nocover
+    def hello_world():  # pragma: no cover
         yield b"Hello, "
         yield b"world!"
 
@@ -272,7 +272,7 @@ async def test_client_closed_state_using_implicit_open():
     # Once we're closed we cannot reopen the client.
     with pytest.raises(RuntimeError):
         async with client:
-            pass  # pragma: nocover
+            pass  # pragma: no cover
 
 
 @pytest.mark.usefixtures("async_environment")
@@ -346,7 +346,7 @@ async def test_cancellation_during_stream():
             async def __aiter__(self) -> typing.AsyncIterator[bytes]:
                 yield b"Hello"
                 raise KeyboardInterrupt()
-                yield b", world"  # pragma: nocover
+                yield b", world"  # pragma: no cover
 
             async def aclose(self) -> None:
                 nonlocal stream_was_closed

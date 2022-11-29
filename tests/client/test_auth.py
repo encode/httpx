@@ -690,7 +690,7 @@ async def test_digest_auth_unavailable_streaming_body():
     app = DigestApp()
 
     async def streaming_body():
-        yield b"Example request body"  # pragma: nocover
+        yield b"Example request body"  # pragma: no cover
 
     async with httpx.AsyncClient(transport=ConsumeBodyTransport(app)) as client:
         with pytest.raises(httpx.StreamConsumed):

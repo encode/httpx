@@ -21,7 +21,7 @@ def test_httpcore_all_exceptions_mapped() -> None:
         and value is not httpcore.ConnectionNotAvailable
     ]
 
-    if not_mapped:  # pragma: nocover
+    if not_mapped:  # pragma: no cover
         pytest.fail(f"Unmapped httpcore exceptions: {not_mapped}")
 
 
@@ -70,7 +70,7 @@ def test_httpx_exceptions_exposed() -> None:
         and not hasattr(httpx, name)
     ]
 
-    if not_exposed:  # pragma: nocover
+    if not_exposed:  # pragma: no cover
         pytest.fail(f"Unexposed HTTPX exceptions: {not_exposed}")
 
 
