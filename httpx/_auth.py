@@ -158,8 +158,15 @@ class DigestAuth(Auth):
     ) -> None:
         self._username = to_bytes(username)
         self._password = to_bytes(password)
+        self._last_challenge: typing.Optional[_DigestAuthChallenge] = None
+        self._nonce_count = 1
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+        if self._last_challenge:
+            request.headers["Authorization"] = self._build_auth_header(
+                request, self._last_challenge
+            )
+
         response = yield request
 
         if response.status_code != 401 or "www-authenticate" not in response.headers:
@@ -175,8 +182,12 @@ class DigestAuth(Auth):
             # header, then we don't need to build an authenticated request.
             return
 
-        challenge = self._parse_challenge(request, response, auth_header)
-        request.headers["Authorization"] = self._build_auth_header(request, challenge)
+        self._last_challenge = self._parse_challenge(request, response, auth_header)
+        self._nonce_count = 1
+
+        request.headers["Authorization"] = self._build_auth_header(
+            request, self._last_challenge
+        )
         yield request
 
     def _parse_challenge(
@@ -225,9 +236,9 @@ class DigestAuth(Auth):
         # TODO: implement auth-int
         HA2 = digest(A2)
 
-        nonce_count = 1  # TODO: implement nonce counting
-        nc_value = b"%08x" % nonce_count
-        cnonce = self._get_client_nonce(nonce_count, challenge.nonce)
+        nc_value = b"%08x" % self._nonce_count
+        cnonce = self._get_client_nonce(self._nonce_count, challenge.nonce)
+        self._nonce_count += 1
 
         HA1 = digest(A1)
         if challenge.algorithm.lower().endswith("-sess"):
