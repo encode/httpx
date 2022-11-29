@@ -105,7 +105,7 @@ async def test_iterator_content():
 
     # Support 'data' for compat with requests.
     with pytest.warns(DeprecationWarning):
-        headers, stream = encode_request(data=hello_world())  # type: ignore
+        headers, stream = encode_request(data=hello_world())
     assert isinstance(stream, typing.Iterable)
     assert not isinstance(stream, typing.AsyncIterable)
 
@@ -135,7 +135,7 @@ async def test_aiterator_content():
 
     # Support 'data' for compat with requests.
     with pytest.warns(DeprecationWarning):
-        headers, stream = encode_request(data=hello_world())  # type: ignore
+        headers, stream = encode_request(data=hello_world())
     assert not isinstance(stream, typing.Iterable)
     assert isinstance(stream, typing.AsyncIterable)
 

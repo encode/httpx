@@ -189,7 +189,7 @@ def encode_request(
     Handles encoding the given `content`, `data`, `files`, and `json`,
     returning a two-tuple of (<headers>, <stream>).
     """
-    if data is not None and not isinstance(data, Mapping):  # type: ignore
+    if data is not None and not isinstance(data, Mapping):
         # We prefer to separate `content=<bytes|str|byte iterator|bytes aiterator>`
         # for raw request content, and `data=<form data>` for url encoded or
         # multipart form content.
