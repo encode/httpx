@@ -212,7 +212,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
                     "Invalid type for name."
                     f" Expected str, got {type(name)}: {name!r}"
                 )
-            err = TypeError(
+            type_error_for_value = TypeError(
                 "Invalid type for value."
                 " Expected primitive type or iterable of primitive types,"
                 f" got {type(data_value)}: {data_value!r}"
@@ -224,10 +224,10 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
             elif isinstance(data_value, typing.Sequence):
                 for item in data_value:
                     if not isinstance(item, (*PRIMITIVE_DATA_TYPES, bytes)):
-                        raise err
+                        raise type_error_for_value
                     yield DataField(name=name, value=item)
             else:
-                raise err
+                raise type_error_for_value
 
         file_items = files.items() if isinstance(files, typing.Mapping) else files
         for name, file_value in file_items:
