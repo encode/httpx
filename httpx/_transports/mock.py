@@ -1,3 +1,4 @@
+import asyncio
 import typing
 from asyncio import iscoroutine
 
@@ -28,7 +29,7 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         # return the result.
 
         # https://simonwillison.net/2020/Sep/2/await-me-maybe/
-        if iscoroutine(response):
+        if asyncio.iscoroutine(response):
             response = await response
 
         return response
