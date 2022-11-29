@@ -1,6 +1,5 @@
 import asyncio
 import typing
-from asyncio import iscoroutine
 
 from .._models import Request, Response
 from .base import AsyncBaseTransport, BaseTransport
