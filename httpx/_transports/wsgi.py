@@ -63,7 +63,7 @@ class WSGITransport(BaseTransport):
     ```
     """
 
-    app: typing.Callable
+    app: typing.Callable[..., typing.Any]
     raise_app_exceptions: bool
     script_name: str
     remote_addr: str
