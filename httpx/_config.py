@@ -1,5 +1,6 @@
 import os
 import ssl
+import sys
 import typing
 from pathlib import Path
 
@@ -34,7 +35,7 @@ logger = get_logger(__name__)
 
 
 class UnsetType:
-    pass  # pragma: nocover
+    pass  # pragma: no cover
 
 
 UNSET = UnsetType()
@@ -125,16 +126,17 @@ class SSLConfig:
 
         # Signal to server support for PHA in TLS 1.3. Raises an
         # AttributeError if only read-only access is implemented.
-        try:
-            context.post_handshake_auth = True  # type: ignore
-        except AttributeError:  # pragma: nocover
-            pass
+        if sys.version_info >= (3, 8):  # pragma: no cover
+            try:
+                context.post_handshake_auth = True
+            except AttributeError:  # pragma: no cover
+                pass
 
         # Disable using 'commonName' for SSLContext.check_hostname
         # when the 'subjectAltName' extension isn't available.
         try:
-            context.hostname_checks_common_name = False  # type: ignore
-        except AttributeError:  # pragma: nocover
+            context.hostname_checks_common_name = False
+        except AttributeError:  # pragma: no cover
             pass
 
         if ca_bundle_path.is_file():
@@ -162,10 +164,10 @@ class SSLConfig:
             alpn_idents = ["http/1.1", "h2"] if self.http2 else ["http/1.1"]
             context.set_alpn_protocols(alpn_idents)
 
-        if hasattr(context, "keylog_filename"):  # pragma: nocover (Available in 3.8+)
+        if sys.version_info >= (3, 8):  # pragma: no cover
             keylogfile = os.environ.get("SSLKEYLOGFILE")
             if keylogfile and self.trust_env:
-                context.keylog_filename = keylogfile  # type: ignore
+                context.keylog_filename = keylogfile
 
         return context
 
