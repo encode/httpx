@@ -207,13 +207,27 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
         self, data: RequestData, files: RequestFiles
     ) -> typing.Iterator[typing.Union[FileField, DataField]]:
         for name, data_value in data.items():
+            if not isinstance(name, str):  # type: ignore
+                raise TypeError(
+                    "Invalid type for name."
+                    f" Expected str, got {type(name)}: {name!r}"
+                )
+            err = TypeError(
+                "Invalid type for value."
+                " Expected primitive type or iterable of primitive types,"
+                f" got {type(data_value)}: {data_value!r}"
+            )
             if data_value is None or isinstance(
                 data_value, (*PRIMITIVE_DATA_TYPES, bytes)
             ):
                 yield DataField(name=name, value=data_value)
-            else:
+            elif isinstance(data_value, typing.Sequence):  # type: ignore
                 for item in data_value:
+                    if not isinstance(item, (*PRIMITIVE_DATA_TYPES, bytes)):
+                        raise err
                     yield DataField(name=name, value=item)
+            else:
+                raise err
 
         file_items = files.items() if isinstance(files, typing.Mapping) else files
         for name, file_value in file_items:

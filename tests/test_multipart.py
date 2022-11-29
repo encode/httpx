@@ -92,9 +92,34 @@ def test_multipart_header_without_boundary(header: str) -> None:
     assert response.request.headers["Content-Type"] == header
 
 
-def test_multipart_file_tuple():
+@pytest.mark.parametrize(("key"), (b"abc", 1, 2.3, None))
+def test_multipart_invalid_key(key: typing.Any):
     client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
 
+    data = {key: "abc"}
+    files = {"file": io.BytesIO(b"<file content>")}
+    with pytest.raises(TypeError) as e:
+        client.post(
+            "http://127.0.0.1:8000/",
+            data=data,
+            files=files,
+        )
+    assert "Invalid type for name" in str(e.value)
+    assert repr(key) in str(e.value)
+
+
+@pytest.mark.parametrize(("value"), (object(), {"key": "value"}, [object()]))
+def test_multipart_invalid_value(value: typing.Any):
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
+    data = {"text": value}
+    files = {"file": io.BytesIO(b"<file content>")}
+    with pytest.raises(TypeError) as e:
+        client.post("http://127.0.0.1:8000/", data=data, files=files)
+    assert "Invalid type for value" in str(e.value)
+
+
+def test_multipart_file_tuple():
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
     # Test with a list of values 'data' argument,
     #     and a tuple style 'files' argument.
     data = {"text": ["abc"]}
