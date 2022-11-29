@@ -8,6 +8,7 @@ import hashlib
 import os
 import threading
 import typing
+from urllib.request import parse_keqv_list
 
 import pytest
 
@@ -151,14 +152,14 @@ class SyncOrAsyncAuth(Auth):
 @pytest.mark.asyncio
 async def test_basic_auth() -> None:
     url = "https://example.org/"
-    auth = ("tomchristie", "password123")
+    auth = ("user", "password123")
     app = App()
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
-    assert response.json() == {"auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="}
+    assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
 @pytest.mark.asyncio
@@ -167,7 +168,7 @@ async def test_basic_auth_with_stream() -> None:
     See: https://github.com/encode/httpx/pull/1312
     """
     url = "https://example.org/"
-    auth = ("tomchristie", "password123")
+    auth = ("user", "password123")
     app = App()
 
     async with httpx.AsyncClient(
@@ -177,25 +178,25 @@ async def test_basic_auth_with_stream() -> None:
             await response.aread()
 
     assert response.status_code == 200
-    assert response.json() == {"auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="}
+    assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
 @pytest.mark.asyncio
 async def test_basic_auth_in_url() -> None:
-    url = "https://tomchristie:password123@example.org/"
+    url = "https://user:password123@example.org/"
     app = App()
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url)
 
     assert response.status_code == 200
-    assert response.json() == {"auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="}
+    assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
 @pytest.mark.asyncio
 async def test_basic_auth_on_session() -> None:
     url = "https://example.org/"
-    auth = ("tomchristie", "password123")
+    auth = ("user", "password123")
     app = App()
 
     async with httpx.AsyncClient(
@@ -204,7 +205,7 @@ async def test_basic_auth_on_session() -> None:
         response = await client.get(url)
 
     assert response.status_code == 200
-    assert response.json() == {"auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="}
+    assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
 @pytest.mark.asyncio
@@ -279,7 +280,7 @@ async def test_trust_env_auth() -> None:
 @pytest.mark.asyncio
 async def test_auth_disable_per_request() -> None:
     url = "https://example.org/"
-    auth = ("tomchristie", "password123")
+    auth = ("user", "password123")
     app = App()
 
     async with httpx.AsyncClient(
@@ -317,13 +318,13 @@ async def test_auth_property() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         assert client.auth is None
 
-        client.auth = ("tomchristie", "password123")  # type: ignore
+        client.auth = ("user", "password123")  # type: ignore
         assert isinstance(client.auth, BasicAuth)
 
         url = "https://example.org/"
         response = await client.get(url)
         assert response.status_code == 200
-        assert response.json() == {"auth": "Basic dG9tY2hyaXN0aWU6cGFzc3dvcmQxMjM="}
+        assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
 @pytest.mark.asyncio
@@ -347,7 +348,7 @@ async def test_auth_invalid_type() -> None:
 @pytest.mark.asyncio
 async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     app = App()
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
@@ -360,7 +361,7 @@ async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> 
 
 def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     auth_header = "Token ..."
     app = App(auth_header=auth_header, status_code=401)
 
@@ -375,7 +376,7 @@ def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
 @pytest.mark.asyncio
 async def test_digest_auth_200_response_including_digest_auth_header() -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     auth_header = 'Digest realm="realm@host.com",qop="auth",nonce="abc",opaque="xyz"'
     app = App(auth_header=auth_header, status_code=200)
 
@@ -390,7 +391,7 @@ async def test_digest_auth_200_response_including_digest_auth_header() -> None:
 @pytest.mark.asyncio
 async def test_digest_auth_401_response_without_digest_auth_header() -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     app = App(auth_header="", status_code=401)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
@@ -419,7 +420,7 @@ async def test_digest_auth(
     algorithm: str, expected_hash_length: int, expected_response_length: int
 ) -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     app = DigestApp(algorithm=algorithm)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
@@ -435,7 +436,7 @@ async def test_digest_auth(
     response_fields = [field.strip() for field in fields.split(",")]
     digest_data = dict(field.split("=") for field in response_fields)
 
-    assert digest_data["username"] == '"tomchristie"'
+    assert digest_data["username"] == '"user"'
     assert digest_data["realm"] == '"httpx@example.org"'
     assert "nonce" in digest_data
     assert digest_data["uri"] == '"/"'
@@ -450,7 +451,7 @@ async def test_digest_auth(
 @pytest.mark.asyncio
 async def test_digest_auth_no_specified_qop() -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     app = DigestApp(qop="")
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
@@ -469,7 +470,7 @@ async def test_digest_auth_no_specified_qop() -> None:
     assert "qop" not in digest_data
     assert "nc" not in digest_data
     assert "cnonce" not in digest_data
-    assert digest_data["username"] == '"tomchristie"'
+    assert digest_data["username"] == '"user"'
     assert digest_data["realm"] == '"httpx@example.org"'
     assert len(digest_data["nonce"]) == 64 + 2  # extra quotes
     assert digest_data["uri"] == '"/"'
@@ -482,7 +483,7 @@ async def test_digest_auth_no_specified_qop() -> None:
 @pytest.mark.asyncio
 async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     app = DigestApp(qop=qop)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
@@ -495,7 +496,7 @@ async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) 
 @pytest.mark.asyncio
 async def test_digest_auth_qop_auth_int_not_implemented() -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     app = DigestApp(qop="auth-int")
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
@@ -506,7 +507,7 @@ async def test_digest_auth_qop_auth_int_not_implemented() -> None:
 @pytest.mark.asyncio
 async def test_digest_auth_qop_must_be_auth_or_auth_int() -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     app = DigestApp(qop="not-auth")
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
@@ -517,7 +518,7 @@ async def test_digest_auth_qop_must_be_auth_or_auth_int() -> None:
 @pytest.mark.asyncio
 async def test_digest_auth_incorrect_credentials() -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     app = DigestApp(send_response_after_attempt=2)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
@@ -525,6 +526,62 @@ async def test_digest_auth_incorrect_credentials() -> None:
 
     assert response.status_code == 401
     assert len(response.history) == 1
+
+
+@pytest.mark.asyncio
+async def test_digest_auth_reuses_challenge() -> None:
+    url = "https://example.org/"
+    auth = DigestAuth(username="user", password="password123")
+    app = DigestApp()
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
+        response_1 = await client.get(url, auth=auth)
+        response_2 = await client.get(url, auth=auth)
+
+        assert response_1.status_code == 200
+        assert response_2.status_code == 200
+
+        assert len(response_1.history) == 1
+        assert len(response_2.history) == 0
+
+
+@pytest.mark.asyncio
+async def test_digest_auth_resets_nonce_count_after_401() -> None:
+    url = "https://example.org/"
+    auth = DigestAuth(username="user", password="password123")
+    app = DigestApp()
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
+        response_1 = await client.get(url, auth=auth)
+        assert response_1.status_code == 200
+        assert len(response_1.history) == 1
+
+        first_nonce = parse_keqv_list(
+            response_1.request.headers["Authorization"].split(", ")
+        )["nonce"]
+        first_nc = parse_keqv_list(
+            response_1.request.headers["Authorization"].split(", ")
+        )["nc"]
+
+        # with this we now force a 401 on a subsequent (but initial) request
+        app.send_response_after_attempt = 2
+
+        # we expect the client again to try to authenticate, i.e. the history length must be 1
+        response_2 = await client.get(url, auth=auth)
+        assert response_2.status_code == 200
+        assert len(response_2.history) == 1
+
+        second_nonce = parse_keqv_list(
+            response_2.request.headers["Authorization"].split(", ")
+        )["nonce"]
+        second_nc = parse_keqv_list(
+            response_2.request.headers["Authorization"].split(", ")
+        )["nc"]
+
+    assert first_nonce != second_nonce  # ensures that the auth challenge was reset
+    assert (
+        first_nc == second_nc
+    )  # ensures the nonce count is reset when the authentication failed
 
 
 @pytest.mark.parametrize(
@@ -539,7 +596,7 @@ async def test_async_digest_auth_raises_protocol_error_on_malformed_header(
     auth_header: str,
 ) -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     app = App(auth_header=auth_header, status_code=401)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
@@ -558,7 +615,7 @@ def test_sync_digest_auth_raises_protocol_error_on_malformed_header(
     auth_header: str,
 ) -> None:
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     app = App(auth_header=auth_header, status_code=401)
 
     with httpx.Client(transport=httpx.MockTransport(app)) as client:
@@ -629,11 +686,11 @@ class ConsumeBodyTransport(httpx.MockTransport):
 @pytest.mark.asyncio
 async def test_digest_auth_unavailable_streaming_body():
     url = "https://example.org/"
-    auth = DigestAuth(username="tomchristie", password="password123")
+    auth = DigestAuth(username="user", password="password123")
     app = DigestApp()
 
     async def streaming_body():
-        yield b"Example request body"  # pragma: nocover
+        yield b"Example request body"  # pragma: no cover
 
     async with httpx.AsyncClient(transport=ConsumeBodyTransport(app)) as client:
         with pytest.raises(httpx.StreamConsumed):

@@ -73,7 +73,7 @@ async def test_async_bytesio_content():
             return chunk
 
         async def __aiter__(self):
-            yield self._content  # pragma: nocover
+            yield self._content  # pragma: no cover
 
     headers, stream = encode_request(content=AsyncBytesIO(b"Hello, world!"))
     assert not isinstance(stream, typing.Iterable)
@@ -105,7 +105,7 @@ async def test_iterator_content():
 
     # Support 'data' for compat with requests.
     with pytest.warns(DeprecationWarning):
-        headers, stream = encode_request(data=hello_world())  # type: ignore
+        headers, stream = encode_request(data=hello_world())
     assert isinstance(stream, typing.Iterable)
     assert not isinstance(stream, typing.AsyncIterable)
 
@@ -135,7 +135,7 @@ async def test_aiterator_content():
 
     # Support 'data' for compat with requests.
     with pytest.warns(DeprecationWarning):
-        headers, stream = encode_request(data=hello_world())  # type: ignore
+        headers, stream = encode_request(data=hello_world())
     assert not isinstance(stream, typing.Iterable)
     assert isinstance(stream, typing.AsyncIterable)
 
