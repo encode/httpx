@@ -428,7 +428,7 @@ async def test_digest_auth(
     assert response.status_code == 200
     assert len(response.history) == 1
 
-    authorization = typing.cast(dict, response.json())["auth"]
+    authorization = typing.cast(typing.Dict[str, typing.Any], response.json())["auth"]
     scheme, _, fields = authorization.partition(" ")
     assert scheme == "Digest"
 
@@ -459,7 +459,7 @@ async def test_digest_auth_no_specified_qop() -> None:
     assert response.status_code == 200
     assert len(response.history) == 1
 
-    authorization = typing.cast(dict, response.json())["auth"]
+    authorization = typing.cast(typing.Dict[str, typing.Any], response.json())["auth"]
     scheme, _, fields = authorization.partition(" ")
     assert scheme == "Digest"
 

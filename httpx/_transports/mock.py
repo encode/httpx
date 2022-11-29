@@ -6,7 +6,7 @@ from .base import AsyncBaseTransport, BaseTransport
 
 
 class MockTransport(AsyncBaseTransport, BaseTransport):
-    def __init__(self, handler: typing.Callable) -> None:
+    def __init__(self, handler: typing.Callable[[Request], Response]) -> None:
         self.handler = handler
 
     def handle_request(
@@ -29,6 +29,6 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
 
         # https://simonwillison.net/2020/Sep/2/await-me-maybe/
         if asyncio.iscoroutine(response):
-            response = await response
+            response = await response  # type: ignore[func-returns-value,assignment]
 
         return response
