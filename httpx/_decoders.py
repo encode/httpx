@@ -14,10 +14,10 @@ from ._exceptions import DecodingError
 
 class ContentDecoder:
     def decode(self, data: bytes) -> bytes:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()  # pragma: no cover
 
     def flush(self) -> bytes:
-        raise NotImplementedError()  # pragma: nocover
+        raise NotImplementedError()  # pragma: no cover
 
 
 class IdentityDecoder(ContentDecoder):
@@ -57,7 +57,7 @@ class DeflateDecoder(ContentDecoder):
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
-        except zlib.error as exc:  # pragma: nocover
+        except zlib.error as exc:  # pragma: no cover
             raise DecodingError(str(exc)) from exc
 
 
@@ -80,7 +80,7 @@ class GZipDecoder(ContentDecoder):
     def flush(self) -> bytes:
         try:
             return self.decompressor.flush()
-        except zlib.error as exc:  # pragma: nocover
+        except zlib.error as exc:  # pragma: no cover
             raise DecodingError(str(exc)) from exc
 
 
@@ -95,7 +95,7 @@ class BrotliDecoder(ContentDecoder):
     """
 
     def __init__(self) -> None:
-        if brotli is None:  # pragma: nocover
+        if brotli is None:  # pragma: no cover
             raise ImportError(
                 "Using 'BrotliDecoder', but neither of the 'brotlicffi' or 'brotli' "
                 "packages have been installed. "
@@ -106,10 +106,10 @@ class BrotliDecoder(ContentDecoder):
         self.seen_data = False
         if hasattr(self.decompressor, "decompress"):
             # The 'brotlicffi' package.
-            self._decompress = self.decompressor.decompress  # pragma: nocover
+            self._decompress = self.decompressor.decompress  # pragma: no cover
         else:
             # The 'brotli' package.
-            self._decompress = self.decompressor.process  # pragma: nocover
+            self._decompress = self.decompressor.process  # pragma: no cover
 
     def decode(self, data: bytes) -> bytes:
         if not data:
@@ -130,9 +130,9 @@ class BrotliDecoder(ContentDecoder):
                 # As the decompressor decompresses eagerly, this
                 # will never actually emit any data. However, it will potentially throw
                 # errors if a truncated or damaged data stream has been used.
-                self.decompressor.finish()  # pragma: nocover
+                self.decompressor.finish()  # pragma: no cover
             return b""
-        except brotli.error as exc:  # pragma: nocover
+        except brotli.error as exc:  # pragma: no cover
             raise DecodingError(str(exc)) from exc
 
 
@@ -330,4 +330,4 @@ SUPPORTED_DECODERS = {
 
 
 if brotli is None:
-    SUPPORTED_DECODERS.pop("br")  # pragma: nocover
+    SUPPORTED_DECODERS.pop("br")  # pragma: no cover

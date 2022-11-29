@@ -73,7 +73,7 @@ async def test_async_bytesio_content():
             return chunk
 
         async def __aiter__(self):
-            yield self._content  # pragma: nocover
+            yield self._content  # pragma: no cover
 
     headers, stream = encode_request(content=AsyncBytesIO(b"Hello, world!"))
     assert not isinstance(stream, typing.Iterable)

@@ -146,7 +146,7 @@ class NetRCInfo:
                     if expanded_path.is_file():
                         self._netrc_info = netrc.netrc(str(expanded_path))
                         break
-                except (netrc.NetrcParseError, IOError):  # pragma: nocover
+                except (netrc.NetrcParseError, IOError):  # pragma: no cover
                     # Issue while reading the netrc file, ignore...
                     pass
         return self._netrc_info
@@ -237,7 +237,7 @@ TRACE_LOG_LEVEL = 5
 class Logger(logging.Logger):
     # Stub for type checkers.
     def trace(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
-        ...  # pragma: nocover
+        ...  # pragma: no cover
 
 
 def get_logger(name: str) -> Logger:
@@ -398,7 +398,7 @@ class Timer:
             import trio
 
             return trio.current_time()
-        elif library == "curio":  # pragma: nocover
+        elif library == "curio":  # pragma: no cover
             import curio
 
             return await curio.clock()
