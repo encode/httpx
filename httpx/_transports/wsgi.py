@@ -8,8 +8,8 @@ from .._types import SyncByteStream
 from .base import BaseTransport
 
 if typing.TYPE_CHECKING:
-    from _typeshed import OptExcInfo
-    from _typeshed.wsgi import WSGIApplication
+    from _typeshed import OptExcInfo  # pragma: no cover
+    from _typeshed.wsgi import WSGIApplication  # pragma: no cover
 
 _T = typing.TypeVar("_T")
 
