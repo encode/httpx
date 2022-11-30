@@ -113,7 +113,7 @@ class ResponseBodyAuth(Auth):
 
     requires_response_body = True
 
-    def __init__(self, token):
+    def __init__(self, token: str) -> None:
         self.token = token
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
@@ -689,7 +689,7 @@ async def test_digest_auth_unavailable_streaming_body():
     auth = DigestAuth(username="user", password="password123")
     app = DigestApp()
 
-    async def streaming_body():
+    async def streaming_body() -> typing.AsyncIterator[bytes]:
         yield b"Example request body"  # pragma: no cover
 
     async with httpx.AsyncClient(transport=ConsumeBodyTransport(app)) as client:

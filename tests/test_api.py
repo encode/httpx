@@ -1,3 +1,5 @@
+import typing
+
 import pytest
 
 import httpx
@@ -18,7 +20,7 @@ def test_post(server):
 
 
 def test_post_byte_iterator(server):
-    def data():
+    def data() -> typing.Iterator[bytes]:
         yield b"Hello"
         yield b", "
         yield b"world!"

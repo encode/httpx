@@ -20,6 +20,9 @@ from uvicorn.server import Server
 from httpx import URL
 from tests.concurrency import sleep
 
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from httpx._transports.asgi import _Receive, _Send
+
 ENVIRONMENT_VARIABLES = {
     "SSL_CERT_FILE",
     "SSL_CERT_DIR",
@@ -72,7 +75,10 @@ def clean_environ():
     os.environ.update(original_environ)
 
 
-async def app(scope, receive, send):
+_Scope = typing.Dict[str, typing.Any]
+
+
+async def app(scope: _Scope, receive: "_Receive", send: "_Send") -> None:
     assert scope["type"] == "http"
     if scope["path"].startswith("/slow_response"):
         await slow_response(scope, receive, send)
@@ -92,7 +98,7 @@ async def app(scope, receive, send):
         await hello_world(scope, receive, send)
 
 
-async def hello_world(scope, receive, send):
+async def hello_world(scope: _Scope, receive: "_Receive", send: "_Send") -> None:
     await send(
         {
             "type": "http.response.start",
@@ -103,7 +109,7 @@ async def hello_world(scope, receive, send):
     await send({"type": "http.response.body", "body": b"Hello, world!"})
 
 
-async def hello_world_json(scope, receive, send):
+async def hello_world_json(scope: _Scope, receive: "_Receive", send: "_Send") -> None:
     await send(
         {
             "type": "http.response.start",
@@ -114,7 +120,7 @@ async def hello_world_json(scope, receive, send):
     await send({"type": "http.response.body", "body": b'{"Hello": "world!"}'})
 
 
-async def slow_response(scope, receive, send):
+async def slow_response(scope: _Scope, receive: "_Receive", send: "_Send") -> None:
     await sleep(1.0)
     await send(
         {
@@ -126,7 +132,7 @@ async def slow_response(scope, receive, send):
     await send({"type": "http.response.body", "body": b"Hello, world!"})
 
 
-async def status_code(scope, receive, send):
+async def status_code(scope: _Scope, receive: "_Receive", send: "_Send") -> None:
     status_code = int(scope["path"].replace("/status/", ""))
     await send(
         {
@@ -138,7 +144,7 @@ async def status_code(scope, receive, send):
     await send({"type": "http.response.body", "body": b"Hello, world!"})
 
 
-async def echo_body(scope, receive, send):
+async def echo_body(scope: _Scope, receive: "_Receive", send: "_Send") -> None:
     body = b""
     more_body = True
 
@@ -157,7 +163,7 @@ async def echo_body(scope, receive, send):
     await send({"type": "http.response.body", "body": body})
 
 
-async def echo_binary(scope, receive, send):
+async def echo_binary(scope: _Scope, receive: "_Receive", send: "_Send") -> None:
     body = b""
     more_body = True
 
@@ -176,7 +182,7 @@ async def echo_binary(scope, receive, send):
     await send({"type": "http.response.body", "body": body})
 
 
-async def echo_headers(scope, receive, send):
+async def echo_headers(scope: _Scope, receive: "_Receive", send: "_Send") -> None:
     body = {
         name.capitalize().decode(): value.decode()
         for name, value in scope.get("headers", [])
@@ -191,7 +197,7 @@ async def echo_headers(scope, receive, send):
     await send({"type": "http.response.body", "body": json.dumps(body).encode()})
 
 
-async def redirect_301(scope, receive, send):
+async def redirect_301(scope: _Scope, receive: "_Receive", send: "_Send") -> None:
     await send(
         {"type": "http.response.start", "status": 301, "headers": [[b"location", b"/"]]}
     )
@@ -275,7 +281,7 @@ class TestServer(Server):
         while not self.started:
             await sleep(0.2)
 
-    async def watch_restarts(self):  # pragma: no cover
+    async def watch_restarts(self) -> None:  # pragma: no cover
         while True:
             if self.should_exit:
                 return
