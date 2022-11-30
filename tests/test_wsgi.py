@@ -144,7 +144,7 @@ def test_logging():
         pytest.param("http://www.example.org:8000", "8000", id="explicit-port"),
     ],
 )
-def test_wsgi_server_port(url: str, expected_server_port: int) -> None:
+def test_wsgi_server_port(url: str, expected_server_port: str) -> None:
     """
     SERVER_PORT is populated correctly from the requested URL.
     """
