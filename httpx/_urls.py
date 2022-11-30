@@ -6,7 +6,7 @@ import rfc3986
 import rfc3986.exceptions
 
 from ._exceptions import InvalidURL
-from ._types import PrimitiveData, QueryParamTypes, URLTypes
+from ._types import PrimitiveData, QueryParamTypes, RawURL, URLTypes
 from ._utils import primitive_value_to_str
 
 
@@ -310,6 +310,20 @@ class URL:
         As a string, without the leading '#'.
         """
         return unquote(self._uri_reference.fragment or "")
+
+    @property
+    def raw(self) -> RawURL:
+        """
+        The URL in the raw representation used by the low level
+        transport API. See `BaseTransport.handle_request`.
+        Provides the (scheme, host, port, target) for the outgoing request.
+        """
+        return RawURL(
+            self.raw_scheme,
+            self.raw_host,
+            self.port,
+            self.raw_path,
+        )
 
     @property
     def is_absolute_url(self) -> bool:
