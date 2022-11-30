@@ -100,7 +100,9 @@ def get_lexer_for_response(response: Response) -> str:
     if content_type is not None:
         mime_type, _, _ = content_type.partition(";")
         try:
-            return pygments.lexers.get_lexer_for_mimetype(mime_type.strip()).name
+            return typing.cast(
+                str, pygments.lexers.get_lexer_for_mimetype(mime_type.strip()).name
+            )
         except pygments.util.ClassNotFound:  # pragma: no cover
             pass
     return ""  # pragma: no cover

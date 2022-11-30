@@ -63,7 +63,7 @@ async def test_bytesio_content():
 @pytest.mark.asyncio
 async def test_async_bytesio_content():
     class AsyncBytesIO:
-        def __init__(self, content):
+        def __init__(self, content: bytes):
             self._idx = 0
             self._content = content
 

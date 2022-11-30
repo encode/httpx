@@ -540,16 +540,20 @@ class Response:
     @property
     def http_version(self) -> str:
         try:
-            return self.extensions["http_version"].decode("ascii", errors="ignore")
+            http_version: bytes = self.extensions["http_version"]
         except KeyError:
             return "HTTP/1.1"
+        else:
+            return http_version.decode("ascii", errors="ignore")
 
     @property
     def reason_phrase(self) -> str:
         try:
-            return self.extensions["reason_phrase"].decode("ascii", errors="ignore")
+            reason_phrase: bytes = self.extensions["reason_phrase"]
         except KeyError:
             return codes.get_reason_phrase(self.status_code)
+        else:
+            return reason_phrase.decode("ascii", errors="ignore")
 
     @property
     def url(self) -> URL:

@@ -70,6 +70,8 @@ class URL:
       be properly URL escaped when decoding the parameter names and values themselves.
     """
 
+    _uri_reference: rfc3986.URIReference
+
     def __init__(
         self, url: typing.Union["URL", str] = "", **kwargs: typing.Any
     ) -> None:
@@ -507,7 +509,7 @@ class URL:
         return isinstance(other, (URL, str)) and str(self) == str(URL(other))
 
     def __str__(self) -> str:
-        return self._uri_reference.unsplit()
+        return typing.cast(str, self._uri_reference.unsplit())
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__

@@ -52,7 +52,7 @@ def async_environment(request: typing.Any) -> str:
         ...
     ```
     """
-    return request.param
+    return typing.cast(str, request.param)
 
 
 @pytest.fixture(scope="function", autouse=True)

@@ -104,6 +104,7 @@ class BrotliDecoder(ContentDecoder):
 
         self.decompressor = brotli.Decompressor()
         self.seen_data = False
+        self._decompress: typing.Callable[[bytes], bytes]
         if hasattr(self.decompressor, "decompress"):
             # The 'brotlicffi' package.
             self._decompress = self.decompressor.decompress  # pragma: no cover

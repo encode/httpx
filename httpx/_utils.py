@@ -401,7 +401,7 @@ class Timer:
         elif library == "curio":  # pragma: no cover
             import curio
 
-            return await curio.clock()
+            return typing.cast(float, await curio.clock())
 
         import asyncio
 
