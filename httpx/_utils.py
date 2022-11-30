@@ -16,7 +16,7 @@ import sniffio
 from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._models import URL
+    from ._urls import URL
 
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
@@ -465,7 +465,7 @@ class URLPattern:
     """
 
     def __init__(self, pattern: str) -> None:
-        from ._models import URL
+        from ._urls import URL
 
         if pattern and ":" not in pattern:
             raise ValueError(
