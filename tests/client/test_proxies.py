@@ -5,7 +5,7 @@ import httpx
 from httpx._utils import URLPattern
 
 
-def url_to_origin(url: str):
+def url_to_origin(url: str) -> httpcore.URL:
     """
     Given a URL string, return the origin in the raw tuple format that
     `httpcore` uses for it's representation.

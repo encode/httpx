@@ -290,7 +290,7 @@ class TestServer(Server):
             await self.startup()
 
 
-def serve_in_thread(server: Server):
+def serve_in_thread(server: TestServer) -> typing.Iterator[TestServer]:
     thread = threading.Thread(target=server.run)
     thread.start()
     try:
@@ -303,7 +303,7 @@ def serve_in_thread(server: Server):
 
 
 @pytest.fixture(scope="session")
-def server():
+def server() -> typing.Iterator[TestServer]:
     config = Config(app=app, lifespan="off", loop="asyncio")
     server = TestServer(config=config)
     yield from serve_in_thread(server)

@@ -67,7 +67,7 @@ async def test_async_bytesio_content():
             self._idx = 0
             self._content = content
 
-        async def aread(self, chunk_size: int):
+        async def aread(self, chunk_size: int) -> bytes:
             chunk = self._content[self._idx : self._idx + chunk_size]
             self._idx = self._idx + chunk_size
             return chunk
