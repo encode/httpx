@@ -11,7 +11,7 @@ if typing.TYPE_CHECKING:
     from _typeshed import OptExcInfo
     from _typeshed.wsgi import WSGIApplication
 
-    _T = typing.TypeVar("_T")
+_T = typing.TypeVar("_T")
 
 
 def _skip_leading_empty_chunks(body: typing.Iterable[_T]) -> typing.Iterable[_T]:
