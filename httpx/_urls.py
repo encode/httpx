@@ -6,7 +6,7 @@ import rfc3986
 import rfc3986.exceptions
 
 from ._exceptions import InvalidURL
-from ._types import PrimitiveData, QueryParamTypes, URLTypes
+from ._types import PrimitiveData, QueryParamTypes, RawURL, URLTypes
 from ._utils import primitive_value_to_str
 
 
@@ -310,6 +310,21 @@ class URL:
         As a string, without the leading '#'.
         """
         return unquote(self._uri_reference.fragment or "")
+
+    @property
+    def raw(self) -> RawURL:
+        """
+        Provides the (scheme, host, port, target) for the outgoing request.
+
+        In older versions of `httpx` this was used in the low-level transport API.
+        We no longer use `RawURL`, and this property will be deprecated in a future release.
+        """
+        return RawURL(
+            self.raw_scheme,
+            self.raw_host,
+            self.port,
+            self.raw_path,
+        )
 
     @property
     def is_absolute_url(self) -> bool:
