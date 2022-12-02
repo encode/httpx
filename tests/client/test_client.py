@@ -120,7 +120,7 @@ def test_raw_iterator(server):
 
 
 def test_cannot_stream_async_request(server):
-    async def hello_world():  # pragma: no cover
+    async def hello_world() -> typing.AsyncIterator[bytes]:  # pragma: no cover
         yield b"Hello, "
         yield b"world!"
 
@@ -229,8 +229,8 @@ def test_merge_relative_url_with_encoded_slashes():
 
 def test_context_managed_transport():
     class Transport(httpx.BaseTransport):
-        def __init__(self):
-            self.events = []
+        def __init__(self) -> None:
+            self.events: typing.List[str] = []
 
         def close(self):
             # The base implementation of httpx.BaseTransport just

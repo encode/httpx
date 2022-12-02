@@ -63,7 +63,7 @@ async def test_bytesio_content():
 @pytest.mark.asyncio
 async def test_async_bytesio_content():
     class AsyncBytesIO:
-        def __init__(self, content: bytes):
+        def __init__(self, content: bytes) -> None:
             self._idx = 0
             self._content = content
 
@@ -87,7 +87,7 @@ async def test_async_bytesio_content():
 
 @pytest.mark.asyncio
 async def test_iterator_content():
-    def hello_world():
+    def hello_world() -> typing.Iterator[bytes]:
         yield b"Hello, "
         yield b"world!"
 
@@ -105,7 +105,7 @@ async def test_iterator_content():
 
     # Support 'data' for compat with requests.
     with pytest.warns(DeprecationWarning):
-        headers, stream = encode_request(data=hello_world())
+        headers, stream = encode_request(data=hello_world())  # type: ignore
     assert isinstance(stream, typing.Iterable)
     assert not isinstance(stream, typing.AsyncIterable)
 
@@ -117,7 +117,7 @@ async def test_iterator_content():
 
 @pytest.mark.asyncio
 async def test_aiterator_content():
-    async def hello_world():
+    async def hello_world() -> typing.AsyncIterator[bytes]:
         yield b"Hello, "
         yield b"world!"
 
@@ -135,7 +135,7 @@ async def test_aiterator_content():
 
     # Support 'data' for compat with requests.
     with pytest.warns(DeprecationWarning):
-        headers, stream = encode_request(data=hello_world())
+        headers, stream = encode_request(data=hello_world())  # type: ignore
     assert not isinstance(stream, typing.Iterable)
     assert isinstance(stream, typing.AsyncIterable)
 
@@ -409,7 +409,7 @@ async def test_response_bytes_content():
 
 @pytest.mark.asyncio
 async def test_response_iterator_content():
-    def hello_world():
+    def hello_world() -> typing.Iterator[bytes]:
         yield b"Hello, "
         yield b"world!"
 
@@ -428,7 +428,7 @@ async def test_response_iterator_content():
 
 @pytest.mark.asyncio
 async def test_response_aiterator_content():
-    async def hello_world():
+    async def hello_world() -> typing.AsyncIterator[bytes]:
         yield b"Hello, "
         yield b"world!"
 
