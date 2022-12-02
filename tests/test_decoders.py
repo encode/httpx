@@ -1,3 +1,4 @@
+import typing
 import zlib
 
 import chardet
@@ -127,7 +128,7 @@ async def test_streaming():
     body = b"test 123"
     compressor = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
 
-    async def compress(body):
+    async def compress(body: bytes) -> typing.AsyncIterator[bytes]:
         yield compressor.compress(body)
         yield compressor.flush()
 
@@ -186,7 +187,7 @@ def test_decoding_errors(header_value):
 )
 @pytest.mark.asyncio
 async def test_text_decoder_with_autodetect(data, encoding):
-    async def iterator():
+    async def iterator() -> typing.AsyncIterator[bytes]:
         nonlocal data
         for chunk in data:
             yield chunk
@@ -209,7 +210,7 @@ async def test_text_decoder_with_autodetect(data, encoding):
 
 @pytest.mark.asyncio
 async def test_text_decoder_known_encoding():
-    async def iterator():
+    async def iterator() -> typing.AsyncIterator[bytes]:
         yield b"\x83g"
         yield b"\x83"
         yield b"\x89\x83x\x83\x8b"
