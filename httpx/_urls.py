@@ -315,7 +315,7 @@ class URL:
     def raw(self) -> RawURL:
         """
         Provides the (scheme, host, port, target) for the outgoing request.
-        
+
         In older versions of `httpx` this was used in the low-level transport API.
         We no longer use `RawURL`, and this property will be deprecated in a future release.
         """
