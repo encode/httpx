@@ -314,9 +314,10 @@ class URL:
     @property
     def raw(self) -> RawURL:
         """
-        The URL in the raw representation used by the low level
-        transport API. See `BaseTransport.handle_request`.
         Provides the (scheme, host, port, target) for the outgoing request.
+        
+        In older versions of `httpx` this was used in the low-level transport API.
+        We no longer use `RawURL`, and this property will be deprecated in a future release.
         """
         return RawURL(
             self.raw_scheme,
