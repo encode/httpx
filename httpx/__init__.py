@@ -46,7 +46,7 @@ from ._urls import URL, QueryParams
 
 try:
     from ._main import main
-except ImportError:  # pragma: nocover
+except ImportError:  # pragma: no cover
 
     def main() -> None:  # type: ignore
         import sys

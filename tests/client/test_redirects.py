@@ -1,3 +1,5 @@
+import typing
+
 import pytest
 
 import httpx
@@ -351,8 +353,8 @@ def test_cannot_redirect_streaming_body():
     client = httpx.Client(transport=ConsumeBodyTransport(redirects))
     url = "https://example.org/redirect_body"
 
-    def streaming_body():
-        yield b"Example request body"  # pragma: nocover
+    def streaming_body() -> typing.Iterator[bytes]:
+        yield b"Example request body"  # pragma: no cover
 
     with pytest.raises(httpx.StreamConsumed):
         client.post(url, content=streaming_body(), follow_redirects=True)

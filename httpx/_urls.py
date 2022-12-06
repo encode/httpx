@@ -6,7 +6,7 @@ import rfc3986
 import rfc3986.exceptions
 
 from ._exceptions import InvalidURL
-from ._types import PrimitiveData, QueryParamTypes, URLTypes
+from ._types import PrimitiveData, QueryParamTypes, RawURL, URLTypes
 from ._utils import primitive_value_to_str
 
 
@@ -69,6 +69,8 @@ class URL:
     * `url.query` is raw bytes, without URL escaping. A URL query string portion can only
       be properly URL escaped when decoding the parameter names and values themselves.
     """
+
+    _uri_reference: rfc3986.URIReference
 
     def __init__(
         self, url: typing.Union["URL", str] = "", **kwargs: typing.Any
@@ -310,6 +312,21 @@ class URL:
         return unquote(self._uri_reference.fragment or "")
 
     @property
+    def raw(self) -> RawURL:
+        """
+        Provides the (scheme, host, port, target) for the outgoing request.
+
+        In older versions of `httpx` this was used in the low-level transport API.
+        We no longer use `RawURL`, and this property will be deprecated in a future release.
+        """
+        return RawURL(
+            self.raw_scheme,
+            self.raw_host,
+            self.port,
+            self.raw_path,
+        )
+
+    @property
     def is_absolute_url(self) -> bool:
         """
         Return `True` for absolute URLs such as 'http://example.com/path',
@@ -507,7 +524,7 @@ class URL:
         return isinstance(other, (URL, str)) and str(self) == str(URL(other))
 
     def __str__(self) -> str:
-        return self._uri_reference.unsplit()
+        return typing.cast(str, self._uri_reference.unsplit())
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
@@ -570,7 +587,7 @@ class QueryParams(typing.Mapping[str, str]):
                 for k, v in dict_value.items()
             }
 
-    def keys(self) -> typing.KeysView:
+    def keys(self) -> typing.KeysView[str]:
         """
         Return all the keys in the query params.
 
@@ -581,7 +598,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return self._dict.keys()
 
-    def values(self) -> typing.ValuesView:
+    def values(self) -> typing.ValuesView[str]:
         """
         Return all the values in the query params. If a key occurs more than once
         only the first item for that key is returned.
@@ -593,7 +610,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return {k: v[0] for k, v in self._dict.items()}.values()
 
-    def items(self) -> typing.ItemsView:
+    def items(self) -> typing.ItemsView[str, str]:
         """
         Return all items in the query params. If a key occurs more than once
         only the first item for that key is returned.
