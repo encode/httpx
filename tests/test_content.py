@@ -4,59 +4,61 @@ import typing
 import pytest
 
 import httpx
-from httpx._content import encode_request, encode_response
+
+method = "POST"
+url = "https://www.example.com"
 
 
 @pytest.mark.asyncio
 async def test_empty_content():
-    headers, stream = encode_request()
-    assert isinstance(stream, httpx.SyncByteStream)
-    assert isinstance(stream, httpx.AsyncByteStream)
+    request = httpx.Request(method, url)
+    assert isinstance(request.stream, httpx.SyncByteStream)
+    assert isinstance(request.stream, httpx.AsyncByteStream)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {}
+    assert request.headers == {"Host": "www.example.com", "Content-Length": "0"}
     assert sync_content == b""
     assert async_content == b""
 
 
 @pytest.mark.asyncio
 async def test_bytes_content():
-    headers, stream = encode_request(content=b"Hello, world!")
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    request = httpx.Request(method, url, content=b"Hello, world!")
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {"Content-Length": "13"}
+    assert request.headers == {"Host": "www.example.com", "Content-Length": "13"}
     assert sync_content == b"Hello, world!"
     assert async_content == b"Hello, world!"
 
     # Support 'data' for compat with requests.
     with pytest.warns(DeprecationWarning):
-        headers, stream = encode_request(data=b"Hello, world!")  # type: ignore
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+        request = httpx.Request(method, url, data=b"Hello, world!")  # type: ignore
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {"Content-Length": "13"}
+    assert request.headers == {"Host": "www.example.com", "Content-Length": "13"}
     assert sync_content == b"Hello, world!"
     assert async_content == b"Hello, world!"
 
 
 @pytest.mark.asyncio
 async def test_bytesio_content():
-    headers, stream = encode_request(content=io.BytesIO(b"Hello, world!"))
-    assert isinstance(stream, typing.Iterable)
-    assert not isinstance(stream, typing.AsyncIterable)
+    request = httpx.Request(method, url, content=io.BytesIO(b"Hello, world!"))
+    assert isinstance(request.stream, typing.Iterable)
+    assert not isinstance(request.stream, typing.AsyncIterable)
 
-    content = b"".join([part for part in stream])
+    content = b"".join([part for part in request.stream])
 
-    assert headers == {"Content-Length": "13"}
+    assert request.headers == {"Host": "www.example.com", "Content-Length": "13"}
     assert content == b"Hello, world!"
 
 
@@ -75,13 +77,16 @@ async def test_async_bytesio_content():
         async def __aiter__(self):
             yield self._content  # pragma: no cover
 
-    headers, stream = encode_request(content=AsyncBytesIO(b"Hello, world!"))
-    assert not isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    request = httpx.Request(method, url, content=AsyncBytesIO(b"Hello, world!"))
+    assert not isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    content = b"".join([part async for part in stream])
+    content = b"".join([part async for part in request.stream])
 
-    assert headers == {"Transfer-Encoding": "chunked"}
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Transfer-Encoding": "chunked",
+    }
     assert content == b"Hello, world!"
 
 
@@ -91,27 +96,33 @@ async def test_iterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    headers, stream = encode_request(content=hello_world())
-    assert isinstance(stream, typing.Iterable)
-    assert not isinstance(stream, typing.AsyncIterable)
+    request = httpx.Request(method, url, content=hello_world())
+    assert isinstance(request.stream, typing.Iterable)
+    assert not isinstance(request.stream, typing.AsyncIterable)
 
-    content = b"".join([part for part in stream])
+    content = b"".join([part for part in request.stream])
 
-    assert headers == {"Transfer-Encoding": "chunked"}
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Transfer-Encoding": "chunked",
+    }
     assert content == b"Hello, world!"
 
     with pytest.raises(httpx.StreamConsumed):
-        [part for part in stream]
+        [part for part in request.stream]
 
     # Support 'data' for compat with requests.
     with pytest.warns(DeprecationWarning):
-        headers, stream = encode_request(data=hello_world())  # type: ignore
-    assert isinstance(stream, typing.Iterable)
-    assert not isinstance(stream, typing.AsyncIterable)
+        request = httpx.Request(method, url, data=hello_world())  # type: ignore
+    assert isinstance(request.stream, typing.Iterable)
+    assert not isinstance(request.stream, typing.AsyncIterable)
 
-    content = b"".join([part for part in stream])
+    content = b"".join([part for part in request.stream])
 
-    assert headers == {"Transfer-Encoding": "chunked"}
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Transfer-Encoding": "chunked",
+    }
     assert content == b"Hello, world!"
 
 
@@ -121,40 +132,47 @@ async def test_aiterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    headers, stream = encode_request(content=hello_world())
-    assert not isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    request = httpx.Request(method, url, content=hello_world())
+    assert not isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    content = b"".join([part async for part in stream])
+    content = b"".join([part async for part in request.stream])
 
-    assert headers == {"Transfer-Encoding": "chunked"}
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Transfer-Encoding": "chunked",
+    }
     assert content == b"Hello, world!"
 
     with pytest.raises(httpx.StreamConsumed):
-        [part async for part in stream]
+        [part async for part in request.stream]
 
     # Support 'data' for compat with requests.
     with pytest.warns(DeprecationWarning):
-        headers, stream = encode_request(data=hello_world())  # type: ignore
-    assert not isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+        request = httpx.Request(method, url, data=hello_world())  # type: ignore
+    assert not isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    content = b"".join([part async for part in stream])
+    content = b"".join([part async for part in request.stream])
 
-    assert headers == {"Transfer-Encoding": "chunked"}
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Transfer-Encoding": "chunked",
+    }
     assert content == b"Hello, world!"
 
 
 @pytest.mark.asyncio
 async def test_json_content():
-    headers, stream = encode_request(json={"Hello": "world!"})
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    request = httpx.Request(method, url, json={"Hello": "world!"})
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {
+    assert request.headers == {
+        "Host": "www.example.com",
         "Content-Length": "19",
         "Content-Type": "application/json",
     }
@@ -164,14 +182,15 @@ async def test_json_content():
 
 @pytest.mark.asyncio
 async def test_urlencoded_content():
-    headers, stream = encode_request(data={"Hello": "world!"})
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    request = httpx.Request(method, url, data={"Hello": "world!"})
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {
+    assert request.headers == {
+        "Host": "www.example.com",
         "Content-Length": "14",
         "Content-Type": "application/x-www-form-urlencoded",
     }
@@ -181,14 +200,15 @@ async def test_urlencoded_content():
 
 @pytest.mark.asyncio
 async def test_urlencoded_boolean():
-    headers, stream = encode_request(data={"example": True})
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    request = httpx.Request(method, url, data={"example": True})
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {
+    assert request.headers == {
+        "Host": "www.example.com",
         "Content-Length": "12",
         "Content-Type": "application/x-www-form-urlencoded",
     }
@@ -198,14 +218,15 @@ async def test_urlencoded_boolean():
 
 @pytest.mark.asyncio
 async def test_urlencoded_none():
-    headers, stream = encode_request(data={"example": None})
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    request = httpx.Request(method, url, data={"example": None})
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {
+    assert request.headers == {
+        "Host": "www.example.com",
         "Content-Length": "8",
         "Content-Type": "application/x-www-form-urlencoded",
     }
@@ -215,14 +236,15 @@ async def test_urlencoded_none():
 
 @pytest.mark.asyncio
 async def test_urlencoded_list():
-    headers, stream = encode_request(data={"example": ["a", 1, True]})
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    request = httpx.Request(method, url, data={"example": ["a", 1, True]})
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {
+    assert request.headers == {
+        "Host": "www.example.com",
         "Content-Length": "32",
         "Content-Type": "application/x-www-form-urlencoded",
     }
@@ -233,14 +255,21 @@ async def test_urlencoded_list():
 @pytest.mark.asyncio
 async def test_multipart_files_content():
     files = {"file": io.BytesIO(b"<file content>")}
-    headers, stream = encode_request(files=files, boundary=b"+++")
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    headers = {"Content-Type": "multipart/form-data; boundary=+++"}
+    request = httpx.Request(
+        method,
+        url,
+        files=files,
+        headers=headers,
+    )
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {
+    assert request.headers == {
+        "Host": "www.example.com",
         "Content-Length": "138",
         "Content-Type": "multipart/form-data; boundary=+++",
     }
@@ -270,14 +299,16 @@ async def test_multipart_files_content():
 async def test_multipart_data_and_files_content():
     data = {"message": "Hello, world!"}
     files = {"file": io.BytesIO(b"<file content>")}
-    headers, stream = encode_request(data=data, files=files, boundary=b"+++")
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    headers = {"Content-Type": "multipart/form-data; boundary=+++"}
+    request = httpx.Request(method, url, data=data, files=files, headers=headers)
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {
+    assert request.headers == {
+        "Host": "www.example.com",
         "Content-Length": "210",
         "Content-Type": "multipart/form-data; boundary=+++",
     }
@@ -313,21 +344,21 @@ async def test_multipart_data_and_files_content():
 
 @pytest.mark.asyncio
 async def test_empty_request():
-    headers, stream = encode_request(data={}, files={})
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    request = httpx.Request(method, url, data={}, files={})
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {}
+    assert request.headers == {"Host": "www.example.com", "Content-Length": "0"}
     assert sync_content == b""
     assert async_content == b""
 
 
 def test_invalid_argument():
     with pytest.raises(TypeError):
-        encode_request(123)  # type: ignore
+        httpx.Request(method, url, content=123)  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -336,14 +367,16 @@ async def test_multipart_multiple_files_single_input_content():
         ("file", io.BytesIO(b"<file content 1>")),
         ("file", io.BytesIO(b"<file content 2>")),
     ]
-    headers, stream = encode_request(files=files, boundary=b"+++")
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    headers = {"Content-Type": "multipart/form-data; boundary=+++"}
+    request = httpx.Request(method, url, files=files, headers=headers)
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in request.stream])
+    async_content = b"".join([part async for part in request.stream])
 
-    assert headers == {
+    assert request.headers == {
+        "Host": "www.example.com",
         "Content-Length": "271",
         "Content-Type": "multipart/form-data; boundary=+++",
     }
@@ -381,28 +414,28 @@ async def test_multipart_multiple_files_single_input_content():
 
 @pytest.mark.asyncio
 async def test_response_empty_content():
-    headers, stream = encode_response()
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    response = httpx.Response(200)
+    assert isinstance(response.stream, typing.Iterable)
+    assert isinstance(response.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in response.stream])
+    async_content = b"".join([part async for part in response.stream])
 
-    assert headers == {}
+    assert response.headers == {}
     assert sync_content == b""
     assert async_content == b""
 
 
 @pytest.mark.asyncio
 async def test_response_bytes_content():
-    headers, stream = encode_response(content=b"Hello, world!")
-    assert isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    response = httpx.Response(200, content=b"Hello, world!")
+    assert isinstance(response.stream, typing.Iterable)
+    assert isinstance(response.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in stream])
-    async_content = b"".join([part async for part in stream])
+    sync_content = b"".join([part for part in response.stream])
+    async_content = b"".join([part async for part in response.stream])
 
-    assert headers == {"Content-Length": "13"}
+    assert response.headers == {"Content-Length": "13"}
     assert sync_content == b"Hello, world!"
     assert async_content == b"Hello, world!"
 
@@ -413,17 +446,17 @@ async def test_response_iterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    headers, stream = encode_response(content=hello_world())
-    assert isinstance(stream, typing.Iterable)
-    assert not isinstance(stream, typing.AsyncIterable)
+    response = httpx.Response(200, content=hello_world())
+    assert isinstance(response.stream, typing.Iterable)
+    assert not isinstance(response.stream, typing.AsyncIterable)
 
-    content = b"".join([part for part in stream])
+    content = b"".join([part for part in response.stream])
 
-    assert headers == {"Transfer-Encoding": "chunked"}
+    assert response.headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
     with pytest.raises(httpx.StreamConsumed):
-        [part for part in stream]
+        [part for part in response.stream]
 
 
 @pytest.mark.asyncio
@@ -432,19 +465,19 @@ async def test_response_aiterator_content():
         yield b"Hello, "
         yield b"world!"
 
-    headers, stream = encode_response(content=hello_world())
-    assert not isinstance(stream, typing.Iterable)
-    assert isinstance(stream, typing.AsyncIterable)
+    response = httpx.Response(200, content=hello_world())
+    assert not isinstance(response.stream, typing.Iterable)
+    assert isinstance(response.stream, typing.AsyncIterable)
 
-    content = b"".join([part async for part in stream])
+    content = b"".join([part async for part in response.stream])
 
-    assert headers == {"Transfer-Encoding": "chunked"}
+    assert response.headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
     with pytest.raises(httpx.StreamConsumed):
-        [part async for part in stream]
+        [part async for part in response.stream]
 
 
 def test_response_invalid_argument():
     with pytest.raises(TypeError):
-        encode_response(123)  # type: ignore
+        httpx.Response(200, content=123)  # type: ignore
