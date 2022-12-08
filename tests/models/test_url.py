@@ -396,3 +396,13 @@ def test_resolution_error_1833():
     """
     url = httpx.URL("https://example.com/?[]")
     assert url.join("/") == "https://example.com/"
+
+
+def test_url_raw_compatibility():
+    url = httpx.URL("https://www.example.com/path")
+    scheme, host, port, raw_path = url.raw
+
+    assert scheme == b"https"
+    assert host == b"www.example.com"
+    assert port is None
+    assert raw_path == b"/path"

@@ -1,3 +1,4 @@
+import typing
 from unittest import mock
 
 import httpcore
@@ -5,6 +6,9 @@ import pytest
 
 import httpx
 from httpx._transports.default import HTTPCORE_EXC_MAP
+
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from conftest import TestServer
 
 
 def test_httpcore_all_exceptions_mapped() -> None:
@@ -21,11 +25,11 @@ def test_httpcore_all_exceptions_mapped() -> None:
         and value is not httpcore.ConnectionNotAvailable
     ]
 
-    if not_mapped:  # pragma: nocover
+    if not_mapped:  # pragma: no cover
         pytest.fail(f"Unmapped httpcore exceptions: {not_mapped}")
 
 
-def test_httpcore_exception_mapping(server) -> None:
+def test_httpcore_exception_mapping(server: "TestServer") -> None:
     """
     HTTPCore exception mapping works as expected.
     """
@@ -70,7 +74,7 @@ def test_httpx_exceptions_exposed() -> None:
         and not hasattr(httpx, name)
     ]
 
-    if not_exposed:  # pragma: nocover
+    if not_exposed:  # pragma: no cover
         pytest.fail(f"Unexposed HTTPX exceptions: {not_exposed}")
 
 

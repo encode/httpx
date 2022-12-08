@@ -16,7 +16,7 @@ import sniffio
 from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._models import URL
+    from ._urls import URL
 
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
@@ -146,7 +146,7 @@ class NetRCInfo:
                     if expanded_path.is_file():
                         self._netrc_info = netrc.netrc(str(expanded_path))
                         break
-                except (netrc.NetrcParseError, IOError):  # pragma: nocover
+                except (netrc.NetrcParseError, IOError):  # pragma: no cover
                     # Issue while reading the netrc file, ignore...
                     pass
         return self._netrc_info
@@ -237,7 +237,7 @@ TRACE_LOG_LEVEL = 5
 class Logger(logging.Logger):
     # Stub for type checkers.
     def trace(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
-        ...  # pragma: nocover
+        ...  # pragma: no cover
 
 
 def get_logger(name: str) -> Logger:
@@ -398,10 +398,10 @@ class Timer:
             import trio
 
             return trio.current_time()
-        elif library == "curio":  # pragma: nocover
+        elif library == "curio":  # pragma: no cover
             import curio
 
-            return await curio.clock()
+            return typing.cast(float, await curio.clock())
 
         import asyncio
 
@@ -465,7 +465,7 @@ class URLPattern:
     """
 
     def __init__(self, pattern: str) -> None:
-        from ._models import URL
+        from ._urls import URL
 
         if pattern and ":" not in pattern:
             raise ValueError(
@@ -508,7 +508,7 @@ class URLPattern:
         return True
 
     @property
-    def priority(self) -> tuple:
+    def priority(self) -> typing.Tuple[int, int, int]:
         """
         The priority allows URLPattern instances to be sortable, so that
         we can match from most specific to least specific.

@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, unquote, urlencode
 
 import idna
 
-from ._types import PrimitiveData, QueryParamTypes, URLTypes
+from ._types import PrimitiveData, QueryParamTypes, RawURL, URLTypes
 from ._urlparse import urlparse
 from ._utils import primitive_value_to_str
 
@@ -67,7 +67,6 @@ class URL:
     * `url.query` is raw bytes, without URL escaping. A URL query string portion can only
       be properly URL escaped when decoding the parameter names and values themselves.
     """
-
     def __init__(
         self, url: typing.Union["URL", str] = "", **kwargs: typing.Any
     ) -> None:
@@ -300,6 +299,21 @@ class URL:
         return unquote(self._uri_reference.fragment or "")
 
     @property
+    def raw(self) -> RawURL:
+        """
+        Provides the (scheme, host, port, target) for the outgoing request.
+
+        In older versions of `httpx` this was used in the low-level transport API.
+        We no longer use `RawURL`, and this property will be deprecated in a future release.
+        """
+        return RawURL(
+            self.raw_scheme,
+            self.raw_host,
+            self.port,
+            self.raw_path,
+        )
+
+    @property
     def is_absolute_url(self) -> bool:
         """
         Return `True` for absolute URLs such as 'http://example.com/path',
@@ -440,7 +454,7 @@ class QueryParams(typing.Mapping[str, str]):
                 for k, v in dict_value.items()
             }
 
-    def keys(self) -> typing.KeysView:
+    def keys(self) -> typing.KeysView[str]:
         """
         Return all the keys in the query params.
 
@@ -451,7 +465,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return self._dict.keys()
 
-    def values(self) -> typing.ValuesView:
+    def values(self) -> typing.ValuesView[str]:
         """
         Return all the values in the query params. If a key occurs more than once
         only the first item for that key is returned.
@@ -463,7 +477,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return {k: v[0] for k, v in self._dict.items()}.values()
 
-    def items(self) -> typing.ItemsView:
+    def items(self) -> typing.ItemsView[str, str]:
         """
         Return all items in the query params. If a key occurs more than once
         only the first item for that key is returned.
