@@ -67,6 +67,7 @@ class URL:
     * `url.query` is raw bytes, without URL escaping. A URL query string portion can only
       be properly URL escaped when decoding the parameter names and values themselves.
     """
+
     def __init__(
         self, url: typing.Union["URL", str] = "", **kwargs: typing.Any
     ) -> None:
