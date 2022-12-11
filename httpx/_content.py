@@ -114,7 +114,11 @@ def encode_content(
         headers = {"Content-Length": str(content_length)} if body else {}
         return headers, ByteStream(body)
 
-    elif isinstance(content, Iterable):
+    elif isinstance(content, Iterable) and not isinstance(content, dict):
+        # `not isinstance(content, dict)` is a bit oddly specific, but it
+        # catches a case that's easy for users to make in error, and would
+        # otherwise pass through here, like any other bytes-iterable,
+        # because `dict` happens to be iterable. See issue #2491.
         content_length_or_none = peek_filelike_length(content)
 
         if content_length_or_none is None:
