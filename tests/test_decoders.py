@@ -6,16 +6,7 @@ import pytest
 
 import httpx
 from httpx._compat import brotli
-from httpx._decoders import (
-    BrotliDecoder,
-    ByteChunker,
-    DeflateDecoder,
-    GZipDecoder,
-    IdentityDecoder,
-    LineDecoder,
-    TextChunker,
-    TextDecoder,
-)
+from httpx._decoders import ByteChunker, LineDecoder, TextChunker, TextDecoder
 
 
 def test_deflate():
@@ -153,14 +144,11 @@ def test_empty_content(header_value):
     assert response.content == b""
 
 
-@pytest.mark.parametrize(
-    "decoder", (BrotliDecoder, DeflateDecoder, GZipDecoder, IdentityDecoder)
-)
-def test_decoders_empty_cases(decoder):
-    response = httpx.Response(content=b"", status_code=200)
-    instance = decoder()
-    assert instance.decode(response.content) == b""
-    assert instance.flush() == b""
+@pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br", b"identity"))
+def test_decoders_empty_cases(header_value):
+    headers = [(b"Content-Encoding", header_value)]
+    response = httpx.Response(content=b"", status_code=200, headers=headers)
+    assert response.read() == b""
 
 
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
