@@ -360,6 +360,9 @@ def test_invalid_argument():
     with pytest.raises(TypeError):
         httpx.Request(method, url, content=123)  # type: ignore
 
+    with pytest.raises(TypeError):
+        httpx.Request(method, url, content={"a": "b"})  # type: ignore
+
 
 @pytest.mark.asyncio
 async def test_multipart_multiple_files_single_input_content():
