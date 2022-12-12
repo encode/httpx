@@ -8,7 +8,6 @@ import pytest
 
 import httpx
 from httpx._content import encode_request
-from httpx._utils import format_form_param
 
 
 def echo_request_content(request: httpx.Request) -> httpx.Response:
@@ -437,17 +436,29 @@ def test_multipart_rewinds_files():
 
 class TestHeaderParamHTML5Formatting:
     def test_unicode(self):
-        param = format_form_param("filename", "n\u00e4me")
-        assert param == b'filename="n\xc3\xa4me"'
+        filename = "n\u00e4me"
+        expected = b'filename="n\xc3\xa4me"'
+        files = {"upload": (filename, b"<file content>")}
+        request = httpx.Request("GET", "https://www.example.com", files=files)
+        assert expected in request.read()
 
     def test_ascii(self):
-        param = format_form_param("filename", b"name")
-        assert param == b'filename="name"'
+        filename = "name"
+        expected = b'filename="name"'
+        files = {"upload": (filename, b"<file content>")}
+        request = httpx.Request("GET", "https://www.example.com", files=files)
+        assert expected in request.read()
 
     def test_unicode_escape(self):
-        param = format_form_param("filename", "hello\\world\u0022")
-        assert param == b'filename="hello\\\\world%22"'
+        filename = "hello\\world\u0022"
+        expected = b'filename="hello\\\\world%22"'
+        files = {"upload": (filename, b"<file content>")}
+        request = httpx.Request("GET", "https://www.example.com", files=files)
+        assert expected in request.read()
 
     def test_unicode_with_control_character(self):
-        param = format_form_param("filename", "hello\x1A\x1B\x1C")
-        assert param == b'filename="hello%1A\x1B%1C"'
+        filename = "hello\x1A\x1B\x1C"
+        expected = b'filename="hello%1A\x1B%1C"'
+        files = {"upload": (filename, b"<file content>")}
+        request = httpx.Request("GET", "https://www.example.com", files=files)
+        assert expected in request.read()
