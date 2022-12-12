@@ -424,3 +424,13 @@ def test_ipv6_url_from_raw_url(host):
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]"
     assert str(url) == "https://[::ffff:192.168.0.1]/"
+
+
+def test_url_raw_compatibility():
+    url = httpx.URL("https://www.example.com/path")
+    scheme, host, port, raw_path = url.raw
+
+    assert scheme == b"https"
+    assert host == b"www.example.com"
+    assert port is None
+    assert raw_path == b"/path"

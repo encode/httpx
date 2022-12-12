@@ -1,11 +1,11 @@
 import json
 import pickle
+import typing
 
 import chardet
 import pytest
 
 import httpx
-from httpx._compat import brotli
 
 
 class StreamingBody:
@@ -14,12 +14,12 @@ class StreamingBody:
         yield b"world!"
 
 
-def streaming_body():
+def streaming_body() -> typing.Iterator[bytes]:
     yield b"Hello, "
     yield b"world!"
 
 
-async def async_streaming_body():
+async def async_streaming_body() -> typing.AsyncIterator[bytes]:
     yield b"Hello, "
     yield b"world!"
 
@@ -396,7 +396,7 @@ def test_iter_raw_with_chunksize():
 
 
 def test_iter_raw_doesnt_return_empty_chunks():
-    def streaming_body_with_empty_chunks():
+    def streaming_body_with_empty_chunks() -> typing.Iterator[bytes]:
         yield b"Hello, "
         yield b""
         yield b"world!"
@@ -539,7 +539,7 @@ def test_iter_bytes_with_empty_response():
 
 
 def test_iter_bytes_doesnt_return_empty_chunks():
-    def streaming_body_with_empty_chunks():
+    def streaming_body_with_empty_chunks() -> typing.Iterator[bytes]:
         yield b"Hello, "
         yield b""
         yield b"world!"
@@ -862,20 +862,19 @@ def test_link_headers(headers, expected):
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
 def test_decode_error_with_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
-    body = b"test 123"
-    compressed_body = brotli.compress(body)[3:]
+    broken_compressed_body = b"xxxxxxxxxxxxxx"
     with pytest.raises(httpx.DecodingError):
         httpx.Response(
             200,
             headers=headers,
-            content=compressed_body,
+            content=broken_compressed_body,
         )
 
     with pytest.raises(httpx.DecodingError):
         httpx.Response(
             200,
             headers=headers,
-            content=compressed_body,
+            content=broken_compressed_body,
             request=httpx.Request("GET", "https://www.example.org/"),
         )
 
@@ -883,10 +882,9 @@ def test_decode_error_with_request(header_value):
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
 def test_value_error_without_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
-    body = b"test 123"
-    compressed_body = brotli.compress(body)[3:]
+    broken_compressed_body = b"xxxxxxxxxxxxxx"
     with pytest.raises(httpx.DecodingError):
-        httpx.Response(200, headers=headers, content=compressed_body)
+        httpx.Response(200, headers=headers, content=broken_compressed_body)
 
 
 def test_response_with_unset_request():
@@ -915,7 +913,7 @@ def test_cannot_access_unset_request():
 
 
 def test_generator_with_transfer_encoding_header():
-    def content():
+    def content() -> typing.Iterator[bytes]:
         yield b"test 123"  # pragma: no cover
 
     response = httpx.Response(200, content=content())
@@ -923,7 +921,7 @@ def test_generator_with_transfer_encoding_header():
 
 
 def test_generator_with_content_length_header():
-    def content():
+    def content() -> typing.Iterator[bytes]:
         yield b"test 123"  # pragma: no cover
 
     headers = {"Content-Length": "8"}

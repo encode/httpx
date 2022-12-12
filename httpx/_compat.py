@@ -38,3 +38,6 @@ else:
         context.options |= ssl.OP_NO_SSLv3
         context.options |= ssl.OP_NO_TLSv1
         context.options |= ssl.OP_NO_TLSv1_1
+
+
+__all__ = ["brotli", "set_minimum_tls_version_1_2"]
