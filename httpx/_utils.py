@@ -81,12 +81,10 @@ def is_known_encoding(encoding: str) -> bool:
     return True
 
 
-def format_form_param(name: str, value: typing.Union[str, bytes]) -> bytes:
+def format_form_param(name: str, value: str) -> bytes:
     """
     Encode a name/value pair within a multipart form.
     """
-    if isinstance(value, bytes):
-        value = value.decode()
 
     def replacer(match: typing.Match[str]) -> str:
         return _HTML5_FORM_ENCODING_REPLACEMENTS[match.group(0)]
