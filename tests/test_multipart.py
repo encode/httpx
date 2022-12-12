@@ -380,8 +380,9 @@ def test_multipart_encode_files_raises_exception_with_text_mode_file() -> None:
 
 def test_multipart_encode_non_seekable_filelike() -> None:
     """
-    Test that special readable but non-seekable filelike objects are supported,
-    at the cost of reading them into memory at most once.
+    Test that special readable but non-seekable filelike objects are supported.
+    In this case uploads with use 'Transfer-Encoding: chunked', instead of
+    a 'Content-Length' header.
     """
 
     class IteratorIO(io.IOBase):
@@ -410,7 +411,7 @@ def test_multipart_encode_non_seekable_filelike() -> None:
     )
     assert headers == {
         "Content-Type": "multipart/form-data; boundary=+++",
-        "Content-Length": str(len(content)),
+        "Transfer-Encoding": "chunked",
     }
     assert content == b"".join(stream)
 
