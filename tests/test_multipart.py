@@ -1,4 +1,3 @@
-import cgi
 import io
 import os
 import tempfile
@@ -24,22 +23,24 @@ def test_multipart(value, output):
     data = {"text": value}
     files = {"file": io.BytesIO(b"<file content>")}
     response = client.post("http://127.0.0.1:8000/", data=data, files=files)
-    assert response.status_code == 200
-
-    # We're using the cgi module to verify the behavior here, which is a
-    # bit grungy, but sufficient just for our testing purposes.
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
-    content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
-        "boundary": boundary.encode("ascii"),
-        "CONTENT-LENGTH": content_length,
-    }
-    multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
+    boundary_bytes = boundary.encode("ascii")
 
-    # Note that the expected return type for text fields
-    # appears to differs from 3.6 to 3.7+
-    assert multipart["text"] == [output.decode()] or multipart["text"] == [output]
-    assert multipart["file"] == [b"<file content>"]
+    assert response.status_code == 200
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="text"\r\n',
+            b"\r\n",
+            b"abc\r\n",
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
+            b"Content-Type: application/octet-stream\r\n",
+            b"\r\n",
+            b"<file content>\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
 
 
 @pytest.mark.parametrize(
@@ -61,19 +62,20 @@ def test_multipart_explicit_boundary(header: str) -> None:
     files = {"file": io.BytesIO(b"<file content>")}
     headers = {"content-type": header}
     response = client.post("http://127.0.0.1:8000/", files=files, headers=headers)
+    boundary_bytes = b"+++"
+
     assert response.status_code == 200
-
-    # We're using the cgi module to verify the behavior here, which is a
-    # bit grungy, but sufficient just for our testing purposes.
     assert response.request.headers["Content-Type"] == header
-    content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
-        "boundary": b"+++",
-        "CONTENT-LENGTH": content_length,
-    }
-    multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
-
-    assert multipart["file"] == [b"<file content>"]
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
+            b"Content-Type: application/octet-stream\r\n",
+            b"\r\n",
+            b"<file content>\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
 
 
 @pytest.mark.parametrize(
@@ -129,26 +131,28 @@ def test_multipart_file_tuple():
     data = {"text": ["abc"]}
     files = {"file": ("name.txt", io.BytesIO(b"<file content>"))}
     response = client.post("http://127.0.0.1:8000/", data=data, files=files)
-    assert response.status_code == 200
-
-    # We're using the cgi module to verify the behavior here, which is a
-    # bit grungy, but sufficient just for our testing purposes.
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
-    content_length = response.request.headers["Content-Length"]
-    pdict: dict = {
-        "boundary": boundary.encode("ascii"),
-        "CONTENT-LENGTH": content_length,
-    }
-    multipart = cgi.parse_multipart(io.BytesIO(response.content), pdict)
+    boundary_bytes = boundary.encode("ascii")
 
-    # Note that the expected return type for text fields
-    # appears to differs from 3.6 to 3.7+
-    assert multipart["text"] == ["abc"] or multipart["text"] == [b"abc"]
-    assert multipart["file"] == [b"<file content>"]
+    assert response.status_code == 200
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="text"\r\n',
+            b"\r\n",
+            b"abc\r\n",
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="name.txt"\r\n',
+            b"Content-Type: text/plain\r\n",
+            b"\r\n",
+            b"<file content>\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
 
 
 @pytest.mark.parametrize("content_type", [None, "text/plain"])
-def test_multipart_file_tuple_headers(content_type: typing.Optional[str]):
+def test_multipart_file_tuple_headers(content_type: typing.Optional[str]) -> None:
     file_name = "test.txt"
     expected_content_type = "text/plain"
     headers = {"Expires": "0"}

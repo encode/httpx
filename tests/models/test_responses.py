@@ -1,5 +1,6 @@
 import json
 import pickle
+import typing
 
 import chardet
 import pytest
@@ -14,12 +15,12 @@ class StreamingBody:
         yield b"world!"
 
 
-def streaming_body():
+def streaming_body() -> typing.Iterator[bytes]:
     yield b"Hello, "
     yield b"world!"
 
 
-async def async_streaming_body():
+async def async_streaming_body() -> typing.AsyncIterator[bytes]:
     yield b"Hello, "
     yield b"world!"
 
@@ -396,7 +397,7 @@ def test_iter_raw_with_chunksize():
 
 
 def test_iter_raw_doesnt_return_empty_chunks():
-    def streaming_body_with_empty_chunks():
+    def streaming_body_with_empty_chunks() -> typing.Iterator[bytes]:
         yield b"Hello, "
         yield b""
         yield b"world!"
@@ -539,7 +540,7 @@ def test_iter_bytes_with_empty_response():
 
 
 def test_iter_bytes_doesnt_return_empty_chunks():
-    def streaming_body_with_empty_chunks():
+    def streaming_body_with_empty_chunks() -> typing.Iterator[bytes]:
         yield b"Hello, "
         yield b""
         yield b"world!"
@@ -915,16 +916,16 @@ def test_cannot_access_unset_request():
 
 
 def test_generator_with_transfer_encoding_header():
-    def content():
-        yield b"test 123"  # pragma: nocover
+    def content() -> typing.Iterator[bytes]:
+        yield b"test 123"  # pragma: no cover
 
     response = httpx.Response(200, content=content())
     assert response.headers == {"Transfer-Encoding": "chunked"}
 
 
 def test_generator_with_content_length_header():
-    def content():
-        yield b"test 123"  # pragma: nocover
+    def content() -> typing.Iterator[bytes]:
+        yield b"test 123"  # pragma: no cover
 
     headers = {"Content-Length": "8"}
     response = httpx.Response(200, content=content(), headers=headers)

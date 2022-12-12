@@ -24,23 +24,23 @@ def test_content_length_header():
 def test_iterable_content():
     class Content:
         def __iter__(self):
-            yield b"test 123"  # pragma: nocover
+            yield b"test 123"  # pragma: no cover
 
     request = httpx.Request("POST", "http://example.org", content=Content())
     assert request.headers == {"Host": "example.org", "Transfer-Encoding": "chunked"}
 
 
 def test_generator_with_transfer_encoding_header():
-    def content():
-        yield b"test 123"  # pragma: nocover
+    def content() -> typing.Iterator[bytes]:
+        yield b"test 123"  # pragma: no cover
 
     request = httpx.Request("POST", "http://example.org", content=content())
     assert request.headers == {"Host": "example.org", "Transfer-Encoding": "chunked"}
 
 
 def test_generator_with_content_length_header():
-    def content():
-        yield b"test 123"  # pragma: nocover
+    def content() -> typing.Iterator[bytes]:
+        yield b"test 123"  # pragma: no cover
 
     headers = {"Content-Length": "8"}
     request = httpx.Request(
@@ -100,8 +100,8 @@ async def test_aread_and_stream_data():
 
 def test_cannot_access_streaming_content_without_read():
     # Ensure that streaming requests
-    def streaming_body():  # pragma: nocover
-        yield ""
+    def streaming_body() -> typing.Iterator[bytes]:  # pragma: no cover
+        yield b""
 
     request = httpx.Request("POST", "http://example.org", content=streaming_body())
     with pytest.raises(httpx.RequestNotRead):
@@ -109,8 +109,8 @@ def test_cannot_access_streaming_content_without_read():
 
 
 def test_transfer_encoding_header():
-    async def streaming_body(data):
-        yield data  # pragma: nocover
+    async def streaming_body(data: bytes) -> typing.AsyncIterator[bytes]:
+        yield data  # pragma: no cover
 
     data = streaming_body(b"test 123")
 
@@ -125,8 +125,8 @@ def test_ignore_transfer_encoding_header_if_content_length_exists():
     See https://github.com/encode/httpx/issues/1168
     """
 
-    def streaming_body(data):
-        yield data  # pragma: nocover
+    def streaming_body(data: bytes) -> typing.Iterator[bytes]:
+        yield data  # pragma: no cover
 
     data = streaming_body(b"abcd")
 
@@ -151,8 +151,8 @@ def test_override_accept_encoding_header():
 
 
 def test_override_content_length_header():
-    async def streaming_body(data):
-        yield data  # pragma: nocover
+    async def streaming_body(data: bytes) -> typing.AsyncIterator[bytes]:
+        yield data  # pragma: no cover
 
     data = streaming_body(b"test 123")
     headers = {"Content-Length": "8"}
@@ -194,7 +194,7 @@ def test_request_picklable():
 
 @pytest.mark.asyncio
 async def test_request_async_streaming_content_picklable():
-    async def streaming_body(data):
+    async def streaming_body(data: bytes) -> typing.AsyncIterator[bytes]:
         yield data
 
     data = streaming_body(b"test 123")
@@ -212,8 +212,8 @@ async def test_request_async_streaming_content_picklable():
 
 
 def test_request_generator_content_picklable():
-    def content():
-        yield b"test 123"  # pragma: nocover
+    def content() -> typing.Iterator[bytes]:
+        yield b"test 123"  # pragma: no cover
 
     request = httpx.Request("POST", "http://example.org", content=content())
     pickle_request = pickle.loads(pickle.dumps(request))

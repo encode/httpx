@@ -356,7 +356,7 @@ class BaseClient:
                 if isinstance(timeout, UseClientDefault)
                 else Timeout(timeout)
             )
-            extensions["timeout"] = timeout.as_dict()
+            extensions = dict(**extensions, timeout=timeout.as_dict())
         return Request(
             method,
             url,
@@ -667,7 +667,7 @@ class Client(BaseClient):
         if http2:
             try:
                 import h2  # noqa
-            except ImportError:  # pragma: nocover
+            except ImportError:  # pragma: no cover
                 raise ImportError(
                     "Using http2=True, but the 'h2' package is not installed. "
                     "Make sure to install httpx using `pip install httpx[http2]`."
@@ -1388,7 +1388,7 @@ class AsyncClient(BaseClient):
         if http2:
             try:
                 import h2  # noqa
-            except ImportError:  # pragma: nocover
+            except ImportError:  # pragma: no cover
                 raise ImportError(
                     "Using http2=True, but the 'h2' package is not installed. "
                     "Make sure to install httpx using `pip install httpx[http2]`."

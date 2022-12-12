@@ -1,4 +1,5 @@
 import sys
+import typing
 import wsgiref.validate
 from functools import partial
 from io import StringIO
@@ -7,8 +8,11 @@ import pytest
 
 import httpx
 
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
 
-def application_factory(output):
+
+def application_factory(output: typing.Iterable[bytes]) -> "WSGIApplication":
     def application(environ, start_response):
         status = "200 OK"
 
@@ -24,7 +28,9 @@ def application_factory(output):
     return wsgiref.validate.validator(application)
 
 
-def echo_body(environ, start_response):
+def echo_body(
+    environ: "WSGIEnvironment", start_response: "StartResponse"
+) -> typing.Iterable[bytes]:
     status = "200 OK"
     output = environ["wsgi.input"].read()
 
@@ -37,14 +43,16 @@ def echo_body(environ, start_response):
     return [output]
 
 
-def echo_body_with_response_stream(environ, start_response):
+def echo_body_with_response_stream(
+    environ: "WSGIEnvironment", start_response: "StartResponse"
+) -> typing.Iterable[bytes]:
     status = "200 OK"
 
     response_headers = [("Content-Type", "text/plain")]
 
     start_response(status, response_headers)
 
-    def output_generator(f):
+    def output_generator(f: typing.IO[bytes]) -> typing.Iterator[bytes]:
         while True:
             output = f.read(2)
             if not output:
@@ -54,7 +62,11 @@ def echo_body_with_response_stream(environ, start_response):
     return output_generator(f=environ["wsgi.input"])
 
 
-def raise_exc(environ, start_response, exc=ValueError):
+def raise_exc(
+    environ: "WSGIEnvironment",
+    start_response: "StartResponse",
+    exc: typing.Type[Exception] = ValueError,
+) -> typing.Iterable[bytes]:
     status = "500 Server Error"
     output = b"Nope!"
 
@@ -66,7 +78,7 @@ def raise_exc(environ, start_response, exc=ValueError):
         raise exc()
     except exc:
         exc_info = sys.exc_info()
-        start_response(status, response_headers, exc_info=exc_info)
+        start_response(status, response_headers, exc_info)
 
     return [output]
 
@@ -144,7 +156,7 @@ def test_logging():
         pytest.param("http://www.example.org:8000", "8000", id="explicit-port"),
     ],
 )
-def test_wsgi_server_port(url: str, expected_server_port: int):
+def test_wsgi_server_port(url: str, expected_server_port: str) -> None:
     """
     SERVER_PORT is populated correctly from the requested URL.
     """

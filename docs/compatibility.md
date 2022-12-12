@@ -145,6 +145,16 @@ Within a `stream()` block request data is made available with:
 * `.iter_raw()` - Use this instead of `response.raw`
 * `.read()` - Read the entire response body, making `request.text` and `response.content` available.
 
+## Timeouts
+
+HTTPX defaults to including reasonable [timeouts](quickstart.md#timeouts) for all network operations, while Requests has no timeouts by default.
+
+To get the same behavior as Requests, set the `timeout` parameter to `None`:
+
+```python
+httpx.get('https://www.example.com', timeout=None)
+```
+
 ## Proxy keys
 
 When using `httpx.Client(proxies={...})` to map to a selection of different proxies, we use full URL schemes, such as `proxies={"http://": ..., "https://": ...}`.
@@ -200,6 +210,8 @@ On the other hand, HTTPX uses [HTTPCore](https://github.com/encode/httpcore) as 
 ## Query Parameters
 
 `requests` omits `params` whose values are `None` (e.g. `requests.get(..., params={"foo": None})`). This is not supported by HTTPX.
+
+For both query params (`params=`) and form data (`data=`), `requests` supports sending a list of tuples (e.g. `requests.get(..., params=[('key1', 'value1'), ('key1', 'value2')])`). This is not supported by HTTPX. Instead, use a dictionary with lists as values. E.g.: `httpx.get(..., params={'key1': ['value1', 'value2']})` or with form data: `httpx.post(..., data={'key1': ['value1', 'value2']})`.
 
 ## Event Hooks
 
