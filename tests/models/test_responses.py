@@ -6,7 +6,6 @@ import chardet
 import pytest
 
 import httpx
-from httpx._compat import brotli
 
 
 class StreamingBody:
@@ -863,20 +862,19 @@ def test_link_headers(headers, expected):
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
 def test_decode_error_with_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
-    body = b"test 123"
-    compressed_body = brotli.compress(body)[3:]
+    broken_compressed_body = b"xxxxxxxxxxxxxx"
     with pytest.raises(httpx.DecodingError):
         httpx.Response(
             200,
             headers=headers,
-            content=compressed_body,
+            content=broken_compressed_body,
         )
 
     with pytest.raises(httpx.DecodingError):
         httpx.Response(
             200,
             headers=headers,
-            content=compressed_body,
+            content=broken_compressed_body,
             request=httpx.Request("GET", "https://www.example.org/"),
         )
 
@@ -884,10 +882,9 @@ def test_decode_error_with_request(header_value):
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
 def test_value_error_without_request(header_value):
     headers = [(b"Content-Encoding", header_value)]
-    body = b"test 123"
-    compressed_body = brotli.compress(body)[3:]
+    broken_compressed_body = b"xxxxxxxxxxxxxx"
     with pytest.raises(httpx.DecodingError):
-        httpx.Response(200, headers=headers, content=compressed_body)
+        httpx.Response(200, headers=headers, content=broken_compressed_body)
 
 
 def test_response_with_unset_request():
