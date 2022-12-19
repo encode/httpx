@@ -267,20 +267,34 @@ class LineDecoder:
         self.buffer = ""
 
     def decode(self, text: str) -> typing.List[str]:
-        if self.buffer:
-            text = self.buffer + text
+        # See https://docs.python.org/3/library/stdtypes.html#str.splitlines
+        NEWLINE_CHARS = "\n\r\x0b\x0c\x1c\x1d\x1e\x85\u2028\u2029"
 
-        if text.endswith("\r"):
+        if self.buffer:
+            # If we have some buffered text from the previous pass,
+            # then we include it before handling the input.
+            text = self.buffer + text
+            self.buffer = ""
+
+        if not text:
+            return []
+        elif text[-1] == "\r":
+            # If the last character is "\r", then we might be about to see "\r\n"
+            # newline seperator. We buffer the text input and return.
             self.buffer = text
             return []
-
-        lines = text.splitlines()
-        if text.endswith("\n") or not lines:
-            self.buffer = ""
+        elif text[-1] in NEWLINE_CHARS:
+            # If the last character is a newline separator then we can simply split
+            # the text into lines and return them. There is no remaining portion
+            # to be dealt with on the next pass.
+            return text.splitlines()
         else:
+            # If the last character is not a newline seperator, then the final portion
+            # from `splitlines()` is incomplete and needs to be buffered for the next
+            # pass.
+            lines = text.splitlines()
             self.buffer = lines.pop()
-
-        return lines
+            return lines
 
     def flush(self) -> typing.List[str]:
         lines = self.buffer.splitlines()
