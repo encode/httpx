@@ -3,13 +3,13 @@ Integration tests for authentication.
 
 Unit tests for auth classes also exist in tests/test_auth.py
 """
-import asyncio
 import hashlib
 import os
 import threading
 import typing
 from urllib.request import parse_keqv_list
 
+import anyio
 import pytest
 
 import httpx
@@ -135,7 +135,7 @@ class SyncOrAsyncAuth(httpx.Auth):
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._async_lock = asyncio.Lock()
+        self._async_lock = anyio.Lock()
 
     def sync_auth_flow(
         self, request: httpx.Request
