@@ -1,5 +1,6 @@
 import codecs
 import email.message
+import enum
 import logging
 import mimetypes
 import netrc
@@ -67,6 +68,8 @@ def primitive_value_to_str(value: "PrimitiveData") -> str:
         return "false"
     elif value is None:
         return ""
+    elif isinstance(value, enum.Enum):
+        return str(value.value)
     return str(value)
 
 

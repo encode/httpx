@@ -1,3 +1,5 @@
+import enum
+
 import httpx
 
 
@@ -20,6 +22,16 @@ def test_client_queryparams_string():
     client.params = "a=b"  # type: ignore
     assert isinstance(client.params, httpx.QueryParams)
     assert client.params["a"] == "b"
+
+
+def test_client_queryparams_enum():
+    class MyEnum(str, enum.Enum):
+        A = "a"
+        B = "b"
+
+    client = httpx.Client(params={"a": MyEnum.A})
+    assert isinstance(client.params, httpx.QueryParams)
+    assert client.params["a"] == "a"
 
 
 def test_client_queryparams_echo():
