@@ -88,7 +88,9 @@ def test_empty_query_params():
 
 
 def test_invalid_query_params():
-    with pytest.raises(TypeError, match=r"Expected str, int, float, bool, or None\. Got 'bytes'\."):
+    with pytest.raises(
+        TypeError, match=r"Expected str, int, float, bool, or None\. Got 'bytes'\."
+    ):
         httpx.QueryParams({"a": b"bytes"})
 
 
