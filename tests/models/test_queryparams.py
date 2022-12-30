@@ -87,6 +87,13 @@ def test_empty_query_params():
     assert str(q) == "a="
 
 
+def test_invalid_query_params():
+    with pytest.raises(
+        TypeError, match=r"Expected str, int, float, bool, or None. Got 'bytes'."
+    ):
+        httpx.QueryParams({"a": b"bytes"})
+
+
 def test_queryparam_update_is_hard_deprecated():
     q = httpx.QueryParams("a=123")
     with pytest.raises(RuntimeError):
