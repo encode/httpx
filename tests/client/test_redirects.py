@@ -1,3 +1,4 @@
+import os
 import typing
 
 import pytest
@@ -365,6 +366,40 @@ def test_cross_subdomain_redirect():
     url = "https://example.com/cross_subdomain"
     response = client.get(url, follow_redirects=True)
     assert response.url == "https://www.example.org/cross_subdomain"
+
+
+def test_same_domain_redirect_with_netrc_auth(tmp_path):
+    # Setup a netrc file containing auth for 'example.org'
+    netrc = "machine example.org\nlogin username\npassword pass123\n"
+    netrc_file = tmp_path / "netrc"
+    netrc_file.write_text(netrc)
+    os.environ["NETRC"] = str(netrc_file)
+
+    # Make a request to example.org
+    client = httpx.Client(transport=httpx.MockTransport(redirects))
+    url = "https://example.org/cross_domain"
+    response = client.get(url, auth=("user", "pass"), follow_redirects=True)
+
+    # Redirect to the same domain
+    assert response.url == "https://example.org/cross_domain_target"
+    assert "authorization" in response.json()["headers"]
+
+
+def test_cross_domain_redirect_with_netrc_auth(tmp_path):
+    # Setup a netrc file containing auth for 'example.org'
+    netrc = "machine example.org\nlogin username\npassword pass123\n"
+    netrc_file = tmp_path / "netrc"
+    netrc_file.write_text(netrc)
+    os.environ["NETRC"] = str(netrc_file)
+
+    # Make a request to example.com
+    client = httpx.Client(transport=httpx.MockTransport(redirects))
+    url = "https://example.com/cross_domain"
+    response = client.get(url, auth=("user", "pass"), follow_redirects=True)
+
+    # Redirect to example.org
+    assert response.url == "https://example.org/cross_domain_target"
+    assert "authorization" in response.json()["headers"]
 
 
 def cookie_sessions(request: httpx.Request) -> httpx.Response:
