@@ -18,6 +18,10 @@ from ..common import FIXTURES_DIR
 
 
 class App:
+    """
+    A mock app to test auth credentials.
+    """
+
     def __init__(self, auth_header: str = "", status_code: int = 200) -> None:
         self.auth_header = auth_header
         self.status_code = status_code
@@ -26,6 +30,26 @@ class App:
         headers = {"www-authenticate": self.auth_header} if self.auth_header else {}
         data = {"auth": request.headers.get("Authorization")}
         return httpx.Response(self.status_code, headers=headers, json=data)
+
+
+class CrossDomainRedirect:
+    """
+    A mock app to test cross domain redirects and auth credentials.
+    """
+
+    def __init__(self, host: str) -> None:
+        self.host = host
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        if request.url.host == self.host:
+            # Echo the authorization header back in the response.
+            data = {"auth": request.headers.get("Authorization")}
+            return httpx.Response(200, json=data)
+        else:
+            # Redirect to the given host.
+            status_code = httpx.codes.SEE_OTHER
+            headers = {"location": f"https://{self.host}"}
+            return httpx.Response(status_code, headers=headers)
 
 
 class DigestApp:
@@ -227,14 +251,18 @@ async def test_custom_auth() -> None:
     assert response.json() == {"auth": "Token 123"}
 
 
-@pytest.mark.anyio
-async def test_netrc_auth() -> None:
-    os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
+def test_netrc_auth_credentials_exist() -> None:
+    """
+    When netrc auth is being used and a request is made to a host that is
+    in the netrc file, then the relevant credentials should be applied.
+    """
+    netrc_file = str(FIXTURES_DIR / ".netrc")
     url = "http://netrcexample.org"
     app = App()
+    auth = httpx.NetRCAuth(netrc_file)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url)
+    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+        response = client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {
@@ -242,38 +270,39 @@ async def test_netrc_auth() -> None:
     }
 
 
-@pytest.mark.anyio
-async def test_auth_header_has_priority_over_netrc() -> None:
-    os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
-    url = "http://netrcexample.org"
+def test_netrc_auth_auth_credentials_do_not_exist() -> None:
+    """
+    When netrc auth is being used and a request is made to a host that is
+    not in the netrc file, then no credentials should be applied.
+    """
+    netrc_file = str(FIXTURES_DIR / ".netrc")
+    url = "http://example.org"
     app = App()
+    auth = httpx.NetRCAuth(netrc_file)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, headers={"Authorization": "Override"})
-
-    assert response.status_code == 200
-    assert response.json() == {"auth": "Override"}
-
-
-@pytest.mark.anyio
-async def test_trust_env_auth() -> None:
-    os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
-    url = "http://netrcexample.org"
-    app = App()
-
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(app), trust_env=False
-    ) as client:
-        response = await client.get(url)
+    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+        response = client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
 
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(app), trust_env=True
-    ) as client:
-        response = await client.get(url)
 
+def test_netrc_auth_cross_domain_redirect() -> None:
+    """
+    When a request is made that redirects to a new host,
+    the netrc credentials for the new host should be applied.
+
+    https://github.com/encode/httpx/issues/2088
+    """
+    netrc_file = str(FIXTURES_DIR / ".netrc")
+    url = "http://example.org"
+    app = CrossDomainRedirect("netrcexample.org")
+    auth = httpx.NetRCAuth(netrc_file)
+
+    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+        response = client.get(url, follow_redirects=True)
+
+    assert len(response.history) == 1
     assert response.status_code == 200
     assert response.json() == {
         "auth": "Basic ZXhhbXBsZS11c2VybmFtZTpleGFtcGxlLXBhc3N3b3Jk"

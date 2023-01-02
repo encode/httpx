@@ -47,7 +47,6 @@ from ._types import (
 )
 from ._urls import URL, QueryParams
 from ._utils import (
-    NetRCInfo,
     Timer,
     URLPattern,
     get_environment_proxies,
@@ -191,7 +190,6 @@ class BaseClient:
         }
         self._trust_env = trust_env
         self._default_encoding = default_encoding
-        self._netrc = NetRCInfo()
         self._state = ClientState.UNOPENED
 
     @property
@@ -455,11 +453,6 @@ class BaseClient:
         username, password = request.url.username, request.url.password
         if username or password:
             return BasicAuth(username=username, password=password)
-
-        if self.trust_env and "Authorization" not in request.headers:
-            credentials = self._netrc.get_credentials(request.url.host)
-            if credentials is not None:
-                return BasicAuth(username=credentials[0], password=credentials[1])
 
         return Auth()
 
