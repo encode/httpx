@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.23.2 (20th Dec, 2022)
+## 0.23.2 (2nd Jan, 2023)
+
+### Added
+
+* Support digest auth nonce counting to avoid multiple auth requests. (#2463)
 
 ### Fixed
 
