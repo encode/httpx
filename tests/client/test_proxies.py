@@ -132,7 +132,7 @@ def test_transport_for_request(url, proxies, expected):
         assert transport._pool._proxy_url == url_to_origin(expected)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.network
 async def test_async_proxy_close():
     try:
