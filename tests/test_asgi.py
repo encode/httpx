@@ -70,7 +70,7 @@ async def raise_exc_after_response(scope, receive, send):
     raise RuntimeError()
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_asgi_transport():
     async with httpx.ASGITransport(app=hello_world) as transport:
         request = httpx.Request("GET", "http://www.example.com/")
@@ -80,7 +80,7 @@ async def test_asgi_transport():
         assert response.content == b"Hello, World!"
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_asgi_transport_no_body():
     async with httpx.ASGITransport(app=echo_body) as transport:
         request = httpx.Request("GET", "http://www.example.com/")
@@ -90,7 +90,7 @@ async def test_asgi_transport_no_body():
         assert response.content == b""
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_asgi():
     async with httpx.AsyncClient(app=hello_world) as client:
         response = await client.get("http://www.example.org/")
@@ -99,7 +99,7 @@ async def test_asgi():
     assert response.text == "Hello, World!"
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_asgi_urlencoded_path():
     async with httpx.AsyncClient(app=echo_path) as client:
         url = httpx.URL("http://www.example.org/").copy_with(path="/user@example.org")
@@ -109,7 +109,7 @@ async def test_asgi_urlencoded_path():
     assert response.json() == {"path": "/user@example.org"}
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_asgi_raw_path():
     async with httpx.AsyncClient(app=echo_raw_path) as client:
         url = httpx.URL("http://www.example.org/").copy_with(path="/user@example.org")
@@ -119,7 +119,7 @@ async def test_asgi_raw_path():
     assert response.json() == {"raw_path": "/user%40example.org"}
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_asgi_upload():
     async with httpx.AsyncClient(app=echo_body) as client:
         response = await client.post("http://www.example.org/", content=b"example")
@@ -128,7 +128,7 @@ async def test_asgi_upload():
     assert response.text == "example"
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_asgi_headers():
     async with httpx.AsyncClient(app=echo_headers) as client:
         response = await client.get("http://www.example.org/")
@@ -145,21 +145,21 @@ async def test_asgi_headers():
     }
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_asgi_exc():
     async with httpx.AsyncClient(app=raise_exc) as client:
         with pytest.raises(RuntimeError):
             await client.get("http://www.example.org/")
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_asgi_exc_after_response():
     async with httpx.AsyncClient(app=raise_exc_after_response) as client:
         with pytest.raises(RuntimeError):
             await client.get("http://www.example.org/")
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_asgi_disconnect_after_response_complete():
     disconnect = False
 

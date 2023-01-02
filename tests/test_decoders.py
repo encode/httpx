@@ -114,7 +114,7 @@ def test_multi_with_identity():
     assert response.content == body
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_streaming():
     body = b"test 123"
     compressor = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
@@ -173,7 +173,7 @@ def test_decoding_errors(header_value):
         ((b"Accented: \xd6sterreich abcdefghijklmnopqrstuvwxyz", b""), "iso-8859-1"),
     ],
 )
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_text_decoder_with_autodetect(data, encoding):
     async def iterator() -> typing.AsyncIterator[bytes]:
         nonlocal data
@@ -196,7 +196,7 @@ async def test_text_decoder_with_autodetect(data, encoding):
     assert text == (b"".join(data)).decode(encoding)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_text_decoder_known_encoding():
     async def iterator() -> typing.AsyncIterator[bytes]:
         yield b"\x83g"
