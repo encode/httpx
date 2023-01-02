@@ -86,7 +86,7 @@ def test_read_and_stream_data():
     assert content == request.content
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_aread_and_stream_data():
     # Ensure a request may still be streamed if it has been read.
     # Needed for cases such as authentication classes that read the request body.
@@ -192,7 +192,7 @@ def test_request_picklable():
     }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_request_async_streaming_content_picklable():
     async def streaming_body(data: bytes) -> typing.AsyncIterator[bytes]:
         yield data

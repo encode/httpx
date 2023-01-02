@@ -98,7 +98,7 @@ def test_parse_header_links(value, expected):
     assert parse_header_links(value) == expected
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_logs_debug(server, capsys):
     with override_log_level("debug"):
         async with httpx.AsyncClient() as client:
@@ -108,7 +108,7 @@ async def test_logs_debug(server, capsys):
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_logs_trace(server, capsys):
     with override_log_level("trace"):
         async with httpx.AsyncClient() as client:
@@ -118,7 +118,7 @@ async def test_logs_trace(server, capsys):
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_logs_redirect_chain(server, capsys):
     with override_log_level("debug"):
         async with httpx.AsyncClient(follow_redirects=True) as client:
