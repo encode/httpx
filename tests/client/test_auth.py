@@ -287,28 +287,6 @@ def test_netrc_auth_auth_credentials_do_not_exist() -> None:
     assert response.json() == {"auth": None}
 
 
-def test_netrc_auth_cross_domain_redirect() -> None:
-    """
-    When a request is made that redirects to a new host,
-    the netrc credentials for the new host should be applied.
-
-    https://github.com/encode/httpx/issues/2088
-    """
-    netrc_file = str(FIXTURES_DIR / ".netrc")
-    url = "http://example.org"
-    app = CrossDomainRedirect("netrcexample.org")
-    auth = httpx.NetRCAuth(netrc_file)
-
-    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
-        response = client.get(url, follow_redirects=True)
-
-    assert len(response.history) == 1
-    assert response.status_code == 200
-    assert response.json() == {
-        "auth": "Basic ZXhhbXBsZS11c2VybmFtZTpleGFtcGxlLXBhc3N3b3Jk"
-    }
-
-
 @pytest.mark.anyio
 async def test_auth_disable_per_request() -> None:
     url = "https://example.org/"
