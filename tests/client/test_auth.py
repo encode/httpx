@@ -32,26 +32,6 @@ class App:
         return httpx.Response(self.status_code, headers=headers, json=data)
 
 
-class CrossDomainRedirect:
-    """
-    A mock app to test cross domain redirects and auth credentials.
-    """
-
-    def __init__(self, host: str) -> None:
-        self.host = host
-
-    def __call__(self, request: httpx.Request) -> httpx.Response:
-        if request.url.host == self.host:
-            # Echo the authorization header back in the response.
-            data = {"auth": request.headers.get("Authorization")}
-            return httpx.Response(200, json=data)
-        else:
-            # Redirect to the given host.
-            status_code = httpx.codes.SEE_OTHER
-            headers = {"location": f"https://{self.host}"}
-            return httpx.Response(status_code, headers=headers)
-
-
 class DigestApp:
     def __init__(
         self,
