@@ -428,42 +428,47 @@ with tempfile.NamedTemporaryFile() as download_file:
 
 ## .netrc Support
 
-HTTPX supports .netrc file. In `trust_env=True` cases, if auth parameter is
-not defined, HTTPX tries to add auth into request's header from .netrc file.
+HTTPX can be configured to use [a `.netrc` config file](https://everything.curl.dev/usingcurl/netrc) for authentication.
 
-!!! note
-    The NETRC file is cached across requests made by a client.
-    If you need to refresh the cache (e.g. because the NETRC file has changed),
-    you should create a new client or restart the interpreter.
+The `.netrc` config file allows authentication credentials to be associated with specified hosts. When a request is made to a host that is found in the netrc file, the username and password will be included using HTTP basic auth.
 
-As default `trust_env` is true. To set false:
-```pycon
->>> httpx.get('https://example.org/', trust_env=False)
+Example `.netrc` file:
+
 ```
-
-If `NETRC` environment is empty, HTTPX tries to use default files.
-(`~/.netrc`, `~/_netrc`)
-
-To change `NETRC` environment:
-```pycon
->>> import os
->>> os.environ["NETRC"] = "my_default_folder/.my_netrc"
-```
-
-.netrc file content example:
-```
-machine netrcexample.org
+machine example.org
 login example-username
 password example-password
 
-...
+machine python-httpx.org
+login other-username
+password other-password
 ```
 
-When using `Client` instances, `trust_env` should be set on the client itself, rather than on the request methods:
+Some examples of configuring `.netrc` authentication with `httpx`.
 
-```python
-client = httpx.Client(trust_env=False)
+Use the default `.netrc` file in the users home directory:
+
+```pycon
+>>> auth = httpx.NetRCAuth()
+>>> client = httpx.Client(auth=auth)
 ```
+
+Use an explicit path to a `.netrc` file:
+
+```pycon
+>>> auth = httpx.NetRCAuth(file="/path/to/.netrc")
+>>> client = httpx.Client(auth=auth)
+```
+
+Use the `NETRC` environment variable to configure a path to the `.netrc` file,
+or fallback to the default.
+
+```pycon
+>>> auth = httpx.NetRCAuth(file=os.environ.get("NETRC"))
+>>> client = httpx.Client(auth=auth)
+```
+
+The `NetRCAuth()` class uses [the `netrc.netrc()` function from the Python standard library](https://docs.python.org/3/library/netrc.html). See the documentation there for more details on exceptions that may be raised if the netrc file is not found, or cannot be parsed.
 
 ## HTTP Proxying
 
@@ -828,7 +833,7 @@ For instance this request sends 2 files, `foo.png` and `bar.png` in one request 
 When issuing requests or instantiating a client, the `auth` argument can be used to pass an authentication scheme to use. The `auth` argument may be one of the following...
 
 * A two-tuple of `username`/`password`, to be used with basic authentication.
-* An instance of `httpx.BasicAuth()` or `httpx.DigestAuth()`.
+* An instance of `httpx.BasicAuth()`, `httpx.DigestAuth()`, or `httpx.NetRCAuth()`.
 * A callable, accepting a request and returning an authenticated request instance.
 * An instance of subclasses of `httpx.Auth`.
 
