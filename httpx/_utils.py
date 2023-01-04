@@ -10,6 +10,7 @@ import time
 import typing
 from pathlib import Path
 from urllib.request import getproxies
+from datetime import date
 
 import sniffio
 
@@ -67,10 +68,10 @@ def primitive_value_to_str(value: "PrimitiveData") -> str:
         return "false"
     elif value is None:
         return ""
-    elif isinstance(value, (str, float, int)):
+    elif isinstance(value, (str, float, int, date)):
         return str(value)
     raise TypeError(
-        f"Expected str, int, float, bool, or None. Got {type(value).__name__!r}."
+        f"Expected str, int, float, bool, date, or None. Got {type(value).__name__!r}."
     )
 
 
