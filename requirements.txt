@@ -6,13 +6,13 @@
 
 # Optional charset auto-detection
 # Used in our test cases
-chardet==5.0.0
+chardet==5.1.0
 types-chardet==5.0.3
 
 # Documentation
 mkdocs==1.4.0
 mkautodoc==0.2.0
-mkdocs-material==8.5.5
+mkdocs-material==8.5.11
 
 # Packaging
 build==0.8.0
@@ -27,12 +27,10 @@ flake8==3.9.2
 flake8-bugbear==22.7.1
 flake8-pie==0.16.0; python_version>='3.7'
 importlib-metadata==4.13.0; python_version>='3.7'
-isort==5.10.1
+isort==5.11.4
 mypy==0.982
 types-certifi==2021.10.8.2
 pytest==7.2.0
-pytest-asyncio==0.20.3
-pytest-trio==0.7.0
 trio==0.21.0
 trio-typing==0.7.0
 trustme==0.9.0
