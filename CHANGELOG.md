@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.23.3 (4th Jan, 2023)
+
+### Fixed
+
+* Version 0.23.2 accidentally included stricter type checking on query parameters. This shouldn've have been included in a minor version bump, and is now reverted. (#2523, #2539)
+
 ## 0.23.2 (2nd Jan, 2023)
 
 ### Added
