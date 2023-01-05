@@ -748,7 +748,14 @@ class QueryParams(typing.Mapping[str, str]):
         return sorted(self.multi_items()) == sorted(other.multi_items())
 
     def __str__(self) -> str:
-        return urlencode(self.multi_items())
+        """
+        Note that we use '%20' encoding for spaces, and treat '/' as a safe
+        character.
+
+        See https://github.com/encode/httpx/issues/2536 and
+        https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
+        """
+        return urlencode(self.multi_items(), safe="/", quote_via=quote)
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
