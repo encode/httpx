@@ -251,8 +251,8 @@ def test_line_decoder_cr():
 
     decoder = LineDecoder()
     assert decoder.decode("") == []
-    assert decoder.decode("a\r\rb\rc\r") == []
-    assert decoder.flush() == ["a", "", "b", "c"]
+    assert decoder.decode("a\r\rb\rc\r") == ["a", "", "b"]
+    assert decoder.flush() == ["c"]
 
     # Issue #1033
     decoder = LineDecoder()
