@@ -350,6 +350,22 @@ def test_url_with_empty_query():
     assert url.raw_path == b"/path?"
 
 
+def test_url_query_encoding():
+    """
+    URL query parameters should use '%20' to encoding spaces,
+    and should treat '/' as a safe character. This behaviour differs
+    across clients, but we're matching browser behaviour here.
+
+    See https://github.com/encode/httpx/issues/2536
+    and https://github.com/encode/httpx/discussions/2460
+    """
+    url = httpx.URL("https://www.example.com/?a=b c&d=e/f")
+    assert url.raw_path == b"/?a=b%20c&d=e/f"
+
+    url = httpx.URL("https://www.example.com/", params={"a": "b c", "d": "e/f"})
+    assert url.raw_path == b"/?a=b%20c&d=e/f"
+
+
 def test_url_with_url_encoded_path():
     url = httpx.URL("https://www.example.com/path%20to%20somewhere")
     assert url.path == "/path to somewhere"
