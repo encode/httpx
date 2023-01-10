@@ -278,23 +278,20 @@ class LineDecoder:
 
         if not text:
             return []
-        elif text[-1] == "\r":
-            # If the last character is "\r", then we might be about to see "\r\n"
-            # newline seperator. We buffer the text input and return.
-            self.buffer = text
-            return []
-        elif text[-1] in NEWLINE_CHARS:
-            # If the last character is a newline separator then we can simply split
-            # the text into lines and return them. There is no remaining portion
-            # to be dealt with on the next pass.
-            return text.splitlines()
-        else:
+
+        lines = text.splitlines()
+
+        if text[-1] == "\r":
+            # If the last character is "\r", then we might be on the boundary of
+            # a "\r\n" sequence. We reassemble and buffer the final portion of the input.
+            self.buffer = lines.pop() + "\r"
+        elif text[-1] not in NEWLINE_CHARS:
             # If the last character is not a newline seperator, then the final portion
             # from `splitlines()` is incomplete and needs to be buffered for the next
             # pass.
-            lines = text.splitlines()
             self.buffer = lines.pop()
-            return lines
+
+        return lines
 
     def flush(self) -> typing.List[str]:
         lines = self.buffer.splitlines()
