@@ -312,49 +312,13 @@ def test_url_copywith_security():
     """
     Prevent unexpected changes on URL after calling copy_with (CVE-2021-41945)
     """
-    url = httpx.URL("https://u:p@[invalid!]//evilHost/path?t=w#tw")
-    original_scheme = url.scheme
-    original_userinfo = url.userinfo
-    original_netloc = url.netloc
-    original_raw_path = url.raw_path
-    original_query = url.query
-    original_fragment = url.fragment
-    url = url.copy_with()
-    assert url.scheme == original_scheme
-    assert url.userinfo == original_userinfo
-    assert url.netloc == original_netloc
-    assert url.raw_path == original_raw_path
-    assert url.query == original_query
-    assert url.fragment == original_fragment
-
-    url = httpx.URL("https://u:p@[invalid!]//evilHost/path?t=w#tw")
-    original_scheme = url.scheme
-    original_netloc = url.netloc
-    original_raw_path = url.raw_path
-    original_query = url.query
-    original_fragment = url.fragment
-    url = url.copy_with(userinfo=b"")
-    assert url.scheme == original_scheme
-    assert url.userinfo == b""
-    assert url.netloc == original_netloc
-    assert url.raw_path == original_raw_path
-    assert url.query == original_query
-    assert url.fragment == original_fragment
+    with pytest.raises(httpx.InvalidURL):
+        httpx.URL("https://u:p@[invalid!]//evilHost/path?t=w#tw")
 
     url = httpx.URL("https://example.com/path?t=w#tw")
-    original_userinfo = url.userinfo
-    original_netloc = url.netloc
-    original_raw_path = url.raw_path
-    original_query = url.query
-    original_fragment = url.fragment
     bad = "https://xxxx:xxxx@xxxxxxx/xxxxx/xxx?x=x#xxxxx"
-    url = url.copy_with(scheme=bad)
-    assert url.scheme == bad
-    assert url.userinfo == original_userinfo
-    assert url.netloc == original_netloc
-    assert url.raw_path == original_raw_path
-    assert url.query == original_query
-    assert url.fragment == original_fragment
+    with pytest.raises(httpx.InvalidURL):
+        url.copy_with(scheme=bad)
 
 
 def test_url_invalid():
@@ -384,6 +348,22 @@ def test_url_with_empty_query():
     assert url.path == "/path"
     assert url.query == b""
     assert url.raw_path == b"/path?"
+
+
+def test_url_query_encoding():
+    """
+    URL query parameters should use '%20' to encoding spaces,
+    and should treat '/' as a safe character. This behaviour differs
+    across clients, but we're matching browser behaviour here.
+
+    See https://github.com/encode/httpx/issues/2536
+    and https://github.com/encode/httpx/discussions/2460
+    """
+    url = httpx.URL("https://www.example.com/?a=b c&d=e/f")
+    assert url.raw_path == b"/?a=b%20c&d=e/f"
+
+    url = httpx.URL("https://www.example.com/", params={"a": "b c", "d": "e/f"})
+    assert url.raw_path == b"/?a=b%20c&d=e/f"
 
 
 def test_url_with_url_encoded_path():
@@ -424,6 +404,14 @@ def test_ipv6_url_from_raw_url(host):
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]"
     assert str(url) == "https://[::ffff:192.168.0.1]/"
+
+
+def test_resolution_error_1833():
+    """
+    See https://github.com/encode/httpx/issues/1833
+    """
+    url = httpx.URL("https://example.com/?[]")
+    assert url.join("/") == "https://example.com/"
 
 
 def test_url_raw_compatibility():
