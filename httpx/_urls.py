@@ -1,10 +1,10 @@
 import typing
-from urllib.parse import parse_qs, unquote, urlencode
+from urllib.parse import parse_qs, unquote
 
 import idna
 
 from ._types import PrimitiveData, QueryParamTypes, RawURL, URLTypes
-from ._urlparse import urlparse
+from ._urlparse import urlencode, urlparse
 from ._utils import primitive_value_to_str
 
 
@@ -623,7 +623,7 @@ class QueryParams(typing.Mapping[str, str]):
         See https://github.com/encode/httpx/issues/2536 and
         https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
         """
-        return urlencode(self.multi_items(), safe="/", quote_via=quote)
+        return urlencode(self.multi_items())
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__

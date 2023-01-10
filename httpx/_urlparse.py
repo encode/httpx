@@ -433,3 +433,17 @@ def quote(string: str, safe: str = "/") -> str:
     return "".join(
         [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]
     )
+
+
+def urlencode(items: typing.List[typing.Tuple[str, str]]) -> str:
+    # We can use a much simpler version of the stdlib urlencode here because
+    # we don't need to handle a bunch of different typing cases, such as bytes vs str.
+    #
+    # https://github.com/python/cpython/blob/b2f7b2ef0b5421e01efb8c7bee2ef95d3bab77eb/Lib/urllib/parse.py#L926
+    #
+    # Note that we use '%20' encoding for spaces, and treat '/' as a safe
+    # character.
+    #
+    # See https://github.com/encode/httpx/issues/2536 and
+    # https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
+    return "&".join([quote(k) + "=" + quote(v) for k, v in items])
