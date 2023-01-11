@@ -152,7 +152,7 @@ class NetRCAuth(Auth):
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         auth_info = self._netrc_info.authenticators(request.url.host)
-        if auth_info is None or auth_info[2] is None:
+        if auth_info is None or not auth_info[2]:
             # The netrc file did not have authentication credentials for this host.
             yield request
         else:
