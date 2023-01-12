@@ -317,6 +317,7 @@ class LineDecoder:
         if self.buffer or self.trailing_cr:
             lines = ["".join(self.buffer)]
             self.buffer = []
+            self.trailing_cr = False
             return lines
         return []
 
