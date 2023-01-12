@@ -266,37 +266,59 @@ class LineDecoder:
     def __init__(self) -> None:
         self.buffer = ""
 
+class LineDecoder:
+    """
+    Handles incrementally reading lines from text.
+
+    Has the same behaviour as the stdllib splitlines, but handling the input iteratively.
+    """
+
+    def __init__(self) -> None:
+        self.buffer: typing.List[str] = []
+        self.trailing_cr: bool = False
+
     def decode(self, text: str) -> typing.List[str]:
         # See https://docs.python.org/3/library/stdtypes.html#str.splitlines
         NEWLINE_CHARS = "\n\r\x0b\x0c\x1c\x1d\x1e\x85\u2028\u2029"
 
-        if self.buffer:
-            # If we have some buffered text from the previous pass,
-            # then we include it before handling the input.
-            text = self.buffer + text
-            self.buffer = ""
+        # We always push a trailing `\r` into the next decode iteration.
+        if self.trailing_cr:
+            text = "\r" + text
+            self.trailing_cr = False
+        if text.endswith("\r"):
+            self.trailing_cr = True
+            text = text[:-1]
 
         if not text:
             return []
 
+        trailing_newline = text[-1] in NEWLINE_CHARS
         lines = text.splitlines()
 
-        if text[-1] == "\r":
-            # If the last character is "\r", then we might be on the boundary of
-            # a "\r\n" sequence. We reassemble and buffer the final portion of the input.
-            self.buffer = lines.pop() + "\r"
-        elif text[-1] not in NEWLINE_CHARS:
-            # If the last character is not a newline seperator, then the final portion
-            # from `splitlines()` is incomplete and needs to be buffered for the next
-            # pass.
-            self.buffer = lines.pop()
+        if len(lines) == 1 and not trailing_newline:
+            # No new lines, buffer the input and continue.
+            self.buffer.append(lines[0])
+            return []
+
+        if self.buffer:
+            # Include any existing buffer in the first portion of the
+            # splitlines result.
+            lines = ["".join(self.buffer) + lines[0]] + lines[1:]
+            self.buffer = []
+
+        if not trailing_newline:
+            # If the last segment of splitlines is not newline terminated,
+            # then drop it from our output and start a new buffer.
+            self.buffer = [lines.pop()]
 
         return lines
 
     def flush(self) -> typing.List[str]:
-        lines = self.buffer.splitlines()
-        self.buffer = ""
-        return lines
+        if self.buffer or self.trailing_cr:
+            lines = ["".join(self.buffer)]
+            self.buffer = []
+            return lines
+        return []
 
 
 SUPPORTED_DECODERS = {
