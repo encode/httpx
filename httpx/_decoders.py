@@ -259,17 +259,6 @@ class LineDecoder:
     """
     Handles incrementally reading lines from text.
 
-    Uses universal line decoding, supporting any of `\n`, `\r`, or `\r\n`
-    as line endings, normalizing to `\n`.
-    """
-
-    def __init__(self) -> None:
-        self.buffer = ""
-
-class LineDecoder:
-    """
-    Handles incrementally reading lines from text.
-
     Has the same behaviour as the stdllib splitlines, but handling the input iteratively.
     """
 
