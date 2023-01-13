@@ -305,7 +305,7 @@ class LineDecoder:
     def flush(self) -> typing.List[str]:
         if not self.buffer and not self.trailing_cr:
             return []
-            
+
         lines = ["".join(self.buffer)]
         self.buffer = []
         self.trailing_cr = False
