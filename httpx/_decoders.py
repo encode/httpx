@@ -303,12 +303,13 @@ class LineDecoder:
         return lines
 
     def flush(self) -> typing.List[str]:
-        if self.buffer or self.trailing_cr:
-            lines = ["".join(self.buffer)]
-            self.buffer = []
-            self.trailing_cr = False
-            return lines
-        return []
+        if not self.buffer and not self.trailing_cr:
+            return []
+            
+        lines = ["".join(self.buffer)]
+        self.buffer = []
+        self.trailing_cr = False
+        return lines
 
 
 SUPPORTED_DECODERS = {
