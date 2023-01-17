@@ -7,7 +7,6 @@ import pytest
 
 import httpx
 from httpx._utils import (
-    NetRCInfo,
     URLPattern,
     get_ca_bundle_from_env,
     get_environment_proxies,
@@ -18,7 +17,7 @@ from httpx._utils import (
     same_origin,
 )
 
-from .common import FIXTURES_DIR, TESTS_DIR
+from .common import TESTS_DIR
 
 
 @pytest.mark.parametrize(
@@ -55,25 +54,6 @@ def test_bad_utf_like_encoding():
 def test_guess_by_bom(encoding, expected):
     data = "\ufeff{}".encode(encoding)
     assert guess_json_utf(data) == expected
-
-
-def test_bad_get_netrc_login():
-    netrc_info = NetRCInfo([str(FIXTURES_DIR / "does-not-exist")])
-    assert netrc_info.get_credentials("netrcexample.org") is None
-
-
-def test_get_netrc_login():
-    netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
-    expected_credentials = (
-        "example-username",
-        "example-password",
-    )
-    assert netrc_info.get_credentials("netrcexample.org") == expected_credentials
-
-
-def test_get_netrc_unknown():
-    netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
-    assert netrc_info.get_credentials("nonexistent.org") is None
 
 
 @pytest.mark.parametrize(
