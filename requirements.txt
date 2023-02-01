@@ -16,7 +16,7 @@ mkdocs-material==8.5.11
 
 # Packaging
 build==0.10.0
-twine==4.0.1
+twine==4.0.2
 
 # Tests & Linting
 autoflake==1.7.7
