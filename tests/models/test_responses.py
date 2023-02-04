@@ -380,17 +380,18 @@ def test_iter_raw():
 
 def test_iter_raw_with_chunksize():
     response = httpx.Response(200, content=streaming_body())
-
     parts = [part for part in response.iter_raw(chunk_size=5)]
     assert parts == [b"Hello", b", wor", b"ld!"]
 
     response = httpx.Response(200, content=streaming_body())
+    parts = [part for part in response.iter_raw(chunk_size=7)]
+    assert parts == [b"Hello, ", b"world!"]
 
+    response = httpx.Response(200, content=streaming_body())
     parts = [part for part in response.iter_raw(chunk_size=13)]
     assert parts == [b"Hello, world!"]
 
     response = httpx.Response(200, content=streaming_body())
-
     parts = [part for part in response.iter_raw(chunk_size=20)]
     assert parts == [b"Hello, world!"]
 
@@ -595,6 +596,14 @@ def test_iter_text_with_chunk_size():
     response = httpx.Response(200, content=b"Hello, world!")
     parts = [part for part in response.iter_text(chunk_size=5)]
     assert parts == ["Hello", ", wor", "ld!"]
+
+    response = httpx.Response(200, content=b"Hello, world!!")
+    parts = [part for part in response.iter_text(chunk_size=7)]
+    assert parts == ["Hello, ", "world!!"]
+
+    response = httpx.Response(200, content=b"Hello, world!")
+    parts = [part for part in response.iter_text(chunk_size=7)]
+    assert parts == ["Hello, ", "world!"]
 
     response = httpx.Response(200, content=b"Hello, world!")
     parts = [part for part in response.iter_text(chunk_size=13)]
