@@ -14,7 +14,6 @@ from httpx._utils import (
     parse_header_links,
     same_origin,
 )
-from tests.utils import override_log_level
 
 from .common import TESTS_DIR
 
@@ -80,30 +79,35 @@ def test_parse_header_links(value, expected):
 
 @pytest.mark.anyio
 async def test_logs_debug(server, capsys):
-    with override_log_level("debug"):
-        async with httpx.AsyncClient() as client:
-            response = await client.get(server.url)
-            assert response.status_code == 200
+    os.environ["HTTPX_LOG_LEVEL"] = "debug"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(server.url)
+        assert response.status_code == 200
+
     stderr = capsys.readouterr().err
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
 
 
 @pytest.mark.anyio
 async def test_logs_trace(server, capsys):
-    with override_log_level("trace"):
-        async with httpx.AsyncClient() as client:
-            response = await client.get(server.url)
-            assert response.status_code == 200
+    os.environ["HTTPX_LOG_LEVEL"] = "trace"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(server.url)
+        assert response.status_code == 200
+
     stderr = capsys.readouterr().err
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
 
 
 @pytest.mark.anyio
 async def test_logs_redirect_chain(server, capsys):
-    with override_log_level("debug"):
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            response = await client.get(server.url.copy_with(path="/redirect_301"))
-            assert response.status_code == 200
+    os.environ["HTTPX_LOG_LEVEL"] = "debug"
+
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        response = await client.get(server.url.copy_with(path="/redirect_301"))
+        assert response.status_code == 200
 
     stderr = capsys.readouterr().err.strip()
     redirected_request_line, ok_request_line = stderr.split("\n")

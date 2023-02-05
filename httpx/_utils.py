@@ -213,6 +213,11 @@ def get_logger(name: str) -> Logger:
     """
     global _LOGGER_INITIALIZED
 
+    formatter = logging.Formatter(
+        fmt="%(levelname)s [%(asctime)s] %(name)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
     if not _LOGGER_INITIALIZED:
         _LOGGER_INITIALIZED = True
         logging.addLevelName(TRACE_LOG_LEVEL, "TRACE")
@@ -222,12 +227,7 @@ def get_logger(name: str) -> Logger:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.DEBUG if log_level == "DEBUG" else TRACE_LOG_LEVEL)
             handler = logging.StreamHandler(sys.stderr)
-            handler.setFormatter(
-                logging.Formatter(
-                    fmt="%(levelname)s [%(asctime)s] %(name)s - %(message)s",
-                    datefmt="%Y-%m-%d %H:%M:%S",
-                )
-            )
+            handler.setFormatter(formatter)
             logger.addHandler(handler)
 
     logger = logging.getLogger(name)
@@ -236,6 +236,30 @@ def get_logger(name: str) -> Logger:
         logger.log(TRACE_LOG_LEVEL, message, *args, **kwargs)
 
     logger.trace = trace  # type: ignore
+
+    if os.environ.get("_HTTPX_TESTING") == "True":
+        # Allow re-configuring the logger across requests in tests
+        # by updating `HTTPX_LOG_LEVEL`.
+
+        logger_debug = logger.debug
+
+        def debug(message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
+            # Ensure we don't get verbose output in tests by default.
+            logger.handlers.clear()
+
+            log_level = os.environ.get("HTTPX_LOG_LEVEL", "").upper()
+            if log_level in ("DEBUG", "TRACE"):
+                logger.setLevel(
+                    logging.DEBUG if log_level == "DEBUG" else TRACE_LOG_LEVEL
+                )
+                # Need a brand new handler, as stderr might be mocked (eg pytest capsys).
+                handler = logging.StreamHandler(sys.stderr)
+                handler.setFormatter(formatter)
+                logger.addHandler(handler)
+
+            logger_debug(message, *args, **kwargs)
+
+        logger.debug = debug  # type: ignore
 
     return typing.cast(Logger, logger)
 

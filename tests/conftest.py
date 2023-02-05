@@ -17,11 +17,15 @@ from cryptography.hazmat.primitives.serialization import (
 from uvicorn.config import Config
 from uvicorn.server import Server
 
-from httpx import URL
 from tests.concurrency import sleep
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from httpx._transports.asgi import _Receive, _Send
+
+# Set before importing `httpx` so it gets picked up by custom logging.
+os.environ["_HTTPX_TESTING"] = "True"
+
+from httpx import URL  # noqa: E402
 
 ENVIRONMENT_VARIABLES = {
     "SSL_CERT_FILE",
