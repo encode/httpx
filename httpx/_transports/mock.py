@@ -17,7 +17,7 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
     ) -> Response:
         request.read()
         response = self.handler(request)
-        if not isinstance(response, Response):
+        if not isinstance(response, Response):  # pragma: no cover
             raise TypeError("Cannot use an async handler in a sync Client")
         return response
 
