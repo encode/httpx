@@ -4,7 +4,6 @@ import typing
 from .._models import Request, Response
 from .base import AsyncBaseTransport, BaseTransport
 
-
 SyncHandler = typing.Callable[[Request], Response]
 AsyncHandler = typing.Callable[[Request], typing.Coroutine[None, None, Response]]
 
@@ -18,7 +17,7 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         request: Request,
     ) -> Response:
         request.read()
-        return self.handler(request)
+        return self.handler(request)  # type: ignore[return-value]
 
     async def handle_async_request(
         self,
@@ -35,4 +34,4 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         if asyncio.iscoroutine(response):
             response = await response
 
-        return response
+        return response  # type: ignore[return-value]
