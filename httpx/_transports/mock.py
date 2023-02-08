@@ -5,8 +5,12 @@ from .._models import Request, Response
 from .base import AsyncBaseTransport, BaseTransport
 
 
+SyncHandler = typing.Callable[[Request], Response]
+AsyncHandler = typing.Callable[[Request], typing.Coroutine[None, None, Response]]
+
+
 class MockTransport(AsyncBaseTransport, BaseTransport):
-    def __init__(self, handler: typing.Callable[[Request], Response]) -> None:
+    def __init__(self, handler: typing.Union[SyncHandler, AsyncHandler]) -> None:
         self.handler = handler
 
     def handle_request(
