@@ -1,4 +1,3 @@
-import asyncio
 import typing
 
 from .._models import Request, Response
@@ -17,7 +16,10 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         request: Request,
     ) -> Response:
         request.read()
-        return self.handler(request)  # type: ignore[return-value]
+        response = self.handler(request)
+        if not isinstance(response, Response):
+            raise TypeError("Cannot use an async handler in a sync Client")
+        return response
 
     async def handle_async_request(
         self,
@@ -30,8 +32,7 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
         # If it is, then the `response` variable need to be awaited to actually
         # return the result.
 
-        # https://simonwillison.net/2020/Sep/2/await-me-maybe/
-        if asyncio.iscoroutine(response):
+        if not isinstance(response, Response):
             response = await response
 
-        return response  # type: ignore[return-value]
+        return response
