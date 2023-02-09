@@ -99,7 +99,6 @@ async def hello_world_json(scope: Scope, receive: Receive, send: Send) -> None:
 
 
 async def slow_response(scope: Scope, receive: Receive, send: Send) -> None:
-    await sleep(1.0)
     await send(
         {
             "type": "http.response.start",
@@ -107,6 +106,7 @@ async def slow_response(scope: Scope, receive: Receive, send: Send) -> None:
             "headers": [[b"content-type", b"text/plain"]],
         }
     )
+    await sleep(1.0)  # Allow triggering a read timeout.
     await send({"type": "http.response.body", "body": b"Hello, world!"})
 
 
