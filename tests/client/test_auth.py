@@ -710,7 +710,7 @@ class ConsumeBodyTransport(httpx.MockTransport):
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
         assert isinstance(request.stream, httpx.AsyncByteStream)
         [_ async for _ in request.stream]
-        return self.handler(request)
+        return self.handler(request)  # type: ignore[return-value]
 
 
 @pytest.mark.anyio

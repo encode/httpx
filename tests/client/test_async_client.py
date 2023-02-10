@@ -313,7 +313,7 @@ async def test_mounted_transport():
 
 @pytest.mark.anyio
 async def test_async_mock_transport():
-    async def hello_world(request):
+    async def hello_world(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, text="Hello, world!")
 
     transport = httpx.MockTransport(hello_world)

@@ -346,7 +346,7 @@ class ConsumeBodyTransport(httpx.MockTransport):
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         assert isinstance(request.stream, httpx.SyncByteStream)
         [_ for _ in request.stream]
-        return self.handler(request)
+        return self.handler(request)  # type: ignore[return-value]
 
 
 def test_cannot_redirect_streaming_body():
