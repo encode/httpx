@@ -1,10 +1,17 @@
 import typing
+from contextlib import AsyncExitStack, asynccontextmanager
 
 import sniffio
 
 from .._models import Request, Response
 from .._types import AsyncByteStream
 from .base import AsyncBaseTransport
+
+try:
+    import anyio
+except ImportError:  # pragma: no cover
+    anyio = None  # type: ignore
+
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     import asyncio
@@ -35,12 +42,19 @@ def create_event() -> "Event":
         return asyncio.Event()
 
 
-class ASGIResponseStream(AsyncByteStream):
-    def __init__(self, body: typing.List[bytes]) -> None:
-        self._body = body
+class ASGIResponseByteStream(AsyncByteStream):
+    def __init__(
+        self, stream: typing.AsyncGenerator[bytes, None], app_context: AsyncExitStack
+    ) -> None:
+        self._stream = stream
+        self._app_context = app_context
 
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        yield b"".join(self._body)
+    def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        return self._stream.__aiter__()
+
+    async def aclose(self) -> None:
+        await self._stream.aclose()
+        await self._app_context.aclose()
 
 
 class ASGITransport(AsyncBaseTransport):
@@ -83,6 +97,9 @@ class ASGITransport(AsyncBaseTransport):
         root_path: str = "",
         client: typing.Tuple[str, int] = ("127.0.0.1", 123),
     ) -> None:
+        if anyio is None:
+            raise RuntimeError("ASGITransport requires anyio (Hint: pip install anyio)")
+
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
         self.root_path = root_path
@@ -92,82 +109,136 @@ class ASGITransport(AsyncBaseTransport):
         self,
         request: Request,
     ) -> Response:
-        assert isinstance(request.stream, AsyncByteStream)
+        exit_stack = AsyncExitStack()
 
-        # ASGI scope.
-        scope = {
-            "type": "http",
-            "asgi": {"version": "3.0"},
-            "http_version": "1.1",
-            "method": request.method,
-            "headers": [(k.lower(), v) for (k, v) in request.headers.raw],
-            "scheme": request.url.scheme,
-            "path": request.url.path,
-            "raw_path": request.url.raw_path,
-            "query_string": request.url.query,
-            "server": (request.url.host, request.url.port),
-            "client": self.client,
-            "root_path": self.root_path,
-        }
+        (
+            status_code,
+            response_headers,
+            response_body,
+        ) = await exit_stack.enter_async_context(
+            run_asgi(
+                self.app,
+                raise_app_exceptions=self.raise_app_exceptions,
+                root_path=self.root_path,
+                client=self.client,
+                request=request,
+            )
+        )
 
-        # Request.
-        request_body_chunks = request.stream.__aiter__()
-        request_complete = False
+        return Response(
+            status_code,
+            headers=response_headers,
+            stream=ASGIResponseByteStream(response_body, exit_stack),
+        )
 
-        # Response.
-        status_code = None
-        response_headers = None
-        body_parts = []
-        response_started = False
-        response_complete = create_event()
 
-        # ASGI callables.
+@asynccontextmanager
+async def run_asgi(
+    app: _ASGIApp,
+    raise_app_exceptions: bool,
+    client: typing.Tuple[str, int],
+    root_path: str,
+    request: Request,
+) -> typing.AsyncIterator[
+    typing.Tuple[
+        int,
+        typing.Sequence[typing.Tuple[bytes, bytes]],
+        typing.AsyncGenerator[bytes, None],
+    ]
+]:
+    # ASGI scope.
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "method": request.method,
+        "headers": [(k.lower(), v) for (k, v) in request.headers.raw],
+        "scheme": request.url.scheme,
+        "path": request.url.path,
+        "raw_path": request.url.raw_path,
+        "query_string": request.url.query,
+        "server": (request.url.host, request.url.port),
+        "client": client,
+        "root_path": root_path,
+    }
 
-        async def receive() -> typing.Dict[str, typing.Any]:
-            nonlocal request_complete
+    # Request.
+    assert isinstance(request.stream, AsyncByteStream)
+    request_body_chunks = request.stream.__aiter__()
+    request_complete = False
 
-            if request_complete:
-                await response_complete.wait()
-                return {"type": "http.disconnect"}
+    # Response.
+    status_code = None
+    response_headers = None
+    response_started = anyio.Event()
+    response_complete = anyio.Event()
 
-            try:
-                body = await request_body_chunks.__anext__()
-            except StopAsyncIteration:
-                request_complete = True
-                return {"type": "http.request", "body": b"", "more_body": False}
-            return {"type": "http.request", "body": body, "more_body": True}
+    send_stream, receive_stream = anyio.create_memory_object_stream()
+    disconnected = anyio.Event()
 
-        async def send(message: typing.Dict[str, typing.Any]) -> None:
-            nonlocal status_code, response_headers, response_started
+    async def watch_disconnect(cancel_scope: anyio.CancelScope) -> None:
+        await disconnected.wait()
+        cancel_scope.cancel()
 
-            if message["type"] == "http.response.start":
-                assert not response_started
-
-                status_code = message["status"]
-                response_headers = message.get("headers", [])
-                response_started = True
-
-            elif message["type"] == "http.response.body":
-                assert not response_complete.is_set()
-                body = message.get("body", b"")
-                more_body = message.get("more_body", False)
-
-                if body and request.method != "HEAD":
-                    body_parts.append(body)
-
-                if not more_body:
-                    response_complete.set()
-
+    async def run_app(cancel_scope: anyio.CancelScope) -> None:
         try:
-            await self.app(scope, receive, send)
+            await app(scope, receive, send)
         except Exception:  # noqa: PIE-786
-            if self.raise_app_exceptions or not response_complete.is_set():
+            if raise_app_exceptions or not response_complete.is_set():
                 raise
 
-        assert response_complete.is_set()
+    # ASGI callables.
+
+    async def receive() -> typing.Dict[str, typing.Any]:
+        nonlocal request_complete
+
+        if request_complete:
+            await response_complete.wait()
+            return {"type": "http.disconnect"}
+
+        try:
+            body = await request_body_chunks.__anext__()
+        except StopAsyncIteration:
+            request_complete = True
+            return {"type": "http.request", "body": b"", "more_body": False}
+        return {"type": "http.request", "body": body, "more_body": True}
+
+    async def send(message: _Message) -> None:
+        nonlocal status_code, response_headers
+
+        if disconnected.is_set():
+            return
+
+        if message["type"] == "http.response.start":
+            assert not response_started.is_set()
+
+            status_code = message["status"]
+            response_headers = message.get("headers", [])
+            response_started.set()
+
+        elif message["type"] == "http.response.body":
+            assert response_started.is_set()
+            assert not response_complete.is_set()
+            body = message.get("body", b"")
+            more_body = message.get("more_body", False)
+
+            if body and request.method != "HEAD":
+                await send_stream.send(body)
+
+            if not more_body:
+                response_complete.set()
+
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(watch_disconnect, tg.cancel_scope)
+        tg.start_soon(run_app, tg.cancel_scope)
+
+        await response_started.wait()
         assert status_code is not None
         assert response_headers is not None
 
-        stream = ASGIResponseStream(body_parts)
+        async def stream() -> typing.AsyncGenerator[bytes, None]:
+            async for chunk in receive_stream:
+                yield chunk
 
-        return Response(status_code, headers=response_headers, stream=stream)
+        yield (status_code, response_headers, stream())
+        disconnected.set()
