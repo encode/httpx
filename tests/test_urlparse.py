@@ -4,49 +4,49 @@ import httpx
 
 
 def test_urlparse():
-    url = httpx.URL("https://www.example.com/")._uri_reference
+    url = httpx.URL("https://www.example.com/")
 
     assert url.scheme == "https"
-    assert url.userinfo == ""
-    assert url.netloc == "www.example.com"
+    assert url.userinfo == b""
+    assert url.netloc == b"www.example.com"
     assert url.host == "www.example.com"
     assert url.port is None
     assert url.path == "/"
-    assert url.query is None
-    assert url.fragment is None
+    assert url.query == b""
+    assert url.fragment == ""
 
     assert str(url) == "https://www.example.com/"
 
 
 def test_urlparse_no_scheme():
-    url = httpx.URL("://example.com")._uri_reference
+    url = httpx.URL("://example.com")
     assert url.scheme == ""
     assert url.host == "example.com"
-    assert url.path == ""
+    assert url.path == "/"
 
 
 def test_urlparse_no_authority():
-    url = httpx.URL("http://")._uri_reference
+    url = httpx.URL("http://")
     assert url.scheme == "http"
     assert url.host == ""
-    assert url.path == ""
+    assert url.path == "/"
 
 
 # Tests for different host types
 
 
 def test_urlparse_valid_host():
-    url = httpx.URL("https://example.com/")._uri_reference
+    url = httpx.URL("https://example.com/")
     assert url.host == "example.com"
 
 
 def test_urlparse_normalized_host():
-    url = httpx.URL("https://EXAMPLE.com/")._uri_reference
+    url = httpx.URL("https://EXAMPLE.com/")
     assert url.host == "example.com"
 
 
 def test_urlparse_valid_ipv4():
-    url = httpx.URL("https://1.2.3.4/")._uri_reference
+    url = httpx.URL("https://1.2.3.4/")
     assert url.host == "1.2.3.4"
 
 
@@ -57,7 +57,7 @@ def test_urlparse_invalid_ipv4():
 
 
 def test_urlparse_valid_ipv6():
-    url = httpx.URL("https://[2001:db8::ff00:42:8329]/")._uri_reference
+    url = httpx.URL("https://[2001:db8::ff00:42:8329]/")
     assert url.host == "2001:db8::ff00:42:8329"
 
 
@@ -68,13 +68,13 @@ def test_urlparse_invalid_ipv6():
 
 
 def test_urlparse_unescaped_idna_host():
-    url = httpx.URL("https://中国.icom.museum/")._uri_reference
-    assert url.host == "xn--fiqs8s.icom.museum"
+    url = httpx.URL("https://中国.icom.museum/")
+    assert url.raw_host == b"xn--fiqs8s.icom.museum"
 
 
 def test_urlparse_escaped_idna_host():
-    url = httpx.URL("https://xn--fiqs8s.icom.museum/")._uri_reference
-    assert url.host == "xn--fiqs8s.icom.museum"
+    url = httpx.URL("https://xn--fiqs8s.icom.museum/")
+    assert url.raw_host == b"xn--fiqs8s.icom.museum"
 
 
 def test_urlparse_invalid_idna_host():
@@ -87,13 +87,13 @@ def test_urlparse_invalid_idna_host():
 
 
 def test_urlparse_valid_port():
-    url = httpx.URL("https://example.com:123/")._uri_reference
+    url = httpx.URL("https://example.com:123/")
     assert url.port == 123
 
 
 def test_urlparse_normalized_port():
     # If the port matches the scheme default it is normalized to None.
-    url = httpx.URL("https://example.com:443/")._uri_reference
+    url = httpx.URL("https://example.com:443/")
     assert url.port is None
 
 
@@ -107,22 +107,22 @@ def test_urlparse_invalid_port():
 
 
 def test_urlparse_normalized_path():
-    url = httpx.URL("https://example.com/abc/def/../ghi/./jkl")._uri_reference
+    url = httpx.URL("https://example.com/abc/def/../ghi/./jkl")
     assert url.path == "/abc/ghi/jkl"
 
 
 def test_urlparse_escaped_path():
-    url = httpx.URL("https://example.com/ /🌟/")._uri_reference
-    assert url.path == "/%20/%F0%9F%8C%9F/"
+    url = httpx.URL("https://example.com/ /🌟/")
+    assert url.raw_path == b"/%20/%F0%9F%8C%9F/"
 
 
 def test_urlparse_leading_dot_prefix_on_absolute_url():
-    url = httpx.URL("https://example.com/../abc")._uri_reference
+    url = httpx.URL("https://example.com/../abc")
     assert url.path == "/abc"
 
 
 def test_urlparse_leading_dot_prefix_on_relative_url():
-    url = httpx.URL("../abc")._uri_reference
+    url = httpx.URL("../abc")
     assert url.path == "../abc"
 
 
@@ -160,15 +160,15 @@ def test_urlparse_non_printing_character_in_component():
 
 
 def test_urlparse_with_components():
-    url = httpx.URL(scheme="https", host="www.example.com", path="/")._uri_reference
+    url = httpx.URL(scheme="https", host="www.example.com", path="/")
 
     assert url.scheme == "https"
-    assert url.userinfo == ""
+    assert url.userinfo == b""
     assert url.host == "www.example.com"
     assert url.port is None
     assert url.path == "/"
-    assert url.query is None
-    assert url.fragment is None
+    assert url.query == b""
+    assert url.fragment == ""
 
     assert str(url) == "https://www.example.com/"
 
@@ -207,7 +207,7 @@ def test_urlparse_with_invalid_path():
 
 def test_urlparse_with_relative_path():
     # This path would be invalid for an absolute URL, but is valid as a relative URL.
-    url = httpx.URL(path="abc")._uri_reference
+    url = httpx.URL(path="abc")
     assert url.path == "abc"
 
 
@@ -215,7 +215,7 @@ def test_urlparse_with_relative_path():
 
 
 def test_copy_with():
-    url = httpx.URL("https://www.example.com/")._uri_reference
+    url = httpx.URL("https://www.example.com/")
     assert str(url) == "https://www.example.com/"
 
     url = url.copy_with()
@@ -224,7 +224,7 @@ def test_copy_with():
     url = url.copy_with(scheme="http")
     assert str(url) == "http://www.example.com/"
 
-    url = url.copy_with(netloc="example.com")
+    url = url.copy_with(netloc=b"example.com")
     assert str(url) == "http://example.com/"
 
     url = url.copy_with(path="/abc")
