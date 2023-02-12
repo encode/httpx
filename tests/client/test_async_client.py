@@ -1,4 +1,5 @@
 import typing
+from contextlib import aclosing
 from datetime import timedelta
 
 import pytest
@@ -74,6 +75,34 @@ async def test_stream_response(server):
     assert response.status_code == 200
     assert body == b"Hello, world!"
     assert response.content == b"Hello, world!"
+
+
+@pytest.mark.anyio
+async def test_stream_iterator(server):
+    body = b""
+
+    async with httpx.AsyncClient() as client:
+        async with client.stream("GET", server.url) as response:
+            async for chunk in response.aiter_bytes():
+                body += chunk
+
+    assert response.status_code == 200
+    assert body == b"Hello, world!"
+
+
+@pytest.mark.anyio
+async def test_stream_iterator_partial(server):
+    body = ""
+
+    async with httpx.AsyncClient() as client:
+        async with client.stream("GET", server.url) as response:
+            async with aclosing(response.aiter_text(5)) as stream:
+                async for chunk in stream:
+                    body += chunk
+                    break
+
+    assert response.status_code == 200
+    assert body == "Hello"
 
 
 @pytest.mark.anyio

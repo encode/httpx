@@ -232,12 +232,14 @@ class HTTPTransport(BaseTransport):
 
 class AsyncResponseStream(AsyncByteStream):
     def __init__(self, httpcore_stream: typing.AsyncIterable[bytes]):
-        self._httpcore_stream = httpcore_stream
+        self._httpcore_stream = httpcore_stream.__aiter__()
 
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+    def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        return self
+
+    async def __anext__(self) -> bytes:
         with map_httpcore_exceptions():
-            async for part in self._httpcore_stream:
-                yield part
+            return await self._httpcore_stream.__anext__()
 
     async def aclose(self) -> None:
         if hasattr(self._httpcore_stream, "aclose"):

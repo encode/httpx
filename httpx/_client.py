@@ -142,9 +142,8 @@ class BoundAsyncStream(AsyncByteStream):
         self._response = response
         self._timer = timer
 
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        async for chunk in self._stream:
-            yield chunk
+    def __aiter__(self) -> typing.AsyncIterator[bytes]:
+        return self._stream.__aiter__()
 
     async def aclose(self) -> None:
         seconds = await self._timer.async_elapsed()

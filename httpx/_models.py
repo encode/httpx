@@ -3,6 +3,7 @@ import email.message
 import json as jsonlib
 import typing
 import urllib.request
+from contextlib import aclosing
 from collections.abc import Mapping
 from http.cookiejar import Cookie, CookieJar
 
@@ -911,7 +912,7 @@ class Response:
 
     async def aiter_bytes(
         self, chunk_size: typing.Optional[int] = None
-    ) -> typing.AsyncIterator[bytes]:
+    ) -> typing.AsyncGenerator[bytes, None]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
@@ -924,19 +925,20 @@ class Response:
             decoder = self._get_content_decoder()
             chunker = ByteChunker(chunk_size=chunk_size)
             with request_context(request=self._request):
-                async for raw_bytes in self.aiter_raw():
-                    decoded = decoder.decode(raw_bytes)
+                async with aclosing(self.aiter_raw()) as stream:
+                    async for raw_bytes in stream:
+                        decoded = decoder.decode(raw_bytes)
+                        for chunk in chunker.decode(decoded):
+                            yield chunk
+                    decoded = decoder.flush()
                     for chunk in chunker.decode(decoded):
+                        yield chunk  # pragma: no cover
+                    for chunk in chunker.flush():
                         yield chunk
-                decoded = decoder.flush()
-                for chunk in chunker.decode(decoded):
-                    yield chunk  # pragma: no cover
-                for chunk in chunker.flush():
-                    yield chunk
 
     async def aiter_text(
         self, chunk_size: typing.Optional[int] = None
-    ) -> typing.AsyncIterator[str]:
+    ) -> typing.AsyncGenerator[str, None]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
@@ -945,28 +947,30 @@ class Response:
         decoder = TextDecoder(encoding=self.encoding or "utf-8")
         chunker = TextChunker(chunk_size=chunk_size)
         with request_context(request=self._request):
-            async for byte_content in self.aiter_bytes():
-                text_content = decoder.decode(byte_content)
+            async with aclosing(self.aiter_bytes()) as stream:
+                async for byte_content in stream:
+                    text_content = decoder.decode(byte_content)
+                    for chunk in chunker.decode(text_content):
+                        yield chunk
+                text_content = decoder.flush()
                 for chunk in chunker.decode(text_content):
                     yield chunk
-            text_content = decoder.flush()
-            for chunk in chunker.decode(text_content):
-                yield chunk
-            for chunk in chunker.flush():
-                yield chunk
+                for chunk in chunker.flush():
+                    yield chunk
 
-    async def aiter_lines(self) -> typing.AsyncIterator[str]:
+    async def aiter_lines(self) -> typing.AsyncGenerator[str, None]:
         decoder = LineDecoder()
         with request_context(request=self._request):
-            async for text in self.aiter_text():
-                for line in decoder.decode(text):
+            async with aclosing(self.aiter_text()) as stream:
+                async for text in stream:
+                    for line in decoder.decode(text):
+                        yield line
+                for line in decoder.flush():
                     yield line
-            for line in decoder.flush():
-                yield line
 
     async def aiter_raw(
         self, chunk_size: typing.Optional[int] = None
-    ) -> typing.AsyncIterator[bytes]:
+    ) -> typing.AsyncGenerator[bytes, None]:
         """
         A byte-iterator over the raw response content.
         """

@@ -107,6 +107,19 @@ def test_stream_iterator(server):
     assert body == b"Hello, world!"
 
 
+def test_stream_iterator_partial(server):
+    body = ""
+
+    with httpx.Client() as client:
+        with client.stream("GET", server.url) as response:
+            for chunk in response.iter_text(5):
+                body += chunk
+                break
+
+    assert response.status_code == 200
+    assert body == "Hello"
+
+
 def test_raw_iterator(server):
     body = b""
 
