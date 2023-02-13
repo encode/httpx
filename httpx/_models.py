@@ -3,8 +3,8 @@ import email.message
 import json as jsonlib
 import typing
 import urllib.request
-from contextlib import aclosing
 from collections.abc import Mapping
+from contextlib import aclosing
 from http.cookiejar import Cookie, CookieJar
 
 from ._content import ByteStream, UnattachedStream, encode_request, encode_response

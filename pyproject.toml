@@ -29,7 +29,7 @@ classifiers = [
 ]
 dependencies = [
     "certifi",
-    "httpcore>=0.15.0,<0.17.0",
+    "httpcore==git+https://github.com/encode/httpcore.git@bug/async-early-stream-break",
     "idna",
     "sniffio",
 ]
