@@ -195,18 +195,6 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     # -------------------------------------------------------------
 
     for key, value in kwargs.items():
-        if key not in (
-            "scheme",
-            "authority",
-            "path",
-            "query",
-            "fragment",
-            "userinfo",
-            "host",
-            "port",
-        ):
-            raise TypeError(f"'{key}' is an invalid keyword argument for urlparse()")
-
         if value is not None:
             if len(value) > MAX_URL_LENGTH:
                 raise InvalidURL(f"URL component '{key}' too long")
