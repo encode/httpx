@@ -162,10 +162,10 @@ def print_response_headers(
     console.print(syntax)
 
 
-def print_response(response: Response) -> None:
+def print_response(response: Response, ignore_content: bool) -> None:
     console = rich.console.Console()
     lexer_name = get_lexer_for_response(response)
-    if lexer_name:
+    if not ignore_content and lexer_name:
         if lexer_name.lower() == "json":
             try:
                 data = response.json()
@@ -178,7 +178,36 @@ def print_response(response: Response) -> None:
         syntax = rich.syntax.Syntax(text, lexer_name, theme="ansi_dark", word_wrap=True)
         console.print(syntax)
     else:
-        console.print(f"<{len(response.content)} bytes of binary data>")
+        lexer_name = lexer_name or 'binary'
+        console.print(f"<{len(response.content)} bytes of {lexer_name} data>")
+
+
+def print_response_hex(response: Response, limit: int) -> None:
+    console = rich.console.Console()
+
+    lexer_name = get_lexer_for_response(response) or 'binary'
+    console.print(f"<{len(response.content)} bytes of {lexer_name} data>")
+
+    content = response.content
+    safe_printable = string.printable.strip() + ' '
+
+    limit = limit or len(content)
+    if limit < (1 << 16):
+        addr = 4
+    else:
+        addr = 8
+
+    off = 0
+    while off < limit and off < len(content):
+        h = content[off:off+16]
+        line = ''.join([
+            '{0:0{1}X}  '.format(off, addr),
+            ' '.join(f'{c:02X}' for c in h[:8]), '  ',
+            ' '.join(f'{c:02X}' for c in h[8:16])
+        ])
+        text = ''.join(chr(c) if chr(c) in safe_printable else '.' for c in h)
+        console.print(f'{line.ljust((addr + 2 + 16 * 3 + 2))}   {text}')
+        off += 16
 
 
 _PCTRTT = typing.Tuple[typing.Tuple[str, str], ...]
@@ -410,6 +439,7 @@ def handle_help(
 )
 @click.option(
     "--no-verify",
+    "-k",
     "verify",
     is_flag=True,
     default=True,
@@ -444,6 +474,33 @@ def handle_help(
     callback=handle_help,
     help="Show this message and exit.",
 )
+@click.option(
+    "--input-headers",
+    "-H",
+    "input_headers",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Enter HTTP headers interactively, in HTTP headers syntax",
+)
+@click.option(
+    "--ignore-content",
+    "-n",
+    "ignore_content",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Treat text response like normal binary response",
+)
+@click.option(
+    "--hex",
+    "show_hex",
+    type=int,
+    is_flag=False,
+    flag_value=160,
+    default=None,
+    help="Print response in bytes with hex value",
+)
 def main(
     url: str,
     method: str,
@@ -462,6 +519,9 @@ def main(
     http2: bool,
     download: typing.Optional[typing.BinaryIO],
     verbose: bool,
+    input_headers: bool,
+    ignore_content: bool,
+    show_hex: typing.Optional[int],
 ) -> None:
     """
     An HTTP command line client.
@@ -469,6 +529,22 @@ def main(
     """
     if not method:
         method = "POST" if content or data or files or json else "GET"
+
+    if input_headers:
+        headers = headers or []
+        headers = list(headers)
+        while True:
+            line = input().strip()
+            if len(line) <= 1:
+                break
+            colon = line.find(':')
+            if colon == 0:
+                # skip http2 pseudo headers, like :method
+                continue
+            elif colon == -1:
+                print(f'invalid HTTP header line: {repr(line)}')
+                sys.exit(1)
+            headers += [(line[:colon], line[colon+1:].strip())]
 
     try:
         with Client(
@@ -496,7 +572,10 @@ def main(
                 else:
                     response.read()
                     if response.content:
-                        print_response(response)
+                        if show_hex is None:
+                            print_response(response, ignore_body)
+                        else:
+                            print_response_hex(response, show_hex)
 
     except RequestError as exc:
         console = rich.console.Console()
