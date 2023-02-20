@@ -1005,6 +1005,17 @@ class Response:
             with request_context(request=self._request):
                 await self.stream.aclose()
 
+    @property
+    def ok(self) -> bool:
+        """Returns True if :attr:`status_code` is less than 300, False if not.
+        Adapt requests api with migrate code from requests.
+        """
+        try:
+            self.raise_for_status()
+        except HTTPStatusError:
+            return False
+        return True
+
 
 class Cookies(typing.MutableMapping[str, str]):
     """
