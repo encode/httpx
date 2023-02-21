@@ -34,7 +34,7 @@ import contextlib
 import typing
 
 if typing.TYPE_CHECKING:
-    from ._models import Request, Response  # pragma: nocover
+    from ._models import Request, Response  # pragma: no cover
 
 
 class HTTPError(Exception):

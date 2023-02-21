@@ -128,8 +128,7 @@ The HTTPX project relies on these excellent libraries:
 * `httpcore` - The underlying transport implementation for `httpx`.
   * `h11` - HTTP/1.1 support.
 * `certifi` - SSL certificates.
-* `rfc3986` - URL parsing & normalization.
-  * `idna` - Internationalized domain name support.
+* `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.
 
 As well as these optional installs:

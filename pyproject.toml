@@ -30,7 +30,7 @@ classifiers = [
 dependencies = [
     "certifi",
     "httpcore>=0.15.0,<0.17.0",
-    "rfc3986[idna2008]>=1.3,<2",
+    "idna",
     "sniffio",
 ]
 dynamic = ["readme", "version"]
@@ -43,7 +43,7 @@ brotli = [
 cli = [
     "click==8.*",
     "pygments==2.*",
-    "rich>=10,<13",
+    "rich>=10,<14",
 ]
 http2 = [
     "h2>=3,<5",
@@ -78,4 +78,15 @@ content-type = "text/markdown"
 path = "README.md"
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
+text = "\n## Release Information\n\n"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
 path = "CHANGELOG.md"
+pattern = "\n(###.+?\n)## "
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
+text = "\n---\n\n[Full changelog](https://github.com/encode/httpx/blob/master/CHANGELOG.md)\n"
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
+pattern = 'src="(docs/img/.*?)"'
+replacement = 'src="https://raw.githubusercontent.com/encode/httpx/master/\1"'

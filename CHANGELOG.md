@@ -4,9 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.23.1
+## 0.23.3 (4th Jan, 2023)
 
-**Note**: The 0.23.1 release should have used a proper version bump, rather than a minor point release. 
+### Fixed
+
+* Version 0.23.2 accidentally included stricter type checking on query parameters. This shouldn've have been included in a minor version bump, and is now reverted. (#2523, #2539)
+
+## 0.23.2 (2nd Jan, 2023)
+
+### Added
+
+* Support digest auth nonce counting to avoid multiple auth requests. (#2463)
+
+### Fixed
+
+* Multipart file uploads where the file length cannot be determine now use chunked transfer encoding, rather than loading the entire file into memory in order to determine the `Content-Length`. (#2382)
+* Raise `TypeError` if content is passed a dict-instance. (#2495)
+* Partially revert the API breaking change in 0.23.1, which removed `RawURL`. We continue to expose a `url.raw` property which is now a plain named-tuple. This API is still expected to be deprecated, but we will do so with a major version bump. (#2481)
+
+## 0.23.1 (18th Nov, 2022)
+
+**Note**: The 0.23.1 release should have used a proper version bump, rather than a minor point release.
 There are API surface area changes that may affect some users.
 See the "Removed" section of these release notes for details.
 

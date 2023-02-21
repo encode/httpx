@@ -1,3 +1,5 @@
+import typing
+
 import pytest
 
 import httpx
@@ -149,7 +151,7 @@ def test_next_request():
     assert response.next_request is None
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_async_next_request():
     async with httpx.AsyncClient(transport=httpx.MockTransport(redirects)) as client:
         request = client.build_request("POST", "https://example.org/redirect_303")
@@ -238,7 +240,7 @@ def test_multiple_redirects():
     assert len(response.history[1].history) == 1
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_async_too_many_redirects():
     async with httpx.AsyncClient(transport=httpx.MockTransport(redirects)) as client:
         with pytest.raises(httpx.TooManyRedirects):
@@ -344,15 +346,15 @@ class ConsumeBodyTransport(httpx.MockTransport):
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         assert isinstance(request.stream, httpx.SyncByteStream)
         [_ for _ in request.stream]
-        return self.handler(request)
+        return self.handler(request)  # type: ignore[return-value]
 
 
 def test_cannot_redirect_streaming_body():
     client = httpx.Client(transport=ConsumeBodyTransport(redirects))
     url = "https://example.org/redirect_body"
 
-    def streaming_body():
-        yield b"Example request body"  # pragma: nocover
+    def streaming_body() -> typing.Iterator[bytes]:
+        yield b"Example request body"  # pragma: no cover
 
     with pytest.raises(httpx.StreamConsumed):
         client.post(url, content=streaming_body(), follow_redirects=True)
@@ -436,7 +438,7 @@ def test_redirect_custom_scheme():
     assert str(e.value) == "Scheme 'market' not supported."
 
 
-@pytest.mark.usefixtures("async_environment")
+@pytest.mark.anyio
 async def test_async_invalid_redirect():
     async with httpx.AsyncClient(transport=httpx.MockTransport(redirects)) as client:
         with pytest.raises(httpx.RemoteProtocolError):

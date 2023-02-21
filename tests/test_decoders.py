@@ -1,3 +1,4 @@
+import typing
 import zlib
 
 import chardet
@@ -5,16 +6,7 @@ import pytest
 
 import httpx
 from httpx._compat import brotli
-from httpx._decoders import (
-    BrotliDecoder,
-    ByteChunker,
-    DeflateDecoder,
-    GZipDecoder,
-    IdentityDecoder,
-    LineDecoder,
-    TextChunker,
-    TextDecoder,
-)
+from httpx._decoders import ByteChunker, LineDecoder, TextChunker, TextDecoder
 
 
 def test_deflate():
@@ -122,12 +114,12 @@ def test_multi_with_identity():
     assert response.content == body
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_streaming():
     body = b"test 123"
     compressor = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
 
-    async def compress(body):
+    async def compress(body: bytes) -> typing.AsyncIterator[bytes]:
         yield compressor.compress(body)
         yield compressor.flush()
 
@@ -152,14 +144,11 @@ def test_empty_content(header_value):
     assert response.content == b""
 
 
-@pytest.mark.parametrize(
-    "decoder", (BrotliDecoder, DeflateDecoder, GZipDecoder, IdentityDecoder)
-)
-def test_decoders_empty_cases(decoder):
-    response = httpx.Response(content=b"", status_code=200)
-    instance = decoder()
-    assert instance.decode(response.content) == b""
-    assert instance.flush() == b""
+@pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br", b"identity"))
+def test_decoders_empty_cases(header_value):
+    headers = [(b"Content-Encoding", header_value)]
+    response = httpx.Response(content=b"", status_code=200, headers=headers)
+    assert response.read() == b""
 
 
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
@@ -184,9 +173,9 @@ def test_decoding_errors(header_value):
         ((b"Accented: \xd6sterreich abcdefghijklmnopqrstuvwxyz", b""), "iso-8859-1"),
     ],
 )
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_text_decoder_with_autodetect(data, encoding):
-    async def iterator():
+    async def iterator() -> typing.AsyncIterator[bytes]:
         nonlocal data
         for chunk in data:
             yield chunk
@@ -207,9 +196,9 @@ async def test_text_decoder_with_autodetect(data, encoding):
     assert text == (b"".join(data)).decode(encoding)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_text_decoder_known_encoding():
-    async def iterator():
+    async def iterator() -> typing.AsyncIterator[bytes]:
         yield b"\x83g"
         yield b"\x83"
         yield b"\x89\x83x\x83\x8b"

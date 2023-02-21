@@ -101,7 +101,7 @@ class UnattachedStream(AsyncByteStream, SyncByteStream):
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
         raise StreamClosed()
-        yield b""  # pragma: nocover
+        yield b""  # pragma: no cover
 
 
 def encode_content(
@@ -114,7 +114,11 @@ def encode_content(
         headers = {"Content-Length": str(content_length)} if body else {}
         return headers, ByteStream(body)
 
-    elif isinstance(content, Iterable):
+    elif isinstance(content, Iterable) and not isinstance(content, dict):
+        # `not isinstance(content, dict)` is a bit oddly specific, but it
+        # catches a case that's easy for users to make in error, and would
+        # otherwise pass through here, like any other bytes-iterable,
+        # because `dict` happens to be iterable. See issue #2491.
         content_length_or_none = peek_filelike_length(content)
 
         if content_length_or_none is None:
@@ -189,7 +193,7 @@ def encode_request(
     Handles encoding the given `content`, `data`, `files`, and `json`,
     returning a two-tuple of (<headers>, <stream>).
     """
-    if data is not None and not isinstance(data, Mapping):  # type: ignore
+    if data is not None and not isinstance(data, Mapping):
         # We prefer to separate `content=<bytes|str|byte iterator|bytes aiterator>`
         # for raw request content, and `data=<form data>` for url encoded or
         # multipart form content.
