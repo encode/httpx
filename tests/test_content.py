@@ -9,7 +9,7 @@ method = "POST"
 url = "https://www.example.com"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_empty_content():
     request = httpx.Request(method, url)
     assert isinstance(request.stream, httpx.SyncByteStream)
@@ -23,7 +23,7 @@ async def test_empty_content():
     assert async_content == b""
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_bytes_content():
     request = httpx.Request(method, url, content=b"Hello, world!")
     assert isinstance(request.stream, typing.Iterable)
@@ -50,7 +50,7 @@ async def test_bytes_content():
     assert async_content == b"Hello, world!"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_bytesio_content():
     request = httpx.Request(method, url, content=io.BytesIO(b"Hello, world!"))
     assert isinstance(request.stream, typing.Iterable)
@@ -62,7 +62,7 @@ async def test_bytesio_content():
     assert content == b"Hello, world!"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_async_bytesio_content():
     class AsyncBytesIO:
         def __init__(self, content: bytes) -> None:
@@ -90,7 +90,7 @@ async def test_async_bytesio_content():
     assert content == b"Hello, world!"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_iterator_content():
     def hello_world() -> typing.Iterator[bytes]:
         yield b"Hello, "
@@ -126,7 +126,7 @@ async def test_iterator_content():
     assert content == b"Hello, world!"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_aiterator_content():
     async def hello_world() -> typing.AsyncIterator[bytes]:
         yield b"Hello, "
@@ -162,7 +162,7 @@ async def test_aiterator_content():
     assert content == b"Hello, world!"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_json_content():
     request = httpx.Request(method, url, json={"Hello": "world!"})
     assert isinstance(request.stream, typing.Iterable)
@@ -180,7 +180,7 @@ async def test_json_content():
     assert async_content == b'{"Hello": "world!"}'
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_urlencoded_content():
     request = httpx.Request(method, url, data={"Hello": "world!"})
     assert isinstance(request.stream, typing.Iterable)
@@ -198,7 +198,7 @@ async def test_urlencoded_content():
     assert async_content == b"Hello=world%21"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_urlencoded_boolean():
     request = httpx.Request(method, url, data={"example": True})
     assert isinstance(request.stream, typing.Iterable)
@@ -216,7 +216,7 @@ async def test_urlencoded_boolean():
     assert async_content == b"example=true"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_urlencoded_none():
     request = httpx.Request(method, url, data={"example": None})
     assert isinstance(request.stream, typing.Iterable)
@@ -234,7 +234,7 @@ async def test_urlencoded_none():
     assert async_content == b"example="
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_urlencoded_list():
     request = httpx.Request(method, url, data={"example": ["a", 1, True]})
     assert isinstance(request.stream, typing.Iterable)
@@ -252,7 +252,7 @@ async def test_urlencoded_list():
     assert async_content == b"example=a&example=1&example=true"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_multipart_files_content():
     files = {"file": io.BytesIO(b"<file content>")}
     headers = {"Content-Type": "multipart/form-data; boundary=+++"}
@@ -295,7 +295,7 @@ async def test_multipart_files_content():
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_multipart_data_and_files_content():
     data = {"message": "Hello, world!"}
     files = {"file": io.BytesIO(b"<file content>")}
@@ -342,7 +342,7 @@ async def test_multipart_data_and_files_content():
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_empty_request():
     request = httpx.Request(method, url, data={}, files={})
     assert isinstance(request.stream, typing.Iterable)
@@ -364,7 +364,7 @@ def test_invalid_argument():
         httpx.Request(method, url, content={"a": "b"})  # type: ignore
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_multipart_multiple_files_single_input_content():
     files = [
         ("file", io.BytesIO(b"<file content 1>")),
@@ -415,7 +415,7 @@ async def test_multipart_multiple_files_single_input_content():
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_response_empty_content():
     response = httpx.Response(200)
     assert isinstance(response.stream, typing.Iterable)
@@ -429,7 +429,7 @@ async def test_response_empty_content():
     assert async_content == b""
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_response_bytes_content():
     response = httpx.Response(200, content=b"Hello, world!")
     assert isinstance(response.stream, typing.Iterable)
@@ -443,7 +443,7 @@ async def test_response_bytes_content():
     assert async_content == b"Hello, world!"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_response_iterator_content():
     def hello_world() -> typing.Iterator[bytes]:
         yield b"Hello, "
@@ -462,7 +462,7 @@ async def test_response_iterator_content():
         [part for part in response.stream]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_response_aiterator_content():
     async def hello_world() -> typing.AsyncIterator[bytes]:
         yield b"Hello, "

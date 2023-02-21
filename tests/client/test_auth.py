@@ -3,13 +3,15 @@ Integration tests for authentication.
 
 Unit tests for auth classes also exist in tests/test_auth.py
 """
-import asyncio
 import hashlib
+import netrc
 import os
+import sys
 import threading
 import typing
 from urllib.request import parse_keqv_list
 
+import anyio
 import pytest
 
 import httpx
@@ -18,6 +20,10 @@ from ..common import FIXTURES_DIR
 
 
 class App:
+    """
+    A mock app to test auth credentials.
+    """
+
     def __init__(self, auth_header: str = "", status_code: int = 200) -> None:
         self.auth_header = auth_header
         self.status_code = status_code
@@ -135,7 +141,7 @@ class SyncOrAsyncAuth(httpx.Auth):
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._async_lock = asyncio.Lock()
+        self._async_lock = anyio.Lock()
 
     def sync_auth_flow(
         self, request: httpx.Request
@@ -152,7 +158,7 @@ class SyncOrAsyncAuth(httpx.Auth):
         yield request
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_basic_auth() -> None:
     url = "https://example.org/"
     auth = ("user", "password123")
@@ -165,7 +171,7 @@ async def test_basic_auth() -> None:
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_basic_auth_with_stream() -> None:
     """
     See: https://github.com/encode/httpx/pull/1312
@@ -184,7 +190,7 @@ async def test_basic_auth_with_stream() -> None:
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_basic_auth_in_url() -> None:
     url = "https://user:password123@example.org/"
     app = App()
@@ -196,7 +202,7 @@ async def test_basic_auth_in_url() -> None:
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_basic_auth_on_session() -> None:
     url = "https://example.org/"
     auth = ("user", "password123")
@@ -211,7 +217,7 @@ async def test_basic_auth_on_session() -> None:
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_custom_auth() -> None:
     url = "https://example.org/"
     app = App()
@@ -227,14 +233,18 @@ async def test_custom_auth() -> None:
     assert response.json() == {"auth": "Token 123"}
 
 
-@pytest.mark.asyncio
-async def test_netrc_auth() -> None:
-    os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
+def test_netrc_auth_credentials_exist() -> None:
+    """
+    When netrc auth is being used and a request is made to a host that is
+    in the netrc file, then the relevant credentials should be applied.
+    """
+    netrc_file = str(FIXTURES_DIR / ".netrc")
     url = "http://netrcexample.org"
     app = App()
+    auth = httpx.NetRCAuth(netrc_file)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url)
+    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+        response = client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {
@@ -242,45 +252,62 @@ async def test_netrc_auth() -> None:
     }
 
 
-@pytest.mark.asyncio
-async def test_auth_header_has_priority_over_netrc() -> None:
-    os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
-    url = "http://netrcexample.org"
+def test_netrc_auth_credentials_do_not_exist() -> None:
+    """
+    When netrc auth is being used and a request is made to a host that is
+    not in the netrc file, then no credentials should be applied.
+    """
+    netrc_file = str(FIXTURES_DIR / ".netrc")
+    url = "http://example.org"
     app = App()
+    auth = httpx.NetRCAuth(netrc_file)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, headers={"Authorization": "Override"})
-
-    assert response.status_code == 200
-    assert response.json() == {"auth": "Override"}
-
-
-@pytest.mark.asyncio
-async def test_trust_env_auth() -> None:
-    os.environ["NETRC"] = str(FIXTURES_DIR / ".netrc")
-    url = "http://netrcexample.org"
-    app = App()
-
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(app), trust_env=False
-    ) as client:
-        response = await client.get(url)
+    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+        response = client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
 
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(app), trust_env=True
-    ) as client:
-        response = await client.get(url)
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="netrc files without a password are invalid with Python < 3.11",
+)
+def test_netrc_auth_nopassword() -> None:  # pragma: no cover
+    """
+    Python has different netrc parsing behaviours with different versions.
+    For Python 3.11+ a netrc file with no password is valid. In this case
+    we want to check that we allow the netrc auth, and simply don't provide
+    any credentials in the request.
+    """
+    netrc_file = str(FIXTURES_DIR / ".netrc-nopassword")
+    url = "http://example.org"
+    app = App()
+    auth = httpx.NetRCAuth(netrc_file)
+
+    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+        response = client.get(url)
 
     assert response.status_code == 200
-    assert response.json() == {
-        "auth": "Basic ZXhhbXBsZS11c2VybmFtZTpleGFtcGxlLXBhc3N3b3Jk"
-    }
+    assert response.json() == {"auth": None}
 
 
-@pytest.mark.asyncio
+@pytest.mark.skipif(
+    sys.version_info >= (3, 11),
+    reason="netrc files without a password are valid from Python >= 3.11",
+)
+def test_netrc_auth_nopassword_parse_error() -> None:  # pragma: no cover
+    """
+    Python has different netrc parsing behaviours with different versions.
+    For Python < 3.11 a netrc file with no password is invalid. In this case
+    we want to allow the parse error to be raised.
+    """
+    netrc_file = str(FIXTURES_DIR / ".netrc-nopassword")
+    with pytest.raises(netrc.NetrcParseError):
+        httpx.NetRCAuth(netrc_file)
+
+
+@pytest.mark.anyio
 async def test_auth_disable_per_request() -> None:
     url = "https://example.org/"
     auth = ("user", "password123")
@@ -302,7 +329,7 @@ def test_auth_hidden_url() -> None:
     assert expected == repr(httpx.URL(url))
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_auth_hidden_header() -> None:
     url = "https://example.org/"
     auth = ("example-username", "example-password")
@@ -314,7 +341,7 @@ async def test_auth_hidden_header() -> None:
     assert "'authorization': '[secure]'" in str(response.request.headers)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_auth_property() -> None:
     app = App()
 
@@ -330,7 +357,7 @@ async def test_auth_property() -> None:
         assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_auth_invalid_type() -> None:
     app = App()
 
@@ -348,7 +375,7 @@ async def test_auth_invalid_type() -> None:
             client.auth = "not a tuple, not a callable"  # type: ignore
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -376,7 +403,7 @@ def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
     assert len(response.history) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth_200_response_including_digest_auth_header() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -391,7 +418,7 @@ async def test_digest_auth_200_response_including_digest_auth_header() -> None:
     assert len(response.history) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth_401_response_without_digest_auth_header() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -418,7 +445,7 @@ async def test_digest_auth_401_response_without_digest_auth_header() -> None:
         ("SHA-512-SESS", 64, 128),
     ],
 )
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth(
     algorithm: str, expected_hash_length: int, expected_response_length: int
 ) -> None:
@@ -451,7 +478,7 @@ async def test_digest_auth(
     assert len(digest_data["cnonce"]) == 16 + 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth_no_specified_qop() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -483,7 +510,7 @@ async def test_digest_auth_no_specified_qop() -> None:
 
 
 @pytest.mark.parametrize("qop", ("auth, auth-int", "auth,auth-int", "unknown,auth"))
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -496,7 +523,7 @@ async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) 
     assert len(response.history) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth_qop_auth_int_not_implemented() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -507,7 +534,7 @@ async def test_digest_auth_qop_auth_int_not_implemented() -> None:
             await client.get(url, auth=auth)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth_qop_must_be_auth_or_auth_int() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -518,7 +545,7 @@ async def test_digest_auth_qop_must_be_auth_or_auth_int() -> None:
             await client.get(url, auth=auth)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth_incorrect_credentials() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -531,7 +558,7 @@ async def test_digest_auth_incorrect_credentials() -> None:
     assert len(response.history) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth_reuses_challenge() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -548,7 +575,7 @@ async def test_digest_auth_reuses_challenge() -> None:
         assert len(response_2.history) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth_resets_nonce_count_after_401() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -594,7 +621,7 @@ async def test_digest_auth_resets_nonce_count_after_401() -> None:
         'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
     ],
 )
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_async_digest_auth_raises_protocol_error_on_malformed_header(
     auth_header: str,
 ) -> None:
@@ -626,7 +653,7 @@ def test_sync_digest_auth_raises_protocol_error_on_malformed_header(
             client.get(url, auth=auth)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_async_auth_history() -> None:
     """
     Test that intermediate requests sent as part of an authentication flow
@@ -683,10 +710,10 @@ class ConsumeBodyTransport(httpx.MockTransport):
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
         assert isinstance(request.stream, httpx.AsyncByteStream)
         [_ async for _ in request.stream]
-        return self.handler(request)
+        return self.handler(request)  # type: ignore[return-value]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_digest_auth_unavailable_streaming_body():
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -700,7 +727,7 @@ async def test_digest_auth_unavailable_streaming_body():
             await client.post(url, content=streaming_body(), auth=auth)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_async_auth_reads_response_body() -> None:
     """
     Test that we can read the response body in an auth flow if `requires_response_body`
@@ -733,7 +760,7 @@ def test_sync_auth_reads_response_body() -> None:
     assert response.json() == {"auth": '{"auth": "xyz"}'}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_async_auth() -> None:
     """
     Test that we can use an auth implementation specific to the async case, to

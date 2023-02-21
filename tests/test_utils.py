@@ -5,7 +5,6 @@ import pytest
 
 import httpx
 from httpx._utils import (
-    NetRCInfo,
     URLPattern,
     get_ca_bundle_from_env,
     get_environment_proxies,
@@ -17,7 +16,7 @@ from httpx._utils import (
 )
 from tests.utils import override_log_level
 
-from .common import FIXTURES_DIR, TESTS_DIR
+from .common import TESTS_DIR
 
 
 @pytest.mark.parametrize(
@@ -56,25 +55,6 @@ def test_guess_by_bom(encoding, expected):
     assert guess_json_utf(data) == expected
 
 
-def test_bad_get_netrc_login():
-    netrc_info = NetRCInfo([str(FIXTURES_DIR / "does-not-exist")])
-    assert netrc_info.get_credentials("netrcexample.org") is None
-
-
-def test_get_netrc_login():
-    netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
-    expected_credentials = (
-        "example-username",
-        "example-password",
-    )
-    assert netrc_info.get_credentials("netrcexample.org") == expected_credentials
-
-
-def test_get_netrc_unknown():
-    netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
-    assert netrc_info.get_credentials("nonexistent.org") is None
-
-
 @pytest.mark.parametrize(
     "value, expected",
     (
@@ -98,7 +78,7 @@ def test_parse_header_links(value, expected):
     assert parse_header_links(value) == expected
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_logs_debug(server, capsys):
     with override_log_level("debug"):
         async with httpx.AsyncClient() as client:
@@ -108,7 +88,7 @@ async def test_logs_debug(server, capsys):
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_logs_trace(server, capsys):
     with override_log_level("trace"):
         async with httpx.AsyncClient() as client:
@@ -118,7 +98,7 @@ async def test_logs_trace(server, capsys):
     assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_logs_redirect_chain(server, capsys):
     with override_log_level("debug"):
         async with httpx.AsyncClient(follow_redirects=True) as client:
