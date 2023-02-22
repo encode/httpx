@@ -242,7 +242,7 @@ class DigestAuth(Auth):
             nonce = header_dict["nonce"].encode()
             algorithm = header_dict.get("algorithm", "MD5")
             opaque = header_dict["opaque"].encode() if "opaque" in header_dict else None
-            qop = header_dict["qop"].encode() if "qop" in header_dict else None
+            qop = header_dict["qop"].encode() if "qop" in header_dict else b"auth"
             return _DigestAuthChallenge(
                 realm=realm, nonce=nonce, algorithm=algorithm, opaque=opaque, qop=qop
             )
