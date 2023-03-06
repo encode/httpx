@@ -7,7 +7,7 @@
 # Optional charset auto-detection
 # Used in our test cases
 chardet==5.1.0
-types-chardet==5.0.3
+types-chardet==5.0.4.2
 
 # Documentation
 mkdocs==1.4.2
@@ -29,7 +29,7 @@ flake8-pie==0.16.0; python_version>='3.7'
 importlib-metadata==4.13.0; python_version>='3.7'
 isort==5.11.4; python_version<'3.8'
 isort==5.12.0; python_version>='3.8'
-mypy==0.982
+mypy==1.0.1
 types-certifi==2021.10.8.2
 pytest==7.2.1
 trio==0.22.0
