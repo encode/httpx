@@ -1738,7 +1738,7 @@ class AsyncClient(BaseClient):
         params: typing.Optional[QueryParamTypes] = None,
         headers: typing.Optional[HeaderTypes] = None,
         cookies: typing.Optional[CookieTypes] = None,
-        auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
+        auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
