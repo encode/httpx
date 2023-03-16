@@ -106,7 +106,7 @@ class ResponseStream(SyncByteStream):
 
     def close(self) -> None:
         if hasattr(self._httpcore_stream, "close"):
-            self._httpcore_stream.close()  # type: ignore
+            self._httpcore_stream.close()
 
 
 class HTTPTransport(BaseTransport):
@@ -241,7 +241,7 @@ class AsyncResponseStream(AsyncByteStream):
 
     async def aclose(self) -> None:
         if hasattr(self._httpcore_stream, "aclose"):
-            await self._httpcore_stream.aclose()  # type: ignore
+            await self._httpcore_stream.aclose()
 
 
 class AsyncHTTPTransport(AsyncBaseTransport):
