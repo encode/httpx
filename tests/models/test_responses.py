@@ -639,7 +639,7 @@ def test_iter_lines():
         content=b"Hello,\nworld!",
     )
     content = [line for line in response.iter_lines()]
-    assert content == ["Hello,\n", "world!"]
+    assert content == ["Hello,", "world!"]
 
 
 @pytest.mark.anyio
@@ -652,7 +652,7 @@ async def test_aiter_lines():
     content = []
     async for line in response.aiter_lines():
         content.append(line)
-    assert content == ["Hello,\n", "world!"]
+    assert content == ["Hello,", "world!"]
 
 
 def test_sync_streaming_response():
