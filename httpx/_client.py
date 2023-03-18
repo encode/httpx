@@ -191,6 +191,7 @@ class BaseClient:
         self._trust_env = trust_env
         self._default_encoding = default_encoding
         self._state = ClientState.UNOPENED
+        self._redirection_cache: typing.Dict[str, str] = {}
 
     @property
     def is_closed(self) -> bool:
@@ -960,10 +961,20 @@ class Client(BaseClient):
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
+            if str(request.url) in self._redirection_cache:
+                # Use the cached location from the 301 responses, as allowed by RFC 9110.
+                request.url = URL(self._redirection_cache[str(request.url)])
+
             for hook in self._event_hooks["request"]:
                 hook(request)
 
             response = self._send_single_request(request)
+
+            if response.status_code == codes.MOVED_PERMANENTLY:
+                old_location = str(request.url)
+                new_location = str(response.headers["Location"])
+                self._redirection_cache[old_location] = new_location
+
             try:
                 for hook in self._event_hooks["response"]:
                     hook(response)
@@ -1673,10 +1684,21 @@ class AsyncClient(BaseClient):
                     "Exceeded maximum allowed redirects.", request=request
                 )
 
+            if str(request.url) in self._redirection_cache:
+                # Use the cached location from the 301 responses, as allowed by RFC 9110.
+                request.url = URL(
+                    self._redirection_cache[str(request.url)]
+                )  # pragma: no cover
+
             for hook in self._event_hooks["request"]:
                 await hook(request)
 
             response = await self._send_single_request(request)
+            if response.status_code == codes.MOVED_PERMANENTLY:
+                old_location = str(request.url)
+                new_location = str(response.headers["Location"])
+                self._redirection_cache[old_location] = new_location
+
             try:
                 for hook in self._event_hooks["response"]:
                     await hook(response)

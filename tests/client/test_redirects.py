@@ -121,6 +121,18 @@ def test_redirect_301():
     assert len(response.history) == 1
 
 
+def test_redirect_301_cache():
+    client = httpx.Client(transport=httpx.MockTransport(redirects))
+    response = client.post("https://example.org/redirect_301", follow_redirects=True)
+    assert response.status_code == httpx.codes.OK
+    assert response.url == "https://example.org/"
+    assert len(response.history) == 1
+    response = client.post("https://example.org/redirect_301", follow_redirects=False)
+    assert response.status_code == httpx.codes.OK
+    assert response.url == "https://example.org/"
+    assert len(response.history) == 0
+
+
 def test_redirect_302():
     client = httpx.Client(transport=httpx.MockTransport(redirects))
     response = client.post("https://example.org/redirect_302", follow_redirects=True)
