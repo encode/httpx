@@ -1,10 +1,8 @@
 import codecs
 import email.message
-import logging
 import mimetypes
 import os
 import re
-import sys
 import time
 import typing
 from pathlib import Path
@@ -194,50 +192,6 @@ def obfuscate_sensitive_headers(
         if to_str(k.lower()) in SENSITIVE_HEADERS:
             v = to_bytes_or_str("[secure]", match_type_of=v)
         yield k, v
-
-
-_LOGGER_INITIALIZED = False
-TRACE_LOG_LEVEL = 5
-
-
-class Logger(logging.Logger):
-    # Stub for type checkers.
-    def trace(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
-        ...  # pragma: no cover
-
-
-def get_logger(name: str) -> Logger:
-    """
-    Get a `logging.Logger` instance, and optionally
-    set up debug logging based on the HTTPX_LOG_LEVEL environment variable.
-    """
-    global _LOGGER_INITIALIZED
-
-    if not _LOGGER_INITIALIZED:
-        _LOGGER_INITIALIZED = True
-        logging.addLevelName(TRACE_LOG_LEVEL, "TRACE")
-
-        log_level = os.environ.get("HTTPX_LOG_LEVEL", "").upper()
-        if log_level in ("DEBUG", "TRACE"):
-            logger = logging.getLogger("httpx")
-            logger.setLevel(logging.DEBUG if log_level == "DEBUG" else TRACE_LOG_LEVEL)
-            handler = logging.StreamHandler(sys.stderr)
-            handler.setFormatter(
-                logging.Formatter(
-                    fmt="%(levelname)s [%(asctime)s] %(name)s - %(message)s",
-                    datefmt="%Y-%m-%d %H:%M:%S",
-                )
-            )
-            logger.addHandler(handler)
-
-    logger = logging.getLogger(name)
-
-    def trace(message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
-        logger.log(TRACE_LOG_LEVEL, message, *args, **kwargs)
-
-    logger.trace = trace  # type: ignore
-
-    return typing.cast(Logger, logger)
 
 
 def port_or_default(url: "URL") -> typing.Optional[int]:
