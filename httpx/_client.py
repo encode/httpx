@@ -93,17 +93,13 @@ ACCEPT_ENCODING = ", ".join(
 
 
 class ClientState(enum.Enum):
-    # UNOPENED:
-    #   The client has been instantiated, but has not been used to send a request,
-    #   or been opened by entering the context of a `with` block.
-    UNOPENED = 1
     # OPENED:
     #   The client has either sent a request, or is within a `with` block.
-    OPENED = 2
+    OPENED = 1
     # CLOSED:
     #   The client has either exited the `with` block, or `close()` has
     #   been called explicitly.
-    CLOSED = 3
+    CLOSED = 2
 
 
 class BoundSyncStream(SyncByteStream):
@@ -190,7 +186,7 @@ class BaseClient:
         }
         self._trust_env = trust_env
         self._default_encoding = default_encoding
-        self._state = ClientState.UNOPENED
+        self._state = ClientState.CLOSED
 
     @property
     def is_closed(self) -> bool:
@@ -886,8 +882,6 @@ class Client(BaseClient):
 
         [0]: /advanced/#request-instances
         """
-        if self._state == ClientState.CLOSED:
-            raise RuntimeError("Cannot send a request, as the client has been closed.")
 
         self._state = ClientState.OPENED
         follow_redirects = (
@@ -1252,24 +1246,14 @@ class Client(BaseClient):
         """
         Close transport and proxies.
         """
-        if self._state != ClientState.CLOSED:
             self._state = ClientState.CLOSED
-
             self._transport.close()
             for transport in self._mounts.values():
                 if transport is not None:
                     transport.close()
 
     def __enter__(self: T) -> T:
-        if self._state != ClientState.UNOPENED:
-            msg = {
-                ClientState.OPENED: "Cannot open a client instance more than once.",
-                ClientState.CLOSED: "Cannot reopen a client instance, once it has been closed.",
-            }[self._state]
-            raise RuntimeError(msg)
-
         self._state = ClientState.OPENED
-
         self._transport.__enter__()
         for transport in self._mounts.values():
             if transport is not None:
@@ -1602,8 +1586,6 @@ class AsyncClient(BaseClient):
 
         [0]: /advanced/#request-instances
         """
-        if self._state == ClientState.CLOSED:
-            raise RuntimeError("Cannot send a request, as the client has been closed.")
 
         self._state = ClientState.OPENED
         follow_redirects = (
@@ -1965,24 +1947,14 @@ class AsyncClient(BaseClient):
         """
         Close transport and proxies.
         """
-        if self._state != ClientState.CLOSED:
             self._state = ClientState.CLOSED
-
             await self._transport.aclose()
             for proxy in self._mounts.values():
                 if proxy is not None:
                     await proxy.aclose()
 
     async def __aenter__(self: U) -> U:
-        if self._state != ClientState.UNOPENED:
-            msg = {
-                ClientState.OPENED: "Cannot open a client instance more than once.",
-                ClientState.CLOSED: "Cannot reopen a client instance, once it has been closed.",
-            }[self._state]
-            raise RuntimeError(msg)
-
         self._state = ClientState.OPENED
-
         await self._transport.__aenter__()
         for proxy in self._mounts.values():
             if proxy is not None:
