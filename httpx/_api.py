@@ -9,6 +9,7 @@ from ._types import (
     CertTypes,
     CookieTypes,
     HeaderTypes,
+    MethodTypes,
     ProxiesTypes,
     QueryParamTypes,
     RequestContent,
@@ -21,7 +22,7 @@ from ._types import (
 
 
 def request(
-    method: str,
+    method: typing.Union[MethodTypes, str],
     url: URLTypes,
     *,
     params: typing.Optional[QueryParamTypes] = None,
@@ -113,7 +114,7 @@ def request(
 
 @contextmanager
 def stream(
-    method: str,
+    method: typing.Union[MethodTypes, str],
     url: URLTypes,
     *,
     params: typing.Optional[QueryParamTypes] = None,

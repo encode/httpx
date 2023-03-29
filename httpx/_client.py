@@ -35,6 +35,7 @@ from ._types import (
     CertTypes,
     CookieTypes,
     HeaderTypes,
+    MethodTypes,
     ProxiesTypes,
     QueryParamTypes,
     RequestContent,
@@ -319,7 +320,7 @@ class BaseClient:
 
     def build_request(
         self,
-        method: str,
+        method: typing.Union[MethodTypes, str],
         url: URLTypes,
         *,
         content: typing.Optional[RequestContent] = None,
@@ -527,7 +528,9 @@ class BaseClient:
 
         return url
 
-    def _redirect_headers(self, request: Request, url: URL, method: str) -> Headers:
+    def _redirect_headers(
+        self, request: Request, url: URL, method: typing.Union[MethodTypes, str]
+    ) -> Headers:
         """
         Return the headers that should be used for the redirect request.
         """
@@ -555,7 +558,7 @@ class BaseClient:
         return headers
 
     def _redirect_stream(
-        self, request: Request, method: str
+        self, request: Request, method: typing.Union[MethodTypes, str]
     ) -> typing.Optional[typing.Union[SyncByteStream, AsyncByteStream]]:
         """
         Return the body that should be used for the redirect request.
@@ -759,7 +762,7 @@ class Client(BaseClient):
 
     def request(
         self,
-        method: str,
+        method: typing.Union[MethodTypes, str],
         url: URLTypes,
         *,
         content: typing.Optional[RequestContent] = None,
@@ -816,7 +819,7 @@ class Client(BaseClient):
     @contextmanager
     def stream(
         self,
-        method: str,
+        method: typing.Union[MethodTypes, str],
         url: URLTypes,
         *,
         content: typing.Optional[RequestContent] = None,
@@ -1483,7 +1486,7 @@ class AsyncClient(BaseClient):
 
     async def request(
         self,
-        method: str,
+        method: typing.Union[MethodTypes, str],
         url: URLTypes,
         *,
         content: typing.Optional[RequestContent] = None,
@@ -1532,7 +1535,7 @@ class AsyncClient(BaseClient):
     @asynccontextmanager
     async def stream(
         self,
-        method: str,
+        method: typing.Union[MethodTypes, str],
         url: URLTypes,
         *,
         content: typing.Optional[RequestContent] = None,

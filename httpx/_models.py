@@ -32,6 +32,7 @@ from ._types import (
     AsyncByteStream,
     CookieTypes,
     HeaderTypes,
+    MethodTypes,
     QueryParamTypes,
     RequestContent,
     RequestData,
@@ -307,7 +308,7 @@ class Headers(typing.MutableMapping[str, str]):
 class Request:
     def __init__(
         self,
-        method: typing.Union[str, bytes],
+        method: typing.Union[MethodTypes, str, bytes],
         url: typing.Union["URL", str],
         *,
         params: typing.Optional[QueryParamTypes] = None,

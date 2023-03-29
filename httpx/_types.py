@@ -23,6 +23,8 @@ from typing import (
     Union,
 )
 
+from typing_extensions import Literal
+
 if TYPE_CHECKING:  # pragma: no cover
     from ._auth import Auth  # noqa: F401
     from ._config import Proxy, Timeout  # noqa: F401
@@ -43,6 +45,9 @@ RawURL = NamedTuple(
 )
 
 URLTypes = Union["URL", str]
+MethodTypes = Literal[
+    "GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE"
+]
 
 QueryParamTypes = Union[
     "QueryParams",

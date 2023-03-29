@@ -17,6 +17,7 @@ from ._client import Client
 from ._exceptions import RequestError
 from ._models import Response
 from ._status_codes import codes
+from ._types import MethodTypes
 
 
 def print_help() -> None:
@@ -446,7 +447,7 @@ def handle_help(
 )
 def main(
     url: str,
-    method: str,
+    method: typing.Union[MethodTypes, str],
     params: typing.List[typing.Tuple[str, str]],
     content: str,
     data: typing.List[typing.Tuple[str, str]],
