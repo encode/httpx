@@ -748,7 +748,7 @@ async def test_elapsed_not_available_until_closed():
     )
 
     with pytest.raises(RuntimeError):
-        response.elapsed
+        response.elapsed  # noqa: B018
 
 
 def test_unknown_status_code():
@@ -909,7 +909,7 @@ def test_cannot_access_unset_request():
     response = httpx.Response(200, content=b"Hello, world!")
 
     with pytest.raises(RuntimeError):
-        response.request
+        response.request  # noqa: B018
 
 
 def test_generator_with_transfer_encoding_header():
@@ -952,7 +952,7 @@ async def test_response_async_streaming_picklable():
     response = httpx.Response(200, content=async_streaming_body())
     pickle_response = pickle.loads(pickle.dumps(response))
     with pytest.raises(httpx.ResponseNotRead):
-        pickle_response.content
+        pickle_response.content  # noqa: B018
     with pytest.raises(httpx.StreamClosed):
         await pickle_response.aread()
     assert pickle_response.is_stream_consumed is False
