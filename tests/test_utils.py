@@ -1,11 +1,12 @@
+import logging
 import os
 import random
 
+import certifi
 import pytest
 
 import httpx
 from httpx._utils import (
-    NetRCInfo,
     URLPattern,
     get_ca_bundle_from_env,
     get_environment_proxies,
@@ -15,9 +16,8 @@ from httpx._utils import (
     parse_header_links,
     same_origin,
 )
-from tests.utils import override_log_level
 
-from .common import FIXTURES_DIR, TESTS_DIR
+from .common import TESTS_DIR
 
 
 @pytest.mark.parametrize(
@@ -56,25 +56,6 @@ def test_guess_by_bom(encoding, expected):
     assert guess_json_utf(data) == expected
 
 
-def test_bad_get_netrc_login():
-    netrc_info = NetRCInfo([str(FIXTURES_DIR / "does-not-exist")])
-    assert netrc_info.get_credentials("netrcexample.org") is None
-
-
-def test_get_netrc_login():
-    netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
-    expected_credentials = (
-        "example-username",
-        "example-password",
-    )
-    assert netrc_info.get_credentials("netrcexample.org") == expected_credentials
-
-
-def test_get_netrc_unknown():
-    netrc_info = NetRCInfo([str(FIXTURES_DIR / ".netrc")])
-    assert netrc_info.get_credentials("nonexistent.org") is None
-
-
 @pytest.mark.parametrize(
     "value, expected",
     (
@@ -98,42 +79,59 @@ def test_parse_header_links(value, expected):
     assert parse_header_links(value) == expected
 
 
-@pytest.mark.asyncio
-async def test_logs_debug(server, capsys):
-    with override_log_level("debug"):
-        async with httpx.AsyncClient() as client:
-            response = await client.get(server.url)
-            assert response.status_code == 200
-    stderr = capsys.readouterr().err
-    assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
+def test_logging_request(server, caplog):
+    caplog.set_level(logging.INFO)
+    with httpx.Client() as client:
+        response = client.get(server.url)
+        assert response.status_code == 200
+
+    assert caplog.record_tuples == [
+        (
+            "httpx",
+            logging.INFO,
+            'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"',
+        )
+    ]
 
 
-@pytest.mark.asyncio
-async def test_logs_trace(server, capsys):
-    with override_log_level("trace"):
-        async with httpx.AsyncClient() as client:
-            response = await client.get(server.url)
-            assert response.status_code == 200
-    stderr = capsys.readouterr().err
-    assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
+def test_logging_redirect_chain(server, caplog):
+    caplog.set_level(logging.INFO)
+    with httpx.Client(follow_redirects=True) as client:
+        response = client.get(server.url.copy_with(path="/redirect_301"))
+        assert response.status_code == 200
+
+    assert caplog.record_tuples == [
+        (
+            "httpx",
+            logging.INFO,
+            'HTTP Request: GET http://127.0.0.1:8000/redirect_301 "HTTP/1.1 301 Moved Permanently"',
+        ),
+        (
+            "httpx",
+            logging.INFO,
+            'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"',
+        ),
+    ]
 
 
-@pytest.mark.asyncio
-async def test_logs_redirect_chain(server, capsys):
-    with override_log_level("debug"):
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            response = await client.get(server.url.copy_with(path="/redirect_301"))
-            assert response.status_code == 200
+def test_logging_ssl(caplog):
+    caplog.set_level(logging.DEBUG)
+    with httpx.Client():
+        pass
 
-    stderr = capsys.readouterr().err.strip()
-    redirected_request_line, ok_request_line = stderr.split("\n")
-    assert redirected_request_line.endswith(
-        "HTTP Request: GET http://127.0.0.1:8000/redirect_301 "
-        '"HTTP/1.1 301 Moved Permanently"'
-    )
-    assert ok_request_line.endswith(
-        'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"'
-    )
+    cafile = certifi.where()
+    assert caplog.record_tuples == [
+        (
+            "httpx",
+            logging.DEBUG,
+            "load_ssl_context verify=True cert=None trust_env=True http2=False",
+        ),
+        (
+            "httpx",
+            logging.DEBUG,
+            f"load_verify_locations cafile='{cafile}'",
+        ),
+    ]
 
 
 def test_get_ssl_cert_file():

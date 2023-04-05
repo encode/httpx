@@ -1,15 +1,16 @@
 import os
+import typing
 
 from click.testing import CliRunner
 
 import httpx
 
 
-def splitlines(output):
+def splitlines(output: str) -> typing.Iterable[str]:
     return [line.strip() for line in output.splitlines()]
 
 
-def remove_date_header(lines):
+def remove_date_header(lines: typing.Iterable[str]) -> typing.Iterable[str]:
     return [line for line in lines if not line.startswith("date:")]
 
 

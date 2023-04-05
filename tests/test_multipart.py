@@ -1,15 +1,10 @@
 import io
-import os
 import tempfile
 import typing
-from unittest import mock
 
 import pytest
-from multipart import MultipartParser
 
 import httpx
-from httpx._content import encode_request
-from httpx._utils import format_form_param
 
 
 def echo_request_content(request: httpx.Request) -> httpx.Response:
@@ -24,21 +19,24 @@ def test_multipart(value, output):
     data = {"text": value}
     files = {"file": io.BytesIO(b"<file content>")}
     response = client.post("http://127.0.0.1:8000/", data=data, files=files)
-    assert response.status_code == 200
-
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
-    content_length = int(response.request.headers["Content-Length"])
+    boundary_bytes = boundary.encode("ascii")
 
-    multipart = {}
-    for part in MultipartParser(
-        io.BytesIO(response.content), boundary=boundary, content_length=content_length
-    ):
-        multipart[part.name] = [part.raw]
-
-    # Note that the expected return type for text fields
-    # appears to differs from 3.6 to 3.7+
-    assert multipart["text"] == [output.decode()] or multipart["text"] == [output]
-    assert multipart["file"] == [b"<file content>"]
+    assert response.status_code == 200
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="text"\r\n',
+            b"\r\n",
+            b"abc\r\n",
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
+            b"Content-Type: application/octet-stream\r\n",
+            b"\r\n",
+            b"<file content>\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
 
 
 @pytest.mark.parametrize(
@@ -60,18 +58,20 @@ def test_multipart_explicit_boundary(header: str) -> None:
     files = {"file": io.BytesIO(b"<file content>")}
     headers = {"content-type": header}
     response = client.post("http://127.0.0.1:8000/", files=files, headers=headers)
+    boundary_bytes = b"+++"
+
     assert response.status_code == 200
-
     assert response.request.headers["Content-Type"] == header
-    content_length = int(response.request.headers["Content-Length"])
-
-    multipart = {}
-    for part in MultipartParser(
-        io.BytesIO(response.content), boundary="+++", content_length=content_length
-    ):
-        multipart[part.name] = [part.raw]
-
-    assert multipart["file"] == [b"<file content>"]
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
+            b"Content-Type: application/octet-stream\r\n",
+            b"\r\n",
+            b"<file content>\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
 
 
 @pytest.mark.parametrize(
@@ -127,73 +127,77 @@ def test_multipart_file_tuple():
     data = {"text": ["abc"]}
     files = {"file": ("name.txt", io.BytesIO(b"<file content>"))}
     response = client.post("http://127.0.0.1:8000/", data=data, files=files)
-    assert response.status_code == 200
-
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
-    content_length = int(response.request.headers["Content-Length"])
+    boundary_bytes = boundary.encode("ascii")
 
-    multipart = {}
-    for part in MultipartParser(
-        io.BytesIO(response.content), boundary=boundary, content_length=content_length
-    ):
-        multipart[part.name] = [part.raw]
+    assert response.status_code == 200
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="text"\r\n',
+            b"\r\n",
+            b"abc\r\n",
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="name.txt"\r\n',
+            b"Content-Type: text/plain\r\n",
+            b"\r\n",
+            b"<file content>\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
 
-    # Note that the expected return type for text fields
-    # appears to differs from 3.6 to 3.7+
-    assert multipart["text"] == ["abc"] or multipart["text"] == [b"abc"]
-    assert multipart["file"] == [b"<file content>"]
 
-
-@pytest.mark.parametrize("content_type", [None, "text/plain"])
-def test_multipart_file_tuple_headers(content_type: typing.Optional[str]):
+@pytest.mark.parametrize("file_content_type", [None, "text/plain"])
+def test_multipart_file_tuple_headers(file_content_type: typing.Optional[str]) -> None:
     file_name = "test.txt"
-    expected_content_type = "text/plain"
-    headers = {"Expires": "0"}
+    file_content = io.BytesIO(b"<file content>")
+    file_headers = {"Expires": "0"}
 
-    files = {"file": (file_name, io.BytesIO(b"<file content>"), content_type, headers)}
-    with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = os.urandom(16).hex()
+    url = "https://www.example.com/"
+    headers = {"Content-Type": "multipart/form-data; boundary=BOUNDARY"}
+    files = {"file": (file_name, file_content, file_content_type, file_headers)}
 
-        headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, typing.Iterable)
+    request = httpx.Request("POST", url, headers=headers, files=files)
+    request.read()
 
-        content = (
-            f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
-            f'filename="{file_name}"\r\nExpires: 0\r\nContent-Type: '
-            f"{expected_content_type}\r\n\r\n<file content>\r\n--{boundary}--\r\n"
-            "".encode("ascii")
-        )
-        assert headers == {
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "Content-Length": str(len(content)),
-        }
-        assert content == b"".join(stream)
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Content-Type": "multipart/form-data; boundary=BOUNDARY",
+        "Content-Length": str(len(request.content)),
+    }
+    assert request.content == (
+        f'--BOUNDARY\r\nContent-Disposition: form-data; name="file"; '
+        f'filename="{file_name}"\r\nExpires: 0\r\nContent-Type: '
+        f"text/plain\r\n\r\n<file content>\r\n--BOUNDARY--\r\n"
+        "".encode("ascii")
+    )
 
 
 def test_multipart_headers_include_content_type() -> None:
     """Content-Type from 4th tuple parameter (headers) should override the 3rd parameter (content_type)"""
     file_name = "test.txt"
-    expected_content_type = "image/png"
-    headers = {"Content-Type": "image/png"}
+    file_content = io.BytesIO(b"<file content>")
+    file_content_type = "text/plain"
+    file_headers = {"Content-Type": "image/png"}
 
-    files = {"file": (file_name, io.BytesIO(b"<file content>"), "text_plain", headers)}
-    with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = os.urandom(16).hex()
+    url = "https://www.example.com/"
+    headers = {"Content-Type": "multipart/form-data; boundary=BOUNDARY"}
+    files = {"file": (file_name, file_content, file_content_type, file_headers)}
 
-        headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, typing.Iterable)
+    request = httpx.Request("POST", url, headers=headers, files=files)
+    request.read()
 
-        content = (
-            f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
-            f'filename="{file_name}"\r\nContent-Type: '
-            f"{expected_content_type}\r\n\r\n<file content>\r\n--{boundary}--\r\n"
-            "".encode("ascii")
-        )
-        assert headers == {
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "Content-Length": str(len(content)),
-        }
-        assert content == b"".join(stream)
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Content-Type": "multipart/form-data; boundary=BOUNDARY",
+        "Content-Length": str(len(request.content)),
+    }
+    assert request.content == (
+        f'--BOUNDARY\r\nContent-Disposition: form-data; name="file"; '
+        f'filename="{file_name}"\r\nContent-Type: '
+        f"image/png\r\n\r\n<file content>\r\n--BOUNDARY--\r\n"
+        "".encode("ascii")
+    )
 
 
 def test_multipart_encode(tmp_path: typing.Any) -> None:
@@ -201,6 +205,8 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
     with open(path, "wb") as f:
         f.write(b"<file content>")
 
+    url = "https://www.example.com/"
+    headers = {"Content-Type": "multipart/form-data; boundary=BOUNDARY"}
     data = {
         "a": "1",
         "b": b"C",
@@ -212,75 +218,70 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
     with open(path, "rb") as input_file:
         files = {"file": ("name.txt", input_file)}
 
-        with mock.patch("os.urandom", return_value=os.urandom(16)):
-            boundary = os.urandom(16).hex()
+        request = httpx.Request("POST", url, headers=headers, data=data, files=files)
+        request.read()
 
-            headers, stream = encode_request(data=data, files=files)
-            assert isinstance(stream, typing.Iterable)
-
-            content = (
-                '--{0}\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n'
-                '--{0}\r\nContent-Disposition: form-data; name="b"\r\n\r\nC\r\n'
-                '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n11\r\n'
-                '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n22\r\n'
-                '--{0}\r\nContent-Disposition: form-data; name="c"\r\n\r\n33\r\n'
-                '--{0}\r\nContent-Disposition: form-data; name="d"\r\n\r\n\r\n'
-                '--{0}\r\nContent-Disposition: form-data; name="e"\r\n\r\ntrue\r\n'
-                '--{0}\r\nContent-Disposition: form-data; name="f"\r\n\r\n\r\n'
-                '--{0}\r\nContent-Disposition: form-data; name="file";'
-                ' filename="name.txt"\r\n'
-                "Content-Type: text/plain\r\n\r\n<file content>\r\n"
-                "--{0}--\r\n"
-                "".format(boundary).encode("ascii")
-            )
-            assert headers == {
-                "Content-Type": f"multipart/form-data; boundary={boundary}",
-                "Content-Length": str(len(content)),
-            }
-            assert content == b"".join(stream)
+        assert request.headers == {
+            "Host": "www.example.com",
+            "Content-Type": "multipart/form-data; boundary=BOUNDARY",
+            "Content-Length": str(len(request.content)),
+        }
+        assert request.content == (
+            '--BOUNDARY\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n'
+            '--BOUNDARY\r\nContent-Disposition: form-data; name="b"\r\n\r\nC\r\n'
+            '--BOUNDARY\r\nContent-Disposition: form-data; name="c"\r\n\r\n11\r\n'
+            '--BOUNDARY\r\nContent-Disposition: form-data; name="c"\r\n\r\n22\r\n'
+            '--BOUNDARY\r\nContent-Disposition: form-data; name="c"\r\n\r\n33\r\n'
+            '--BOUNDARY\r\nContent-Disposition: form-data; name="d"\r\n\r\n\r\n'
+            '--BOUNDARY\r\nContent-Disposition: form-data; name="e"\r\n\r\ntrue\r\n'
+            '--BOUNDARY\r\nContent-Disposition: form-data; name="f"\r\n\r\n\r\n'
+            '--BOUNDARY\r\nContent-Disposition: form-data; name="file";'
+            ' filename="name.txt"\r\n'
+            "Content-Type: text/plain\r\n\r\n<file content>\r\n"
+            "--BOUNDARY--\r\n"
+            "".encode("ascii")
+        )
 
 
 def test_multipart_encode_unicode_file_contents() -> None:
+    url = "https://www.example.com/"
+    headers = {"Content-Type": "multipart/form-data; boundary=BOUNDARY"}
     files = {"file": ("name.txt", b"<bytes content>")}
 
-    with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = os.urandom(16).hex()
+    request = httpx.Request("POST", url, headers=headers, files=files)
+    request.read()
 
-        headers, stream = encode_request(files=files)
-        assert isinstance(stream, typing.Iterable)
-
-        content = (
-            '--{0}\r\nContent-Disposition: form-data; name="file";'
-            ' filename="name.txt"\r\n'
-            "Content-Type: text/plain\r\n\r\n<bytes content>\r\n"
-            "--{0}--\r\n"
-            "".format(boundary).encode("utf-8")
-        )
-        assert headers == {
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "Content-Length": str(len(content)),
-        }
-        assert content == b"".join(stream)
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Content-Type": "multipart/form-data; boundary=BOUNDARY",
+        "Content-Length": str(len(request.content)),
+    }
+    assert request.content == (
+        b'--BOUNDARY\r\nContent-Disposition: form-data; name="file";'
+        b' filename="name.txt"\r\n'
+        b"Content-Type: text/plain\r\n\r\n<bytes content>\r\n"
+        b"--BOUNDARY--\r\n"
+    )
 
 
 def test_multipart_encode_files_allows_filenames_as_none() -> None:
+    url = "https://www.example.com/"
+    headers = {"Content-Type": "multipart/form-data; boundary=BOUNDARY"}
     files = {"file": (None, io.BytesIO(b"<file content>"))}
-    with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = os.urandom(16).hex()
 
-        headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, typing.Iterable)
+    request = httpx.Request("POST", url, headers=headers, data={}, files=files)
+    request.read()
 
-        content = (
-            '--{0}\r\nContent-Disposition: form-data; name="file"\r\n\r\n'
-            "<file content>\r\n--{0}--\r\n"
-            "".format(boundary).encode("ascii")
-        )
-        assert headers == {
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "Content-Length": str(len(content)),
-        }
-        assert content == b"".join(stream)
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Content-Type": "multipart/form-data; boundary=BOUNDARY",
+        "Content-Length": str(len(request.content)),
+    }
+    assert request.content == (
+        '--BOUNDARY\r\nContent-Disposition: form-data; name="file"\r\n\r\n'
+        "<file content>\r\n--BOUNDARY--\r\n"
+        "".encode("ascii")
+    )
 
 
 @pytest.mark.parametrize(
@@ -294,87 +295,90 @@ def test_multipart_encode_files_allows_filenames_as_none() -> None:
 def test_multipart_encode_files_guesses_correct_content_type(
     file_name: str, expected_content_type: str
 ) -> None:
+    url = "https://www.example.com/"
+    headers = {"Content-Type": "multipart/form-data; boundary=BOUNDARY"}
     files = {"file": (file_name, io.BytesIO(b"<file content>"))}
-    with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = os.urandom(16).hex()
 
-        headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, typing.Iterable)
+    request = httpx.Request("POST", url, headers=headers, data={}, files=files)
+    request.read()
 
-        content = (
-            f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
-            f'filename="{file_name}"\r\nContent-Type: '
-            f"{expected_content_type}\r\n\r\n<file content>\r\n--{boundary}--\r\n"
-            "".encode("ascii")
-        )
-        assert headers == {
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "Content-Length": str(len(content)),
-        }
-        assert content == b"".join(stream)
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Content-Type": "multipart/form-data; boundary=BOUNDARY",
+        "Content-Length": str(len(request.content)),
+    }
+    assert request.content == (
+        f'--BOUNDARY\r\nContent-Disposition: form-data; name="file"; '
+        f'filename="{file_name}"\r\nContent-Type: '
+        f"{expected_content_type}\r\n\r\n<file content>\r\n--BOUNDARY--\r\n"
+        "".encode("ascii")
+    )
 
 
 def test_multipart_encode_files_allows_bytes_content() -> None:
+    url = "https://www.example.com/"
+    headers = {"Content-Type": "multipart/form-data; boundary=BOUNDARY"}
     files = {"file": ("test.txt", b"<bytes content>", "text/plain")}
-    with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = os.urandom(16).hex()
 
-        headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, typing.Iterable)
+    request = httpx.Request("POST", url, headers=headers, data={}, files=files)
+    request.read()
 
-        content = (
-            '--{0}\r\nContent-Disposition: form-data; name="file"; '
-            'filename="test.txt"\r\n'
-            "Content-Type: text/plain\r\n\r\n<bytes content>\r\n"
-            "--{0}--\r\n"
-            "".format(boundary).encode("ascii")
-        )
-        assert headers == {
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "Content-Length": str(len(content)),
-        }
-        assert content == b"".join(stream)
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Content-Type": "multipart/form-data; boundary=BOUNDARY",
+        "Content-Length": str(len(request.content)),
+    }
+    assert request.content == (
+        '--BOUNDARY\r\nContent-Disposition: form-data; name="file"; '
+        'filename="test.txt"\r\n'
+        "Content-Type: text/plain\r\n\r\n<bytes content>\r\n"
+        "--BOUNDARY--\r\n"
+        "".encode("ascii")
+    )
 
 
 def test_multipart_encode_files_allows_str_content() -> None:
+    url = "https://www.example.com/"
+    headers = {"Content-Type": "multipart/form-data; boundary=BOUNDARY"}
     files = {"file": ("test.txt", "<str content>", "text/plain")}
-    with mock.patch("os.urandom", return_value=os.urandom(16)):
-        boundary = os.urandom(16).hex()
 
-        headers, stream = encode_request(data={}, files=files)
-        assert isinstance(stream, typing.Iterable)
+    request = httpx.Request("POST", url, headers=headers, data={}, files=files)
+    request.read()
 
-        content = (
-            '--{0}\r\nContent-Disposition: form-data; name="file"; '
-            'filename="test.txt"\r\n'
-            "Content-Type: text/plain\r\n\r\n<str content>\r\n"
-            "--{0}--\r\n"
-            "".format(boundary).encode("ascii")
-        )
-        assert headers == {
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "Content-Length": str(len(content)),
-        }
-        assert content == b"".join(stream)
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Content-Type": "multipart/form-data; boundary=BOUNDARY",
+        "Content-Length": str(len(request.content)),
+    }
+    assert request.content == (
+        '--BOUNDARY\r\nContent-Disposition: form-data; name="file"; '
+        'filename="test.txt"\r\n'
+        "Content-Type: text/plain\r\n\r\n<str content>\r\n"
+        "--BOUNDARY--\r\n"
+        "".encode("ascii")
+    )
 
 
 def test_multipart_encode_files_raises_exception_with_StringIO_content() -> None:
+    url = "https://www.example.com"
     files = {"file": ("test.txt", io.StringIO("content"), "text/plain")}
     with pytest.raises(TypeError):
-        encode_request(data={}, files=files)  # type: ignore
+        httpx.Request("POST", url, data={}, files=files)  # type: ignore
 
 
 def test_multipart_encode_files_raises_exception_with_text_mode_file() -> None:
+    url = "https://www.example.com"
     with tempfile.TemporaryFile(mode="w") as upload:
         files = {"file": ("test.txt", upload, "text/plain")}
         with pytest.raises(TypeError):
-            encode_request(data={}, files=files)  # type: ignore
+            httpx.Request("POST", url, data={}, files=files)  # type: ignore
 
 
 def test_multipart_encode_non_seekable_filelike() -> None:
     """
-    Test that special readable but non-seekable filelike objects are supported,
-    at the cost of reading them into memory at most once.
+    Test that special readable but non-seekable filelike objects are supported.
+    In this case uploads with use 'Transfer-Encoding: chunked', instead of
+    a 'Content-Length' header.
     """
 
     class IteratorIO(io.IOBase):
@@ -388,24 +392,27 @@ def test_multipart_encode_non_seekable_filelike() -> None:
         yield b"Hello"
         yield b"World"
 
+    url = "https://www.example.com/"
+    headers = {"Content-Type": "multipart/form-data; boundary=BOUNDARY"}
     fileobj: typing.Any = IteratorIO(data())
     files = {"file": fileobj}
-    headers, stream = encode_request(files=files, boundary=b"+++")
-    assert isinstance(stream, typing.Iterable)
 
-    content = (
-        b"--+++\r\n"
+    request = httpx.Request("POST", url, headers=headers, files=files)
+    request.read()
+
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Content-Type": "multipart/form-data; boundary=BOUNDARY",
+        "Transfer-Encoding": "chunked",
+    }
+    assert request.content == (
+        b"--BOUNDARY\r\n"
         b'Content-Disposition: form-data; name="file"; filename="upload"\r\n'
         b"Content-Type: application/octet-stream\r\n"
         b"\r\n"
         b"HelloWorld\r\n"
-        b"--+++--\r\n"
+        b"--BOUNDARY--\r\n"
     )
-    assert headers == {
-        "Content-Type": "multipart/form-data; boundary=+++",
-        "Content-Length": str(len(content)),
-    }
-    assert content == b"".join(stream)
 
 
 def test_multipart_rewinds_files():
@@ -429,17 +436,29 @@ def test_multipart_rewinds_files():
 
 class TestHeaderParamHTML5Formatting:
     def test_unicode(self):
-        param = format_form_param("filename", "n\u00e4me")
-        assert param == b'filename="n\xc3\xa4me"'
+        filename = "n\u00e4me"
+        expected = b'filename="n\xc3\xa4me"'
+        files = {"upload": (filename, b"<file content>")}
+        request = httpx.Request("GET", "https://www.example.com", files=files)
+        assert expected in request.read()
 
     def test_ascii(self):
-        param = format_form_param("filename", b"name")
-        assert param == b'filename="name"'
+        filename = "name"
+        expected = b'filename="name"'
+        files = {"upload": (filename, b"<file content>")}
+        request = httpx.Request("GET", "https://www.example.com", files=files)
+        assert expected in request.read()
 
     def test_unicode_escape(self):
-        param = format_form_param("filename", "hello\\world\u0022")
-        assert param == b'filename="hello\\\\world%22"'
+        filename = "hello\\world\u0022"
+        expected = b'filename="hello\\\\world%22"'
+        files = {"upload": (filename, b"<file content>")}
+        request = httpx.Request("GET", "https://www.example.com", files=files)
+        assert expected in request.read()
 
     def test_unicode_with_control_character(self):
-        param = format_form_param("filename", "hello\x1A\x1B\x1C")
-        assert param == b'filename="hello%1A\x1B%1C"'
+        filename = "hello\x1A\x1B\x1C"
+        expected = b'filename="hello%1A\x1B%1C"'
+        files = {"upload": (filename, b"<file content>")}
+        request = httpx.Request("GET", "https://www.example.com", files=files)
+        assert expected in request.read()

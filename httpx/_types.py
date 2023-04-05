@@ -16,6 +16,7 @@ from typing import (
     Iterator,
     List,
     Mapping,
+    NamedTuple,
     Optional,
     Sequence,
     Tuple,
@@ -30,6 +31,16 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
+
+RawURL = NamedTuple(
+    "RawURL",
+    [
+        ("raw_scheme", bytes),
+        ("raw_host", bytes),
+        ("port", Optional[int]),
+        ("raw_path", bytes),
+    ],
+)
 
 URLTypes = Union["URL", str]
 
@@ -76,7 +87,7 @@ AuthTypes = Union[
 
 RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
-ResponseExtensions = Dict[str, Any]
+ResponseExtensions = Mapping[str, Any]
 
 RequestData = Mapping[str, Any]
 
@@ -93,15 +104,15 @@ FileTypes = Union[
 ]
 RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
 
-RequestExtensions = Dict[str, Any]
+RequestExtensions = Mapping[str, Any]
 
 
 class SyncByteStream:
     def __iter__(self) -> Iterator[bytes]:
         raise NotImplementedError(
             "The '__iter__' method must be implemented."
-        )  # pragma: nocover
-        yield b""  # pragma: nocover
+        )  # pragma: no cover
+        yield b""  # pragma: no cover
 
     def close(self) -> None:
         """
@@ -114,8 +125,8 @@ class AsyncByteStream:
     async def __aiter__(self) -> AsyncIterator[bytes]:
         raise NotImplementedError(
             "The '__aiter__' method must be implemented."
-        )  # pragma: nocover
-        yield b""  # pragma: nocover
+        )  # pragma: no cover
+        yield b""  # pragma: no cover
 
     async def aclose(self) -> None:
         pass

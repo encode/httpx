@@ -1,11 +1,8 @@
 import codecs
 import email.message
-import logging
 import mimetypes
-import netrc
 import os
 import re
-import sys
 import time
 import typing
 from pathlib import Path
@@ -16,7 +13,7 @@ import sniffio
 from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from ._models import URL
+    from ._urls import URL
 
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
@@ -81,12 +78,10 @@ def is_known_encoding(encoding: str) -> bool:
     return True
 
 
-def format_form_param(name: str, value: typing.Union[str, bytes]) -> bytes:
+def format_form_param(name: str, value: str) -> bytes:
     """
     Encode a name/value pair within a multipart form.
     """
-    if isinstance(value, bytes):
-        value = value.decode()
 
     def replacer(match: typing.Match[str]) -> str:
         return _HTML5_FORM_ENCODING_REPLACEMENTS[match.group(0)]
@@ -128,37 +123,6 @@ def guess_json_utf(data: bytes) -> typing.Optional[str]:
             return "utf-32-le"
         # Did not detect a valid UTF-32 ascii-range character
     return None
-
-
-class NetRCInfo:
-    def __init__(self, files: typing.Optional[typing.List[str]] = None) -> None:
-        if files is None:
-            files = [os.getenv("NETRC", ""), "~/.netrc", "~/_netrc"]
-        self.netrc_files = files
-
-    @property
-    def netrc_info(self) -> typing.Optional[netrc.netrc]:
-        if not hasattr(self, "_netrc_info"):
-            self._netrc_info = None
-            for file_path in self.netrc_files:
-                expanded_path = Path(file_path).expanduser()
-                try:
-                    if expanded_path.is_file():
-                        self._netrc_info = netrc.netrc(str(expanded_path))
-                        break
-                except (netrc.NetrcParseError, IOError):  # pragma: nocover
-                    # Issue while reading the netrc file, ignore...
-                    pass
-        return self._netrc_info
-
-    def get_credentials(self, host: str) -> typing.Optional[typing.Tuple[str, str]]:
-        if self.netrc_info is None:
-            return None
-
-        auth_info = self.netrc_info.authenticators(host)
-        if auth_info is None or auth_info[2] is None:
-            return None
-        return (auth_info[0], auth_info[2])
 
 
 def get_ca_bundle_from_env() -> typing.Optional[str]:
@@ -228,50 +192,6 @@ def obfuscate_sensitive_headers(
         if to_str(k.lower()) in SENSITIVE_HEADERS:
             v = to_bytes_or_str("[secure]", match_type_of=v)
         yield k, v
-
-
-_LOGGER_INITIALIZED = False
-TRACE_LOG_LEVEL = 5
-
-
-class Logger(logging.Logger):
-    # Stub for type checkers.
-    def trace(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
-        ...  # pragma: nocover
-
-
-def get_logger(name: str) -> Logger:
-    """
-    Get a `logging.Logger` instance, and optionally
-    set up debug logging based on the HTTPX_LOG_LEVEL environment variable.
-    """
-    global _LOGGER_INITIALIZED
-
-    if not _LOGGER_INITIALIZED:
-        _LOGGER_INITIALIZED = True
-        logging.addLevelName(TRACE_LOG_LEVEL, "TRACE")
-
-        log_level = os.environ.get("HTTPX_LOG_LEVEL", "").upper()
-        if log_level in ("DEBUG", "TRACE"):
-            logger = logging.getLogger("httpx")
-            logger.setLevel(logging.DEBUG if log_level == "DEBUG" else TRACE_LOG_LEVEL)
-            handler = logging.StreamHandler(sys.stderr)
-            handler.setFormatter(
-                logging.Formatter(
-                    fmt="%(levelname)s [%(asctime)s] %(name)s - %(message)s",
-                    datefmt="%Y-%m-%d %H:%M:%S",
-                )
-            )
-            logger.addHandler(handler)
-
-    logger = logging.getLogger(name)
-
-    def trace(message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
-        logger.log(TRACE_LOG_LEVEL, message, *args, **kwargs)
-
-    logger.trace = trace  # type: ignore
-
-    return typing.cast(Logger, logger)
 
 
 def port_or_default(url: "URL") -> typing.Optional[int]:
@@ -398,10 +318,10 @@ class Timer:
             import trio
 
             return trio.current_time()
-        elif library == "curio":  # pragma: nocover
+        elif library == "curio":  # pragma: no cover
             import curio
 
-            return await curio.clock()
+            return typing.cast(float, await curio.clock())
 
         import asyncio
 
@@ -465,7 +385,7 @@ class URLPattern:
     """
 
     def __init__(self, pattern: str) -> None:
-        from ._models import URL
+        from ._urls import URL
 
         if pattern and ":" not in pattern:
             raise ValueError(
@@ -508,7 +428,7 @@ class URLPattern:
         return True
 
     @property
-    def priority(self) -> tuple:
+    def priority(self) -> typing.Tuple[int, int, int]:
         """
         The priority allows URLPattern instances to be sortable, so that
         we can match from most specific to least specific.

@@ -70,7 +70,7 @@ def map_httpcore_exceptions() -> typing.Iterator[None]:
             if mapped_exc is None or issubclass(to_exc, mapped_exc):
                 mapped_exc = to_exc
 
-        if mapped_exc is None:  # pragma: nocover
+        if mapped_exc is None:  # pragma: no cover
             raise
 
         message = str(exc)
@@ -106,7 +106,7 @@ class ResponseStream(SyncByteStream):
 
     def close(self) -> None:
         if hasattr(self._httpcore_stream, "close"):
-            self._httpcore_stream.close()  # type: ignore
+            self._httpcore_stream.close()
 
 
 class HTTPTransport(BaseTransport):
@@ -158,7 +158,7 @@ class HTTPTransport(BaseTransport):
         elif proxy.url.scheme == "socks5":
             try:
                 import socksio  # noqa
-            except ImportError:  # pragma: nocover
+            except ImportError:  # pragma: no cover
                 raise ImportError(
                     "Using SOCKS proxy, but the 'socksio' package is not installed. "
                     "Make sure to install httpx using `pip install httpx[socks]`."
@@ -180,7 +180,7 @@ class HTTPTransport(BaseTransport):
                 http2=http2,
                 retries=retries,
             )
-        else:  # pragma: nocover
+        else:  # pragma: no cover
             raise ValueError(
                 f"Proxy protocol must be either 'http', 'https', or 'socks5', but got {proxy.url.scheme!r}."
             )
@@ -243,7 +243,7 @@ class AsyncResponseStream(AsyncByteStream):
 
     async def aclose(self) -> None:
         if hasattr(self._httpcore_stream, "aclose"):
-            await self._httpcore_stream.aclose()  # type: ignore
+            await self._httpcore_stream.aclose()
 
 
 class AsyncHTTPTransport(AsyncBaseTransport):
@@ -295,7 +295,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         elif proxy.url.scheme == "socks5":
             try:
                 import socksio  # noqa
-            except ImportError:  # pragma: nocover
+            except ImportError:  # pragma: no cover
                 raise ImportError(
                     "Using SOCKS proxy, but the 'socksio' package is not installed. "
                     "Make sure to install httpx using `pip install httpx[socks]`."
@@ -317,7 +317,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 http2=http2,
                 retries=retries,
             )
-        else:  # pragma: nocover
+        else:  # pragma: no cover
             raise ValueError(
                 f"Proxy protocol must be either 'http', 'https', or 'socks5', but got {proxy.url.scheme!r}."
             )

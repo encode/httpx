@@ -1,4 +1,5 @@
 import hashlib
+import netrc
 import os
 import re
 import time
@@ -9,6 +10,9 @@ from urllib.request import parse_http_list
 from ._exceptions import ProtocolError
 from ._models import Request, Response
 from ._utils import to_bytes, to_str, unquote
+
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from hashlib import _Hash
 
 
 class Auth:
@@ -138,8 +142,36 @@ class BasicAuth(Auth):
         return f"Basic {token}"
 
 
+class NetRCAuth(Auth):
+    """
+    Use a 'netrc' file to lookup basic auth credentials based on the url host.
+    """
+
+    def __init__(self, file: typing.Optional[str]):
+        self._netrc_info = netrc.netrc(file)
+
+    def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+        auth_info = self._netrc_info.authenticators(request.url.host)
+        if auth_info is None or not auth_info[2]:
+            # The netrc file did not have authentication credentials for this host.
+            yield request
+        else:
+            # Build a basic auth header with credentials from the netrc file.
+            request.headers["Authorization"] = self._build_auth_header(
+                username=auth_info[0], password=auth_info[2]
+            )
+            yield request
+
+    def _build_auth_header(
+        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
+    ) -> str:
+        userpass = b":".join((to_bytes(username), to_bytes(password)))
+        token = b64encode(userpass).decode()
+        return f"Basic {token}"
+
+
 class DigestAuth(Auth):
-    _ALGORITHM_TO_HASH_FUNCTION: typing.Dict[str, typing.Callable] = {
+    _ALGORITHM_TO_HASH_FUNCTION: typing.Dict[str, typing.Callable[[bytes], "_Hash"]] = {
         "MD5": hashlib.md5,
         "MD5-SESS": hashlib.md5,
         "SHA": hashlib.sha1,
@@ -155,8 +187,15 @@ class DigestAuth(Auth):
     ) -> None:
         self._username = to_bytes(username)
         self._password = to_bytes(password)
+        self._last_challenge: typing.Optional[_DigestAuthChallenge] = None
+        self._nonce_count = 1
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
+        if self._last_challenge:
+            request.headers["Authorization"] = self._build_auth_header(
+                request, self._last_challenge
+            )
+
         response = yield request
 
         if response.status_code != 401 or "www-authenticate" not in response.headers:
@@ -172,8 +211,12 @@ class DigestAuth(Auth):
             # header, then we don't need to build an authenticated request.
             return
 
-        challenge = self._parse_challenge(request, response, auth_header)
-        request.headers["Authorization"] = self._build_auth_header(request, challenge)
+        self._last_challenge = self._parse_challenge(request, response, auth_header)
+        self._nonce_count = 1
+
+        request.headers["Authorization"] = self._build_auth_header(
+            request, self._last_challenge
+        )
         yield request
 
     def _parse_challenge(
@@ -222,9 +265,9 @@ class DigestAuth(Auth):
         # TODO: implement auth-int
         HA2 = digest(A2)
 
-        nonce_count = 1  # TODO: implement nonce counting
-        nc_value = b"%08x" % nonce_count
-        cnonce = self._get_client_nonce(nonce_count, challenge.nonce)
+        nc_value = b"%08x" % self._nonce_count
+        cnonce = self._get_client_nonce(self._nonce_count, challenge.nonce)
+        self._nonce_count += 1
 
         HA1 = digest(A1)
         if challenge.algorithm.lower().endswith("-sess"):
