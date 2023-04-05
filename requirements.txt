@@ -21,7 +21,7 @@ twine==4.0.2
 # Tests & Linting
 autoflake==1.7.7
 black==23.3.0
-coverage==7.2.1
+coverage==7.2.2
 cryptography==39.0.1
 flake8==3.9.2
 flake8-bugbear==23.1.20
