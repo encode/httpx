@@ -84,7 +84,7 @@ async def test_access_content_stream_response(server):
 
     assert response.status_code == 200
     with pytest.raises(httpx.ResponseNotRead):
-        response.content
+        response.content  # noqa: B018
 
 
 @pytest.mark.anyio
