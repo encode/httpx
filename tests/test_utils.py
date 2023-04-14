@@ -185,6 +185,8 @@ def test_get_ssl_cert_file():
         ),
         ({"all_proxy": "http://127.0.0.1"}, {"all://": "http://127.0.0.1"}),
         ({"TRAVIS_APT_PROXY": "http://127.0.0.1"}, {}),
+        ({"no_proxy": "127.0.0.1"}, {"all://127.0.0.1": None}),
+        ({"no_proxy": "::1"}, {"all://[::1]": None}),
     ],
 )
 def test_get_environment_proxies(environment, proxies):
