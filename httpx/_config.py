@@ -1,3 +1,4 @@
+import logging
 import os
 import ssl
 import sys
@@ -10,7 +11,7 @@ from ._compat import set_minimum_tls_version_1_2
 from ._models import Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._urls import URL
-from ._utils import get_ca_bundle_from_env, get_logger
+from ._utils import get_ca_bundle_from_env
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -32,7 +33,7 @@ DEFAULT_CIPHERS = ":".join(
 )
 
 
-logger = get_logger(__name__)
+logger = logging.getLogger("httpx")
 
 
 class UnsetType:
@@ -75,12 +76,12 @@ class SSLConfig:
         self.ssl_context = self.load_ssl_context()
 
     def load_ssl_context(self) -> ssl.SSLContext:
-        logger.trace(
-            f"load_ssl_context "
-            f"verify={self.verify!r} "
-            f"cert={self.cert!r} "
-            f"trust_env={self.trust_env!r} "
-            f"http2={self.http2!r}"
+        logger.debug(
+            "load_ssl_context verify=%r cert=%r trust_env=%r http2=%r",
+            self.verify,
+            self.cert,
+            self.trust_env,
+            self.http2,
         )
 
         if self.verify:
@@ -141,11 +142,13 @@ class SSLConfig:
             pass
 
         if ca_bundle_path.is_file():
-            logger.trace(f"load_verify_locations cafile={ca_bundle_path!s}")
-            context.load_verify_locations(cafile=str(ca_bundle_path))
+            cafile = str(ca_bundle_path)
+            logger.debug("load_verify_locations cafile=%r", cafile)
+            context.load_verify_locations(cafile=cafile)
         elif ca_bundle_path.is_dir():
-            logger.trace(f"load_verify_locations capath={ca_bundle_path!s}")
-            context.load_verify_locations(capath=str(ca_bundle_path))
+            capath = str(ca_bundle_path)
+            logger.debug("load_verify_locations capath=%r", capath)
+            context.load_verify_locations(capath=capath)
 
         self._load_client_certs(context)
 

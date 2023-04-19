@@ -29,7 +29,7 @@ classifiers = [
 ]
 dependencies = [
     "certifi",
-    "httpcore>=0.15.0,<0.17.0",
+    "httpcore>=0.15.0,<0.18.0",
     "idna",
     "sniffio",
 ]
@@ -90,3 +90,12 @@ text = "\n---\n\n[Full changelog](https://github.com/encode/httpx/blob/master/CH
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
 pattern = 'src="(docs/img/.*?)"'
 replacement = 'src="https://raw.githubusercontent.com/encode/httpx/master/\1"'
+
+# https://beta.ruff.rs/docs/configuration/#using-rufftoml
+[tool.ruff]
+select = ["E", "F", "I", "B", "PIE"]
+ignore = ["B904", "B028"]
+line-length = 120
+
+[tool.ruff.isort]
+combine-as-imports = true

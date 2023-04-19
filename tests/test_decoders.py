@@ -226,42 +226,42 @@ def test_line_decoder_nl():
     assert list(response.iter_lines()) == []
 
     response = httpx.Response(200, content=[b"", b"a\n\nb\nc"])
-    assert list(response.iter_lines()) == ["a\n", "\n", "b\n", "c"]
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
     # Issue #1033
     response = httpx.Response(
         200, content=[b"", b"12345\n", b"foo ", b"bar ", b"baz\n"]
     )
-    assert list(response.iter_lines()) == ["12345\n", "foo bar baz\n"]
+    assert list(response.iter_lines()) == ["12345", "foo bar baz"]
 
 
 def test_line_decoder_cr():
     response = httpx.Response(200, content=[b"", b"a\r\rb\rc"])
-    assert list(response.iter_lines()) == ["a\n", "\n", "b\n", "c"]
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
     response = httpx.Response(200, content=[b"", b"a\r\rb\rc\r"])
-    assert list(response.iter_lines()) == ["a\n", "\n", "b\n", "c\n"]
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
     # Issue #1033
     response = httpx.Response(
         200, content=[b"", b"12345\r", b"foo ", b"bar ", b"baz\r"]
     )
-    assert list(response.iter_lines()) == ["12345\n", "foo bar baz\n"]
+    assert list(response.iter_lines()) == ["12345", "foo bar baz"]
 
 
 def test_line_decoder_crnl():
     response = httpx.Response(200, content=[b"", b"a\r\n\r\nb\r\nc"])
-    assert list(response.iter_lines()) == ["a\n", "\n", "b\n", "c"]
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
     response = httpx.Response(200, content=[b"", b"a\r\n\r\nb\r\nc\r\n"])
-    assert list(response.iter_lines()) == ["a\n", "\n", "b\n", "c\n"]
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
     response = httpx.Response(200, content=[b"", b"a\r", b"\n\r\nb\r\nc"])
-    assert list(response.iter_lines()) == ["a\n", "\n", "b\n", "c"]
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
     # Issue #1033
     response = httpx.Response(200, content=[b"", b"12345\r\n", b"foo bar baz\r\n"])
-    assert list(response.iter_lines()) == ["12345\n", "foo bar baz\n"]
+    assert list(response.iter_lines()) == ["12345", "foo bar baz"]
 
 
 def test_invalid_content_encoding_header():

@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, unquote
 
 import idna
 
-from ._types import PrimitiveData, QueryParamTypes, RawURL, URLTypes
+from ._types import QueryParamTypes, RawURL, URLTypes
 from ._urlparse import urlencode, urlparse
 from ._utils import primitive_value_to_str
 
@@ -422,7 +422,6 @@ class QueryParams(typing.Mapping[str, str]):
 
         value = args[0] if args else kwargs
 
-        items: typing.Sequence[typing.Tuple[str, PrimitiveData]]
         if value is None or isinstance(value, (str, bytes)):
             value = value.decode("ascii") if isinstance(value, bytes) else value
             self._dict = parse_qs(value, keep_blank_values=True)

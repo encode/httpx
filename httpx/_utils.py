@@ -1,10 +1,9 @@
 import codecs
 import email.message
-import logging
+import ipaddress
 import mimetypes
 import os
 import re
-import sys
 import time
 import typing
 from pathlib import Path
@@ -196,50 +195,6 @@ def obfuscate_sensitive_headers(
         yield k, v
 
 
-_LOGGER_INITIALIZED = False
-TRACE_LOG_LEVEL = 5
-
-
-class Logger(logging.Logger):
-    # Stub for type checkers.
-    def trace(self, message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
-        ...  # pragma: no cover
-
-
-def get_logger(name: str) -> Logger:
-    """
-    Get a `logging.Logger` instance, and optionally
-    set up debug logging based on the HTTPX_LOG_LEVEL environment variable.
-    """
-    global _LOGGER_INITIALIZED
-
-    if not _LOGGER_INITIALIZED:
-        _LOGGER_INITIALIZED = True
-        logging.addLevelName(TRACE_LOG_LEVEL, "TRACE")
-
-        log_level = os.environ.get("HTTPX_LOG_LEVEL", "").upper()
-        if log_level in ("DEBUG", "TRACE"):
-            logger = logging.getLogger("httpx")
-            logger.setLevel(logging.DEBUG if log_level == "DEBUG" else TRACE_LOG_LEVEL)
-            handler = logging.StreamHandler(sys.stderr)
-            handler.setFormatter(
-                logging.Formatter(
-                    fmt="%(levelname)s [%(asctime)s] %(name)s - %(message)s",
-                    datefmt="%Y-%m-%d %H:%M:%S",
-                )
-            )
-            logger.addHandler(handler)
-
-    logger = logging.getLogger(name)
-
-    def trace(message: str, *args: typing.Any, **kwargs: typing.Any) -> None:
-        logger.log(TRACE_LOG_LEVEL, message, *args, **kwargs)
-
-    logger.trace = trace  # type: ignore
-
-    return typing.cast(Logger, logger)
-
-
 def port_or_default(url: "URL") -> typing.Optional[int]:
     if url.port is not None:
         return url.port
@@ -305,7 +260,16 @@ def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
             # NO_PROXY=google.com is marked as "all://*google.com,
             #   which disables "www.google.com" and "google.com".
             #   (But not "wwwgoogle.com")
-            mounts[f"all://*{hostname}"] = None
+            # NO_PROXY can include domains, IPv6, IPv4 addresses and "localhost"
+            #   NO_PROXY=example.com,::1,localhost,192.168.0.0/16
+            if is_ipv4_hostname(hostname):
+                mounts[f"all://{hostname}"] = None
+            elif is_ipv6_hostname(hostname):
+                mounts[f"all://[{hostname}]"] = None
+            elif hostname.lower() == "localhost":
+                mounts[f"all://{hostname}"] = None
+            else:
+                mounts[f"all://*{hostname}"] = None
 
     return mounts
 
@@ -495,3 +459,19 @@ class URLPattern:
 
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, URLPattern) and self.pattern == other.pattern
+
+
+def is_ipv4_hostname(hostname: str) -> bool:
+    try:
+        ipaddress.IPv4Address(hostname.split("/")[0])
+    except:
+        return False
+    return True
+
+
+def is_ipv6_hostname(hostname: str) -> bool:
+    try:
+        ipaddress.IPv6Address(hostname.split("/")[0])
+    except:
+        return False
+    return True

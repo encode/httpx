@@ -54,10 +54,10 @@ class IteratorByteStream(SyncByteStream):
         self._is_stream_consumed = True
         if hasattr(self._stream, "read"):
             # File-like interfaces should use 'read' directly.
-            chunk = self._stream.read(self.CHUNK_SIZE)  # type: ignore
+            chunk = self._stream.read(self.CHUNK_SIZE)
             while chunk:
                 yield chunk
-                chunk = self._stream.read(self.CHUNK_SIZE)  # type: ignore
+                chunk = self._stream.read(self.CHUNK_SIZE)
         else:
             # Otherwise iterate.
             for part in self._stream:
@@ -79,10 +79,10 @@ class AsyncIteratorByteStream(AsyncByteStream):
         self._is_stream_consumed = True
         if hasattr(self._stream, "aread"):
             # File-like interfaces should use 'aread' directly.
-            chunk = await self._stream.aread(self.CHUNK_SIZE)  # type: ignore
+            chunk = await self._stream.aread(self.CHUNK_SIZE)
             while chunk:
                 yield chunk
-                chunk = await self._stream.aread(self.CHUNK_SIZE)  # type: ignore
+                chunk = await self._stream.aread(self.CHUNK_SIZE)
         else:
             # Otherwise iterate.
             async for part in self._stream:
@@ -107,7 +107,6 @@ class UnattachedStream(AsyncByteStream, SyncByteStream):
 def encode_content(
     content: Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ) -> Tuple[Dict[str, str], Union[SyncByteStream, AsyncByteStream]]:
-
     if isinstance(content, (bytes, str)):
         body = content.encode("utf-8") if isinstance(content, str) else content
         content_length = len(body)

@@ -195,18 +195,6 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     # -------------------------------------------------------------
 
     for key, value in kwargs.items():
-        if key not in (
-            "scheme",
-            "authority",
-            "path",
-            "query",
-            "fragment",
-            "userinfo",
-            "host",
-            "port",
-        ):
-            raise TypeError(f"'{key}' is an invalid keyword argument for urlparse()")
-
         if value is not None:
             if len(value) > MAX_URL_LENGTH:
                 raise InvalidURL(f"URL component '{key}' too long")
@@ -411,7 +399,7 @@ def normalize_path(path: str) -> str:
 
 def percent_encode(char: str) -> str:
     """
-    Replace every character in a string with the percent-encoded representation.
+    Replace a single character with the percent-encoded representation.
 
     Characters outside the ASCII range are represented with their a percent-encoded
     representation of their UTF-8 byte sequence.
@@ -423,13 +411,29 @@ def percent_encode(char: str) -> str:
     return "".join([f"%{byte:02x}" for byte in char.encode("utf-8")]).upper()
 
 
-def quote(string: str, safe: str = "/") -> str:
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
-    if string.count("%") == len(PERCENT_ENCODED_REGEX.findall(string)):
-        # If all occurances of '%' are valid '%xx' escapes, then treat
-        # percent as a non-escaping character.
-        NON_ESCAPED_CHARS += "%"
+def is_safe(string: str, safe: str = "/") -> bool:
+    """
+    Determine if a given string is already quote-safe.
+    """
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe + "%"
 
+    # All characters must already be non-escaping or '%'
+    for char in string:
+        if char not in NON_ESCAPED_CHARS:
+            return False
+
+    # Any '%' characters must be valid '%xx' escape sequences.
+    return string.count("%") == len(PERCENT_ENCODED_REGEX.findall(string))
+
+
+def quote(string: str, safe: str = "/") -> str:
+    """
+    Use percent-encoding to quote a string if required.
+    """
+    if is_safe(string, safe=safe):
+        return string
+
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
     return "".join(
         [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]
     )

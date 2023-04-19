@@ -31,6 +31,7 @@ nav:
     - Guides:
         - Async Support: 'async.md'
         - HTTP/2 Support: 'http2.md'
+        - Logging: 'logging.md'
         - Requests Compatibility: 'compatibility.md'
         - Troubleshooting: 'troubleshooting.md'
     - API Reference:

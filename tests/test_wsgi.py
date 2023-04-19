@@ -161,7 +161,7 @@ def test_wsgi_server_port(url: str, expected_server_port: str) -> None:
     SERVER_PORT is populated correctly from the requested URL.
     """
     hello_world_app = application_factory([b"Hello, World!"])
-    server_port: str
+    server_port: typing.Optional[str] = None
 
     def app(environ, start_response):
         nonlocal server_port
