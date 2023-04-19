@@ -128,19 +128,20 @@ def test_urlparse_leading_dot_prefix_on_relative_url():
 
 # Tests for optional percent encoding
 
+
 def test_param_requires_encoding():
-    url = httpx.URL('http://webservice', params={"u": "with spaces"})
-    assert str(url) == 'http://webservice?u=with%20spaces'
+    url = httpx.URL("http://webservice", params={"u": "with spaces"})
+    assert str(url) == "http://webservice?u=with%20spaces"
 
 
 def test_param_does_not_require_encoding():
-    url = httpx.URL('http://webservice', params={"u": "with%20spaces"})
-    assert str(url) == 'http://webservice?u=with%20spaces'
+    url = httpx.URL("http://webservice", params={"u": "with%20spaces"})
+    assert str(url) == "http://webservice?u=with%20spaces"
 
 
 def test_param_with_existing_escape_requires_encoding():
-    url = httpx.URL('http://webservice', params={"u": "http://example.com?q=foo%2Fa"})
-    assert str(url) == 'http://webservice?u=http%3A//example.com%3Fq%3Dfoo%252Fa'
+    url = httpx.URL("http://webservice", params={"u": "http://example.com?q=foo%2Fa"})
+    assert str(url) == "http://webservice?u=http%3A//example.com%3Fq%3Dfoo%252Fa"
 
 
 # Tests for invalid URLs
