@@ -1,12 +1,11 @@
 import typing
 import zlib
 
+import brotli
 import chardet
 import pytest
 
 import httpx
-from httpx._compat import brotli
-from httpx._decoders import ByteChunker, LineDecoder, TextChunker, TextDecoder
 
 
 def test_deflate():
@@ -214,125 +213,55 @@ async def test_text_decoder_known_encoding():
 
 
 def test_text_decoder_empty_cases():
-    decoder = TextDecoder()
-    assert decoder.flush() == ""
+    response = httpx.Response(200, content=b"")
+    assert response.text == ""
 
-    decoder = TextDecoder()
-    assert decoder.decode(b"") == ""
-    assert decoder.flush() == ""
+    response = httpx.Response(200, content=[b""])
+    response.read()
+    assert response.text == ""
 
 
 def test_line_decoder_nl():
-    decoder = LineDecoder()
-    assert decoder.decode("") == []
-    assert decoder.decode("a\n\nb\nc") == ["a", "", "b"]
-    assert decoder.flush() == ["c"]
+    response = httpx.Response(200, content=[b""])
+    assert list(response.iter_lines()) == []
 
-    decoder = LineDecoder()
-    assert decoder.decode("") == []
-    assert decoder.decode("a\n\nb\nc\n") == ["a", "", "b", "c"]
-    assert decoder.flush() == []
+    response = httpx.Response(200, content=[b"", b"a\n\nb\nc"])
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
     # Issue #1033
-    decoder = LineDecoder()
-    assert decoder.decode("") == []
-    assert decoder.decode("12345\n") == ["12345"]
-    assert decoder.decode("foo ") == []
-    assert decoder.decode("bar ") == []
-    assert decoder.decode("baz\n") == ["foo bar baz"]
-    assert decoder.flush() == []
+    response = httpx.Response(
+        200, content=[b"", b"12345\n", b"foo ", b"bar ", b"baz\n"]
+    )
+    assert list(response.iter_lines()) == ["12345", "foo bar baz"]
 
 
 def test_line_decoder_cr():
-    decoder = LineDecoder()
-    assert decoder.decode("") == []
-    assert decoder.decode("a\r\rb\rc") == ["a", "", "b"]
-    assert decoder.flush() == ["c"]
+    response = httpx.Response(200, content=[b"", b"a\r\rb\rc"])
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
-    decoder = LineDecoder()
-    assert decoder.decode("") == []
-    assert decoder.decode("a\r\rb\rc\r") == ["a", "", "b"]
-    assert decoder.flush() == ["c"]
+    response = httpx.Response(200, content=[b"", b"a\r\rb\rc\r"])
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
     # Issue #1033
-    decoder = LineDecoder()
-    assert decoder.decode("") == []
-    assert decoder.decode("12345\r") == []
-    assert decoder.decode("foo ") == ["12345"]
-    assert decoder.decode("bar ") == []
-    assert decoder.decode("baz\r") == []
-    assert decoder.flush() == ["foo bar baz"]
+    response = httpx.Response(
+        200, content=[b"", b"12345\r", b"foo ", b"bar ", b"baz\r"]
+    )
+    assert list(response.iter_lines()) == ["12345", "foo bar baz"]
 
 
 def test_line_decoder_crnl():
-    decoder = LineDecoder()
-    assert decoder.decode("") == []
-    assert decoder.decode("a\r\n\r\nb\r\nc") == ["a", "", "b"]
-    assert decoder.flush() == ["c"]
+    response = httpx.Response(200, content=[b"", b"a\r\n\r\nb\r\nc"])
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
-    decoder = LineDecoder()
-    assert decoder.decode("") == []
-    assert decoder.decode("a\r\n\r\nb\r\nc\r\n") == ["a", "", "b", "c"]
-    assert decoder.flush() == []
+    response = httpx.Response(200, content=[b"", b"a\r\n\r\nb\r\nc\r\n"])
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
-    decoder = LineDecoder()
-    assert decoder.decode("") == []
-    assert decoder.decode("a\r") == []
-    assert decoder.decode("\n\r\nb\r\nc") == ["a", "", "b"]
-    assert decoder.flush() == ["c"]
+    response = httpx.Response(200, content=[b"", b"a\r", b"\n\r\nb\r\nc"])
+    assert list(response.iter_lines()) == ["a", "", "b", "c"]
 
     # Issue #1033
-    decoder = LineDecoder()
-    assert decoder.decode("") == []
-    assert decoder.decode("12345\r\n") == ["12345"]
-    assert decoder.decode("foo ") == []
-    assert decoder.decode("bar ") == []
-    assert decoder.decode("baz\r\n") == ["foo bar baz"]
-    assert decoder.flush() == []
-
-
-def test_byte_chunker():
-    decoder = ByteChunker()
-    assert decoder.decode(b"1234567") == [b"1234567"]
-    assert decoder.decode(b"89") == [b"89"]
-    assert decoder.flush() == []
-
-    decoder = ByteChunker(chunk_size=3)
-    assert decoder.decode(b"1234567") == [b"123", b"456"]
-    assert decoder.decode(b"89") == [b"789"]
-    assert decoder.flush() == []
-
-    decoder = ByteChunker(chunk_size=3)
-    assert decoder.decode(b"123456") == [b"123", b"456"]
-    assert decoder.decode(b"789") == [b"789"]
-    assert decoder.flush() == []
-
-    decoder = ByteChunker(chunk_size=3)
-    assert decoder.decode(b"123456") == [b"123", b"456"]
-    assert decoder.decode(b"78") == []
-    assert decoder.flush() == [b"78"]
-
-
-def test_text_chunker():
-    decoder = TextChunker()
-    assert decoder.decode("1234567") == ["1234567"]
-    assert decoder.decode("89") == ["89"]
-    assert decoder.flush() == []
-
-    decoder = TextChunker(chunk_size=3)
-    assert decoder.decode("1234567") == ["123", "456"]
-    assert decoder.decode("89") == ["789"]
-    assert decoder.flush() == []
-
-    decoder = TextChunker(chunk_size=3)
-    assert decoder.decode("123456") == ["123", "456"]
-    assert decoder.decode("789") == ["789"]
-    assert decoder.flush() == []
-
-    decoder = TextChunker(chunk_size=3)
-    assert decoder.decode("123456") == ["123", "456"]
-    assert decoder.decode("78") == []
-    assert decoder.flush() == ["78"]
+    response = httpx.Response(200, content=[b"", b"12345\r\n", b"foo bar baz\r\n"])
+    assert list(response.iter_lines()) == ["12345", "foo bar baz"]
 
 
 def test_invalid_content_encoding_header():
