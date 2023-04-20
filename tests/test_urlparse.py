@@ -53,7 +53,7 @@ def test_urlparse_valid_ipv4():
 def test_urlparse_invalid_ipv4():
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL("https://999.999.999.999/")
-    assert str(exc.value) == "Invalid IPv4 address"
+    assert str(exc.value) == "Invalid IPv4 address: '999.999.999.999'"
 
 
 def test_urlparse_valid_ipv6():
@@ -64,7 +64,7 @@ def test_urlparse_valid_ipv6():
 def test_urlparse_invalid_ipv6():
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL("https://[2001]/")
-    assert str(exc.value) == "Invalid IPv6 address"
+    assert str(exc.value) == "Invalid IPv6 address: '[2001]'"
 
 
 def test_urlparse_unescaped_idna_host():
@@ -80,7 +80,7 @@ def test_urlparse_escaped_idna_host():
 def test_urlparse_invalid_idna_host():
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL("https://☃.com/")
-    assert str(exc.value) == "Invalid IDNA hostname"
+    assert str(exc.value) == "Invalid IDNA hostname: '☃.com'"
 
 
 # Tests for different port types
@@ -100,7 +100,7 @@ def test_urlparse_normalized_port():
 def test_urlparse_invalid_port():
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL("https://example.com:abc/")
-    assert str(exc.value) == "Invalid port"
+    assert str(exc.value) == "Invalid port: 'abc'"
 
 
 # Tests for path handling
@@ -124,6 +124,24 @@ def test_urlparse_leading_dot_prefix_on_absolute_url():
 def test_urlparse_leading_dot_prefix_on_relative_url():
     url = httpx.URL("../abc")
     assert url.path == "../abc"
+
+
+# Tests for optional percent encoding
+
+
+def test_param_requires_encoding():
+    url = httpx.URL("http://webservice", params={"u": "with spaces"})
+    assert str(url) == "http://webservice?u=with%20spaces"
+
+
+def test_param_does_not_require_encoding():
+    url = httpx.URL("http://webservice", params={"u": "with%20spaces"})
+    assert str(url) == "http://webservice?u=with%20spaces"
+
+
+def test_param_with_existing_escape_requires_encoding():
+    url = httpx.URL("http://webservice", params={"u": "http://example.com?q=foo%2Fa"})
+    assert str(url) == "http://webservice?u=http%3A//example.com%3Fq%3Dfoo%252Fa"
 
 
 # Tests for invalid URLs

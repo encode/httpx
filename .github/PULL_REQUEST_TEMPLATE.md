@@ -1,4 +1,4 @@
-<!-- Thanks for contributing to Starlette! 💚
+<!-- Thanks for contributing to HTTPX! 💚
 Given this is a project maintained by volunteers, please read this template to not waste your time, or ours! 😁 -->
 
 # Summary
