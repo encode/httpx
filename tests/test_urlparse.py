@@ -53,7 +53,7 @@ def test_urlparse_valid_ipv4():
 def test_urlparse_invalid_ipv4():
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL("https://999.999.999.999/")
-    assert str(exc.value) == "Invalid IPv4 address"
+    assert str(exc.value) == "Invalid IPv4 address: '999.999.999.999'"
 
 
 def test_urlparse_valid_ipv6():
@@ -64,7 +64,7 @@ def test_urlparse_valid_ipv6():
 def test_urlparse_invalid_ipv6():
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL("https://[2001]/")
-    assert str(exc.value) == "Invalid IPv6 address"
+    assert str(exc.value) == "Invalid IPv6 address: '[2001]'"
 
 
 def test_urlparse_unescaped_idna_host():
@@ -80,7 +80,7 @@ def test_urlparse_escaped_idna_host():
 def test_urlparse_invalid_idna_host():
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL("https://☃.com/")
-    assert str(exc.value) == "Invalid IDNA hostname"
+    assert str(exc.value) == "Invalid IDNA hostname: '☃.com'"
 
 
 # Tests for different port types
@@ -100,7 +100,7 @@ def test_urlparse_normalized_port():
 def test_urlparse_invalid_port():
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL("https://example.com:abc/")
-    assert str(exc.value) == "Invalid port"
+    assert str(exc.value) == "Invalid port: 'abc'"
 
 
 # Tests for path handling
