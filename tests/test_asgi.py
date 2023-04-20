@@ -3,7 +3,7 @@ import json
 import pytest
 
 import httpx
-from httpx._transports.asgi import ASGITransport
+from httpx import ASGITransport
 
 
 async def hello_world(scope, receive, send):
