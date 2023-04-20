@@ -287,7 +287,7 @@ def encode_host(host: str) -> str:
         try:
             ipaddress.IPv4Address(host)
         except ipaddress.AddressValueError:
-            raise InvalidURL("Invalid IPv4 address")
+            raise InvalidURL(f"Invalid IPv4 address: {host!r}")
         return host
 
     elif IPv6_STYLE_HOSTNAME.match(host):
@@ -302,7 +302,7 @@ def encode_host(host: str) -> str:
         try:
             ipaddress.IPv6Address(host[1:-1])
         except ipaddress.AddressValueError:
-            raise InvalidURL("Invalid IPv6 address")
+            raise InvalidURL(f"Invalid IPv6 address: {host!r}")
         return host[1:-1]
 
     elif host.isascii():
@@ -317,7 +317,7 @@ def encode_host(host: str) -> str:
     try:
         return idna.encode(host.lower()).decode("ascii")
     except idna.IDNAError:
-        raise InvalidURL("Invalid IDNA hostname")
+        raise InvalidURL(f"Invalid IDNA hostname: {host!r}")
 
 
 def normalize_port(
@@ -338,7 +338,7 @@ def normalize_port(
     try:
         port_as_int = int(port)
     except ValueError:
-        raise InvalidURL("Invalid port")
+        raise InvalidURL(f"Invalid port: {port!r}")
 
     # See https://url.spec.whatwg.org/#url-miscellaneous
     default_port = {"ftp": 21, "http": 80, "https": 443, "ws": 80, "wss": 443}.get(
