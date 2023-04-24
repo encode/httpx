@@ -332,7 +332,7 @@ class Proxy:
         url = URL(url)
         headers = Headers(headers)
 
-        if url.scheme not in ("http", "https", "socks5"):
+        if url.scheme not in ("http", "https", "socks5", "socks5h"):
             raise ValueError(f"Unknown scheme for proxy URL {url!r}")
 
         if url.username or url.password:
