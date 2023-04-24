@@ -678,6 +678,10 @@ You can now configure a client to make requests via a proxy using the SOCKS prot
 httpx.Client(proxies='socks5://user:pass@host:port')
 ```
 
+```python
+httpx.Client(proxies='socks5h://user:pass@host:port')
+```
+
 ## Timeout Configuration
 
 HTTPX is careful to enforce timeouts everywhere by default.
