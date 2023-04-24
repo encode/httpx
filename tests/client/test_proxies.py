@@ -61,6 +61,20 @@ def test_socks_proxy():
     assert isinstance(async_transport._pool, httpcore.AsyncSOCKSProxy)
 
 
+def test_socks5h_proxy():
+    url = httpx.URL("http://www.example.com")
+
+    client = httpx.Client(proxies="socks5h://localhost/")
+    transport = client._transport_for_url(url)
+    assert isinstance(transport, httpx.HTTPTransport)
+    assert isinstance(transport._pool, httpcore.SOCKSProxy)
+
+    async_client = httpx.AsyncClient(proxies="socks5h://localhost/")
+    async_transport = async_client._transport_for_url(url)
+    assert isinstance(async_transport, httpx.AsyncHTTPTransport)
+    assert isinstance(async_transport._pool, httpcore.AsyncSOCKSProxy)
+
+
 PROXY_URL = "http://[::1]"
 
 
