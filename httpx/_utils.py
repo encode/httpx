@@ -472,6 +472,6 @@ def is_ipv4_hostname(hostname: str) -> bool:
 def is_ipv6_hostname(hostname: str) -> bool:
     try:
         ipaddress.IPv6Address(hostname.split("/")[0])
-    except Exception:
+    except ValueError:
         return False
     return True
