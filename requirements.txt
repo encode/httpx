@@ -29,4 +29,4 @@ ruff==0.0.260
 trio==0.22.0
 trio-typing==0.7.0
 trustme==0.9.0
-uvicorn==0.20.0
+uvicorn==0.22.0
