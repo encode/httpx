@@ -7,7 +7,7 @@
 # Optional charset auto-detection
 # Used in our test cases
 chardet==5.1.0
-types-chardet==5.0.4.2
+types-chardet==5.0.4.5
 
 # Documentation
 mkdocs==1.4.2
