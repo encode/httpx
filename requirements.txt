@@ -27,6 +27,6 @@ types-certifi==2021.10.8.2
 pytest==7.2.2
 ruff==0.0.260
 trio==0.22.0
-trio-typing==0.7.0
+trio-typing==0.8.0
 trustme==1.0.0
 uvicorn==0.22.0
