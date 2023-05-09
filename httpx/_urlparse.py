@@ -253,12 +253,19 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     if has_authority:
         path = normalize_path(path)
 
-    parsed_path: str = quote(path, safe=SUB_DELIMS + ":@/")
+    # The GEN_DELIMS set is... : / ? # [ ] @
+    # These do not need to be percent-quoted unless they serve as delimiters for the
+    # specific component.
+
+    # For 'path' we need to drop ? and # from the GEN_DELIMS set.
+    parsed_path: str = quote(path, safe=SUB_DELIMS + ":/[]@")
+    # For 'query' we need to drop '#' from the GEN_DELIMS set.
     parsed_query: typing.Optional[str] = (
-        None if query is None else quote(query, safe=SUB_DELIMS + "/?")
+        None if query is None else quote(query, safe=SUB_DELIMS + ":/?[]@")
     )
+    # For 'fragment' we can include all of the GEN_DELIMS set.
     parsed_fragment: typing.Optional[str] = (
-        None if fragment is None else quote(fragment, safe=SUB_DELIMS + "/?")
+        None if fragment is None else quote(fragment, safe=SUB_DELIMS + ":/?#[]@")
     )
 
     # The parsed ASCII bytestrings are our canonical form.

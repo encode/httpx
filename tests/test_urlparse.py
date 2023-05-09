@@ -247,3 +247,33 @@ def test_copy_with():
 
     url = url.copy_with(path="/abc")
     assert str(url) == "http://example.com/abc"
+
+
+# Tests for percent encoding across path, query, and fragement...
+
+
+def test_path_percent_encoding():
+    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
+    url = httpx.URL("https://example.com/!$&'()*+,;= abc ABC 123 :/[]@")
+    assert url.raw_path == b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@"
+    assert url.path == "/!$&'()*+,;= abc ABC 123 :/[]@"
+    assert url.query == b""
+    assert url.fragment == ""
+
+
+def test_query_percent_encoding():
+    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
+    url = httpx.URL("https://example.com/?!$&'()*+,;= abc ABC 123 :/[]@" + "?")
+    assert url.raw_path == b"/?!$&'()*+,;=%20abc%20ABC%20123%20:/[]@?"
+    assert url.path == "/"
+    assert url.query == b"!$&'()*+,;=%20abc%20ABC%20123%20:/[]@?"
+    assert url.fragment == ""
+
+
+def test_fragment_percent_encoding():
+    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
+    url = httpx.URL("https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@" + "?#")
+    assert url.raw_path == b"/"
+    assert url.path == "/"
+    assert url.query == b""
+    assert url.fragment == "!$&'()*+,;= abc ABC 123 :/[]@?#"
