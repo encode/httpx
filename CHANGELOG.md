@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.24.1 (16th May, 2023)
+
+### Fixed
+
+* Fix which gen-delims need to be escaped for path/query/fragment components in URL. (#2701)
+
 ## 0.24.0 (6th April, 2023)
 
 ### Changed
