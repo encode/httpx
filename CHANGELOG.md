@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+
+## [Unreleased]
+
+### Fixed
+
+* Return `500` error response instead of exceptions when `raise_app_exceptions=False` is set on `ASGITransport`. (#2669)
+
 ## 0.24.1 (17th May, 2023)
 
 ### Added
@@ -12,7 +19,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-* Return `500` error response instead of exceptions when `raise_app_exceptions=False` is set on `ASGITransport`. (#2669)
 * Fix optional percent-encoding behaviour. (#2671)
 * More robust checking for opening upload files in binary mode. (#2630)
 * Properly support IP addresses in `NO_PROXY` environment variable. (#2659)
