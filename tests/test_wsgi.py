@@ -173,3 +173,20 @@ def test_wsgi_server_port(url: str, expected_server_port: str) -> None:
     assert response.status_code == 200
     assert response.text == "Hello, World!"
     assert server_port == expected_server_port
+
+
+def test_wsgi_server_protocol():
+    server_protocol = None
+
+    def app(environ, start_response):
+        nonlocal server_protocol
+        server_protocol = environ["SERVER_PROTOCOL"]
+        start_response("200 OK", [("Content-Type", "text/plain")])
+        return [b"success"]
+
+    with httpx.Client(app=app, base_url="http://testserver") as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert response.text == "success"
+    assert server_protocol == "HTTP/1.1"
