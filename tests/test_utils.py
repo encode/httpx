@@ -1,6 +1,8 @@
+import logging
 import os
 import random
 
+import certifi
 import pytest
 
 import httpx
@@ -14,7 +16,6 @@ from httpx._utils import (
     parse_header_links,
     same_origin,
 )
-from tests.utils import override_log_level
 
 from .common import TESTS_DIR
 
@@ -78,42 +79,59 @@ def test_parse_header_links(value, expected):
     assert parse_header_links(value) == expected
 
 
-@pytest.mark.anyio
-async def test_logs_debug(server, capsys):
-    with override_log_level("debug"):
-        async with httpx.AsyncClient() as client:
-            response = await client.get(server.url)
-            assert response.status_code == 200
-    stderr = capsys.readouterr().err
-    assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
+def test_logging_request(server, caplog):
+    caplog.set_level(logging.INFO)
+    with httpx.Client() as client:
+        response = client.get(server.url)
+        assert response.status_code == 200
+
+    assert caplog.record_tuples == [
+        (
+            "httpx",
+            logging.INFO,
+            'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"',
+        )
+    ]
 
 
-@pytest.mark.anyio
-async def test_logs_trace(server, capsys):
-    with override_log_level("trace"):
-        async with httpx.AsyncClient() as client:
-            response = await client.get(server.url)
-            assert response.status_code == 200
-    stderr = capsys.readouterr().err
-    assert 'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"' in stderr
+def test_logging_redirect_chain(server, caplog):
+    caplog.set_level(logging.INFO)
+    with httpx.Client(follow_redirects=True) as client:
+        response = client.get(server.url.copy_with(path="/redirect_301"))
+        assert response.status_code == 200
+
+    assert caplog.record_tuples == [
+        (
+            "httpx",
+            logging.INFO,
+            'HTTP Request: GET http://127.0.0.1:8000/redirect_301 "HTTP/1.1 301 Moved Permanently"',
+        ),
+        (
+            "httpx",
+            logging.INFO,
+            'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"',
+        ),
+    ]
 
 
-@pytest.mark.anyio
-async def test_logs_redirect_chain(server, capsys):
-    with override_log_level("debug"):
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            response = await client.get(server.url.copy_with(path="/redirect_301"))
-            assert response.status_code == 200
+def test_logging_ssl(caplog):
+    caplog.set_level(logging.DEBUG)
+    with httpx.Client():
+        pass
 
-    stderr = capsys.readouterr().err.strip()
-    redirected_request_line, ok_request_line = stderr.split("\n")
-    assert redirected_request_line.endswith(
-        "HTTP Request: GET http://127.0.0.1:8000/redirect_301 "
-        '"HTTP/1.1 301 Moved Permanently"'
-    )
-    assert ok_request_line.endswith(
-        'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"'
-    )
+    cafile = certifi.where()
+    assert caplog.record_tuples == [
+        (
+            "httpx",
+            logging.DEBUG,
+            "load_ssl_context verify=True cert=None trust_env=True http2=False",
+        ),
+        (
+            "httpx",
+            logging.DEBUG,
+            f"load_verify_locations cafile='{cafile}'",
+        ),
+    ]
 
 
 def test_get_ssl_cert_file():
@@ -167,6 +185,12 @@ def test_get_ssl_cert_file():
         ),
         ({"all_proxy": "http://127.0.0.1"}, {"all://": "http://127.0.0.1"}),
         ({"TRAVIS_APT_PROXY": "http://127.0.0.1"}, {}),
+        ({"no_proxy": "127.0.0.1"}, {"all://127.0.0.1": None}),
+        ({"no_proxy": "192.168.0.0/16"}, {"all://192.168.0.0/16": None}),
+        ({"no_proxy": "::1"}, {"all://[::1]": None}),
+        ({"no_proxy": "localhost"}, {"all://localhost": None}),
+        ({"no_proxy": "github.com"}, {"all://*github.com": None}),
+        ({"no_proxy": ".github.com"}, {"all://*.github.com": None}),
     ],
 )
 def test_get_environment_proxies(environment, proxies):

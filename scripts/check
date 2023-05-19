@@ -10,6 +10,5 @@ set -x
 
 ./scripts/sync-version
 ${PREFIX}black --check --diff --target-version=py37 $SOURCE_FILES
-${PREFIX}flake8 $SOURCE_FILES
 ${PREFIX}mypy $SOURCE_FILES
-${PREFIX}isort --check --diff --project=httpx $SOURCE_FILES
+${PREFIX}ruff check $SOURCE_FILES

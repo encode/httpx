@@ -102,6 +102,7 @@ class WSGITransport(BaseTransport):
             "QUERY_STRING": request.url.query.decode("ascii"),
             "SERVER_NAME": request.url.host,
             "SERVER_PORT": str(port),
+            "SERVER_PROTOCOL": "HTTP/1.1",
             "REMOTE_ADDR": self.remote_addr,
         }
         for header_key, header_value in request.headers.raw:

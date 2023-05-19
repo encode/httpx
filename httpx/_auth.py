@@ -147,7 +147,7 @@ class NetRCAuth(Auth):
     Use a 'netrc' file to lookup basic auth credentials based on the url host.
     """
 
-    def __init__(self, file: typing.Optional[str]):
+    def __init__(self, file: typing.Optional[str] = None):
         self._netrc_info = netrc.netrc(file)
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:

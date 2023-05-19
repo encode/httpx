@@ -1,9 +1,12 @@
-The starting point for contributions should usually be [a discussion](https://github.com/encode/httpx/discussions)
+<!-- Thanks for contributing to HTTPX! 💚
+Given this is a project maintained by volunteers, please read this template to not waste your time, or ours! 😁 -->
 
-Simple documentation typos may be raised as stand-alone pull requests, but otherwise
-please ensure you've discussed your proposal prior to issuing a pull request.
+# Summary
 
-This will help us direct work appropriately, and ensure that any suggested changes
-have been okayed by the maintainers.
+<!-- Write a small summary about what is happening here. -->
 
-- [ ] Initially raised as discussion #...
+# Checklist
+
+- [ ] I understand that this PR may be closed in case there was no previous discussion. (This doesn't apply to typos!)
+- [ ] I've added a test for each change that was introduced, and I tried as much as possible to make a single atomic change.
+- [ ] I've updated the documentation accordingly.
