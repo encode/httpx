@@ -4,12 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-
-## [Unreleased]
+## Unreleased
 
 ### Fixed
 
 * Return `500` error response instead of exceptions when `raise_app_exceptions=False` is set on `ASGITransport`. (#2669)
+* Ensure all WSGITransport environs have a SERVER_PROTOCOL. (#2708)
 
 ## 0.24.1 (17th May, 2023)
 
