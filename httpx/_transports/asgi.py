@@ -161,8 +161,14 @@ class ASGITransport(AsyncBaseTransport):
         try:
             await self.app(scope, receive, send)
         except Exception:  # noqa: PIE-786
-            if self.raise_app_exceptions or not response_complete.is_set():
+            if self.raise_app_exceptions:
                 raise
+
+            response_complete.set()
+            if status_code is None:
+                status_code = 500
+            if response_headers is None:
+                response_headers = {}
 
         assert response_complete.is_set()
         assert status_code is not None
