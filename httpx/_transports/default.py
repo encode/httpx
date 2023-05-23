@@ -28,6 +28,7 @@ import typing
 from types import TracebackType
 
 import httpcore
+from httpcore.backends.base import SOCKET_OPTION
 
 from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._exceptions import (
@@ -122,6 +123,7 @@ class HTTPTransport(BaseTransport):
         uds: typing.Optional[str] = None,
         local_address: typing.Optional[str] = None,
         retries: int = 0,
+        socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
@@ -136,6 +138,7 @@ class HTTPTransport(BaseTransport):
                 uds=uds,
                 local_address=local_address,
                 retries=retries,
+                socket_options=socket_options,
             )
         elif proxy.url.scheme in ("http", "https"):
             self._pool = httpcore.HTTPProxy(
@@ -153,6 +156,7 @@ class HTTPTransport(BaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                socket_options=socket_options,
             )
         elif proxy.url.scheme == "socks5":
             try:
@@ -257,6 +261,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         uds: typing.Optional[str] = None,
         local_address: typing.Optional[str] = None,
         retries: int = 0,
+        socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
@@ -271,6 +276,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 uds=uds,
                 local_address=local_address,
                 retries=retries,
+                socket_options=socket_options,
             )
         elif proxy.url.scheme in ("http", "https"):
             self._pool = httpcore.AsyncHTTPProxy(
@@ -288,6 +294,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                socket_options=socket_options,
             )
         elif proxy.url.scheme == "socks5":
             try:
