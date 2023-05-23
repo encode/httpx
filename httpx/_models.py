@@ -1005,6 +1005,18 @@ class Response:
             with request_context(request=self._request):
                 await self.stream.aclose()
 
+    def __entter__(self) -> "Response":
+        return self
+
+    def __exit__(self) -> None:
+        self.close()
+
+    async def __aenter__(self) -> "Response":
+        await self
+
+    async def __aexit__(self) -> None:
+        await self.aclose()
+
 
 class Cookies(typing.MutableMapping[str, str]):
     """

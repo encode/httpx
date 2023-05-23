@@ -77,6 +77,14 @@ async def test_stream_response(server):
 
 
 @pytest.mark.anyio
+async def test_context_manager(server):
+    url = server.url
+    async with httpx.AsyncClient() as client:
+        async with client.post(url, json={"text": "Hello, world!"}) as response:
+            assert response.status_code == 200
+
+
+@pytest.mark.anyio
 async def test_access_content_stream_response(server):
     async with httpx.AsyncClient() as client:
         async with client.stream("GET", server.url) as response:

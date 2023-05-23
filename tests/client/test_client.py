@@ -187,6 +187,14 @@ def test_base_url(server):
     assert response.url == base_url
 
 
+def test_context_manager(server):
+    base_url = server.url
+    with httpx.Client(base_url=base_url) as client:
+        with client.get("/") as response:
+            assert response.status_code == 200
+            assert response.url == base_url
+
+
 def test_merge_absolute_url():
     client = httpx.Client(base_url="https://www.example.com/")
     request = client.build_request("GET", "http://www.example.com/")
