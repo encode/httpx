@@ -7,12 +7,12 @@
 # Optional charset auto-detection
 # Used in our test cases
 chardet==5.1.0
-types-chardet==5.0.4.2
+types-chardet==5.0.4.5
 
 # Documentation
 mkdocs==1.4.2
 mkautodoc==0.2.0
-mkdocs-material==9.0.15
+mkdocs-material==9.1.5
 
 # Packaging
 build==0.10.0
@@ -20,13 +20,13 @@ twine==4.0.2
 
 # Tests & Linting
 black==23.3.0
-coverage==7.2.2
-cryptography==39.0.1
+coverage[toml]==7.2.2
+cryptography==40.0.2
 mypy==1.0.1
 types-certifi==2021.10.8.2
 pytest==7.2.2
 ruff==0.0.260
 trio==0.22.0
-trio-typing==0.7.0
-trustme==0.9.0
-uvicorn==0.20.0
+trio-typing==0.8.0
+trustme==1.0.0
+uvicorn==0.22.0

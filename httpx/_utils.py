@@ -1,5 +1,6 @@
 import codecs
 import email.message
+import ipaddress
 import mimetypes
 import os
 import re
@@ -259,7 +260,16 @@ def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
             # NO_PROXY=google.com is marked as "all://*google.com,
             #   which disables "www.google.com" and "google.com".
             #   (But not "wwwgoogle.com")
-            mounts[f"all://*{hostname}"] = None
+            # NO_PROXY can include domains, IPv6, IPv4 addresses and "localhost"
+            #   NO_PROXY=example.com,::1,localhost,192.168.0.0/16
+            if is_ipv4_hostname(hostname):
+                mounts[f"all://{hostname}"] = None
+            elif is_ipv6_hostname(hostname):
+                mounts[f"all://[{hostname}]"] = None
+            elif hostname.lower() == "localhost":
+                mounts[f"all://{hostname}"] = None
+            else:
+                mounts[f"all://*{hostname}"] = None
 
     return mounts
 
@@ -449,3 +459,19 @@ class URLPattern:
 
     def __eq__(self, other: typing.Any) -> bool:
         return isinstance(other, URLPattern) and self.pattern == other.pattern
+
+
+def is_ipv4_hostname(hostname: str) -> bool:
+    try:
+        ipaddress.IPv4Address(hostname.split("/")[0])
+    except Exception:
+        return False
+    return True
+
+
+def is_ipv6_hostname(hostname: str) -> bool:
+    try:
+        ipaddress.IPv6Address(hostname.split("/")[0])
+    except Exception:
+        return False
+    return True
