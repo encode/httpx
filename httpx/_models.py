@@ -441,7 +441,9 @@ class Request:
         self.extensions = {}
         self.stream = UnattachedStream()
 
+
 U = typing.TypeVar("U", bound="Response")
+
 
 class Response:
     def __init__(
