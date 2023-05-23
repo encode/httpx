@@ -441,6 +441,7 @@ class Request:
         self.extensions = {}
         self.stream = UnattachedStream()
 
+U = typing.TypeVar("U", bound="Response")
 
 class Response:
     def __init__(
@@ -1005,16 +1006,16 @@ class Response:
             with request_context(request=self._request):
                 await self.stream.aclose()
 
-    def __entter__(self) -> "Response":
+    def __entter__(self: U) -> U:
         return self
 
-    def __exit__(self) -> None:
+    def __exit__(self, *args) -> None:
         self.close()
 
-    async def __aenter__(self) -> "Response":
+    async def __aenter__(self: U) -> U:
         await self
 
-    async def __aexit__(self) -> None:
+    async def __aexit__(self, *args) -> None:
         await self.aclose()
 
 
