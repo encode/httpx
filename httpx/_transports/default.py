@@ -28,7 +28,6 @@ import typing
 from types import TracebackType
 
 import httpcore
-from httpcore.backends.base import SOCKET_OPTION
 
 from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._exceptions import (
@@ -53,6 +52,12 @@ from .base import AsyncBaseTransport, BaseTransport
 
 T = typing.TypeVar("T", bound="HTTPTransport")
 A = typing.TypeVar("A", bound="AsyncHTTPTransport")
+
+SOCKET_OPTION = typing.Union[
+    typing.Tuple[int, int, int],
+    typing.Tuple[int, int, typing.Union[bytes, bytearray]],
+    typing.Tuple[int, int, None, int],
+]
 
 
 @contextlib.contextmanager
