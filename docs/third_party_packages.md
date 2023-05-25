@@ -54,6 +54,12 @@ A utility for record and repeat an http request.
 
 This package adds caching functionality to HTTPX
 
+### httpx-sse
+
+[GitHub](https://github.com/florimondmanca/httpx-sse)
+
+Allows consuming Server-Sent Events (SSE) with HTTPX.
+
 ### robox
 
 [Github](https://github.com/danclaudiupop/robox)

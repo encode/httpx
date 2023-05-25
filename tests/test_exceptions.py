@@ -53,7 +53,7 @@ def test_request_attribute() -> None:
     # Exception without request attribute
     exc = httpx.ReadTimeout("Read operation timed out")
     with pytest.raises(RuntimeError):
-        exc.request
+        exc.request  # noqa: B018
 
     # Exception with request attribute
     request = httpx.Request("GET", "https://www.example.com")

@@ -8,6 +8,5 @@ export SOURCE_FILES="httpx tests"
 
 set -x
 
-${PREFIX}autoflake --in-place --recursive $SOURCE_FILES
-${PREFIX}isort --project=httpx $SOURCE_FILES
+${PREFIX}ruff --fix $SOURCE_FILES
 ${PREFIX}black --target-version=py37 $SOURCE_FILES

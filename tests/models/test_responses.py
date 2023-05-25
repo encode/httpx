@@ -380,17 +380,18 @@ def test_iter_raw():
 
 def test_iter_raw_with_chunksize():
     response = httpx.Response(200, content=streaming_body())
-
     parts = [part for part in response.iter_raw(chunk_size=5)]
     assert parts == [b"Hello", b", wor", b"ld!"]
 
     response = httpx.Response(200, content=streaming_body())
+    parts = [part for part in response.iter_raw(chunk_size=7)]
+    assert parts == [b"Hello, ", b"world!"]
 
+    response = httpx.Response(200, content=streaming_body())
     parts = [part for part in response.iter_raw(chunk_size=13)]
     assert parts == [b"Hello, world!"]
 
     response = httpx.Response(200, content=streaming_body())
-
     parts = [part for part in response.iter_raw(chunk_size=20)]
     assert parts == [b"Hello, world!"]
 
@@ -596,6 +597,14 @@ def test_iter_text_with_chunk_size():
     parts = [part for part in response.iter_text(chunk_size=5)]
     assert parts == ["Hello", ", wor", "ld!"]
 
+    response = httpx.Response(200, content=b"Hello, world!!")
+    parts = [part for part in response.iter_text(chunk_size=7)]
+    assert parts == ["Hello, ", "world!!"]
+
+    response = httpx.Response(200, content=b"Hello, world!")
+    parts = [part for part in response.iter_text(chunk_size=7)]
+    assert parts == ["Hello, ", "world!"]
+
     response = httpx.Response(200, content=b"Hello, world!")
     parts = [part for part in response.iter_text(chunk_size=13)]
     assert parts == ["Hello, world!"]
@@ -748,7 +757,7 @@ async def test_elapsed_not_available_until_closed():
     )
 
     with pytest.raises(RuntimeError):
-        response.elapsed
+        response.elapsed  # noqa: B018
 
 
 def test_unknown_status_code():
@@ -909,7 +918,7 @@ def test_cannot_access_unset_request():
     response = httpx.Response(200, content=b"Hello, world!")
 
     with pytest.raises(RuntimeError):
-        response.request
+        response.request  # noqa: B018
 
 
 def test_generator_with_transfer_encoding_header():
@@ -952,7 +961,7 @@ async def test_response_async_streaming_picklable():
     response = httpx.Response(200, content=async_streaming_body())
     pickle_response = pickle.loads(pickle.dumps(response))
     with pytest.raises(httpx.ResponseNotRead):
-        pickle_response.content
+        pickle_response.content  # noqa: B018
     with pytest.raises(httpx.StreamClosed):
         await pickle_response.aread()
     assert pickle_response.is_stream_consumed is False

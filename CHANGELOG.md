@@ -4,6 +4,45 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## Unreleased
+
+### Added
+
+* Add `socket_options` argument to `httpx.HTTPTransport` and `httpx.AsyncHTTPTransport` classes. (#2716)
+
+### Fixed
+
+* Return `500` error response instead of exceptions when `raise_app_exceptions=False` is set on `ASGITransport`. (#2669)
+* Ensure all WSGITransport environs have a SERVER_PROTOCOL. (#2708)
+
+## 0.24.1 (17th May, 2023)
+
+### Added
+
+* Provide additional context in some `InvalidURL` exceptions. (#2675)
+
+### Fixed
+
+* Fix optional percent-encoding behaviour. (#2671)
+* More robust checking for opening upload files in binary mode. (#2630)
+* Properly support IP addresses in `NO_PROXY` environment variable. (#2659)
+* Set default file for `NetRCAuth()` to `None` to use the stdlib default. (#2667)
+* Set logging request lines to INFO level for async requests, in line with sync requests. (#2656)
+* Fix which gen-delims need to be escaped for path/query/fragment components in URL. (#2701)
+
+## 0.24.0 (6th April, 2023)
+
+### Changed
+
+* The logging behaviour has been changed to be more in-line with other standard Python logging usages. We no longer have a custom `TRACE` log level, and we no longer use the `HTTPX_LOG_LEVEL` environment variable to auto-configure logging. We now have a significant amount of `DEBUG` logging available at the network level. Full documentation is available at https://www.python-httpx.org/logging/ (#2547, encode/httpcore#648)
+* The `Response.iter_lines()` method now matches the stdlib behaviour and does not include the newline characters. It also resolves a performance issue. (#2423)
+* Query parameter encoding switches from using + for spaces and %2F for forward slash, to instead using %20 for spaces and treating forward slash as a safe, unescaped character. This differs from `requests`, but is in line with browser behavior in Chrome, Safari, and Firefox. Both options are RFC valid. (#2543)
+* NetRC authentication is no longer automatically handled, but is instead supported by an explicit `httpx.NetRCAuth()` authentication class. See the documentation at https://www.python-httpx.org/advanced/#netrc-support (#2525)
+
+### Removed
+
+* The `rfc3986` dependancy has been removed. (#2252)
+
 ## 0.23.3 (4th Jan, 2023)
 
 ### Fixed

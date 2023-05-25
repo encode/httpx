@@ -29,7 +29,7 @@ classifiers = [
 ]
 dependencies = [
     "certifi",
-    "httpcore>=0.15.0,<0.17.0",
+    "httpcore>=0.17.2,<0.18.0",
     "idna",
     "sniffio",
 ]
@@ -90,3 +90,38 @@ text = "\n---\n\n[Full changelog](https://github.com/encode/httpx/blob/master/CH
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
 pattern = 'src="(docs/img/.*?)"'
 replacement = 'src="https://raw.githubusercontent.com/encode/httpx/master/\1"'
+
+# https://beta.ruff.rs/docs/configuration/#using-rufftoml
+[tool.ruff]
+select = ["E", "F", "I", "B", "PIE"]
+ignore = ["B904", "B028"]
+line-length = 120
+
+[tool.ruff.isort]
+combine-as-imports = true
+
+[tool.mypy]
+ignore_missing_imports = true
+strict = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+addopts = "-rxXs"
+filterwarnings = [
+  "error",
+  "ignore: You seem to already have a custom sys.excepthook handler installed. I'll skip installing Trio's custom handler, but this means MultiErrors will not show full tracebacks.:RuntimeWarning",
+  # See: https://github.com/agronholm/anyio/issues/508
+  "ignore: trio.MultiError is deprecated since Trio 0.22.0:trio.TrioDeprecationWarning"
+]
+markers = [
+  "copied_from(source, changes=None): mark test as copied from somewhere else, along with a description of changes made to accodomate e.g. our test setup",
+  "network: marks tests which require network connection. Used in 3rd-party build environments that have network disabled."
+]
+
+[tool.coverage.run]
+omit = ["venv/*", "httpx/_compat.py"]
+include = ["httpx/*", "tests/*"]
