@@ -458,10 +458,6 @@ httpx.post(url, content=gen(file_to_upload))
 
 ![tqdm progress bar](img/tqdm-progress.gif)
 
-
-![rich progress bar](img/rich-progress.gif)
-
-
 ## .netrc Support
 
 HTTPX can be configured to use [a `.netrc` config file](https://everything.curl.dev/usingcurl/netrc) for authentication.
