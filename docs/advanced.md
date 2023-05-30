@@ -431,7 +431,7 @@ with tempfile.NamedTemporaryFile() as download_file:
 
 If you need to monitor upload progress of large responses, you can use request content generator streaming.
 
-For example, showing a progress bar using the [`tqdm`](https://github.com/tqdm/tqdm) library while a response is being downloaded could be done like this…
+For example, showing a progress bar using the [`tqdm`](https://github.com/tqdm/tqdm) library.
 
 ```python
 from pathlib import Path
