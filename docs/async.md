@@ -52,7 +52,9 @@ Use `async with httpx.AsyncClient()` if you want a context-managed client...
 async with httpx.AsyncClient() as client:
     ...
 ```
-Note that there is some overhead to instantiating and terminating the client object, so it's recommended to avoid building the client using `async with` repeatedly inside a "hot loop". This can be achieved either by having a single scoped client that's passed throughout wherever it's needed, or by having a single global client instance.
+
+!!! warning
+Note that there is some overhead to instantiating and terminating the client object, so it's recommended to avoid building the client using `async with` repeatedly inside a "hot loop". This can be achieved by having a single global client instance which will provide automatic connection pooling.
 
 Alternatively, use `await client.aclose()` if you want to close a client explicitly:
 
