@@ -261,10 +261,9 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     parsed_path: str = quote(path, safe=SUB_DELIMS + ":/[]@")
     # For 'query' we need to drop '#' from the GEN_DELIMS set.
     # We also exclude '/' because it is more robust to replace it with a percent
-    # encoding despite it not being a requirement of the spec and include '%' to
-    # prevent duplicate encoding of previously quoted items.
+    # encoding despite it not being a requirement of the spec.
     parsed_query: typing.Optional[str] = (
-        None if query is None else quote(query, safe=SUB_DELIMS + ":?[]@%")
+        None if query is None else quote(query, safe=SUB_DELIMS + ":?[]@")
     )
     # For 'fragment' we can include all of the GEN_DELIMS set.
     parsed_fragment: typing.Optional[str] = (
