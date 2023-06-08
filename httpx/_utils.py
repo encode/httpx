@@ -357,12 +357,12 @@ class URLPattern:
     A utility class currently used for making lookups against proxy keys...
 
     # Wildcard matching...
-    >>> pattern = URLPattern("all")
+    >>> pattern = URLPattern("all://")
     >>> pattern.matches(httpx.URL("http://example.com"))
     True
 
     # Witch scheme matching...
-    >>> pattern = URLPattern("https")
+    >>> pattern = URLPattern("https://")
     >>> pattern.matches(httpx.URL("https://example.com"))
     True
     >>> pattern.matches(httpx.URL("http://example.com"))
