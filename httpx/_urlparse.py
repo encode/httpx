@@ -454,11 +454,11 @@ def urlencode(items: typing.List[typing.Tuple[str, str]]) -> str:
     #
     # https://github.com/python/cpython/blob/b2f7b2ef0b5421e01efb8c7bee2ef95d3bab77eb/Lib/urllib/parse.py#L926
     #
-    # Note that we use '%20' encoding for spaces, and treat '/' as a safe
-    # character. This means our query params have the same escaping as other
-    # characters in the URL path. This is slightly different to `requests`,
-    # but is the behaviour that browsers use.
+    # Note that we use '%20' encoding for spaces. and '%2F  for '/'.
+    # This is slightly different than `requests`, but is the behaviour that browsers use.
     #
-    # See https://github.com/encode/httpx/issues/2536 and
-    # https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
-    return "&".join([quote(k) + "=" + quote(v) for k, v in items])
+    # See
+    # - https://github.com/encode/httpx/issues/2536
+    # - https://github.com/encode/httpx/issues/2721
+    # - https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
+    return "&".join([quote(k, safe="") + "=" + quote(v, safe="") for k, v in items])
