@@ -141,7 +141,7 @@ def test_param_does_not_require_encoding():
 
 def test_param_with_existing_escape_requires_encoding():
     url = httpx.URL("http://webservice", params={"u": "http://example.com?q=foo%2Fa"})
-    assert str(url) == "http://webservice?u=http%3A//example.com%3Fq%3Dfoo%252Fa"
+    assert str(url) == "http://webservice?u=http%3A%2F%2Fexample.com%3Fq%3Dfoo%252Fa"
 
 
 # Tests for invalid URLs
@@ -264,9 +264,9 @@ def test_path_percent_encoding():
 def test_query_percent_encoding():
     # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
     url = httpx.URL("https://example.com/?!$&'()*+,;= abc ABC 123 :/[]@" + "?")
-    assert url.raw_path == b"/?!$&'()*+,;=%20abc%20ABC%20123%20:/[]@?"
+    assert url.raw_path == b"/?!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?"
     assert url.path == "/"
-    assert url.query == b"!$&'()*+,;=%20abc%20ABC%20123%20:/[]@?"
+    assert url.query == b"!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?"
     assert url.fragment == ""
 
 
