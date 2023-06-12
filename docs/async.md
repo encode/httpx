@@ -54,7 +54,7 @@ async with httpx.AsyncClient() as client:
 ```
 
 !!! warning
-Note that there is some overhead to instantiating and terminating the client object, so it's recommended to avoid building the client using `async with` repeatedly inside a "hot loop". This can be achieved by having a single global client instance which will provide automatic connection pooling.
+In order to get the most benefit from connection pooling, make sure you're not instantiating multiple client instances. This can be achieved either by having a single scoped client that's passed throughout wherever it's needed, or by having a single global client instance.
 
 Alternatively, use `await client.aclose()` if you want to close a client explicitly:
 
