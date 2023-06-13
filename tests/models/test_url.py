@@ -360,10 +360,10 @@ def test_url_query_encoding():
     and https://github.com/encode/httpx/discussions/2460
     """
     url = httpx.URL("https://www.example.com/?a=b c&d=e/f")
-    assert url.raw_path == b"/?a=b%20c&d=e/f"
+    assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
 
     url = httpx.URL("https://www.example.com/", params={"a": "b c", "d": "e/f"})
-    assert url.raw_path == b"/?a=b%20c&d=e/f"
+    assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
 
 
 def test_url_with_url_encoded_path():
