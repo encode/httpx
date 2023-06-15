@@ -1,6 +1,5 @@
 import os
 import ssl
-import sys
 from pathlib import Path
 
 import certifi
