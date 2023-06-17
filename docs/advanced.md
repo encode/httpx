@@ -441,7 +441,7 @@ from tqdm import tqdm
 
 
 def gen(p: Path):
-    with tqdm.tqdm(ascii=True, unit_scale=True, unit='B', unit_divisor=1024,
+    with tqdm(ascii=True, unit_scale=True, unit='B', unit_divisor=1024,
                    total=p.stat().st_size) as bar:
         with p.open("rb") as f:
             while data := f.read(4096):
