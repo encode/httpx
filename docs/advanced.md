@@ -434,26 +434,27 @@ If you need to monitor upload progress of large responses, you can use request c
 For example, showing a progress bar using the [`tqdm`](https://github.com/tqdm/tqdm) library.
 
 ```python
-from pathlib import Path
+import io
+import random
 
 import httpx
 from tqdm import tqdm
 
 
-def gen(p: Path):
-    with tqdm(ascii=True, unit_scale=True, unit='B', unit_divisor=1024,
-                   total=p.stat().st_size) as bar:
-        with p.open("rb") as f:
-            while data := f.read(4096):
+def gen():
+    """
+    this is a complete example with generated random bytes.
+    you can replace `io.BytesIO` with real file object.
+    """
+    total = 32 * 1024 * 1024  # 32m
+    with tqdm(ascii=True, unit_scale=True, unit='B', unit_divisor=1024, total=total) as bar:
+        with io.BytesIO(random.randbytes(total)) as f:
+            while data := f.read(1024):
                 yield data
                 bar.update(len(data))
 
 
-file_to_upload = Path('...')
-
-url = "..."
-
-httpx.post(url, content=gen(file_to_upload))
+httpx.post("https://httpbin.org/post", content=gen())
 ```
 
 ![tqdm progress bar](img/tqdm-progress.gif)
