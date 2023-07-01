@@ -367,7 +367,7 @@ If you're using streaming responses in any of these ways then the `response.cont
 
 ```pycon
 >>> with httpx.stream("GET", "https://www.example.com") as r:
-...     if r.headers['Content-Length'] < TOO_LONG:
+...     if int(r.headers['Content-Length']) < TOO_LONG:
 ...         r.read()
 ...         print(r.text)
 ```
