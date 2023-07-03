@@ -12,7 +12,7 @@ types-chardet==5.0.4.5
 # Documentation
 mkdocs==1.4.3
 mkautodoc==0.2.0
-mkdocs-material==9.1.15
+mkdocs-material==9.1.17
 
 # Packaging
 build==0.10.0
@@ -25,7 +25,7 @@ cryptography==41.0.0
 mypy==1.4.1
 types-certifi==2021.10.8.2
 pytest==7.4.0
-ruff==0.0.260
+ruff==0.0.275
 trio==0.22.0
 trio-typing==0.8.0
 trustme==1.0.0
