@@ -1070,7 +1070,27 @@ class Cookies(typing.MutableMapping[str, str]):
         cookie = Cookie(**kwargs)  # type: ignore
         self.jar.set_cookie(cookie)
 
-    def get(  # type: ignore
+    @typing.overload  # type: ignore
+    def get(
+        self,
+        name: str,
+        default: None = None,
+        domain: typing.Optional[str] = None,
+        path: typing.Optional[str] = None,
+    ) -> typing.Optional[str]:
+        ...
+
+    @typing.overload
+    def get(
+        self,
+        name: str,
+        default: str,
+        domain: typing.Optional[str] = None,
+        path: typing.Optional[str] = None,
+    ) -> str:
+        ...
+
+    def get(
         self,
         name: str,
         default: typing.Optional[str] = None,
