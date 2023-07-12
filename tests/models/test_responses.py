@@ -102,7 +102,7 @@ def test_raise_for_status():
         response.raise_for_status()
     assert str(exc_info.value) == (
         "Informational response '101 Switching Protocols' for url 'https://example.org'\n"
-        "For more information check: https://httpstatuses.com/101"
+        "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/101"
     )
 
     # 3xx status codes are redirections.
@@ -114,7 +114,7 @@ def test_raise_for_status():
     assert str(exc_info.value) == (
         "Redirect response '303 See Other' for url 'https://example.org'\n"
         "Redirect location: 'https://other.org'\n"
-        "For more information check: https://httpstatuses.com/303"
+        "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303"
     )
 
     # 4xx status codes are a client error.
@@ -125,7 +125,7 @@ def test_raise_for_status():
         response.raise_for_status()
     assert str(exc_info.value) == (
         "Client error '403 Forbidden' for url 'https://example.org'\n"
-        "For more information check: https://httpstatuses.com/403"
+        "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403"
     )
 
     # 5xx status codes are a server error.
@@ -136,7 +136,7 @@ def test_raise_for_status():
         response.raise_for_status()
     assert str(exc_info.value) == (
         "Server error '500 Internal Server Error' for url 'https://example.org'\n"
-        "For more information check: https://httpstatuses.com/500"
+        "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
     )
 
     # Calling .raise_for_status without setting a request instance is
