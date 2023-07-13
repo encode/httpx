@@ -426,7 +426,6 @@ with tempfile.NamedTemporaryFile() as download_file:
 
 ![rich progress bar](img/rich-progress.gif)
 
-
 ## Monitoring upload progress
 
 If you need to monitor upload progress of large responses, you can use request content generator streaming.
