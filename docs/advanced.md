@@ -426,6 +426,38 @@ with tempfile.NamedTemporaryFile() as download_file:
 
 ![rich progress bar](img/rich-progress.gif)
 
+## Monitoring upload progress
+
+If you need to monitor upload progress of large responses, you can use request content generator streaming.
+
+For example, showing a progress bar using the [`tqdm`](https://github.com/tqdm/tqdm) library.
+
+```python
+import io
+import random
+
+import httpx
+from tqdm import tqdm
+
+
+def gen():
+    """
+    this is a complete example with generated random bytes.
+    you can replace `io.BytesIO` with real file object.
+    """
+    total = 32 * 1024 * 1024  # 32m
+    with tqdm(ascii=True, unit_scale=True, unit='B', unit_divisor=1024, total=total) as bar:
+        with io.BytesIO(random.randbytes(total)) as f:
+            while data := f.read(1024):
+                yield data
+                bar.update(len(data))
+
+
+httpx.post("https://httpbin.org/post", content=gen())
+```
+
+![tqdm progress bar](img/tqdm-progress.gif)
+
 ## .netrc Support
 
 HTTPX can be configured to use [a `.netrc` config file](https://everything.curl.dev/usingcurl/netrc) for authentication.

@@ -30,7 +30,3 @@ trio==0.22.0
 trio-typing==0.8.0
 trustme==1.0.0
 uvicorn==0.22.0
-
-# The latest click fails type checks due to bug
-# https://github.com/pallets/click/issues/2558
-click==8.1.3
