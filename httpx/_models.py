@@ -729,12 +729,12 @@ class Response:
             message = (
                 "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
                 "Redirect location: '{0.headers[location]}'\n"
-                "For more information check: https://httpstatuses.com/{0.status_code}"
+                "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{0.status_code}"
             )
         else:
             message = (
                 "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
-                "For more information check: https://httpstatuses.com/{0.status_code}"
+                "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{0.status_code}"
             )
 
         status_class = self.status_code // 100

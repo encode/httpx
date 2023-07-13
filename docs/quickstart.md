@@ -285,7 +285,7 @@ Traceback (most recent call last):
   File "/Users/tomchristie/GitHub/encode/httpcore/httpx/models.py", line 837, in raise_for_status
     raise HTTPStatusError(message, response=self)
 httpx._exceptions.HTTPStatusError: 404 Client Error: Not Found for url: https://httpbin.org/status/404
-For more information check: https://httpstatuses.com/404
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
 ```
 
 Any successful response codes will simply return `None` rather than raising an exception.
