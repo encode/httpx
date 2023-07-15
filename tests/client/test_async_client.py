@@ -122,7 +122,7 @@ async def test_raise_for_status(server):
                     response.raise_for_status()
                 assert exc_info.value.response == response
             else:
-                assert response.raise_for_status() is None  # type: ignore
+                assert response.raise_for_status() is response
 
 
 @pytest.mark.anyio
