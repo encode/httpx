@@ -711,7 +711,7 @@ class Response:
             and "Location" in self.headers
         )
 
-    def raise_for_status(self) -> 'Response':
+    def raise_for_status(self) -> "Response":
         """
         Raise the `HTTPStatusError` if one occurred.
         """
