@@ -1002,6 +1002,8 @@ class Client(BaseClient):
             response = transport.handle_request(request)
 
         assert isinstance(response.stream, SyncByteStream)
+        # Avoid recursion of `response.stream`
+        assert not isinstance(response.stream, BoundSyncStream)
 
         response.request = request
         response.stream = BoundSyncStream(
@@ -1721,6 +1723,7 @@ class AsyncClient(BaseClient):
         assert isinstance(response.stream, AsyncByteStream)
         # Avoid recursion of `response.stream`
         assert not isinstance(response.stream, BoundAsyncStream)
+
         response.request = request
         response.stream = BoundAsyncStream(
             response.stream, response=response, timer=timer
