@@ -1719,7 +1719,7 @@ class AsyncClient(BaseClient):
             response = await transport.handle_async_request(request)
 
         assert isinstance(response.stream, AsyncByteStream)
-        # We are not accept BoundAsyncStream here to avoid recursion
+        # Avoid recursion of `response.stream`
         assert not isinstance(response.stream, BoundAsyncStream)
         response.request = request
         response.stream = BoundAsyncStream(
