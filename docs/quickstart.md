@@ -294,6 +294,13 @@ Any successful response codes will simply return `Resposne` itself rather than r
 >>> r.raise_for_status()
 ```
 
+You can just call it after HTTP method to verify response code.
+
+```pycon
+>>> r = httpx.get('...').raise_for_status()
+>>> data = httpx.get('...').raise_for_status().json()
+```
+
 ## Response Headers
 
 The response headers are available as a dictionary-like interface.
