@@ -70,7 +70,7 @@
   * The amount of time elapsed between sending the request and calling `close()` on the corresponding response received for that request.
   [total_seconds()](https://docs.python.org/3/library/datetime.html#datetime.timedelta.total_seconds) to correctly get
   the total elapsed seconds.
-* `def .raise_for_status()` - **None**
+* `def .raise_for_status()` - **Response**
 * `def .json()` - **Any**
 * `def .read()` - **bytes**
 * `def .iter_raw([chunk_size])` - **bytes iterator**
