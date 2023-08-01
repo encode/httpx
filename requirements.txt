@@ -30,3 +30,6 @@ trio==0.22.0
 trio-typing==0.8.0
 trustme==1.0.0
 uvicorn==0.22.0
+
+# Test
+httpcore @ git+https://github.com/encode/httpcore@master
