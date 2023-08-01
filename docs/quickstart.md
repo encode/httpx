@@ -294,7 +294,7 @@ Any successful response codes will return the `Response` instance rather than ra
 >>> r.raise_for_status()
 ```
 
-You can just call it after HTTP method to verify response code.
+The method returns the response instance, allowing you to use it inline. For example:
 
 ```pycon
 >>> r = httpx.get('...').raise_for_status()
