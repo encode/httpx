@@ -711,7 +711,7 @@ class Response:
             and "Location" in self.headers
         )
 
-    def raise_for_status(self) -> None:
+    def raise_for_status(self) -> "Response":
         """
         Raise the `HTTPStatusError` if one occurred.
         """
@@ -723,7 +723,7 @@ class Response:
             )
 
         if self.is_success:
-            return
+            return self
 
         if self.has_redirect_location:
             message = (
