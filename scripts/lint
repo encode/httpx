@@ -1,7 +1,7 @@
 #!/bin/sh -e
 
 export PREFIX=""
-if [ -d 'venv' ] ; then
+if [ -d 'venv' ]; then
     export PREFIX="venv/bin/"
 fi
 export SOURCE_FILES="httpx tests"
@@ -9,4 +9,4 @@ export SOURCE_FILES="httpx tests"
 set -x
 
 ${PREFIX}ruff --fix $SOURCE_FILES
-${PREFIX}black --target-version=py37 $SOURCE_FILES
+${PREFIX}black $SOURCE_FILES
