@@ -103,7 +103,7 @@ Or, to include the optional HTTP/2 support, use:
 $ pip install httpx[http2]
 ```
 
-HTTPX requires Python 3.7+.
+HTTPX requires Python 3.8+.
 
 ## Documentation
 

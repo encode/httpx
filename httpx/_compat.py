@@ -17,7 +17,7 @@ except ImportError:  # pragma: no cover
         brotli = None
 
 if sys.version_info >= (3, 10) or (
-    sys.version_info >= (3, 7) and ssl.OPENSSL_VERSION_INFO >= (1, 1, 0, 7)
+    sys.version_info >= (3, 8) and ssl.OPENSSL_VERSION_INFO >= (1, 1, 0, 7)
 ):
 
     def set_minimum_tls_version_1_2(context: ssl.SSLContext) -> None:
