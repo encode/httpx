@@ -28,5 +28,5 @@ pytest==7.4.0
 ruff==0.0.275
 trio==0.22.0
 trio-typing==0.8.0
-trustme==1.0.0
+trustme==1.1.0
 uvicorn==0.22.0
