@@ -1,6 +1,5 @@
 import os
 import ssl
-import sys
 from pathlib import Path
 
 import certifi
@@ -176,28 +175,26 @@ def test_timeout_repr():
     not hasattr(ssl.SSLContext, "keylog_filename"),
     reason="requires OpenSSL 1.1.1 or higher",
 )
-@pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python3.8 or higher")
 def test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):  # pragma: no cover
-    if sys.version_info > (3, 8):
-        with monkeypatch.context() as m:
-            m.delenv("SSLKEYLOGFILE", raising=False)
+    with monkeypatch.context() as m:
+        m.delenv("SSLKEYLOGFILE", raising=False)
 
-            context = httpx.create_ssl_context(trust_env=True)
+        context = httpx.create_ssl_context(trust_env=True)
 
-            assert context.keylog_filename is None
+        assert context.keylog_filename is None
 
-        filename = str(tmpdir.join("test.log"))
+    filename = str(tmpdir.join("test.log"))
 
-        with monkeypatch.context() as m:
-            m.setenv("SSLKEYLOGFILE", filename)
+    with monkeypatch.context() as m:
+        m.setenv("SSLKEYLOGFILE", filename)
 
-            context = httpx.create_ssl_context(trust_env=True)
+        context = httpx.create_ssl_context(trust_env=True)
 
-            assert context.keylog_filename == filename
+        assert context.keylog_filename == filename
 
-            context = httpx.create_ssl_context(trust_env=False)
+        context = httpx.create_ssl_context(trust_env=False)
 
-            assert context.keylog_filename is None
+        assert context.keylog_filename is None
 
 
 def test_proxy_from_url():
