@@ -41,7 +41,7 @@ DEBUG [2023-03-16 14:36:21] httpcore - connection.close.started
 DEBUG [2023-03-16 14:36:21] httpcore - connection.close.complete
 ```
 
-Logging output includes information from both the high-level `httpx` logger, and the network-level `httpcore` logger, which can be configured seperately.
+Logging output includes information from both the high-level `httpx` logger, and the network-level `httpcore` logger, which can be configured separately.
 
 For handling more complex logging configurations you might want to use the dictionary configuration style...
 
