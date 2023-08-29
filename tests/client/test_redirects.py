@@ -241,7 +241,7 @@ def test_multiple_redirects():
 
 
 @pytest.mark.anyio
-async def test_async_too_many_redirects():
+async def test_async_too_many_redirects_default_max_redirects():
     async with httpx.AsyncClient(transport=httpx.MockTransport(redirects)) as client:
         with pytest.raises(httpx.TooManyRedirects):
             await client.get(
@@ -249,11 +249,28 @@ async def test_async_too_many_redirects():
             )
 
 
-def test_sync_too_many_redirects():
+@pytest.mark.anyio
+async def test_async_too_many_redirects_custom_max_redirects():
+    async with httpx.AsyncClient(transport=httpx.MockTransport(redirects)) as client:
+        with pytest.raises(httpx.TooManyRedirects):
+            await client.get(
+                "https://example.org/multiple_redirects?count=6", follow_redirects=True, max_redirects=5
+            )
+
+
+def test_sync_too_many_redirects_default_max_redirects():
     client = httpx.Client(transport=httpx.MockTransport(redirects))
     with pytest.raises(httpx.TooManyRedirects):
         client.get(
             "https://example.org/multiple_redirects?count=21", follow_redirects=True
+        )
+
+
+def test_sync_too_many_redirects_custom_max_redirects():
+    client = httpx.Client(transport=httpx.MockTransport(redirects))
+    with pytest.raises(httpx.TooManyRedirects):
+        client.get(
+            "https://example.org/multiple_redirects?count=6", follow_redirects=True, max_redirects=5
         )
 
 

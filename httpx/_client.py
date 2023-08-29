@@ -632,8 +632,8 @@ class Client(BaseClient):
         mounts: typing.Optional[typing.Mapping[str, BaseTransport]] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
-        limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        limits: Limits = DEFAULT_LIMITS,
         event_hooks: typing.Optional[
             typing.Mapping[str, typing.List[EventHook]]
         ] = None,
@@ -771,6 +771,7 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -811,7 +812,7 @@ class Client(BaseClient):
             timeout=timeout,
             extensions=extensions,
         )
-        return self.send(request, auth=auth, follow_redirects=follow_redirects)
+        return self.send(request, auth=auth, follow_redirects=follow_redirects, max_redirects=max_redirects)
 
     @contextmanager
     def stream(
@@ -828,6 +829,7 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> typing.Iterator[Response]:
@@ -858,6 +860,7 @@ class Client(BaseClient):
             request=request,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             stream=True,
         )
         try:
@@ -872,6 +875,7 @@ class Client(BaseClient):
         stream: bool = False,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a request.
@@ -895,6 +899,11 @@ class Client(BaseClient):
             if isinstance(follow_redirects, UseClientDefault)
             else follow_redirects
         )
+        max_redirects = (
+            self.max_redirects
+            if isinstance(max_redirects, UseClientDefault)
+            else max_redirects
+        )
 
         auth = self._build_request_auth(request, auth)
 
@@ -902,6 +911,7 @@ class Client(BaseClient):
             request,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             history=[],
         )
         try:
@@ -919,6 +929,7 @@ class Client(BaseClient):
         request: Request,
         auth: Auth,
         follow_redirects: bool,
+        max_redirects: int,
         history: typing.List[Response],
     ) -> Response:
         auth_flow = auth.sync_auth_flow(request)
@@ -929,6 +940,7 @@ class Client(BaseClient):
                 response = self._send_handling_redirects(
                     request,
                     follow_redirects=follow_redirects,
+                    max_redirects=max_redirects,
                     history=history,
                 )
                 try:
@@ -952,10 +964,11 @@ class Client(BaseClient):
         self,
         request: Request,
         follow_redirects: bool,
+        max_redirects: int,
         history: typing.List[Response],
     ) -> Response:
         while True:
-            if len(history) > self.max_redirects:
+            if len(history) > max_redirects:
                 raise TooManyRedirects(
                     "Exceeded maximum allowed redirects.", request=request
                 )
@@ -1030,6 +1043,7 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1046,6 +1060,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1059,6 +1074,7 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1075,6 +1091,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1088,6 +1105,7 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1104,6 +1122,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1121,6 +1140,7 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1141,6 +1161,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1158,6 +1179,7 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1178,6 +1200,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1195,6 +1218,7 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1215,6 +1239,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1228,6 +1253,7 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1244,6 +1270,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1357,8 +1384,8 @@ class AsyncClient(BaseClient):
         mounts: typing.Optional[typing.Mapping[str, AsyncBaseTransport]] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
-        limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
+        limits: Limits = DEFAULT_LIMITS,
         event_hooks: typing.Optional[
             typing.Mapping[str, typing.List[typing.Callable[..., typing.Any]]]
         ] = None,
@@ -1495,6 +1522,7 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1527,7 +1555,7 @@ class AsyncClient(BaseClient):
             timeout=timeout,
             extensions=extensions,
         )
-        return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+        return await self.send(request, auth=auth, max_redirects=max_redirects, follow_redirects=follow_redirects)
 
     @asynccontextmanager
     async def stream(
@@ -1544,6 +1572,7 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> typing.AsyncIterator[Response]:
@@ -1574,6 +1603,7 @@ class AsyncClient(BaseClient):
             request=request,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             stream=True,
         )
         try:
@@ -1588,6 +1618,7 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a request.
@@ -1611,6 +1642,11 @@ class AsyncClient(BaseClient):
             if isinstance(follow_redirects, UseClientDefault)
             else follow_redirects
         )
+        max_redirects = (
+            self.max_redirects
+            if isinstance(max_redirects, UseClientDefault)
+            else max_redirects
+        )
 
         auth = self._build_request_auth(request, auth)
 
@@ -1618,6 +1654,7 @@ class AsyncClient(BaseClient):
             request,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             history=[],
         )
         try:
@@ -1635,6 +1672,7 @@ class AsyncClient(BaseClient):
         request: Request,
         auth: Auth,
         follow_redirects: bool,
+        max_redirects: int,
         history: typing.List[Response],
     ) -> Response:
         auth_flow = auth.async_auth_flow(request)
@@ -1645,6 +1683,7 @@ class AsyncClient(BaseClient):
                 response = await self._send_handling_redirects(
                     request,
                     follow_redirects=follow_redirects,
+                    max_redirects=max_redirects,
                     history=history,
                 )
                 try:
@@ -1668,10 +1707,11 @@ class AsyncClient(BaseClient):
         self,
         request: Request,
         follow_redirects: bool,
+        max_redirects: int,
         history: typing.List[Response],
     ) -> Response:
         while True:
-            if len(history) > self.max_redirects:
+            if len(history) > max_redirects:
                 raise TooManyRedirects(
                     "Exceeded maximum allowed redirects.", request=request
                 )
@@ -1746,6 +1786,7 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1762,6 +1803,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1775,6 +1817,7 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1791,6 +1834,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1804,6 +1848,7 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1820,6 +1865,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1837,6 +1883,7 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1857,6 +1904,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1874,6 +1922,7 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1894,6 +1943,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1911,6 +1961,7 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1931,6 +1982,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1944,6 +1996,7 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        max_redirects: typing.Union[int, UseClientDefault] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1960,6 +2013,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
             timeout=timeout,
             extensions=extensions,
         )
