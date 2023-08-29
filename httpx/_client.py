@@ -812,7 +812,12 @@ class Client(BaseClient):
             timeout=timeout,
             extensions=extensions,
         )
-        return self.send(request, auth=auth, follow_redirects=follow_redirects, max_redirects=max_redirects)
+        return self.send(
+            request,
+            auth=auth,
+            follow_redirects=follow_redirects,
+            max_redirects=max_redirects,
+        )
 
     @contextmanager
     def stream(
@@ -1555,7 +1560,12 @@ class AsyncClient(BaseClient):
             timeout=timeout,
             extensions=extensions,
         )
-        return await self.send(request, auth=auth, max_redirects=max_redirects, follow_redirects=follow_redirects)
+        return await self.send(
+            request,
+            auth=auth,
+            max_redirects=max_redirects,
+            follow_redirects=follow_redirects,
+        )
 
     @asynccontextmanager
     async def stream(
