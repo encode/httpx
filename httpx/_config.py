@@ -326,6 +326,7 @@ class Proxy:
         self,
         url: URLTypes,
         *,
+        ssl_context: typing.Optional[ssl.SSLContext] = None,
         auth: typing.Optional[typing.Tuple[str, str]] = None,
         headers: typing.Optional[HeaderTypes] = None,
     ):
@@ -343,6 +344,7 @@ class Proxy:
         self.url = url
         self.auth = auth
         self.headers = headers
+        self.ssl_context = ssl_context
 
     @property
     def raw_auth(self) -> typing.Optional[typing.Tuple[bytes, bytes]]:
