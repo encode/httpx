@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
+## 0.25.0 (11th Sep, 2023)
 
 ### Removed
 
@@ -20,7 +20,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 * Return `500` error response instead of exceptions when `raise_app_exceptions=False` is set on `ASGITransport`. (#2669)
-* Ensure all WSGITransport environs have a SERVER_PROTOCOL. (#2708)
+* Ensure all `WSGITransport` environs have a `SERVER_PROTOCOL`. (#2708)
+* Always encode forward slashes as `%2F` in query parameters (#2723)
+* Use Mozilla documentation instead of `httpstatuses.com` for HTTP error reference (#2768)
 
 ## 0.24.1 (17th May, 2023)
 
