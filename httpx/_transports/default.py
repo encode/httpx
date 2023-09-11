@@ -156,6 +156,7 @@ class HTTPTransport(BaseTransport):
                 proxy_auth=proxy.raw_auth,
                 proxy_headers=proxy.headers.raw,
                 ssl_context=ssl_context,
+                proxy_ssl_context=proxy.ssl_context,
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
