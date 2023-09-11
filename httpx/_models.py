@@ -467,7 +467,7 @@ class Response:
         # the client will set `response.next_request`.
         self.next_request: typing.Optional[Request] = None
 
-        self.extensions = {} if extensions is None else extensions
+        self.extensions: ResponseExtensions = {} if extensions is None else extensions
         self.history = [] if history is None else list(history)
 
         self.is_closed = False
@@ -711,7 +711,7 @@ class Response:
             and "Location" in self.headers
         )
 
-    def raise_for_status(self) -> None:
+    def raise_for_status(self) -> "Response":
         """
         Raise the `HTTPStatusError` if one occurred.
         """
@@ -723,7 +723,7 @@ class Response:
             )
 
         if self.is_success:
-            return
+            return self
 
         if self.has_redirect_location:
             message = (

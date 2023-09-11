@@ -288,10 +288,17 @@ httpx._exceptions.HTTPStatusError: 404 Client Error: Not Found for url: https://
 For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
 ```
 
-Any successful response codes will simply return `None` rather than raising an exception.
+Any successful response codes will return the `Response` instance rather than raising an exception.
 
 ```pycon
 >>> r.raise_for_status()
+```
+
+The method returns the response instance, allowing you to use it inline. For example:
+
+```pycon
+>>> r = httpx.get('...').raise_for_status()
+>>> data = httpx.get('...').raise_for_status().json()
 ```
 
 ## Response Headers

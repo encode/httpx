@@ -141,7 +141,7 @@ def test_raise_for_status(server):
                 assert exc_info.value.response == response
                 assert exc_info.value.request.url.path == f"/status/{status_code}"
             else:
-                assert response.raise_for_status() is None  # type: ignore
+                assert response.raise_for_status() is response
 
 
 def test_options(server):
