@@ -54,7 +54,7 @@ def test_digest_auth_with_401():
         "WWW-Authenticate": 'Digest realm="...", qop="auth", nonce="...", opaque="..."'
     }
     response = httpx.Response(
-        content=b"Auth required", status_code=401, headers=headers
+        content=b"Auth required", status_code=401, headers=headers, request=request
     )
     request = flow.send(response)
     assert request.headers["Authorization"].startswith("Digest")
@@ -79,7 +79,7 @@ def test_digest_auth_with_401_nonce_counting():
         "WWW-Authenticate": 'Digest realm="...", qop="auth", nonce="...", opaque="..."'
     }
     response = httpx.Response(
-        content=b"Auth required", status_code=401, headers=headers
+        content=b"Auth required", status_code=401, headers=headers, request=request
     )
     first_request = flow.send(response)
     assert first_request.headers["Authorization"].startswith("Digest")
