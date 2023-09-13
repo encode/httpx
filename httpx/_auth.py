@@ -217,7 +217,8 @@ class DigestAuth(Auth):
         request.headers["Authorization"] = self._build_auth_header(
             request, self._last_challenge
         )
-        Cookies(response.cookies).set_cookie_header(request=request)
+        if response.cookies:
+            Cookies(response.cookies).set_cookie_header(request=request)
         yield request
 
     def _parse_challenge(
