@@ -8,7 +8,7 @@ from base64 import b64encode
 from urllib.request import parse_http_list
 
 from ._exceptions import ProtocolError
-from ._models import Request, Response
+from ._models import Cookies, Request, Response
 from ._utils import to_bytes, to_str, unquote
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -217,6 +217,8 @@ class DigestAuth(Auth):
         request.headers["Authorization"] = self._build_auth_header(
             request, self._last_challenge
         )
+        if response.cookies:
+            Cookies(response.cookies).set_cookie_header(request=request)
         yield request
 
     def _parse_challenge(
