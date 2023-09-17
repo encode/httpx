@@ -308,7 +308,8 @@ def test_response_force_encoding_after_text_accessed():
     assert response.text == "Hello, world!"
     assert response.encoding == "utf-8"
 
-    response.encoding = "UTF8"
+    with pytest.raises(ValueError):
+        response.encoding = "UTF8"
 
     with pytest.raises(ValueError):
         response.encoding = "iso-8859-1"
