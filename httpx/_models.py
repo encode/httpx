@@ -1,3 +1,4 @@
+import codecs
 import datetime
 import email.message
 import json as jsonlib
@@ -603,6 +604,27 @@ class Response:
 
     @encoding.setter
     def encoding(self, value: str) -> None:
+        """
+        Set the encoding to use for decoding the byte content into text.
+
+        If the `text` attribute has been accessed, the encoding is not
+        allowed to be changed and will raise a ValueError if doing so.
+        """
+
+        if hasattr(self, "_text"):
+            encoding = self.encoding or "utf-8"
+            if (
+                is_known_encoding(value)
+                and is_known_encoding(encoding)
+                and codecs.lookup(value) == codecs.lookup(encoding)
+            ):
+                self._encoding = value
+                return
+            else:
+                raise ValueError(
+                    f"Attempt to set encoding to '{value}' is not allowed,"
+                    f"because the content has been decoded with encoding '{self.encoding}'"
+                )
         self._encoding = value
 
     @property
