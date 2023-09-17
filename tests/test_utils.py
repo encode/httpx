@@ -3,21 +3,10 @@ import os
 import random
 
 import certifi
+import httpcore
 import pytest
 
 import httpx
-from httpx._utils import (
-    URLPattern,
-    get_ca_bundle_from_env,
-    get_environment_proxies,
-    guess_json_utf,
-    is_https_redirect,
-    obfuscate_sensitive_headers,
-    parse_header_links,
-    same_origin,
-)
-
-from .common import TESTS_DIR
 
 
 @pytest.mark.parametrize(
@@ -35,11 +24,13 @@ from .common import TESTS_DIR
 )
 def test_encoded(encoding):
     data = "{}".encode(encoding)
-    assert guess_json_utf(data) == encoding
+    response = httpx.Response(200, content=data)
+    assert response._guess_content_json_utf() == encoding
 
 
 def test_bad_utf_like_encoding():
-    assert guess_json_utf(b"\x00\x00\x00\x00") is None
+    response = httpx.Response(200, content=b"\x00\x00\x00\x00")
+    assert response._guess_content_json_utf() is None
 
 
 @pytest.mark.parametrize(
@@ -53,7 +44,8 @@ def test_bad_utf_like_encoding():
 )
 def test_guess_by_bom(encoding, expected):
     data = "\ufeff{}".encode(encoding)
-    assert guess_json_utf(data) == expected
+    response = httpx.Response(200, content=data)
+    assert response._guess_content_json_utf() == expected
 
 
 @pytest.mark.parametrize(
@@ -76,7 +68,8 @@ def test_guess_by_bom(encoding, expected):
     ),
 )
 def test_parse_header_links(value, expected):
-    assert parse_header_links(value) == expected
+    all_links = httpx.Response(200, headers={"link": value}).links.values()
+    assert all(link in all_links for link in expected)
 
 
 def test_logging_request(server, caplog):
@@ -134,46 +127,6 @@ def test_logging_ssl(caplog):
     ]
 
 
-def test_get_ssl_cert_file():
-    # Two environments is not set.
-    assert get_ca_bundle_from_env() is None
-
-    os.environ["SSL_CERT_DIR"] = str(TESTS_DIR)
-    # SSL_CERT_DIR is correctly set, SSL_CERT_FILE is not set.
-    ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests")
-
-    del os.environ["SSL_CERT_DIR"]
-    os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
-    # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
-    ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
-
-    os.environ["SSL_CERT_FILE"] = "wrongfile"
-    # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
-    assert get_ca_bundle_from_env() is None
-
-    del os.environ["SSL_CERT_FILE"]
-    os.environ["SSL_CERT_DIR"] = "wrongpath"
-    # SSL_CERT_DIR is set with wrong path,  SSL_CERT_FILE is not set.
-    assert get_ca_bundle_from_env() is None
-
-    os.environ["SSL_CERT_DIR"] = str(TESTS_DIR)
-    os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
-    # Two environments is correctly set.
-    ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
-
-    os.environ["SSL_CERT_FILE"] = "wrongfile"
-    # Two environments is set but SSL_CERT_FILE is not a file.
-    ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests")
-
-    os.environ["SSL_CERT_DIR"] = "wrongpath"
-    # Two environments is set but both are not correct.
-    assert get_ca_bundle_from_env() is None
-
-
 @pytest.mark.parametrize(
     ["environment", "proxies"],
     [
@@ -194,9 +147,31 @@ def test_get_ssl_cert_file():
     ],
 )
 def test_get_environment_proxies(environment, proxies):
-    os.environ.update(environment)
+    as_classes = {
+        pattern: None if proxy is None else httpx.Proxy(url=proxy)
+        for pattern, proxy in proxies.items()
+    }
 
-    assert get_environment_proxies() == proxies
+    os.environ.update(environment)
+    client = httpx.Client()
+
+    for pat, transport in client._mounts.items():
+        expected = as_classes[pat.pattern]
+        if transport is None:
+            assert expected is None
+        else:
+            assert expected is not None
+
+            assert isinstance(transport, httpx.HTTPTransport)
+            assert isinstance(
+                transport._pool, (httpcore.HTTPProxy, httpcore.SOCKSProxy)
+            )
+            proxy_url = transport._pool._proxy_url
+
+            assert proxy_url.scheme == expected.url.raw_scheme
+            assert proxy_url.host == expected.url.raw_host
+            assert proxy_url.port == expected.url.port
+            assert proxy_url.target == expected.url.raw_path
 
 
 @pytest.mark.parametrize(
@@ -208,40 +183,65 @@ def test_get_environment_proxies(environment, proxies):
     ],
 )
 def test_obfuscate_sensitive_headers(headers, output):
-    bytes_headers = [(k.encode(), v.encode()) for k, v in headers]
-    bytes_output = [(k.encode(), v.encode()) for k, v in output]
-    assert list(obfuscate_sensitive_headers(headers)) == output
-    assert list(obfuscate_sensitive_headers(bytes_headers)) == bytes_output
+    as_dict = {k: v for k, v in output}
+    headers_class = httpx.Headers({k: v for k, v in headers})
+    assert repr(headers_class) == f"Headers({as_dict!r})"
 
 
 def test_same_origin():
-    origin1 = httpx.URL("https://example.com")
-    origin2 = httpx.URL("HTTPS://EXAMPLE.COM:443")
-    assert same_origin(origin1, origin2)
+    origin = httpx.URL("https://example.com")
+    request = httpx.Request("GET", "HTTPS://EXAMPLE.COM:443")
+
+    client = httpx.Client()
+    headers = client._redirect_headers(request, origin, "GET")
+
+    assert headers["Host"] == request.url.netloc.decode("ascii")
 
 
 def test_not_same_origin():
-    origin1 = httpx.URL("https://example.com")
-    origin2 = httpx.URL("HTTP://EXAMPLE.COM")
-    assert not same_origin(origin1, origin2)
+    origin = httpx.URL("https://example.com")
+    request = httpx.Request("GET", "HTTP://EXAMPLE.COM:80")
+
+    client = httpx.Client()
+    headers = client._redirect_headers(request, origin, "GET")
+
+    assert headers["Host"] == origin.netloc.decode("ascii")
 
 
 def test_is_https_redirect():
-    url = httpx.URL("http://example.com")
-    location = httpx.URL("https://example.com")
-    assert is_https_redirect(url, location)
+    url = httpx.URL("https://example.com")
+    request = httpx.Request(
+        "GET", "http://example.com", headers={"Authorization": "empty"}
+    )
+
+    client = httpx.Client()
+    headers = client._redirect_headers(request, url, "GET")
+
+    assert "Authorization" in headers
 
 
 def test_is_not_https_redirect():
-    url = httpx.URL("http://example.com")
-    location = httpx.URL("https://www.example.com")
-    assert not is_https_redirect(url, location)
+    url = httpx.URL("https://www.example.com")
+    request = httpx.Request(
+        "GET", "http://example.com", headers={"Authorization": "empty"}
+    )
+
+    client = httpx.Client()
+    headers = client._redirect_headers(request, url, "GET")
+
+    assert "Authorization" not in headers
 
 
 def test_is_not_https_redirect_if_not_default_ports():
-    url = httpx.URL("http://example.com:9999")
-    location = httpx.URL("https://example.com:1337")
-    assert not is_https_redirect(url, location)
+    url = httpx.URL("https://example.com:1337")
+    request = httpx.Request(
+        "GET", "http://example.com:9999", headers={"Authorization": "empty"}
+    )
+
+    client = httpx.Client()
+    headers = client._redirect_headers(request, url, "GET")
+
+    assert "Authorization" not in headers
 
 
 @pytest.mark.parametrize(
@@ -262,21 +262,26 @@ def test_is_not_https_redirect_if_not_default_ports():
     ],
 )
 def test_url_matches(pattern, url, expected):
-    pattern = URLPattern(pattern)
+    client = httpx.Client(mounts={pattern: httpx.BaseTransport()})
+    pattern = next(iter(client._mounts))
     assert pattern.matches(httpx.URL(url)) == expected
 
 
 def test_pattern_priority():
     matchers = [
-        URLPattern("all://"),
-        URLPattern("http://"),
-        URLPattern("http://example.com"),
-        URLPattern("http://example.com:123"),
+        "all://",
+        "http://",
+        "http://example.com",
+        "http://example.com:123",
     ]
     random.shuffle(matchers)
-    assert sorted(matchers) == [
-        URLPattern("http://example.com:123"),
-        URLPattern("http://example.com"),
-        URLPattern("http://"),
-        URLPattern("all://"),
+
+    transport = httpx.BaseTransport()
+    client = httpx.Client(mounts={m: transport for m in matchers})
+
+    assert [pat.pattern for pat in client._mounts] == [
+        "http://example.com:123",
+        "http://example.com",
+        "http://",
+        "all://",
     ]

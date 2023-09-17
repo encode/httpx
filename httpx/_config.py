@@ -10,7 +10,6 @@ from ._compat import set_minimum_tls_version_1_2
 from ._models import Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._urls import URL
-from ._utils import get_ca_bundle_from_env
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -102,9 +101,14 @@ class SSLConfig:
         Return an SSL context for verified connections.
         """
         if self.trust_env and self.verify is True:
-            ca_bundle = get_ca_bundle_from_env()
-            if ca_bundle is not None:
-                self.verify = ca_bundle
+            if "SSL_CERT_FILE" in os.environ:
+                ssl_file = Path(os.environ["SSL_CERT_FILE"])
+                if ssl_file.is_file():
+                    self.verify = str(ssl_file)
+            if "SSL_CERT_DIR" in os.environ:
+                ssl_path = Path(os.environ["SSL_CERT_DIR"])
+                if ssl_path.is_dir():
+                    self.verify = str(ssl_path)
 
         if isinstance(self.verify, ssl.SSLContext):
             # Allow passing in our own SSLContext object that's pre-configured.
