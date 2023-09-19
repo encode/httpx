@@ -298,6 +298,23 @@ def test_response_force_encoding():
     assert response.encoding == "iso-8859-1"
 
 
+def test_response_force_encoding_after_text_accessed():
+    response = httpx.Response(
+        200,
+        content=b"Hello, world!",
+    )
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+    assert response.text == "Hello, world!"
+    assert response.encoding == "utf-8"
+
+    with pytest.raises(ValueError):
+        response.encoding = "UTF8"
+
+    with pytest.raises(ValueError):
+        response.encoding = "iso-8859-1"
+
+
 def test_read():
     response = httpx.Response(
         200,

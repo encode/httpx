@@ -603,6 +603,16 @@ class Response:
 
     @encoding.setter
     def encoding(self, value: str) -> None:
+        """
+        Set the encoding to use for decoding the byte content into text.
+
+        If the `text` attribute has been accessed, attempting to set the
+        encoding will throw a ValueError.
+        """
+        if hasattr(self, "_text"):
+            raise ValueError(
+                "Setting encoding after `text` has been accessed is not allowed."
+            )
         self._encoding = value
 
     @property

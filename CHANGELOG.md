@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## Unreleased
+
+### Fixed
+
+* Raise `ValueError` on `Response.encoding` being set after `Response.text` has been accessed. (#2852)
+
 ## 0.25.0 (11th Sep, 2023)
 
 ### Removed
