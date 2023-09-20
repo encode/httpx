@@ -64,7 +64,7 @@ SOCKET_OPTION = typing.Union[
 def map_httpcore_exceptions() -> typing.Iterator[None]:
     try:
         yield
-    except Exception as exc:  # noqa: PIE-786
+    except Exception as exc:
         mapped_exc = None
 
         for from_exc, to_exc in HTTPCORE_EXC_MAP.items():
@@ -269,6 +269,13 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         retries: int = 0,
         socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
     ) -> None:
+        try:
+            import sniffio  # noqa: F401
+        except ImportError:  # pragma: nocover
+            raise RuntimeError(
+                "Using httpx in async mode, but neither httpx['asyncio'] or asyncio['trio'] is installed."
+            )
+
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
         if proxy is None:

@@ -97,10 +97,12 @@ Install with pip:
 $ pip install httpx
 ```
 
-Or, to include the optional HTTP/2 support, use:
+There are also a number of optional dependancies.
+
+For example to include asyncio and HTTP/2 support, use:
 
 ```shell
-$ pip install httpx[http2]
+$ pip install 'httpx[asyncio,http2]'
 ```
 
 HTTPX requires Python 3.8+.
@@ -129,15 +131,16 @@ The HTTPX project relies on these excellent libraries:
   * `h11` - HTTP/1.1 support.
 * `certifi` - SSL certificates.
 * `idna` - Internationalized domain name support.
-* `sniffio` - Async library autodetection.
 
 As well as these optional installs:
 
-* `h2` - HTTP/2 support. *(Optional, with `httpx[http2]`)*
-* `socksio` - SOCKS proxy support. *(Optional, with `httpx[socks]`)*
-* `rich` - Rich terminal support. *(Optional, with `httpx[cli]`)*
-* `click` - Command line client support. *(Optional, with `httpx[cli]`)*
-* `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx[brotli]`)*
+* `anyio`, `sniffio` - Async support for `asyncio`. *(Optional, with `httpx['asyncio']`)*
+* `trio`, `sniffio` - Async support for `trio`. *(Optional, with `httpx['trio']`)*
+* `h2` - HTTP/2 support. *(Optional, with `httpx['http2']`)*
+* `socksio` - SOCKS proxy support. *(Optional, with `httpx['socks']`)*
+* `rich` - Rich terminal support. *(Optional, with `httpx['cli']`)*
+* `click` - Command line client support. *(Optional, with `httpx['cli']`)*
+* `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx['brotli']`)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design

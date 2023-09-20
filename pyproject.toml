@@ -28,9 +28,8 @@ classifiers = [
 ]
 dependencies = [
     "certifi",
-    "httpcore>=0.18.0,<0.19.0",
+    "httpcore>=1.0.0,<2.0.0",
     "idna",
-    "sniffio",
 ]
 dynamic = ["readme", "version"]
 
@@ -45,10 +44,16 @@ cli = [
     "rich>=10,<14",
 ]
 http2 = [
-    "h2>=3,<5",
+    "httpcore['http2']",
 ]
 socks = [
-    "socksio==1.*",
+    "httpcore['socks']",
+]
+asyncio = [
+    "httpcore['asyncio']"
+]
+trio = [
+    "httpcore['trio']"
 ]
 
 [project.scripts]
