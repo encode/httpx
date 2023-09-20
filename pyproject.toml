@@ -44,16 +44,16 @@ cli = [
     "rich>=10,<14",
 ]
 http2 = [
-    "httpcore['http2']",
+    "httpcore[http2]",
 ]
 socks = [
-    "httpcore['socks']",
+    "httpcore[socks]",
 ]
 asyncio = [
-    "httpcore['asyncio']"
+    "httpcore[asyncio]"
 ]
 trio = [
-    "httpcore['trio']"
+    "httpcore[trio]"
 ]
 
 [project.scripts]
