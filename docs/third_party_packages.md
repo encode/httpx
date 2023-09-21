@@ -6,6 +6,12 @@ As HTTPX usage grows, there is an expanding community of developers building too
 
 <!-- NOTE: this list is in alphabetical order. -->
 
+### Hishel
+
+[GitHub](https://github.com/karosis88/hishel) - [Documentation](https://karosis88.github.io/hishel/)
+
+An elegant HTTP Cache implementation for HTTPX and HTTP Core.
+
 ### Authlib
 
 [GitHub](https://github.com/lepture/authlib) - [Documentation](https://docs.authlib.org/en/latest/)

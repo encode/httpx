@@ -101,7 +101,7 @@ $ pip install httpx
 $ pip install httpx[http2]
 ```
 
-HTTPX 要求 Python 3.7+ 版本。
+HTTPX 要求 Python 3.8+ 版本。
 
 ## 文档
 

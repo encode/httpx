@@ -285,13 +285,20 @@ Traceback (most recent call last):
   File "/Users/tomchristie/GitHub/encode/httpcore/httpx/models.py", line 837, in raise_for_status
     raise HTTPStatusError(message, response=self)
 httpx._exceptions.HTTPStatusError: 404 Client Error: Not Found for url: https://httpbin.org/status/404
-For more information check: https://httpstatuses.com/404
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
 ```
 
-Any successful response codes will simply return `None` rather than raising an exception.
+Any successful response codes will return the `Response` instance rather than raising an exception.
 
 ```pycon
 >>> r.raise_for_status()
+```
+
+The method returns the response instance, allowing you to use it inline. For example:
+
+```pycon
+>>> r = httpx.get('...').raise_for_status()
+>>> data = httpx.get('...').raise_for_status().json()
 ```
 
 ## Response Headers
@@ -367,7 +374,7 @@ If you're using streaming responses in any of these ways then the `response.cont
 
 ```pycon
 >>> with httpx.stream("GET", "https://www.example.com") as r:
-...     if r.headers['Content-Length'] < TOO_LONG:
+...     if int(r.headers['Content-Length']) < TOO_LONG:
 ...         r.read()
 ...         print(r.text)
 ```

@@ -467,7 +467,7 @@ class Response:
         # the client will set `response.next_request`.
         self.next_request: typing.Optional[Request] = None
 
-        self.extensions = {} if extensions is None else extensions
+        self.extensions: ResponseExtensions = {} if extensions is None else extensions
         self.history = [] if history is None else list(history)
 
         self.is_closed = False
@@ -603,6 +603,16 @@ class Response:
 
     @encoding.setter
     def encoding(self, value: str) -> None:
+        """
+        Set the encoding to use for decoding the byte content into text.
+
+        If the `text` attribute has been accessed, attempting to set the
+        encoding will throw a ValueError.
+        """
+        if hasattr(self, "_text"):
+            raise ValueError(
+                "Setting encoding after `text` has been accessed is not allowed."
+            )
         self._encoding = value
 
     @property
@@ -711,7 +721,7 @@ class Response:
             and "Location" in self.headers
         )
 
-    def raise_for_status(self) -> None:
+    def raise_for_status(self) -> "Response":
         """
         Raise the `HTTPStatusError` if one occurred.
         """
@@ -723,18 +733,18 @@ class Response:
             )
 
         if self.is_success:
-            return
+            return self
 
         if self.has_redirect_location:
             message = (
                 "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
                 "Redirect location: '{0.headers[location]}'\n"
-                "For more information check: https://httpstatuses.com/{0.status_code}"
+                "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{0.status_code}"
             )
         else:
             message = (
                 "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
-                "For more information check: https://httpstatuses.com/{0.status_code}"
+                "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{0.status_code}"
             )
 
         status_class = self.status_code // 100

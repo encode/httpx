@@ -2,7 +2,6 @@ import httpcore
 import pytest
 
 import httpx
-from httpx._utils import URLPattern
 
 
 def url_to_origin(url: str) -> httpcore.URL:
@@ -35,11 +34,12 @@ def url_to_origin(url: str) -> httpcore.URL:
 )
 def test_proxies_parameter(proxies, expected_proxies):
     client = httpx.Client(proxies=proxies)
+    client_patterns = [p.pattern for p in client._mounts.keys()]
+    client_proxies = list(client._mounts.values())
 
     for proxy_key, url in expected_proxies:
-        pattern = URLPattern(proxy_key)
-        assert pattern in client._mounts
-        proxy = client._mounts[pattern]
+        assert proxy_key in client_patterns
+        proxy = client_proxies[client_patterns.index(proxy_key)]
         assert isinstance(proxy, httpx.HTTPTransport)
         assert isinstance(proxy._pool, httpcore.HTTPProxy)
         assert proxy._pool._proxy_url == url_to_origin(url)

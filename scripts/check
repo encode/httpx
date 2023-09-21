@@ -9,6 +9,6 @@ export SOURCE_FILES="httpx tests"
 set -x
 
 ./scripts/sync-version
-${PREFIX}black --check --diff --target-version=py37 $SOURCE_FILES
+${PREFIX}black --check --diff $SOURCE_FILES
 ${PREFIX}mypy $SOURCE_FILES
 ${PREFIX}ruff check $SOURCE_FILES
