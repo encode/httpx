@@ -1,8 +1,6 @@
 import typing
 from urllib.parse import parse_qs, unquote
 
-import idna
-
 from ._types import QueryParamTypes, RawURL, URLTypes
 from ._urlparse import urlencode, urlparse
 from ._utils import primitive_value_to_str
@@ -183,7 +181,7 @@ class URL:
         host: str = self._uri_reference.host
 
         if host.startswith("xn--"):
-            host = idna.decode(host)
+            host = host.encode("ascii").decode("idna")
 
         return host
 
