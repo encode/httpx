@@ -203,7 +203,7 @@ If you need to mock HTTPX the same way that test utilities like `responses` and 
 
 ## Caching
 
-If you're using `cachecontrol` or `requests-cache` to add HTTP Caching support to the `requests` library, [Hishel](https://github.com/karosis88/hishel) is an alternative to HTTPX.
+If you use `cachecontrol` or `requests-cache` to add HTTP Caching support to the `requests` library, you can use [Hishel](https://hishel.com) for HTTPX.
 
 ## Networking layer
 
