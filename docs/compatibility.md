@@ -201,6 +201,10 @@ Besides, `httpx.Request()` does not support the `auth`, `timeout`, `follow_redir
 
 If you need to mock HTTPX the same way that test utilities like `responses` and `requests-mock` does for `requests`, see [RESPX](https://github.com/lundberg/respx).
 
+## Caching
+
+If you're using `cachecontrol` or `requests-cache` to add HTTP Caching support to the `requests` library, [Hishel](https://github.com/karosis88/hishel) is an alternative to HTTPX.
+
 ## Networking layer
 
 `requests` defers most of its HTTP networking code to the excellent [`urllib3` library](https://urllib3.readthedocs.io/en/latest/).
