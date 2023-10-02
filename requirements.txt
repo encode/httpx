@@ -19,7 +19,7 @@ build==0.10.0
 twine==4.0.2
 
 # Tests & Linting
-black==23.7.0
+black==23.9.1
 coverage[toml]==7.3.0
 cryptography==41.0.4
 mypy==1.5.1
