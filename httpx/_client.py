@@ -36,6 +36,7 @@ from ._types import (
     CookieTypes,
     HeaderTypes,
     ProxiesTypes,
+    ProxyTypes,
     QueryParamTypes,
     RequestContent,
     RequestData,
@@ -628,6 +629,7 @@ class Client(BaseClient):
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
+        proxy: typing.Optional[ProxyTypes] = None,
         proxies: typing.Optional[ProxiesTypes] = None,
         mounts: typing.Optional[typing.Mapping[str, BaseTransport]] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -666,8 +668,14 @@ class Client(BaseClient):
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
+        if proxies:
+            message = "The 'proxies' argument is now deprecated. Use 'proxy' or 'mounts' instead."
+            warnings.warn(message, DeprecationWarning)
+            if proxy:
+                raise RuntimeError("Use either `proxy` or 'proxies', not both.")
+
         allow_env_proxies = trust_env and app is None and transport is None
-        proxy_map = self._get_proxy_map(proxies, allow_env_proxies)
+        proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
             verify=verify,
@@ -1353,6 +1361,7 @@ class AsyncClient(BaseClient):
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
+        proxy: typing.Optional[ProxyTypes] = None,
         proxies: typing.Optional[ProxiesTypes] = None,
         mounts: typing.Optional[typing.Mapping[str, AsyncBaseTransport]] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
@@ -1391,8 +1400,14 @@ class AsyncClient(BaseClient):
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
+        if proxies:
+            message = "The 'proxies' argument is now deprecated. Use 'proxy' or 'mounts' instead."
+            warnings.warn(message, DeprecationWarning)
+            if proxy:
+                raise RuntimeError("Use either `proxy` or 'proxies', not both.")
+
         allow_env_proxies = trust_env and app is None and transport is None
-        proxy_map = self._get_proxy_map(proxies, allow_env_proxies)
+        proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
             verify=verify,
