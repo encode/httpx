@@ -328,3 +328,11 @@ def test_proxy_and_proxies_together():
         httpx.AsyncClient(
             proxies={"all://": "http://127.0.0.1"}, proxy="http://127.0.0.1"
         )
+
+
+def test_proxy_with_mounts():
+    proxy_transport = httpx.HTTPTransport(proxy="http://127.0.0.1")
+    client = httpx.Client(mounts={"http://": proxy_transport})
+
+    transport = client._transport_for_url(httpx.URL("http://example.com"))
+    assert transport == proxy_transport
