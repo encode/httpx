@@ -87,7 +87,7 @@ COMPONENT_REGEX = {
 
 # We use these simple regexs as a first pass before handing off to
 # the stdlib 'ipaddress' module for IP address validation.
-IPv4_STYLE_HOSTNAME = re.compile(r"^[0-9]+.[0-9]+.[0-9]+.[0-9]+$")
+IPv4_STYLE_HOSTNAME = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$")
 IPv6_STYLE_HOSTNAME = re.compile(r"^\[.*\]$")
 
 
