@@ -29,7 +29,6 @@ from types import TracebackType
 
 import httpcore
 
-from httpx import URL
 
 from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._exceptions import (
