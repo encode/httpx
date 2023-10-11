@@ -29,7 +29,6 @@ from types import TracebackType
 
 import httpcore
 
-
 from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._exceptions import (
     ConnectError,
@@ -66,7 +65,7 @@ SOCKET_OPTION = typing.Union[
 def map_httpcore_exceptions() -> typing.Iterator[None]:
     try:
         yield
-    except Exception as exc:  # noqa: PIE-786
+    except Exception as exc:
         mapped_exc = None
 
         for from_exc, to_exc in HTTPCORE_EXC_MAP.items():
