@@ -49,6 +49,7 @@ from .._exceptions import (
 )
 from .._models import Request, Response
 from .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream, VerifyTypes
+from .._urls import URL
 from .base import AsyncBaseTransport, BaseTransport
 
 T = typing.TypeVar("T", bound="HTTPTransport")
