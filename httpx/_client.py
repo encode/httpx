@@ -631,7 +631,9 @@ class Client(BaseClient):
         http2: bool = False,
         proxy: typing.Optional[ProxyTypes] = None,
         proxies: typing.Optional[ProxiesTypes] = None,
-        mounts: typing.Optional[typing.Mapping[str, BaseTransport]] = None,
+        mounts: typing.Optional[
+            typing.Mapping[str, typing.Optional[BaseTransport]]
+        ] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -1363,7 +1365,9 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         proxy: typing.Optional[ProxyTypes] = None,
         proxies: typing.Optional[ProxiesTypes] = None,
-        mounts: typing.Optional[typing.Mapping[str, AsyncBaseTransport]] = None,
+        mounts: typing.Optional[
+            typing.Mapping[str, typing.Optional[AsyncBaseTransport]]
+        ] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
