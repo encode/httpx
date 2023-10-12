@@ -1290,7 +1290,7 @@ mounts = {
 #### Environment variables
 
 There are also environment variables that can be used to control the dictionary of the client mounts. 
-They can be used to configure proxy HTTP proxying for clients.
+They can be used to configure HTTP proxying for clients.
 
 See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](environment_variables.md#http_proxy-https_proxy-all_proxy) for more information.
 
