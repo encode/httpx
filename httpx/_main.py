@@ -69,7 +69,7 @@ def print_help() -> None:
     )
 
     table.add_row(
-        "--proxies [cyan]URL",
+        "--proxy [cyan]URL",
         "Send the request via a proxy. Should be the URL giving the proxy address.",
     )
 
@@ -385,8 +385,8 @@ def handle_help(
     ),
 )
 @click.option(
-    "--proxies",
-    "proxies",
+    "--proxy",
+    "proxy",
     type=str,
     default=None,
     help="Send the request via a proxy. Should be the URL giving the proxy address.",
@@ -455,7 +455,7 @@ def main(
     headers: typing.List[typing.Tuple[str, str]],
     cookies: typing.List[typing.Tuple[str, str]],
     auth: typing.Optional[typing.Tuple[str, str]],
-    proxies: str,
+    proxy: str,
     timeout: float,
     follow_redirects: bool,
     verify: bool,
@@ -472,7 +472,7 @@ def main(
 
     try:
         with Client(
-            proxies=proxies,
+            proxy=proxy,
             timeout=timeout,
             verify=verify,
             http2=http2,
