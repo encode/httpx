@@ -79,7 +79,7 @@ TimeoutTypes = Union[
     "Timeout",
 ]
 ProxyTypes = Union[URLTypes, "Proxy"]
-ProxiesTypes = Union[URLTypes, ProxyTypes, Dict[URLTypes, Union[None, ProxyTypes]]]
+ProxiesTypes = Union[ProxyTypes, Dict[URLTypes, Union[None, ProxyTypes]]]
 
 AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
