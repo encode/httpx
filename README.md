@@ -134,8 +134,8 @@ The HTTPX project relies on these excellent libraries:
 
 As well as these optional installs:
 
-* `anyio`, `sniffio` - Async support for `asyncio`. *(Optional, with `httpx['asyncio']`)*
-* `trio`, `sniffio` - Async support for `trio`. *(Optional, with `httpx['trio']`)*
+* `anyio` - Async support for `asyncio`. *(Optional, with `httpx['asyncio']`)*
+* `trio` - Async support for `trio`. *(Optional, with `httpx['trio']`)*
 * `h2` - HTTP/2 support. *(Optional, with `httpx['http2']`)*
 * `socksio` - SOCKS proxy support. *(Optional, with `httpx['socks']`)*
 * `rich` - Rich terminal support. *(Optional, with `httpx['cli']`)*
