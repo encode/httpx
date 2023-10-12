@@ -598,6 +598,7 @@ class Client(BaseClient):
     to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
     file, key file, password).
+    * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
     * **proxies** - *(optional)* A dictionary mapping proxy keys to proxy
     URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
@@ -1332,6 +1333,7 @@ class AsyncClient(BaseClient):
     file, key file, password).
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
+    * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
     * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
     URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
