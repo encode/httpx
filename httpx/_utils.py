@@ -28,10 +28,11 @@ _HTML5_FORM_ENCODING_RE = re.compile(
 # For our supported text codecs, we start with the text codecs as supported by Chromium, Oct. 2023.
 # https://chromium.googlesource.com/chromium/chromium/+/refs/heads/trunk/chrome/browser/character_encoding.cc#36
 #
-# Then limit those to any which documented as included by cpython,
-# which drops "windows-874", "iso-8859-8-i".
+# Then limit them to only includec codecs which are documented as included by cpython.
+# https://docs.python.org/3/library/codecs.html#standard-encodings
 #
-# Then make sure we're referencing them with the canonical name as used by the Python codecs.
+# We're referencing them with the canonical name as used by the Python codecs.
+# The alias given in the chromium source is included as a comment for comparison. 
 SUPPORTED_CODECS = {
     "big5",  # big5
     "big5hkscs",  # big5-hkscs
