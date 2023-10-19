@@ -25,6 +25,12 @@ _HTML5_FORM_ENCODING_RE = re.compile(
     r"|".join([re.escape(c) for c in _HTML5_FORM_ENCODING_REPLACEMENTS.keys()])
 )
 
+# Text codecs as supported by Chromium, Oct. 2023.
+# https://chromium.googlesource.com/chromium/chromium/+/refs/heads/trunk/chrome/browser/character_encoding.cc#36
+SUPPORTED_CODECS = [
+    'utf-8', 'utf-16le', 'iso-8859-1', 'windows-1252', 'gbk', 'gb18030', 'big5', 'big5-hkscs', 'euc-kr', 'shift-jis', 'euc-jp', 'iso-2022-jp', 'windows-874', 'iso-8859-15', 'macintosh', 'iso-8859-2', 'windows-1250', 'iso-8859-5', 'windows-1251', 'koi8-r', 'koi8-u', 'iso-8859-7', 'windows-1253', 'windows-1254', 'windows-1256', 'iso-8859-6', 'windows-1255', 'iso-8859-8-i', 'iso-8859-8', 'windows-1258', 'iso-8859-4', 'iso-8859-13', 'windows-1257', 'iso-8859-3', 'iso-8859-10', 'iso-8859-14', 'iso-8859-16'
+]
+
 
 def normalize_header_key(
     value: typing.Union[str, bytes],
@@ -72,6 +78,15 @@ def is_known_encoding(encoding: str) -> bool:
     """
     Return `True` if `encoding` is a known codec.
     """
+    # Only allow text codecs within our supported range.
+    if encoding.lower().replace('_', '-') not in SUPPORTED_CODECS:
+        return False
+
+    # Also ensure that the codec is actually available.
+    # At the point of writing this was true for all the SUPPORTED_CODECS
+    # except "windows-874", "iso-8859-8-i", when using cpython.
+    # But there *could* feasibly be a different set of codecs available
+    # under some installations.
     try:
         codecs.lookup(encoding)
     except LookupError:
