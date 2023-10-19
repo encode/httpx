@@ -45,6 +45,12 @@ def test_urlparse_normalized_host():
     assert url.host == "example.com"
 
 
+def test_urlparse_ipv4_like_host():
+    """rare host names used to quality as IPv4"""
+    url = httpx.URL("https://023b76x43144/")
+    assert url.host == "023b76x43144"
+
+
 def test_urlparse_valid_ipv4():
     url = httpx.URL("https://1.2.3.4/")
     assert url.host == "1.2.3.4"
