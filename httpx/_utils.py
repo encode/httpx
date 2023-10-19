@@ -27,7 +27,7 @@ _HTML5_FORM_ENCODING_RE = re.compile(
 
 # Text codecs as supported by Chromium, Oct. 2023.
 # https://chromium.googlesource.com/chromium/chromium/+/refs/heads/trunk/chrome/browser/character_encoding.cc#36
-SUPPORTED_CODECS = [
+SUPPORTED_CODECS = {
     "utf-8",
     "utf-16le",
     "iso-8859-1",
@@ -65,7 +65,7 @@ SUPPORTED_CODECS = [
     "iso-8859-10",
     "iso-8859-14",
     "iso-8859-16",
-]
+}
 
 
 def normalize_header_key(
