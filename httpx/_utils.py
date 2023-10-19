@@ -32,7 +32,7 @@ _HTML5_FORM_ENCODING_RE = re.compile(
 # https://docs.python.org/3/library/codecs.html#standard-encodings
 #
 # We're referencing them with the canonical name as used by the Python codecs.
-# The alias given in the chromium source is included as a comment for comparison. 
+# The alias given in the chromium source is included as a comment for comparison.
 SUPPORTED_CODECS = {
     "big5",  # big5
     "big5hkscs",  # big5-hkscs
