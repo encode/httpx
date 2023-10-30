@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import random
@@ -23,14 +24,16 @@ import httpx
     ),
 )
 def test_encoded(encoding):
-    data = "{}".encode(encoding)
-    response = httpx.Response(200, content=data)
-    assert response._guess_content_json_utf() == encoding
+    content = '{"abc": 123}'.encode(encoding)
+    response = httpx.Response(200, content=content)
+    assert response.json() == {"abc": 123}
 
 
 def test_bad_utf_like_encoding():
-    response = httpx.Response(200, content=b"\x00\x00\x00\x00")
-    assert response._guess_content_json_utf() is None
+    content = b"\x00\x00\x00\x00"
+    response = httpx.Response(200, content=content)
+    with pytest.raises(json.decoder.JSONDecodeError):
+        response.json()
 
 
 @pytest.mark.parametrize(
@@ -43,9 +46,9 @@ def test_bad_utf_like_encoding():
     ),
 )
 def test_guess_by_bom(encoding, expected):
-    data = "\ufeff{}".encode(encoding)
-    response = httpx.Response(200, content=data)
-    assert response._guess_content_json_utf() == expected
+    content = '\ufeff{"abc": 123}'.encode(encoding)
+    response = httpx.Response(200, content=content)
+    assert response.json() == {"abc": 123}
 
 
 @pytest.mark.parametrize(
