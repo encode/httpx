@@ -199,7 +199,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
         boundary: typing.Optional[bytes] = None,
     ) -> None:
         if boundary is None:
-            boundary = os.urandom(16).hex()
+            boundary = os.urandom(16).hex().encode("ascii")
 
         self.boundary = boundary
         self.content_type = "multipart/form-data; boundary=%s" % boundary.decode(
