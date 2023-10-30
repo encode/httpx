@@ -1,4 +1,3 @@
-import binascii
 import io
 import os
 import typing
@@ -200,7 +199,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
         boundary: typing.Optional[bytes] = None,
     ) -> None:
         if boundary is None:
-            boundary = binascii.hexlify(os.urandom(16))
+            boundary = ''.join([f'{byte:02x}' for byte in(os.urandom(16)])
 
         self.boundary = boundary
         self.content_type = "multipart/form-data; boundary=%s" % boundary.decode(
