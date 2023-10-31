@@ -69,13 +69,6 @@ SUPPORTED_CODECS = {
     "shift_jis",  # shift-jis
     "utf-8",  # utf-8
     "utf-16-le",  # utf-16le
-    # We also support the following UTF flavors...
-    "utf-8-sig",
-    "utf-16",
-    "utf-16-be",
-    "utf-32",
-    "utf-32-be",
-    "utf-32-le",
 }
 
 
