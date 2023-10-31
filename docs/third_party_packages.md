@@ -8,7 +8,7 @@ As HTTPX usage grows, there is an expanding community of developers building too
 
 ### Hishel
 
-[GitHub](https://github.com/karosis88/hishel) - [Documentation](https://karosis88.github.io/hishel/)
+[GitHub](https://github.com/karpetrosyan/hishel) - [Documentation](https://hishel.com/)
 
 An elegant HTTP Cache implementation for HTTPX and HTTP Core.
 
