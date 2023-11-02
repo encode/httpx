@@ -51,21 +51,23 @@ class URL:
       assert url.raw_host == b"xn--fiqs8s.icom.museum"
 
     * `url.port` is either None or an integer. URLs that include the default port for
-      "http", "https", "ws", "wss", and "ftp" schemes have their port normalized to `None`.
+      "http", "https", "ws", "wss", and "ftp" schemes have their port
+      normalized to `None`.
 
       assert httpx.URL("http://example.com") == httpx.URL("http://example.com:80")
       assert httpx.URL("http://example.com").port is None
       assert httpx.URL("http://example.com:80").port is None
 
-    * `url.userinfo` is raw bytes, without URL escaping. Usually you'll want to work with
-      `url.username` and `url.password` instead, which handle the URL escaping.
+    * `url.userinfo` is raw bytes, without URL escaping. Usually you'll want to work
+      with `url.username` and `url.password` instead, which handle the URL escaping.
 
     * `url.raw_path` is raw bytes of both the path and query, without URL escaping.
       This portion is used as the target when constructing HTTP requests. Usually you'll
       want to work with `url.path` instead.
 
-    * `url.query` is raw bytes, without URL escaping. A URL query string portion can only
-      be properly URL escaped when decoding the parameter names and values themselves.
+    * `url.query` is raw bytes, without URL escaping. A URL query string portion can
+      only be properly URL escaped when decoding the parameter names and values
+      themselves.
     """
 
     def __init__(
@@ -115,7 +117,8 @@ class URL:
             self._uri_reference = url._uri_reference.copy_with(**kwargs)
         else:
             raise TypeError(
-                f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}: {url!r}"
+                "Invalid type for url.  Expected str or httpx.URL,"
+                f" got {type(url)}: {url!r}"
             )
 
     @property
@@ -305,7 +308,8 @@ class URL:
         Provides the (scheme, host, port, target) for the outgoing request.
 
         In older versions of `httpx` this was used in the low-level transport API.
-        We no longer use `RawURL`, and this property will be deprecated in a future release.
+        We no longer use `RawURL`, and this property will be deprecated
+        in a future release.
         """
         return RawURL(
             self.raw_scheme,
@@ -342,7 +346,9 @@ class URL:
 
         For example:
 
-        url = httpx.URL("https://www.example.com").copy_with(username="jo@gmail.com", password="a secret")
+        url = httpx.URL("https://www.example.com").copy_with(
+            username="jo@gmail.com", password="a secret"
+        )
         assert url == "https://jo%40email.com:a%20secret@www.example.com"
         """
         return URL(self, **kwargs)

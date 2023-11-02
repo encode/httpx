@@ -259,7 +259,8 @@ class LineDecoder:
     """
     Handles incrementally reading lines from text.
 
-    Has the same behaviour as the stdllib splitlines, but handling the input iteratively.
+    Has the same behaviour as the stdllib splitlines,
+    but handling the input iteratively.
     """
 
     def __init__(self) -> None:
