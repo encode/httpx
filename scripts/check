@@ -9,6 +9,6 @@ export SOURCE_FILES="httpx tests"
 set -x
 
 ./scripts/sync-version
-${PREFIX}black --check --diff $SOURCE_FILES
+${PREFIX}ruff format $SOURCE_FILES --diff
 ${PREFIX}mypy $SOURCE_FILES
 ${PREFIX}ruff check $SOURCE_FILES
