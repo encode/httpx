@@ -1,5 +1,4 @@
 import hashlib
-import netrc
 import os
 import re
 import time
@@ -148,6 +147,10 @@ class NetRCAuth(Auth):
     """
 
     def __init__(self, file: typing.Optional[str] = None):
+        # Lazily import 'netrc'.
+        # There's no need for us to load this module unless 'NetRCAuth' is being used.
+        import netrc
+
         self._netrc_info = netrc.netrc(file)
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
