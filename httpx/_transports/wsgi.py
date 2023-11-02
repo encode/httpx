@@ -114,6 +114,7 @@ class WSGITransport(BaseTransport):
         seen_status = None
         seen_response_headers = None
         seen_exc_info = None
+        seen_output = []
 
         def start_response(
             status: str,
@@ -124,9 +125,11 @@ class WSGITransport(BaseTransport):
             seen_status = status
             seen_response_headers = response_headers
             seen_exc_info = exc_info
-            return lambda _: None
+            return seen_output.append
 
         result = self.app(environ, start_response)
+        if seen_output:
+            result = itertools.chain(result, seen_output)
 
         stream = WSGIByteStream(result)
 
