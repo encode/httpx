@@ -15,7 +15,7 @@ mkautodoc==0.2.0
 mkdocs-material==9.4.7
 
 # Packaging
-build==0.10.0
+build==1.0.3
 twine==4.0.2
 
 # Tests & Linting
