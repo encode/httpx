@@ -129,7 +129,7 @@ class WSGITransport(BaseTransport):
 
         result = self.app(environ, start_response)
         if seen_output:
-            result = itertools.chain(result, seen_output)
+            result = itertools.chain(seen_output, result)
 
         stream = WSGIByteStream(result)
 
