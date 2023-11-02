@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 * Add support for Python 3.12. (#2854)
+* Add support for httpcore 1.0 (#2885)
 
 ### Fixed
 

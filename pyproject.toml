@@ -29,7 +29,8 @@ classifiers = [
 ]
 dependencies = [
     "certifi",
-    "httpcore>=0.18.0,<0.19.0",
+    "httpcore",
+    "anyio",
     "idna",
     "sniffio",
 ]
