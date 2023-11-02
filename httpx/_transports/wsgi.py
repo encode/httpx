@@ -114,7 +114,7 @@ class WSGITransport(BaseTransport):
         seen_status = None
         seen_response_headers = None
         seen_exc_info = None
-        seen_output = []
+        seen_output: typing.List[bytes] = []
 
         def start_response(
             status: str,
