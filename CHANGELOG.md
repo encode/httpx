@@ -6,15 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
-### Added
+### 0.25.1 (3rd November, 2023)
 
 * Add support for Python 3.12. (#2854)
+* Add support for httpcore 1.0 (#2885)
 
 ### Fixed
 
 * Raise `ValueError` on `Response.encoding` being set after `Response.text` has been accessed. (#2852)
 
-## 0.25.0 (11th Sep, 2023)
+## 0.25.0 (11th September, 2023)
 
 ### Removed
 
@@ -62,13 +63,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 * The `rfc3986` dependancy has been removed. (#2252)
 
-## 0.23.3 (4th Jan, 2023)
+## 0.23.3 (4th January, 2023)
 
 ### Fixed
 
 * Version 0.23.2 accidentally included stricter type checking on query parameters. This shouldn've have been included in a minor version bump, and is now reverted. (#2523, #2539)
 
-## 0.23.2 (2nd Jan, 2023)
+## 0.23.2 (2nd January, 2023)
 
 ### Added
 
@@ -80,7 +81,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * Raise `TypeError` if content is passed a dict-instance. (#2495)
 * Partially revert the API breaking change in 0.23.1, which removed `RawURL`. We continue to expose a `url.raw` property which is now a plain named-tuple. This API is still expected to be deprecated, but we will do so with a major version bump. (#2481)
 
-## 0.23.1 (18th Nov, 2022)
+## 0.23.1 (18th November, 2022)
 
 **Note**: The 0.23.1 release should have used a proper version bump, rather than a minor point release.
 There are API surface area changes that may affect some users.
