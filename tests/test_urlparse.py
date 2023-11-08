@@ -150,6 +150,11 @@ def test_param_with_existing_escape_requires_encoding():
     assert str(url) == "http://webservice?u=http%3A%2F%2Fexample.com%3Fq%3Dfoo%252Fa"
 
 
+def test_param_with_existing_escape():
+    url = httpx.URL("https://example.com?sig=iGyXM1mSehS4ONN5%2B2GillQ%2BYawyh5EryToDT/Bzf90%3D")
+    assert str(url) == "https://example.com?sig=iGyXM1mSehS4ONN5%2B2GillQ%2BYawyh5EryToDT%2FBzf90%3D"
+
+
 # Tests for invalid URLs
 
 
