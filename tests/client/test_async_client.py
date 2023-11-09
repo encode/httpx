@@ -106,7 +106,7 @@ async def test_cannot_stream_sync_request(server):
 
     async with httpx.AsyncClient() as client:
         with pytest.raises(RuntimeError):
-            await client.post(server.url, content=hello_world())
+            await client.post(server.url, content=hello_world())  # type: ignore[arg-type]
 
 
 @pytest.mark.anyio
