@@ -31,6 +31,7 @@ from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
     AsyncByteStream,
+    AsyncRequestContent,
     AuthTypes,
     CertTypes,
     CookieTypes,
@@ -38,7 +39,6 @@ from ._types import (
     ProxiesTypes,
     QueryParamTypes,
     RequestContent,
-    AsyncRequestContent,
     RequestData,
     RequestExtensions,
     RequestFiles,
