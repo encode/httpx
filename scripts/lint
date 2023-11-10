@@ -9,4 +9,4 @@ export SOURCE_FILES="httpx tests"
 set -x
 
 ${PREFIX}ruff --fix $SOURCE_FILES
-${PREFIX}black $SOURCE_FILES
+${PREFIX}ruff format $SOURCE_FILES
