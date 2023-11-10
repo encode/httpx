@@ -1,7 +1,6 @@
 import typing
 import zlib
 
-import brotli
 import chardet
 import pytest
 
@@ -61,7 +60,7 @@ def test_gzip():
 
 def test_brotli():
     body = b"test 123"
-    compressed_body = brotli.compress(body)
+    compressed_body = b"\x8b\x03\x80test 123\x03"
 
     headers = [(b"Content-Encoding", b"br")]
     response = httpx.Response(
@@ -94,7 +93,7 @@ def test_multi():
 
 def test_multi_with_identity():
     body = b"test 123"
-    compressed_body = brotli.compress(body)
+    compressed_body = b"\x8b\x03\x80test 123\x03"
 
     headers = [(b"Content-Encoding", b"br, identity")]
     response = httpx.Response(
@@ -153,8 +152,7 @@ def test_decoders_empty_cases(header_value):
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
 def test_decoding_errors(header_value):
     headers = [(b"Content-Encoding", header_value)]
-    body = b"test 123"
-    compressed_body = brotli.compress(body)[3:]
+    compressed_body = b"invalid"
     with pytest.raises(httpx.DecodingError):
         request = httpx.Request("GET", "https://example.org")
         httpx.Response(200, headers=headers, content=compressed_body, request=request)
