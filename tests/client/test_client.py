@@ -260,7 +260,7 @@ def test_context_managed_transport():
 
 def test_context_managed_transport_and_mount():
     class Transport(httpx.BaseTransport):
-        def __init__(self, name: str):
+        def __init__(self, name: str) -> None:
             self.name: str = name
             self.events: typing.List[str] = []
 
