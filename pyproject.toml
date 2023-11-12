@@ -29,7 +29,7 @@ classifiers = [
 ]
 dependencies = [
     "certifi",
-    "httpcore>=1.0.0",
+    "httpcore==1.*",
     "anyio",
     "idna",
     "sniffio",
