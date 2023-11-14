@@ -71,7 +71,6 @@ include = [
     "/CHANGELOG.md",
     "/README.md",
     "/tests",
-    "/requirements.txt",
 ]
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
