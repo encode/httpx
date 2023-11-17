@@ -29,7 +29,7 @@ classifiers = [
 ]
 dependencies = [
     "certifi",
-    "httpcore",
+    "httpcore==1.*",
     "anyio",
     "idna",
     "sniffio",
@@ -70,6 +70,7 @@ include = [
     "/httpx",
     "/CHANGELOG.md",
     "/README.md",
+    "/tests",
 ]
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
