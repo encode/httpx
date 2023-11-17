@@ -318,7 +318,7 @@ class Request:
         json: typing.Optional[typing.Any] = None,
         stream: typing.Union[SyncByteStream, AsyncByteStream, None] = None,
         extensions: typing.Optional[RequestExtensions] = None,
-    ):
+    ) -> None:
         self.method = (
             method.decode("ascii").upper()
             if isinstance(method, bytes)
@@ -456,7 +456,7 @@ class Response:
         extensions: typing.Optional[ResponseExtensions] = None,
         history: typing.Optional[typing.List["Response"]] = None,
         default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
-    ):
+    ) -> None:
         self.status_code = status_code
         self.headers = Headers(headers)
 
@@ -1201,7 +1201,7 @@ class Cookies(typing.MutableMapping[str, str]):
         for use with `CookieJar` operations.
         """
 
-        def __init__(self, response: Response):
+        def __init__(self, response: Response) -> None:
             self.response = response
 
         def info(self) -> email.message.Message:

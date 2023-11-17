@@ -126,7 +126,7 @@ class BasicAuth(Auth):
 
     def __init__(
         self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
-    ):
+    ) -> None:
         self._auth_header = self._build_auth_header(username, password)
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
@@ -146,7 +146,7 @@ class NetRCAuth(Auth):
     Use a 'netrc' file to lookup basic auth credentials based on the url host.
     """
 
-    def __init__(self, file: typing.Optional[str] = None):
+    def __init__(self, file: typing.Optional[str] = None) -> None:
         # Lazily import 'netrc'.
         # There's no need for us to load this module unless 'NetRCAuth' is being used.
         import netrc
