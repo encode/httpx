@@ -102,7 +102,7 @@ HTTPCORE_EXC_MAP = {
 
 
 class ResponseStream(SyncByteStream):
-    def __init__(self, httpcore_stream: typing.Iterable[bytes]):
+    def __init__(self, httpcore_stream: typing.Iterable[bytes]) -> None:
         self._httpcore_stream = httpcore_stream
 
     def __iter__(self) -> typing.Iterator[bytes]:
@@ -241,7 +241,7 @@ class HTTPTransport(BaseTransport):
 
 
 class AsyncResponseStream(AsyncByteStream):
-    def __init__(self, httpcore_stream: typing.AsyncIterable[bytes]):
+    def __init__(self, httpcore_stream: typing.AsyncIterable[bytes]) -> None:
         self._httpcore_stream = httpcore_stream
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:

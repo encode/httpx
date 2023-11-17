@@ -172,7 +172,7 @@ class BaseClient:
         base_url: URLTypes = "",
         trust_env: bool = True,
         default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
-    ):
+    ) -> None:
         event_hooks = {} if event_hooks is None else event_hooks
 
         self._base_url = self._enforce_trailing_slash(URL(base_url))
@@ -642,7 +642,7 @@ class Client(BaseClient):
         app: typing.Optional[typing.Callable[..., typing.Any]] = None,
         trust_env: bool = True,
         default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
-    ):
+    ) -> None:
         super().__init__(
             auth=auth,
             params=params,
@@ -1367,7 +1367,7 @@ class AsyncClient(BaseClient):
         app: typing.Optional[typing.Callable[..., typing.Any]] = None,
         trust_env: bool = True,
         default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
-    ):
+    ) -> None:
         super().__init__(
             auth=auth,
             params=params,

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Added
+
+* Add missing type hints to few `__init__()` methods. (#2938)
+
 ## 0.25.1 (3rd November, 2023)
 
 ### Added
