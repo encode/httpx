@@ -93,7 +93,7 @@ class RepeatAuth(httpx.Auth):
 
     requires_request_body = True
 
-    def __init__(self, repeat: int):
+    def __init__(self, repeat: int) -> None:
         self.repeat = repeat
 
     def auth_flow(

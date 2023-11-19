@@ -245,7 +245,7 @@ class TextDecoder:
     Handles incrementally decoding bytes into text
     """
 
-    def __init__(self, encoding: str = "utf-8"):
+    def __init__(self, encoding: str = "utf-8") -> None:
         self.decoder = codecs.getincrementaldecoder(encoding)(errors="replace")
 
     def decode(self, data: bytes) -> str:
