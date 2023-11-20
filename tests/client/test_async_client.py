@@ -106,6 +106,9 @@ async def test_cannot_stream_sync_request(server):
 
     async with httpx.AsyncClient() as client:
         with pytest.raises(RuntimeError):
+            # We have a type ignore here, because we'd expect this case
+            # to *both* be a typing error *and* also raise a RuntimeError
+            # if it is violated.
             await client.post(server.url, content=hello_world())  # type: ignore[arg-type]
 
 
