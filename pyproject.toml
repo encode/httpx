@@ -97,10 +97,6 @@ replacement = 'src="https://raw.githubusercontent.com/encode/httpx/master/\1"'
 [tool.ruff]
 select = ["E", "F", "I", "B", "PIE"]
 ignore = ["B904", "B028"]
-line-length = 88
-
-[tool.ruff.pycodestyle]
-max-line-length = 120
 
 [tool.ruff.isort]
 combine-as-imports = true
