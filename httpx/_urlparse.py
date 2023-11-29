@@ -360,24 +360,25 @@ def normalize_port(
 
 def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:
     """
-    Path validation rules that depend on if the URL contains a scheme or authority component.
+    Path validation rules that depend on if the URL contains
+    a scheme or authority component.
 
     See https://datatracker.ietf.org/doc/html/rfc3986.html#section-3.3
     """
     if has_authority:
-        # > If a URI contains an authority component, then the path component
-        # > must either be empty or begin with a slash ("/") character."
+        # If a URI contains an authority component, then the path component
+        # must either be empty or begin with a slash ("/") character."
         if path and not path.startswith("/"):
             raise InvalidURL("For absolute URLs, path must be empty or begin with '/'")
     else:
-        # > If a URI does not contain an authority component, then the path cannot begin
-        # > with two slash characters ("//").
+        # If a URI does not contain an authority component, then the path cannot begin
+        # with two slash characters ("//").
         if path.startswith("//"):
             raise InvalidURL(
                 "URLs with no authority component cannot have a path starting with '//'"
             )
-        # > In addition, a URI reference (Section 4.1) may be a relative-path reference, in which
-        # > case the first path segment cannot contain a colon (":") character.
+        # In addition, a URI reference (Section 4.1) may be a relative-path reference,
+        # in which case the first path segment cannot contain a colon (":") character.
         if path.startswith(":") and not has_scheme:
             raise InvalidURL(
                 "URLs with no scheme component cannot have a path starting with ':'"
@@ -449,16 +450,18 @@ def quote(string: str, safe: str = "/") -> str:
 
 
 def urlencode(items: typing.List[typing.Tuple[str, str]]) -> str:
-    # We can use a much simpler version of the stdlib urlencode here because
-    # we don't need to handle a bunch of different typing cases, such as bytes vs str.
-    #
-    # https://github.com/python/cpython/blob/b2f7b2ef0b5421e01efb8c7bee2ef95d3bab77eb/Lib/urllib/parse.py#L926
-    #
-    # Note that we use '%20' encoding for spaces. and '%2F  for '/'.
-    # This is slightly different than `requests`, but is the behaviour that browsers use.
-    #
-    # See
-    # - https://github.com/encode/httpx/issues/2536
-    # - https://github.com/encode/httpx/issues/2721
-    # - https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
+    """
+    We can use a much simpler version of the stdlib urlencode here because
+    we don't need to handle a bunch of different typing cases, such as bytes vs str.
+
+    https://github.com/python/cpython/blob/b2f7b2ef0b5421e01efb8c7bee2ef95d3bab77eb/Lib/urllib/parse.py#L926
+
+    Note that we use '%20' encoding for spaces. and '%2F  for '/'.
+    This is slightly different than `requests`, but is the behaviour that browsers use.
+
+    See
+    - https://github.com/encode/httpx/issues/2536
+    - https://github.com/encode/httpx/issues/2721
+    - https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
+    """
     return "&".join([quote(k, safe="") + "=" + quote(v, safe="") for k, v in items])
