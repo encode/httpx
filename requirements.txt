@@ -12,7 +12,7 @@ types-chardet==5.0.4.5
 # Documentation
 mkdocs==1.5.3
 mkautodoc==0.2.0
-mkdocs-material==9.4.7
+mkdocs-material==9.4.14
 
 # Packaging
 build==1.0.3
