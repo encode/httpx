@@ -28,4 +28,4 @@ ruff==0.1.6
 trio==0.22.2
 trio-typing==0.10.0
 trustme==1.1.0
-uvicorn==0.22.0
+uvicorn==0.24.0.post1
