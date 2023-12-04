@@ -26,21 +26,17 @@ from ._exceptions import InvalidURL
 MAX_URL_LENGTH = 65536
 
 # https://datatracker.ietf.org/doc/html/rfc3986.html#section-2.3
-UNRESERVED_CHARACTERS = (
+UNRESERVED_CHARACTERS = set(
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
 )
-UNRESERVED_CHARACTERS_SET = set(UNRESERVED_CHARACTERS)
 
-SUB_DELIMS = "!$&'()*+,;="
-SUB_DELIMS_SET = set(SUB_DELIMS)
+SUB_DELIMS = set("!$&'()*+,;=")
+GEN_DELIMS = set(":/?#[]@")
 
-GEN_DELIMS = ":/?#[]@"
-GEN_DELIMS_SET = set(GEN_DELIMS)
-
-RESERVED_SET = SUB_DELIMS_SET.union(GEN_DELIMS_SET)
+RESERVED = SUB_DELIMS.union(GEN_DELIMS)
 
 # Safe characters in a full URL
-URL_RAW_SAFE = RESERVED_SET.union(set("%"))
+URL_RAW_SAFE = RESERVED.union(set("%"))
 
 # Safe characters in the path section
 PATH_RAW_SAFE = URL_RAW_SAFE.difference(set("?#"))
@@ -59,6 +55,12 @@ FRAGMENT_RAW_SAFE = URL_RAW_SAFE
 
 # Safe characters in a single fragment
 FRAGMENT_VAL_SAFE = FRAGMENT_RAW_SAFE.difference(set("&=%"))
+
+# Safe characters in the user info section
+USERINFO_RAW_SAFE = SUB_DELIMS.union(set(":%"))
+
+# Safe characters in a password or username
+USERINFO_VAL_SAFE = USERINFO_RAW_SAFE.difference(set(":%"))
 
 PERCENT_ENCODED_REGEX = re.compile("%[A-Fa-f0-9]{2}")
 
@@ -203,8 +205,8 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
 
     # Replace "username" and/or "password" with "userinfo".
     if "username" in kwargs or "password" in kwargs:
-        username = quote(kwargs.pop("username", "") or "")
-        password = quote(kwargs.pop("password", "") or "")
+        username = quote(kwargs.pop("username", "") or "", set("/"))
+        password = quote(kwargs.pop("password", "") or "", set("/"))
         kwargs["userinfo"] = f"{username}:{password}" if password else username
 
     # Replace "raw_path" with "path" and "query".
@@ -270,7 +272,7 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     # We end up with a parsed representation of the URL,
     # with components that are plain ASCII bytestrings.
     parsed_scheme: str = scheme.lower()
-    parsed_userinfo: str = quote(userinfo, safe=SUB_DELIMS + ":")
+    parsed_userinfo: str = quote(userinfo, safe=USERINFO_RAW_SAFE)
     parsed_host: str = encode_host(host)
     parsed_port: typing.Optional[int] = normalize_port(port, scheme)
 
@@ -448,14 +450,11 @@ def percent_encode(char: str) -> str:
     return "".join([f"%{byte:02x}" for byte in char.encode("utf-8")]).upper()
 
 
-def is_safe(string: str, safe: typing.Union[str, typing.Set[str]] = "/") -> bool:
+def is_safe(string: str, safe: typing.Set[str]) -> bool:
     """
     Determine if a given string is already quote-safe.
     """
-    if not isinstance(safe, set):
-        safe = set(safe)
-
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS_SET.union(safe, set("%"))
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS.union(safe, set("%"))
 
     # All characters must already be non-escaping or '%'
     for char in string:
@@ -466,17 +465,14 @@ def is_safe(string: str, safe: typing.Union[str, typing.Set[str]] = "/") -> bool
     return string.count("%") == len(PERCENT_ENCODED_REGEX.findall(string))
 
 
-def quote(string: str, safe: typing.Union[str, typing.Set[str]] = "/") -> str:
+def quote(string: str, safe: typing.Set[str]) -> str:
     """
     Use percent-encoding to quote a string if required.
     """
     if is_safe(string, safe=safe):
         return string
 
-    if not isinstance(safe, set):
-        safe = set(safe)
-
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS_SET.union(safe)
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS.union(safe)
     return "".join(
         [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]
     )
