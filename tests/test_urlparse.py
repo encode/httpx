@@ -150,6 +150,26 @@ def test_param_with_existing_escape_requires_encoding():
     assert str(url) == "http://webservice?u=http%3A%2F%2Fexample.com%3Fq%3Dfoo%252Fa"
 
 
+def test_param_with_existing_escape():
+    url = httpx.URL("https://webservice/?u=/%3D%26&v=1%202")
+    assert str(url) == "https://webservice/?u=%2F%3D%26&v=1%202"
+    assert url.params["u"] == "/=&"
+    assert url.params["v"] == "1 2"
+
+
+def test_param_nested_urls_in_query():
+    src = "special;string with:reserved?cha%20raca/ters&d"
+    data = str(httpx.URL("http://webservice", params={"u": src}))
+    data = str(httpx.URL("http://webservice", params={"u": data}))
+    data = str(httpx.URL("http://webservice", params={"u": data}))
+
+    url = httpx.URL(data)
+    url = httpx.URL(url.params["u"])
+    url = httpx.URL(url.params["u"])
+
+    assert url.params["u"] == src
+
+
 # Tests for invalid URLs
 
 
@@ -260,9 +280,9 @@ def test_copy_with():
 
 def test_path_percent_encoding():
     # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/!$&'()*+,;= abc ABC 123 :/[]@")
-    assert url.raw_path == b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@"
-    assert url.path == "/!$&'()*+,;= abc ABC 123 :/[]@"
+    url = httpx.URL("https://example.com/!$&'()*+,;= abc ABC 123 :/[]@%20")
+    assert url.raw_path == b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@%20"
+    assert url.path == "/!$&'()*+,;= abc ABC 123 :/[]@ "
     assert url.query == b""
     assert url.fragment == ""
 
@@ -278,8 +298,8 @@ def test_query_percent_encoding():
 
 def test_fragment_percent_encoding():
     # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@" + "?#")
+    url = httpx.URL("https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@%20" + "?#")
     assert url.raw_path == b"/"
     assert url.path == "/"
     assert url.query == b""
-    assert url.fragment == "!$&'()*+,;= abc ABC 123 :/[]@?#"
+    assert url.fragment == "!$&'()*+,;= abc ABC 123 :/[]@ ?#"
