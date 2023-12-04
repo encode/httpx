@@ -29,7 +29,36 @@ MAX_URL_LENGTH = 65536
 UNRESERVED_CHARACTERS = (
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
 )
+UNRESERVED_CHARACTERS_SET = set(UNRESERVED_CHARACTERS)
+
 SUB_DELIMS = "!$&'()*+,;="
+SUB_DELIMS_SET = set(SUB_DELIMS)
+
+GEN_DELIMS = ":/?#[]@"
+GEN_DELIMS_SET = set(GEN_DELIMS)
+
+RESERVED_SET = SUB_DELIMS_SET | GEN_DELIMS_SET
+
+# Safe characters in a full URL
+URL_RAW_SAFE = RESERVED_SET | set("%")
+
+# Safe characters in the path section
+PATH_RAW_SAFE = URL_RAW_SAFE - set("?#")
+
+# Safe characters in a single path element
+PATH_VAL_SAFE = PATH_RAW_SAFE - set("/%")
+
+# Safe characters in the query section
+QUERY_RAW_SAFE = URL_RAW_SAFE - set("#")
+
+# Safe characters in a name or value of a query
+QUERY_VAL_SAFE = QUERY_RAW_SAFE - set("&=%")
+
+# Safe characters in the fragment section
+FRAGMENT_RAW_SAFE = URL_RAW_SAFE
+
+# Safe characters in a single fragment
+FRAGMENT_VAL_SAFE = FRAGMENT_RAW_SAFE - set("&=%")
 
 PERCENT_ENCODED_REGEX = re.compile("%[A-Fa-f0-9]{2}")
 
@@ -258,16 +287,14 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     # specific component.
 
     # For 'path' we need to drop ? and # from the GEN_DELIMS set.
-    parsed_path: str = quote(path, safe=SUB_DELIMS + ":/[]@")
+    parsed_path: str = quote(path, safe=PATH_RAW_SAFE)
     # For 'query' we need to drop '#' from the GEN_DELIMS set.
-    # We also exclude '/' because it is more robust to replace it with a percent
-    # encoding despite it not being a requirement of the spec.
     parsed_query: typing.Optional[str] = (
-        None if query is None else quote(query, safe=SUB_DELIMS + ":?[]@")
+        None if query is None else quote(query, safe=QUERY_RAW_SAFE)
     )
     # For 'fragment' we can include all of the GEN_DELIMS set.
     parsed_fragment: typing.Optional[str] = (
-        None if fragment is None else quote(fragment, safe=SUB_DELIMS + ":/?#[]@")
+        None if fragment is None else quote(fragment, safe=FRAGMENT_RAW_SAFE)
     )
 
     # The parsed ASCII bytestrings are our canonical form.
@@ -421,11 +448,14 @@ def percent_encode(char: str) -> str:
     return "".join([f"%{byte:02x}" for byte in char.encode("utf-8")]).upper()
 
 
-def is_safe(string: str, safe: str = "/") -> bool:
+def is_safe(string: str, safe: str | set[str] = "/") -> bool:
     """
     Determine if a given string is already quote-safe.
     """
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe + "%"
+    if not isinstance(safe, set):
+        safe = set(safe)
+
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS_SET | safe | set("%")
 
     # All characters must already be non-escaping or '%'
     for char in string:
@@ -436,14 +466,17 @@ def is_safe(string: str, safe: str = "/") -> bool:
     return string.count("%") == len(PERCENT_ENCODED_REGEX.findall(string))
 
 
-def quote(string: str, safe: str = "/") -> str:
+def quote(string: str, safe: str | set[str] = "/") -> str:
     """
     Use percent-encoding to quote a string if required.
     """
+    if not isinstance(safe, set):
+        safe = set(safe)
+
     if is_safe(string, safe=safe):
         return string
 
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS_SET | safe
     return "".join(
         [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]
     )
@@ -464,4 +497,9 @@ def urlencode(items: typing.List[typing.Tuple[str, str]]) -> str:
     - https://github.com/encode/httpx/issues/2721
     - https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
     """
-    return "&".join([quote(k, safe="") + "=" + quote(v, safe="") for k, v in items])
+    return "&".join(
+        [
+            quote(k, safe=QUERY_VAL_SAFE) + "=" + quote(v, safe=QUERY_VAL_SAFE)
+            for k, v in items
+        ]
+    )

@@ -147,7 +147,30 @@ def test_param_does_not_require_encoding():
 
 def test_param_with_existing_escape_requires_encoding():
     url = httpx.URL("http://webservice", params={"u": "http://example.com?q=foo%2Fa"})
-    assert str(url) == "http://webservice?u=http%3A%2F%2Fexample.com%3Fq%3Dfoo%252Fa"
+    assert str(url) == "http://webservice?u=http://example.com?q%3Dfoo%252Fa"
+
+
+def test_param_with_existing_escape():
+    url = httpx.URL("https://webservice/?u=/%3D%26&v=1%202")
+    assert str(url) == "https://webservice/?u=/%3D%26&v=1%202"
+    assert url.params["u"] == "/=&"
+    assert url.params["v"] == "1 2"
+
+
+def test_param_nested_urls_in_query():
+    src = "special;string with:reserved?cha%20raca/ters&d"
+    data1 = str(httpx.URL("http://webservice", params={"u": src}))
+    data2 = str(httpx.URL("http://webservice", params={"u": data1}))
+    data3 = str(httpx.URL("http://webservice", params={"u": data2}))
+
+    url3 = httpx.URL(data3)
+    assert str(url3) == data3
+    url2 = httpx.URL(url3.params["u"])
+    assert str(url2) == data2
+    url1 = httpx.URL(url2.params["u"])
+    assert str(url1) == data1
+
+    assert url1.params["u"] == src
 
 
 # Tests for invalid URLs
@@ -260,9 +283,9 @@ def test_copy_with():
 
 def test_path_percent_encoding():
     # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/!$&'()*+,;= abc ABC 123 :/[]@")
-    assert url.raw_path == b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@"
-    assert url.path == "/!$&'()*+,;= abc ABC 123 :/[]@"
+    url = httpx.URL("https://example.com/!$&'()*+,;= abc ABC 123 :/[]@%20")
+    assert url.raw_path == b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@%20"
+    assert url.path == "/!$&'()*+,;= abc ABC 123 :/[]@ "
     assert url.query == b""
     assert url.fragment == ""
 
@@ -270,16 +293,30 @@ def test_path_percent_encoding():
 def test_query_percent_encoding():
     # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
     url = httpx.URL("https://example.com/?!$&'()*+,;= abc ABC 123 :/[]@" + "?")
-    assert url.raw_path == b"/?!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?"
+    assert url.raw_path == b"/?!$&'()*+,;=%20abc%20ABC%20123%20:/[]@?"
     assert url.path == "/"
-    assert url.query == b"!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?"
+    assert url.query == b"!$&'()*+,;=%20abc%20ABC%20123%20:/[]@?"
     assert url.fragment == ""
 
 
 def test_fragment_percent_encoding():
     # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@" + "?#")
+    url = httpx.URL("https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@%20" + "?#")
     assert url.raw_path == b"/"
     assert url.path == "/"
     assert url.query == b""
-    assert url.fragment == "!$&'()*+,;= abc ABC 123 :/[]@?#"
+    assert url.fragment == "!$&'()*+,;= abc ABC 123 :/[]@ ?#"
+
+
+def test_twitter_overly_encoded():
+    expected = "https://api.twitter.com/1.1/search/tweets.json?q=url%3Ahttps%3A%2F%2Fedition.cnn.com&lang=en"
+    url = httpx.URL(expected)
+    assert str(url) == expected
+    assert url.params["q"] == "url:https://edition.cnn.com"
+
+
+def test_twitter_normal_encoded():
+    expected = "https://api.twitter.com/1.1/search/tweets.json?q=url:https://edition.cnn.com"
+    url = httpx.URL("https://api.twitter.com/1.1/search/tweets.json", params={"q":"url:https://edition.cnn.com"})
+    assert str(url) == expected
+    assert url.params["q"] == "url:https://edition.cnn.com"
