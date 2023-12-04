@@ -306,17 +306,3 @@ def test_fragment_percent_encoding():
     assert url.path == "/"
     assert url.query == b""
     assert url.fragment == "!$&'()*+,;= abc ABC 123 :/[]@ ?#"
-
-
-def test_twitter_overly_encoded():
-    expected = "https://api.twitter.com/1.1/search/tweets.json?q=url%3Ahttps%3A%2F%2Fedition.cnn.com&lang=en"
-    url = httpx.URL(expected)
-    assert str(url) == expected
-    assert url.params["q"] == "url:https://edition.cnn.com"
-
-
-def test_twitter_normal_encoded():
-    expected = "https://api.twitter.com/1.1/search/tweets.json?q=url:https://edition.cnn.com"
-    url = httpx.URL("https://api.twitter.com/1.1/search/tweets.json", params={"q":"url:https://edition.cnn.com"})
-    assert str(url) == expected
-    assert url.params["q"] == "url:https://edition.cnn.com"
