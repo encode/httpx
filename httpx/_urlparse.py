@@ -37,28 +37,28 @@ SUB_DELIMS_SET = set(SUB_DELIMS)
 GEN_DELIMS = ":/?#[]@"
 GEN_DELIMS_SET = set(GEN_DELIMS)
 
-RESERVED_SET = SUB_DELIMS_SET | GEN_DELIMS_SET
+RESERVED_SET = SUB_DELIMS_SET.union(GEN_DELIMS_SET)
 
 # Safe characters in a full URL
-URL_RAW_SAFE = RESERVED_SET | set("%")
+URL_RAW_SAFE = RESERVED_SET.union(set("%"))
 
 # Safe characters in the path section
-PATH_RAW_SAFE = URL_RAW_SAFE - set("?#")
+PATH_RAW_SAFE = URL_RAW_SAFE.difference(set("?#"))
 
 # Safe characters in a single path element
-PATH_VAL_SAFE = PATH_RAW_SAFE - set("/%")
+PATH_VAL_SAFE = PATH_RAW_SAFE.difference(set("/%"))
 
 # Safe characters in the query section
-QUERY_RAW_SAFE = URL_RAW_SAFE - set("#")
+QUERY_RAW_SAFE = URL_RAW_SAFE.difference(set("#"))
 
 # Safe characters in a name or value of a query
-QUERY_VAL_SAFE = QUERY_RAW_SAFE - set("&=%")
+QUERY_VAL_SAFE = QUERY_RAW_SAFE.difference(set("&=%"))
 
 # Safe characters in the fragment section
 FRAGMENT_RAW_SAFE = URL_RAW_SAFE
 
 # Safe characters in a single fragment
-FRAGMENT_VAL_SAFE = FRAGMENT_RAW_SAFE - set("&=%")
+FRAGMENT_VAL_SAFE = FRAGMENT_RAW_SAFE.difference(set("&=%"))
 
 PERCENT_ENCODED_REGEX = re.compile("%[A-Fa-f0-9]{2}")
 
@@ -448,14 +448,14 @@ def percent_encode(char: str) -> str:
     return "".join([f"%{byte:02x}" for byte in char.encode("utf-8")]).upper()
 
 
-def is_safe(string: str, safe: str | set[str] = "/") -> bool:
+def is_safe(string: str, safe: typing.Union[str, typing.Set[str]] = "/") -> bool:
     """
     Determine if a given string is already quote-safe.
     """
     if not isinstance(safe, set):
         safe = set(safe)
 
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS_SET | safe | set("%")
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS_SET.union(safe, set("%"))
 
     # All characters must already be non-escaping or '%'
     for char in string:
@@ -466,7 +466,7 @@ def is_safe(string: str, safe: str | set[str] = "/") -> bool:
     return string.count("%") == len(PERCENT_ENCODED_REGEX.findall(string))
 
 
-def quote(string: str, safe: str | set[str] = "/") -> str:
+def quote(string: str, safe: typing.Union[str, typing.Set[str]] = "/") -> str:
     """
     Use percent-encoding to quote a string if required.
     """
@@ -476,7 +476,7 @@ def quote(string: str, safe: str | set[str] = "/") -> str:
     if is_safe(string, safe=safe):
         return string
 
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS_SET | safe
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS_SET.union(safe)
     return "".join(
         [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]
     )
