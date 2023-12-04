@@ -470,11 +470,11 @@ def quote(string: str, safe: typing.Union[str, typing.Set[str]] = "/") -> str:
     """
     Use percent-encoding to quote a string if required.
     """
-    if not isinstance(safe, set):
-        safe = set(safe)
-
     if is_safe(string, safe=safe):
         return string
+
+    if not isinstance(safe, set):
+        safe = set(safe)
 
     NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS_SET.union(safe)
     return "".join(
