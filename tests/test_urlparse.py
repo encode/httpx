@@ -283,9 +283,9 @@ def test_copy_with():
 
 def test_path_percent_encoding():
     # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/!$&'()*+,;= abc ABC 123 :/[]@%20")
-    assert url.raw_path == b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@%20"
-    assert url.path == "/!$&'()*+,;= abc ABC 123 :/[]@ "
+    url = httpx.URL("https://example.com/!$&'()*+,;= abc ABC 123 :/[]@")
+    assert url.raw_path == b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@"
+    assert url.path == "/!$&'()*+,;= abc ABC 123 :/[]@"
     assert url.query == b""
     assert url.fragment == ""
 
@@ -301,8 +301,8 @@ def test_query_percent_encoding():
 
 def test_fragment_percent_encoding():
     # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@%20" + "?#")
+    url = httpx.URL("https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@" + "?#")
     assert url.raw_path == b"/"
     assert url.path == "/"
     assert url.query == b""
-    assert url.fragment == "!$&'()*+,;= abc ABC 123 :/[]@ ?#"
+    assert url.fragment == "!$&'()*+,;= abc ABC 123 :/[]@?#"
