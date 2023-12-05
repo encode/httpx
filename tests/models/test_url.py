@@ -67,6 +67,36 @@ def test_url_no_authority():
     assert url.path == "/"
 
 
+# Tests for percent encoding across path, query, and fragment...
+
+
+def test_path_percent_encoding():
+    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
+    url = httpx.URL("https://example.com/!$&'()*+,;= abc ABC 123 :/[]@")
+    assert url.raw_path == b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@"
+    assert url.path == "/!$&'()*+,;= abc ABC 123 :/[]@"
+    assert url.query == b""
+    assert url.fragment == ""
+
+
+def test_query_percent_encoding():
+    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
+    url = httpx.URL("https://example.com/?!$&'()*+,;= abc ABC 123 :/[]@" + "?")
+    assert url.raw_path == b"/?!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?"
+    assert url.path == "/"
+    assert url.query == b"!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?"
+    assert url.fragment == ""
+
+
+def test_fragment_percent_encoding():
+    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
+    url = httpx.URL("https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@" + "?#")
+    assert url.raw_path == b"/"
+    assert url.path == "/"
+    assert url.query == b""
+    assert url.fragment == "!$&'()*+,;= abc ABC 123 :/[]@?#"
+
+
 def test_url_query_encoding():
     """
     URL query parameters should use '%20' to encoding spaces,
@@ -100,19 +130,6 @@ def test_url_params():
     )
     assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
     assert url.params == httpx.QueryParams({"a": "123"})
-
-
-def test_url_raw_compatibility():
-    """
-    Test case for the (to-be-deprecated) `url.raw` accessor.
-    """
-    url = httpx.URL("https://www.example.com/path")
-    scheme, host, port, raw_path = url.raw
-
-    assert scheme == b"https"
-    assert host == b"www.example.com"
-    assert port is None
-    assert raw_path == b"/path"
 
 
 # Tests for `httpx.URL` python built-in operators.
@@ -549,3 +566,18 @@ def test_ipv6_url_copy_with_host(url_str, new_host):
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]:1234"
     assert str(url) == "http://[::ffff:192.168.0.1]:1234"
+
+
+# Test for deprecated API
+
+def test_url_raw_compatibility():
+    """
+    Test case for the (to-be-deprecated) `url.raw` accessor.
+    """
+    url = httpx.URL("https://www.example.com/path")
+    scheme, host, port, raw_path = url.raw
+
+    assert scheme == b"https"
+    assert host == b"www.example.com"
+    assert port is None
+    assert raw_path == b"/path"
