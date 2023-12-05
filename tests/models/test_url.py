@@ -235,6 +235,7 @@ def test_resolution_error_1833():
 
 # Tests for `URL.copy_with()`.
 
+
 def test_copy_with():
     url = httpx.URL("https://www.example.com/")
     assert str(url) == "https://www.example.com/"
@@ -474,6 +475,7 @@ def test_url_invalid_idna_host():
 
 # Tests for IPv4 hostname support.
 
+
 def test_url_valid_ipv4():
     url = httpx.URL("https://1.2.3.4/")
     assert url.host == "1.2.3.4"
@@ -486,6 +488,7 @@ def test_url_invalid_ipv4():
 
 
 # Tests for IPv6 hostname support.
+
 
 def test_ipv6_url():
     url = httpx.URL("http://[::ffff:192.168.0.1]:5678/")
