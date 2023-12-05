@@ -3,76 +3,6 @@ import pytest
 import httpx
 
 
-@pytest.mark.parametrize(
-    "given,idna,host,raw_host,scheme,port",
-    [
-        (
-            "http://中国.icom.museum:80/",
-            "http://xn--fiqs8s.icom.museum:80/",
-            "中国.icom.museum",
-            b"xn--fiqs8s.icom.museum",
-            "http",
-            None,
-        ),
-        (
-            "http://Königsgäßchen.de",
-            "http://xn--knigsgchen-b4a3dun.de",
-            "königsgäßchen.de",
-            b"xn--knigsgchen-b4a3dun.de",
-            "http",
-            None,
-        ),
-        (
-            "https://faß.de",
-            "https://xn--fa-hia.de",
-            "faß.de",
-            b"xn--fa-hia.de",
-            "https",
-            None,
-        ),
-        (
-            "https://βόλος.com:443",
-            "https://xn--nxasmm1c.com:443",
-            "βόλος.com",
-            b"xn--nxasmm1c.com",
-            "https",
-            None,
-        ),
-        (
-            "http://ශ්‍රී.com:444",
-            "http://xn--10cl1a0b660p.com:444",
-            "ශ්‍රී.com",
-            b"xn--10cl1a0b660p.com",
-            "http",
-            444,
-        ),
-        (
-            "https://نامه‌ای.com:4433",
-            "https://xn--mgba3gch31f060k.com:4433",
-            "نامه‌ای.com",
-            b"xn--mgba3gch31f060k.com",
-            "https",
-            4433,
-        ),
-    ],
-    ids=[
-        "http_with_port",
-        "unicode_tr46_compat",
-        "https_without_port",
-        "https_with_port",
-        "http_with_custom_port",
-        "https_with_custom_port",
-    ],
-)
-def test_idna_url(given, idna, host, raw_host, scheme, port):
-    url = httpx.URL(given)
-    assert url == httpx.URL(idna)
-    assert url.host == host
-    assert url.raw_host == raw_host
-    assert url.scheme == scheme
-    assert url.port == port
-
-
 def test_url():
     url = httpx.URL("https://example.org:123/path/to/somewhere?abc=123#anchor")
     assert url.scheme == "https"
@@ -91,11 +21,99 @@ def test_url():
     assert new.scheme == "http"
 
 
+def test_url_with_empty_query():
+    """
+    URLs with and without a trailing `?` but an empty query component
+    should preserve the information on the raw path.
+    """
+    url = httpx.URL("https://www.example.com/path")
+    assert url.path == "/path"
+    assert url.query == b""
+    assert url.raw_path == b"/path"
+
+    url = httpx.URL("https://www.example.com/path?")
+    assert url.path == "/path"
+    assert url.query == b""
+    assert url.raw_path == b"/path?"
+
+
+def test_url_query_encoding():
+    """
+    URL query parameters should use '%20' to encoding spaces,
+    and should treat '/' as a safe character. This behaviour differs
+    across clients, but we're matching browser behaviour here.
+
+    See https://github.com/encode/httpx/issues/2536
+    and https://github.com/encode/httpx/discussions/2460
+    """
+    url = httpx.URL("https://www.example.com/?a=b c&d=e/f")
+    assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
+
+    url = httpx.URL("https://www.example.com/", params={"a": "b c", "d": "e/f"})
+    assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
+
+
+def test_url_with_url_encoded_path():
+    url = httpx.URL("https://www.example.com/path%20to%20somewhere")
+    assert url.path == "/path to somewhere"
+    assert url.query == b""
+    assert url.raw_path == b"/path%20to%20somewhere"
+
+
+def test_url_raw_compatibility():
+    url = httpx.URL("https://www.example.com/path")
+    scheme, host, port, raw_path = url.raw
+
+    assert scheme == b"https"
+    assert host == b"www.example.com"
+    assert port is None
+    assert raw_path == b"/path"
+
+
+def test_url_invalid():
+    """
+    Ensure that invalid URLs raise an `httpx.InvalidURL` exception.
+    """
+    with pytest.raises(httpx.InvalidURL):
+        httpx.URL("https://😇/")
+
+
 def test_url_eq_str():
+    """
+    Ensure that `httpx.URL` supports the equality operator,
+    and can be compared against plain strings.
+    """
     url = httpx.URL("https://example.org:123/path/to/somewhere?abc=123#anchor")
     assert url == "https://example.org:123/path/to/somewhere?abc=123#anchor"
     assert str(url) == url
 
+
+def test_url_set():
+    """
+    Ensure that `httpx.URL` instances can be used in sets.
+    """
+    urls = (
+        httpx.URL("http://example.org:123/path/to/somewhere"),
+        httpx.URL("http://example.org:123/path/to/somewhere/else"),
+    )
+
+    url_set = set(urls)
+
+    assert all(url in urls for url in url_set)
+
+
+def test_url_invalid_type():
+    """
+    Ensure that invalid types on `httpx.URL()` raise a `TypeError`.
+    """
+    class ExternalURLClass:  # representing external URL class
+        pass
+
+    with pytest.raises(TypeError):
+        httpx.URL(ExternalURLClass())  # type: ignore
+
+
+# Tests for `QueryParams`.
 
 def test_url_params():
     url = httpx.URL("https://example.org:123/path/to/somewhere", params={"a": "123"})
@@ -108,6 +126,8 @@ def test_url_params():
     assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
     assert url.params == httpx.QueryParams({"a": "123"})
 
+
+# Tests for `URL.join()`.
 
 def test_url_join():
     """
@@ -122,38 +142,6 @@ def test_url_join():
         url.join("../somewhere-else") == "https://example.org:123/path/somewhere-else"
     )
     assert url.join("../../somewhere-else") == "https://example.org:123/somewhere-else"
-
-
-def test_url_set_param_manipulation():
-    """
-    Some basic URL query parameter manipulation.
-    """
-    url = httpx.URL("https://example.org:123/?a=123")
-    assert url.copy_set_param("a", "456") == "https://example.org:123/?a=456"
-
-
-def test_url_add_param_manipulation():
-    """
-    Some basic URL query parameter manipulation.
-    """
-    url = httpx.URL("https://example.org:123/?a=123")
-    assert url.copy_add_param("a", "456") == "https://example.org:123/?a=123&a=456"
-
-
-def test_url_remove_param_manipulation():
-    """
-    Some basic URL query parameter manipulation.
-    """
-    url = httpx.URL("https://example.org:123/?a=123")
-    assert url.copy_remove_param("a") == "https://example.org:123/"
-
-
-def test_url_merge_params_manipulation():
-    """
-    Some basic URL query parameter manipulation.
-    """
-    url = httpx.URL("https://example.org:123/?a=123")
-    assert url.copy_merge_params({"b": "456"}) == "https://example.org:123/?a=123&b=456"
 
 
 def test_relative_url_join():
@@ -219,16 +207,15 @@ def test_url_join_rfc3986():
     assert url.join("g#s/../x") == "http://example.com/b/c/g#s/../x"
 
 
-def test_url_set():
-    urls = (
-        httpx.URL("http://example.org:123/path/to/somewhere"),
-        httpx.URL("http://example.org:123/path/to/somewhere/else"),
-    )
+def test_resolution_error_1833():
+    """
+    See https://github.com/encode/httpx/issues/1833
+    """
+    url = httpx.URL("https://example.com/?[]")
+    assert url.join("/") == "https://example.com/"
 
-    url_set = set(urls)
 
-    assert all(url in urls for url in url_set)
-
+# Tests for `URL.copy_with()`.
 
 def test_url_copywith_authority_subcomponents():
     copy_with_kwargs = {
@@ -321,63 +308,133 @@ def test_url_copywith_security():
         url.copy_with(scheme=bad)
 
 
-def test_url_invalid():
-    with pytest.raises(httpx.InvalidURL):
-        httpx.URL("https://😇/")
+# Tests for copy-modifying-parameters methods.
+#
+# `URL.copy_set_param()`
+# `URL.copy_add_param()`
+# `URL.copy_remove_param()`
+# `URL.copy_merge_params()`
 
-
-def test_url_invalid_type():
-    class ExternalURLClass:  # representing external URL class
-        pass
-
-    with pytest.raises(TypeError):
-        httpx.URL(ExternalURLClass())  # type: ignore
-
-
-def test_url_with_empty_query():
+def test_url_set_param_manipulation():
     """
-    URLs with and without a trailing `?` but an empty query component
-    should preserve the information on the raw path.
+    Some basic URL query parameter manipulation.
     """
-    url = httpx.URL("https://www.example.com/path")
-    assert url.path == "/path"
-    assert url.query == b""
-    assert url.raw_path == b"/path"
-
-    url = httpx.URL("https://www.example.com/path?")
-    assert url.path == "/path"
-    assert url.query == b""
-    assert url.raw_path == b"/path?"
+    url = httpx.URL("https://example.org:123/?a=123")
+    assert url.copy_set_param("a", "456") == "https://example.org:123/?a=456"
 
 
-def test_url_query_encoding():
+def test_url_add_param_manipulation():
     """
-    URL query parameters should use '%20' to encoding spaces,
-    and should treat '/' as a safe character. This behaviour differs
-    across clients, but we're matching browser behaviour here.
-
-    See https://github.com/encode/httpx/issues/2536
-    and https://github.com/encode/httpx/discussions/2460
+    Some basic URL query parameter manipulation.
     """
-    url = httpx.URL("https://www.example.com/?a=b c&d=e/f")
-    assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
-
-    url = httpx.URL("https://www.example.com/", params={"a": "b c", "d": "e/f"})
-    assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
+    url = httpx.URL("https://example.org:123/?a=123")
+    assert url.copy_add_param("a", "456") == "https://example.org:123/?a=123&a=456"
 
 
-def test_url_with_url_encoded_path():
-    url = httpx.URL("https://www.example.com/path%20to%20somewhere")
-    assert url.path == "/path to somewhere"
-    assert url.query == b""
-    assert url.raw_path == b"/path%20to%20somewhere"
+def test_url_remove_param_manipulation():
+    """
+    Some basic URL query parameter manipulation.
+    """
+    url = httpx.URL("https://example.org:123/?a=123")
+    assert url.copy_remove_param("a") == "https://example.org:123/"
 
+
+def test_url_merge_params_manipulation():
+    """
+    Some basic URL query parameter manipulation.
+    """
+    url = httpx.URL("https://example.org:123/?a=123")
+    assert url.copy_merge_params({"b": "456"}) == "https://example.org:123/?a=123&b=456"
+
+
+# Tests for IDNA hostname support.
+
+@pytest.mark.parametrize(
+    "given,idna,host,raw_host,scheme,port",
+    [
+        (
+            "http://中国.icom.museum:80/",
+            "http://xn--fiqs8s.icom.museum:80/",
+            "中国.icom.museum",
+            b"xn--fiqs8s.icom.museum",
+            "http",
+            None,
+        ),
+        (
+            "http://Königsgäßchen.de",
+            "http://xn--knigsgchen-b4a3dun.de",
+            "königsgäßchen.de",
+            b"xn--knigsgchen-b4a3dun.de",
+            "http",
+            None,
+        ),
+        (
+            "https://faß.de",
+            "https://xn--fa-hia.de",
+            "faß.de",
+            b"xn--fa-hia.de",
+            "https",
+            None,
+        ),
+        (
+            "https://βόλος.com:443",
+            "https://xn--nxasmm1c.com:443",
+            "βόλος.com",
+            b"xn--nxasmm1c.com",
+            "https",
+            None,
+        ),
+        (
+            "http://ශ්‍රී.com:444",
+            "http://xn--10cl1a0b660p.com:444",
+            "ශ්‍රී.com",
+            b"xn--10cl1a0b660p.com",
+            "http",
+            444,
+        ),
+        (
+            "https://نامه‌ای.com:4433",
+            "https://xn--mgba3gch31f060k.com:4433",
+            "نامه‌ای.com",
+            b"xn--mgba3gch31f060k.com",
+            "https",
+            4433,
+        ),
+    ],
+    ids=[
+        "http_with_port",
+        "unicode_tr46_compat",
+        "https_without_port",
+        "https_with_port",
+        "http_with_custom_port",
+        "https_with_custom_port",
+    ],
+)
+def test_idna_url(given, idna, host, raw_host, scheme, port):
+    url = httpx.URL(given)
+    assert url == httpx.URL(idna)
+    assert url.host == host
+    assert url.raw_host == raw_host
+    assert url.scheme == scheme
+    assert url.port == port
+
+
+# Tests for IPv6 hostname support.
 
 def test_ipv6_url():
     url = httpx.URL("http://[::ffff:192.168.0.1]:5678/")
 
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]:5678"
+
+
+@pytest.mark.parametrize("host", ["[::ffff:192.168.0.1]", "::ffff:192.168.0.1"])
+def test_ipv6_url_from_raw_url(host):
+    url = httpx.URL(scheme="https", host=host, port=443, path="/")
+
+    assert url.host == "::ffff:192.168.0.1"
+    assert url.netloc == b"[::ffff:192.168.0.1]"
+    assert str(url) == "https://[::ffff:192.168.0.1]/"
 
 
 @pytest.mark.parametrize(
@@ -395,30 +452,3 @@ def test_ipv6_url_copy_with_host(url_str, new_host):
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]:1234"
     assert str(url) == "http://[::ffff:192.168.0.1]:1234"
-
-
-@pytest.mark.parametrize("host", ["[::ffff:192.168.0.1]", "::ffff:192.168.0.1"])
-def test_ipv6_url_from_raw_url(host):
-    url = httpx.URL(scheme="https", host=host, port=443, path="/")
-
-    assert url.host == "::ffff:192.168.0.1"
-    assert url.netloc == b"[::ffff:192.168.0.1]"
-    assert str(url) == "https://[::ffff:192.168.0.1]/"
-
-
-def test_resolution_error_1833():
-    """
-    See https://github.com/encode/httpx/issues/1833
-    """
-    url = httpx.URL("https://example.com/?[]")
-    assert url.join("/") == "https://example.com/"
-
-
-def test_url_raw_compatibility():
-    url = httpx.URL("https://www.example.com/path")
-    scheme, host, port, raw_path = url.raw
-
-    assert scheme == b"https"
-    assert host == b"www.example.com"
-    assert port is None
-    assert raw_path == b"/path"
