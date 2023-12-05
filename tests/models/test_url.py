@@ -90,6 +90,18 @@ def test_url_with_url_encoded_path():
     assert url.raw_path == b"/path%20to%20somewhere"
 
 
+def test_url_params():
+    url = httpx.URL("https://example.org:123/path/to/somewhere", params={"a": "123"})
+    assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
+    assert url.params == httpx.QueryParams({"a": "123"})
+
+    url = httpx.URL(
+        "https://example.org:123/path/to/somewhere?b=456", params={"a": "123"}
+    )
+    assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
+    assert url.params == httpx.QueryParams({"a": "123"})
+
+
 def test_url_raw_compatibility():
     """
     Test case for the (to-be-deprecated) `url.raw` accessor.
@@ -103,18 +115,11 @@ def test_url_raw_compatibility():
     assert raw_path == b"/path"
 
 
-def test_url_invalid():
-    """
-    Ensure that invalid URLs raise an `httpx.InvalidURL` exception.
-    """
-    with pytest.raises(httpx.InvalidURL):
-        httpx.URL("https://😇/")
-
+# Tests for `httpx.URL` python built-in operators.
 
 def test_url_eq_str():
     """
-    Ensure that `httpx.URL` supports the equality operator,
-    and can be compared against plain strings.
+    Ensure that `httpx.URL` supports the equality operator.
     """
     url = httpx.URL("https://example.org:123/path/to/somewhere?abc=123#anchor")
     assert url == "https://example.org:123/path/to/somewhere?abc=123#anchor"
@@ -154,21 +159,6 @@ def test_url_with_invalid_component():
     with pytest.raises(TypeError) as exc:
         httpx.URL(scheme="https", host="www.example.com", incorrect="/")
     assert str(exc.value) == "'incorrect' is an invalid keyword argument for URL()"
-
-
-# Tests for inspecting URL query params.
-
-
-def test_url_params():
-    url = httpx.URL("https://example.org:123/path/to/somewhere", params={"a": "123"})
-    assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
-    assert url.params == httpx.QueryParams({"a": "123"})
-
-    url = httpx.URL(
-        "https://example.org:123/path/to/somewhere?b=456", params={"a": "123"}
-    )
-    assert str(url) == "https://example.org:123/path/to/somewhere?a=123"
-    assert url.params == httpx.QueryParams({"a": "123"})
 
 
 # Tests for `URL.join()`.

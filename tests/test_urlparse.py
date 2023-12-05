@@ -84,6 +84,13 @@ def test_param_with_existing_escape_requires_encoding():
 
 # Tests for invalid URLs
 
+def test_url_invalid_hostname():
+    """
+    Ensure that invalid URLs raise an `httpx.InvalidURL` exception.
+    """
+    with pytest.raises(httpx.InvalidURL):
+        httpx.URL("https://😇/")
+
 
 def test_url_excessively_long_url():
     with pytest.raises(httpx.InvalidURL) as exc:
@@ -127,38 +134,6 @@ def test_url_with_components():
     assert url.fragment == ""
 
     assert str(url) == "https://www.example.com/"
-
-
-def test_url_with_invalid_component():
-    with pytest.raises(TypeError) as exc:
-        httpx.URL(scheme="https", host="www.example.com", incorrect="/")
-    assert str(exc.value) == "'incorrect' is an invalid keyword argument for URL()"
-
-
-def test_url_with_invalid_scheme():
-    with pytest.raises(httpx.InvalidURL) as exc:
-        httpx.URL(scheme="~", host="www.example.com", path="/")
-    assert str(exc.value) == "Invalid URL component 'scheme'"
-
-
-def test_url_with_invalid_path():
-    with pytest.raises(httpx.InvalidURL) as exc:
-        httpx.URL(scheme="https", host="www.example.com", path="abc")
-    assert str(exc.value) == "For absolute URLs, path must be empty or begin with '/'"
-
-    with pytest.raises(httpx.InvalidURL) as exc:
-        httpx.URL(path="//abc")
-    assert (
-        str(exc.value)
-        == "URLs with no authority component cannot have a path starting with '//'"
-    )
-
-    with pytest.raises(httpx.InvalidURL) as exc:
-        httpx.URL(path=":abc")
-    assert (
-        str(exc.value)
-        == "URLs with no scheme component cannot have a path starting with ':'"
-    )
 
 
 def test_url_with_relative_path():
