@@ -114,7 +114,7 @@ def test_url_invalid_type():
         httpx.URL(ExternalURLClass())  # type: ignore
 
 
-# Tests for `QueryParams`.
+# Tests for inspecting URL query params.
 
 
 def test_url_params():
@@ -219,6 +219,22 @@ def test_resolution_error_1833():
 
 
 # Tests for `URL.copy_with()`.
+
+def test_copy_with():
+    url = httpx.URL("https://www.example.com/")
+    assert str(url) == "https://www.example.com/"
+
+    url = url.copy_with()
+    assert str(url) == "https://www.example.com/"
+
+    url = url.copy_with(scheme="http")
+    assert str(url) == "http://www.example.com/"
+
+    url = url.copy_with(netloc=b"example.com")
+    assert str(url) == "http://example.com/"
+
+    url = url.copy_with(path="/abc")
+    assert str(url) == "http://example.com/abc"
 
 
 def test_url_copywith_authority_subcomponents():
@@ -425,14 +441,53 @@ def test_idna_url(given, idna, host, raw_host, scheme, port):
     assert url.port == port
 
 
-# Tests for IPv6 hostname support.
+def test_url_unescaped_idna_host():
+    url = httpx.URL("https://中国.icom.museum/")
+    assert url.raw_host == b"xn--fiqs8s.icom.museum"
 
+
+def test_url_escaped_idna_host():
+    url = httpx.URL("https://xn--fiqs8s.icom.museum/")
+    assert url.raw_host == b"xn--fiqs8s.icom.museum"
+
+
+def test_url_invalid_idna_host():
+    with pytest.raises(httpx.InvalidURL) as exc:
+        httpx.URL("https://☃.com/")
+    assert str(exc.value) == "Invalid IDNA hostname: '☃.com'"
+
+
+# Tests for IPv4 hostname support.
+
+def test_url_valid_ipv4():
+    url = httpx.URL("https://1.2.3.4/")
+    assert url.host == "1.2.3.4"
+
+
+def test_url_invalid_ipv4():
+    with pytest.raises(httpx.InvalidURL) as exc:
+        httpx.URL("https://999.999.999.999/")
+    assert str(exc.value) == "Invalid IPv4 address: '999.999.999.999'"
+
+
+# Tests for IPv6 hostname support.
 
 def test_ipv6_url():
     url = httpx.URL("http://[::ffff:192.168.0.1]:5678/")
 
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]:5678"
+
+
+def test_url_valid_ipv6():
+    url = httpx.URL("https://[2001:db8::ff00:42:8329]/")
+    assert url.host == "2001:db8::ff00:42:8329"
+
+
+def test_url_invalid_ipv6():
+    with pytest.raises(httpx.InvalidURL) as exc:
+        httpx.URL("https://[2001]/")
+    assert str(exc.value) == "Invalid IPv6 address: '[2001]'"
 
 
 @pytest.mark.parametrize("host", ["[::ffff:192.168.0.1]", "::ffff:192.168.0.1"])
