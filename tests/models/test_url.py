@@ -214,6 +214,7 @@ def test_param_with_existing_escape_requires_encoding():
 
 # Tests for invalid URLs
 
+
 def test_url_invalid_hostname():
     """
     Ensure that invalid URLs raise an `httpx.InvalidURL` exception.
@@ -273,6 +274,7 @@ def test_url_with_relative_path():
 
 
 # Tests for `httpx.URL` python built-in operators.
+
 
 def test_url_eq_str():
     """
@@ -708,7 +710,8 @@ def test_ipv6_url_copy_with_host(url_str, new_host):
     assert str(url) == "http://[::ffff:192.168.0.1]:1234"
 
 
-# Test for deprecated API
+# Test for deprecated API
+
 
 def test_url_raw_compatibility():
     """
