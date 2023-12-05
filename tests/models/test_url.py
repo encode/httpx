@@ -3,7 +3,22 @@ import pytest
 import httpx
 
 
-def test_url():
+def test_basic_url():
+    url = httpx.URL("https://www.example.com/")
+
+    assert url.scheme == "https"
+    assert url.userinfo == b""
+    assert url.netloc == b"www.example.com"
+    assert url.host == "www.example.com"
+    assert url.port is None
+    assert url.path == "/"
+    assert url.query == b""
+    assert url.fragment == ""
+
+    assert str(url) == "https://www.example.com/"
+
+
+def test_complete_url():
     url = httpx.URL("https://example.org:123/path/to/somewhere?abc=123#anchor")
     assert url.scheme == "https"
     assert url.host == "example.org"
