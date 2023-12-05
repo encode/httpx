@@ -137,6 +137,7 @@ def test_url_set():
 
 # Tests for TypeErrors when instantiating `httpx.URL`.
 
+
 def test_url_invalid_type():
     """
     Ensure that invalid types on `httpx.URL()` raise a `TypeError`.
