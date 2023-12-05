@@ -106,6 +106,7 @@ def test_url_invalid_type():
     """
     Ensure that invalid types on `httpx.URL()` raise a `TypeError`.
     """
+
     class ExternalURLClass:  # representing external URL class
         pass
 
@@ -114,6 +115,7 @@ def test_url_invalid_type():
 
 
 # Tests for `QueryParams`.
+
 
 def test_url_params():
     url = httpx.URL("https://example.org:123/path/to/somewhere", params={"a": "123"})
@@ -128,6 +130,7 @@ def test_url_params():
 
 
 # Tests for `URL.join()`.
+
 
 def test_url_join():
     """
@@ -216,6 +219,7 @@ def test_resolution_error_1833():
 
 
 # Tests for `URL.copy_with()`.
+
 
 def test_url_copywith_authority_subcomponents():
     copy_with_kwargs = {
@@ -315,6 +319,7 @@ def test_url_copywith_security():
 # `URL.copy_remove_param()`
 # `URL.copy_merge_params()`
 
+
 def test_url_set_param_manipulation():
     """
     Some basic URL query parameter manipulation.
@@ -348,6 +353,7 @@ def test_url_merge_params_manipulation():
 
 
 # Tests for IDNA hostname support.
+
 
 @pytest.mark.parametrize(
     "given,idna,host,raw_host,scheme,port",
@@ -420,6 +426,7 @@ def test_idna_url(given, idna, host, raw_host, scheme, port):
 
 
 # Tests for IPv6 hostname support.
+
 
 def test_ipv6_url():
     url = httpx.URL("http://[::ffff:192.168.0.1]:5678/")
