@@ -267,6 +267,38 @@ def test_url_with_components():
     assert str(url) == "https://www.example.com/"
 
 
+def test_urlparse_with_invalid_component():
+    with pytest.raises(TypeError) as exc:
+        httpx.URL(scheme="https", host="www.example.com", incorrect="/")
+    assert str(exc.value) == "'incorrect' is an invalid keyword argument for URL()"
+
+
+def test_urlparse_with_invalid_scheme():
+    with pytest.raises(httpx.InvalidURL) as exc:
+        httpx.URL(scheme="~", host="www.example.com", path="/")
+    assert str(exc.value) == "Invalid URL component 'scheme'"
+
+
+def test_urlparse_with_invalid_path():
+    with pytest.raises(httpx.InvalidURL) as exc:
+        httpx.URL(scheme="https", host="www.example.com", path="abc")
+    assert str(exc.value) == "For absolute URLs, path must be empty or begin with '/'"
+
+    with pytest.raises(httpx.InvalidURL) as exc:
+        httpx.URL(path="//abc")
+    assert (
+        str(exc.value)
+        == "URLs with no authority component cannot have a path starting with '//'"
+    )
+
+    with pytest.raises(httpx.InvalidURL) as exc:
+        httpx.URL(path=":abc")
+    assert (
+        str(exc.value)
+        == "URLs with no scheme component cannot have a path starting with ':'"
+    )
+
+
 def test_url_with_relative_path():
     # This path would be invalid for an absolute URL, but is valid as a relative URL.
     url = httpx.URL(path="abc")
