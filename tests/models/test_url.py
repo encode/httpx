@@ -2,6 +2,8 @@ import pytest
 
 import httpx
 
+# Tests for `httpx.URL` instantiation and property accessors.
+
 
 def test_basic_url():
     url = httpx.URL("https://www.example.com/")
@@ -16,6 +18,7 @@ def test_basic_url():
     assert url.fragment == ""
 
     assert str(url) == "https://www.example.com/"
+    assert repr(url) == "URL('https://www.example.com/')"
 
 
 def test_complete_url():
@@ -27,13 +30,11 @@ def test_complete_url():
     assert url.query == b"abc=123"
     assert url.raw_path == b"/path/to/somewhere?abc=123"
     assert url.fragment == "anchor"
+
+    assert str(url) == "https://example.org:123/path/to/somewhere?abc=123#anchor"
     assert (
         repr(url) == "URL('https://example.org:123/path/to/somewhere?abc=123#anchor')"
     )
-
-    new = url.copy_with(scheme="http", port=None)
-    assert new == httpx.URL("http://example.org/path/to/somewhere?abc=123#anchor")
-    assert new.scheme == "http"
 
 
 def test_url_with_empty_query():
@@ -50,6 +51,20 @@ def test_url_with_empty_query():
     assert url.path == "/path"
     assert url.query == b""
     assert url.raw_path == b"/path?"
+
+
+def test_url_no_scheme():
+    url = httpx.URL("://example.com")
+    assert url.scheme == ""
+    assert url.host == "example.com"
+    assert url.path == "/"
+
+
+def test_url_no_authority():
+    url = httpx.URL("http://")
+    assert url.scheme == "http"
+    assert url.host == ""
+    assert url.path == "/"
 
 
 def test_url_query_encoding():
@@ -76,6 +91,9 @@ def test_url_with_url_encoded_path():
 
 
 def test_url_raw_compatibility():
+    """
+    Test case for the (to-be-deprecated) `url.raw` accessor.
+    """
     url = httpx.URL("https://www.example.com/path")
     scheme, host, port, raw_path = url.raw
 
@@ -117,6 +135,8 @@ def test_url_set():
     assert all(url in urls for url in url_set)
 
 
+# Tests for TypeErrors when instantiating `httpx.URL`.
+
 def test_url_invalid_type():
     """
     Ensure that invalid types on `httpx.URL()` raise a `TypeError`.
@@ -127,6 +147,12 @@ def test_url_invalid_type():
 
     with pytest.raises(TypeError):
         httpx.URL(ExternalURLClass())  # type: ignore
+
+
+def test_url_with_invalid_component():
+    with pytest.raises(TypeError) as exc:
+        httpx.URL(scheme="https", host="www.example.com", incorrect="/")
+    assert str(exc.value) == "'incorrect' is an invalid keyword argument for URL()"
 
 
 # Tests for inspecting URL query params.

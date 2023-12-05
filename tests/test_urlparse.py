@@ -2,21 +2,6 @@ import pytest
 
 import httpx
 
-
-def test_url_no_scheme():
-    url = httpx.URL("://example.com")
-    assert url.scheme == ""
-    assert url.host == "example.com"
-    assert url.path == "/"
-
-
-def test_url_no_authority():
-    url = httpx.URL("http://")
-    assert url.scheme == "http"
-    assert url.host == ""
-    assert url.path == "/"
-
-
 # Tests for different host types
 
 
