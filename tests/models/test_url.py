@@ -132,6 +132,54 @@ def test_url_params():
     assert url.params == httpx.QueryParams({"a": "123"})
 
 
+# Tests for username and password
+
+
+@pytest.mark.parametrize(
+    "url,userinfo,username,password",
+    [
+        # username and password in URL.
+        (
+            "https://username:password@example.com",
+            b"username:password",
+            "username",
+            "password",
+        ),
+        # username and password in URL with percent escape sequences.
+        (
+            "https://username%40gmail.com:pa%20ssword@example.com",
+            b"username%40gmail.com:pa%20ssword",
+            "username@gmail.com",
+            "pa ssword",
+        ),
+        (
+            "https://user%20name:p%40ssword@example.com",
+            b"user%20name:p%40ssword",
+            "user name",
+            "p@ssword",
+        ),
+        # username and password in URL without percent escape sequences.
+        (
+            "https://username@gmail.com:pa ssword@example.com",
+            b"username%40gmail.com:pa%20ssword",
+            "username@gmail.com",
+            "pa ssword",
+        ),
+        (
+            "https://user name:p@ssword@example.com",
+            b"user%20name:p%40ssword",
+            "user name",
+            "p@ssword",
+        ),
+    ],
+)
+def test_url_username_and_password(url, userinfo, username, password):
+    url = httpx.URL(url)
+    assert url.userinfo == userinfo
+    assert url.username == username
+    assert url.password == password
+
+
 # Tests for different host types
 
 
