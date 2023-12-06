@@ -62,8 +62,8 @@ AUTHORITY_REGEX = re.compile(
     (
         r"(?:(?P<userinfo>{userinfo})@)?" r"(?P<host>{host})" r":?(?P<port>{port})?"
     ).format(
-        userinfo="[^@]*",  # Any character sequence not including '@'.
-        host="(\\[.*\\]|[^:]*)",  # Either any character sequence not including ':',
+        userinfo=".*",  # Any character sequence.
+        host="(\\[.*\\]|[^:@]*)",  # Either any character sequence excluding ':' or '@',
         # or an IPv6 address enclosed within square brackets.
         port=".*",  # Any character sequence.
     )
