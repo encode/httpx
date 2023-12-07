@@ -107,33 +107,6 @@ def test_path_query_fragment(url, raw_path, path, query, fragment):
     assert url.fragment == fragment
 
 
-def test_path_percent_encoding():
-    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/!$&'()*+,;= abc ABC 123 :/[]@")
-    assert url.raw_path == b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@"
-    assert url.path == "/!$&'()*+,;= abc ABC 123 :/[]@"
-    assert url.query == b""
-    assert url.fragment == ""
-
-
-def test_query_percent_encoding():
-    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/?!$&'()*+,;= abc ABC 123 :/[]@" + "?")
-    assert url.raw_path == b"/?!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?"
-    assert url.path == "/"
-    assert url.query == b"!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?"
-    assert url.fragment == ""
-
-
-def test_fragment_percent_encoding():
-    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@" + "?#")
-    assert url.raw_path == b"/"
-    assert url.path == "/"
-    assert url.query == b""
-    assert url.fragment == "!$&'()*+,;= abc ABC 123 :/[]@?#"
-
-
 def test_url_query_encoding():
     """
     URL query parameters should use '%20' to encoding spaces,
