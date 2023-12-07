@@ -70,6 +70,43 @@ def test_url_no_authority():
 # Tests for percent encoding across path, query, and fragment...
 
 
+@pytest.mark.parametrize(
+    "url,raw_path,path,query,fragment",
+    [
+        # URL encoding characters in path.
+        (
+            "https://example.com/!$&'()*+,;= abc ABC 123 :/[]@",
+            b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@",
+            "/!$&'()*+,;= abc ABC 123 :/[]@",
+            b"",
+            "",
+        ),
+        # URL encoding characters in query.
+        (
+            "https://example.com/?!$&'()*+,;= abc ABC 123 :/[]@" + "?",
+            b"/?!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
+            "/",
+            b"!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
+            "",
+        ),
+        # URL encoding characters in fragment.
+        (
+            "https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@" + "?#",
+            b"/",
+            "/",
+            b"",
+            "!$&'()*+,;= abc ABC 123 :/[]@?#",
+        ),
+    ],
+)
+def test_path_query_fragment(url, raw_path, path, query, fragment):
+    url = httpx.URL(url)
+    assert url.raw_path == raw_path
+    assert url.path == path
+    assert url.query == query
+    assert url.fragment == fragment
+
+
 def test_path_percent_encoding():
     # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
     url = httpx.URL("https://example.com/!$&'()*+,;= abc ABC 123 :/[]@")
