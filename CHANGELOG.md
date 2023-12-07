@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-* Allow URLs where username or password contains unescaped '@'.
+* Allow URLs where username or password contains unescaped '@'. (#2986)
 
 ## 0.25.2 (24th November, 2023)
 
