@@ -73,7 +73,7 @@ def test_url_no_authority():
 @pytest.mark.parametrize(
     "url,raw_path,path,query,fragment",
     [
-        # URL encoding characters in path.
+        # URL with unescaped chars in path.
         (
             "https://example.com/!$&'()*+,;= abc ABC 123 :/[]@",
             b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@",
@@ -81,17 +81,50 @@ def test_url_no_authority():
             b"",
             "",
         ),
-        # URL encoding characters in query.
+        # URL with escaped chars in path.
         (
-            "https://example.com/?!$&'()*+,;= abc ABC 123 :/[]@" + "?",
+            "https://example.com/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@",
+            b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@",
+            "/!$&'()*+,;= abc ABC 123 :/[]@",
+            b"",
+            "",
+        ),
+        # URL with mix of unescaped and escaped chars in path.
+        # WARNING: This has the incorrect behaviour, adding the test as an interim step.
+        (
+            "https://example.com/ %61%62%63",
+            b"/%20%61%62%63",
+            "/ abc",
+            b"",
+            "",
+        ),
+        # URL with unescaped chars in query.
+        (
+            "https://example.com/?!$&'()*+,;= abc ABC 123 :/[]@?",
             b"/?!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
             "/",
             b"!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
             "",
         ),
+        # URL with escaped chars in query.
+        (
+            "https://example.com/?!$&%27()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
+            b"/?!$&%27()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
+            "/",
+            b"!$&%27()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
+            "",
+        ),
+        # URL with mix of unescaped and escaped chars in query.
+        (
+            "https://example.com/?%20%97%98%99",
+            b"/?%20%97%98%99",
+            "/",
+            b"%20%97%98%99",
+            "",
+        ),
         # URL encoding characters in fragment.
         (
-            "https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@" + "?#",
+            "https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@?#",
             b"/",
             "/",
             b"",
@@ -121,13 +154,6 @@ def test_url_query_encoding():
 
     url = httpx.URL("https://www.example.com/", params={"a": "b c", "d": "e/f"})
     assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
-
-
-def test_url_with_url_encoded_path():
-    url = httpx.URL("https://www.example.com/path%20to%20somewhere")
-    assert url.path == "/path to somewhere"
-    assert url.query == b""
-    assert url.raw_path == b"/path%20to%20somewhere"
 
 
 def test_url_params():
