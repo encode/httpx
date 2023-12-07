@@ -101,9 +101,9 @@ def test_url_no_authority():
         # URL with unescaped chars in query.
         (
             "https://example.com/?!$&'()*+,;= abc ABC 123 :/[]@?",
-            b"/?!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
+            b"/?!$&'()*+,;=%20abc%20ABC%20123%20:/[]@?",
             "/",
-            b"!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
+            b"!$&'()*+,;=%20abc%20ABC%20123%20:/[]@?",
             "",
         ),
         # URL with escaped chars in query.
@@ -142,7 +142,7 @@ def test_path_query_fragment(url, raw_path, path, query, fragment):
 
 def test_url_query_encoding():
     """
-    URL query parameters should use '%20' to encoding spaces,
+    URL query parameters should use '%20' for encoding spaces,
     and should treat '/' as a safe character. This behaviour differs
     across clients, but we're matching browser behaviour here.
 
@@ -150,7 +150,7 @@ def test_url_query_encoding():
     and https://github.com/encode/httpx/discussions/2460
     """
     url = httpx.URL("https://www.example.com/?a=b c&d=e/f")
-    assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
+    assert url.raw_path == b"/?a=b%20c&d=e/f"
 
     url = httpx.URL("https://www.example.com/", params={"a": "b c", "d": "e/f"})
     assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
