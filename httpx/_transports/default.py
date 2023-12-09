@@ -140,9 +140,9 @@ class HTTPTransport(BaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
-                uds=uds,
-                local_address=local_address,
                 retries=retries,
+                local_address=local_address,
+                uds=uds,
                 socket_options=socket_options,
             )
         elif proxy.url.scheme in ("http", "https"):
@@ -162,6 +162,9 @@ class HTTPTransport(BaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                retries=retries,
+                local_address=local_address,
+                uds=uds,
                 socket_options=socket_options,
             )
         elif proxy.url.scheme == "socks5":
@@ -187,6 +190,7 @@ class HTTPTransport(BaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                retries=retries,
             )
         else:  # pragma: no cover
             raise ValueError(
@@ -280,9 +284,9 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
-                uds=uds,
-                local_address=local_address,
                 retries=retries,
+                local_address=local_address,
+                uds=uds,
                 socket_options=socket_options,
             )
         elif proxy.url.scheme in ("http", "https"):
@@ -301,6 +305,9 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                retries=retries,
+                local_address=local_address,
+                uds=uds,
                 socket_options=socket_options,
             )
         elif proxy.url.scheme == "socks5":
@@ -326,6 +333,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
+                retries=retries,
             )
         else:  # pragma: no cover
             raise ValueError(
