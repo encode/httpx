@@ -596,7 +596,8 @@ async def test_digest_auth_resets_nonce_count_after_401() -> None:
         # with this we now force a 401 on a subsequent (but initial) request
         app.send_response_after_attempt = 2
 
-        # we expect the client again to try to authenticate, i.e. the history length must be 1
+        # we expect the client again to try to authenticate,
+        # i.e. the history length must be 1
         response_2 = await client.get(url, auth=auth)
         assert response_2.status_code == 200
         assert len(response_2.history) == 1

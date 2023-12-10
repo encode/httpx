@@ -63,9 +63,10 @@ def print_help() -> None:
     )
     table.add_row(
         "--auth [cyan]<USER PASS>",
-        "Username and password to include in the request. Specify '-' for the password to use "
-        "a password prompt. Note that using --verbose/-v will expose the Authorization "
-        "header, including the password encoding in a trivially reversible format.",
+        "Username and password to include in the request. Specify '-' for the password"
+        " to use a password prompt. Note that using --verbose/-v will expose"
+        " the Authorization header, including the password encoding"
+        " in a trivially reversible format.",
     )
 
     table.add_row(
@@ -75,8 +76,8 @@ def print_help() -> None:
 
     table.add_row(
         "--timeout [cyan]FLOAT",
-        "Timeout value to use for network operations, such as establishing the connection, "
-        "reading some data, etc... [Default: 5.0]",
+        "Timeout value to use for network operations, such as establishing the"
+        " connection, reading some data, etc... [Default: 5.0]",
     )
 
     table.add_row("--follow-redirects", "Automatically follow redirects.")

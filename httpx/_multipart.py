@@ -48,7 +48,8 @@ class DataField:
             )
         if value is not None and not isinstance(value, (str, bytes, int, float)):
             raise TypeError(
-                f"Invalid type for value. Expected primitive type, got {type(value)}: {value!r}"
+                "Invalid type for value. Expected primitive type,"
+                f" got {type(value)}: {value!r}"
             )
         self.name = name
         self.value: typing.Union[str, bytes] = (
@@ -96,11 +97,13 @@ class FileField:
         content_type: typing.Optional[str] = None
 
         # This large tuple based API largely mirror's requests' API
-        # It would be good to think of better APIs for this that we could include in httpx 2.0
-        # since variable length tuples (especially of 4 elements) are quite unwieldly
+        # It would be good to think of better APIs for this that we could
+        # include in httpx 2.0 since variable length tuples(especially of 4 elements)
+        # are quite unwieldly
         if isinstance(value, tuple):
             if len(value) == 2:
-                # neither the 3rd parameter (content_type) nor the 4th (headers) was included
+                # neither the 3rd parameter (content_type) nor the 4th (headers)
+                # was included
                 filename, fileobj = value  # type: ignore
             elif len(value) == 3:
                 filename, fileobj, content_type = value  # type: ignore
@@ -116,9 +119,9 @@ class FileField:
 
         has_content_type_header = any("content-type" in key.lower() for key in headers)
         if content_type is not None and not has_content_type_header:
-            # note that unlike requests, we ignore the content_type
-            # provided in the 3rd tuple element if it is also included in the headers
-            # requests does the opposite (it overwrites the header with the 3rd tuple element)
+            # note that unlike requests, we ignore the content_type provided in the 3rd
+            # tuple element if it is also included in the headers requests does
+            # the opposite (it overwrites the headerwith the 3rd tuple element)
             headers["Content-Type"] = content_type
 
         if isinstance(fileobj, io.StringIO):
