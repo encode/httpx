@@ -212,7 +212,7 @@ class TextChunker:
 
     def decode(self, content: str) -> typing.List[str]:
         if self._chunk_size is None:
-            return [content]
+            return [content] if content else []
 
         self._buffer.write(content)
         if self._buffer.tell() >= self._chunk_size:
