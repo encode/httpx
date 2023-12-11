@@ -19,7 +19,7 @@ httpx.ProxyError: _ssl.c:1091: The handshake operation timed out
 **Resolution**: it is likely that you've set up your proxies like this...
 
 ```python
-proxy_mounts = {
+mounts = {
   "http://": httpx.HTTPTransport(proxy="http://myproxy.org"),
   "https://": httpx.HTTPTransport(proxy="https://myproxy.org"),
 }
