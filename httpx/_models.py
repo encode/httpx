@@ -1,5 +1,6 @@
 import datetime
 import email.message
+import itertools
 import json as jsonlib
 import typing
 import urllib.request
@@ -851,10 +852,9 @@ class Response:
                 text_content = decoder.decode(byte_content)
                 for chunk in chunker.decode(text_content):
                     yield chunk
-            text_content = decoder.flush()
-            for chunk in chunker.decode(text_content):
-                yield chunk
-            for chunk in chunker.flush():
+            for chunk in itertools.chain(
+                chunker.decode(decoder.flush()), chunker.flush()
+            ):
                 yield chunk
 
     def iter_lines(self) -> typing.Iterator[str]:
@@ -955,10 +955,9 @@ class Response:
                 text_content = decoder.decode(byte_content)
                 for chunk in chunker.decode(text_content):
                     yield chunk
-            text_content = decoder.flush()
-            for chunk in chunker.decode(text_content):
-                yield chunk
-            for chunk in chunker.flush():
+            for chunk in itertools.chain(
+                chunker.decode(decoder.flush()), chunker.flush()
+            ):
                 yield chunk
 
     async def aiter_lines(self) -> typing.AsyncIterator[str]:
