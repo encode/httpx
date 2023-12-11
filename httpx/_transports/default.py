@@ -191,7 +191,6 @@ class HTTPTransport(BaseTransport):
                 http1=http1,
                 http2=http2,
                 retries=retries,
-                socket_options=socket_options,
             )
         else:  # pragma: no cover
             raise ValueError(
@@ -335,7 +334,6 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 http1=http1,
                 http2=http2,
                 retries=retries,
-                socket_options=socket_options,
             )
         else:  # pragma: no cover
             raise ValueError(
