@@ -1275,7 +1275,9 @@ class Client(BaseClient):
         if self._state != ClientState.UNOPENED:
             msg = {
                 ClientState.OPENED: "Cannot open a client instance more than once.",
-                ClientState.CLOSED: "Cannot reopen a client instance, once it has been closed.",
+                ClientState.CLOSED: (
+                    "Cannot reopen a client instance, once it has been closed."
+                ),
             }[self._state]
             raise RuntimeError(msg)
 
@@ -2001,7 +2003,9 @@ class AsyncClient(BaseClient):
         if self._state != ClientState.UNOPENED:
             msg = {
                 ClientState.OPENED: "Cannot open a client instance more than once.",
-                ClientState.CLOSED: "Cannot reopen a client instance, once it has been closed.",
+                ClientState.CLOSED: (
+                    "Cannot reopen a client instance, once it has been closed."
+                ),
             }[self._state]
             raise RuntimeError(msg)
 

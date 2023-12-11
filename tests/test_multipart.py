@@ -174,7 +174,10 @@ def test_multipart_file_tuple_headers(file_content_type: typing.Optional[str]) -
 
 
 def test_multipart_headers_include_content_type() -> None:
-    """Content-Type from 4th tuple parameter (headers) should override the 3rd parameter (content_type)"""
+    """
+    Content-Type from 4th tuple parameter (headers) should
+    override the 3rd parameter (content_type)
+    """
     file_name = "test.txt"
     file_content = io.BytesIO(b"<file content>")
     file_content_type = "text/plain"

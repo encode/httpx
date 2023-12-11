@@ -10,6 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 * The `proxies` argument is now deprecated. You should use the `proxy` argument instead, or use `mounts=` for more complex configurations. (#2879)
 
+### Fixed
+
+* Allow URLs where username or password contains unescaped '@'. (#2986)
+
+## 0.25.2 (24th November, 2023)
+
 ### Added
 
 * Add missing type hints to few `__init__()` methods. (#2938)
