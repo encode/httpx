@@ -219,6 +219,17 @@ def test_text_decoder_empty_cases():
     assert response.text == ""
 
 
+@pytest.mark.parametrize(
+    ["data", "expected"],
+    [((b"Hello,", b" world!"), ["Hello,", " world!"])],
+)
+def test_streaming_text_decoder(
+    data: typing.Iterable[bytes], expected: typing.List[str]
+) -> None:
+    response = httpx.Response(200, content=iter(data))
+    assert list(response.iter_text()) == expected
+
+
 def test_line_decoder_nl():
     response = httpx.Response(200, content=[b""])
     assert list(response.iter_lines()) == []
