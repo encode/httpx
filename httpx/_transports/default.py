@@ -190,8 +190,6 @@ class HTTPTransport(BaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
-                uds=uds,
-                local_address=local_address,
                 retries=retries,
                 socket_options=socket_options,
             )
@@ -336,8 +334,6 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
-                uds=uds,
-                local_address=local_address,
                 retries=retries,
                 socket_options=socket_options,
             )
