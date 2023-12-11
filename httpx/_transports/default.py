@@ -162,9 +162,9 @@ class HTTPTransport(BaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
-                uds=uds,
-                local_address=local_address,
                 retries=retries,
+                local_address=local_address,
+                uds=uds,
                 socket_options=socket_options,
             )
         elif proxy.url.scheme == "socks5":
@@ -305,9 +305,9 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
-                uds=uds,
-                local_address=local_address,
                 retries=retries,
+                local_address=local_address,
+                uds=uds,
                 socket_options=socket_options,
             )
         elif proxy.url.scheme == "socks5":
