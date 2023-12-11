@@ -504,7 +504,7 @@ The `NetRCAuth()` class uses [the `netrc.netrc()` function from the Python stand
 
 ## HTTP Proxying
 
-HTTPX supports setting up [HTTP proxies](https://en.wikipedia.org/wiki/Proxy_server#Web_proxy_servers) via the `proxies` parameter to be passed on client initialization or top-level API functions like `httpx.get(..., proxies=...)`.
+HTTPX supports setting up [HTTP proxies](https://en.wikipedia.org/wiki/Proxy_server#Web_proxy_servers) via the `proxy` parameter to be passed on client initialization or top-level API functions like `httpx.get(..., proxy=...)`.
 
 <div align="center">
     <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Open_proxy_h2g2bob.svg/480px-Open_proxy_h2g2bob.svg.png"/>
@@ -516,19 +516,19 @@ HTTPX supports setting up [HTTP proxies](https://en.wikipedia.org/wiki/Proxy_ser
 To route all traffic (HTTP and HTTPS) to a proxy located at `http://localhost:8030`, pass the proxy URL to the client...
 
 ```python
-with httpx.Client(proxies="http://localhost:8030") as client:
+with httpx.Client(proxy="http://localhost:8030") as client:
     ...
 ```
 
-For more advanced use cases, pass a proxies `dict`. For example, to route HTTP and HTTPS requests to 2 different proxies, respectively located at `http://localhost:8030`, and `http://localhost:8031`, pass a `dict` of proxy URLs:
+For more advanced use cases, pass a mounts `dict`. For example, to route HTTP and HTTPS requests to 2 different proxies, respectively located at `http://localhost:8030`, and `http://localhost:8031`, pass a `dict` of proxy URLs:
 
 ```python
-proxies = {
-    "http://": "http://localhost:8030",
-    "https://": "http://localhost:8031",
+proxy_mounts = {
+    "http://": httpx.HTTPTransport(proxy="http://localhost:8030"),
+    "https://": httpx.HTTPTransport(proxy="http://localhost:8031"),
 }
 
-with httpx.Client(proxies=proxies) as client:
+with httpx.Client(mounts=proxy_mounts) as client:
     ...
 ```
 
@@ -546,131 +546,9 @@ For detailed information about proxy routing, see the [Routing](#routing) sectio
 Proxy credentials can be passed as the `userinfo` section of the proxy URL. For example:
 
 ```python
-proxies = {
-    "http://": "http://username:password@localhost:8030",
-    # ...
-}
+with httpx.Client(proxy="http://username:password@localhost:8030") as client:
+    ...
 ```
-
-### Routing
-
-HTTPX provides fine-grained controls for deciding which requests should go through a proxy, and which shouldn't. This process is known as proxy routing.
-
-The `proxies` dictionary maps URL patterns ("proxy keys") to proxy URLs. HTTPX matches requested URLs against proxy keys to decide which proxy should be used, if any. Matching is done from most specific proxy keys (e.g. `https://<domain>:<port>`) to least specific ones (e.g. `https://`).
-
-HTTPX supports routing proxies based on **scheme**, **domain**, **port**, or a combination of these.
-
-#### Wildcard routing
-
-Route everything through a proxy...
-
-```python
-proxies = {
-    "all://": "http://localhost:8030",
-}
-```
-
-#### Scheme routing
-
-Route HTTP requests through one proxy, and HTTPS requests through another...
-
-```python
-proxies = {
-    "http://": "http://localhost:8030",
-    "https://": "http://localhost:8031",
-}
-```
-
-#### Domain routing
-
-Proxy all requests on domain "example.com", let other requests pass through...
-
-```python
-proxies = {
-    "all://example.com": "http://localhost:8030",
-}
-```
-
-Proxy HTTP requests on domain "example.com", let HTTPS and other requests pass through...
-
-```python
-proxies = {
-    "http://example.com": "http://localhost:8030",
-}
-```
-
-Proxy all requests to "example.com" and its subdomains, let other requests pass through...
-
-```python
-proxies = {
-    "all://*example.com": "http://localhost:8030",
-}
-```
-
-Proxy all requests to strict subdomains of "example.com", let "example.com" and other requests pass through...
-
-```python
-proxies = {
-    "all://*.example.com": "http://localhost:8030",
-}
-```
-
-#### Port routing
-
-Proxy HTTPS requests on port 1234 to "example.com"...
-
-```python
-proxies = {
-    "https://example.com:1234": "http://localhost:8030",
-}
-```
-
-Proxy all requests on port 1234...
-
-```python
-proxies = {
-    "all://*:1234": "http://localhost:8030",
-}
-```
-
-#### No-proxy support
-
-It is also possible to define requests that _shouldn't_ be routed through proxies.
-
-To do so, pass `None` as the proxy URL. For example...
-
-```python
-proxies = {
-    # Route requests through a proxy by default...
-    "all://": "http://localhost:8031",
-    # Except those for "example.com".
-    "all://example.com": None,
-}
-```
-
-#### Complex configuration example
-
-You can combine the routing features outlined above to build complex proxy routing configurations. For example...
-
-```python
-proxies = {
-    # Route all traffic through a proxy by default...
-    "all://": "http://localhost:8030",
-    # But don't use proxies for HTTPS requests to "domain.io"...
-    "https://domain.io": None,
-    # And use another proxy for requests to "example.com" and its subdomains...
-    "all://*example.com": "http://localhost:8031",
-    # And yet another proxy if HTTP is used,
-    # and the "internal" subdomain on port 5550 is requested...
-    "http://internal.example.com:5550": "http://localhost:8032",
-}
-```
-
-#### Environment variables
-
-HTTP proxying can also be configured through environment variables, although with less fine-grained control.
-
-See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](environment_variables.md#http_proxy-https_proxy-all_proxy) for more information.
 
 ### Proxy mechanisms
 
@@ -707,7 +585,7 @@ $ pip install httpx[socks]
 You can now configure a client to make requests via a proxy using the SOCKS protocol:
 
 ```python
-httpx.Client(proxies='socks5://user:pass@host:port')
+httpx.Client(proxy='socks5://user:pass@host:port')
 ```
 
 ## Timeout Configuration
@@ -1294,3 +1172,125 @@ Adding support for custom schemes:
 mounts = {"file://": FileSystemTransport()}
 client = httpx.Client(mounts=mounts)
 ```
+
+### Routing
+
+HTTPX provides a powerful mechanism for routing requests, allowing you to write complex rules that specify which transport should be used for each request.
+
+The `mounts` dictionary maps URL patterns to HTTP transports. HTTPX matches requested URLs against URL patterns to decide which transport should be used, if any. Matching is done from most specific URL patterns (e.g. `https://<domain>:<port>`) to least specific ones (e.g. `https://`).
+
+HTTPX supports routing requests based on **scheme**, **domain**, **port**, or a combination of these.
+
+#### Wildcard routing
+
+Route everything through a transport...
+
+```python
+mounts = {
+    "all://": httpx.HTTPTransport(proxy="http://localhost:8030"),
+}
+```
+
+#### Scheme routing
+
+Route HTTP requests through one transport, and HTTPS requests through another...
+
+```python
+mounts = {
+    "http://": httpx.HTTPTransport(proxy="http://localhost:8030"),
+    "https://": httpx.HTTPTransport(proxy="http://localhost:8031"),
+}
+```
+
+#### Domain routing
+
+Proxy all requests on domain "example.com", let other requests pass through...
+
+```python
+mounts = {
+    "all://example.com": httpx.HTTPTransport(proxy="http://localhost:8030"),
+}
+```
+
+Proxy HTTP requests on domain "example.com", let HTTPS and other requests pass through...
+
+```python
+mounts = {
+    "http://example.com": httpx.HTTPTransport(proxy="http://localhost:8030"),
+}
+```
+
+Proxy all requests to "example.com" and its subdomains, let other requests pass through...
+
+```python
+mounts = {
+    "all://*example.com": httpx.HTTPTransport(proxy="http://localhost:8030"),
+}
+```
+
+Proxy all requests to strict subdomains of "example.com", let "example.com" and other requests pass through...
+
+```python
+mounts = {
+    "all://*.example.com": httpx.HTTPTransport(proxy="http://localhost:8030"),
+}
+```
+
+#### Port routing
+
+Proxy HTTPS requests on port 1234 to "example.com"...
+
+```python
+mounts = {
+    "https://example.com:1234": httpx.HTTPTransport(proxy="http://localhost:8030"),
+}
+```
+
+Proxy all requests on port 1234...
+
+```python
+mounts = {
+    "all://*:1234": httpx.HTTPTransport(proxy="http://localhost:8030"),
+}
+```
+
+#### No-proxy support
+
+It is also possible to define requests that _shouldn't_ be routed through the transport.
+
+To do so, pass `None` as the proxy URL. For example...
+
+```python
+mounts = {
+    # Route requests through a proxy by default...
+    "all://": httpx.HTTPTransport(proxy="http://localhost:8031"),
+    # Except those for "example.com".
+    "all://example.com": None,
+}
+```
+
+#### Complex configuration example
+
+You can combine the routing features outlined above to build complex proxy routing configurations. For example...
+
+```python
+mounts = {
+    # Route all traffic through a proxy by default...
+    "all://": httpx.HTTPTransport(proxy="http://localhost:8030"),
+    # But don't use proxies for HTTPS requests to "domain.io"...
+    "https://domain.io": None,
+    # And use another proxy for requests to "example.com" and its subdomains...
+    "all://*example.com": httpx.HTTPTransport(proxy="http://localhost:8031"),
+    # And yet another proxy if HTTP is used,
+    # and the "internal" subdomain on port 5550 is requested...
+    "http://internal.example.com:5550": httpx.HTTPTransport(proxy="http://localhost:8032"),
+}
+```
+
+#### Environment variables
+
+There are also environment variables that can be used to control the dictionary of the client mounts. 
+They can be used to configure HTTP proxying for clients.
+
+See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](environment_variables.md#http_proxy-https_proxy-all_proxy) for more information.
+
