@@ -32,7 +32,7 @@ But if you get the error above, it is likely that your proxy doesn't support con
 Change the scheme of your HTTPS proxy to `http://...` instead of `https://...`:
 
 ```python
-proxy_mounts = {
+mounts = {
   "http://": httpx.HTTPTransport(proxy="http://myproxy.org"),
   "https://": httpx.HTTPTransport(proxy="http://myproxy.org"),
 }
