@@ -672,7 +672,10 @@ class Client(BaseClient):
                 ) from None
 
         if proxies:
-            message = "The 'proxies' argument is now deprecated. Use 'proxy' or 'mounts' instead."
+            message = (
+                "The 'proxies' argument is now deprecated."
+                " Use 'proxy' or 'mounts' instead."
+            )
             warnings.warn(message, DeprecationWarning)
             if proxy:
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
@@ -1409,7 +1412,10 @@ class AsyncClient(BaseClient):
                 ) from None
 
         if proxies:
-            message = "The 'proxies' argument is now deprecated. Use 'proxy' or 'mounts' instead."
+            message = (
+                "The 'proxies' argument is now deprecated."
+                " Use 'proxy' or 'mounts' instead."
+            )
             warnings.warn(message, DeprecationWarning)
             if proxy:
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
