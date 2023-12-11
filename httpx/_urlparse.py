@@ -451,6 +451,13 @@ def percent_encoded(string: str, safe: str = "/") -> str:
 def quote(string: str, safe: str = "/") -> str:
     """
     Use percent-encoding to quote a string, omitting existing '%xx' escape sequences.
+
+    See: https://www.rfc-editor.org/rfc/rfc3986#section-2.1
+    
+    * `string`: The string to be percent-escaped.
+    * `safe`: A string containing characters that may be treated as safe, and do not
+        need to be escaped. Unreserved characters are always treated as safe.
+        See: https://www.rfc-editor.org/rfc/rfc3986#section-2.3
     """
     parts = []
     current_position = 0
