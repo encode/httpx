@@ -19,9 +19,9 @@ httpx.ProxyError: _ssl.c:1091: The handshake operation timed out
 **Resolution**: it is likely that you've set up your proxies like this...
 
 ```python
-proxies = {
-  "http://": "http://myproxy.org",
-  "https://": "https://myproxy.org",
+mounts = {
+  "http://": httpx.HTTPTransport(proxy="http://myproxy.org"),
+  "https://": httpx.HTTPTransport(proxy="https://myproxy.org"),
 }
 ```
 
@@ -32,16 +32,18 @@ But if you get the error above, it is likely that your proxy doesn't support con
 Change the scheme of your HTTPS proxy to `http://...` instead of `https://...`:
 
 ```python
-proxies = {
-  "http://": "http://myproxy.org",
-  "https://": "http://myproxy.org",
+mounts = {
+  "http://": httpx.HTTPTransport(proxy="http://myproxy.org"),
+  "https://": httpx.HTTPTransport(proxy="http://myproxy.org"),
 }
 ```
 
 This can be simplified to:
 
 ```python
-proxies = "http://myproxy.org"
+proxy = "http://myproxy.org"
+with httpx.Client(proxy=proxy) as client:
+  ...
 ```
 
 For more information, see [Proxies: FORWARD vs TUNNEL](advanced.md#forward-vs-tunnel).
