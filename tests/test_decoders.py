@@ -273,6 +273,11 @@ def test_line_decoder_crnl():
     assert list(response.iter_lines()) == ["12345", "foo bar baz"]
 
 
+@pytest.mark.parametrize(["text", "expected"], [("", [])])
+def test_line_decoding_edge_cases(text: str, expected: typing.List[str]) -> None:
+    assert httpx._decoders.LineDecoder().decode(text) == expected
+
+
 def test_invalid_content_encoding_header():
     headers = [(b"Content-Encoding", b"invalid-header")]
     body = b"test 123"
