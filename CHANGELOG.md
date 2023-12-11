@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-* The `proxies` argument is now deprecated and supposed to be replaced by the `proxy` argument. (#2879)
+* The `proxies` argument is now deprecated. You should use the `proxy` argument instead, or use `mounts=` for more complex configurations. (#2879)
 
 ### Added
 
