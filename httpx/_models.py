@@ -1,5 +1,6 @@
 import datetime
 import email.message
+import itertools
 import json as jsonlib
 import typing
 import urllib.request
@@ -826,15 +827,13 @@ class Response:
             decoder = self._get_content_decoder()
             chunker = ByteChunker(chunk_size=chunk_size)
             with request_context(request=self._request):
-                for raw_bytes in self.iter_raw():
-                    decoded = decoder.decode(raw_bytes)
-                    for chunk in chunker.decode(decoded):
-                        yield chunk
-                decoded = decoder.flush()
-                for chunk in chunker.decode(decoded):
-                    yield chunk  # pragma: no cover
-                for chunk in chunker.flush():
-                    yield chunk
+                yield from itertools.chain.from_iterable(
+                    chunker.decode(decoder.decode(raw_bytes))
+                    for raw_bytes in self.iter_raw()
+                )
+                yield from itertools.chain(
+                    chunker.decode(decoder.flush()), chunker.flush()
+                )
 
     def iter_text(
         self, chunk_size: typing.Optional[int] = None
@@ -847,24 +846,19 @@ class Response:
         decoder = TextDecoder(encoding=self.encoding or "utf-8")
         chunker = TextChunker(chunk_size=chunk_size)
         with request_context(request=self._request):
-            for byte_content in self.iter_bytes():
-                text_content = decoder.decode(byte_content)
-                for chunk in chunker.decode(text_content):
-                    yield chunk
-            text_content = decoder.flush()
-            for chunk in chunker.decode(text_content):
-                yield chunk  # pragma: no cover
-            for chunk in chunker.flush():
-                yield chunk
+            yield from itertools.chain.from_iterable(
+                chunker.decode(decoder.decode(byte_content))
+                for byte_content in self.iter_bytes()
+            )
+            yield from itertools.chain(chunker.decode(decoder.flush()), chunker.flush())
 
     def iter_lines(self) -> typing.Iterator[str]:
         decoder = LineDecoder()
         with request_context(request=self._request):
-            for text in self.iter_text():
-                for line in decoder.decode(text):
-                    yield line
-            for line in decoder.flush():
-                yield line
+            yield from itertools.chain.from_iterable(
+                decoder.decode(text) for text in self.iter_text()
+            )
+            yield from decoder.flush()
 
     def iter_raw(
         self, chunk_size: typing.Optional[int] = None
@@ -886,11 +880,9 @@ class Response:
         with request_context(request=self._request):
             for raw_stream_bytes in self.stream:
                 self._num_bytes_downloaded += len(raw_stream_bytes)
-                for chunk in chunker.decode(raw_stream_bytes):
-                    yield chunk
+                yield from chunker.decode(raw_stream_bytes)
 
-        for chunk in chunker.flush():
-            yield chunk
+        yield from chunker.flush()
 
         self.close()
 
@@ -931,13 +923,11 @@ class Response:
             chunker = ByteChunker(chunk_size=chunk_size)
             with request_context(request=self._request):
                 async for raw_bytes in self.aiter_raw():
-                    decoded = decoder.decode(raw_bytes)
-                    for chunk in chunker.decode(decoded):
+                    for chunk in chunker.decode(decoder.decode(raw_bytes)):
                         yield chunk
-                decoded = decoder.flush()
-                for chunk in chunker.decode(decoded):
-                    yield chunk  # pragma: no cover
-                for chunk in chunker.flush():
+                for chunk in itertools.chain(
+                    chunker.decode(decoder.flush()), chunker.flush()
+                ):
                     yield chunk
 
     async def aiter_text(
@@ -952,13 +942,11 @@ class Response:
         chunker = TextChunker(chunk_size=chunk_size)
         with request_context(request=self._request):
             async for byte_content in self.aiter_bytes():
-                text_content = decoder.decode(byte_content)
-                for chunk in chunker.decode(text_content):
+                for chunk in chunker.decode(decoder.decode(byte_content)):
                     yield chunk
-            text_content = decoder.flush()
-            for chunk in chunker.decode(text_content):
-                yield chunk  # pragma: no cover
-            for chunk in chunker.flush():
+            for chunk in itertools.chain(
+                chunker.decode(decoder.flush()), chunker.flush()
+            ):
                 yield chunk
 
     async def aiter_lines(self) -> typing.AsyncIterator[str]:
