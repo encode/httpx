@@ -212,7 +212,7 @@ class TextChunker:
 
     def decode(self, content: str) -> typing.List[str]:
         if self._chunk_size is None:
-            return [content]
+            return [content] if content else []
 
         self._buffer.write(content)
         if self._buffer.tell() >= self._chunk_size:
@@ -280,7 +280,9 @@ class LineDecoder:
             text = text[:-1]
 
         if not text:
-            return []
+            # NOTE: the edge case input of empty text doesn't occur in practice,
+            # because other httpx internals filter out this value
+            return []  # pragma: no cover
 
         trailing_newline = text[-1] in NEWLINE_CHARS
         lines = text.splitlines()
