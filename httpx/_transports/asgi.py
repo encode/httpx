@@ -1,5 +1,7 @@
 import typing
 
+import sniffio
+
 from .._models import Request, Response
 from .._types import AsyncByteStream
 from .base import AsyncBaseTransport
@@ -23,8 +25,6 @@ _ASGIApp = typing.Callable[
 
 
 def create_event() -> "Event":
-    import sniffio
-
     if sniffio.current_async_library() == "trio":
         import trio
 
