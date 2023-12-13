@@ -397,19 +397,19 @@ def test_iter_raw():
 
 def test_iter_raw_with_chunksize():
     response = httpx.Response(200, content=streaming_body())
-    parts = [part for part in response.iter_raw(chunk_size=5)]
+    parts = list(response.iter_raw(chunk_size=5))
     assert parts == [b"Hello", b", wor", b"ld!"]
 
     response = httpx.Response(200, content=streaming_body())
-    parts = [part for part in response.iter_raw(chunk_size=7)]
+    parts = list(response.iter_raw(chunk_size=7))
     assert parts == [b"Hello, ", b"world!"]
 
     response = httpx.Response(200, content=streaming_body())
-    parts = [part for part in response.iter_raw(chunk_size=13)]
+    parts = list(response.iter_raw(chunk_size=13))
     assert parts == [b"Hello, world!"]
 
     response = httpx.Response(200, content=streaming_body())
-    parts = [part for part in response.iter_raw(chunk_size=20)]
+    parts = list(response.iter_raw(chunk_size=20))
     assert parts == [b"Hello, world!"]
 
 
@@ -422,7 +422,7 @@ def test_iter_raw_doesnt_return_empty_chunks():
 
     response = httpx.Response(200, content=streaming_body_with_empty_chunks())
 
-    parts = [part for part in response.iter_raw()]
+    parts = list(response.iter_raw())
     assert parts == [b"Hello, ", b"world!"]
 
 
@@ -445,7 +445,7 @@ def test_iter_raw_on_async():
     )
 
     with pytest.raises(RuntimeError):
-        [part for part in response.iter_raw()]
+        list(response.iter_raw())
 
 
 def test_close_on_async():
@@ -538,21 +538,21 @@ def test_iter_bytes():
 
 def test_iter_bytes_with_chunk_size():
     response = httpx.Response(200, content=streaming_body())
-    parts = [part for part in response.iter_bytes(chunk_size=5)]
+    parts = list(response.iter_bytes(chunk_size=5))
     assert parts == [b"Hello", b", wor", b"ld!"]
 
     response = httpx.Response(200, content=streaming_body())
-    parts = [part for part in response.iter_bytes(chunk_size=13)]
+    parts = list(response.iter_bytes(chunk_size=13))
     assert parts == [b"Hello, world!"]
 
     response = httpx.Response(200, content=streaming_body())
-    parts = [part for part in response.iter_bytes(chunk_size=20)]
+    parts = list(response.iter_bytes(chunk_size=20))
     assert parts == [b"Hello, world!"]
 
 
 def test_iter_bytes_with_empty_response():
     response = httpx.Response(200, content=b"")
-    parts = [part for part in response.iter_bytes()]
+    parts = list(response.iter_bytes())
     assert parts == []
 
 
@@ -565,7 +565,7 @@ def test_iter_bytes_doesnt_return_empty_chunks():
 
     response = httpx.Response(200, content=streaming_body_with_empty_chunks())
 
-    parts = [part for part in response.iter_bytes()]
+    parts = list(response.iter_bytes())
     assert parts == [b"Hello, ", b"world!"]
 
 
@@ -611,23 +611,23 @@ def test_iter_text():
 
 def test_iter_text_with_chunk_size():
     response = httpx.Response(200, content=b"Hello, world!")
-    parts = [part for part in response.iter_text(chunk_size=5)]
+    parts = list(response.iter_text(chunk_size=5))
     assert parts == ["Hello", ", wor", "ld!"]
 
     response = httpx.Response(200, content=b"Hello, world!!")
-    parts = [part for part in response.iter_text(chunk_size=7)]
+    parts = list(response.iter_text(chunk_size=7))
     assert parts == ["Hello, ", "world!!"]
 
     response = httpx.Response(200, content=b"Hello, world!")
-    parts = [part for part in response.iter_text(chunk_size=7)]
+    parts = list(response.iter_text(chunk_size=7))
     assert parts == ["Hello, ", "world!"]
 
     response = httpx.Response(200, content=b"Hello, world!")
-    parts = [part for part in response.iter_text(chunk_size=13)]
+    parts = list(response.iter_text(chunk_size=13))
     assert parts == ["Hello, world!"]
 
     response = httpx.Response(200, content=b"Hello, world!")
-    parts = [part for part in response.iter_text(chunk_size=20)]
+    parts = list(response.iter_text(chunk_size=20))
     assert parts == ["Hello, world!"]
 
 
@@ -664,7 +664,7 @@ def test_iter_lines():
         200,
         content=b"Hello,\nworld!",
     )
-    content = [line for line in response.iter_lines()]
+    content = list(response.iter_lines())
     assert content == ["Hello,", "world!"]
 
 
