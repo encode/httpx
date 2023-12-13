@@ -152,7 +152,7 @@ SENSITIVE_HEADERS = {"authorization", "proxy-authorization"}
 
 
 def obfuscate_sensitive_headers(
-    items: typing.Iterable[typing.Tuple[typing.AnyStr, typing.AnyStr]]
+    items: typing.Iterable[typing.Tuple[typing.AnyStr, typing.AnyStr]],
 ) -> typing.Iterator[typing.Tuple[typing.AnyStr, typing.AnyStr]]:
     for k, v in items:
         if to_str(k.lower()) in SENSITIVE_HEADERS:

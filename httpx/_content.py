@@ -105,7 +105,7 @@ class UnattachedStream(AsyncByteStream, SyncByteStream):
 
 
 def encode_content(
-    content: Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+    content: Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]],
 ) -> Tuple[Dict[str, str], Union[SyncByteStream, AsyncByteStream]]:
     if isinstance(content, (bytes, str)):
         body = content.encode("utf-8") if isinstance(content, str) else content
