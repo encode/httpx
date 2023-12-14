@@ -121,6 +121,19 @@ async def test_asgi_raw_path():
 
 
 @pytest.mark.anyio
+async def test_asgi_raw_path_should_not_include_querystring_portion():
+    """
+    See https://github.com/encode/httpx/issues/2810
+    """
+    async with httpx.AsyncClient(app=echo_raw_path) as client:
+        url = httpx.URL("http://www.example.org/path?query")
+        response = await client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {"raw_path": "/path"}
+
+
+@pytest.mark.anyio
 async def test_asgi_upload():
     async with httpx.AsyncClient(app=echo_body) as client:
         response = await client.post("http://www.example.org/", content=b"example")

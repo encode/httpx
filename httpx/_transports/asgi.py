@@ -103,7 +103,7 @@ class ASGITransport(AsyncBaseTransport):
             "headers": [(k.lower(), v) for (k, v) in request.headers.raw],
             "scheme": request.url.scheme,
             "path": request.url.path,
-            "raw_path": request.url.raw_path,
+            "raw_path": request.url.raw_path.split(b"?")[0],
             "query_string": request.url.query,
             "server": (request.url.host, request.url.port),
             "client": self.client,
