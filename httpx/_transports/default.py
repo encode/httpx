@@ -126,9 +126,9 @@ class HTTPTransport(BaseTransport):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
         proxy: typing.Optional[ProxyTypes] = None,
-        uds: typing.Optional[str] = None,
-        local_address: typing.Optional[str] = None,
         retries: int = 0,
+        local_address: typing.Optional[str] = None,
+        uds: typing.Optional[str] = None,
         socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
@@ -142,9 +142,9 @@ class HTTPTransport(BaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
-                uds=uds,
-                local_address=local_address,
                 retries=retries,
+                local_address=local_address,
+                uds=uds,
                 socket_options=socket_options,
             )
         elif proxy.url.scheme in ("http", "https"):
@@ -271,9 +271,9 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
         proxy: typing.Optional[ProxyTypes] = None,
-        uds: typing.Optional[str] = None,
-        local_address: typing.Optional[str] = None,
         retries: int = 0,
+        local_address: typing.Optional[str] = None,
+        uds: typing.Optional[str] = None,
         socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
@@ -287,9 +287,9 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 keepalive_expiry=limits.keepalive_expiry,
                 http1=http1,
                 http2=http2,
-                uds=uds,
-                local_address=local_address,
                 retries=retries,
+                local_address=local_address,
+                uds=uds,
                 socket_options=socket_options,
             )
         elif proxy.url.scheme in ("http", "https"):
