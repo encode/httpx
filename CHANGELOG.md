@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+* Handle `NO_PROXY` envvar cases when a fully qualified URL is supplied as the value. (#2741)
 * Allow URLs where username or password contains unescaped '@'. (#2986)
 * Ensure ASGI `raw_path` does not include URL query component. (#2999)
 * Ensure `Response.iter_text()` cannot yield empty strings. (#2998)
