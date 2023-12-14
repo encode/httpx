@@ -36,6 +36,7 @@ from ._types import (
     CookieTypes,
     HeaderTypes,
     ProxiesTypes,
+    ProxyTypes,
     QueryParamTypes,
     RequestContent,
     RequestData,
@@ -172,7 +173,7 @@ class BaseClient:
         base_url: URLTypes = "",
         trust_env: bool = True,
         default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
-    ):
+    ) -> None:
         event_hooks = {} if event_hooks is None else event_hooks
 
         self._base_url = self._enforce_trailing_slash(URL(base_url))
@@ -597,6 +598,7 @@ class Client(BaseClient):
     to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
     file, key file, password).
+    * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
     * **proxies** - *(optional)* A dictionary mapping proxy keys to proxy
     URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
@@ -628,8 +630,11 @@ class Client(BaseClient):
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
+        proxy: typing.Optional[ProxyTypes] = None,
         proxies: typing.Optional[ProxiesTypes] = None,
-        mounts: typing.Optional[typing.Mapping[str, BaseTransport]] = None,
+        mounts: typing.Optional[
+            typing.Mapping[str, typing.Optional[BaseTransport]]
+        ] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -642,7 +647,7 @@ class Client(BaseClient):
         app: typing.Optional[typing.Callable[..., typing.Any]] = None,
         trust_env: bool = True,
         default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
-    ):
+    ) -> None:
         super().__init__(
             auth=auth,
             params=params,
@@ -666,8 +671,17 @@ class Client(BaseClient):
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
+        if proxies:
+            message = (
+                "The 'proxies' argument is now deprecated."
+                " Use 'proxy' or 'mounts' instead."
+            )
+            warnings.warn(message, DeprecationWarning)
+            if proxy:
+                raise RuntimeError("Use either `proxy` or 'proxies', not both.")
+
         allow_env_proxies = trust_env and app is None and transport is None
-        proxy_map = self._get_proxy_map(proxies, allow_env_proxies)
+        proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
             verify=verify,
@@ -1264,7 +1278,9 @@ class Client(BaseClient):
         if self._state != ClientState.UNOPENED:
             msg = {
                 ClientState.OPENED: "Cannot open a client instance more than once.",
-                ClientState.CLOSED: "Cannot reopen a client instance, once it has been closed.",
+                ClientState.CLOSED: (
+                    "Cannot reopen a client instance, once it has been closed."
+                ),
             }[self._state]
             raise RuntimeError(msg)
 
@@ -1322,6 +1338,7 @@ class AsyncClient(BaseClient):
     file, key file, password).
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
+    * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
     * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
     URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
@@ -1353,8 +1370,11 @@ class AsyncClient(BaseClient):
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
         http2: bool = False,
+        proxy: typing.Optional[ProxyTypes] = None,
         proxies: typing.Optional[ProxiesTypes] = None,
-        mounts: typing.Optional[typing.Mapping[str, AsyncBaseTransport]] = None,
+        mounts: typing.Optional[
+            typing.Mapping[str, typing.Optional[AsyncBaseTransport]]
+        ] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -1367,7 +1387,7 @@ class AsyncClient(BaseClient):
         app: typing.Optional[typing.Callable[..., typing.Any]] = None,
         trust_env: bool = True,
         default_encoding: typing.Union[str, typing.Callable[[bytes], str]] = "utf-8",
-    ):
+    ) -> None:
         super().__init__(
             auth=auth,
             params=params,
@@ -1391,8 +1411,17 @@ class AsyncClient(BaseClient):
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
+        if proxies:
+            message = (
+                "The 'proxies' argument is now deprecated."
+                " Use 'proxy' or 'mounts' instead."
+            )
+            warnings.warn(message, DeprecationWarning)
+            if proxy:
+                raise RuntimeError("Use either `proxy` or 'proxies', not both.")
+
         allow_env_proxies = trust_env and app is None and transport is None
-        proxy_map = self._get_proxy_map(proxies, allow_env_proxies)
+        proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
             verify=verify,
@@ -1980,7 +2009,9 @@ class AsyncClient(BaseClient):
         if self._state != ClientState.UNOPENED:
             msg = {
                 ClientState.OPENED: "Cannot open a client instance more than once.",
-                ClientState.CLOSED: "Cannot reopen a client instance, once it has been closed.",
+                ClientState.CLOSED: (
+                    "Cannot reopen a client instance, once it has been closed."
+                ),
             }[self._state]
             raise RuntimeError(msg)
 

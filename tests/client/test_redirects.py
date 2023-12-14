@@ -345,7 +345,7 @@ def test_can_stream_if_no_redirect():
 class ConsumeBodyTransport(httpx.MockTransport):
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         assert isinstance(request.stream, httpx.SyncByteStream)
-        [_ for _ in request.stream]
+        list(request.stream)
         return self.handler(request)  # type: ignore[return-value]
 
 

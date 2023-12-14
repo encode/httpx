@@ -47,7 +47,8 @@ from .._exceptions import (
     WriteTimeout,
 )
 from .._models import Request, Response
-from .._types import AsyncByteStream, CertTypes, SyncByteStream, VerifyTypes
+from .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream, VerifyTypes
+from .._urls import URL
 from .base import AsyncBaseTransport, BaseTransport
 
 T = typing.TypeVar("T", bound="HTTPTransport")
@@ -64,7 +65,7 @@ SOCKET_OPTION = typing.Union[
 def map_httpcore_exceptions() -> typing.Iterator[None]:
     try:
         yield
-    except Exception as exc:  # noqa: PIE-786
+    except Exception as exc:
         mapped_exc = None
 
         for from_exc, to_exc in HTTPCORE_EXC_MAP.items():
@@ -102,7 +103,7 @@ HTTPCORE_EXC_MAP = {
 
 
 class ResponseStream(SyncByteStream):
-    def __init__(self, httpcore_stream: typing.Iterable[bytes]):
+    def __init__(self, httpcore_stream: typing.Iterable[bytes]) -> None:
         self._httpcore_stream = httpcore_stream
 
     def __iter__(self) -> typing.Iterator[bytes]:
@@ -124,13 +125,14 @@ class HTTPTransport(BaseTransport):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
-        proxy: typing.Optional[Proxy] = None,
+        proxy: typing.Optional[ProxyTypes] = None,
         uds: typing.Optional[str] = None,
         local_address: typing.Optional[str] = None,
         retries: int = 0,
         socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
+        proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
 
         if proxy is None:
             self._pool = httpcore.ConnectionPool(
@@ -190,7 +192,8 @@ class HTTPTransport(BaseTransport):
             )
         else:  # pragma: no cover
             raise ValueError(
-                f"Proxy protocol must be either 'http', 'https', or 'socks5', but got {proxy.url.scheme!r}."
+                "Proxy protocol must be either 'http', 'https', or 'socks5',"
+                f" but got {proxy.url.scheme!r}."
             )
 
     def __enter__(self: T) -> T:  # Use generics for subclass support.
@@ -241,7 +244,7 @@ class HTTPTransport(BaseTransport):
 
 
 class AsyncResponseStream(AsyncByteStream):
-    def __init__(self, httpcore_stream: typing.AsyncIterable[bytes]):
+    def __init__(self, httpcore_stream: typing.AsyncIterable[bytes]) -> None:
         self._httpcore_stream = httpcore_stream
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
@@ -263,13 +266,14 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
-        proxy: typing.Optional[Proxy] = None,
+        proxy: typing.Optional[ProxyTypes] = None,
         uds: typing.Optional[str] = None,
         local_address: typing.Optional[str] = None,
         retries: int = 0,
         socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
+        proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
 
         if proxy is None:
             self._pool = httpcore.AsyncConnectionPool(
@@ -328,7 +332,8 @@ class AsyncHTTPTransport(AsyncBaseTransport):
             )
         else:  # pragma: no cover
             raise ValueError(
-                f"Proxy protocol must be either 'http', 'https', or 'socks5', but got {proxy.url.scheme!r}."
+                "Proxy protocol must be either 'http', 'https', or 'socks5',"
+                " but got {proxy.url.scheme!r}."
             )
 
     async def __aenter__(self: A) -> A:  # Use generics for subclass support.
