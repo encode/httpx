@@ -197,6 +197,7 @@ def test_get_ssl_cert_file():
         ({"no_proxy": "localhost"}, {"all://localhost": None}),
         ({"no_proxy": "github.com"}, {"all://*github.com": None}),
         ({"no_proxy": ".github.com"}, {"all://*.github.com": None}),
+        ({"no_proxy": "http://github.com"}, {"http://github.com": None}),
     ],
 )
 def test_get_environment_proxies(environment, proxies):

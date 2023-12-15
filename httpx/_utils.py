@@ -227,7 +227,9 @@ def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
             #   (But not "wwwgoogle.com")
             # NO_PROXY can include domains, IPv6, IPv4 addresses and "localhost"
             #   NO_PROXY=example.com,::1,localhost,192.168.0.0/16
-            if is_ipv4_hostname(hostname):
+            if "://" in hostname:
+                mounts[hostname] = None
+            elif is_ipv4_hostname(hostname):
                 mounts[f"all://{hostname}"] = None
             elif is_ipv6_hostname(hostname):
                 mounts[f"all://[{hostname}]"] = None
