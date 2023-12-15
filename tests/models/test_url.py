@@ -70,36 +70,79 @@ def test_url_no_authority():
 # Tests for percent encoding across path, query, and fragment...
 
 
-def test_path_percent_encoding():
-    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/!$&'()*+,;= abc ABC 123 :/[]@")
-    assert url.raw_path == b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@"
-    assert url.path == "/!$&'()*+,;= abc ABC 123 :/[]@"
-    assert url.query == b""
-    assert url.fragment == ""
-
-
-def test_query_percent_encoding():
-    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/?!$&'()*+,;= abc ABC 123 :/[]@" + "?")
-    assert url.raw_path == b"/?!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?"
-    assert url.path == "/"
-    assert url.query == b"!$&'()*+,;=%20abc%20ABC%20123%20:%2F[]@?"
-    assert url.fragment == ""
-
-
-def test_fragment_percent_encoding():
-    # Test percent encoding for SUB_DELIMS ALPHA NUM and allowable GEN_DELIMS
-    url = httpx.URL("https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@" + "?#")
-    assert url.raw_path == b"/"
-    assert url.path == "/"
-    assert url.query == b""
-    assert url.fragment == "!$&'()*+,;= abc ABC 123 :/[]@?#"
+@pytest.mark.parametrize(
+    "url,raw_path,path,query,fragment",
+    [
+        # URL with unescaped chars in path.
+        (
+            "https://example.com/!$&'()*+,;= abc ABC 123 :/[]@",
+            b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@",
+            "/!$&'()*+,;= abc ABC 123 :/[]@",
+            b"",
+            "",
+        ),
+        # URL with escaped chars in path.
+        (
+            "https://example.com/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@",
+            b"/!$&'()*+,;=%20abc%20ABC%20123%20:/[]@",
+            "/!$&'()*+,;= abc ABC 123 :/[]@",
+            b"",
+            "",
+        ),
+        # URL with mix of unescaped and escaped chars in path.
+        # WARNING: This has the incorrect behaviour, adding the test as an interim step.
+        (
+            "https://example.com/ %61%62%63",
+            b"/%20%61%62%63",
+            "/ abc",
+            b"",
+            "",
+        ),
+        # URL with unescaped chars in query.
+        (
+            "https://example.com/?!$&'()*+,;= abc ABC 123 :/[]@?",
+            b"/?!$&'()*+,;=%20abc%20ABC%20123%20:/[]@?",
+            "/",
+            b"!$&'()*+,;=%20abc%20ABC%20123%20:/[]@?",
+            "",
+        ),
+        # URL with escaped chars in query.
+        (
+            "https://example.com/?!$&%27()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
+            b"/?!$&%27()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
+            "/",
+            b"!$&%27()*+,;=%20abc%20ABC%20123%20:%2F[]@?",
+            "",
+        ),
+        # URL with mix of unescaped and escaped chars in query.
+        (
+            "https://example.com/?%20%97%98%99",
+            b"/?%20%97%98%99",
+            "/",
+            b"%20%97%98%99",
+            "",
+        ),
+        # URL encoding characters in fragment.
+        (
+            "https://example.com/#!$&'()*+,;= abc ABC 123 :/[]@?#",
+            b"/",
+            "/",
+            b"",
+            "!$&'()*+,;= abc ABC 123 :/[]@?#",
+        ),
+    ],
+)
+def test_path_query_fragment(url, raw_path, path, query, fragment):
+    url = httpx.URL(url)
+    assert url.raw_path == raw_path
+    assert url.path == path
+    assert url.query == query
+    assert url.fragment == fragment
 
 
 def test_url_query_encoding():
     """
-    URL query parameters should use '%20' to encoding spaces,
+    URL query parameters should use '%20' for encoding spaces,
     and should treat '/' as a safe character. This behaviour differs
     across clients, but we're matching browser behaviour here.
 
@@ -107,17 +150,10 @@ def test_url_query_encoding():
     and https://github.com/encode/httpx/discussions/2460
     """
     url = httpx.URL("https://www.example.com/?a=b c&d=e/f")
-    assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
+    assert url.raw_path == b"/?a=b%20c&d=e/f"
 
     url = httpx.URL("https://www.example.com/", params={"a": "b c", "d": "e/f"})
     assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
-
-
-def test_url_with_url_encoded_path():
-    url = httpx.URL("https://www.example.com/path%20to%20somewhere")
-    assert url.path == "/path to somewhere"
-    assert url.query == b""
-    assert url.raw_path == b"/path%20to%20somewhere"
 
 
 def test_url_params():
