@@ -6,9 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## 0.26.0 (20th December, 2023)
 
-### Changed
+### Added
 
-* The `proxies` argument is now deprecated. You should use the `proxy` argument instead, or use `mounts=` for more complex configurations. (#2879)
+* The `proxy` argument was added. You should use the `proxy` argument instead of the deprecated `proxies`, or use `mounts=` for more complex configurations. (#2879)
+
+### Deprecated
+
+* The `proxies` argument is now deprecated. It will still continue to work, but it will be removed in the future. (#2879)
 
 ### Fixed
 
