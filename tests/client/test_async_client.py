@@ -126,6 +126,16 @@ async def test_raise_for_status(server):
 
 
 @pytest.mark.anyio
+async def test_raise_for_status_with_text(server):
+    async with httpx.AsyncClient() as client:
+        response = await client.request("GET", server.url.copy_with(path="/status/500"))
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            response.raise_for_status(True)
+
+        assert str(exc_info.value) == "Hello, world!"
+
+
+@pytest.mark.anyio
 async def test_options(server):
     async with httpx.AsyncClient() as client:
         response = await client.options(server.url)

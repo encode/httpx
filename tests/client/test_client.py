@@ -144,6 +144,14 @@ def test_raise_for_status(server):
                 assert response.raise_for_status() is response
 
 
+def test_raise_for_status_with_text(server):
+    with httpx.Client() as client:
+        response = client.request("GET", server.url.copy_with(path="/status/404"))
+        with pytest.raises(httpx.HTTPStatusError) as exc_info:
+            response.raise_for_status(True)
+        assert str(exc_info.value) == "Hello, world!"
+
+
 def test_options(server):
     with httpx.Client() as client:
         response = client.options(server.url)

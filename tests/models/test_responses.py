@@ -139,6 +139,14 @@ def test_raise_for_status():
         "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500"
     )
 
+    # Use the text from the server if use_response_text is True
+    response = httpx.Response(422, request=request, text="ID is required")
+    assert response.is_client_error
+    assert response.is_error
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        response.raise_for_status(True)
+    assert str(exc_info.value) == "ID is required"
+
     # Calling .raise_for_status without setting a request instance is
     # not valid. Should raise a runtime error.
     response = httpx.Response(200)
