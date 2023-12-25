@@ -2,7 +2,6 @@
 Type definitions for type checking purposes.
 """
 
-import ssl
 from http.cookiejar import CookieJar
 from typing import (
     IO,
@@ -72,7 +71,7 @@ CertTypes = Union[
     # (certfile, keyfile, password)
     Tuple[str, Optional[str], Optional[str]],
 ]
-VerifyTypes = Union[str, bool, ssl.SSLContext]
+VerifyTypes = Union[str, bool]
 TimeoutTypes = Union[
     Optional[float],
     Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],

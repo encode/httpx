@@ -2,11 +2,10 @@ import typing
 from contextlib import contextmanager
 
 from ._client import Client
-from ._config import DEFAULT_TIMEOUT_CONFIG
+from ._config import DEFAULT_TIMEOUT_CONFIG, SSLContext
 from ._models import Response
 from ._types import (
     AuthTypes,
-    CertTypes,
     CookieTypes,
     HeaderTypes,
     ProxiesTypes,
@@ -17,7 +16,6 @@ from ._types import (
     RequestFiles,
     TimeoutTypes,
     URLTypes,
-    VerifyTypes,
 )
 
 
@@ -37,8 +35,7 @@ def request(
     proxies: typing.Optional[ProxiesTypes] = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     follow_redirects: bool = False,
-    verify: VerifyTypes = True,
-    cert: typing.Optional[CertTypes] = None,
+    ssl_context: typing.Optional[SSLContext] = None,
     trust_env: bool = True,
 ) -> Response:
     """
@@ -70,14 +67,8 @@ def request(
     * **timeout** - *(optional)* The timeout configuration to use when sending
     the request.
     * **follow_redirects** - *(optional)* Enables or disables HTTP redirects.
-    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
-    verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
-    (which will disable verification).
-    * **cert** - *(optional)* An SSL certificate used by the requested host
-    to authenticate the client. Either a path to an SSL certificate file, or
-    two-tuple of (certificate file, key file), or a three-tuple of (certificate
-    file, key file, password).
+    * **ssl_context** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
 
@@ -96,8 +87,7 @@ def request(
         cookies=cookies,
         proxy=proxy,
         proxies=proxies,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     ) as client:
@@ -132,8 +122,7 @@ def stream(
     proxies: typing.Optional[ProxiesTypes] = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     follow_redirects: bool = False,
-    verify: VerifyTypes = True,
-    cert: typing.Optional[CertTypes] = None,
+    ssl_context: typing.Optional[SSLContext] = None,
     trust_env: bool = True,
 ) -> typing.Iterator[Response]:
     """
@@ -150,8 +139,7 @@ def stream(
         cookies=cookies,
         proxy=proxy,
         proxies=proxies,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     ) as client:
@@ -180,8 +168,7 @@ def get(
     proxy: typing.Optional[ProxyTypes] = None,
     proxies: typing.Optional[ProxiesTypes] = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: typing.Optional[SSLContext] = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -203,8 +190,7 @@ def get(
         proxy=proxy,
         proxies=proxies,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -220,8 +206,7 @@ def options(
     proxy: typing.Optional[ProxyTypes] = None,
     proxies: typing.Optional[ProxiesTypes] = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: typing.Optional[SSLContext] = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -243,8 +228,7 @@ def options(
         proxy=proxy,
         proxies=proxies,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -260,8 +244,7 @@ def head(
     proxy: typing.Optional[ProxyTypes] = None,
     proxies: typing.Optional[ProxiesTypes] = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: typing.Optional[SSLContext] = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -283,8 +266,7 @@ def head(
         proxy=proxy,
         proxies=proxies,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -304,8 +286,7 @@ def post(
     proxy: typing.Optional[ProxyTypes] = None,
     proxies: typing.Optional[ProxiesTypes] = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: typing.Optional[SSLContext] = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -328,8 +309,7 @@ def post(
         proxy=proxy,
         proxies=proxies,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -349,8 +329,7 @@ def put(
     proxy: typing.Optional[ProxyTypes] = None,
     proxies: typing.Optional[ProxiesTypes] = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: typing.Optional[SSLContext] = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -373,8 +352,7 @@ def put(
         proxy=proxy,
         proxies=proxies,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -394,8 +372,7 @@ def patch(
     proxy: typing.Optional[ProxyTypes] = None,
     proxies: typing.Optional[ProxiesTypes] = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: typing.Optional[SSLContext] = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -418,8 +395,7 @@ def patch(
         proxy=proxy,
         proxies=proxies,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -435,9 +411,8 @@ def delete(
     proxy: typing.Optional[ProxyTypes] = None,
     proxies: typing.Optional[ProxiesTypes] = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    ssl_context: typing.Optional[SSLContext] = None,
     trust_env: bool = True,
 ) -> Response:
     """
@@ -458,8 +433,7 @@ def delete(
         proxy=proxy,
         proxies=proxies,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )

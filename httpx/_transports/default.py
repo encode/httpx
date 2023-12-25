@@ -24,12 +24,13 @@ transport = httpx.HTTPTransport(uds="socket.uds")
 client = httpx.Client(transport=transport)
 """
 import contextlib
+import ssl
 import typing
 from types import TracebackType
 
 import httpcore
 
-from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
+from .._config import DEFAULT_LIMITS, Limits, Proxy, SSLContext
 from .._exceptions import (
     ConnectError,
     ConnectTimeout,
@@ -47,7 +48,7 @@ from .._exceptions import (
     WriteTimeout,
 )
 from .._models import Request, Response
-from .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream, VerifyTypes
+from .._types import AsyncByteStream, ProxyTypes, SyncByteStream
 from .._urls import URL
 from .base import AsyncBaseTransport, BaseTransport
 
@@ -119,20 +120,18 @@ class ResponseStream(SyncByteStream):
 class HTTPTransport(BaseTransport):
     def __init__(
         self,
-        verify: VerifyTypes = True,
-        cert: typing.Optional[CertTypes] = None,
+        ssl_context: typing.Optional[ssl.SSLContext] = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
         proxy: typing.Optional[ProxyTypes] = None,
         uds: typing.Optional[str] = None,
         local_address: typing.Optional[str] = None,
         retries: int = 0,
         socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
     ) -> None:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
+        ssl_context = ssl_context or SSLContext()
 
         if proxy is None:
             self._pool = httpcore.ConnectionPool(
@@ -260,20 +259,18 @@ class AsyncResponseStream(AsyncByteStream):
 class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
-        verify: VerifyTypes = True,
-        cert: typing.Optional[CertTypes] = None,
+        ssl_context: typing.Optional[ssl.SSLContext] = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
         proxy: typing.Optional[ProxyTypes] = None,
         uds: typing.Optional[str] = None,
         local_address: typing.Optional[str] = None,
         retries: int = 0,
         socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
     ) -> None:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
+        ssl_context = ssl_context or SSLContext()
 
         if proxy is None:
             self._pool = httpcore.AsyncConnectionPool(
