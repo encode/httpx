@@ -5,6 +5,7 @@ from pathlib import Path
 
 import certifi
 
+from ._compat import set_minimum_tls_version_1_2
 from ._models import Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._urls import URL
@@ -49,6 +50,10 @@ class SSLContext(ssl.SSLContext):
         cert: typing.Optional[CertTypes] = None,
     ) -> "SSLContext":
         self = super().__new__(cls, protocol)
+
+        set_minimum_tls_version_1_2(self)
+        self.options |= ssl.OP_NO_COMPRESSION
+        self.set_ciphers(DEFAULT_CIPHERS)
 
         logger.debug(
             "load_ssl_context verify=%r cert=%r",
