@@ -1493,6 +1493,7 @@ class AsyncClient(BaseClient):
         return AsyncHTTPTransport(
             verify=verify,
             cert=cert,
+            http1=http1,
             http2=http2,
             limits=limits,
             trust_env=trust_env,
