@@ -276,7 +276,8 @@ class AsyncHTTPTransport(AsyncBaseTransport):
             import sniffio  # noqa: F401
         except ImportError:  # pragma: nocover
             raise RuntimeError(
-                "Using httpx in async mode, but neither httpx['asyncio'] or asyncio['trio'] is installed."
+                "Using httpx in async mode, but neither "
+                "httpx['asyncio'] or asyncio['trio'] is installed."
             )
 
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
