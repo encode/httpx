@@ -16,8 +16,6 @@ theme:
         toggle:
           icon: 'material/lightbulb-outline'
           name: 'Switch to light mode'
-    features:
-        - navigation.sections
 
 repo_name: encode/httpx
 repo_url: https://github.com/encode/httpx/
@@ -25,23 +23,44 @@ edit_uri: ""
 
 nav:
     - Introduction: 'index.md'
-    - Usage:
-        - QuickStart: 'quickstart.md'
-        - Advanced Usage: 'advanced.md'
-    - Guides:
-        - Async Support: 'async.md'
-        - HTTP/2 Support: 'http2.md'
-        - Logging: 'logging.md'
-        - Requests Compatibility: 'compatibility.md'
-        - Troubleshooting: 'troubleshooting.md'
-    - API Reference:
-        - Developer Interface: 'api.md'
-        - Exceptions: 'exceptions.md'
-        - Environment Variables: 'environment_variables.md'
+    - QuickStart: 'quickstart.md'
+    - Command Line Client: 'command-line-client.md'
+    - Clients:
+        - Overview: 'clients/overview.md'
+        - Authentication: 'clients/authentication.md'
+        - Redirects: 'clients/redirects.md'
+        - Cookies: 'clients/cookies.md'
+        - SSL: 'clients/ssl.md'
+        - Proxies: 'clients/proxies.md'
+        - Timeouts: 'clients/timeouts.md'
+        - HTTP Version: 'clients/http-version.md'
+        - Event Hooks: 'clients/event-hooks.md'
+        - Building Requests: 'clients/building-requests.md'
+    - Requests and Responses:
+        - Requests: 'models/requests.md'
+        - Responses: 'models/responses.md'
+        - URLs: 'models/urls.md'
+        - Headers: 'models/headers.md'
+        - Status Codes: 'models/status_codes.md'
+        - Extensions: 'models/extensions.md'
+    - Transports:
+        - Overview: 'transports/index.md'
+        - HTTP: 'transports/http.md'
+        - WSGI: 'transports/wsgi.md'
+        - ASGI: 'transports/asgi.md'
+        - Mounts: 'transports/mounts.md'
+        - Mock: 'transports/mock.md'
+        - Custom: 'transports/custom.md'
+    - Topics:
+        - HTTPX Version 1.0: 'topics/httpx-1.0.md'
+        - Requests Compatability: 'topics/requests-compat.md'
+        - Logging: topics/logging.md
+        - WebSockets: topics/websockets.md
+        - Server Sent Events: topics/server-sent-events.md
     - Community:
-        - Third Party Packages: 'third_party_packages.md'
-        - Contributing: 'contributing.md'
-        - Code of Conduct: 'code_of_conduct.md'
+        - Third Party Packages: 'community/third_party_packages.md'
+        - Contributing: 'community/contributing.md'
+        - Code of Conduct: 'community/code_of_conduct.md'
 
 markdown_extensions:
   - admonition

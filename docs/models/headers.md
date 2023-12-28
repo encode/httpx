@@ -1,0 +1,13 @@
+# HTTP headers
+
+...
+
+* Validation, Multiple headers, Encoding...
+
+## Default headers
+
+...
+
+## HTTP/2
+
+...
