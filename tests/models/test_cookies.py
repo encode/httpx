@@ -92,7 +92,7 @@ def test_cookies_repr():
     cookies.set(name="foo", value="bar", domain="http://blah.com")
     cookies.set(name="fizz", value="buzz", domain="http://hello.com")
 
-    assert (
-        repr(cookies)
-        == "<Cookies[<Cookie foo=bar for http://blah.com />, <Cookie fizz=buzz for http://hello.com />]>"
+    assert repr(cookies) == (
+        "<Cookies[<Cookie foo=bar for http://blah.com />,"
+        " <Cookie fizz=buzz for http://hello.com />]>"
     )

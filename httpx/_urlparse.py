@@ -62,8 +62,8 @@ AUTHORITY_REGEX = re.compile(
     (
         r"(?:(?P<userinfo>{userinfo})@)?" r"(?P<host>{host})" r":?(?P<port>{port})?"
     ).format(
-        userinfo="[^@]*",  # Any character sequence not including '@'.
-        host="(\\[.*\\]|[^:]*)",  # Either any character sequence not including ':',
+        userinfo=".*",  # Any character sequence.
+        host="(\\[.*\\]|[^:@]*)",  # Either any character sequence excluding ':' or '@',
         # or an IPv6 address enclosed within square brackets.
         port=".*",  # Any character sequence.
     )
@@ -260,10 +260,8 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     # For 'path' we need to drop ? and # from the GEN_DELIMS set.
     parsed_path: str = quote(path, safe=SUB_DELIMS + ":/[]@")
     # For 'query' we need to drop '#' from the GEN_DELIMS set.
-    # We also exclude '/' because it is more robust to replace it with a percent
-    # encoding despite it not being a requirement of the spec.
     parsed_query: typing.Optional[str] = (
-        None if query is None else quote(query, safe=SUB_DELIMS + ":?[]@")
+        None if query is None else quote(query, safe=SUB_DELIMS + ":/?[]@")
     )
     # For 'fragment' we can include all of the GEN_DELIMS set.
     parsed_fragment: typing.Optional[str] = (
@@ -360,24 +358,25 @@ def normalize_port(
 
 def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:
     """
-    Path validation rules that depend on if the URL contains a scheme or authority component.
+    Path validation rules that depend on if the URL contains
+    a scheme or authority component.
 
     See https://datatracker.ietf.org/doc/html/rfc3986.html#section-3.3
     """
     if has_authority:
-        # > If a URI contains an authority component, then the path component
-        # > must either be empty or begin with a slash ("/") character."
+        # If a URI contains an authority component, then the path component
+        # must either be empty or begin with a slash ("/") character."
         if path and not path.startswith("/"):
             raise InvalidURL("For absolute URLs, path must be empty or begin with '/'")
     else:
-        # > If a URI does not contain an authority component, then the path cannot begin
-        # > with two slash characters ("//").
+        # If a URI does not contain an authority component, then the path cannot begin
+        # with two slash characters ("//").
         if path.startswith("//"):
             raise InvalidURL(
                 "URLs with no authority component cannot have a path starting with '//'"
             )
-        # > In addition, a URI reference (Section 4.1) may be a relative-path reference, in which
-        # > case the first path segment cannot contain a colon (":") character.
+        # In addition, a URI reference (Section 4.1) may be a relative-path reference,
+        # in which case the first path segment cannot contain a colon (":") character.
         if path.startswith(":") and not has_scheme:
             raise InvalidURL(
                 "URLs with no scheme component cannot have a path starting with ':'"
@@ -431,13 +430,12 @@ def is_safe(string: str, safe: str = "/") -> bool:
         if char not in NON_ESCAPED_CHARS:
             return False
 
-    # Any '%' characters must be valid '%xx' escape sequences.
-    return string.count("%") == len(PERCENT_ENCODED_REGEX.findall(string))
+    return True
 
 
-def quote(string: str, safe: str = "/") -> str:
+def percent_encoded(string: str, safe: str = "/") -> str:
     """
-    Use percent-encoding to quote a string if required.
+    Use percent-encoding to quote a string.
     """
     if is_safe(string, safe=safe):
         return string
@@ -448,17 +446,57 @@ def quote(string: str, safe: str = "/") -> str:
     )
 
 
+def quote(string: str, safe: str = "/") -> str:
+    """
+    Use percent-encoding to quote a string, omitting existing '%xx' escape sequences.
+
+    See: https://www.rfc-editor.org/rfc/rfc3986#section-2.1
+
+    * `string`: The string to be percent-escaped.
+    * `safe`: A string containing characters that may be treated as safe, and do not
+        need to be escaped. Unreserved characters are always treated as safe.
+        See: https://www.rfc-editor.org/rfc/rfc3986#section-2.3
+    """
+    parts = []
+    current_position = 0
+    for match in re.finditer(PERCENT_ENCODED_REGEX, string):
+        start_position, end_position = match.start(), match.end()
+        matched_text = match.group(0)
+        # Add any text up to the '%xx' escape sequence.
+        if start_position != current_position:
+            leading_text = string[current_position:start_position]
+            parts.append(percent_encoded(leading_text, safe=safe))
+
+        # Add the '%xx' escape sequence.
+        parts.append(matched_text)
+        current_position = end_position
+
+    # Add any text after the final '%xx' escape sequence.
+    if current_position != len(string):
+        trailing_text = string[current_position:]
+        parts.append(percent_encoded(trailing_text, safe=safe))
+
+    return "".join(parts)
+
+
 def urlencode(items: typing.List[typing.Tuple[str, str]]) -> str:
-    # We can use a much simpler version of the stdlib urlencode here because
-    # we don't need to handle a bunch of different typing cases, such as bytes vs str.
-    #
-    # https://github.com/python/cpython/blob/b2f7b2ef0b5421e01efb8c7bee2ef95d3bab77eb/Lib/urllib/parse.py#L926
-    #
-    # Note that we use '%20' encoding for spaces. and '%2F  for '/'.
-    # This is slightly different than `requests`, but is the behaviour that browsers use.
-    #
-    # See
-    # - https://github.com/encode/httpx/issues/2536
-    # - https://github.com/encode/httpx/issues/2721
-    # - https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
-    return "&".join([quote(k, safe="") + "=" + quote(v, safe="") for k, v in items])
+    """
+    We can use a much simpler version of the stdlib urlencode here because
+    we don't need to handle a bunch of different typing cases, such as bytes vs str.
+
+    https://github.com/python/cpython/blob/b2f7b2ef0b5421e01efb8c7bee2ef95d3bab77eb/Lib/urllib/parse.py#L926
+
+    Note that we use '%20' encoding for spaces. and '%2F  for '/'.
+    This is slightly different than `requests`, but is the behaviour that browsers use.
+
+    See
+    - https://github.com/encode/httpx/issues/2536
+    - https://github.com/encode/httpx/issues/2721
+    - https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
+    """
+    return "&".join(
+        [
+            percent_encoded(k, safe="") + "=" + percent_encoded(v, safe="")
+            for k, v in items
+        ]
+    )

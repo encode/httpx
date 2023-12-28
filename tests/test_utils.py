@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import random
@@ -10,7 +11,6 @@ from httpx._utils import (
     URLPattern,
     get_ca_bundle_from_env,
     get_environment_proxies,
-    guess_json_utf,
     is_https_redirect,
     obfuscate_sensitive_headers,
     parse_header_links,
@@ -34,12 +34,16 @@ from .common import TESTS_DIR
     ),
 )
 def test_encoded(encoding):
-    data = "{}".encode(encoding)
-    assert guess_json_utf(data) == encoding
+    content = '{"abc": 123}'.encode(encoding)
+    response = httpx.Response(200, content=content)
+    assert response.json() == {"abc": 123}
 
 
 def test_bad_utf_like_encoding():
-    assert guess_json_utf(b"\x00\x00\x00\x00") is None
+    content = b"\x00\x00\x00\x00"
+    response = httpx.Response(200, content=content)
+    with pytest.raises(json.decoder.JSONDecodeError):
+        response.json()
 
 
 @pytest.mark.parametrize(
@@ -52,8 +56,9 @@ def test_bad_utf_like_encoding():
     ),
 )
 def test_guess_by_bom(encoding, expected):
-    data = "\ufeff{}".encode(encoding)
-    assert guess_json_utf(data) == expected
+    content = '\ufeff{"abc": 123}'.encode(encoding)
+    response = httpx.Response(200, content=content)
+    assert response.json() == {"abc": 123}
 
 
 @pytest.mark.parametrize(
@@ -104,7 +109,8 @@ def test_logging_redirect_chain(server, caplog):
         (
             "httpx",
             logging.INFO,
-            'HTTP Request: GET http://127.0.0.1:8000/redirect_301 "HTTP/1.1 301 Moved Permanently"',
+            "HTTP Request: GET http://127.0.0.1:8000/redirect_301"
+            ' "HTTP/1.1 301 Moved Permanently"',
         ),
         (
             "httpx",
@@ -191,6 +197,7 @@ def test_get_ssl_cert_file():
         ({"no_proxy": "localhost"}, {"all://localhost": None}),
         ({"no_proxy": "github.com"}, {"all://*github.com": None}),
         ({"no_proxy": ".github.com"}, {"all://*.github.com": None}),
+        ({"no_proxy": "http://github.com"}, {"http://github.com": None}),
     ],
 )
 def test_get_environment_proxies(environment, proxies):

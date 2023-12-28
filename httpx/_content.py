@@ -42,7 +42,7 @@ class ByteStream(AsyncByteStream, SyncByteStream):
 class IteratorByteStream(SyncByteStream):
     CHUNK_SIZE = 65_536
 
-    def __init__(self, stream: Iterable[bytes]):
+    def __init__(self, stream: Iterable[bytes]) -> None:
         self._stream = stream
         self._is_stream_consumed = False
         self._is_generator = inspect.isgenerator(stream)
@@ -67,7 +67,7 @@ class IteratorByteStream(SyncByteStream):
 class AsyncIteratorByteStream(AsyncByteStream):
     CHUNK_SIZE = 65_536
 
-    def __init__(self, stream: AsyncIterable[bytes]):
+    def __init__(self, stream: AsyncIterable[bytes]) -> None:
         self._stream = stream
         self._is_stream_consumed = False
         self._is_generator = inspect.isasyncgen(stream)
@@ -105,7 +105,7 @@ class UnattachedStream(AsyncByteStream, SyncByteStream):
 
 
 def encode_content(
-    content: Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+    content: Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]],
 ) -> Tuple[Dict[str, str], Union[SyncByteStream, AsyncByteStream]]:
     if isinstance(content, (bytes, str)):
         body = content.encode("utf-8") if isinstance(content, str) else content

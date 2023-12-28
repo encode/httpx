@@ -212,7 +212,7 @@ async def test_context_managed_transport():
 @pytest.mark.anyio
 async def test_context_managed_transport_and_mount():
     class Transport(httpx.AsyncBaseTransport):
-        def __init__(self, name: str):
+        def __init__(self, name: str) -> None:
             self.name: str = name
             self.events: typing.List[str] = []
 
