@@ -3,7 +3,6 @@ import json
 import pytest
 
 import httpx
-from httpx import ASGITransport
 
 
 async def hello_world(scope, receive, send):
@@ -209,7 +208,7 @@ async def test_asgi_disconnect_after_response_complete():
 
 @pytest.mark.anyio
 async def test_asgi_exc_no_raise():
-    transport = ASGITransport(app=raise_exc, raise_app_exceptions=False)
+    transport = httpx.ASGITransport(app=raise_exc, raise_app_exceptions=False)
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.get("http://www.example.org/")
 
