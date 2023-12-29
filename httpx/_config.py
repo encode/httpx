@@ -43,14 +43,11 @@ UNSET = UnsetType()
 class SSLContext(ssl.SSLContext):
     DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
 
-    def __new__(
-        cls,
-        protocol: ssl._SSLMethod = ssl.PROTOCOL_TLS_CLIENT,
+    def __init__(
+        self,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
-    ) -> "SSLContext":
-        self = super().__new__(cls, protocol)
-
+    ) -> None:
         set_minimum_tls_version_1_2(self)
         self.options |= ssl.OP_NO_COMPRESSION
         self.set_ciphers(DEFAULT_CIPHERS)
@@ -65,7 +62,6 @@ class SSLContext(ssl.SSLContext):
             self.load_ssl_context_verify(cert, verify)
         else:
             self.load_ssl_context_no_verify(cert)
-        return self
 
     def load_ssl_context_no_verify(
         self, cert: typing.Optional[CertTypes]
@@ -137,6 +133,14 @@ class SSLContext(ssl.SSLContext):
                     keyfile=cert[1],
                     password=cert[2],  # type: ignore
                 )
+
+    def __new__(
+        cls,
+        protocol: ssl._SSLMethod = ssl.PROTOCOL_TLS_CLIENT,
+        *args: typing.Any,
+        **kwargs: typing.Any,
+    ) -> "SSLContext":
+        return super().__new__(cls, protocol, *args, **kwargs)
 
 
 class Timeout:
