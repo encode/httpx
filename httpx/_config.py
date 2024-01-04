@@ -185,7 +185,7 @@ class SSLConfig:
                 ssl_context.load_cert_chain(
                     certfile=self.cert[0],
                     keyfile=self.cert[1],
-                    password=self.cert[2],  # type: ignore
+                    password=self.cert[2],
                 )
 
 

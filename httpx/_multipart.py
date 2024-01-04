@@ -104,9 +104,9 @@ class FileField:
             if len(value) == 2:
                 # neither the 3rd parameter (content_type) nor the 4th (headers)
                 # was included
-                filename, fileobj = value  # type: ignore
+                filename, fileobj = value
             elif len(value) == 3:
-                filename, fileobj, content_type = value  # type: ignore
+                filename, fileobj, content_type = value
             else:
                 # all 4 parameters included
                 filename, fileobj, content_type, headers = value  # type: ignore
