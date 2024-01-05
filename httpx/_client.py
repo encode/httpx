@@ -1549,7 +1549,7 @@ class AsyncClient(BaseClient):
         [0]: /advanced/#merging-of-configuration
         """
 
-        if cookies is not None:
+        if cookies is not None:  # pragma: no cover
             message = (
                 "Setting per-request cookies=<...> is being deprecated, because "
                 "the expected behaviour on cookie persistence is ambiguous. Set "
