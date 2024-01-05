@@ -131,7 +131,7 @@ class SSLContext(ssl.SSLContext):
                 self.load_cert_chain(
                     certfile=cert[0],
                     keyfile=cert[1],
-                    password=cert[2],  # type: ignore
+                    password=cert[2],
                 )
 
     def __new__(
