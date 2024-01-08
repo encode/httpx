@@ -598,6 +598,8 @@ class Client(BaseClient):
     to authenticate the client. Either a path to an SSL certificate file, or
     two-tuple of (certificate file, key file), or a three-tuple of (certificate
     file, key file, password).
+    * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
+    enabled. Defaults to `False`.
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
     * **proxies** - *(optional)* A dictionary mapping proxy keys to proxy
     URLs.
@@ -1311,6 +1313,8 @@ class AsyncClient(BaseClient):
     An asynchronous HTTP client, with connection pooling, HTTP/2, redirects,
     cookie persistence, etc.
 
+    It can be shared between tasks.
+
     Usage:
 
     ```python
@@ -1544,6 +1548,15 @@ class AsyncClient(BaseClient):
 
         [0]: /advanced/#merging-of-configuration
         """
+
+        if cookies is not None:  # pragma: no cover
+            message = (
+                "Setting per-request cookies=<...> is being deprecated, because "
+                "the expected behaviour on cookie persistence is ambiguous. Set "
+                "cookies directly on the client instance instead."
+            )
+            warnings.warn(message, DeprecationWarning)
+
         request = self.build_request(
             method=method,
             url=url,
@@ -1656,7 +1669,7 @@ class AsyncClient(BaseClient):
 
             return response
 
-        except BaseException as exc:  # pragma: no cover
+        except BaseException as exc:
             await response.aclose()
             raise exc
 
