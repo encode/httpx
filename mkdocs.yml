@@ -29,6 +29,7 @@ nav:
         - Authentication: 'clients/authentication.md'
         - SSL: 'clients/ssl.md'
         - Timeouts: 'clients/timeouts.md'
+        - Event Hooks: 'clients/event-hooks.md'
     - Guides:
         - Async Support: 'async.md'
         - HTTP/2 Support: 'http2.md'
