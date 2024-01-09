@@ -1,43 +1,50 @@
+Authentication can either be included on a per-request basis...
+
 ```pycon
->>> auth = ...
+>>> auth = httpx.BasicAuthentication(username="username", password="secret")
+>>> client = httpx.Client()
 >>> response = httpx.get("https://www.example.com/", auth=auth)
 ```
 
+Or configured on the client instance, ensuring that all outgoing requests will include authentication credentials...
+
 ```pycon
->>> auth = ...
+>>> auth = httpx.BasicAuthentication(username="username", password="secret")
 >>> client = httpx.Client(auth=auth)
->>> response = client.get("https://www.example.com/")
+>>> response = httpx.get("https://www.example.com/")
 ```
 
 ## Basic authentication
 
-HTTP basic authentication is an unencrypted authentication scheme that uses a simple encoding of the username and password in the request `Authorization` header. Since it is unencrypted it should only be used over `https`, although this is not strictly enforced.
+HTTP basic authentication is an unencrypted authentication scheme that uses a simple encoding of the username and password in the request `Authorization` header. Since it is unencrypted it should typically only be used over `https`, although this is not strictly enforced.
 
 ```pycon
->>> auth = httpx.BasicAuthentication(username="user@example.com", password="password123")
->>> response = httpx.get("https://www.example.com/", auth=auth)
+>>> auth = httpx.BasicAuthentication(username="finley", password="secret")
+>>> client = httpx.Client(auth=auth)
+>>> response = client.get("https://httpbin.org/basic-auth/finley/secret")
 >>> response
 <Response [200 OK]>
 ```
 
 ## Digest authentication
 
-HTTP digest authentication is a challenge-response authentication scheme. Unlike basic authentication it provides encryption **TODO**
+HTTP digest authentication is a challenge-response authentication scheme. Unlike basic authentication it provides encryption, and can be used over unencrypted `http` connections. It requires an additional round-trip in order to negotiate the authentication. 
 
 ```pycon
->>> auth = httpx.DigestAuth(username="user@example.com", password="password123")
->>> response = httpx.get("https://example.com/", auth=auth)
+>>> auth = httpx.DigestAuth(username="olivia", password="secret")
+>>> client = httpx.Client(auth=auth)
+>>> response = client.get("https://httpbin.org/digest-auth/auth/olivia/secret")
 >>> response
 <Response [200 OK]>
 >>> response.history
-...  # TODO
+[<Response [401 UNAUTHORIZED]>]
 ```
 
 ## NetRC authentication
 
 HTTPX can be configured to use [a `.netrc` config file](https://everything.curl.dev/usingcurl/netrc) for authentication.
 
-The `.netrc` config file allows authentication credentials to be associated with specified hosts. When a request is made to a host that is found in the netrc file, the username and password will be included using HTTP basic auth.
+The `.netrc` config file allows authentication credentials to be associated with specified hosts. When a request is made to a host that is found in the netrc file, the username and password will be included using HTTP basic authentication.
 
 Example `.netrc` file:
 
@@ -75,7 +82,7 @@ or fallback to the default.
 >>> client = httpx.Client(auth=auth)
 ```
 
-The `NetRCAuth()` class uses [the `netrc.netrc()` function from the Python standard library](https://docs.python.org/3/library/netrc.html). See the documentation there for more details on exceptions that may be raised if the netrc file is not found, or cannot be parsed.
+The `NetRCAuth()` class uses [the `netrc.netrc()` function from the Python standard library](https://docs.python.org/3/library/netrc.html). See the documentation there for more details on exceptions that may be raised if the `.netrc` file is not found, or cannot be parsed.
 
 ## Custom authentication schemes
 
