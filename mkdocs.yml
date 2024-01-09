@@ -27,6 +27,7 @@ nav:
     - Clients:
         - Overview: 'clients/overview.md'
         - Authentication: 'clients/authentication.md'
+        - SSL Context: 'clients/ssl.md'
     - Guides:
         - Async Support: 'async.md'
         - HTTP/2 Support: 'http2.md'
