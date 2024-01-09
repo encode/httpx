@@ -25,7 +25,7 @@ nav:
     - Introduction: 'index.md'
     - QuickStart: 'quickstart.md'
     - Clients:
-        - Overview: 'advanced.md'
+        - Overview: 'clients/overview.md'
     - Guides:
         - Async Support: 'async.md'
         - HTTP/2 Support: 'http2.md'
