@@ -3,7 +3,7 @@ Authentication can either be included on a per-request basis...
 ```pycon
 >>> auth = httpx.BasicAuthentication(username="username", password="secret")
 >>> client = httpx.Client()
->>> response = httpx.get("https://www.example.com/", auth=auth)
+>>> response = client.get("https://www.example.com/", auth=auth)
 ```
 
 Or configured on the client instance, ensuring that all outgoing requests will include authentication credentials...
@@ -11,7 +11,7 @@ Or configured on the client instance, ensuring that all outgoing requests will i
 ```pycon
 >>> auth = httpx.BasicAuthentication(username="username", password="secret")
 >>> client = httpx.Client(auth=auth)
->>> response = httpx.get("https://www.example.com/")
+>>> response = client.get("https://www.example.com/")
 ```
 
 ## Basic authentication
