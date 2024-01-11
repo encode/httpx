@@ -25,10 +25,8 @@ from ._exceptions import (
 )
 from ._models import Cookies, Headers, Request, Response
 from ._status_codes import codes
-from ._transports.asgi import ASGITransport
 from ._transports.base import AsyncBaseTransport, BaseTransport
 from ._transports.default import AsyncHTTPTransport, HTTPTransport
-from ._transports.wsgi import WSGITransport
 from ._types import (
     AsyncByteStream,
     AuthTypes,
@@ -682,7 +680,10 @@ class Client(BaseClient):
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
 
         if app:
-            raise RuntimeError("'app=...' is deprecated. Use 'transport=httpx.WSGITransport(app=...).'")
+            raise RuntimeError(
+                "'app=...' is deprecated. "
+                "Use 'transport=httpx.WSGITransport(app=...).'"
+            )
 
         allow_env_proxies = trust_env and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
@@ -1421,7 +1422,10 @@ class AsyncClient(BaseClient):
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
 
         if app:
-            raise RuntimeError("'app=...' is deprecated. Use 'transport=httpx.ASGITransport(app=...).'")
+            raise RuntimeError(
+                "'app=...' is deprecated. "
+                "Use 'transport=httpx.ASGITransport(app=...).'"
+            )
 
         allow_env_proxies = trust_env and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
