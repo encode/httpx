@@ -232,4 +232,6 @@ def test_version():
 
 def test_invalid_version():
     with pytest.raises(ValueError):
+        httpx.Version()
+    with pytest.raises(ValueError):
         httpx.Version("HTTP/3")

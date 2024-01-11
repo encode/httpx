@@ -366,10 +366,12 @@ class Proxy:
 class Version:
     def __init__(self, *versions: str) -> None:
         self._versions = sorted(set(versions))
+        if not versions:
+            raise ValueError("Missing HTTP version.")
         if any([version not in ["HTTP/1.1", "HTTP/2"] for version in versions]):
             raise ValueError("Supported versions are 'HTTP/1.1' and 'HTTP/2'")
 
-    def __contains__(self, version: str) -> bool:
+    def __contains__(self, version: str, /) -> bool:
         return version in self._versions
 
     def __repr__(self) -> str:
