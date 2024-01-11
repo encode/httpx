@@ -463,6 +463,7 @@ def test_client_decode_text_using_explicit_encoding():
 
 
 def test_http2_parameter_deprecated():
-    # The 'http1' and 'http2' flags are deprecated in favor of `version=httpx.Version(...)`.
+    # The 'http1' and 'http2' flags are deprecated in favor of
+    # `version=httpx.Version("HTTP/1.1", "HTTP/2")`.
     with pytest.raises(RuntimeError):
         httpx.Client(http2=True)
