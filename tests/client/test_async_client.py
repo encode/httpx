@@ -373,3 +373,9 @@ async def test_server_extensions(server):
         response = await client.get(url)
     assert response.status_code == 200
     assert response.extensions["http_version"] == b"HTTP/1.1"
+
+
+def test_http2_parameter_deprecated():
+    # The 'http1' and 'http2' flags are deprecated in favor of `version=httpx.Version(...)`.
+    with pytest.raises(RuntimeError):
+        httpx.AsyncClient(http2=True)

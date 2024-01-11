@@ -460,3 +460,9 @@ def test_client_decode_text_using_explicit_encoding():
         assert response.reason_phrase == "OK"
         assert response.encoding == "ISO-8859-1"
         assert response.text == text
+
+
+def test_http2_parameter_deprecated():
+    # The 'http1' and 'http2' flags are deprecated in favor of `version=httpx.Version(...)`.
+    with pytest.raises(RuntimeError):
+        httpx.Client(http2=True)
