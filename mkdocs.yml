@@ -24,8 +24,8 @@ edit_uri: ""
 nav:
     - Introduction: 'index.md'
     - QuickStart: 'quickstart.md'
-    - Clients:
-        - Overview: 'clients/overview.md'
+    - Advanced:
+        - Clients: 'clients/clients.md'
         - Authentication: 'clients/authentication.md'
         - SSL: 'clients/ssl.md'
         - Proxies: 'clients/proxies.md'
