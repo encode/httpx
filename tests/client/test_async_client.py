@@ -9,7 +9,8 @@ import httpx
 @pytest.mark.anyio
 async def test_get(server):
     url = server.url
-    async with httpx.AsyncClient(http2=True) as client:
+    ENABLE_HTTP2 = httpx.Version("HTTP/1.1", "HTTP/2")
+    async with httpx.AsyncClient(version=ENABLE_HTTP2) as client:
         response = await client.get(url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
@@ -367,7 +368,8 @@ async def test_cancellation_during_stream():
 @pytest.mark.anyio
 async def test_server_extensions(server):
     url = server.url
-    async with httpx.AsyncClient(http2=True) as client:
+    ENABLE_HTTP2 = httpx.Version("HTTP/1.1", "HTTP/2")
+    async with httpx.AsyncClient(version=ENABLE_HTTP2) as client:
         response = await client.get(url)
     assert response.status_code == 200
     assert response.extensions["http_version"] == b"HTTP/1.1"

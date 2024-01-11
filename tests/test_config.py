@@ -221,3 +221,15 @@ def test_proxy_with_auth_from_url():
 def test_invalid_proxy_scheme():
     with pytest.raises(ValueError):
         httpx.Proxy("invalid://example.com")
+
+
+def test_version():
+    version = httpx.Version("HTTP/1.1", "HTTP/2")
+    assert "HTTP/1.1" in version
+    assert "HTTP/2" in version
+    assert repr(version) == "Version('HTTP/1.1', 'HTTP/2')"
+
+
+def test_invalid_version():
+    with pytest.raises(ValueError):
+        httpx.Version("HTTP/3")
