@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 * Respect the `http1` argument while configuring proxy transports. (#3023)
+* Fix RFC 2069 mode digest authentication. (#3045)
 
 ## 0.26.0 (20th December, 2023)
 
