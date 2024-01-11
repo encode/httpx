@@ -231,7 +231,7 @@ with tempfile.NamedTemporaryFile() as download_file:
                 progress.update(download_task, completed=response.num_bytes_downloaded)
 ```
 
-![rich progress bar](img/rich-progress.gif)
+![rich progress bar](../img/rich-progress.gif)
 
 ## Monitoring upload progress
 
@@ -263,23 +263,7 @@ def gen():
 httpx.post("https://httpbin.org/post", content=gen())
 ```
 
-![tqdm progress bar](img/tqdm-progress.gif)
-
-## Pool limit configuration
-
-You can control the connection pool size using the `limits` keyword
-argument on the client. It takes instances of `httpx.Limits` which define:
-
-- `max_keepalive_connections`, number of allowable keep-alive connections, or `None` to always
-allow. (Defaults 20)
-- `max_connections`, maximum number of allowable connections, or `None` for no limits.
-(Default 100)
-- `keepalive_expiry`, time limit on idle keep-alive connections in seconds, or `None` for no limits. (Default 5)
-
-```python
-limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
-client = httpx.Client(limits=limits)
-```
+![tqdm progress bar](../img/tqdm-progress.gif)
 
 ## Multipart file encoding
 

@@ -30,6 +30,7 @@ nav:
         - SSL: 'clients/ssl.md'
         - Proxies: 'clients/proxies.md'
         - Timeouts: 'clients/timeouts.md'
+        - Resource Limits: 'clients/resource-limits.md'
         - Event Hooks: 'clients/event-hooks.md'
         - Transports: 'clients/transports.md'
         - Text Encodings: 'clients/text-encodings.md'
