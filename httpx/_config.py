@@ -2,6 +2,7 @@ import logging
 import os
 import ssl
 import typing
+from functools import lru_cache
 from pathlib import Path
 
 import certifi
@@ -42,6 +43,7 @@ class UnsetType:
 UNSET = UnsetType()
 
 
+@lru_cache(None)
 def create_ssl_context(
     cert: typing.Optional[CertTypes] = None,
     verify: VerifyTypes = True,
