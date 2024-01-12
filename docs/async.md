@@ -10,6 +10,24 @@ long-lived network connections such as WebSockets.
 If you're working with an async web framework then you'll also want to use an
 async client for sending outgoing HTTP requests.
 
+## Enabling Async support
+
+To enable async support you'll need to install some additional dependencies:
+
+If you're using Python's [standard `asyncio` support](https://docs.python.org/3/library/asyncio.html) then:
+
+```shell
+$ pip install httpx['asyncio']
+```
+
+Or, if you're working with the [`trio` third party package](https://trio.readthedocs.io/en/stable/):
+
+```shell
+$ pip install httpx['trio']
+```
+
+We highly recommend `trio` for async support. The `trio` project [pioneered the principles of structured concurrency](https://en.wikipedia.org/wiki/Structured_concurrency), and has a more carefully constrained API against which to work from.
+
 ## Making Async requests
 
 To make asynchronous requests, you'll need an `AsyncClient`.
