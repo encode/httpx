@@ -32,9 +32,9 @@ import httpcore
 from .._config import (
     DEFAULT_LIMITS,
     DEFAULT_NETWORK_OPTIONS,
-    Proxy,
     Limits,
     NetworkOptions,
+    Proxy,
     create_ssl_context,
 )
 from .._exceptions import (
