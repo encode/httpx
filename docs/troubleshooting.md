@@ -27,7 +27,7 @@ mounts = {
 
 Using this setup, you're telling HTTPX to connect to the proxy using HTTP for HTTP requests, and using HTTPS for HTTPS requests.
 
-But if you get the error above, it is likely that your proxy doesn't support connecting via HTTPS. Don't worry: that's a [common gotcha](advanced.md#example).
+But if you get the error above, it is likely that your proxy doesn't support connecting via HTTPS. Don't worry: that's a [common gotcha](advanced/proxies.md#http-proxies).
 
 Change the scheme of your HTTPS proxy to `http://...` instead of `https://...`:
 
@@ -46,7 +46,7 @@ with httpx.Client(proxy=proxy) as client:
   ...
 ```
 
-For more information, see [Proxies: FORWARD vs TUNNEL](advanced.md#forward-vs-tunnel).
+For more information, see [Proxies: FORWARD vs TUNNEL](advanced/proxies.md#forward-vs-tunnel).
 
 ---
 
