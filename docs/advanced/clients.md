@@ -8,7 +8,7 @@
 
 **More efficient usage of network resources**
 
-When you make requests using the top-level API as documented in the [Quickstart](quickstart.md) guide, HTTPX has to establish a new connection _for every single request_ (connections are not reused). As the number of requests to a host increases, this quickly becomes inefficient.
+When you make requests using the top-level API as documented in the [Quickstart](../quickstart.md) guide, HTTPX has to establish a new connection _for every single request_ (connections are not reused). As the number of requests to a host increases, this quickly becomes inefficient.
 
 On the other hand, a `Client` instance uses [HTTP connection pooling](https://en.wikipedia.org/wiki/HTTP_persistent_connection). This means that when you make several requests to the same host, the `Client` will reuse the underlying TCP connection, instead of recreating one for every single request.
 
@@ -25,7 +25,7 @@ This can bring **significant performance improvements** compared to using the to
 - Cookie persistence across requests.
 - Applying configuration across all outgoing requests.
 - Sending requests through HTTP proxies.
-- Using [HTTP/2](http2.md).
+- Using [HTTP/2](../http2.md).
 
 The other sections on this page go into further detail about what you can do with a `Client` instance.
 
@@ -60,7 +60,7 @@ Once you have a `Client`, you can send requests using `.get()`, `.post()`, etc. 
 <Response [200 OK]>
 ```
 
-These methods accept the same arguments as `httpx.get()`, `httpx.post()`, etc. This means that all features documented in the [Quickstart](quickstart.md) guide are also available at the client level.
+These methods accept the same arguments as `httpx.get()`, `httpx.post()`, etc. This means that all features documented in the [Quickstart](../quickstart.md) guide are also available at the client level.
 
 For example, to send a request with custom headers:
 
@@ -139,13 +139,13 @@ For example, `base_url` allows you to prepend an URL to all outgoing requests:
 URL('http://httpbin.org/headers')
 ```
 
-For a list of all available client parameters, see the [`Client`](api.md#client) API reference.
+For a list of all available client parameters, see the [`Client`](../api.md#client) API reference.
 
 ---
 
 ## Request instances
 
-For maximum control on what gets sent over the wire, HTTPX supports building explicit [`Request`](api.md#request) instances:
+For maximum control on what gets sent over the wire, HTTPX supports building explicit [`Request`](../api.md#request) instances:
 
 ```python
 request = httpx.Request("GET", "https://example.com")
@@ -203,7 +203,7 @@ with tempfile.NamedTemporaryFile() as download_file:
                 num_bytes_downloaded = response.num_bytes_downloaded
 ```
 
-![tqdm progress bar](img/tqdm-progress.gif)
+![tqdm progress bar](../img/tqdm-progress.gif)
 
 Or an alternate example, this time using the [`rich`](https://github.com/willmcgugan/rich) library…
 
@@ -265,7 +265,7 @@ httpx.post("https://httpbin.org/post", content=gen())
 
 ## Multipart file encoding
 
-As mentioned in the [quickstart](quickstart.md#sending-multipart-file-uploads)
+As mentioned in the [quickstart](../quickstart.md#sending-multipart-file-uploads)
 multipart file encoding is available by passing a dictionary with the
 name of the payloads as keys and either tuple of elements or a file-like object or a string as values.
 

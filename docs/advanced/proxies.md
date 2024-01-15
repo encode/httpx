@@ -63,7 +63,7 @@ How exactly step 2/ is performed depends on which of two proxying mechanisms is 
 
 ### Troubleshooting proxies
 
-If you encounter issues when setting up proxies, please refer to our [Troubleshooting guide](troubleshooting.md#proxies).
+If you encounter issues when setting up proxies, please refer to our [Troubleshooting guide](../troubleshooting.md#proxies).
 
 ## SOCKS
 
