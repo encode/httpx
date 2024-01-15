@@ -22,8 +22,8 @@ coverage[toml]==7.4.0
 cryptography==41.0.7
 mypy==1.8.0
 pytest==7.4.4
-ruff==0.1.9
-trio==0.22.2
+ruff==0.1.13
+trio==0.24.0
 trio-typing==0.10.0
 trustme==1.1.0
-uvicorn==0.24.0.post1
+uvicorn==0.25.0
