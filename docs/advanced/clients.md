@@ -1,9 +1,7 @@
-# Client Instances
-
 !!! hint
     If you are coming from Requests, `httpx.Client()` is what you can use instead of `requests.Session()`.
 
-### Why use a Client?
+## Why use a Client?
 
 !!! note "TL;DR"
     If you do anything more than experimentation, one-off scripts, or prototypes, then you should use a `Client` instance.
@@ -31,7 +29,7 @@ This can bring **significant performance improvements** compared to using the to
 
 The other sections on this page go into further detail about what you can do with a `Client` instance.
 
-### Usage
+## Usage
 
 The recommended way to use a `Client` is as a context manager. This will ensure that connections are properly cleaned up when leaving the `with` block:
 
@@ -50,7 +48,7 @@ finally:
     client.close()
 ```
 
-### Making requests
+## Making requests
 
 Once you have a `Client`, you can send requests using `.get()`, `.post()`, etc. For example:
 
@@ -75,7 +73,7 @@ For example, to send a request with custom headers:
 'value'
 ```
 
-### Sharing configuration across requests
+## Sharing configuration across requests
 
 Clients allow you to apply configuration to all outgoing requests by passing parameters to the `Client` constructor.
 
@@ -91,7 +89,7 @@ For example, to apply a set of custom headers _on every request_:
 'my-app/0.0.1'
 ```
 
-### Merging of configuration
+## Merging of configuration
 
 When a configuration option is provided at both the client-level and request-level, one of two things can happen:
 
@@ -127,7 +125,7 @@ b'alice:ecila123'
 
 If you need finer-grained control on the merging of client-level and request-level parameters, see [Request instances](#request-instances).
 
-### Other Client-only configuration options
+## Other Client-only configuration options
 
 Additionally, `Client` accepts some configuration options that aren't available at the request level.
 
