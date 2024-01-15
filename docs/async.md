@@ -17,7 +17,7 @@ To enable async support you'll need to install some additional dependencies:
 If you're using Python's [standard `asyncio` support](https://docs.python.org/3/library/asyncio.html) then:
 
 ```shell
-$ pip install httpx['asyncio']
+$ pip install "httpx[asyncio]"
 ```
 
 Or, if you're working with the [`trio` third party package](https://trio.readthedocs.io/en/stable/):
