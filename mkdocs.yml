@@ -16,8 +16,6 @@ theme:
         toggle:
           icon: 'material/lightbulb-outline'
           name: 'Switch to light mode'
-    features:
-        - navigation.sections
 
 repo_name: encode/httpx
 repo_url: https://github.com/encode/httpx/
@@ -25,9 +23,17 @@ edit_uri: ""
 
 nav:
     - Introduction: 'index.md'
-    - Usage:
-        - QuickStart: 'quickstart.md'
-        - Advanced Usage: 'advanced.md'
+    - QuickStart: 'quickstart.md'
+    - Advanced:
+        - Clients: 'advanced/clients.md'
+        - Authentication: 'advanced/authentication.md'
+        - SSL: 'advanced/ssl.md'
+        - Proxies: 'advanced/proxies.md'
+        - Timeouts: 'advanced/timeouts.md'
+        - Resource Limits: 'advanced/resource-limits.md'
+        - Event Hooks: 'advanced/event-hooks.md'
+        - Transports: 'advanced/transports.md'
+        - Text Encodings: 'advanced/text-encodings.md'
     - Guides:
         - Async Support: 'async.md'
         - HTTP/2 Support: 'http2.md'
