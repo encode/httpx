@@ -78,18 +78,6 @@ with httpx.Client(transport=transport, base_url="http://testserver") as client:
     ...
 ```
 
-## urllib3 transport
-
-This [public gist](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165da388e546e) provides a transport that uses the excellent [`urllib3` library](https://urllib3.readthedocs.io/en/latest/), and can be used with the sync `Client`...
-
-```pycon
->>> import httpx
->>> from urllib3_transport import URLLib3Transport
->>> client = httpx.Client(transport=URLLib3Transport())
->>> client.get("https://example.org")
-<Response [200 OK]>
-```
-
 ## Custom transports
 
 A transport instance must implement the low-level Transport API, which deals
