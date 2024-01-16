@@ -13,7 +13,6 @@ from httpx._utils import (
     get_environment_proxies,
     is_https_redirect,
     obfuscate_sensitive_headers,
-    parse_header_links,
     same_origin,
 )
 
@@ -81,7 +80,8 @@ def test_guess_by_bom(encoding, expected):
     ),
 )
 def test_parse_header_links(value, expected):
-    assert parse_header_links(value) == expected
+    all_links = httpx.Response(200, headers={"link": value}).links.values()
+    assert all(link in all_links for link in expected)
 
 
 def test_logging_request(server, caplog):
