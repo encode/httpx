@@ -9,9 +9,11 @@ The following additional keyword arguments are currently supported by httpcore..
 
 Example usages...
 
-# Disable HTTP/2 on a single specific domain.
+# Enable HTTP/2, except on a single specific domain.
+
+ENABLE_HTTP2 = httpx.Version("HTTP/1.1", "HTTP/2")
 mounts = {
-    "all://": httpx.HTTPTransport(http2=True),
+    "all://": httpx.HTTPTransport(version=ENABLE_HTTP2),
     "all://*example.org": httpx.HTTPTransport()
 }
 
@@ -29,7 +31,14 @@ from types import TracebackType
 
 import httpcore
 
-from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
+from .._config import (
+    DEFAULT_LIMITS,
+    DEFAULT_VERSION,
+    Limits,
+    Proxy,
+    Version,
+    create_ssl_context,
+)
 from .._exceptions import (
     ConnectError,
     ConnectTimeout,
@@ -121,8 +130,7 @@ class HTTPTransport(BaseTransport):
         self,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
-        http1: bool = True,
-        http2: bool = False,
+        version: Version = DEFAULT_VERSION,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
         proxy: typing.Optional[ProxyTypes] = None,
@@ -140,8 +148,8 @@ class HTTPTransport(BaseTransport):
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
-                http1=http1,
-                http2=http2,
+                http1="HTTP/1.1" in version,
+                http2="HTTP/2" in version,
                 uds=uds,
                 local_address=local_address,
                 retries=retries,
@@ -162,8 +170,8 @@ class HTTPTransport(BaseTransport):
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
-                http1=http1,
-                http2=http2,
+                http1="HTTP/1.1" in version,
+                http2="HTTP/2" in version,
                 socket_options=socket_options,
             )
         elif proxy.url.scheme == "socks5":
@@ -187,8 +195,8 @@ class HTTPTransport(BaseTransport):
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
-                http1=http1,
-                http2=http2,
+                http1="HTTP/1.1" in version,
+                http2="HTTP/2" in version,
             )
         else:  # pragma: no cover
             raise ValueError(
@@ -262,8 +270,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         self,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
-        http1: bool = True,
-        http2: bool = False,
+        version: Version = DEFAULT_VERSION,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
         proxy: typing.Optional[ProxyTypes] = None,
@@ -281,8 +288,8 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
-                http1=http1,
-                http2=http2,
+                http1="HTTP/1.1" in version,
+                http2="HTTP/2" in version,
                 uds=uds,
                 local_address=local_address,
                 retries=retries,
@@ -302,8 +309,8 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
-                http1=http1,
-                http2=http2,
+                http1="HTTP/1.1" in version,
+                http2="HTTP/2" in version,
                 socket_options=socket_options,
             )
         elif proxy.url.scheme == "socks5":
@@ -327,8 +334,8 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
                 keepalive_expiry=limits.keepalive_expiry,
-                http1=http1,
-                http2=http2,
+                http1="HTTP/1.1" in version,
+                http2="HTTP/2" in version,
             )
         else:  # pragma: no cover
             raise ValueError(

@@ -12,9 +12,11 @@ from ._config import (
     DEFAULT_LIMITS,
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_TIMEOUT_CONFIG,
+    DEFAULT_VERSION,
     Limits,
     Proxy,
     Timeout,
+    Version,
 )
 from ._decoders import SUPPORTED_DECODERS
 from ._exceptions import (
@@ -630,8 +632,8 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
-        http1: bool = True,
         http2: bool = False,
+        version: Version = DEFAULT_VERSION,
         proxy: typing.Optional[ProxyTypes] = None,
         proxies: typing.Optional[ProxiesTypes] = None,
         mounts: typing.Optional[
@@ -664,12 +666,12 @@ class Client(BaseClient):
             default_encoding=default_encoding,
         )
 
-        if http2:
+        if "HTTP/2" in version:
             try:
                 import h2  # noqa
             except ImportError:  # pragma: no cover
                 raise ImportError(
-                    "Using http2=True, but the 'h2' package is not installed. "
+                    "Configured 'HTTP/2', but the 'h2' package is not installed. "
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
@@ -682,14 +684,19 @@ class Client(BaseClient):
             if proxy:
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
 
+        if http2:
+            raise RuntimeError(
+                "The 'http2' argument is now deprecated. "
+                "Use version=httpx.Version('HTTP/1.1', 'HTTP/2')."
+            )
+
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
             verify=verify,
             cert=cert,
-            http1=http1,
-            http2=http2,
+            version=version,
             limits=limits,
             transport=transport,
             app=app,
@@ -702,8 +709,7 @@ class Client(BaseClient):
                 proxy,
                 verify=verify,
                 cert=cert,
-                http1=http1,
-                http2=http2,
+                version=version,
                 limits=limits,
                 trust_env=trust_env,
             )
@@ -720,8 +726,7 @@ class Client(BaseClient):
         self,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
-        http1: bool = True,
-        http2: bool = False,
+        version: Version = DEFAULT_VERSION,
         limits: Limits = DEFAULT_LIMITS,
         transport: typing.Optional[BaseTransport] = None,
         app: typing.Optional[typing.Callable[..., typing.Any]] = None,
@@ -736,8 +741,7 @@ class Client(BaseClient):
         return HTTPTransport(
             verify=verify,
             cert=cert,
-            http1=http1,
-            http2=http2,
+            version=version,
             limits=limits,
             trust_env=trust_env,
         )
@@ -747,16 +751,14 @@ class Client(BaseClient):
         proxy: Proxy,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
-        http1: bool = True,
-        http2: bool = False,
+        version: Version = DEFAULT_VERSION,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> BaseTransport:
         return HTTPTransport(
             verify=verify,
             cert=cert,
-            http1=http1,
-            http2=http2,
+            version=version,
             limits=limits,
             trust_env=trust_env,
             proxy=proxy,
@@ -1372,8 +1374,8 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
-        http1: bool = True,
         http2: bool = False,
+        version: Version = DEFAULT_VERSION,
         proxy: typing.Optional[ProxyTypes] = None,
         proxies: typing.Optional[ProxiesTypes] = None,
         mounts: typing.Optional[
@@ -1406,23 +1408,29 @@ class AsyncClient(BaseClient):
             default_encoding=default_encoding,
         )
 
-        if http2:
+        if "HTTP/2" in version:
             try:
                 import h2  # noqa
             except ImportError:  # pragma: no cover
                 raise ImportError(
-                    "Using http2=True, but the 'h2' package is not installed. "
+                    "Configured 'HTTP/2', but the 'h2' package is not installed. "
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
         if proxies:
             message = (
-                "The 'proxies' argument is now deprecated."
-                " Use 'proxy' or 'mounts' instead."
+                "The 'proxies' argument is now deprecated. "
+                "Use 'proxy' or 'mounts' instead."
             )
             warnings.warn(message, DeprecationWarning)
             if proxy:
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
+
+        if http2:
+            raise RuntimeError(
+                "The 'http2' argument is now deprecated. "
+                "Use version=httpx.Version('HTTP/1.1', 'HTTP/2')."
+            )
 
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
@@ -1430,8 +1438,7 @@ class AsyncClient(BaseClient):
         self._transport = self._init_transport(
             verify=verify,
             cert=cert,
-            http1=http1,
-            http2=http2,
+            version=version,
             limits=limits,
             transport=transport,
             app=app,
@@ -1445,8 +1452,7 @@ class AsyncClient(BaseClient):
                 proxy,
                 verify=verify,
                 cert=cert,
-                http1=http1,
-                http2=http2,
+                version=version,
                 limits=limits,
                 trust_env=trust_env,
             )
@@ -1462,8 +1468,7 @@ class AsyncClient(BaseClient):
         self,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
-        http1: bool = True,
-        http2: bool = False,
+        version: Version = DEFAULT_VERSION,
         limits: Limits = DEFAULT_LIMITS,
         transport: typing.Optional[AsyncBaseTransport] = None,
         app: typing.Optional[typing.Callable[..., typing.Any]] = None,
@@ -1478,8 +1483,7 @@ class AsyncClient(BaseClient):
         return AsyncHTTPTransport(
             verify=verify,
             cert=cert,
-            http1=http1,
-            http2=http2,
+            version=version,
             limits=limits,
             trust_env=trust_env,
         )
@@ -1489,16 +1493,14 @@ class AsyncClient(BaseClient):
         proxy: Proxy,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
-        http1: bool = True,
-        http2: bool = False,
+        version: Version = DEFAULT_VERSION,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> AsyncBaseTransport:
         return AsyncHTTPTransport(
             verify=verify,
             cert=cert,
-            http1=http1,
-            http2=http2,
+            version=version,
             limits=limits,
             trust_env=trust_env,
             proxy=proxy,

@@ -13,7 +13,8 @@ def autodetect(content):
 
 def test_get(server):
     url = server.url
-    with httpx.Client(http2=True) as http:
+    ENABLE_HTTP2 = httpx.Version("HTTP/1.1", "HTTP/2")
+    with httpx.Client(version=ENABLE_HTTP2) as http:
         response = http.get(url)
     assert response.status_code == 200
     assert response.url == url
@@ -399,7 +400,8 @@ def test_all_mounted_transport():
 
 def test_server_extensions(server):
     url = server.url.copy_with(path="/http_version_2")
-    with httpx.Client(http2=True) as client:
+    ENABLE_HTTP2 = httpx.Version("HTTP/1.1", "HTTP/2")
+    with httpx.Client(version=ENABLE_HTTP2) as client:
         response = client.get(url)
     assert response.status_code == 200
     assert response.extensions["http_version"] == b"HTTP/1.1"
@@ -458,3 +460,10 @@ def test_client_decode_text_using_explicit_encoding():
         assert response.reason_phrase == "OK"
         assert response.encoding == "ISO-8859-1"
         assert response.text == text
+
+
+def test_http2_parameter_deprecated():
+    # The 'http1' and 'http2' flags are deprecated in favor of
+    # `version=httpx.Version("HTTP/1.1", "HTTP/2")`.
+    with pytest.raises(RuntimeError):
+        httpx.Client(http2=True)
