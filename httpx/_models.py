@@ -774,13 +774,13 @@ class Response:
         Returns the parsed header links of the response, if any
         """
         header = self.headers.get("link")
-        ldict = {}
-        if header:
-            links = parse_header_links(header)
-            for link in links:
-                key = link.get("rel") or link.get("url")
-                ldict[key] = link
-        return ldict
+        if header is None:
+            return {}
+
+        return {
+            (link.get("rel") or link.get("url")): link
+            for link in parse_header_links(header)
+        }
 
     @property
     def num_bytes_downloaded(self) -> int:
