@@ -75,7 +75,7 @@ The environment variables documented below are used as a convention by various H
 * [cURL](https://github.com/curl/curl/blob/master/docs/MANUAL.md#environment-variables)
 * [requests](https://github.com/psf/requests/blob/master/docs/user/advanced.rst#proxies)
 
-For more information on using proxies in HTTPX, see [HTTP Proxying](advanced.md#http-proxying).
+For more information on using proxies in HTTPX, see [HTTP Proxying](advanced/proxies.md#http-proxying).
 
 ### `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`
 
