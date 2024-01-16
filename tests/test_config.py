@@ -74,6 +74,16 @@ def test_SSLContext_with_get_request(server, cert_pem_file):
     assert response.status_code == 200
 
 
+def test_SSLContext_repr():
+    ssl_context = httpx.SSLContext()
+
+    assert repr(ssl_context) == "SSLContext(verify=True)"
+
+    ssl_context = httpx.SSLContext(verify=certifi.where())
+
+    assert repr(ssl_context) == "SSLContext(verify='{}')".format(certifi.where())
+
+
 def test_limits_repr():
     limits = httpx.Limits(max_connections=100)
     expected = (
