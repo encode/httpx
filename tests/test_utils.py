@@ -14,7 +14,6 @@ from httpx._utils import (
     is_https_redirect,
     obfuscate_sensitive_headers,
     parse_header_links,
-    same_origin,
 )
 
 from .common import TESTS_DIR
@@ -222,15 +221,23 @@ def test_obfuscate_sensitive_headers(headers, output):
 
 
 def test_same_origin():
-    origin1 = httpx.URL("https://example.com")
-    origin2 = httpx.URL("HTTPS://EXAMPLE.COM:443")
-    assert same_origin(origin1, origin2)
+    origin = httpx.URL("https://example.com")
+    request = httpx.Request("GET", "HTTPS://EXAMPLE.COM:443")
+
+    client = httpx.Client()
+    headers = client._redirect_headers(request, origin, "GET")
+
+    assert headers["Host"] == request.url.netloc.decode("ascii")
 
 
 def test_not_same_origin():
-    origin1 = httpx.URL("https://example.com")
-    origin2 = httpx.URL("HTTP://EXAMPLE.COM")
-    assert not same_origin(origin1, origin2)
+    origin = httpx.URL("https://example.com")
+    request = httpx.Request("GET", "HTTP://EXAMPLE.COM:80")
+
+    client = httpx.Client()
+    headers = client._redirect_headers(request, origin, "GET")
+
+    assert headers["Host"] == origin.netloc.decode("ascii")
 
 
 def test_is_https_redirect():
