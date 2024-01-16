@@ -260,10 +260,8 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     # For 'path' we need to drop ? and # from the GEN_DELIMS set.
     parsed_path: str = quote(path, safe=SUB_DELIMS + ":/[]@")
     # For 'query' we need to drop '#' from the GEN_DELIMS set.
-    # We also exclude '/' because it is more robust to replace it with a percent
-    # encoding despite it not being a requirement of the spec.
     parsed_query: typing.Optional[str] = (
-        None if query is None else quote(query, safe=SUB_DELIMS + ":?[]@")
+        None if query is None else quote(query, safe=SUB_DELIMS + ":/?[]@")
     )
     # For 'fragment' we can include all of the GEN_DELIMS set.
     parsed_fragment: typing.Optional[str] = (
@@ -432,13 +430,12 @@ def is_safe(string: str, safe: str = "/") -> bool:
         if char not in NON_ESCAPED_CHARS:
             return False
 
-    # Any '%' characters must be valid '%xx' escape sequences.
-    return string.count("%") == len(PERCENT_ENCODED_REGEX.findall(string))
+    return True
 
 
-def quote(string: str, safe: str = "/") -> str:
+def percent_encoded(string: str, safe: str = "/") -> str:
     """
-    Use percent-encoding to quote a string if required.
+    Use percent-encoding to quote a string.
     """
     if is_safe(string, safe=safe):
         return string
@@ -447,6 +444,39 @@ def quote(string: str, safe: str = "/") -> str:
     return "".join(
         [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]
     )
+
+
+def quote(string: str, safe: str = "/") -> str:
+    """
+    Use percent-encoding to quote a string, omitting existing '%xx' escape sequences.
+
+    See: https://www.rfc-editor.org/rfc/rfc3986#section-2.1
+
+    * `string`: The string to be percent-escaped.
+    * `safe`: A string containing characters that may be treated as safe, and do not
+        need to be escaped. Unreserved characters are always treated as safe.
+        See: https://www.rfc-editor.org/rfc/rfc3986#section-2.3
+    """
+    parts = []
+    current_position = 0
+    for match in re.finditer(PERCENT_ENCODED_REGEX, string):
+        start_position, end_position = match.start(), match.end()
+        matched_text = match.group(0)
+        # Add any text up to the '%xx' escape sequence.
+        if start_position != current_position:
+            leading_text = string[current_position:start_position]
+            parts.append(percent_encoded(leading_text, safe=safe))
+
+        # Add the '%xx' escape sequence.
+        parts.append(matched_text)
+        current_position = end_position
+
+    # Add any text after the final '%xx' escape sequence.
+    if current_position != len(string):
+        trailing_text = string[current_position:]
+        parts.append(percent_encoded(trailing_text, safe=safe))
+
+    return "".join(parts)
 
 
 def urlencode(items: typing.List[typing.Tuple[str, str]]) -> str:
@@ -464,4 +494,9 @@ def urlencode(items: typing.List[typing.Tuple[str, str]]) -> str:
     - https://github.com/encode/httpx/issues/2721
     - https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
     """
-    return "&".join([quote(k, safe="") + "=" + quote(v, safe="") for k, v in items])
+    return "&".join(
+        [
+            percent_encoded(k, safe="") + "=" + percent_encoded(v, safe="")
+            for k, v in items
+        ]
+    )
