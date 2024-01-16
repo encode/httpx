@@ -48,6 +48,7 @@ class SSLContext(ssl.SSLContext):
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
     ) -> None:
+        self.verify = verify
         set_minimum_tls_version_1_2(self)
         self.options |= ssl.OP_NO_COMPRESSION
         self.set_ciphers(DEFAULT_CIPHERS)
@@ -133,6 +134,9 @@ class SSLContext(ssl.SSLContext):
                     keyfile=cert[1],
                     password=cert[2],
                 )
+
+    def __repr__(self) -> str:
+        return f"<SSLContext [verify={self.verify}]>"
 
     def __new__(
         cls,
