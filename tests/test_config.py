@@ -221,3 +221,18 @@ def test_proxy_with_auth_from_url():
 def test_invalid_proxy_scheme():
     with pytest.raises(ValueError):
         httpx.Proxy("invalid://example.com")
+
+
+def test_network_options():
+    network_options = httpx.NetworkOptions()
+    assert repr(network_options) == "NetworkOptions()"
+
+    network_options = httpx.NetworkOptions(connection_retries=1)
+    assert repr(network_options) == "NetworkOptions(connection_retries=1)"
+
+    network_options = httpx.NetworkOptions(
+        connection_retries=1, local_address="0.0.0.0"
+    )
+    assert repr(network_options) == (
+        "NetworkOptions(connection_retries=1, local_address='0.0.0.0')"
+    )
