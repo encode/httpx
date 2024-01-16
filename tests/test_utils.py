@@ -84,7 +84,7 @@ def test_parse_header_links(value, expected):
     assert all(link in all_links for link in expected)
 
 
-def test_parse_header_links_no_link(value, expected):
+def test_parse_header_links_no_link():
     all_links = httpx.Response(200).links
     assert all_links == {}
 
