@@ -164,6 +164,7 @@ class BaseClient:
         params: typing.Optional[QueryParamTypes] = None,
         headers: typing.Optional[HeaderTypes] = None,
         cookies: typing.Optional[CookieTypes] = None,
+        persistent_cookies: bool = False,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
@@ -182,6 +183,7 @@ class BaseClient:
         self._params = QueryParams(params)
         self.headers = Headers(headers)
         self._cookies = Cookies(cookies)
+        self._persistent_cookies = persistent_cookies
         self._timeout = Timeout(timeout)
         self.follow_redirects = follow_redirects
         self.max_redirects = max_redirects
@@ -590,6 +592,8 @@ class Client(BaseClient):
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
     sending requests.
+    * **persistent_cookies** - *(optional) A boolean indicating if cookies should
+    persist. Defaults to `False`.
     * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
     verify the identity of requested hosts. Either `True` (default CA bundle),
     a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
@@ -626,6 +630,7 @@ class Client(BaseClient):
         params: typing.Optional[QueryParamTypes] = None,
         headers: typing.Optional[HeaderTypes] = None,
         cookies: typing.Optional[CookieTypes] = None,
+        persistent_cookies: bool = False,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
@@ -653,6 +658,7 @@ class Client(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
+            persistent_cookies=persistent_cookies,
             timeout=timeout,
             follow_redirects=follow_redirects,
             max_redirects=max_redirects,
@@ -1021,7 +1027,8 @@ class Client(BaseClient):
         response.stream = BoundSyncStream(
             response.stream, response=response, timer=timer
         )
-        self.cookies.extract_cookies(response)
+        if self._persistent_cookies:
+            self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
 
         logger.info(
@@ -1328,6 +1335,8 @@ class AsyncClient(BaseClient):
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
     sending requests.
+    * **persistent_cookies** - *(optional) A boolean indicating if cookies should
+    persist. Defaults to `False`.
     * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
     verify the identity of requested hosts. Either `True` (default CA bundle),
     a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
@@ -1366,6 +1375,7 @@ class AsyncClient(BaseClient):
         params: typing.Optional[QueryParamTypes] = None,
         headers: typing.Optional[HeaderTypes] = None,
         cookies: typing.Optional[CookieTypes] = None,
+        persistent_cookies: bool = False,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
@@ -1393,6 +1403,7 @@ class AsyncClient(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
+            persistent_cookies=persistent_cookies,
             timeout=timeout,
             follow_redirects=follow_redirects,
             max_redirects=max_redirects,
@@ -1752,7 +1763,8 @@ class AsyncClient(BaseClient):
         response.stream = BoundAsyncStream(
             response.stream, response=response, timer=timer
         )
-        self.cookies.extract_cookies(response)
+        if self._persistent_cookies:
+            self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
 
         logger.info(

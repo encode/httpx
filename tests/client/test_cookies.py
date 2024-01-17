@@ -166,3 +166,23 @@ def test_cookie_persistence() -> None:
     response = client.get("http://example.org/echo_cookies")
     assert response.status_code == 200
     assert response.json() == {"cookies": "example-name=example-value"}
+
+
+def test_cookie_persistence_off() -> None:
+    """
+    Ensure that Client instances do not persist cookies between requests when persistence is off.
+    """
+    client = httpx.Client(transport=httpx.MockTransport(get_and_set_cookies), persistent_cookies=False)
+
+    response = client.get("http://example.org/echo_cookies")
+    assert response.status_code == 200
+    assert response.json() == {"cookies": None}
+
+    response = client.get("http://example.org/set_cookie")
+    assert response.status_code == 200
+    assert response.cookies["example-name"] == "example-value"
+    assert "example-name" not in client.cookies.keys()
+
+    response = client.get("http://example.org/echo_cookies")
+    assert response.status_code == 200
+    assert response.json() == {"cookies": None}
