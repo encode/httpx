@@ -54,7 +54,7 @@ async with httpx.AsyncClient() as client:
 ```
 
 !!! warning
-In order to get the most benefit from connection pooling, make sure you're not instantiating multiple client instances - for example by using `async with` inside a "hot loop". This can be achieved either by having a single scoped client that's passed throughout wherever it's needed, or by having a single global client instance.
+    In order to get the most benefit from connection pooling, make sure you're not instantiating multiple client instances - for example by using `async with` inside a "hot loop". This can be achieved either by having a single scoped client that's passed throughout wherever it's needed, or by having a single global client instance.
 
 Alternatively, use `await client.aclose()` if you want to close a client explicitly:
 
@@ -84,7 +84,7 @@ The async response streaming methods are:
 * `Response.aiter_raw()` - For streaming the raw response bytes, without applying content decoding.
 * `Response.aclose()` - For closing the response. You don't usually need this, since `.stream` block closes the response automatically on exit.
 
-For situations when context block usage is not practical, it is possible to enter "manual mode" by sending a [`Request` instance](./advanced.md#request-instances) using `client.send(..., stream=True)`.
+For situations when context block usage is not practical, it is possible to enter "manual mode" by sending a [`Request` instance](advanced/clients.md#request-instances) using `client.send(..., stream=True)`.
 
 Example in the context of forwarding the response to a streaming web endpoint with [Starlette](https://www.starlette.io):
 
