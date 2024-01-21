@@ -44,9 +44,7 @@ def normalize_header_key(
     return bytes_value.lower() if lower else bytes_value
 
 
-def normalize_header_value(
-    value: str | bytes, encoding: str | None = None
-) -> bytes:
+def normalize_header_value(value: str | bytes, encoding: str | None = None) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header value.
     """

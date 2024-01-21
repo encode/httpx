@@ -169,9 +169,7 @@ class BaseClient:
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: None | (
-            typing.Mapping[str, list[EventHook]]
-        ) = None,
+        event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URLTypes = "",
         trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
@@ -244,9 +242,7 @@ class BaseClient:
         return self._event_hooks
 
     @event_hooks.setter
-    def event_hooks(
-        self, event_hooks: dict[str, list[EventHook]]
-    ) -> None:
+    def event_hooks(self, event_hooks: dict[str, list[EventHook]]) -> None:
         self._event_hooks = {
             "request": list(event_hooks.get("request", [])),
             "response": list(event_hooks.get("response", [])),
@@ -393,9 +389,7 @@ class BaseClient:
             return self.base_url.copy_with(raw_path=merge_raw_path)
         return merge_url
 
-    def _merge_cookies(
-        self, cookies: CookieTypes | None = None
-    ) -> CookieTypes | None:
+    def _merge_cookies(self, cookies: CookieTypes | None = None) -> CookieTypes | None:
         """
         Merge a cookies argument together with any cookies on the client,
         to create the cookies used for the outgoing request.
@@ -406,9 +400,7 @@ class BaseClient:
             return merged_cookies
         return cookies
 
-    def _merge_headers(
-        self, headers: HeaderTypes | None = None
-    ) -> HeaderTypes | None:
+    def _merge_headers(self, headers: HeaderTypes | None = None) -> HeaderTypes | None:
         """
         Merge a headers argument together with any headers on the client,
         to create the headers used for the outgoing request.
@@ -636,16 +628,12 @@ class Client(BaseClient):
         http2: bool = False,
         proxy: ProxyTypes | None = None,
         proxies: ProxiesTypes | None = None,
-        mounts: None | (
-            typing.Mapping[str, BaseTransport | None]
-        ) = None,
+        mounts: None | (typing.Mapping[str, BaseTransport | None]) = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: None | (
-            typing.Mapping[str, list[EventHook]]
-        ) = None,
+        event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URLTypes = "",
         transport: BaseTransport | None = None,
         app: typing.Callable[..., typing.Any] | None = None,
@@ -1378,16 +1366,13 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         proxy: ProxyTypes | None = None,
         proxies: ProxiesTypes | None = None,
-        mounts: None | (
-            typing.Mapping[str, AsyncBaseTransport | None]
-        ) = None,
+        mounts: None | (typing.Mapping[str, AsyncBaseTransport | None]) = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: None | (
-            typing.Mapping[str, list[typing.Callable[..., typing.Any]]]
-        ) = None,
+        event_hooks: None
+        | (typing.Mapping[str, list[typing.Callable[..., typing.Any]]]) = None,
         base_url: URLTypes = "",
         transport: AsyncBaseTransport | None = None,
         app: typing.Callable[..., typing.Any] | None = None,

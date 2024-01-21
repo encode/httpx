@@ -72,9 +72,7 @@ class URL:
       themselves.
     """
 
-    def __init__(
-        self, url: URL | str = "", **kwargs: typing.Any
-    ) -> None:
+    def __init__(self, url: URL | str = "", **kwargs: typing.Any) -> None:
         if kwargs:
             allowed = {
                 "scheme": str,
@@ -422,9 +420,7 @@ class QueryParams(typing.Mapping[str, str]):
     URL query parameters, as a multi-dict.
     """
 
-    def __init__(
-        self, *args: QueryParamTypes | None, **kwargs: typing.Any
-    ) -> None:
+    def __init__(self, *args: QueryParamTypes | None, **kwargs: typing.Any) -> None:
         assert len(args) < 2, "Too many arguments."
         assert not (args and kwargs), "Cannot mix named and unnamed arguments."
 

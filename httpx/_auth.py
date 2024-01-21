@@ -126,18 +126,14 @@ class BasicAuth(Auth):
     and uses HTTP Basic authentication.
     """
 
-    def __init__(
-        self, username: str | bytes, password: str | bytes
-    ) -> None:
+    def __init__(self, username: str | bytes, password: str | bytes) -> None:
         self._auth_header = self._build_auth_header(username, password)
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         request.headers["Authorization"] = self._auth_header
         yield request
 
-    def _build_auth_header(
-        self, username: str | bytes, password: str | bytes
-    ) -> str:
+    def _build_auth_header(self, username: str | bytes, password: str | bytes) -> str:
         userpass = b":".join((to_bytes(username), to_bytes(password)))
         token = b64encode(userpass).decode()
         return f"Basic {token}"
@@ -167,9 +163,7 @@ class NetRCAuth(Auth):
             )
             yield request
 
-    def _build_auth_header(
-        self, username: str | bytes, password: str | bytes
-    ) -> str:
+    def _build_auth_header(self, username: str | bytes, password: str | bytes) -> str:
         userpass = b":".join((to_bytes(username), to_bytes(password)))
         token = b64encode(userpass).decode()
         return f"Basic {token}"
@@ -187,9 +181,7 @@ class DigestAuth(Auth):
         "SHA-512-SESS": hashlib.sha512,
     }
 
-    def __init__(
-        self, username: str | bytes, password: str | bytes
-    ) -> None:
+    def __init__(self, username: str | bytes, password: str | bytes) -> None:
         self._username = to_bytes(username)
         self._password = to_bytes(password)
         self._last_challenge: _DigestAuthChallenge | None = None
@@ -331,9 +323,7 @@ class DigestAuth(Auth):
 
         return header_value
 
-    def _resolve_qop(
-        self, qop: bytes | None, request: Request
-    ) -> bytes | None:
+    def _resolve_qop(self, qop: bytes | None, request: Request) -> bytes | None:
         if qop is None:
             return None
         qops = re.split(b", ?", qop)

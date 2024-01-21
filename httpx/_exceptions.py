@@ -77,9 +77,7 @@ class RequestError(HTTPError):
     Base class for all exceptions that may occur when issuing a `.request()`.
     """
 
-    def __init__(
-        self, message: str, *, request: Request | None = None
-    ) -> None:
+    def __init__(self, message: str, *, request: Request | None = None) -> None:
         super().__init__(message)
         # At the point an exception is raised we won't typically have a request
         # instance to associate it with.
@@ -232,9 +230,7 @@ class HTTPStatusError(HTTPError):
     May be raised when calling `response.raise_for_status()`
     """
 
-    def __init__(
-        self, message: str, *, request: Request, response: Response
-    ) -> None:
+    def __init__(self, message: str, *, request: Request, response: Response) -> None:
         super().__init__(message)
         self.request = request
         self.response = response

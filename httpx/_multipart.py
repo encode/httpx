@@ -41,9 +41,7 @@ class DataField:
     A single form field item, within a multipart form field.
     """
 
-    def __init__(
-        self, name: str, value: str | bytes | int | float | None
-    ) -> None:
+    def __init__(self, name: str, value: str | bytes | int | float | None) -> None:
         if not isinstance(name, str):
             raise TypeError(
                 f"Invalid type for name. Expected str, got {type(name)}: {name!r}"

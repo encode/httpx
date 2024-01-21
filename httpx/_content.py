@@ -7,13 +7,9 @@ from typing import (
     Any,
     AsyncIterable,
     AsyncIterator,
-    
     Iterable,
     Iterator,
     Mapping,
-    
-    
-    
 )
 from urllib.parse import urlencode
 

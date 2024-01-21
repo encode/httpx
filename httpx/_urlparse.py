@@ -329,9 +329,7 @@ def encode_host(host: str) -> str:
         raise InvalidURL(f"Invalid IDNA hostname: {host!r}")
 
 
-def normalize_port(
-    port: str | int | None, scheme: str
-) -> int | None:
+def normalize_port(port: str | int | None, scheme: str) -> int | None:
     # From https://tools.ietf.org/html/rfc3986#section-3.2.3
     #
     # "A scheme may define a default port.  For example, the "http" scheme

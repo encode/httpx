@@ -813,9 +813,7 @@ class Response:
             self._content = b"".join(self.iter_bytes())
         return self._content
 
-    def iter_bytes(
-        self, chunk_size: int | None = None
-    ) -> typing.Iterator[bytes]:
+    def iter_bytes(self, chunk_size: int | None = None) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the decoded response content.
         This allows us to handle gzip, deflate, and brotli encoded responses.
@@ -838,9 +836,7 @@ class Response:
                 for chunk in chunker.flush():
                     yield chunk
 
-    def iter_text(
-        self, chunk_size: int | None = None
-    ) -> typing.Iterator[str]:
+    def iter_text(self, chunk_size: int | None = None) -> typing.Iterator[str]:
         """
         A str-iterator over the decoded response content
         that handles both gzip, deflate, etc but also detects the content's
@@ -868,9 +864,7 @@ class Response:
             for line in decoder.flush():
                 yield line
 
-    def iter_raw(
-        self, chunk_size: int | None = None
-    ) -> typing.Iterator[bytes]:
+    def iter_raw(self, chunk_size: int | None = None) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the raw response content.
         """
@@ -1127,9 +1121,7 @@ class Cookies(typing.MutableMapping[str, str]):
         for cookie in remove:
             self.jar.clear(cookie.domain, cookie.path, cookie.name)
 
-    def clear(
-        self, domain: str | None = None, path: str | None = None
-    ) -> None:
+    def clear(self, domain: str | None = None, path: str | None = None) -> None:
         """
         Delete all cookies. Optionally include a domain and path in
         order to only delete a subset of all the cookies.
