@@ -30,6 +30,8 @@ Our exception hierarchy:
   x ResponseNotRead
   x RequestNotRead
 """
+from __future__ import annotations
+
 import contextlib
 import typing
 
@@ -57,16 +59,16 @@ class HTTPError(Exception):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
-        self._request: typing.Optional["Request"] = None
+        self._request: Request | None = None
 
     @property
-    def request(self) -> "Request":
+    def request(self) -> Request:
         if self._request is None:
             raise RuntimeError("The .request property has not been set.")
         return self._request
 
     @request.setter
-    def request(self, request: "Request") -> None:
+    def request(self, request: Request) -> None:
         self._request = request
 
 
@@ -76,7 +78,7 @@ class RequestError(HTTPError):
     """
 
     def __init__(
-        self, message: str, *, request: typing.Optional["Request"] = None
+        self, message: str, *, request: Request | None = None
     ) -> None:
         super().__init__(message)
         # At the point an exception is raised we won't typically have a request
@@ -231,7 +233,7 @@ class HTTPStatusError(HTTPError):
     """
 
     def __init__(
-        self, message: str, *, request: "Request", response: "Response"
+        self, message: str, *, request: Request, response: Response
     ) -> None:
         super().__init__(message)
         self.request = request
@@ -335,7 +337,7 @@ class RequestNotRead(StreamError):
 
 @contextlib.contextmanager
 def request_context(
-    request: typing.Optional["Request"] = None,
+    request: Request | None = None,
 ) -> typing.Iterator[None]:
     """
     A context manager that can be used to attach the given request context

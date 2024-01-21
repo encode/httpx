@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing
 
 from .._models import Request, Response
@@ -8,7 +10,7 @@ AsyncHandler = typing.Callable[[Request], typing.Coroutine[None, None, Response]
 
 
 class MockTransport(AsyncBaseTransport, BaseTransport):
-    def __init__(self, handler: typing.Union[SyncHandler, AsyncHandler]) -> None:
+    def __init__(self, handler: SyncHandler | AsyncHandler) -> None:
         self.handler = handler
 
     def handle_request(
