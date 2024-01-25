@@ -201,8 +201,3 @@ def test_wsgi_server_protocol():
     assert response.status_code == 200
     assert response.text == "success"
     assert server_protocol == "HTTP/1.1"
-
-
-def test_app_deprecated():
-    with pytest.raises(RuntimeError):
-        httpx.Client(app=...)

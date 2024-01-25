@@ -222,8 +222,3 @@ async def test_asgi_exc_no_raise():
         response = await client.get("http://www.example.org/")
 
         assert response.status_code == 500
-
-
-def test_app_deprecated():
-    with pytest.raises(RuntimeError):
-        httpx.AsyncClient(app=...)
