@@ -208,24 +208,18 @@ class BaseClient:
         return url.copy_with(raw_path=url.raw_path + b"/")
 
     def _get_proxy_map(
-        self, proxies: ProxyTypes | None, allow_env_proxies: bool
+        self, proxy: ProxyTypes | None, allow_env_proxies: bool
     ) -> dict[str, Proxy | None]:
-        if proxies is None:
+        if proxy is None:
             if allow_env_proxies:
                 return {
                     key: None if url is None else Proxy(url=url)
                     for key, url in get_environment_proxies().items()
                 }
             return {}
-        if isinstance(proxies, dict):
-            new_proxies = {}
-            for key, value in proxies.items():
-                proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
-                new_proxies[str(key)] = proxy
-            return new_proxies
-        else:
-            proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
-            return {"all://": proxy}
+
+        proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
+        return {"all://": proxy}
 
     @property
     def timeout(self) -> Timeout:
@@ -385,17 +379,6 @@ class BaseClient:
             merge_raw_path = self.base_url.raw_path + merge_url.raw_path.lstrip(b"/")
             return self.base_url.copy_with(raw_path=merge_raw_path)
         return merge_url
-
-    def _merge_cookies(self, cookies: CookieTypes | None = None) -> CookieTypes | None:
-        """
-        Merge a cookies argument together with any cookies on the client,
-        to create the cookies used for the outgoing request.
-        """
-        if cookies or self.cookies:
-            merged_cookies = Cookies(self.cookies)
-            merged_cookies.update(cookies)
-            return merged_cookies
-        return cookies
 
     def _merge_headers(self, headers: HeaderTypes | None = None) -> HeaderTypes | None:
         """
@@ -1215,7 +1198,7 @@ class Client(BaseClient):
 
     def close(self) -> None:
         """
-        Close transport and proxies.
+        Close transport and mounts.
         """
         if self._state != ClientState.CLOSED:
             self._state = ClientState.CLOSED
@@ -1916,15 +1899,15 @@ class AsyncClient(BaseClient):
 
     async def aclose(self) -> None:
         """
-        Close transport and proxies.
+        Close transport and mounts.
         """
         if self._state != ClientState.CLOSED:
             self._state = ClientState.CLOSED
 
             await self._transport.aclose()
-            for proxy in self._mounts.values():
-                if proxy is not None:
-                    await proxy.aclose()
+            for transport in self._mounts.values():
+                if transport is not None:
+                    await transport.aclose()
 
     async def __aenter__(self: U) -> U:
         if self._state != ClientState.UNOPENED:

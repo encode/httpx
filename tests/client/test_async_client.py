@@ -373,3 +373,13 @@ async def test_server_extensions(server):
         response = await client.get(url)
     assert response.status_code == 200
     assert response.extensions["http_version"] == b"HTTP/1.1"
+
+
+@pytest.mark.anyio
+async def test_async_client_close(server):
+    mounts = {"all://": httpx.MockTransport(hello_world)}
+    try:
+        client = httpx.AsyncClient(mounts=mounts)
+        await client.get(server.url)
+    finally:
+        await client.aclose()

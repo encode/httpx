@@ -290,3 +290,8 @@ def test_pattern_priority():
         URLPattern("http://"),
         URLPattern("all://"),
     ]
+
+
+def test_plain_pattern():
+    with pytest.raises(ValueError):
+        URLPattern("http")

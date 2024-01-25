@@ -167,6 +167,13 @@ def test_put(server):
     assert response.reason_phrase == "OK"
 
 
+def test_put_json(server):
+    with httpx.Client() as client:
+        response = client.put(server.url, json={"text": "Hello, world!"})
+    assert response.status_code == 200
+    assert response.reason_phrase == "OK"
+
+
 def test_patch(server):
     with httpx.Client() as client:
         response = client.patch(server.url, content=b"Hello, world!")
@@ -460,3 +467,12 @@ def test_client_decode_text_using_explicit_encoding():
         assert response.reason_phrase == "OK"
         assert response.encoding == "ISO-8859-1"
         assert response.text == text
+
+
+def test_client_close(server):
+    mounts = {"all://": httpx.MockTransport(hello_world)}
+    try:
+        client = httpx.Client(mounts=mounts)
+        client.get(server.url)
+    finally:
+        client.close()
