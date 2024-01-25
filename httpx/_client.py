@@ -218,8 +218,8 @@ class BaseClient:
                 }
             return {}
 
-        proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-        return {"all://": proxy}
+        universal_proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
+        return {"all://": universal_proxy}
 
     @property
     def timeout(self) -> Timeout:

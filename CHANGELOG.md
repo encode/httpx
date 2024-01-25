@@ -11,6 +11,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * Respect the `http1` argument while configuring proxy transports. (#3023)
 * Fix RFC 2069 mode digest authentication. (#3045)
 
+### Removed
+
+* Recently deprecated `proxies` argument has been removed. (#3071)
+* Per request `cookies` argument is not supporting anymore. (#3071)
+* Non-Mapping objects for `data` argument is no longer allowed. (#3071)
+
 ## 0.26.0 (20th December, 2023)
 
 ### Added
