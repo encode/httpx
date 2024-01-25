@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import codecs
 import email.message
 import ipaddress
@@ -27,9 +29,9 @@ _HTML5_FORM_ENCODING_RE = re.compile(
 
 
 def normalize_header_key(
-    value: typing.Union[str, bytes],
+    value: str | bytes,
     lower: bool,
-    encoding: typing.Optional[str] = None,
+    encoding: str | None = None,
 ) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header key.
@@ -42,9 +44,7 @@ def normalize_header_key(
     return bytes_value.lower() if lower else bytes_value
 
 
-def normalize_header_value(
-    value: typing.Union[str, bytes], encoding: typing.Optional[str] = None
-) -> bytes:
+def normalize_header_value(value: str | bytes, encoding: str | None = None) -> bytes:
     """
     Coerce str/bytes into a strictly byte-wise HTTP header value.
     """
@@ -53,7 +53,7 @@ def normalize_header_value(
     return value.encode(encoding or "ascii")
 
 
-def primitive_value_to_str(value: "PrimitiveData") -> str:
+def primitive_value_to_str(value: PrimitiveData) -> str:
     """
     Coerce a primitive data type into a string value.
 
@@ -91,7 +91,7 @@ def format_form_param(name: str, value: str) -> bytes:
     return f'{name}="{value}"'.encode()
 
 
-def get_ca_bundle_from_env() -> typing.Optional[str]:
+def get_ca_bundle_from_env() -> str | None:
     if "SSL_CERT_FILE" in os.environ:
         ssl_file = Path(os.environ["SSL_CERT_FILE"])
         if ssl_file.is_file():
@@ -103,7 +103,7 @@ def get_ca_bundle_from_env() -> typing.Optional[str]:
     return None
 
 
-def parse_header_links(value: str) -> typing.List[typing.Dict[str, str]]:
+def parse_header_links(value: str) -> list[dict[str, str]]:
     """
     Returns a list of parsed link headers, for more info see:
     https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link
@@ -119,7 +119,7 @@ def parse_header_links(value: str) -> typing.List[typing.Dict[str, str]]:
     :param value: HTTP Link entity-header field
     :return: list of parsed link headers
     """
-    links: typing.List[typing.Dict[str, str]] = []
+    links: list[dict[str, str]] = []
     replace_chars = " '\""
     value = value.strip(replace_chars)
     if not value:
@@ -140,7 +140,7 @@ def parse_header_links(value: str) -> typing.List[typing.Dict[str, str]]:
     return links
 
 
-def parse_content_type_charset(content_type: str) -> typing.Optional[str]:
+def parse_content_type_charset(content_type: str) -> str | None:
     # We used to use `cgi.parse_header()` here, but `cgi` became a dead battery.
     # See: https://peps.python.org/pep-0594/#cgi
     msg = email.message.Message()
@@ -152,21 +152,21 @@ SENSITIVE_HEADERS = {"authorization", "proxy-authorization"}
 
 
 def obfuscate_sensitive_headers(
-    items: typing.Iterable[typing.Tuple[typing.AnyStr, typing.AnyStr]],
-) -> typing.Iterator[typing.Tuple[typing.AnyStr, typing.AnyStr]]:
+    items: typing.Iterable[tuple[typing.AnyStr, typing.AnyStr]],
+) -> typing.Iterator[tuple[typing.AnyStr, typing.AnyStr]]:
     for k, v in items:
         if to_str(k.lower()) in SENSITIVE_HEADERS:
             v = to_bytes_or_str("[secure]", match_type_of=v)
         yield k, v
 
 
-def port_or_default(url: "URL") -> typing.Optional[int]:
+def port_or_default(url: URL) -> int | None:
     if url.port is not None:
         return url.port
     return {"http": 80, "https": 443}.get(url.scheme)
 
 
-def same_origin(url: "URL", other: "URL") -> bool:
+def same_origin(url: URL, other: URL) -> bool:
     """
     Return 'True' if the given URLs share the same origin.
     """
@@ -177,7 +177,7 @@ def same_origin(url: "URL", other: "URL") -> bool:
     )
 
 
-def is_https_redirect(url: "URL", location: "URL") -> bool:
+def is_https_redirect(url: URL, location: URL) -> bool:
     """
     Return 'True' if 'location' is a HTTPS upgrade of 'url'
     """
@@ -192,7 +192,7 @@ def is_https_redirect(url: "URL", location: "URL") -> bool:
     )
 
 
-def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
+def get_environment_proxies() -> dict[str, str | None]:
     """Gets proxy information from the environment"""
 
     # urllib.request.getproxies() falls back on System
@@ -200,7 +200,7 @@ def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
     # We don't want to propagate non-HTTP proxies into
     # our configuration such as 'TRAVIS_APT_PROXY'.
     proxy_info = getproxies()
-    mounts: typing.Dict[str, typing.Optional[str]] = {}
+    mounts: dict[str, str | None] = {}
 
     for scheme in ("http", "https", "all"):
         if proxy_info.get(scheme):
@@ -241,11 +241,11 @@ def get_environment_proxies() -> typing.Dict[str, typing.Optional[str]]:
     return mounts
 
 
-def to_bytes(value: typing.Union[str, bytes], encoding: str = "utf-8") -> bytes:
+def to_bytes(value: str | bytes, encoding: str = "utf-8") -> bytes:
     return value.encode(encoding) if isinstance(value, str) else value
 
 
-def to_str(value: typing.Union[str, bytes], encoding: str = "utf-8") -> str:
+def to_str(value: str | bytes, encoding: str = "utf-8") -> str:
     return value if isinstance(value, str) else value.decode(encoding)
 
 
@@ -257,13 +257,13 @@ def unquote(value: str) -> str:
     return value[1:-1] if value[0] == value[-1] == '"' else value
 
 
-def guess_content_type(filename: typing.Optional[str]) -> typing.Optional[str]:
+def guess_content_type(filename: str | None) -> str | None:
     if filename:
         return mimetypes.guess_type(filename)[0] or "application/octet-stream"
     return None
 
 
-def peek_filelike_length(stream: typing.Any) -> typing.Optional[int]:
+def peek_filelike_length(stream: typing.Any) -> int | None:
     """
     Given a file-like stream object, return its length in number of bytes
     without reading it into memory.
@@ -373,7 +373,7 @@ class URLPattern:
         self.host = "" if url.host == "*" else url.host
         self.port = url.port
         if not url.host or url.host == "*":
-            self.host_regex: typing.Optional[typing.Pattern[str]] = None
+            self.host_regex: typing.Pattern[str] | None = None
         elif url.host.startswith("*."):
             # *.example.com should match "www.example.com", but not "example.com"
             domain = re.escape(url.host[2:])
@@ -387,7 +387,7 @@ class URLPattern:
             domain = re.escape(url.host)
             self.host_regex = re.compile(f"^{domain}$")
 
-    def matches(self, other: "URL") -> bool:
+    def matches(self, other: URL) -> bool:
         if self.scheme and self.scheme != other.scheme:
             return False
         if (
@@ -401,7 +401,7 @@ class URLPattern:
         return True
 
     @property
-    def priority(self) -> typing.Tuple[int, int, int]:
+    def priority(self) -> tuple[int, int, int]:
         """
         The priority allows URLPattern instances to be sortable, so that
         we can match from most specific to least specific.
@@ -417,7 +417,7 @@ class URLPattern:
     def __hash__(self) -> int:
         return hash(self.pattern)
 
-    def __lt__(self, other: "URLPattern") -> bool:
+    def __lt__(self, other: URLPattern) -> bool:
         return self.priority < other.priority
 
     def __eq__(self, other: typing.Any) -> bool:

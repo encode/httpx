@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import os
 import typing
@@ -21,8 +23,8 @@ from ._utils import (
 
 
 def get_multipart_boundary_from_content_type(
-    content_type: typing.Optional[bytes],
-) -> typing.Optional[bytes]:
+    content_type: bytes | None,
+) -> bytes | None:
     if not content_type or not content_type.startswith(b"multipart/form-data"):
         return None
     # parse boundary according to
@@ -39,9 +41,7 @@ class DataField:
     A single form field item, within a multipart form field.
     """
 
-    def __init__(
-        self, name: str, value: typing.Union[str, bytes, int, float, None]
-    ) -> None:
+    def __init__(self, name: str, value: str | bytes | int | float | None) -> None:
         if not isinstance(name, str):
             raise TypeError(
                 f"Invalid type for name. Expected str, got {type(name)}: {name!r}"
@@ -52,7 +52,7 @@ class DataField:
                 f" got {type(value)}: {value!r}"
             )
         self.name = name
-        self.value: typing.Union[str, bytes] = (
+        self.value: str | bytes = (
             value if isinstance(value, bytes) else primitive_value_to_str(value)
         )
 
@@ -93,8 +93,8 @@ class FileField:
 
         fileobj: FileContent
 
-        headers: typing.Dict[str, str] = {}
-        content_type: typing.Optional[str] = None
+        headers: dict[str, str] = {}
+        content_type: str | None = None
 
         # This large tuple based API largely mirror's requests' API
         # It would be good to think of better APIs for this that we could
@@ -137,7 +137,7 @@ class FileField:
         self.file = fileobj
         self.headers = headers
 
-    def get_length(self) -> typing.Optional[int]:
+    def get_length(self) -> int | None:
         headers = self.render_headers()
 
         if isinstance(self.file, (str, bytes)):
@@ -199,7 +199,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
         self,
         data: RequestData,
         files: RequestFiles,
-        boundary: typing.Optional[bytes] = None,
+        boundary: bytes | None = None,
     ) -> None:
         if boundary is None:
             boundary = os.urandom(16).hex().encode("ascii")
@@ -212,7 +212,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
 
     def _iter_fields(
         self, data: RequestData, files: RequestFiles
-    ) -> typing.Iterator[typing.Union[FileField, DataField]]:
+    ) -> typing.Iterator[FileField | DataField]:
         for name, value in data.items():
             if isinstance(value, (tuple, list)):
                 for item in value:
@@ -231,7 +231,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
             yield b"\r\n"
         yield b"--%s--\r\n" % self.boundary
 
-    def get_content_length(self) -> typing.Optional[int]:
+    def get_content_length(self) -> int | None:
         """
         Return the length of the multipart encoded content, or `None` if
         any of the files have a length that cannot be determined upfront.
@@ -253,7 +253,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
 
     # Content stream interface.
 
-    def get_headers(self) -> typing.Dict[str, str]:
+    def get_headers(self) -> dict[str, str]:
         content_length = self.get_content_length()
         content_type = self.content_type
         if content_length is None:

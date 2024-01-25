@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing
 
 import httpcore
@@ -34,7 +36,7 @@ def test_httpcore_all_exceptions_mapped() -> None:
         pytest.fail(f"Unmapped httpcore exceptions: {unmapped_exceptions}")
 
 
-def test_httpcore_exception_mapping(server: "TestServer") -> None:
+def test_httpcore_exception_mapping(server: TestServer) -> None:
     """
     HTTPCore exception mapping works as expected.
     """
