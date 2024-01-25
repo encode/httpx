@@ -40,6 +40,7 @@ from ._transports.asgi import ASGITransport
 from ._transports.base import AsyncBaseTransport, BaseTransport
 from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.mock import MockTransport
+from ._transports.mounts import AsyncMounts, MountNotFound, Mounts
 from ._transports.wsgi import WSGITransport
 from ._types import AsyncByteStream, SyncByteStream
 from ._urls import URL, QueryParams
@@ -68,6 +69,7 @@ __all__ = [
     "AsyncByteStream",
     "AsyncClient",
     "AsyncHTTPTransport",
+    "AsyncMounts",
     "Auth",
     "BaseTransport",
     "BasicAuth",
@@ -94,8 +96,10 @@ __all__ = [
     "LocalProtocolError",
     "main",
     "MockTransport",
+    "Mounts",
     "NetRCAuth",
     "NetworkError",
+    "MountNotFound",
     "options",
     "patch",
     "PoolTimeout",

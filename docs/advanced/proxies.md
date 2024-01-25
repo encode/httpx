@@ -14,19 +14,17 @@ with httpx.Client(proxy="http://localhost:8030") as client:
     ...
 ```
 
-For more advanced use cases, pass a mounts `dict`. For example, to route HTTP and HTTPS requests to 2 different proxies, respectively located at `http://localhost:8030`, and `http://localhost:8031`, pass a `dict` of proxy URLs:
+For more advanced use cases, you might want to use the `httpx.Mounts` transport to determine which requests should be routed via a proxy:
 
 ```python
-proxy_mounts = {
+transport = httpx.Mounts({
     "http://": httpx.HTTPTransport(proxy="http://localhost:8030"),
-    "https://": httpx.HTTPTransport(proxy="http://localhost:8031"),
-}
+    "https://": httpx.HTTPTransport(proxy="https://localhost:8031"),
+})
 
-with httpx.Client(mounts=proxy_mounts) as client:
+with httpx.Client(transport=transport) as client:
     ...
 ```
-
-For detailed information about proxy routing, see the [Routing](#routing) section.
 
 !!! tip "Gotcha"
     In most cases, the proxy URL for the `https://` key _should_ use the `http://` scheme (that's not a typo!).
