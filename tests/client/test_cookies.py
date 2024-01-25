@@ -1,7 +1,5 @@
 from http.cookiejar import Cookie, CookieJar
 
-import pytest
-
 import httpx
 
 
@@ -26,21 +24,6 @@ def test_set_cookie() -> None:
         cookies=cookies, transport=httpx.MockTransport(get_and_set_cookies)
     )
     response = client.get(url)
-
-    assert response.status_code == 200
-    assert response.json() == {"cookies": "example-name=example-value"}
-
-
-def test_set_per_request_cookie_is_deprecated() -> None:
-    """
-    Sending a request including a per-request cookie is deprecated.
-    """
-    url = "http://example.org/echo_cookies"
-    cookies = {"example-name": "example-value"}
-
-    client = httpx.Client(transport=httpx.MockTransport(get_and_set_cookies))
-    with pytest.warns(DeprecationWarning):
-        response = client.get(url, cookies=cookies)
 
     assert response.status_code == 200
     assert response.json() == {"cookies": "example-name=example-value"}

@@ -4,7 +4,6 @@ import datetime
 import enum
 import logging
 import typing
-import warnings
 from contextlib import asynccontextmanager, contextmanager
 from types import TracebackType
 
@@ -37,7 +36,6 @@ from ._types import (
     CertTypes,
     CookieTypes,
     HeaderTypes,
-    ProxiesTypes,
     ProxyTypes,
     QueryParamTypes,
     RequestContent,
@@ -210,7 +208,7 @@ class BaseClient:
         return url.copy_with(raw_path=url.raw_path + b"/")
 
     def _get_proxy_map(
-        self, proxies: ProxiesTypes | None, allow_env_proxies: bool
+        self, proxies: ProxyTypes | None, allow_env_proxies: bool
     ) -> dict[str, Proxy | None]:
         if proxies is None:
             if allow_env_proxies:
@@ -327,15 +325,14 @@ class BaseClient:
         json: typing.Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         extensions: RequestExtensions | None = None,
     ) -> Request:
         """
         Build and return a request instance.
 
-        * The `params`, `headers` and `cookies` arguments
-        are merged with any values set on the client.
+        * The `params` and `headers` arguments are merged with any values
+        set on the client.
         * The `url` argument is merged with any `base_url` set on the client.
 
         See also: [Request instances][0]
@@ -344,7 +341,6 @@ class BaseClient:
         """
         url = self._merge_url(url)
         headers = self._merge_headers(headers)
-        cookies = self._merge_cookies(cookies)
         params = self._merge_queryparams(params)
         extensions = {} if extensions is None else extensions
         if "timeout" not in extensions:
@@ -354,6 +350,7 @@ class BaseClient:
                 else Timeout(timeout)
             )
             extensions = dict(**extensions, timeout=timeout.as_dict())
+        cookies = Cookies(self.cookies)
         return Request(
             method,
             url,
@@ -595,8 +592,6 @@ class Client(BaseClient):
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
-    * **proxies** - *(optional)* A dictionary mapping proxy keys to proxy
-    URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
     * **limits** - *(optional)* The limits configuration to use.
@@ -627,7 +622,6 @@ class Client(BaseClient):
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
-        proxies: ProxiesTypes | None = None,
         mounts: None | (typing.Mapping[str, BaseTransport | None]) = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
@@ -663,17 +657,8 @@ class Client(BaseClient):
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
-        if proxies:
-            message = (
-                "The 'proxies' argument is now deprecated."
-                " Use 'proxy' or 'mounts' instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-            if proxy:
-                raise RuntimeError("Use either `proxy` or 'proxies', not both.")
-
         allow_env_proxies = trust_env and app is None and transport is None
-        proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
+        proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
             verify=verify,
@@ -774,7 +759,6 @@ class Client(BaseClient):
         json: typing.Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -796,14 +780,6 @@ class Client(BaseClient):
 
         [0]: /advanced/#merging-of-configuration
         """
-        if cookies is not None:
-            message = (
-                "Setting per-request cookies=<...> is being deprecated, because "
-                "the expected behaviour on cookie persistence is ambiguous. Set "
-                "cookies directly on the client instance instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-
         request = self.build_request(
             method=method,
             url=url,
@@ -813,7 +789,6 @@ class Client(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -831,7 +806,6 @@ class Client(BaseClient):
         json: typing.Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -856,7 +830,6 @@ class Client(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1033,7 +1006,6 @@ class Client(BaseClient):
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1049,7 +1021,6 @@ class Client(BaseClient):
             url,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1062,7 +1033,6 @@ class Client(BaseClient):
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1078,7 +1048,6 @@ class Client(BaseClient):
             url,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1091,7 +1060,6 @@ class Client(BaseClient):
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1107,7 +1075,6 @@ class Client(BaseClient):
             url,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1124,7 +1091,6 @@ class Client(BaseClient):
         json: typing.Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1144,7 +1110,6 @@ class Client(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1161,7 +1126,6 @@ class Client(BaseClient):
         json: typing.Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1181,7 +1145,6 @@ class Client(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1198,7 +1161,6 @@ class Client(BaseClient):
         json: typing.Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1218,7 +1180,6 @@ class Client(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1231,7 +1192,6 @@ class Client(BaseClient):
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1247,7 +1207,6 @@ class Client(BaseClient):
             url,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1333,8 +1292,6 @@ class AsyncClient(BaseClient):
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
-    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
-    URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
     * **limits** - *(optional)* The limits configuration to use.
@@ -1365,7 +1322,6 @@ class AsyncClient(BaseClient):
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
-        proxies: ProxiesTypes | None = None,
         mounts: None | (typing.Mapping[str, AsyncBaseTransport | None]) = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
@@ -1402,17 +1358,8 @@ class AsyncClient(BaseClient):
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
-        if proxies:
-            message = (
-                "The 'proxies' argument is now deprecated."
-                " Use 'proxy' or 'mounts' instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-            if proxy:
-                raise RuntimeError("Use either `proxy` or 'proxies', not both.")
-
         allow_env_proxies = trust_env and app is None and transport is None
-        proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
+        proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
             verify=verify,
@@ -1513,7 +1460,6 @@ class AsyncClient(BaseClient):
         json: typing.Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1535,15 +1481,6 @@ class AsyncClient(BaseClient):
 
         [0]: /advanced/#merging-of-configuration
         """
-
-        if cookies is not None:  # pragma: no cover
-            message = (
-                "Setting per-request cookies=<...> is being deprecated, because "
-                "the expected behaviour on cookie persistence is ambiguous. Set "
-                "cookies directly on the client instance instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-
         request = self.build_request(
             method=method,
             url=url,
@@ -1553,7 +1490,6 @@ class AsyncClient(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1571,7 +1507,6 @@ class AsyncClient(BaseClient):
         json: typing.Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1596,7 +1531,6 @@ class AsyncClient(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1773,7 +1707,6 @@ class AsyncClient(BaseClient):
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1789,7 +1722,6 @@ class AsyncClient(BaseClient):
             url,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1802,7 +1734,6 @@ class AsyncClient(BaseClient):
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1818,7 +1749,6 @@ class AsyncClient(BaseClient):
             url,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1831,7 +1761,6 @@ class AsyncClient(BaseClient):
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1847,7 +1776,6 @@ class AsyncClient(BaseClient):
             url,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1864,7 +1792,6 @@ class AsyncClient(BaseClient):
         json: typing.Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1884,7 +1811,6 @@ class AsyncClient(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1901,7 +1827,6 @@ class AsyncClient(BaseClient):
         json: typing.Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1921,7 +1846,6 @@ class AsyncClient(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1938,7 +1862,6 @@ class AsyncClient(BaseClient):
         json: typing.Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1958,7 +1881,6 @@ class AsyncClient(BaseClient):
             json=json,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,
@@ -1971,7 +1893,6 @@ class AsyncClient(BaseClient):
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
-        cookies: CookieTypes | None = None,
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
@@ -1987,7 +1908,6 @@ class AsyncClient(BaseClient):
             url,
             params=params,
             headers=headers,
-            cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
             timeout=timeout,

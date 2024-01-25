@@ -36,9 +36,7 @@ async def test_bytes_content():
     assert sync_content == b"Hello, world!"
     assert async_content == b"Hello, world!"
 
-    # Support 'data' for compat with requests.
-    with pytest.warns(DeprecationWarning):
-        request = httpx.Request(method, url, data=b"Hello, world!")  # type: ignore
+    request = httpx.Request(method, url, content=b"Hello, world!")
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
@@ -111,9 +109,7 @@ async def test_iterator_content():
     with pytest.raises(httpx.StreamConsumed):
         list(request.stream)
 
-    # Support 'data' for compat with requests.
-    with pytest.warns(DeprecationWarning):
-        request = httpx.Request(method, url, data=hello_world())  # type: ignore
+    request = httpx.Request(method, url, content=hello_world())
     assert isinstance(request.stream, typing.Iterable)
     assert not isinstance(request.stream, typing.AsyncIterable)
 
@@ -147,9 +143,7 @@ async def test_aiterator_content():
     with pytest.raises(httpx.StreamConsumed):
         [part async for part in request.stream]
 
-    # Support 'data' for compat with requests.
-    with pytest.warns(DeprecationWarning):
-        request = httpx.Request(method, url, data=hello_world())  # type: ignore
+    request = httpx.Request(method, url, content=hello_world())
     assert not isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 

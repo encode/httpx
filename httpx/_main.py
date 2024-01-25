@@ -479,6 +479,7 @@ def main(
             timeout=timeout,
             verify=verify,
             http2=http2,
+            cookies=dict(cookies),
         ) as client:
             with client.stream(
                 method,
@@ -489,7 +490,6 @@ def main(
                 files=files,  # type: ignore
                 json=json,
                 headers=headers,
-                cookies=dict(cookies),
                 auth=auth,
                 follow_redirects=follow_redirects,
                 extensions={"trace": functools.partial(trace, verbose=verbose)},
