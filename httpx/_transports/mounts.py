@@ -168,7 +168,7 @@ class Mounts(BaseTransport):
         for pattern, transport in self._mounts.items():
             if pattern.matches(request.url):
                 return transport.handle_request(request)
-        
+
         message = "No mounted transport available for URL {request.url}."
         raise MountNotFound(message, request=request)
 
@@ -184,6 +184,7 @@ class AsyncMounts(AsyncBaseTransport):
     """
     An async transport class that supports routing based on scheme and domain matches.
     """
+
     def __init__(self, mounts: typing.Dict[str, AsyncBaseTransport]) -> None:
         if mounts is None:
             mounts = {}
