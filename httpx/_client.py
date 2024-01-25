@@ -604,7 +604,6 @@ class Client(BaseClient):
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
-    * **app** - DEPRECATED
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
     * **default_encoding** - *(optional)* The default encoding to use for decoding
@@ -667,12 +666,6 @@ class Client(BaseClient):
             warnings.warn(message, DeprecationWarning)
             if proxy:
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
-
-        if app:
-            raise RuntimeError(
-                "'app=...' is deprecated. "
-                "Use 'transport=httpx.WSGITransport(app=...).'"
-            )
 
         allow_env_proxies = trust_env and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
@@ -1341,7 +1334,6 @@ class AsyncClient(BaseClient):
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
-    * **app** - DEPRECATED.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
     * **default_encoding** - *(optional)* The default encoding to use for decoding
@@ -1405,12 +1397,6 @@ class AsyncClient(BaseClient):
             warnings.warn(message, DeprecationWarning)
             if proxy:
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
-
-        if app:
-            raise RuntimeError(
-                "'app=...' is deprecated. "
-                "Use 'transport=httpx.ASGITransport(app=...).'"
-            )
 
         allow_env_proxies = trust_env and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
