@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing
 from urllib.parse import parse_qs, unquote
 
@@ -70,9 +72,7 @@ class URL:
       themselves.
     """
 
-    def __init__(
-        self, url: typing.Union["URL", str] = "", **kwargs: typing.Any
-    ) -> None:
+    def __init__(self, url: URL | str = "", **kwargs: typing.Any) -> None:
         if kwargs:
             allowed = {
                 "scheme": str,
@@ -213,7 +213,7 @@ class URL:
         return self._uri_reference.host.encode("ascii")
 
     @property
-    def port(self) -> typing.Optional[int]:
+    def port(self) -> int | None:
         """
         The URL port as an integer.
 
@@ -270,7 +270,7 @@ class URL:
         return query.encode("ascii")
 
     @property
-    def params(self) -> "QueryParams":
+    def params(self) -> QueryParams:
         """
         The URL query parameters, neatly parsed and packaged into an immutable
         multidict representation.
@@ -338,7 +338,7 @@ class URL:
         """
         return not self.is_absolute_url
 
-    def copy_with(self, **kwargs: typing.Any) -> "URL":
+    def copy_with(self, **kwargs: typing.Any) -> URL:
         """
         Copy this URL, returning a new URL with some components altered.
         Accepts the same set of parameters as the components that are made
@@ -353,19 +353,19 @@ class URL:
         """
         return URL(self, **kwargs)
 
-    def copy_set_param(self, key: str, value: typing.Any = None) -> "URL":
+    def copy_set_param(self, key: str, value: typing.Any = None) -> URL:
         return self.copy_with(params=self.params.set(key, value))
 
-    def copy_add_param(self, key: str, value: typing.Any = None) -> "URL":
+    def copy_add_param(self, key: str, value: typing.Any = None) -> URL:
         return self.copy_with(params=self.params.add(key, value))
 
-    def copy_remove_param(self, key: str) -> "URL":
+    def copy_remove_param(self, key: str) -> URL:
         return self.copy_with(params=self.params.remove(key))
 
-    def copy_merge_params(self, params: QueryParamTypes) -> "URL":
+    def copy_merge_params(self, params: QueryParamTypes) -> URL:
         return self.copy_with(params=self.params.merge(params))
 
-    def join(self, url: URLTypes) -> "URL":
+    def join(self, url: URLTypes) -> URL:
         """
         Return an absolute URL, using this URL as the base.
 
@@ -420,9 +420,7 @@ class QueryParams(typing.Mapping[str, str]):
     URL query parameters, as a multi-dict.
     """
 
-    def __init__(
-        self, *args: typing.Optional[QueryParamTypes], **kwargs: typing.Any
-    ) -> None:
+    def __init__(self, *args: QueryParamTypes | None, **kwargs: typing.Any) -> None:
         assert len(args) < 2, "Too many arguments."
         assert not (args and kwargs), "Cannot mix named and unnamed arguments."
 
@@ -434,7 +432,7 @@ class QueryParams(typing.Mapping[str, str]):
         elif isinstance(value, QueryParams):
             self._dict = {k: list(v) for k, v in value._dict.items()}
         else:
-            dict_value: typing.Dict[typing.Any, typing.List[typing.Any]] = {}
+            dict_value: dict[typing.Any, list[typing.Any]] = {}
             if isinstance(value, (list, tuple)):
                 # Convert list inputs like:
                 #     [("a", "123"), ("a", "456"), ("b", "789")]
@@ -495,7 +493,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return {k: v[0] for k, v in self._dict.items()}.items()
 
-    def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
+    def multi_items(self) -> list[tuple[str, str]]:
         """
         Return all items in the query params. Allow duplicate keys to occur.
 
@@ -504,7 +502,7 @@ class QueryParams(typing.Mapping[str, str]):
         q = httpx.QueryParams("a=123&a=456&b=789")
         assert list(q.multi_items()) == [("a", "123"), ("a", "456"), ("b", "789")]
         """
-        multi_items: typing.List[typing.Tuple[str, str]] = []
+        multi_items: list[tuple[str, str]] = []
         for k, v in self._dict.items():
             multi_items.extend([(k, i) for i in v])
         return multi_items
@@ -523,7 +521,7 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[str(key)][0]
         return default
 
-    def get_list(self, key: str) -> typing.List[str]:
+    def get_list(self, key: str) -> list[str]:
         """
         Get all values from the query param for a given key.
 
@@ -534,7 +532,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return list(self._dict.get(str(key), []))
 
-    def set(self, key: str, value: typing.Any = None) -> "QueryParams":
+    def set(self, key: str, value: typing.Any = None) -> QueryParams:
         """
         Return a new QueryParams instance, setting the value of a key.
 
@@ -549,7 +547,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict[str(key)] = [primitive_value_to_str(value)]
         return q
 
-    def add(self, key: str, value: typing.Any = None) -> "QueryParams":
+    def add(self, key: str, value: typing.Any = None) -> QueryParams:
         """
         Return a new QueryParams instance, setting or appending the value of a key.
 
@@ -564,7 +562,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict[str(key)] = q.get_list(key) + [primitive_value_to_str(value)]
         return q
 
-    def remove(self, key: str) -> "QueryParams":
+    def remove(self, key: str) -> QueryParams:
         """
         Return a new QueryParams instance, removing the value of a key.
 
@@ -579,7 +577,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict.pop(str(key), None)
         return q
 
-    def merge(self, params: typing.Optional[QueryParamTypes] = None) -> "QueryParams":
+    def merge(self, params: QueryParamTypes | None = None) -> QueryParams:
         """
         Return a new QueryParams instance, updated with.
 
@@ -635,7 +633,7 @@ class QueryParams(typing.Mapping[str, str]):
         query_string = str(self)
         return f"{class_name}({query_string!r})"
 
-    def update(self, params: typing.Optional[QueryParamTypes] = None) -> None:
+    def update(self, params: QueryParamTypes | None = None) -> None:
         raise RuntimeError(
             "QueryParams are immutable since 0.18.0. "
             "Use `q = q.merge(...)` to create an updated copy."

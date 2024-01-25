@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing
 import zlib
 
@@ -224,7 +226,7 @@ def test_text_decoder_empty_cases():
     [((b"Hello,", b" world!"), ["Hello,", " world!"])],
 )
 def test_streaming_text_decoder(
-    data: typing.Iterable[bytes], expected: typing.List[str]
+    data: typing.Iterable[bytes], expected: list[str]
 ) -> None:
     response = httpx.Response(200, content=iter(data))
     assert list(response.iter_text()) == expected
