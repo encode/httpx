@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import json
 import sys
@@ -125,8 +127,8 @@ def format_request_headers(request: httpcore.Request, http2: bool = False) -> st
 def format_response_headers(
     http_version: bytes,
     status: int,
-    reason_phrase: typing.Optional[bytes],
-    headers: typing.List[typing.Tuple[bytes, bytes]],
+    reason_phrase: bytes | None,
+    headers: list[tuple[bytes, bytes]],
 ) -> str:
     version = http_version.decode("ascii")
     reason = (
@@ -152,8 +154,8 @@ def print_request_headers(request: httpcore.Request, http2: bool = False) -> Non
 def print_response_headers(
     http_version: bytes,
     status: int,
-    reason_phrase: typing.Optional[bytes],
-    headers: typing.List[typing.Tuple[bytes, bytes]],
+    reason_phrase: bytes | None,
+    headers: list[tuple[bytes, bytes]],
 ) -> None:
     console = rich.console.Console()
     http_text = format_response_headers(http_version, status, reason_phrase, headers)
@@ -268,7 +270,7 @@ def download_response(response: Response, download: typing.BinaryIO) -> None:
 
 def validate_json(
     ctx: click.Context,
-    param: typing.Union[click.Option, click.Parameter],
+    param: click.Option | click.Parameter,
     value: typing.Any,
 ) -> typing.Any:
     if value is None:
@@ -282,7 +284,7 @@ def validate_json(
 
 def validate_auth(
     ctx: click.Context,
-    param: typing.Union[click.Option, click.Parameter],
+    param: click.Option | click.Parameter,
     value: typing.Any,
 ) -> typing.Any:
     if value == (None, None):
@@ -296,7 +298,7 @@ def validate_auth(
 
 def handle_help(
     ctx: click.Context,
-    param: typing.Union[click.Option, click.Parameter],
+    param: click.Option | click.Parameter,
     value: typing.Any,
 ) -> None:
     if not value or ctx.resilient_parsing:
@@ -448,20 +450,20 @@ def handle_help(
 def main(
     url: str,
     method: str,
-    params: typing.List[typing.Tuple[str, str]],
+    params: list[tuple[str, str]],
     content: str,
-    data: typing.List[typing.Tuple[str, str]],
-    files: typing.List[typing.Tuple[str, click.File]],
+    data: list[tuple[str, str]],
+    files: list[tuple[str, click.File]],
     json: str,
-    headers: typing.List[typing.Tuple[str, str]],
-    cookies: typing.List[typing.Tuple[str, str]],
-    auth: typing.Optional[typing.Tuple[str, str]],
+    headers: list[tuple[str, str]],
+    cookies: list[tuple[str, str]],
+    auth: tuple[str, str] | None,
     proxy: str,
     timeout: float,
     follow_redirects: bool,
     verify: bool,
     http2: bool,
-    download: typing.Optional[typing.BinaryIO],
+    download: typing.BinaryIO | None,
     verbose: bool,
 ) -> None:
     """

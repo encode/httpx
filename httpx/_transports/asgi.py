@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing
 
 import sniffio
@@ -24,7 +26,7 @@ _ASGIApp = typing.Callable[
 ]
 
 
-def create_event() -> "Event":
+def create_event() -> Event:
     if sniffio.current_async_library() == "trio":
         import trio
 
@@ -36,7 +38,7 @@ def create_event() -> "Event":
 
 
 class ASGIResponseStream(AsyncByteStream):
-    def __init__(self, body: typing.List[bytes]) -> None:
+    def __init__(self, body: list[bytes]) -> None:
         self._body = body
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
@@ -81,7 +83,7 @@ class ASGITransport(AsyncBaseTransport):
         app: _ASGIApp,
         raise_app_exceptions: bool = True,
         root_path: str = "",
-        client: typing.Tuple[str, int] = ("127.0.0.1", 123),
+        client: tuple[str, int] = ("127.0.0.1", 123),
     ) -> None:
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
@@ -123,7 +125,7 @@ class ASGITransport(AsyncBaseTransport):
 
         # ASGI callables.
 
-        async def receive() -> typing.Dict[str, typing.Any]:
+        async def receive() -> dict[str, typing.Any]:
             nonlocal request_complete
 
             if request_complete:
@@ -137,7 +139,7 @@ class ASGITransport(AsyncBaseTransport):
                 return {"type": "http.request", "body": b"", "more_body": False}
             return {"type": "http.request", "body": body, "more_body": True}
 
-        async def send(message: typing.Dict[str, typing.Any]) -> None:
+        async def send(message: dict[str, typing.Any]) -> None:
             nonlocal status_code, response_headers, response_started
 
             if message["type"] == "http.response.start":
