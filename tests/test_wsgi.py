@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 import typing
 import wsgiref.validate
@@ -12,7 +14,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
 
 
-def application_factory(output: typing.Iterable[bytes]) -> "WSGIApplication":
+def application_factory(output: typing.Iterable[bytes]) -> WSGIApplication:
     def application(environ, start_response):
         status = "200 OK"
 
@@ -29,7 +31,7 @@ def application_factory(output: typing.Iterable[bytes]) -> "WSGIApplication":
 
 
 def echo_body(
-    environ: "WSGIEnvironment", start_response: "StartResponse"
+    environ: WSGIEnvironment, start_response: StartResponse
 ) -> typing.Iterable[bytes]:
     status = "200 OK"
     output = environ["wsgi.input"].read()
@@ -44,7 +46,7 @@ def echo_body(
 
 
 def echo_body_with_response_stream(
-    environ: "WSGIEnvironment", start_response: "StartResponse"
+    environ: WSGIEnvironment, start_response: StartResponse
 ) -> typing.Iterable[bytes]:
     status = "200 OK"
 
@@ -63,9 +65,9 @@ def echo_body_with_response_stream(
 
 
 def raise_exc(
-    environ: "WSGIEnvironment",
-    start_response: "StartResponse",
-    exc: typing.Type[Exception] = ValueError,
+    environ: WSGIEnvironment,
+    start_response: StartResponse,
+    exc: type[Exception] = ValueError,
 ) -> typing.Iterable[bytes]:
     status = "500 Server Error"
     output = b"Nope!"
@@ -161,7 +163,7 @@ def test_wsgi_server_port(url: str, expected_server_port: str) -> None:
     SERVER_PORT is populated correctly from the requested URL.
     """
     hello_world_app = application_factory([b"Hello, World!"])
-    server_port: typing.Optional[str] = None
+    server_port: str | None = None
 
     def app(environ, start_response):
         nonlocal server_port

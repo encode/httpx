@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import tempfile
 import typing
@@ -148,7 +150,7 @@ def test_multipart_file_tuple():
 
 
 @pytest.mark.parametrize("file_content_type", [None, "text/plain"])
-def test_multipart_file_tuple_headers(file_content_type: typing.Optional[str]) -> None:
+def test_multipart_file_tuple_headers(file_content_type: str | None) -> None:
     file_name = "test.txt"
     file_content = io.BytesIO(b"<file content>")
     file_headers = {"Expires": "0"}
