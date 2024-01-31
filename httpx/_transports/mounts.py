@@ -2,7 +2,6 @@
 This module exposes the `httpx.Mount` and `httpx.AsyncMount` transport classes.
 """
 
-import ipaddress
 import re
 import typing
 
@@ -126,32 +125,14 @@ class URLPattern:
         return isinstance(other, URLPattern) and self.pattern == other.pattern
 
 
-def is_ipv4_hostname(hostname: str) -> bool:
-    try:
-        ipaddress.IPv4Address(hostname.split("/")[0])
-    except Exception:
-        return False
-    return True
-
-
-def is_ipv6_hostname(hostname: str) -> bool:
-    try:
-        ipaddress.IPv6Address(hostname.split("/")[0])
-    except Exception:
-        return False
-    return True
-
-
 class Mounts(BaseTransport):
     """
     A transport class that supports routing based on scheme and domain matches.
     """
 
     def __init__(self, mounts: typing.Dict[str, BaseTransport]) -> None:
-        if mounts is None:
-            mounts = {}
-
-        self._mounts = {URLPattern(key): value for key, value in mounts.items()}
+        items = [(URLPattern(key), value) for key, value in mounts.items()]
+        self._mounts = dict(sorted(items))
 
     @property
     def mounts(self) -> typing.Dict[str, BaseTransport]:
@@ -186,10 +167,8 @@ class AsyncMounts(AsyncBaseTransport):
     """
 
     def __init__(self, mounts: typing.Dict[str, AsyncBaseTransport]) -> None:
-        if mounts is None:
-            mounts = {}
-
-        self._mounts = {URLPattern(key): value for key, value in mounts.items()}
+        items = [(URLPattern(key), value) for key, value in mounts.items()]
+        self._mounts = dict(sorted(items))
 
     @property
     def mounts(self) -> typing.Dict[str, AsyncBaseTransport]:

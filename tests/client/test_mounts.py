@@ -3,6 +3,10 @@ import pytest
 import httpx
 
 
+def matched(request: httpx.Request) -> httpx.Response:
+    return httpx.Response(200, text="Matched")
+
+
 def mounted_at_http(request: httpx.Request) -> httpx.Response:
     return httpx.Response(200, text="Mounted at 'http://'")
 
@@ -112,3 +116,55 @@ async def test_async_mounts_property():
         "http://": httpx.MockTransport(mounted_at_http),
         "https://": httpx.MockTransport(mounted_at_https),
     }
+
+
+@pytest.mark.parametrize(
+    ["mount_url", "request_url", "should_match"],
+    [
+        ("http://example.com", "http://example.com", True),
+        ("http://example.com", "https://example.com", False),
+        ("http://example.com", "http://other.com", False),
+        ("http://example.com:123", "http://example.com:123", True),
+        ("http://example.com:123", "http://example.com:456", False),
+        ("http://example.com:123", "http://example.com", False),
+        ("http://*.example.com", "http://www.example.com", True),
+        ("http://*.example.com", "http://example.com", False),
+        ("http://*example.com", "http://www.example.com", True),
+        ("http://*example.com", "http://example.com", True),
+        ("all://example.com", "http://example.com", True),
+        ("all://example.com", "https://example.com", True),
+        ("http://", "http://example.com", True),
+        ("http://", "https://example.com", False),
+        ("all://", "https://example.com:123", True),
+        ("", "https://example.com:123", True),
+    ],
+)
+def test_url_matches(mount_url, request_url, should_match):
+    transport = httpx.Mounts(
+        {
+            mount_url: httpx.MockTransport(matched),
+        }
+    )
+    with httpx.Client(transport=transport) as client:
+        if should_match:
+            response = client.get(request_url)
+            assert response.text == "Matched"
+        else:
+            with pytest.raises(httpx.MountNotFound):
+                client.get(request_url)
+
+
+# def test_pattern_priority():
+#     matchers = [
+#         URLPattern("all://"),
+#         URLPattern("http://"),
+#         URLPattern("http://example.com"),
+#         URLPattern("http://example.com:123"),
+#     ]
+#     random.shuffle(matchers)
+#     assert sorted(matchers) == [
+#         URLPattern("http://example.com:123"),
+#         URLPattern("http://example.com"),
+#         URLPattern("http://"),
+#         URLPattern("all://"),
+#     ]
