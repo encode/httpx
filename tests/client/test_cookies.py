@@ -174,7 +174,7 @@ def test_cookie_persistence_off() -> None:
      persistence is off.
     """
     client = httpx.Client(
-        transport=httpx.MockTransport(get_and_set_cookies), persistent_cookies=False
+        transport=httpx.MockTransport(get_and_set_cookies), merge_response_cookies=False
     )
 
     response = client.get("http://example.org/echo_cookies")

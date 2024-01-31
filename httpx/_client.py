@@ -164,9 +164,9 @@ class BaseClient:
         params: typing.Optional[QueryParamTypes] = None,
         headers: typing.Optional[HeaderTypes] = None,
         cookies: typing.Optional[CookieTypes] = None,
-        persistent_cookies: bool = True,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
+        merge_response_cookies: bool = True,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: typing.Optional[
             typing.Mapping[str, typing.List[EventHook]]
@@ -183,7 +183,7 @@ class BaseClient:
         self._params = QueryParams(params)
         self.headers = Headers(headers)
         self._cookies = Cookies(cookies)
-        self._persistent_cookies = persistent_cookies
+        self._merge_response_cookies = merge_response_cookies
         self._timeout = Timeout(timeout)
         self.follow_redirects = follow_redirects
         self.max_redirects = max_redirects
@@ -592,8 +592,6 @@ class Client(BaseClient):
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
     sending requests.
-    * **persistent_cookies** - *(optional) A boolean indicating if cookies should
-    persist. Defaults to `False`.
     * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
     verify the identity of requested hosts. Either `True` (default CA bundle),
     a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
@@ -607,6 +605,8 @@ class Client(BaseClient):
     URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
+    * **merge_response_cookies** - *(optional) A boolean indicating if cookies from the
+    response should be merged into the cookie jar. Defaults to `True`.
     * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
@@ -630,7 +630,6 @@ class Client(BaseClient):
         params: typing.Optional[QueryParamTypes] = None,
         headers: typing.Optional[HeaderTypes] = None,
         cookies: typing.Optional[CookieTypes] = None,
-        persistent_cookies: bool = True,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
@@ -642,6 +641,7 @@ class Client(BaseClient):
         ] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
+        merge_response_cookies: bool = True,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: typing.Optional[
@@ -658,9 +658,9 @@ class Client(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
-            persistent_cookies=persistent_cookies,
             timeout=timeout,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             max_redirects=max_redirects,
             event_hooks=event_hooks,
             base_url=base_url,
@@ -1027,7 +1027,7 @@ class Client(BaseClient):
         response.stream = BoundSyncStream(
             response.stream, response=response, timer=timer
         )
-        if self._persistent_cookies:
+        if self._merge_response_cookies:
             self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
 
@@ -1335,8 +1335,6 @@ class AsyncClient(BaseClient):
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
     sending requests.
-    * **persistent_cookies** - *(optional) A boolean indicating if cookies should
-    persist. Defaults to `False`.
     * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
     verify the identity of requested hosts. Either `True` (default CA bundle),
     a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
@@ -1352,6 +1350,8 @@ class AsyncClient(BaseClient):
     URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
+    * **merge_response_cookies** - *(optional) A boolean indicating if cookies from the
+    response should be merged into the cookie jar. Defaults to `True`.
     * **limits** - *(optional)* The limits configuration to use.
     * **max_redirects** - *(optional)* The maximum number of redirect responses
     that should be followed.
@@ -1375,7 +1375,6 @@ class AsyncClient(BaseClient):
         params: typing.Optional[QueryParamTypes] = None,
         headers: typing.Optional[HeaderTypes] = None,
         cookies: typing.Optional[CookieTypes] = None,
-        persistent_cookies: bool = True,
         verify: VerifyTypes = True,
         cert: typing.Optional[CertTypes] = None,
         http1: bool = True,
@@ -1387,6 +1386,7 @@ class AsyncClient(BaseClient):
         ] = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
+        merge_response_cookies: bool = True,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: typing.Optional[
@@ -1403,9 +1403,9 @@ class AsyncClient(BaseClient):
             params=params,
             headers=headers,
             cookies=cookies,
-            persistent_cookies=persistent_cookies,
             timeout=timeout,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             max_redirects=max_redirects,
             event_hooks=event_hooks,
             base_url=base_url,
@@ -1763,7 +1763,7 @@ class AsyncClient(BaseClient):
         response.stream = BoundAsyncStream(
             response.stream, response=response, timer=timer
         )
-        if self._persistent_cookies:
+        if self._merge_response_cookies:
             self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
 
