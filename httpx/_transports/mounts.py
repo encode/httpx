@@ -2,6 +2,8 @@
 This module exposes the `httpx.Mount` and `httpx.AsyncMount` transport classes.
 """
 
+from __future__ import annotations
+
 import re
 import typing
 
@@ -58,20 +60,13 @@ class URLPattern:
     """
 
     def __init__(self, pattern: str) -> None:
-        if pattern and ":" not in pattern:
-            raise ValueError(
-                f"Proxy keys should use proper URL forms rather "
-                f"than plain scheme strings. "
-                f'Instead of "{pattern}", use "{pattern}://"'
-            )
-
         url = URL(pattern)
         self.pattern = pattern
         self.scheme = "" if url.scheme == "all" else url.scheme
         self.host = "" if url.host == "*" else url.host
         self.port = url.port
         if not url.host or url.host == "*":
-            self.host_regex: typing.Optional[typing.Pattern[str]] = None
+            self.host_regex: typing.Pattern[str] | None = None
         elif url.host.startswith("*."):
             # *.example.com should match "www.example.com", but not "example.com"
             domain = re.escape(url.host[2:])
@@ -99,7 +94,7 @@ class URLPattern:
         return True
 
     @property
-    def priority(self) -> typing.Tuple[int, int, int]:
+    def priority(self) -> tuple[int, int, int]:
         """
         The priority allows URLPattern instances to be sortable, so that
         we can match from most specific to least specific.
@@ -130,12 +125,12 @@ class Mounts(BaseTransport):
     A transport class that supports routing based on scheme and domain matches.
     """
 
-    def __init__(self, mounts: typing.Dict[str, BaseTransport]) -> None:
+    def __init__(self, mounts: dict[str, BaseTransport]) -> None:
         items = [(URLPattern(key), value) for key, value in mounts.items()]
         self._mounts = dict(sorted(items))
 
     @property
-    def mounts(self) -> typing.Dict[str, BaseTransport]:
+    def mounts(self) -> dict[str, BaseTransport]:
         """
         Return a dictionary of {URL pattern: Mounted transport}.
         """
@@ -166,12 +161,12 @@ class AsyncMounts(AsyncBaseTransport):
     An async transport class that supports routing based on scheme and domain matches.
     """
 
-    def __init__(self, mounts: typing.Dict[str, AsyncBaseTransport]) -> None:
+    def __init__(self, mounts: dict[str, AsyncBaseTransport]) -> None:
         items = [(URLPattern(key), value) for key, value in mounts.items()]
         self._mounts = dict(sorted(items))
 
     @property
-    def mounts(self) -> typing.Dict[str, AsyncBaseTransport]:
+    def mounts(self) -> dict[str, AsyncBaseTransport]:
         """
         Return a dictionary of {URL pattern: Mounted transport}.
         """

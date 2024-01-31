@@ -140,6 +140,9 @@ async def test_async_mounts_property():
     ],
 )
 def test_url_matches(mount_url, request_url, should_match):
+    """
+    Ensure that mount URL patterns match correctly.
+    """
     transport = httpx.Mounts(
         {
             mount_url: httpx.MockTransport(matched),
@@ -154,17 +157,32 @@ def test_url_matches(mount_url, request_url, should_match):
                 client.get(request_url)
 
 
-# def test_pattern_priority():
-#     matchers = [
-#         URLPattern("all://"),
-#         URLPattern("http://"),
-#         URLPattern("http://example.com"),
-#         URLPattern("http://example.com:123"),
-#     ]
-#     random.shuffle(matchers)
-#     assert sorted(matchers) == [
-#         URLPattern("http://example.com:123"),
-#         URLPattern("http://example.com"),
-#         URLPattern("http://"),
-#         URLPattern("all://"),
-#     ]
+def test_pattern_priority():
+    """
+    Ensure that pattern matches are prioritised from most specific to least specific.
+    """
+
+    def priority(num: int) -> httpx.MockTransport:
+        def func(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, text=str(num))
+
+        return httpx.MockTransport(func)
+
+    transport = httpx.Mounts(
+        {
+            "all://": priority(4),
+            "http://": priority(3),
+            "http://example.com": priority(2),
+            "http://example.com:123": priority(1),
+        }
+    )
+    client = httpx.Client(transport=transport)
+
+    response = client.get("http://example.com:123")
+    assert response.text == "1"
+    response = client.get("http://example.com")
+    assert response.text == "2"
+    response = client.get("http://another.com")
+    assert response.text == "3"
+    response = client.get("https://another.com")
+    assert response.text == "4"
