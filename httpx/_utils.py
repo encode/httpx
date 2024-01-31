@@ -295,14 +295,10 @@ class Timer:
             import trio
 
             return trio.current_time()
-        elif library == "curio":  # pragma: no cover
-            import curio
+        else:
+            import asyncio
 
-            return typing.cast(float, await curio.clock())
-
-        import asyncio
-
-        return asyncio.get_event_loop().time()
+            return asyncio.get_event_loop().time()
 
     def sync_start(self) -> None:
         self.started = time.perf_counter()

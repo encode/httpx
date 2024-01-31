@@ -12,8 +12,6 @@ from httpx._utils import (
     get_ca_bundle_from_env,
     get_environment_proxies,
     is_https_redirect,
-    obfuscate_sensitive_headers,
-    parse_header_links,
     same_origin,
 )
 
@@ -81,7 +79,13 @@ def test_guess_by_bom(encoding, expected):
     ),
 )
 def test_parse_header_links(value, expected):
-    assert parse_header_links(value) == expected
+    all_links = httpx.Response(200, headers={"link": value}).links.values()
+    assert all(link in all_links for link in expected)
+
+
+def test_parse_header_links_no_link():
+    all_links = httpx.Response(200).links
+    assert all_links == {}
 
 
 def test_logging_request(server, caplog):
@@ -215,10 +219,9 @@ def test_get_environment_proxies(environment, proxies):
     ],
 )
 def test_obfuscate_sensitive_headers(headers, output):
-    bytes_headers = [(k.encode(), v.encode()) for k, v in headers]
-    bytes_output = [(k.encode(), v.encode()) for k, v in output]
-    assert list(obfuscate_sensitive_headers(headers)) == output
-    assert list(obfuscate_sensitive_headers(bytes_headers)) == bytes_output
+    as_dict = {k: v for k, v in output}
+    headers_class = httpx.Headers({k: v for k, v in headers})
+    assert repr(headers_class) == f"Headers({as_dict!r})"
 
 
 def test_same_origin():
