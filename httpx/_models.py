@@ -458,7 +458,7 @@ class Response:
         request: Request | None = None,
         extensions: ResponseExtensions | None = None,
         history: list[Response] | None = None,
-        default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
+        default_encoding: str | typing.Callable[[bytes], str | None] = "utf-8",
     ) -> None:
         self.status_code = status_code
         self.headers = Headers(headers)
