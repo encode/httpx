@@ -231,4 +231,4 @@ async def test_deprecated_shortcut():
     Use the explicit transport style instead.
     """
     with pytest.warns(DeprecationWarning):
-        httpx.Client(app=hello_world)
+        httpx.AsyncClient(app=hello_world)
