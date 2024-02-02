@@ -672,6 +672,13 @@ class Client(BaseClient):
             if proxy:
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
 
+        if app:
+            message = (
+                "The 'app' shortcut is now deprecated."
+                " Use the explicit style 'transport=WSGITransport(app=...)' instead."
+            )
+            warnings.warn(message, DeprecationWarning)
+
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
@@ -1411,7 +1418,14 @@ class AsyncClient(BaseClient):
             if proxy:
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
 
-        allow_env_proxies = trust_env and app is None and transport is None
+        if app:
+            message = (
+                "The 'app' shortcut is now deprecated."
+                " Use the explicit style 'transport=ASGITransport(app=...)' instead."
+            )
+            warnings.warn(message, DeprecationWarning)
+
+        allow_env_proxies = trust_env and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
