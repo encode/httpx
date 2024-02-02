@@ -38,3 +38,6 @@ class MockTransport(AsyncBaseTransport, BaseTransport):
             response = await response
 
         return response
+
+    def __eq__(self, other: typing.Any) -> bool:
+        return isinstance(other, self.__class__) and self.handler == other.handler
