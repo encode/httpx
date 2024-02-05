@@ -196,13 +196,14 @@ def test_cookie_persistence_override() -> None:
         transport=httpx.MockTransport(get_and_set_cookies), merge_response_cookies=False
     )
 
+    response = client.get("http://example.org/echo_cookies")
+    assert response.status_code == 200
+    assert response.json() == {"cookies": None}
+
     response = client.get("http://example.org/set_cookie", merge_response_cookies=True)
     assert response.status_code == 200
-
-    response = client.get("http://example.org/set_cookie")
-    assert response.status_code == 200
     assert response.cookies["example-name"] == "example-value"
-    assert "example-name" in client.cookies.keys()
+    assert client.cookies["example-name"] == "example-value"
 
     response = client.get("http://example.org/echo_cookies")
     assert response.status_code == 200
