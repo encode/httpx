@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import os
 import re
@@ -124,18 +126,14 @@ class BasicAuth(Auth):
     and uses HTTP Basic authentication.
     """
 
-    def __init__(
-        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
-    ) -> None:
+    def __init__(self, username: str | bytes, password: str | bytes) -> None:
         self._auth_header = self._build_auth_header(username, password)
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
         request.headers["Authorization"] = self._auth_header
         yield request
 
-    def _build_auth_header(
-        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
-    ) -> str:
+    def _build_auth_header(self, username: str | bytes, password: str | bytes) -> str:
         userpass = b":".join((to_bytes(username), to_bytes(password)))
         token = b64encode(userpass).decode()
         return f"Basic {token}"
@@ -146,7 +144,7 @@ class NetRCAuth(Auth):
     Use a 'netrc' file to lookup basic auth credentials based on the url host.
     """
 
-    def __init__(self, file: typing.Optional[str] = None) -> None:
+    def __init__(self, file: str | None = None) -> None:
         # Lazily import 'netrc'.
         # There's no need for us to load this module unless 'NetRCAuth' is being used.
         import netrc
@@ -165,16 +163,14 @@ class NetRCAuth(Auth):
             )
             yield request
 
-    def _build_auth_header(
-        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
-    ) -> str:
+    def _build_auth_header(self, username: str | bytes, password: str | bytes) -> str:
         userpass = b":".join((to_bytes(username), to_bytes(password)))
         token = b64encode(userpass).decode()
         return f"Basic {token}"
 
 
 class DigestAuth(Auth):
-    _ALGORITHM_TO_HASH_FUNCTION: typing.Dict[str, typing.Callable[[bytes], "_Hash"]] = {
+    _ALGORITHM_TO_HASH_FUNCTION: dict[str, typing.Callable[[bytes], _Hash]] = {
         "MD5": hashlib.md5,
         "MD5-SESS": hashlib.md5,
         "SHA": hashlib.sha1,
@@ -185,12 +181,10 @@ class DigestAuth(Auth):
         "SHA-512-SESS": hashlib.sha512,
     }
 
-    def __init__(
-        self, username: typing.Union[str, bytes], password: typing.Union[str, bytes]
-    ) -> None:
+    def __init__(self, username: str | bytes, password: str | bytes) -> None:
         self._username = to_bytes(username)
         self._password = to_bytes(password)
-        self._last_challenge: typing.Optional[_DigestAuthChallenge] = None
+        self._last_challenge: _DigestAuthChallenge | None = None
         self._nonce_count = 1
 
     def auth_flow(self, request: Request) -> typing.Generator[Request, Response, None]:
@@ -226,7 +220,7 @@ class DigestAuth(Auth):
 
     def _parse_challenge(
         self, request: Request, response: Response, auth_header: str
-    ) -> "_DigestAuthChallenge":
+    ) -> _DigestAuthChallenge:
         """
         Returns a challenge from a Digest WWW-Authenticate header.
         These take the form of:
@@ -237,7 +231,7 @@ class DigestAuth(Auth):
         # This method should only ever have been called with a Digest auth header.
         assert scheme.lower() == "digest"
 
-        header_dict: typing.Dict[str, str] = {}
+        header_dict: dict[str, str] = {}
         for field in parse_http_list(fields):
             key, value = field.strip().split("=", 1)
             header_dict[key] = unquote(value)
@@ -256,7 +250,7 @@ class DigestAuth(Auth):
             raise ProtocolError(message, request=request) from exc
 
     def _build_auth_header(
-        self, request: Request, challenge: "_DigestAuthChallenge"
+        self, request: Request, challenge: _DigestAuthChallenge
     ) -> str:
         hash_func = self._ALGORITHM_TO_HASH_FUNCTION[challenge.algorithm.upper()]
 
@@ -311,7 +305,7 @@ class DigestAuth(Auth):
 
         return hashlib.sha1(s).hexdigest()[:16].encode()
 
-    def _get_header_value(self, header_fields: typing.Dict[str, bytes]) -> str:
+    def _get_header_value(self, header_fields: dict[str, bytes]) -> str:
         NON_QUOTED_FIELDS = ("algorithm", "qop", "nc")
         QUOTED_TEMPLATE = '{}="{}"'
         NON_QUOTED_TEMPLATE = "{}={}"
@@ -329,9 +323,7 @@ class DigestAuth(Auth):
 
         return header_value
 
-    def _resolve_qop(
-        self, qop: typing.Optional[bytes], request: Request
-    ) -> typing.Optional[bytes]:
+    def _resolve_qop(self, qop: bytes | None, request: Request) -> bytes | None:
         if qop is None:
             return None
         qops = re.split(b", ?", qop)
@@ -349,5 +341,5 @@ class _DigestAuthChallenge(typing.NamedTuple):
     realm: bytes
     nonce: bytes
     algorithm: str
-    opaque: typing.Optional[bytes]
-    qop: typing.Optional[bytes]
+    opaque: bytes | None
+    qop: bytes | None

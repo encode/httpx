@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing
 from types import TracebackType
 
@@ -13,9 +15,9 @@ class BaseTransport:
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]] = None,
-        exc_value: typing.Optional[BaseException] = None,
-        traceback: typing.Optional[TracebackType] = None,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         self.close()
 
@@ -64,9 +66,9 @@ class AsyncBaseTransport:
 
     async def __aexit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]] = None,
-        exc_value: typing.Optional[BaseException] = None,
-        traceback: typing.Optional[TracebackType] = None,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         await self.aclose()
 
