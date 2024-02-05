@@ -174,7 +174,7 @@ The interface provided by the network stream:
 
 This API can be used as the foundation for working with HTTP proxies, WebSocket upgrades, and other advanced use-cases.
 
-See the [network backends documentation](network-backends.md) for more information on working directly with network streams.
+See the [network backends documentation](https://www.encode.io/httpcore/network-backends/) for more information on working directly with network streams.
 
 **Extra network information**
 
