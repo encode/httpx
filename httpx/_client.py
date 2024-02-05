@@ -183,9 +183,9 @@ class BaseClient:
         self._params = QueryParams(params)
         self.headers = Headers(headers)
         self._cookies = Cookies(cookies)
-        self._merge_response_cookies = merge_response_cookies
         self._timeout = Timeout(timeout)
         self.follow_redirects = follow_redirects
+        self.merge_response_cookies = merge_response_cookies
         self.max_redirects = max_redirects
         self._event_hooks = {
             "request": list(event_hooks.get("request", [])),
@@ -793,6 +793,9 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -833,7 +836,12 @@ class Client(BaseClient):
             timeout=timeout,
             extensions=extensions,
         )
-        return self.send(request, auth=auth, follow_redirects=follow_redirects)
+        return self.send(
+            request,
+            auth=auth,
+            follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
+        )
 
     @contextmanager
     def stream(
@@ -850,6 +858,9 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> typing.Iterator[Response]:
@@ -880,6 +891,7 @@ class Client(BaseClient):
             request=request,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             stream=True,
         )
         try:
@@ -894,6 +906,9 @@ class Client(BaseClient):
         stream: bool = False,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a request.
@@ -917,6 +932,11 @@ class Client(BaseClient):
             if isinstance(follow_redirects, UseClientDefault)
             else follow_redirects
         )
+        merge_response_cookies = (
+            self.merge_response_cookies
+            if isinstance(merge_response_cookies, UseClientDefault)
+            else merge_response_cookies
+        )
 
         auth = self._build_request_auth(request, auth)
 
@@ -924,6 +944,7 @@ class Client(BaseClient):
             request,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             history=[],
         )
         try:
@@ -941,6 +962,7 @@ class Client(BaseClient):
         request: Request,
         auth: Auth,
         follow_redirects: bool,
+        merge_response_cookies: bool,
         history: typing.List[Response],
     ) -> Response:
         auth_flow = auth.sync_auth_flow(request)
@@ -951,6 +973,7 @@ class Client(BaseClient):
                 response = self._send_handling_redirects(
                     request,
                     follow_redirects=follow_redirects,
+                    merge_response_cookies=merge_response_cookies,
                     history=history,
                 )
                 try:
@@ -974,6 +997,7 @@ class Client(BaseClient):
         self,
         request: Request,
         follow_redirects: bool,
+        merge_response_cookies: bool,
         history: typing.List[Response],
     ) -> Response:
         while True:
@@ -985,7 +1009,7 @@ class Client(BaseClient):
             for hook in self._event_hooks["request"]:
                 hook(request)
 
-            response = self._send_single_request(request)
+            response = self._send_single_request(request, merge_response_cookies)
             try:
                 for hook in self._event_hooks["response"]:
                     hook(response)
@@ -1007,7 +1031,9 @@ class Client(BaseClient):
                 response.close()
                 raise exc
 
-    def _send_single_request(self, request: Request) -> Response:
+    def _send_single_request(
+        self, request: Request, merge_response_cookies
+    ) -> Response:
         """
         Sends a single request, without handling any redirections.
         """
@@ -1029,7 +1055,7 @@ class Client(BaseClient):
         response.stream = BoundSyncStream(
             response.stream, response=response, timer=timer
         )
-        if self._merge_response_cookies:
+        if merge_response_cookies:
             self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
 
@@ -1053,6 +1079,9 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1069,6 +1098,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1082,6 +1112,9 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1098,6 +1131,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1111,6 +1145,9 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1127,6 +1164,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1144,6 +1182,9 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1164,6 +1205,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1181,6 +1223,9 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1201,6 +1246,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1218,6 +1264,9 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1238,6 +1287,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1251,6 +1301,9 @@ class Client(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1267,6 +1320,7 @@ class Client(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1540,6 +1594,9 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1581,7 +1638,12 @@ class AsyncClient(BaseClient):
             timeout=timeout,
             extensions=extensions,
         )
-        return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+        return await self.send(
+            request,
+            auth=auth,
+            follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
+        )
 
     @asynccontextmanager
     async def stream(
@@ -1598,6 +1660,9 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> typing.AsyncIterator[Response]:
@@ -1628,6 +1693,7 @@ class AsyncClient(BaseClient):
             request=request,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             stream=True,
         )
         try:
@@ -1642,6 +1708,9 @@ class AsyncClient(BaseClient):
         stream: bool = False,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
     ) -> Response:
         """
         Send a request.
@@ -1665,6 +1734,11 @@ class AsyncClient(BaseClient):
             if isinstance(follow_redirects, UseClientDefault)
             else follow_redirects
         )
+        merge_response_cookies = (
+            self.merge_response_cookies
+            if isinstance(merge_response_cookies, UseClientDefault)
+            else merge_response_cookies
+        )
 
         auth = self._build_request_auth(request, auth)
 
@@ -1672,6 +1746,7 @@ class AsyncClient(BaseClient):
             request,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             history=[],
         )
         try:
@@ -1689,6 +1764,7 @@ class AsyncClient(BaseClient):
         request: Request,
         auth: Auth,
         follow_redirects: bool,
+        merge_response_cookies: bool,
         history: typing.List[Response],
     ) -> Response:
         auth_flow = auth.async_auth_flow(request)
@@ -1699,6 +1775,7 @@ class AsyncClient(BaseClient):
                 response = await self._send_handling_redirects(
                     request,
                     follow_redirects=follow_redirects,
+                    merge_response_cookies=merge_response_cookies,
                     history=history,
                 )
                 try:
@@ -1722,6 +1799,7 @@ class AsyncClient(BaseClient):
         self,
         request: Request,
         follow_redirects: bool,
+        merge_response_cookies: bool,
         history: typing.List[Response],
     ) -> Response:
         while True:
@@ -1733,7 +1811,7 @@ class AsyncClient(BaseClient):
             for hook in self._event_hooks["request"]:
                 await hook(request)
 
-            response = await self._send_single_request(request)
+            response = await self._send_single_request(request, merge_response_cookies)
             try:
                 for hook in self._event_hooks["response"]:
                     await hook(response)
@@ -1756,7 +1834,9 @@ class AsyncClient(BaseClient):
                 await response.aclose()
                 raise exc
 
-    async def _send_single_request(self, request: Request) -> Response:
+    async def _send_single_request(
+        self, request: Request, merge_response_cookies
+    ) -> Response:
         """
         Sends a single request, without handling any redirections.
         """
@@ -1777,7 +1857,7 @@ class AsyncClient(BaseClient):
         response.stream = BoundAsyncStream(
             response.stream, response=response, timer=timer
         )
-        if self._merge_response_cookies:
+        if merge_response_cookies:
             self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
 
@@ -1801,6 +1881,9 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault, None] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1817,6 +1900,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1830,6 +1914,9 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1846,6 +1933,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1859,6 +1947,9 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1875,6 +1966,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1892,6 +1984,9 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1912,6 +2007,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1929,6 +2025,9 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1949,6 +2048,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1966,6 +2066,9 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -1986,6 +2089,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
@@ -1999,6 +2103,9 @@ class AsyncClient(BaseClient):
         cookies: typing.Optional[CookieTypes] = None,
         auth: typing.Union[AuthTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         follow_redirects: typing.Union[bool, UseClientDefault] = USE_CLIENT_DEFAULT,
+        merge_response_cookies: typing.Union[
+            bool, UseClientDefault
+        ] = USE_CLIENT_DEFAULT,
         timeout: typing.Union[TimeoutTypes, UseClientDefault] = USE_CLIENT_DEFAULT,
         extensions: typing.Optional[RequestExtensions] = None,
     ) -> Response:
@@ -2015,6 +2122,7 @@ class AsyncClient(BaseClient):
             cookies=cookies,
             auth=auth,
             follow_redirects=follow_redirects,
+            merge_response_cookies=merge_response_cookies,
             timeout=timeout,
             extensions=extensions,
         )
