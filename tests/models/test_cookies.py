@@ -52,6 +52,46 @@ def test_cookies_with_domain_and_path():
     assert len(cookies) == 0
 
 
+def test_cookies_for_url_cookies():
+    cookies = httpx.Cookies()
+    cookies.set("name", "value")
+    assert httpx.Cookies.for_url(httpx.URL("http://example.com/"), cookies) == cookies
+
+
+def test_cookies_for_url_cookiejar():
+    cookies = httpx.Cookies()
+    cookies.set("name", "value")
+    assert (
+        httpx.Cookies.for_url(httpx.URL("http://example.com/"), cookies.jar) == cookies
+    )
+
+
+def test_cookies_for_url_http_dict():
+    cookies = httpx.Cookies.for_url(httpx.URL("http://example.com/"), {"name": "value"})
+    assert cookies.get("name", domain="example.com") == "value"
+
+
+def test_cookies_for_url_http_list():
+    cookies = httpx.Cookies.for_url(
+        httpx.URL("http://example.com/"), [("name", "value")]
+    )
+    assert cookies.get("name", domain="example.com") == "value"
+
+
+def test_cookies_for_url_https_dict():
+    cookies = httpx.Cookies.for_url(
+        httpx.URL("https://example.com/"), {"name": "value"}
+    )
+    assert cookies.get("name", domain="example.com", secure=True) == "value"
+
+
+def test_cookies_for_url_https_list():
+    cookies = httpx.Cookies.for_url(
+        httpx.URL("https://example.com/"), [("name", "value")]
+    )
+    assert cookies.get("name", domain="example.com", secure=True) == "value"
+
+
 def test_multiple_set_cookie():
     jar = http.cookiejar.CookieJar()
     headers = [
