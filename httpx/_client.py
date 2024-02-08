@@ -1023,7 +1023,7 @@ class Client(BaseClient):
                 raise exc
 
     def _send_single_request(
-        self, request: Request, merge_response_cookies
+        self, request: Request, merge_response_cookies: bool
     ) -> Response:
         """
         Sends a single request, without handling any redirections.
@@ -1810,7 +1810,7 @@ class AsyncClient(BaseClient):
                 raise exc
 
     async def _send_single_request(
-        self, request: Request, merge_response_cookies
+        self, request: Request, merge_response_cookies: bool
     ) -> Response:
         """
         Sends a single request, without handling any redirections.
