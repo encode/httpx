@@ -1010,7 +1010,7 @@ class Response:
                 await self.stream.aclose()
 
 
-class Cookies(typing.MutableMapping[str, str | None]):
+class Cookies(typing.MutableMapping[str, typing.Optional[str]]):
     """
     HTTP Cookies, as a mutable mapping.
     """
