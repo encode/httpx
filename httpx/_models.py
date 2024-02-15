@@ -1010,7 +1010,7 @@ class Response:
                 await self.stream.aclose()
 
 
-class Cookies(typing.MutableMapping[str, str]):
+class Cookies(typing.MutableMapping[str, str | None]):
     """
     HTTP Cookies, as a mutable mapping.
     """
@@ -1048,7 +1048,9 @@ class Cookies(typing.MutableMapping[str, str]):
         urllib_request = self._CookieCompatRequest(request)
         self.jar.add_cookie_header(urllib_request)
 
-    def set(self, name: str, value: str, domain: str = "", path: str = "/") -> None:
+    def set(
+        self, name: str, value: str | None, domain: str = "", path: str = "/"
+    ) -> None:
         """
         Set a cookie value by name. May optionally include domain and path.
         """
@@ -1080,23 +1082,26 @@ class Cookies(typing.MutableMapping[str, str]):
         default: str | None = None,
         domain: str | None = None,
         path: str | None = None,
+        raise_when_not_found: bool = False,
     ) -> str | None:
         """
         Get a cookie by name. May optionally include domain and path
         in order to specify exactly which cookie to retrieve.
         """
-        value = None
+        value = default
+        found = False
         for cookie in self.jar:
             if cookie.name == name:
                 if domain is None or cookie.domain == domain:
                     if path is None or cookie.path == path:
-                        if value is not None:
+                        if found:
                             message = f"Multiple cookies exist with name={name}"
                             raise CookieConflict(message)
                         value = cookie.value
+                        found = True
 
-        if value is None:
-            return default
+        if not found and raise_when_not_found:
+            raise KeyError(name)
         return value
 
     def delete(
@@ -1141,14 +1146,11 @@ class Cookies(typing.MutableMapping[str, str]):
         for cookie in cookies.jar:
             self.jar.set_cookie(cookie)
 
-    def __setitem__(self, name: str, value: str) -> None:
+    def __setitem__(self, name: str, value: str | None) -> None:
         return self.set(name, value)
 
-    def __getitem__(self, name: str) -> str:
-        value = self.get(name)
-        if value is None:
-            raise KeyError(name)
-        return value
+    def __getitem__(self, name: str) -> str | None:
+        return self.get(name, raise_when_not_found=True)
 
     def __delitem__(self, name: str) -> None:
         return self.delete(name)
