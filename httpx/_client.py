@@ -967,8 +967,8 @@ class Client(BaseClient):
 
     @staticmethod
     def extract_retry_after(response: Response) -> float | None:
-        # The Retry-After response HTTP header indicates how long the user agent should wait before
-        # making a follow-up request.
+        # The Retry-After response HTTP header indicates
+        # how long the user agent should wait before making a follow-up request.
         # According to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
         # is either <http-date> or a <delay-seconds>
         headers = response.headers

@@ -1,7 +1,7 @@
+import time
 import typing
 
 import pytest
-import time
 
 import httpx
 

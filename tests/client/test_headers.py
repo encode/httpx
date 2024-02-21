@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import pytest
 import datetime
+
+import pytest
 
 import httpx
 
