@@ -1414,9 +1414,8 @@ class AsyncClient(BaseClient):
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: None | (
-            typing.Mapping[str, list[typing.Callable[..., typing.Any]]]
-        ) = None,
+        event_hooks: None
+        | (typing.Mapping[str, list[typing.Callable[..., typing.Any]]]) = None,
         base_url: URLTypes = "",
         transport: AsyncBaseTransport | None = None,
         app: typing.Callable[..., typing.Any] | None = None,
