@@ -25,6 +25,8 @@ _ASGIApp = typing.Callable[
     [typing.Dict[str, typing.Any], _Receive, _Send], typing.Coroutine[None, None, None]
 ]
 
+__all__ = ["ASGITransport"]
+
 
 def create_event() -> Event:
     if sniffio.current_async_library() == "trio":
