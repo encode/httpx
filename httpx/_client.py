@@ -966,16 +966,16 @@ class Client(BaseClient):
             auth_flow.close()
 
     @staticmethod
-    def extract_retry_after(request: Request) -> float | None:
+    def extract_retry_after(response: Response) -> float | None:
         # The Retry-After response HTTP header indicates how long the user agent should wait before
         # making a follow-up request.
         # According to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
         # is either <http-date> or a <delay-seconds>
-        headers = request.headers
+        headers = response.headers
         retry_after_header = headers.get("Retry-After", None)
 
         if not retry_after_header:
-            return retry_after_header
+            return None
 
         if retry_after_header.isdigit():
             retry_after_second = float(retry_after_header)
@@ -988,10 +988,9 @@ class Client(BaseClient):
             retry_after_second = (
                 retry_after_date - datetime.datetime.now()
             ).total_seconds()
+            return retry_after_second
         except ValueError:
-            retry_after_second = None
-            pass
-        return retry_after_second
+            return None
 
     def _send_handling_redirects(
         self,

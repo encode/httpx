@@ -247,11 +247,7 @@ def test_request_auto_headers():
     ],
 )
 def test_extract_retry_after(headers, expected_retry_after_value):
-    url = "http://example.org/echo_headers"
-
-    retry_after = httpx.Client.extract_retry_after(
-        httpx.Request("GET", url, headers=headers)
-    )
+    retry_after = httpx.Client.extract_retry_after(httpx.Response(303, headers=headers))
     assert retry_after == expected_retry_after_value
 
 
@@ -266,9 +262,5 @@ def test_extract_retry_after(headers, expected_retry_after_value):
     ],
 )
 def test_extract_retry_after_date(headers):
-    url = "http://example.org/echo_headers"
-
-    retry_after = httpx.Client.extract_retry_after(
-        httpx.Request("GET", url, headers=headers)
-    )
+    retry_after = httpx.Client.extract_retry_after(httpx.Response(303, headers=headers))
     assert retry_after
