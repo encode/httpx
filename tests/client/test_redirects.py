@@ -1,6 +1,7 @@
 import typing
 
 import pytest
+import time
 
 import httpx
 
@@ -13,6 +14,12 @@ def redirects(request: httpx.Request) -> httpx.Response:
         status_code = httpx.codes.MOVED_PERMANENTLY
         content = b"<a href='https://example.org/'>here</a>"
         headers = {"location": "https://example.org/"}
+        return httpx.Response(status_code, headers=headers, content=content)
+
+    if request.url.path == "/redirect_301_retry_after":
+        status_code = httpx.codes.MOVED_PERMANENTLY
+        content = b"<a href='https://example.org/'>here</a>"
+        headers = {"location": "https://example.org/", "retry-after": "1"}
         return httpx.Response(status_code, headers=headers, content=content)
 
     elif request.url.path == "/redirect_302":
@@ -116,6 +123,22 @@ def redirects(request: httpx.Request) -> httpx.Response:
 def test_redirect_301():
     client = httpx.Client(transport=httpx.MockTransport(redirects))
     response = client.post("https://example.org/redirect_301", follow_redirects=True)
+    assert response.status_code == httpx.codes.OK
+    assert response.url == "https://example.org/"
+    assert len(response.history) == 1
+
+
+def test_redirect_301_retry_after():
+    client = httpx.Client(transport=httpx.MockTransport(redirects))
+
+    start = time.time()
+    response = client.post(
+        "https://example.org/redirect_301_retry_after", follow_redirects=True
+    )
+    elapsed = time.time() - start
+
+    # Ensure at least retry-after has elapsed
+    assert elapsed > 1
     assert response.status_code == httpx.codes.OK
     assert response.url == "https://example.org/"
     assert len(response.history) == 1

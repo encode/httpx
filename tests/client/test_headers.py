@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import pytest
+import datetime
 
 import httpx
 
@@ -227,3 +228,47 @@ def test_host_with_non_default_port_in_url():
 def test_request_auto_headers():
     request = httpx.Request("GET", "https://www.example.org/")
     assert "host" in request.headers
+
+
+@pytest.mark.parametrize(
+    "headers,expected_retry_after_value",
+    [
+        ({"Retry-After": "2"}, 2),
+        ({"Retry-After": "not_a_date"}, None),
+        ({"Retry-After": "-1"}, None),
+        (
+            {
+                "Retry-After": (
+                    datetime.datetime.now() + datetime.timedelta(0, 2)
+                ).isoformat()
+            },
+            None,
+        ),
+    ],
+)
+def test_extract_retry_after(headers, expected_retry_after_value):
+    url = "http://example.org/echo_headers"
+
+    retry_after = httpx.Client.extract_retry_after(
+        httpx.Request("GET", url, headers=headers)
+    )
+    assert retry_after == expected_retry_after_value
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {
+            "Retry-After": (datetime.datetime.now() + datetime.timedelta(0, 2))
+            .astimezone()
+            .strftime(httpx._client.HTTP_DATE_FORMAT)
+        },
+    ],
+)
+def test_extract_retry_after_date(headers):
+    url = "http://example.org/echo_headers"
+
+    retry_after = httpx.Client.extract_retry_after(
+        httpx.Request("GET", url, headers=headers)
+    )
+    assert retry_after

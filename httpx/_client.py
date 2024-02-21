@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import enum
 import logging
+import time
 import typing
 import warnings
 from contextlib import asynccontextmanager, contextmanager
@@ -93,6 +94,7 @@ USER_AGENT = f"python-httpx/{__version__}"
 ACCEPT_ENCODING = ", ".join(
     [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
 )
+HTTP_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S %Z"
 
 
 class ClientState(enum.Enum):
@@ -693,16 +695,18 @@ class Client(BaseClient):
             trust_env=trust_env,
         )
         self._mounts: dict[URLPattern, BaseTransport | None] = {
-            URLPattern(key): None
-            if proxy is None
-            else self._init_proxy_transport(
-                proxy,
-                verify=verify,
-                cert=cert,
-                http1=http1,
-                http2=http2,
-                limits=limits,
-                trust_env=trust_env,
+            URLPattern(key): (
+                None
+                if proxy is None
+                else self._init_proxy_transport(
+                    proxy,
+                    verify=verify,
+                    cert=cert,
+                    http1=http1,
+                    http2=http2,
+                    limits=limits,
+                    trust_env=trust_env,
+                )
             )
             for key, proxy in proxy_map.items()
         }
@@ -961,6 +965,34 @@ class Client(BaseClient):
         finally:
             auth_flow.close()
 
+    @staticmethod
+    def extract_retry_after(request: Request) -> float | None:
+        # The Retry-After response HTTP header indicates how long the user agent should wait before
+        # making a follow-up request.
+        # According to https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
+        # is either <http-date> or a <delay-seconds>
+        headers = request.headers
+        retry_after_header = headers.get("Retry-After", None)
+
+        if not retry_after_header:
+            return retry_after_header
+
+        if retry_after_header.isdigit():
+            retry_after_second = float(retry_after_header)
+            return retry_after_second
+
+        try:
+            retry_after_date = datetime.datetime.strptime(
+                retry_after_header, HTTP_DATE_FORMAT
+            )
+            retry_after_second = (
+                retry_after_date - datetime.datetime.now()
+            ).total_seconds()
+        except ValueError:
+            retry_after_second = None
+            pass
+        return retry_after_second
+
     def _send_handling_redirects(
         self,
         request: Request,
@@ -989,6 +1021,10 @@ class Client(BaseClient):
                 history = history + [response]
 
                 if follow_redirects:
+                    retry_after_second = Client.extract_retry_after(response)
+                    if retry_after_second:
+                        # Somehow dirty
+                        time.sleep(retry_after_second)
                     response.read()
                 else:
                     response.next_request = request
@@ -1378,8 +1414,9 @@ class AsyncClient(BaseClient):
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: None
-        | (typing.Mapping[str, list[typing.Callable[..., typing.Any]]]) = None,
+        event_hooks: None | (
+            typing.Mapping[str, list[typing.Callable[..., typing.Any]]]
+        ) = None,
         base_url: URLTypes = "",
         transport: AsyncBaseTransport | None = None,
         app: typing.Callable[..., typing.Any] | None = None,
@@ -1440,16 +1477,18 @@ class AsyncClient(BaseClient):
         )
 
         self._mounts: dict[URLPattern, AsyncBaseTransport | None] = {
-            URLPattern(key): None
-            if proxy is None
-            else self._init_proxy_transport(
-                proxy,
-                verify=verify,
-                cert=cert,
-                http1=http1,
-                http2=http2,
-                limits=limits,
-                trust_env=trust_env,
+            URLPattern(key): (
+                None
+                if proxy is None
+                else self._init_proxy_transport(
+                    proxy,
+                    verify=verify,
+                    cert=cert,
+                    http1=http1,
+                    http2=http2,
+                    limits=limits,
+                    trust_env=trust_env,
+                )
             )
             for key, proxy in proxy_map.items()
         }
