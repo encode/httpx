@@ -19,7 +19,7 @@ twine==4.0.2
 
 # Tests & Linting
 coverage[toml]==7.4.1
-cryptography==42.0.2
+cryptography==42.0.4
 mypy==1.8.0
 pytest==8.0.0
 ruff==0.1.15
