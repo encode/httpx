@@ -1,7 +1,7 @@
 Authentication can either be included on a per-request basis...
 
 ```pycon
->>> auth = httpx.BasicAuthentication(username="username", password="secret")
+>>> auth = httpx.BasicAuth(username="username", password="secret")
 >>> client = httpx.Client()
 >>> response = client.get("https://www.example.com/", auth=auth)
 ```
@@ -9,7 +9,7 @@ Authentication can either be included on a per-request basis...
 Or configured on the client instance, ensuring that all outgoing requests will include authentication credentials...
 
 ```pycon
->>> auth = httpx.BasicAuthentication(username="username", password="secret")
+>>> auth = httpx.BasicAuth(username="username", password="secret")
 >>> client = httpx.Client(auth=auth)
 >>> response = client.get("https://www.example.com/")
 ```
@@ -19,7 +19,7 @@ Or configured on the client instance, ensuring that all outgoing requests will i
 HTTP basic authentication is an unencrypted authentication scheme that uses a simple encoding of the username and password in the request `Authorization` header. Since it is unencrypted it should typically only be used over `https`, although this is not strictly enforced.
 
 ```pycon
->>> auth = httpx.BasicAuthentication(username="finley", password="secret")
+>>> auth = httpx.BasicAuth(username="finley", password="secret")
 >>> client = httpx.Client(auth=auth)
 >>> response = client.get("https://httpbin.org/basic-auth/finley/secret")
 >>> response
