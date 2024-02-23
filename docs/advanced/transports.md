@@ -2,7 +2,7 @@ HTTPX's `Client` also accepts a `transport` argument. This argument allows you
 to provide a custom Transport object that will be used to perform the actual
 sending of the requests.
 
-## HTTPTransport
+## HTTP Transport
 
 For some advanced configuration you might need to instantiate a transport
 class directly, and pass it to the client instance. One example is the
@@ -42,7 +42,9 @@ You can configure an `httpx` client to call directly into a Python web applicati
 This is particularly useful for two main use-cases:
 
 * Using `httpx` as a client inside test cases.
-* Mocking out external services during tests or in dev/staging environments.
+* Mocking out external services during tests or in dev or staging environments.
+
+### Example
 
 Here's an example of integrating against a Flask application:
 
@@ -57,11 +59,14 @@ app = Flask(__name__)
 def hello():
     return "Hello World!"
 
-with httpx.Client(app=app, base_url="http://testserver") as client:
+transport = httpx.WSGITransport(app=app)
+with httpx.Client(transport=transport, base_url="http://testserver") as client:
     r = client.get("/")
     assert r.status_code == 200
     assert r.text == "Hello World!"
 ```
+
+### Configuration
 
 For some more complex cases you might need to customize the WSGI transport. This allows you to:
 
@@ -78,9 +83,72 @@ with httpx.Client(transport=transport, base_url="http://testserver") as client:
     ...
 ```
 
+## ASGI Transport
+
+You can configure an `httpx` client to call directly into an async Python web application using the ASGI protocol.
+
+This is particularly useful for two main use-cases:
+
+* Using `httpx` as a client inside test cases.
+* Mocking out external services during tests or in dev or staging environments.
+
+### Example
+
+Let's take this Starlette application as an example:
+
+```python
+from starlette.applications import Starlette
+from starlette.responses import HTMLResponse
+from starlette.routing import Route
+
+
+async def hello(request):
+    return HTMLResponse("Hello World!")
+
+
+app = Starlette(routes=[Route("/", hello)])
+```
+
+We can make requests directly against the application, like so:
+
+```python
+transport = httpx.ASGITransport(app=app)
+
+async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+    r = await client.get("/")
+    assert r.status_code == 200
+    assert r.text == "Hello World!"
+```
+
+### Configuration
+
+For some more complex cases you might need to customise the ASGI transport. This allows you to:
+
+* Inspect 500 error responses rather than raise exceptions by setting `raise_app_exceptions=False`.
+* Mount the ASGI application at a subpath by setting `root_path`.
+* Use a given client address for requests by setting `client`.
+
+For example:
+
+```python
+# Instantiate a client that makes ASGI requests with a client IP of "1.2.3.4",
+# on port 123.
+transport = httpx.ASGITransport(app=app, client=("1.2.3.4", 123))
+async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+    ...
+```
+
+See [the ASGI documentation](https://asgi.readthedocs.io/en/latest/specs/www.html#connection-scope) for more details on the `client` and `root_path` keys.
+
+### ASGI startup and shutdown
+
+It is not in the scope of HTTPX to trigger ASGI lifespan events of your app.
+
+However it is suggested to use `LifespanManager` from [asgi-lifespan](https://github.com/florimondmanca/asgi-lifespan#usage) in pair with `AsyncClient`.
+
 ## Custom transports
 
-A transport instance must implement the low-level Transport API, which deals
+A transport instance must implement the low-level Transport API which deals
 with sending a single request, and returning a response. You should either
 subclass `httpx.BaseTransport` to implement a transport to use with `Client`,
 or subclass `httpx.AsyncBaseTransport` to implement a transport to
@@ -98,28 +166,81 @@ A complete example of a custom transport implementation would be:
 import json
 import httpx
 
-
 class HelloWorldTransport(httpx.BaseTransport):
     """
     A mock transport that always returns a JSON "Hello, world!" response.
     """
 
     def handle_request(self, request):
-        message = {"text": "Hello, world!"}
-        content = json.dumps(message).encode("utf-8")
-        stream = httpx.ByteStream(content)
-        headers = [(b"content-type", b"application/json")]
-        return httpx.Response(200, headers=headers, stream=stream)
+        return httpx.Response(200, json={"text": "Hello, world!"})
 ```
 
-Which we can use in the same way:
+Or this example, which uses a custom transport and `httpx.Mounts` to always redirect `http://` requests.
 
-```pycon
->>> import httpx
->>> client = httpx.Client(transport=HelloWorldTransport())
->>> response = client.get("https://example.org/")
->>> response.json()
-{"text": "Hello, world!"}
+```python
+class HTTPSRedirect(httpx.BaseTransport):
+    """
+    A transport that always redirects to HTTPS.
+    """
+    def handle_request(self, request):
+        url = request.url.copy_with(scheme="https")
+        return httpx.Response(303, headers={"Location": str(url)})
+
+# A client where any `http` requests are always redirected to `https`
+transport = httpx.Mounts({
+    'http://': HTTPSRedirect()
+    'https://': httpx.HTTPTransport()
+})
+client = httpx.Client(transport=transport)
+```
+
+A useful pattern here is custom transport classes that wrap the default HTTP implementation. For example...
+
+```python
+class DebuggingTransport(httpx.BaseTransport):
+    def __init__(self, **kwargs):
+        self._wrapper = httpx.HTTPTransport(**kwargs)
+
+    def handle_request(self, request):
+        print(f">>> {request}")
+        response = self._wrapper.handle_request(request)
+        print(f"<<< {response}")
+        return response
+
+    def close(self):
+        self._wrapper.close()
+
+transport = DebuggingTransport()
+client = httpx.Client(transport=transport)
+```
+
+Here's another case, where we're using a round-robin across a number of different proxies...
+
+```python
+class ProxyRoundRobin(httpx.BaseTransport):
+    def __init__(self, proxies, **kwargs):
+        self._transports = [
+            httpx.HTTPTransport(proxy=proxy, **kwargs)
+            for proxy in proxies
+        ]
+        self._idx = 0
+
+    def handle_request(self, request):
+        transport = self._transports[self._idx]
+        self._idx = (self._idx + 1) % len(self._transports)
+        return transport.handle_request(request)
+
+    def close(self):
+        for transport in self._transports:
+            transport.close()
+
+proxies = [
+    httpx.Proxy("http://127.0.0.1:8081"),
+    httpx.Proxy("http://127.0.0.1:8082"),
+    httpx.Proxy("http://127.0.0.1:8083"),
+]
+transport = ProxyRoundRobin(proxies=proxies)
+client = httpx.Client(transport=transport)
 ```
 
 ## Mock transports
@@ -329,4 +450,5 @@ mounts = {
 There are also environment variables that can be used to control the dictionary of the client mounts. 
 They can be used to configure HTTP proxying for clients.
 
-See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](../environment_variables.md#http_proxy-https_proxy-all_proxy) for more information.
+See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](../environment_variables.md#http_proxy-https_proxy-all_proxy)
+and [`NO_PROXY`](../environment_variables.md#no_proxy) for more information.
