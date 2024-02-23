@@ -62,6 +62,8 @@ SOCKET_OPTION = typing.Union[
     typing.Tuple[int, int, None, int],
 ]
 
+__all__ = ["AsyncHTTPTransport", "HTTPTransport"]
+
 
 @contextlib.contextmanager
 def map_httpcore_exceptions() -> typing.Iterator[None]:

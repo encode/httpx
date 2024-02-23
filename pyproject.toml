@@ -101,6 +101,9 @@ ignore = ["B904", "B028"]
 [tool.ruff.isort]
 combine-as-imports = true
 
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F403", "F405"]
+
 [tool.mypy]
 ignore_missing_imports = true
 strict = true

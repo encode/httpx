@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from enum import IntEnum
 
+__all__ = ["codes"]
+
 
 class codes(IntEnum):
     """HTTP status codes and reason phrases

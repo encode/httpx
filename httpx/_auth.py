@@ -16,6 +16,9 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from hashlib import _Hash
 
 
+__all__ = ["Auth", "BasicAuth", "DigestAuth", "NetRCAuth"]
+
+
 class Auth:
     """
     Base class for all authentication schemes.

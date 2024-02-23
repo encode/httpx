@@ -25,6 +25,8 @@ _ASGIApp = typing.Callable[
     [typing.MutableMapping[str, typing.Any], _Receive, _Send], typing.Awaitable[None]
 ]
 
+__all__ = ["ASGITransport"]
+
 
 def create_event() -> Event:
     if sniffio.current_async_library() == "trio":

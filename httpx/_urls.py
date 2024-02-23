@@ -9,6 +9,8 @@ from ._types import QueryParamTypes, RawURL, URLTypes
 from ._urlparse import urlencode, urlparse
 from ._utils import primitive_value_to_str
 
+__all__ = ["URL", "QueryParams"]
+
 
 class URL:
     """

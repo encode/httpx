@@ -58,6 +58,8 @@ from ._utils import (
     same_origin,
 )
 
+__all__ = ["USE_CLIENT_DEFAULT", "AsyncClient", "Client"]
+
 # The type annotation for @classmethod and context managers here follows PEP 484
 # https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
 T = typing.TypeVar("T", bound="Client")
