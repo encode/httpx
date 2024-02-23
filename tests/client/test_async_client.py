@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing
 from datetime import timedelta
 
@@ -181,7 +183,7 @@ async def test_100_continue(server):
 async def test_context_managed_transport():
     class Transport(httpx.AsyncBaseTransport):
         def __init__(self) -> None:
-            self.events: typing.List[str] = []
+            self.events: list[str] = []
 
         async def aclose(self):
             # The base implementation of httpx.AsyncBaseTransport just
@@ -214,7 +216,7 @@ async def test_context_managed_transport_and_mount():
     class Transport(httpx.AsyncBaseTransport):
         def __init__(self, name: str) -> None:
             self.name: str = name
-            self.events: typing.List[str] = []
+            self.events: list[str] = []
 
         async def aclose(self):
             # The base implementation of httpx.AsyncBaseTransport just
