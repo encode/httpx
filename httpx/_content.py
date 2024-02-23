@@ -25,6 +25,8 @@ from ._types import (
 )
 from ._utils import peek_filelike_length, primitive_value_to_str
 
+__all__ = ["ByteStream"]
+
 
 class ByteStream(AsyncByteStream, SyncByteStream):
     def __init__(self, stream: bytes) -> None:
