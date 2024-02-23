@@ -11,7 +11,6 @@ from httpx._utils import (
     URLPattern,
     get_ca_bundle_from_env,
     get_environment_proxies,
-    parse_header_links,
     same_origin,
 )
 
