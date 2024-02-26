@@ -58,6 +58,8 @@ from ._utils import (
     same_origin,
 )
 
+__all__ = ["USE_CLIENT_DEFAULT", "AsyncClient", "Client"]
+
 # The type annotation for @classmethod and context managers here follows PEP 484
 # https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
 T = typing.TypeVar("T", bound="Client")
@@ -560,6 +562,15 @@ class BaseClient:
 
         return request.stream
 
+    def _set_timeout(self, request: Request) -> None:
+        if "timeout" not in request.extensions:
+            timeout = (
+                self.timeout
+                if isinstance(self.timeout, UseClientDefault)
+                else Timeout(self.timeout)
+            )
+            request.extensions = dict(**request.extensions, timeout=timeout.as_dict())
+
 
 class Client(BaseClient):
     """
@@ -908,6 +919,8 @@ class Client(BaseClient):
             if isinstance(follow_redirects, UseClientDefault)
             else follow_redirects
         )
+
+        self._set_timeout(request)
 
         auth = self._build_request_auth(request, auth)
 
@@ -1655,6 +1668,8 @@ class AsyncClient(BaseClient):
             if isinstance(follow_redirects, UseClientDefault)
             else follow_redirects
         )
+
+        self._set_timeout(request)
 
         auth = self._build_request_auth(request, auth)
 
