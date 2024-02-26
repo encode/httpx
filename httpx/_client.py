@@ -1043,7 +1043,7 @@ class Client(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
+        auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         extensions: RequestExtensions | None = None,
@@ -1380,8 +1380,7 @@ class AsyncClient(BaseClient):
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: None
-        | (typing.Mapping[str, list[typing.Callable[..., typing.Any]]]) = None,
+        event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URLTypes = "",
         transport: AsyncBaseTransport | None = None,
         app: typing.Callable[..., typing.Any] | None = None,
@@ -1427,7 +1426,7 @@ class AsyncClient(BaseClient):
             )
             warnings.warn(message, DeprecationWarning)
 
-        allow_env_proxies = trust_env and transport is None
+        allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
@@ -1588,7 +1587,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
+        auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         extensions: RequestExtensions | None = None,
