@@ -30,6 +30,12 @@ def test_cookies_update():
     assert cookies.get("name", domain="example.com") == "value"
 
 
+def test_get_missing_cookie_raises_exception():
+    cookies = httpx.Cookies()
+    with pytest.raises(KeyError):
+        cookies["missing"]
+
+
 def test_cookie_value_can_be_none():
     cookies = httpx.Cookies()
     more_cookies = httpx.Cookies()
@@ -37,7 +43,7 @@ def test_cookie_value_can_be_none():
 
     cookies.update(more_cookies)
     assert dict(cookies) == {"no-value": None}
-    assert cookies.get("no-value", domain="example.com") is None
+    assert cookies["no-value"] is None
 
 
 def test_cookies_with_domain():
