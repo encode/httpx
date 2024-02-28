@@ -30,7 +30,7 @@ client = httpx.Client(follow_redirects=True)
 The HTTPX equivalent of `requests.Session` is `httpx.Client`.
 
 ```python
-session = requests.Session(**kwargs)
+session = requests.Session()
 ```
 
 is generally equivalent to
@@ -38,6 +38,15 @@ is generally equivalent to
 ```python
 client = httpx.Client(**kwargs)
 ```
+
+!!! note "Client arguments"
+    Unlike `requests`, `httpx` allows passing arguments when instantiating the client.
+    With `requests`, you would typically do something like:
+
+    ```python
+    session = requests.Session()
+    session.headers.update({"X-Header": "value"})
+    ```
 
 ## Request URLs
 
