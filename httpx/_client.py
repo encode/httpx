@@ -342,7 +342,7 @@ class BaseClient:
 
         See also: [Request instances][0]
 
-        [0]: /advanced/#request-instances
+        [0]: /advanced/clients/#request-instances
         """
         url = self._merge_url(url)
         headers = self._merge_headers(headers)
@@ -561,6 +561,15 @@ class BaseClient:
             return None
 
         return request.stream
+
+    def _set_timeout(self, request: Request) -> None:
+        if "timeout" not in request.extensions:
+            timeout = (
+                self.timeout
+                if isinstance(self.timeout, UseClientDefault)
+                else Timeout(self.timeout)
+            )
+            request.extensions = dict(**request.extensions, timeout=timeout.as_dict())
 
 
 class Client(BaseClient):
@@ -803,7 +812,7 @@ class Client(BaseClient):
         [Merging of configuration][0] for how the various parameters
         are merged with client-level configuration.
 
-        [0]: /advanced/#merging-of-configuration
+        [0]: /advanced/clients/#merging-of-configuration
         """
         if cookies is not None:
             message = (
@@ -899,7 +908,7 @@ class Client(BaseClient):
 
         See also: [Request instances][0]
 
-        [0]: /advanced/#request-instances
+        [0]: /advanced/clients/#request-instances
         """
         if self._state == ClientState.CLOSED:
             raise RuntimeError("Cannot send a request, as the client has been closed.")
@@ -910,6 +919,8 @@ class Client(BaseClient):
             if isinstance(follow_redirects, UseClientDefault)
             else follow_redirects
         )
+
+        self._set_timeout(request)
 
         auth = self._build_request_auth(request, auth)
 
@@ -1548,7 +1559,7 @@ class AsyncClient(BaseClient):
         and [Merging of configuration][0] for how the various parameters
         are merged with client-level configuration.
 
-        [0]: /advanced/#merging-of-configuration
+        [0]: /advanced/clients/#merging-of-configuration
         """
 
         if cookies is not None:  # pragma: no cover
@@ -1645,7 +1656,7 @@ class AsyncClient(BaseClient):
 
         See also: [Request instances][0]
 
-        [0]: /advanced/#request-instances
+        [0]: /advanced/clients/#request-instances
         """
         if self._state == ClientState.CLOSED:
             raise RuntimeError("Cannot send a request, as the client has been closed.")
@@ -1656,6 +1667,8 @@ class AsyncClient(BaseClient):
             if isinstance(follow_redirects, UseClientDefault)
             else follow_redirects
         )
+
+        self._set_timeout(request)
 
         auth = self._build_request_auth(request, auth)
 
