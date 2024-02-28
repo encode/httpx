@@ -342,7 +342,7 @@ class BaseClient:
 
         See also: [Request instances][0]
 
-        [0]: /advanced/#request-instances
+        [0]: /advanced/clients/#request-instances
         """
         url = self._merge_url(url)
         headers = self._merge_headers(headers)
@@ -812,7 +812,7 @@ class Client(BaseClient):
         [Merging of configuration][0] for how the various parameters
         are merged with client-level configuration.
 
-        [0]: /advanced/#merging-of-configuration
+        [0]: /advanced/clients/#merging-of-configuration
         """
         if cookies is not None:
             message = (
@@ -908,7 +908,7 @@ class Client(BaseClient):
 
         See also: [Request instances][0]
 
-        [0]: /advanced/#request-instances
+        [0]: /advanced/clients/#request-instances
         """
         if self._state == ClientState.CLOSED:
             raise RuntimeError("Cannot send a request, as the client has been closed.")
@@ -1560,7 +1560,7 @@ class AsyncClient(BaseClient):
         and [Merging of configuration][0] for how the various parameters
         are merged with client-level configuration.
 
-        [0]: /advanced/#merging-of-configuration
+        [0]: /advanced/clients/#merging-of-configuration
         """
 
         if cookies is not None:  # pragma: no cover
@@ -1657,7 +1657,7 @@ class AsyncClient(BaseClient):
 
         See also: [Request instances][0]
 
-        [0]: /advanced/#request-instances
+        [0]: /advanced/clients/#request-instances
         """
         if self._state == ClientState.CLOSED:
             raise RuntimeError("Cannot send a request, as the client has been closed.")
