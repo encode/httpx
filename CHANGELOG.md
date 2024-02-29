@@ -98,7 +98,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * The logging behaviour has been changed to be more in-line with other standard Python logging usages. We no longer have a custom `TRACE` log level, and we no longer use the `HTTPX_LOG_LEVEL` environment variable to auto-configure logging. We now have a significant amount of `DEBUG` logging available at the network level. Full documentation is available at https://www.python-httpx.org/logging/ (#2547, encode/httpcore#648)
 * The `Response.iter_lines()` method now matches the stdlib behaviour and does not include the newline characters. It also resolves a performance issue. (#2423)
 * Query parameter encoding switches from using + for spaces and %2F for forward slash, to instead using %20 for spaces and treating forward slash as a safe, unescaped character. This differs from `requests`, but is in line with browser behavior in Chrome, Safari, and Firefox. Both options are RFC valid. (#2543)
-* NetRC authentication is no longer automatically handled, but is instead supported by an explicit `httpx.NetRCAuth()` authentication class. See the documentation at https://www.python-httpx.org/advanced/#netrc-support (#2525)
+* NetRC authentication is no longer automatically handled, but is instead supported by an explicit `httpx.NetRCAuth()` authentication class. See the documentation at https://www.python-httpx.org/advanced/authentication/#netrc-authentication (#2525)
 
 ### Removed
 
@@ -151,7 +151,7 @@ See the "Removed" section of these release notes for details.
 ### Changed
 
 * Drop support for Python 3.6. (#2097)
-* Use `utf-8` as the default character set, instead of falling back to `charset-normalizer` for auto-detection. To enable automatic character set detection, see [the documentation](https://www.python-httpx.org/advanced/#character-set-encodings-and-auto-detection). (#2165)
+* Use `utf-8` as the default character set, instead of falling back to `charset-normalizer` for auto-detection. To enable automatic character set detection, see [the documentation](https://www.python-httpx.org/advanced/text-encodings/#using-auto-detection). (#2165)
 
 ### Fixed
 
@@ -170,7 +170,7 @@ See the "Removed" section of these release notes for details.
 
 ### Added
 
-* Support for [the SOCKS5 proxy protocol](https://www.python-httpx.org/advanced/#socks) via [the `socksio` package](https://github.com/sethmlarson/socksio). (#2034)
+* Support for [the SOCKS5 proxy protocol](https://www.python-httpx.org/advanced/proxies/#socks) via [the `socksio` package](https://github.com/sethmlarson/socksio). (#2034)
 * Support for custom headers in multipart/form-data requests (#1936)
 
 ### Fixed
@@ -325,7 +325,7 @@ finally:
 
 The 0.18.x release series formalises our low-level Transport API, introducing the base classes `httpx.BaseTransport` and `httpx.AsyncBaseTransport`.
 
-See the "[Writing custom transports](https://www.python-httpx.org/advanced/#writing-custom-transports)" documentation and the [`httpx.BaseTransport.handle_request()`](https://github.com/encode/httpx/blob/397aad98fdc8b7580a5fc3e88f1578b4302c6382/httpx/_transports/base.py#L77-L147) docstring for more complete details on implementing custom transports.
+See the "[Custom transports](https://www.python-httpx.org/advanced/transports/#custom-transports)" documentation and the [`httpx.BaseTransport.handle_request()`](https://github.com/encode/httpx/blob/397aad98fdc8b7580a5fc3e88f1578b4302c6382/httpx/_transports/base.py#L77-L147) docstring for more complete details on implementing custom transports.
 
 Pull request #1522 includes a checklist of differences from the previous `httpcore` transport API, for developers implementing custom transports.
 
@@ -642,7 +642,7 @@ This release switches to `httpcore` for all the internal networking, which means
 
 It also means we've had to remove our UDS support, since maintaining that would have meant having to push back our work towards a 1.0 release, which isn't a trade-off we wanted to make.
 
-We also now have [a public "Transport API"](https://www.python-httpx.org/advanced/#custom-transports), which you can use to implement custom transport implementations against. This formalises and replaces our previously private "Dispatch API".
+We also now have [a public "Transport API"](https://www.python-httpx.org/advanced/transports/#custom-transports), which you can use to implement custom transport implementations against. This formalises and replaces our previously private "Dispatch API".
 
 ### Changed
 
