@@ -5,9 +5,7 @@ import sys
 from pprint import pprint
 
 SUBS = [
-    ('from .._backends.auto import AutoBackend', 'from .._backends.sync import SyncBackend'),
     ('from .._transports.asgi import ASGITransport', 'from .._transports.wsgi import WSGITransport'),
-    ('import trio as concurrency', 'from tests import concurrency'),
     ('BoundAsyncStream', 'BoundSyncStream'),
     ('AsyncByteStream', 'SyncByteStream'),
     ('ASGITransport', 'WSGITransport'),
@@ -23,7 +21,6 @@ SUBS = [
     ('await ', ''),
     ('handle_async_request', 'handle_request'),
     ('aclose', 'close'),
-    ('aiter_stream', 'iter_stream'),
     ('aread', 'read'),
     ('asend', 'send'),
     ('asynccontextmanager', 'contextmanager'),
@@ -31,9 +28,6 @@ SUBS = [
     ('__aexit__', '__exit__'),
     ('__aiter__', '__iter__'),
     ('__anext__', '__next__'),
-    ('@pytest.mark.anyio', ''),
-    ('@pytest.mark.trio', ''),
-    ('AutoBackend', 'SyncBackend'),
 ]
 COMPILED_SUBS = [
     (re.compile(r'(^|\b)' + regex + r'($|\b)'), repl)

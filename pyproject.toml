@@ -98,6 +98,8 @@ replacement = 'src="https://raw.githubusercontent.com/encode/httpx/master/\1"'
 select = ["E", "F", "I", "B", "PIE"]
 ignore = ["B904", "B028"]
 
+exclude = ["httpx/_clients/_sync_client.py"]
+
 [tool.ruff.isort]
 combine-as-imports = true
 

@@ -24,10 +24,11 @@ from .._exceptions import (
     request_context,
 )
 from .._models import Request, Response
+from .._transports.wsgi import WSGITransport
 from .._transports.base import BaseTransport
 from .._transports.default import HTTPTransport
-from .._transports.wsgi import WSGITransport
 from .._types import (
+    SyncByteStream,
     AuthTypes,
     CertTypes,
     CookieTypes,
@@ -39,7 +40,6 @@ from .._types import (
     RequestData,
     RequestExtensions,
     RequestFiles,
-    SyncByteStream,
     TimeoutTypes,
     URLTypes,
     VerifyTypes,
