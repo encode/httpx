@@ -3,6 +3,7 @@ Handlers for Content-Encoding.
 
 See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 """
+
 from __future__ import annotations
 
 import codecs
