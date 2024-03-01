@@ -23,6 +23,7 @@ client = httpx.Client(transport=transport)
 transport = httpx.HTTPTransport(uds="socket.uds")
 client = httpx.Client(transport=transport)
 """
+
 from __future__ import annotations
 
 import contextlib
