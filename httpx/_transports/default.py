@@ -264,7 +264,7 @@ class AsyncResponseStream(AsyncByteStream):
 class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
-        ssl_context: ssl.SSLContext | None = None
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
