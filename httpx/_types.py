@@ -78,7 +78,8 @@ TimeoutTypes = Union[
     Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
     "Timeout",
 ]
-ProxiesTypes = Union[URLTypes, "Proxy", Dict[URLTypes, Union[None, URLTypes, "Proxy"]]]
+ProxyTypes = Union[URLTypes, "Proxy"]
+ProxiesTypes = Union[ProxyTypes, Dict[URLTypes, Union[None, ProxyTypes]]]
 
 AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
@@ -106,6 +107,8 @@ FileTypes = Union[
 RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
 
 RequestExtensions = MutableMapping[str, Any]
+
+__all__ = ["AsyncByteStream", "SyncByteStream"]
 
 
 class SyncByteStream:

@@ -82,7 +82,7 @@ def test_read_and_stream_data():
     request.read()
     assert request.stream is not None
     assert isinstance(request.stream, typing.Iterable)
-    content = b"".join([part for part in request.stream])
+    content = b"".join(list(request.stream))
     assert content == request.content
 
 

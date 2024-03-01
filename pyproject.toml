@@ -29,7 +29,7 @@ classifiers = [
 ]
 dependencies = [
     "certifi",
-    "httpcore",
+    "httpcore==1.*",
     "anyio",
     "idna",
     "sniffio",
@@ -70,6 +70,7 @@ include = [
     "/httpx",
     "/CHANGELOG.md",
     "/README.md",
+    "/tests",
 ]
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
@@ -96,13 +97,12 @@ replacement = 'src="https://raw.githubusercontent.com/encode/httpx/master/\1"'
 [tool.ruff]
 select = ["E", "F", "I", "B", "PIE"]
 ignore = ["B904", "B028"]
-line-length = 88
-
-[tool.ruff.pycodestyle]
-max-line-length = 120
 
 [tool.ruff.isort]
 combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F403", "F405"]
 
 [tool.mypy]
 ignore_missing_imports = true

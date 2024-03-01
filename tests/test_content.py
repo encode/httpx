@@ -15,7 +15,7 @@ async def test_empty_content():
     assert isinstance(request.stream, httpx.SyncByteStream)
     assert isinstance(request.stream, httpx.AsyncByteStream)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {"Host": "www.example.com", "Content-Length": "0"}
@@ -29,7 +29,7 @@ async def test_bytes_content():
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {"Host": "www.example.com", "Content-Length": "13"}
@@ -42,7 +42,7 @@ async def test_bytes_content():
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {"Host": "www.example.com", "Content-Length": "13"}
@@ -56,7 +56,7 @@ async def test_bytesio_content():
     assert isinstance(request.stream, typing.Iterable)
     assert not isinstance(request.stream, typing.AsyncIterable)
 
-    content = b"".join([part for part in request.stream])
+    content = b"".join(list(request.stream))
 
     assert request.headers == {"Host": "www.example.com", "Content-Length": "13"}
     assert content == b"Hello, world!"
@@ -100,7 +100,7 @@ async def test_iterator_content():
     assert isinstance(request.stream, typing.Iterable)
     assert not isinstance(request.stream, typing.AsyncIterable)
 
-    content = b"".join([part for part in request.stream])
+    content = b"".join(list(request.stream))
 
     assert request.headers == {
         "Host": "www.example.com",
@@ -109,7 +109,7 @@ async def test_iterator_content():
     assert content == b"Hello, world!"
 
     with pytest.raises(httpx.StreamConsumed):
-        [part for part in request.stream]
+        list(request.stream)
 
     # Support 'data' for compat with requests.
     with pytest.warns(DeprecationWarning):
@@ -117,7 +117,7 @@ async def test_iterator_content():
     assert isinstance(request.stream, typing.Iterable)
     assert not isinstance(request.stream, typing.AsyncIterable)
 
-    content = b"".join([part for part in request.stream])
+    content = b"".join(list(request.stream))
 
     assert request.headers == {
         "Host": "www.example.com",
@@ -168,7 +168,7 @@ async def test_json_content():
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {
@@ -186,7 +186,7 @@ async def test_urlencoded_content():
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {
@@ -204,7 +204,7 @@ async def test_urlencoded_boolean():
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {
@@ -222,7 +222,7 @@ async def test_urlencoded_none():
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {
@@ -240,7 +240,7 @@ async def test_urlencoded_list():
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {
@@ -265,7 +265,7 @@ async def test_multipart_files_content():
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {
@@ -304,7 +304,7 @@ async def test_multipart_data_and_files_content():
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {
@@ -348,7 +348,7 @@ async def test_empty_request():
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {"Host": "www.example.com", "Content-Length": "0"}
@@ -375,7 +375,7 @@ async def test_multipart_multiple_files_single_input_content():
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in request.stream])
+    sync_content = b"".join(list(request.stream))
     async_content = b"".join([part async for part in request.stream])
 
     assert request.headers == {
@@ -421,7 +421,7 @@ async def test_response_empty_content():
     assert isinstance(response.stream, typing.Iterable)
     assert isinstance(response.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in response.stream])
+    sync_content = b"".join(list(response.stream))
     async_content = b"".join([part async for part in response.stream])
 
     assert response.headers == {}
@@ -435,7 +435,7 @@ async def test_response_bytes_content():
     assert isinstance(response.stream, typing.Iterable)
     assert isinstance(response.stream, typing.AsyncIterable)
 
-    sync_content = b"".join([part for part in response.stream])
+    sync_content = b"".join(list(response.stream))
     async_content = b"".join([part async for part in response.stream])
 
     assert response.headers == {"Content-Length": "13"}
@@ -453,13 +453,13 @@ async def test_response_iterator_content():
     assert isinstance(response.stream, typing.Iterable)
     assert not isinstance(response.stream, typing.AsyncIterable)
 
-    content = b"".join([part for part in response.stream])
+    content = b"".join(list(response.stream))
 
     assert response.headers == {"Transfer-Encoding": "chunked"}
     assert content == b"Hello, world!"
 
     with pytest.raises(httpx.StreamConsumed):
-        [part for part in response.stream]
+        list(response.stream)
 
 
 @pytest.mark.anyio

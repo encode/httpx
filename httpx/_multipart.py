@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import os
 import typing
@@ -21,8 +23,8 @@ from ._utils import (
 
 
 def get_multipart_boundary_from_content_type(
-    content_type: typing.Optional[bytes],
-) -> typing.Optional[bytes]:
+    content_type: bytes | None,
+) -> bytes | None:
     if not content_type or not content_type.startswith(b"multipart/form-data"):
         return None
     # parse boundary according to
@@ -39,19 +41,18 @@ class DataField:
     A single form field item, within a multipart form field.
     """
 
-    def __init__(
-        self, name: str, value: typing.Union[str, bytes, int, float, None]
-    ) -> None:
+    def __init__(self, name: str, value: str | bytes | int | float | None) -> None:
         if not isinstance(name, str):
             raise TypeError(
                 f"Invalid type for name. Expected str, got {type(name)}: {name!r}"
             )
         if value is not None and not isinstance(value, (str, bytes, int, float)):
             raise TypeError(
-                f"Invalid type for value. Expected primitive type, got {type(value)}: {value!r}"
+                "Invalid type for value. Expected primitive type,"
+                f" got {type(value)}: {value!r}"
             )
         self.name = name
-        self.value: typing.Union[str, bytes] = (
+        self.value: str | bytes = (
             value if isinstance(value, bytes) else primitive_value_to_str(value)
         )
 
@@ -92,18 +93,20 @@ class FileField:
 
         fileobj: FileContent
 
-        headers: typing.Dict[str, str] = {}
-        content_type: typing.Optional[str] = None
+        headers: dict[str, str] = {}
+        content_type: str | None = None
 
         # This large tuple based API largely mirror's requests' API
-        # It would be good to think of better APIs for this that we could include in httpx 2.0
-        # since variable length tuples (especially of 4 elements) are quite unwieldly
+        # It would be good to think of better APIs for this that we could
+        # include in httpx 2.0 since variable length tuples(especially of 4 elements)
+        # are quite unwieldly
         if isinstance(value, tuple):
             if len(value) == 2:
-                # neither the 3rd parameter (content_type) nor the 4th (headers) was included
-                filename, fileobj = value  # type: ignore
+                # neither the 3rd parameter (content_type) nor the 4th (headers)
+                # was included
+                filename, fileobj = value
             elif len(value) == 3:
-                filename, fileobj, content_type = value  # type: ignore
+                filename, fileobj, content_type = value
             else:
                 # all 4 parameters included
                 filename, fileobj, content_type, headers = value  # type: ignore
@@ -116,9 +119,9 @@ class FileField:
 
         has_content_type_header = any("content-type" in key.lower() for key in headers)
         if content_type is not None and not has_content_type_header:
-            # note that unlike requests, we ignore the content_type
-            # provided in the 3rd tuple element if it is also included in the headers
-            # requests does the opposite (it overwrites the header with the 3rd tuple element)
+            # note that unlike requests, we ignore the content_type provided in the 3rd
+            # tuple element if it is also included in the headers requests does
+            # the opposite (it overwrites the headerwith the 3rd tuple element)
             headers["Content-Type"] = content_type
 
         if isinstance(fileobj, io.StringIO):
@@ -134,7 +137,7 @@ class FileField:
         self.file = fileobj
         self.headers = headers
 
-    def get_length(self) -> typing.Optional[int]:
+    def get_length(self) -> int | None:
         headers = self.render_headers()
 
         if isinstance(self.file, (str, bytes)):
@@ -196,7 +199,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
         self,
         data: RequestData,
         files: RequestFiles,
-        boundary: typing.Optional[bytes] = None,
+        boundary: bytes | None = None,
     ) -> None:
         if boundary is None:
             boundary = os.urandom(16).hex().encode("ascii")
@@ -209,7 +212,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
 
     def _iter_fields(
         self, data: RequestData, files: RequestFiles
-    ) -> typing.Iterator[typing.Union[FileField, DataField]]:
+    ) -> typing.Iterator[FileField | DataField]:
         for name, value in data.items():
             if isinstance(value, (tuple, list)):
                 for item in value:
@@ -228,7 +231,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
             yield b"\r\n"
         yield b"--%s--\r\n" % self.boundary
 
-    def get_content_length(self) -> typing.Optional[int]:
+    def get_content_length(self) -> int | None:
         """
         Return the length of the multipart encoded content, or `None` if
         any of the files have a length that cannot be determined upfront.
@@ -250,7 +253,7 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
 
     # Content stream interface.
 
-    def get_headers(self) -> typing.Dict[str, str]:
+    def get_headers(self) -> dict[str, str]:
         content_length = self.get_content_length()
         content_type = self.content_type
         if content_length is None:

@@ -462,7 +462,7 @@ You can also disable the timeout behavior completely...
 >>> httpx.get('https://github.com/', timeout=None)
 ```
 
-For advanced timeout management, see [Timeout fine-tuning](advanced.md#fine-tuning-the-configuration).
+For advanced timeout management, see [Timeout fine-tuning](advanced/timeouts.md#fine-tuning-the-configuration).
 
 ## Authentication
 

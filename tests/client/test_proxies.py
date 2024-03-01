@@ -33,7 +33,8 @@ def url_to_origin(url: str) -> httpcore.URL:
     ],
 )
 def test_proxies_parameter(proxies, expected_proxies):
-    client = httpx.Client(proxies=proxies)
+    with pytest.warns(DeprecationWarning):
+        client = httpx.Client(proxies=proxies)
     client_patterns = [p.pattern for p in client._mounts.keys()]
     client_proxies = list(client._mounts.values())
 
@@ -47,15 +48,31 @@ def test_proxies_parameter(proxies, expected_proxies):
     assert len(expected_proxies) == len(client._mounts)
 
 
-def test_socks_proxy():
+def test_socks_proxy_deprecated():
     url = httpx.URL("http://www.example.com")
 
-    client = httpx.Client(proxies="socks5://localhost/")
+    with pytest.warns(DeprecationWarning):
+        client = httpx.Client(proxies="socks5://localhost/")
     transport = client._transport_for_url(url)
     assert isinstance(transport, httpx.HTTPTransport)
     assert isinstance(transport._pool, httpcore.SOCKSProxy)
 
-    async_client = httpx.AsyncClient(proxies="socks5://localhost/")
+    with pytest.warns(DeprecationWarning):
+        async_client = httpx.AsyncClient(proxies="socks5://localhost/")
+    async_transport = async_client._transport_for_url(url)
+    assert isinstance(async_transport, httpx.AsyncHTTPTransport)
+    assert isinstance(async_transport._pool, httpcore.AsyncSOCKSProxy)
+
+
+def test_socks_proxy():
+    url = httpx.URL("http://www.example.com")
+
+    client = httpx.Client(proxy="socks5://localhost/")
+    transport = client._transport_for_url(url)
+    assert isinstance(transport, httpx.HTTPTransport)
+    assert isinstance(transport._pool, httpcore.SOCKSProxy)
+
+    async_client = httpx.AsyncClient(proxy="socks5://localhost/")
     async_transport = async_client._transport_for_url(url)
     assert isinstance(async_transport, httpx.AsyncHTTPTransport)
     assert isinstance(async_transport._pool, httpcore.AsyncSOCKSProxy)
@@ -121,7 +138,12 @@ PROXY_URL = "http://[::1]"
     ],
 )
 def test_transport_for_request(url, proxies, expected):
-    client = httpx.Client(proxies=proxies)
+    if proxies:
+        with pytest.warns(DeprecationWarning):
+            client = httpx.Client(proxies=proxies)
+    else:
+        client = httpx.Client(proxies=proxies)
+
     transport = client._transport_for_url(httpx.URL(url))
 
     if expected is None:
@@ -136,7 +158,8 @@ def test_transport_for_request(url, proxies, expected):
 @pytest.mark.network
 async def test_async_proxy_close():
     try:
-        client = httpx.AsyncClient(proxies={"https://": PROXY_URL})
+        with pytest.warns(DeprecationWarning):
+            client = httpx.AsyncClient(proxies={"https://": PROXY_URL})
         await client.get("http://example.com")
     finally:
         await client.aclose()
@@ -145,15 +168,21 @@ async def test_async_proxy_close():
 @pytest.mark.network
 def test_sync_proxy_close():
     try:
-        client = httpx.Client(proxies={"https://": PROXY_URL})
+        with pytest.warns(DeprecationWarning):
+            client = httpx.Client(proxies={"https://": PROXY_URL})
         client.get("http://example.com")
     finally:
         client.close()
 
 
+def test_unsupported_proxy_scheme_deprecated():
+    with pytest.warns(DeprecationWarning), pytest.raises(ValueError):
+        httpx.Client(proxies="ftp://127.0.0.1")
+
+
 def test_unsupported_proxy_scheme():
     with pytest.raises(ValueError):
-        httpx.Client(proxies="ftp://127.0.0.1")
+        httpx.Client(proxy="ftp://127.0.0.1")
 
 
 @pytest.mark.parametrize(
@@ -279,8 +308,31 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
     ],
 )
 def test_for_deprecated_proxy_params(proxies, is_valid):
-    if not is_valid:
-        with pytest.raises(ValueError):
+    with pytest.warns(DeprecationWarning):
+        if not is_valid:
+            with pytest.raises(ValueError):
+                httpx.Client(proxies=proxies)
+        else:
             httpx.Client(proxies=proxies)
-    else:
-        httpx.Client(proxies=proxies)
+
+
+def test_proxy_and_proxies_together():
+    with pytest.warns(DeprecationWarning), pytest.raises(
+        RuntimeError,
+    ):
+        httpx.Client(proxies={"all://": "http://127.0.0.1"}, proxy="http://127.0.0.1")
+
+    with pytest.warns(DeprecationWarning), pytest.raises(
+        RuntimeError,
+    ):
+        httpx.AsyncClient(
+            proxies={"all://": "http://127.0.0.1"}, proxy="http://127.0.0.1"
+        )
+
+
+def test_proxy_with_mounts():
+    proxy_transport = httpx.HTTPTransport(proxy="http://127.0.0.1")
+    client = httpx.Client(mounts={"http://": proxy_transport})
+
+    transport = client._transport_for_url(httpx.URL("http://example.com"))
+    assert transport == proxy_transport

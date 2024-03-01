@@ -3,6 +3,8 @@ Handlers for Content-Encoding.
 
 See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 """
+from __future__ import annotations
+
 import codecs
 import io
 import typing
@@ -167,11 +169,11 @@ class ByteChunker:
     Handles returning byte content in fixed-size chunks.
     """
 
-    def __init__(self, chunk_size: typing.Optional[int] = None) -> None:
+    def __init__(self, chunk_size: int | None = None) -> None:
         self._buffer = io.BytesIO()
         self._chunk_size = chunk_size
 
-    def decode(self, content: bytes) -> typing.List[bytes]:
+    def decode(self, content: bytes) -> list[bytes]:
         if self._chunk_size is None:
             return [content] if content else []
 
@@ -194,7 +196,7 @@ class ByteChunker:
         else:
             return []
 
-    def flush(self) -> typing.List[bytes]:
+    def flush(self) -> list[bytes]:
         value = self._buffer.getvalue()
         self._buffer.seek(0)
         self._buffer.truncate()
@@ -206,13 +208,13 @@ class TextChunker:
     Handles returning text content in fixed-size chunks.
     """
 
-    def __init__(self, chunk_size: typing.Optional[int] = None) -> None:
+    def __init__(self, chunk_size: int | None = None) -> None:
         self._buffer = io.StringIO()
         self._chunk_size = chunk_size
 
-    def decode(self, content: str) -> typing.List[str]:
+    def decode(self, content: str) -> list[str]:
         if self._chunk_size is None:
-            return [content]
+            return [content] if content else []
 
         self._buffer.write(content)
         if self._buffer.tell() >= self._chunk_size:
@@ -233,7 +235,7 @@ class TextChunker:
         else:
             return []
 
-    def flush(self) -> typing.List[str]:
+    def flush(self) -> list[str]:
         value = self._buffer.getvalue()
         self._buffer.seek(0)
         self._buffer.truncate()
@@ -245,7 +247,7 @@ class TextDecoder:
     Handles incrementally decoding bytes into text
     """
 
-    def __init__(self, encoding: str = "utf-8"):
+    def __init__(self, encoding: str = "utf-8") -> None:
         self.decoder = codecs.getincrementaldecoder(encoding)(errors="replace")
 
     def decode(self, data: bytes) -> str:
@@ -259,14 +261,15 @@ class LineDecoder:
     """
     Handles incrementally reading lines from text.
 
-    Has the same behaviour as the stdllib splitlines, but handling the input iteratively.
+    Has the same behaviour as the stdllib splitlines,
+    but handling the input iteratively.
     """
 
     def __init__(self) -> None:
-        self.buffer: typing.List[str] = []
+        self.buffer: list[str] = []
         self.trailing_cr: bool = False
 
-    def decode(self, text: str) -> typing.List[str]:
+    def decode(self, text: str) -> list[str]:
         # See https://docs.python.org/3/library/stdtypes.html#str.splitlines
         NEWLINE_CHARS = "\n\r\x0b\x0c\x1c\x1d\x1e\x85\u2028\u2029"
 
@@ -279,7 +282,9 @@ class LineDecoder:
             text = text[:-1]
 
         if not text:
-            return []
+            # NOTE: the edge case input of empty text doesn't occur in practice,
+            # because other httpx internals filter out this value
+            return []  # pragma: no cover
 
         trailing_newline = text[-1] in NEWLINE_CHARS
         lines = text.splitlines()
@@ -302,7 +307,7 @@ class LineDecoder:
 
         return lines
 
-    def flush(self) -> typing.List[str]:
+    def flush(self) -> list[str]:
         if not self.buffer and not self.trailing_cr:
             return []
 
