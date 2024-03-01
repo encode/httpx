@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing
 from contextlib import contextmanager
 
-from ._client import Client
+from ._clients import Client
 from ._config import DEFAULT_TIMEOUT_CONFIG
 from ._models import Response
 from ._types import (

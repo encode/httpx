@@ -14,7 +14,7 @@ from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._urls import URL
 from ._utils import get_ca_bundle_from_env
 
-__all__ = ["Limits", "Proxy", "Timeout", "create_ssl_context"]
+__all__ = ["Limits", "Proxy", "Timeout", "create_ssl_context", "USE_CLIENT_DEFAULT"]
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -42,6 +42,28 @@ logger = logging.getLogger("httpx")
 class UnsetType:
     pass  # pragma: no cover
 
+
+class UseClientDefault:
+    """
+    For some parameters such as `auth=...` and `timeout=...` we need to be able
+    to indicate the default "unset" state, in a way that is distinctly different
+    to using `None`.
+
+    The default "unset" state indicates that whatever default is set on the
+    client should be used. This is different to setting `None`, which
+    explicitly disables the parameter, possibly overriding a client default.
+
+    For example we use `timeout=USE_CLIENT_DEFAULT` in the `request()` signature.
+    Omitting the `timeout` parameter will send a request using whatever default
+    timeout has been configured on the client. Including `timeout=None` will
+    ensure no timeout is used.
+
+    Note that user code shouldn't need to use the `USE_CLIENT_DEFAULT` constant,
+    but it is used internally when a parameter is not included.
+    """
+
+
+USE_CLIENT_DEFAULT = UseClientDefault()
 
 UNSET = UnsetType()
 
