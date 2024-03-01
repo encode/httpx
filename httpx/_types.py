@@ -107,6 +107,8 @@ RequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]
 
 RequestExtensions = MutableMapping[str, Any]
 
+__all__ = ["AsyncByteStream", "SyncByteStream"]
+
 
 class SyncByteStream:
     def __iter__(self) -> Iterator[bytes]:

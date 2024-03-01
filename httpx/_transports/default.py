@@ -23,6 +23,8 @@ client = httpx.Client(transport=transport)
 transport = httpx.HTTPTransport(uds="socket.uds")
 client = httpx.Client(transport=transport)
 """
+from __future__ import annotations
+
 import contextlib
 import ssl
 import typing
@@ -60,6 +62,8 @@ SOCKET_OPTION = typing.Union[
     typing.Tuple[int, int, typing.Union[bytes, bytearray]],
     typing.Tuple[int, int, None, int],
 ]
+
+__all__ = ["AsyncHTTPTransport", "HTTPTransport"]
 
 
 @contextlib.contextmanager
@@ -120,15 +124,16 @@ class ResponseStream(SyncByteStream):
 class HTTPTransport(BaseTransport):
     def __init__(
         self,
-        ssl_context: typing.Optional[ssl.SSLContext] = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        proxy: typing.Optional[ProxyTypes] = None,
-        uds: typing.Optional[str] = None,
-        local_address: typing.Optional[str] = None,
+        trust_env: bool = True,
+        proxy: ProxyTypes | None = None,
+        uds: str | None = None,
+        local_address: str | None = None,
         retries: int = 0,
-        socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
+        socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
         ssl_context = ssl_context or SSLContext()
@@ -201,9 +206,9 @@ class HTTPTransport(BaseTransport):
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]] = None,
-        exc_value: typing.Optional[BaseException] = None,
-        traceback: typing.Optional[TracebackType] = None,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         with map_httpcore_exceptions():
             self._pool.__exit__(exc_type, exc_value, traceback)
@@ -259,15 +264,16 @@ class AsyncResponseStream(AsyncByteStream):
 class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
-        ssl_context: typing.Optional[ssl.SSLContext] = None,
+        ssl_context: ssl.SSLContext | None = None
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        proxy: typing.Optional[ProxyTypes] = None,
-        uds: typing.Optional[str] = None,
-        local_address: typing.Optional[str] = None,
+        trust_env: bool = True,
+        proxy: ProxyTypes | None = None,
+        uds: str | None = None,
+        local_address: str | None = None,
         retries: int = 0,
-        socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
+        socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
         ssl_context = ssl_context or SSLContext()
@@ -339,9 +345,9 @@ class AsyncHTTPTransport(AsyncBaseTransport):
 
     async def __aexit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]] = None,
-        exc_value: typing.Optional[BaseException] = None,
-        traceback: typing.Optional[TracebackType] = None,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         with map_httpcore_exceptions():
             await self._pool.__aexit__(exc_type, exc_value, traceback)
