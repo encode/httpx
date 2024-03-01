@@ -10,6 +10,7 @@ from typing import (
     Iterable,
     Iterator,
     Mapping,
+    Tuple,
 )
 from urllib.parse import urlencode
 
@@ -17,13 +18,14 @@ from ._exceptions import StreamClosed, StreamConsumed
 from ._multipart import MultipartStream
 from ._types import (
     AsyncByteStream,
+    PrimitiveData,
     RequestContent,
     RequestData,
     RequestFiles,
     ResponseContent,
     SyncByteStream,
 )
-from ._utils import peek_filelike_length, primitive_value_to_str
+from ._utils import peek_filelike_length
 
 __all__ = ["ByteStream"]
 
@@ -133,15 +135,36 @@ def encode_content(
     raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
 
 
+def _coerce_type(key: str, value: PrimitiveData) -> Tuple[str, str]:
+    if not isinstance(key, str):
+        raise TypeError(
+            f"Request data keys must be str. " f"Got type {type(key).__name__!r}."
+        )
+
+    if value is True:
+        return (key, "true")
+    elif value is False:
+        return (key, "false")
+    elif value is None:
+        return (key, "")
+    elif isinstance(value, (str, int, float)):
+        return (key, str(value))
+
+    raise TypeError(
+        f"Request data values must be str, int, float, bool, or None. "
+        f"Got type {type(value).__name__!r} for key {key!r}."
+    )
+
+
 def encode_urlencoded_data(
     data: RequestData,
 ) -> tuple[dict[str, str], ByteStream]:
     plain_data = []
     for key, value in data.items():
         if isinstance(value, (list, tuple)):
-            plain_data.extend([(key, primitive_value_to_str(item)) for item in value])
+            plain_data.extend([_coerce_type(key, each) for each in value])
         else:
-            plain_data.append((key, primitive_value_to_str(value)))
+            plain_data.append(_coerce_type(key, value))
     body = urlencode(plain_data, doseq=True).encode("utf-8")
     content_length = str(len(body))
     content_type = "application/x-www-form-urlencoded"
