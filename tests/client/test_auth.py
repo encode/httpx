@@ -3,6 +3,7 @@ Integration tests for authentication.
 
 Unit tests for auth classes also exist in tests/test_auth.py
 """
+
 import hashlib
 import netrc
 import os
