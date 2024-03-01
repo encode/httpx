@@ -626,8 +626,6 @@ class Client(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
         ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
