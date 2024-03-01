@@ -12,7 +12,7 @@ from ._models import Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._urls import URL
 
-__all__ = ["Limits", "Proxy", "Timeout", "create_ssl_context"]
+__all__ = ["Limits", "Proxy", "Timeout", "SSLContext"]
 
 DEFAULT_CIPHERS = ":".join(
     [
