@@ -93,12 +93,11 @@ text = "\n---\n\n[Full changelog](https://github.com/encode/httpx/blob/master/CH
 pattern = 'src="(docs/img/.*?)"'
 replacement = 'src="https://raw.githubusercontent.com/encode/httpx/master/\1"'
 
-# https://beta.ruff.rs/docs/configuration/#using-rufftoml
-[tool.ruff]
+[tool.ruff.lint]
 select = ["E", "F", "I", "B", "PIE"]
 ignore = ["B904", "B028"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
