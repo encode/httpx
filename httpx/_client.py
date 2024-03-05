@@ -767,7 +767,7 @@ class Client(BaseClient):
                 "the expected behaviour on cookie persistence is ambiguous. Set "
                 "cookies directly on the client instance instead."
             )
-            warnings.warn(message, DeprecationWarning)
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
 
         request = self.build_request(
             method=method,
@@ -1469,7 +1469,7 @@ class AsyncClient(BaseClient):
                 "the expected behaviour on cookie persistence is ambiguous. Set "
                 "cookies directly on the client instance instead."
             )
-            warnings.warn(message, DeprecationWarning)
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
 
         request = self.build_request(
             method=method,
