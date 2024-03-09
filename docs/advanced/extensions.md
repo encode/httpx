@@ -2,7 +2,7 @@
 
 Request and response extensions provide a untyped space where additional information may be added.
 
-Extensions should be used for features that may not be available on all transports, and that do not fit neatly into [the simplified request/response model](https://www.encode.io/httpcore/extensions/) that the underlying `httpcore` pacakge uses as it's API.
+Extensions should be used for features that may not be available on all transports, and that do not fit neatly into [the simplified request/response model](https://www.encode.io/httpcore/extensions/) that the underlying `httpcore` package uses as its API.
 
 Several extensions are supported on the request:
 
@@ -152,7 +152,7 @@ When using HTTP/2 there is no further response versioning included in the protoc
 
 The reason-phrase of the HTTP response, as bytes. For example `b"OK"`. Some servers may include a custom reason phrase, although this is not recommended.
 
-HTTP/2 onwards does not include a reason phrase on the wire.
+HTTP/2 Edwards does not include a reason phrase on the wire.
 
 When no key is included, a default based on the status code may be used.
 
