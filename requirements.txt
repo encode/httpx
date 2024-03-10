@@ -2,7 +2,7 @@
 # On the other hand, we're not pinning package dependencies, because our tests
 # needs to pass with the latest version of the packages.
 # Reference: https://github.com/encode/httpx/pull/1721#discussion_r661241588
--e .[brotli,cli,http2,socks]
+-e .[brotli,cli,http2,socks,zstd]
 
 # Optional charset auto-detection
 # Used in our test cases
