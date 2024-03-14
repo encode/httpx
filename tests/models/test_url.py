@@ -284,6 +284,8 @@ def test_url_leading_dot_prefix_on_relative_url():
 def test_param_requires_encoding():
     url = httpx.URL("http://webservice", params={"u": "with spaces"})
     assert str(url) == "http://webservice?u=with%20spaces"
+    url = httpx.URL("http://webservice", params={"u": "%"})
+    assert str(url) == "http://webservice?u=%25"
 
 
 def test_param_does_not_require_encoding():
