@@ -33,6 +33,7 @@ dependencies = [
     "anyio",
     "idna",
     "sniffio",
+    "pydantic>=2.0.0",
 ]
 dynamic = ["readme", "version"]
 
@@ -52,6 +53,7 @@ http2 = [
 socks = [
     "socksio==1.*",
 ]
+
 
 [project.scripts]
 httpx = "httpx:main"

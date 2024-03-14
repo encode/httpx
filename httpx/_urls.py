@@ -4,9 +4,12 @@ import typing
 from urllib.parse import parse_qs, unquote
 
 import idna
+from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
+from pydantic_core import core_schema
 
+from ._exceptions import InvalidURL
 from ._types import QueryParamTypes, RawURL, URLTypes
-from ._urlparse import urlencode, urlparse
+from ._urlparse import MAX_URL_LENGTH, urlencode, urlparse
 from ._utils import primitive_value_to_str
 
 __all__ = ["URL", "QueryParams"]
@@ -415,6 +418,44 @@ class URL:
         )
 
         return f"{self.__class__.__name__}({url!r})"
+
+    @classmethod
+    def _validate(cls, url: str, _: core_schema.ValidationInfo) -> "URL":
+        """
+        Validate a URL from the provided str value.
+        Args:
+            url: The str value to be validated.
+            _: The Pydantic ValidationInfo.
+        Returns:
+            The validated URL.
+        """
+        try:
+            return cls(url=url)
+        except InvalidURL as e:
+            raise ValueError(str(e))
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, type: type[typing.Any], handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        """
+        duplicate of the `AnyUrl` schema, but with the `URL` type from httpx.
+        """
+        return core_schema.with_info_after_validator_function(
+            cls._validate,
+            core_schema.str_schema(min_length=1, max_length=MAX_URL_LENGTH),
+            serialization=core_schema.to_string_ser_schema(),
+        )
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
+    ) -> dict[str, typing.Any]:
+        """
+        duplicate of the `AnyUrl` schema, but with the `URL` type from httpx.
+        """
+        json_schema = handler(schema)
+        return json_schema
 
 
 class QueryParams(typing.Mapping[str, str]):
