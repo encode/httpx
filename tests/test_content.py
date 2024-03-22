@@ -200,7 +200,7 @@ async def test_urlencoded_content():
 
 @pytest.mark.anyio
 async def test_urlencoded_boolean():
-    request = httpx.Request(method, url, data={"example": True})
+    request = httpx.Request(method, url, data={"true": True, "false": False})
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 
@@ -209,11 +209,11 @@ async def test_urlencoded_boolean():
 
     assert request.headers == {
         "Host": "www.example.com",
-        "Content-Length": "12",
+        "Content-Length": "21",
         "Content-Type": "application/x-www-form-urlencoded",
     }
-    assert sync_content == b"example=true"
-    assert async_content == b"example=true"
+    assert sync_content == b"true=true&false=false"
+    assert async_content == b"true=true&false=false"
 
 
 @pytest.mark.anyio
@@ -250,6 +250,21 @@ async def test_urlencoded_list():
     }
     assert sync_content == b"example=a&example=1&example=true"
     assert async_content == b"example=a&example=1&example=true"
+
+
+def test_urlencoded_invalid_key():
+    with pytest.raises(TypeError) as e:
+        httpx.Request(method, url, data={123: "value"})  # type: ignore
+    assert str(e.value) == "Request data keys must be str. Got type 'int'."
+
+
+def test_urlencoded_invalid_value():
+    with pytest.raises(TypeError) as e:
+        httpx.Request(method, url, data={"key": {"this": "ain't json, buddy"}})
+    assert str(e.value) == (
+        "Request data values must be str, int, float, bool, or None. "
+        "Got type 'dict' for key 'key'."
+    )
 
 
 @pytest.mark.anyio
