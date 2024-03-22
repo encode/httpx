@@ -134,3 +134,6 @@ class AsyncByteStream:
 
     async def aclose(self) -> None:
         pass
+
+
+AnyByteStream = Union[SyncByteStream, AsyncByteStream]

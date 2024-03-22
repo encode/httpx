@@ -12,3 +12,4 @@ set -x
 ${PREFIX}ruff format $SOURCE_FILES --diff
 ${PREFIX}mypy $SOURCE_FILES
 ${PREFIX}ruff check $SOURCE_FILES
+${PREFIX}python scripts/unasync.py --check
