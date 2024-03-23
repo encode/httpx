@@ -188,12 +188,6 @@ def cert_authority():
 
 
 @pytest.fixture(scope="session")
-def ca_cert_pem_file(cert_authority):
-    with cert_authority.cert_pem.tempfile() as tmp:
-        yield tmp
-
-
-@pytest.fixture(scope="session")
 def localhost_cert(cert_authority):
     return cert_authority.issue_cert("localhost")
 
@@ -289,19 +283,5 @@ def serve_in_thread(server: TestServer) -> typing.Iterator[TestServer]:
 @pytest.fixture(scope="session")
 def server() -> typing.Iterator[TestServer]:
     config = Config(app=app, lifespan="off", loop="asyncio")
-    server = TestServer(config=config)
-    yield from serve_in_thread(server)
-
-
-@pytest.fixture(scope="session")
-def https_server(cert_pem_file, cert_private_key_file):
-    config = Config(
-        app=app,
-        lifespan="off",
-        ssl_certfile=cert_pem_file,
-        ssl_keyfile=cert_private_key_file,
-        port=8001,
-        loop="asyncio",
-    )
     server = TestServer(config=config)
     yield from serve_in_thread(server)
