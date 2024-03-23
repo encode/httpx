@@ -22,8 +22,6 @@ import ipaddress
 import re
 import typing
 
-import idna
-
 from ._exceptions import InvalidURL
 
 MAX_URL_LENGTH = 65536
@@ -325,8 +323,8 @@ def encode_host(host: str) -> str:
 
     # IDNA hostnames
     try:
-        return idna.encode(host.lower()).decode("ascii")
-    except idna.IDNAError:
+        return host.lower().encode("idna").decode("ascii")
+    except UnicodeError:
         raise InvalidURL(f"Invalid IDNA hostname: {host!r}")
 
 
