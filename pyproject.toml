@@ -52,6 +52,9 @@ http2 = [
 socks = [
     "socksio==1.*",
 ]
+zstd = [
+  "zstandard>=0.18.0",
+]
 
 [project.scripts]
 httpx = "httpx:main"
