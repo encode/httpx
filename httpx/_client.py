@@ -58,6 +58,8 @@ from ._utils import (
     same_origin,
 )
 
+__all__ = ["USE_CLIENT_DEFAULT", "AsyncClient", "Client"]
+
 # The type annotation for @classmethod and context managers here follows PEP 484
 # https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
 T = typing.TypeVar("T", bound="Client")
@@ -340,7 +342,7 @@ class BaseClient:
 
         See also: [Request instances][0]
 
-        [0]: /advanced/#request-instances
+        [0]: /advanced/clients/#request-instances
         """
         url = self._merge_url(url)
         headers = self._merge_headers(headers)
@@ -559,6 +561,15 @@ class BaseClient:
             return None
 
         return request.stream
+
+    def _set_timeout(self, request: Request) -> None:
+        if "timeout" not in request.extensions:
+            timeout = (
+                self.timeout
+                if isinstance(self.timeout, UseClientDefault)
+                else Timeout(self.timeout)
+            )
+            request.extensions = dict(**request.extensions, timeout=timeout.as_dict())
 
 
 class Client(BaseClient):
@@ -801,7 +812,7 @@ class Client(BaseClient):
         [Merging of configuration][0] for how the various parameters
         are merged with client-level configuration.
 
-        [0]: /advanced/#merging-of-configuration
+        [0]: /advanced/clients/#merging-of-configuration
         """
         if cookies is not None:
             message = (
@@ -897,7 +908,7 @@ class Client(BaseClient):
 
         See also: [Request instances][0]
 
-        [0]: /advanced/#request-instances
+        [0]: /advanced/clients/#request-instances
         """
         if self._state == ClientState.CLOSED:
             raise RuntimeError("Cannot send a request, as the client has been closed.")
@@ -908,6 +919,8 @@ class Client(BaseClient):
             if isinstance(follow_redirects, UseClientDefault)
             else follow_redirects
         )
+
+        self._set_timeout(request)
 
         auth = self._build_request_auth(request, auth)
 
@@ -1042,7 +1055,7 @@ class Client(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
+        auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         extensions: RequestExtensions | None = None,
@@ -1379,8 +1392,7 @@ class AsyncClient(BaseClient):
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
-        event_hooks: None
-        | (typing.Mapping[str, list[typing.Callable[..., typing.Any]]]) = None,
+        event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URLTypes = "",
         transport: AsyncBaseTransport | None = None,
         app: typing.Callable[..., typing.Any] | None = None,
@@ -1426,7 +1438,7 @@ class AsyncClient(BaseClient):
             )
             warnings.warn(message, DeprecationWarning)
 
-        allow_env_proxies = trust_env and transport is None
+        allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
@@ -1548,7 +1560,7 @@ class AsyncClient(BaseClient):
         and [Merging of configuration][0] for how the various parameters
         are merged with client-level configuration.
 
-        [0]: /advanced/#merging-of-configuration
+        [0]: /advanced/clients/#merging-of-configuration
         """
 
         if cookies is not None:  # pragma: no cover
@@ -1587,7 +1599,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
+        auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         extensions: RequestExtensions | None = None,
@@ -1645,7 +1657,7 @@ class AsyncClient(BaseClient):
 
         See also: [Request instances][0]
 
-        [0]: /advanced/#request-instances
+        [0]: /advanced/clients/#request-instances
         """
         if self._state == ClientState.CLOSED:
             raise RuntimeError("Cannot send a request, as the client has been closed.")
@@ -1656,6 +1668,8 @@ class AsyncClient(BaseClient):
             if isinstance(follow_redirects, UseClientDefault)
             else follow_redirects
         )
+
+        self._set_timeout(request)
 
         auth = self._build_request_auth(request, auth)
 

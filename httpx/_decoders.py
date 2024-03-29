@@ -3,6 +3,7 @@ Handlers for Content-Encoding.
 
 See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 """
+
 from __future__ import annotations
 
 import codecs
@@ -10,7 +11,7 @@ import io
 import typing
 import zlib
 
-from ._compat import brotli
+from ._compat import brotli, zstd
 from ._exceptions import DecodingError
 
 
@@ -137,6 +138,44 @@ class BrotliDecoder(ContentDecoder):
             return b""
         except brotli.error as exc:  # pragma: no cover
             raise DecodingError(str(exc)) from exc
+
+
+class ZStandardDecoder(ContentDecoder):
+    """
+    Handle 'zstd' RFC 8878 decoding.
+
+    Requires `pip install zstandard`.
+    Can be installed as a dependency of httpx using `pip install httpx[zstd]`.
+    """
+
+    # inspired by the ZstdDecoder implementation in urllib3
+    def __init__(self) -> None:
+        if zstd is None:  # pragma: no cover
+            raise ImportError(
+                "Using 'ZStandardDecoder', ..."
+                "Make sure to install httpx using `pip install httpx[zstd]`."
+            ) from None
+
+        self.decompressor = zstd.ZstdDecompressor().decompressobj()
+
+    def decode(self, data: bytes) -> bytes:
+        assert zstd is not None
+        output = io.BytesIO()
+        try:
+            output.write(self.decompressor.decompress(data))
+            while self.decompressor.eof and self.decompressor.unused_data:
+                unused_data = self.decompressor.unused_data
+                self.decompressor = zstd.ZstdDecompressor().decompressobj()
+                output.write(self.decompressor.decompress(unused_data))
+        except zstd.ZstdError as exc:
+            raise DecodingError(str(exc)) from exc
+        return output.getvalue()
+
+    def flush(self) -> bytes:
+        ret = self.decompressor.flush()  # note: this is a no-op
+        if not self.decompressor.eof:
+            raise DecodingError("Zstandard data is incomplete")  # pragma: no cover
+        return bytes(ret)
 
 
 class MultiDecoder(ContentDecoder):
@@ -322,8 +361,11 @@ SUPPORTED_DECODERS = {
     "gzip": GZipDecoder,
     "deflate": DeflateDecoder,
     "br": BrotliDecoder,
+    "zstd": ZStandardDecoder,
 }
 
 
 if brotli is None:
     SUPPORTED_DECODERS.pop("br")  # pragma: no cover
+if zstd is None:
+    SUPPORTED_DECODERS.pop("zstd")  # pragma: no cover
