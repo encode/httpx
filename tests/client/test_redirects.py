@@ -111,7 +111,7 @@ def redirects(request: httpx.Request) -> httpx.Response:
         status_code = httpx.codes.SEE_OTHER
         headers = {"location": "https://example.org/"}
         history = [httpx.Response(status_code, headers=headers)]
-        return httpx.Response(status_code, headers=headers, history=[history])
+        return httpx.Response(status_code, headers=headers, history=history)
 
     if request.method == "HEAD":
         return httpx.Response(200)
