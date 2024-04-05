@@ -119,6 +119,7 @@ As well as these optional installs:
 * `rich` - Rich terminal support. *(Optional, with `httpx[cli]`)*
 * `click` - Command line client support. *(Optional, with `httpx[cli]`)*
 * `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx[brotli]`)*
+* `zstandard` - Decoding for "zstd" compressed responses. *(Optional, with `httpx[zstd]`)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
@@ -138,10 +139,10 @@ Or, to include the optional HTTP/2 support, use:
 $ pip install httpx[http2]
 ```
 
-To include the optional brotli decoder support, use:
+To include the optional brotli and zstandard decoders support, use:
 
 ```shell
-$ pip install httpx[brotli]
+$ pip install httpx[brotli,zstd]
 ```
 
 HTTPX requires Python 3.8+

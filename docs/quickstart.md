@@ -100,7 +100,8 @@ b'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 
 Any `gzip` and `deflate` HTTP response encodings will automatically
 be decoded for you. If `brotlipy` is installed, then the `brotli` response
-encoding will also be supported.
+encoding will be supported. If `zstandard` is installed, then `zstd`
+response encodings will also be supported.
 
 For example, to create an image from binary data returned by a request, you can use the following code:
 
@@ -362,7 +363,8 @@ Or stream the text, on a line-by-line basis...
 
 HTTPX will use universal line endings, normalising all cases to `\n`.
 
-In some cases you might want to access the raw bytes on the response without applying any HTTP content decoding. In this case any content encoding that the web server has applied such as `gzip`, `deflate`, or `brotli` will not be automatically decoded.
+In some cases you might want to access the raw bytes on the response without applying any HTTP content decoding. In this case any content encoding that the web server has applied such as `gzip`, `deflate`, `brotli`, or `zstd` will
+not be automatically decoded.
 
 ```pycon
 >>> with httpx.stream("GET", "https://www.example.com") as r:
