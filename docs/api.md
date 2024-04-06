@@ -114,7 +114,7 @@ what gets sent over the wire.*
 'example.org'
 ```
 
-* `def __init__(url, allow_relative=False, params=None)`
+* `def __init__(url, **kwargs)`
 * `.scheme` - **str**
 * `.authority` - **str**
 * `.host` - **str**
