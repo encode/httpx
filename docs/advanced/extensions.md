@@ -138,6 +138,47 @@ response = client.get(
 
 This extension is how the `httpx` timeouts are implemented, ensuring that the timeout values are associated with the request instance and passed throughout the stack. You shouldn't typically be working with this extension directly, but use the higher level `timeout` API instead.
 
+### `"target"`
+
+The target that is used as [the HTTP target instead of the URL path](https://datatracker.ietf.org/doc/html/rfc2616#section-5.1.2).
+
+This enables support constructing requests that would otherwise be unsupported.
+
+* URL paths with non-standard escaping applied.
+* Forward proxy requests using an absolute URI.
+* Tunneling proxy requests using `CONNECT` with hostname as the target.
+* Server-wide `OPTIONS *` requests.
+
+Some examples:
+
+Using the 'target' extension to send requests without the standard path escaping rules...
+
+```python
+# Typically a request to "https://www.example.com/test^path" would
+# connect to "www.example.com" and send an HTTP/1.1 request like...
+#
+# GET /test%5Epath HTTP/1.1
+#
+# Using the target extension we can include the literal '^'...
+#
+# GET /test^path HTTP/1.1
+#
+# Note that requests must still be valid HTTP requests.
+# For example including whitespace in the target will raise a `LocalProtocolError`.
+extensions = {"target": b"/test^path"}
+response = httpx.get("https://www.example.com", extensions=extensions)
+```
+
+The `target` extension also allows server-wide `OPTIONS *` requests to be constructed...
+
+```python
+# This will send the following request...
+#
+# CONNECT * HTTP/1.1
+extensions = {"target": b"*"}
+response = httpx.request("CONNECT", "https://www.example.com", extensions=extensions)
+```
+
 ## Response Extensions
 
 ### `"http_version"`
