@@ -2,6 +2,7 @@
 Type definitions for type checking purposes.
 """
 
+import enum
 import ssl
 from http.cookiejar import CookieJar
 from typing import (
@@ -31,7 +32,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from ._urls import URL, QueryParams  # noqa: F401
 
 
-PrimitiveData = Optional[Union[str, int, float, bool]]
+PrimitiveData = Optional[Union[str, int, float, bool, enum.Enum]]
 
 RawURL = NamedTuple(
     "RawURL",
@@ -91,7 +92,7 @@ RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseExtensions = MutableMapping[str, Any]
 
-RequestData = Mapping[str, Any]
+RequestData = Mapping[str, PrimitiveData | Sequence[PrimitiveData]]
 
 FileContent = Union[IO[bytes], bytes, str]
 FileTypes = Union[

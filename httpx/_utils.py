@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import codecs
 import email.message
+import enum
 import ipaddress
 import mimetypes
 import os
@@ -65,7 +66,14 @@ def primitive_value_to_str(value: PrimitiveData) -> str:
         return "false"
     elif value is None:
         return ""
-    return str(value)
+    elif isinstance(value, (int, float)):
+        return str(value)
+    elif isinstance(value, str):
+        return value
+    elif isinstance(value, enum.Enum):
+        # StrEnum and IntEnum is handled above
+        return primitive_value_to_str(value.value)
+    raise TypeError(f"unsupported data type {type(value)}")
 
 
 def is_known_encoding(encoding: str) -> bool:

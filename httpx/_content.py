@@ -10,6 +10,10 @@ from typing import (
     Iterable,
     Iterator,
     Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
 )
 from urllib.parse import urlencode
 
