@@ -22,7 +22,7 @@ and async APIs**.
 Install HTTPX using pip:
 
 ```shell
-$ pip install httpx
+pip install httpx
 ```
 
 Now, let's get started:
@@ -43,7 +43,7 @@ Now, let's get started:
 Or, using the command-line client.
 
 ```shell
-$ pip install 'httpx[cli]'  # The command line client is an optional dependency.
+pip install 'httpx[cli]'  # The command line client is an optional dependency.
 ```
 
 Which now allows us to use HTTPX directly from the command-line...
@@ -94,13 +94,13 @@ Plus all the standard features of `requests`...
 Install with pip:
 
 ```shell
-$ pip install httpx
+pip install httpx
 ```
 
 Or, to include the optional HTTP/2 support, use:
 
 ```shell
-$ pip install httpx[http2]
+pip install httpx[http2]
 ```
 
 HTTPX requires Python 3.8+.
