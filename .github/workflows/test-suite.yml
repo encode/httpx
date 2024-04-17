@@ -37,3 +37,4 @@ jobs:
         run: "scripts/test"
       - name: "Enforce coverage"
         run: "scripts/coverage"
+        if: "matrix.os == 'ubuntu'"

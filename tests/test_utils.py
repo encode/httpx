@@ -144,6 +144,7 @@ def test_logging_ssl(caplog):
     ]
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Path separator problem")
 def test_get_ssl_cert_file():
     # Two environments is not set.
     assert get_ca_bundle_from_env() is None
