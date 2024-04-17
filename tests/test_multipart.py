@@ -213,7 +213,7 @@ def test_multipart_encode(tmp_path: typing.Any) -> None:
 
     url = "https://www.example.com/"
     headers = {"Content-Type": "multipart/form-data; boundary=BOUNDARY"}
-    data = {
+    data: dict[str, typing.Any] = {
         "a": "1",
         "b": b"C",
         "c": ["11", "22", "33"],
