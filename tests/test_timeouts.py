@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 import httpx
@@ -12,6 +14,7 @@ async def test_read_timeout(server):
             await client.get(server.url.copy_with(path="/slow_response"))
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="broken on windows")
 @pytest.mark.anyio
 async def test_write_timeout(server):
     timeout = httpx.Timeout(None, write=1e-6)
@@ -33,6 +36,7 @@ async def test_connect_timeout(server):
             await client.get("http://10.255.255.1/")
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="broken on windows")
 @pytest.mark.anyio
 async def test_pool_timeout(server):
     limits = httpx.Limits(max_connections=1)
