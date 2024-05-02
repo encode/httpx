@@ -15,6 +15,7 @@ Previously we relied on the excellent `rfc3986` package to handle URL parsing an
 validation, but this module provides a simpler alternative, with less indirection
 required.
 """
+
 from __future__ import annotations
 
 import ipaddress

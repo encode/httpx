@@ -2,7 +2,7 @@
 
 Request and response extensions provide a untyped space where additional information may be added.
 
-Extensions should be used for features that may not be available on all transports, and that do not fit neatly into [the simplified request/response model](https://www.encode.io/httpcore/extensions/) that the underlying `httpcore` pacakge uses as it's API.
+Extensions should be used for features that may not be available on all transports, and that do not fit neatly into [the simplified request/response model](https://www.encode.io/httpcore/extensions/) that the underlying `httpcore` package uses as its API.
 
 Several extensions are supported on the request:
 
