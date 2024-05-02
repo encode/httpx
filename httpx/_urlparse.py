@@ -424,13 +424,13 @@ def is_safe(string: str, safe: str = "/") -> bool:
     """
     Determine if a given string is already quote-safe.
     """
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe + "%"
-
-    # All characters must already be non-escaping or '%'
-    for char in string:
-        if char not in NON_ESCAPED_CHARS:
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
+    # All characters must already be non-escaping or valid percent-encoded
+    for index, char in enumerate(string):
+        if char not in NON_ESCAPED_CHARS and not PERCENT_ENCODED_REGEX.match(
+            string[index : index + 3]
+        ):
             return False
-
     return True
 
 
