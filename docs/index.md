@@ -68,7 +68,7 @@ HTTPX builds on the well-established usability of `requests`, and gives you:
 * A broadly [requests-compatible API](compatibility.md).
 * Standard synchronous interface, but with [async support if you need it](async.md).
 * HTTP/1.1 [and HTTP/2 support](http2.md).
-* Ability to make requests directly to [WSGI applications](async.md#calling-into-python-web-apps) or [ASGI applications](async.md#calling-into-python-web-apps).
+* Ability to make requests directly to [WSGI applications](advanced/transports.md#wsgi-transport) or [ASGI applications](advanced/transports.md#asgi-transport).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 100% test coverage.
