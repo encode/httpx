@@ -53,6 +53,8 @@ from ._utils import (
     parse_header_links,
 )
 
+__all__ = ["Cookies", "Headers", "Request", "Response"]
+
 
 class Headers(typing.MutableMapping[str, str]):
     """
@@ -816,7 +818,7 @@ class Response:
     def iter_bytes(self, chunk_size: int | None = None) -> typing.Iterator[bytes]:
         """
         A byte-iterator over the decoded response content.
-        This allows us to handle gzip, deflate, and brotli encoded responses.
+        This allows us to handle gzip, deflate, brotli, and zstd encoded responses.
         """
         if hasattr(self, "_content"):
             chunk_size = len(self._content) if chunk_size is None else chunk_size
@@ -916,7 +918,7 @@ class Response:
     ) -> typing.AsyncIterator[bytes]:
         """
         A byte-iterator over the decoded response content.
-        This allows us to handle gzip, deflate, and brotli encoded responses.
+        This allows us to handle gzip, deflate, brotli, and zstd encoded responses.
         """
         if hasattr(self, "_content"):
             chunk_size = len(self._content) if chunk_size is None else chunk_size

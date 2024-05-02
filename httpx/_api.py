@@ -22,6 +22,18 @@ from ._types import (
     VerifyTypes,
 )
 
+__all__ = [
+    "delete",
+    "get",
+    "head",
+    "options",
+    "patch",
+    "post",
+    "put",
+    "request",
+    "stream",
+]
+
 
 def request(
     method: str,

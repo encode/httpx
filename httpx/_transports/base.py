@@ -8,6 +8,8 @@ from .._models import Request, Response
 T = typing.TypeVar("T", bound="BaseTransport")
 A = typing.TypeVar("A", bound="AsyncBaseTransport")
 
+__all__ = ["AsyncBaseTransport", "BaseTransport"]
+
 
 class BaseTransport:
     def __enter__(self: T) -> T:

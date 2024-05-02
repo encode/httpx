@@ -357,7 +357,7 @@ def test_raw_client_header():
     assert response.json() == [
         ["Host", "example.org"],
         ["Accept", "*/*"],
-        ["Accept-Encoding", "gzip, deflate, br"],
+        ["Accept-Encoding", "gzip, deflate, br, zstd"],
         ["Connection", "keep-alive"],
         ["User-Agent", f"python-httpx/{httpx.__version__}"],
         ["Example-Header", "example-value"],
