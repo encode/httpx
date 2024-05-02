@@ -287,6 +287,7 @@ def test_url_leading_dot_prefix_on_relative_url():
 #
 # Percent-encoding in `params={}` should match browser form behavior.
 
+
 def test_param_with_space():
     # Params passed as form key-value pairs should be escaped.
     url = httpx.URL("http://webservice", params={"u": "with spaces"})
@@ -318,6 +319,7 @@ def test_param_with_existing_escape_requires_encoding():
 # Tests for query parameter percent encoding.
 #
 # Percent-encoding in `url={}` should match browser URL bar behavior.
+
 
 def test_query_with_existing_percent_encoding():
     # Valid percent encoded sequences should not be double encoded.
