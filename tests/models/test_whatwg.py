@@ -23,13 +23,21 @@ with open("tests/models/whatwg.json", "r") as input:
 def test_urlparse(test_case):
     p = urlparse(test_case["href"])
 
+    # Test cases include the protocol with the trailing ":"
     protocol = p.scheme + ":"
+    # Include the square brackets for IPv6 addresses.
     hostname = f"[{p.host}]" if ":" in p.host else p.host
+    # The test cases use a string representation of the port.
     port = "" if p.port is None else str(p.port)
+    # I have nothing to say about this one.
     path = p.path
+    # The 'search' and 'hash' components in the whatwg tests are semantic, not literal.
+    # Our parsing differentiates between no query/hash and empty-string query/hash.
     search = "" if p.query in (None, "") else "?" + str(p.query)
     hash = "" if p.fragment in (None, "") else "#" + str(p.fragment)
 
+    # URL hostnames are case-insensitive.
+    # We normalize these, unlike the WHATWG test cases.
     assert protocol == test_case["protocol"]
     assert hostname.lower() == test_case["hostname"].lower()
     assert port == test_case["port"]

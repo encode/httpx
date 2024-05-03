@@ -415,17 +415,11 @@ def test_urlparse_with_invalid_path():
 
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL(path="//abc")
-    assert (
-        str(exc.value)
-        == "Relative URLs cannot have a path starting with '//'"
-    )
+    assert str(exc.value) == "Relative URLs cannot have a path starting with '//'"
 
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL(path=":abc")
-    assert (
-        str(exc.value)
-        == "Relative URLs cannot have a path starting with ':'"
-    )
+    assert str(exc.value) == "Relative URLs cannot have a path starting with ':'"
 
 
 def test_url_with_relative_path():
