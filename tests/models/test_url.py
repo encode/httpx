@@ -229,6 +229,11 @@ def test_url_normalized_host():
     assert url.host == "example.com"
 
 
+def test_url_percent_escape_host():
+    url = httpx.URL("https://exam%le.com/")
+    assert url.host == "exam%25le.com"
+
+
 def test_url_ipv4_like_host():
     """rare host names used to quality as IPv4"""
     url = httpx.URL("https://023b76x43144/")
@@ -278,22 +283,62 @@ def test_url_leading_dot_prefix_on_relative_url():
     assert url.path == "../abc"
 
 
-# Tests for optional percent encoding
+# Tests for query parameter percent encoding.
+#
+# Percent-encoding in `params={}` should match browser form behavior.
 
 
-def test_param_requires_encoding():
+def test_param_with_space():
+    # Params passed as form key-value pairs should be escaped.
     url = httpx.URL("http://webservice", params={"u": "with spaces"})
     assert str(url) == "http://webservice?u=with%20spaces"
 
 
 def test_param_does_not_require_encoding():
+    # Params passed as form key-value pairs should be escaped.
+    url = httpx.URL("http://webservice", params={"u": "%"})
+    assert str(url) == "http://webservice?u=%25"
+
+
+def test_param_with_percent_encoded():
+    # Params passed as form key-value pairs should always be escaped,
+    # even if they include a valid escape sequence.
+    # We want to match browser form behaviour here.
     url = httpx.URL("http://webservice", params={"u": "with%20spaces"})
-    assert str(url) == "http://webservice?u=with%20spaces"
+    assert str(url) == "http://webservice?u=with%2520spaces"
 
 
 def test_param_with_existing_escape_requires_encoding():
+    # Params passed as form key-value pairs should always be escaped,
+    # even if they include a valid escape sequence.
+    # We want to match browser form behaviour here.
     url = httpx.URL("http://webservice", params={"u": "http://example.com?q=foo%2Fa"})
     assert str(url) == "http://webservice?u=http%3A%2F%2Fexample.com%3Fq%3Dfoo%252Fa"
+
+
+# Tests for query parameter percent encoding.
+#
+# Percent-encoding in `url={}` should match browser URL bar behavior.
+
+
+def test_query_with_existing_percent_encoding():
+    # Valid percent encoded sequences should not be double encoded.
+    url = httpx.URL("http://webservice?u=phrase%20with%20spaces")
+    assert str(url) == "http://webservice?u=phrase%20with%20spaces"
+
+
+def test_query_requiring_percent_encoding():
+    # Characters that require percent encoding should be encoded.
+    url = httpx.URL("http://webservice?u=phrase with spaces")
+    assert str(url) == "http://webservice?u=phrase%20with%20spaces"
+
+
+def test_query_with_mixed_percent_encoding():
+    # When a mix of encoded and unencoded characters are present,
+    # characters that require percent encoding should be encoded,
+    # while existing sequences should not be double encoded.
+    url = httpx.URL("http://webservice?u=phrase%20with spaces")
+    assert str(url) == "http://webservice?u=phrase%20with%20spaces"
 
 
 # Tests for invalid URLs
