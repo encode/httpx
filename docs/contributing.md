@@ -46,14 +46,14 @@ Then clone your fork with the following command replacing `YOUR-USERNAME` with
 your GitHub username:
 
 ```shell
-$ git clone https://github.com/YOUR-USERNAME/httpx
+git clone https://github.com/YOUR-USERNAME/httpx
 ```
 
 You can now install the project and its dependencies using:
 
 ```shell
-$ cd httpx
-$ scripts/install
+cd httpx
+scripts/install
 ```
 
 ## Testing and Linting
@@ -64,7 +64,7 @@ and documentation building workflow.
 To run the tests, use:
 
 ```shell
-$ scripts/test
+scripts/test
 ```
 
 !!! warning
@@ -76,19 +76,19 @@ Any additional arguments will be passed to `pytest`. See the [pytest documentati
 For example, to run a single test script:
 
 ```shell
-$ scripts/test tests/test_multipart.py
+scripts/test tests/test_multipart.py
 ```
 
 To run the code auto-formatting:
 
 ```shell
-$ scripts/lint
+scripts/lint
 ```
 
 Lastly, to run code checks separately (they are also run as part of `scripts/test`), run:
 
 ```shell
-$ scripts/check
+scripts/check
 ```
 
 ## Documenting
@@ -98,7 +98,7 @@ Documentation pages are located under the `docs/` folder.
 To run the documentation site locally (useful for previewing changes), use:
 
 ```shell
-$ scripts/docs
+scripts/docs
 ```
 
 ## Resolving Build / CI Failures
@@ -122,7 +122,7 @@ This job failing means there is either a code formatting issue or type-annotatio
 You can look at the job output to figure out why it's failed or within a shell run:
 
 ```shell
-$ scripts/check
+scripts/check
 ```
 
 It may be worth it to run `$ scripts/lint` to attempt auto-formatting the code
