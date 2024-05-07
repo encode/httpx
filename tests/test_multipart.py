@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import sys
 import tempfile
 import typing
 
@@ -372,13 +371,14 @@ def test_multipart_encode_files_raises_exception_with_StringIO_content() -> None
         httpx.Request("POST", url, data={}, files=files)  # type: ignore
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="TemporaryFile on windows is binary mode"
-)
 def test_multipart_encode_files_raises_exception_with_text_mode_file() -> None:
     url = "https://www.example.com"
-    with tempfile.TemporaryFile(mode="w") as upload:
-        files = {"file": ("test.txt", upload, "text/plain")}
+    # TemporaryFiles are always binary mode on windows.
+    # For this test case where we need a text-mode file.
+    # We make sure to create-and-write in binary mode first,
+    # and then open the file in text mode.
+    with io.StringIO("hello world") as temp:
+        files = {"file": ("test.txt", temp, "text/plain")}
         with pytest.raises(TypeError):
             httpx.Request("POST", url, data={}, files=files)  # type: ignore
 
