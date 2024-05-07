@@ -19,9 +19,9 @@ async def test_get(server):
     assert response.http_version == "HTTP/1.1"
     assert response.headers
     assert repr(response) == "<Response [200 OK]>"
-    if sys.platform != "win32":
-        # flaky on windows
-        assert response.elapsed > timedelta(seconds=0)
+    # time related tests are flaky on windows
+    # Sanity test the property access and return type.
+    assert response.elapsed >= timedelta(seconds=0)
 
 
 @pytest.mark.parametrize(
