@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import tempfile
 import typing
+from pathlib import Path
 
 import pytest
 
@@ -371,7 +372,9 @@ def test_multipart_encode_files_raises_exception_with_StringIO_content() -> None
         httpx.Request("POST", url, data={}, files=files)  # type: ignore
 
 
-def test_multipart_encode_files_raises_exception_with_text_mode_file(tmp_path) -> None:
+def test_multipart_encode_files_raises_exception_with_text_mode_file(
+    tmp_path: Path,
+) -> None:
     url = "https://www.example.com"
     # TemporaryFiles are always binary mode on windows.
     # For this test case where we need a text-mode file.
