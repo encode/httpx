@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 import httpx
@@ -12,6 +14,9 @@ async def test_read_timeout(server):
             await client.get(server.url.copy_with(path="/slow_response"))
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="time related tests are flaky on win32"
+)
 @pytest.mark.anyio
 async def test_write_timeout(server):
     timeout = httpx.Timeout(None, write=1e-6)
