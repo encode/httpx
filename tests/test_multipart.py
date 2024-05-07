@@ -375,7 +375,7 @@ def test_multipart_encode_files_raises_exception_with_text_mode_file() -> None:
     url = "https://www.example.com"
     # TemporaryFiles are always binary mode on windows.
     # For this test case where we need a text-mode file.
-    with io.StringIO("hello world") as temp:
+    with io.StringIO("xxx") as temp:
         files = {"file": ("test.txt", temp, "text/plain")}
         with pytest.raises(TypeError):
             httpx.Request("POST", url, data={}, files=files)  # type: ignore
