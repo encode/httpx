@@ -303,6 +303,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 ),
                 proxy_auth=proxy.raw_auth,
                 proxy_headers=proxy.headers.raw,
+                proxy_ssl_context=proxy.ssl_context,
                 ssl_context=ssl_context,
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
