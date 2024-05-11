@@ -482,11 +482,10 @@ def test_client_request_class():
     assert isinstance(request, Request)
     assert request.content == b"foobar"
 
-    client = httpx.Client()
-    client.request_class = Request
-    request = client.build_request("GET", "http://www.example.com/")
-    assert isinstance(request, Request)
-    assert request.content == b"foobar"
+    with httpx.Client(request_class=Request) as client:
+        request = client.build_request("GET", "http://www.example.com/")
+        assert isinstance(request, Request)
+        assert request.content == b"foobar"
 
 
 @pytest.mark.anyio
@@ -510,9 +509,14 @@ async def test_client_response_class(server):
     with Client() as client:
         response = client.get(server.url)
         assert isinstance(response, Response)
-        assert response.content == b"foobar"
+        assert response.read() == b"foobar"
 
     async with AsyncClient() as async_client:
         response = await async_client.get(server.url)
         assert isinstance(response, AsyncResponse)
         assert await response.aread() == b"foobar"
+
+    with httpx.Client(response_class=Response) as httpx_client:
+        response = httpx_client.get(server.url)
+        assert isinstance(response, Response)
+        assert response.read() == b"foobar"

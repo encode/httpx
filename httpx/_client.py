@@ -202,10 +202,6 @@ class BaseClient:
     def request_class(self) -> type[Request]:
         return self._request_class
 
-    @request_class.setter
-    def request_class(self, request_class: type[Request]) -> None:
-        self._request_class = request_class
-
     @property
     def is_closed(self) -> bool:
         """
