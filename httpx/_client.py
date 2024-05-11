@@ -744,10 +744,6 @@ class Client(BaseClient):
     def response_class(self) -> type[Response]:
         return self._response_class
 
-    @response_class.setter
-    def response_class(self, response_class: type[Response]) -> None:
-        self._response_class = response_class
-
     def _init_transport(
         self,
         verify: VerifyTypes = True,
@@ -793,6 +789,7 @@ class Client(BaseClient):
             limits=limits,
             trust_env=trust_env,
             proxy=proxy,
+            response_class=self.response_class,
         )
 
     def _transport_for_url(self, url: URL) -> BaseTransport:
@@ -1505,10 +1502,6 @@ class AsyncClient(BaseClient):
     def response_class(self) -> type[Response]:
         return self._response_class
 
-    @response_class.setter
-    def response_class(self, response_class: type[Response]) -> None:
-        self._response_class = response_class
-
     def _init_transport(
         self,
         verify: VerifyTypes = True,
@@ -1554,6 +1547,7 @@ class AsyncClient(BaseClient):
             limits=limits,
             trust_env=trust_env,
             proxy=proxy,
+            response_class=self.response_class,
         )
 
     def _transport_for_url(self, url: URL) -> AsyncBaseTransport:
