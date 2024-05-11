@@ -460,3 +460,24 @@ def test_client_decode_text_using_explicit_encoding():
         assert response.reason_phrase == "OK"
         assert response.encoding == "ISO-8859-1"
         assert response.text == text
+
+
+def test_client_request_class():
+    class Request(httpx.Request):
+        def __init__(self, *args, **kwargs):
+            kwargs["content"] = "foobar"
+            super().__init__(*args, **kwargs)
+
+    class Client(httpx.Client):
+        request_class = Request
+
+    class AsyncClient(httpx.AsyncClient):
+        request_class = Request
+
+    request = Client().build_request("GET", "http://www.example.com/")
+    assert isinstance(request, Request)
+    assert request.content == b"foobar"
+
+    request = AsyncClient().build_request("GET", "http://www.example.com/")
+    assert isinstance(request, Request)
+    assert request.content == b"foobar"
