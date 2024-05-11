@@ -481,3 +481,32 @@ def test_client_request_class():
     request = AsyncClient().build_request("GET", "http://www.example.com/")
     assert isinstance(request, Request)
     assert request.content == b"foobar"
+
+
+@pytest.mark.anyio
+async def test_client_response_class(server):
+    class Response(httpx.Response):
+        def iter_bytes(self, chunk_size: int | None = None) -> typing.Iterator[bytes]:
+            yield b"foobar"
+
+    class Client(httpx.Client):
+        response_class = Response
+
+    class AsyncResponse(httpx.Response):
+        async def aiter_bytes(
+            self, chunk_size: int | None = None
+        ) -> typing.AsyncIterator[bytes]:
+            yield b"foobar"
+
+    class AsyncClient(httpx.AsyncClient):
+        response_class = AsyncResponse
+
+    with Client() as client:
+        response = client.get(server.url)
+        assert isinstance(response, Response)
+        assert response.content == b"foobar"
+
+    async with AsyncClient() as async_client:
+        response = await async_client.get(server.url)
+        assert isinstance(response, AsyncResponse)
+        assert await response.aread() == b"foobar"

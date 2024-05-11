@@ -641,6 +641,7 @@ class Client(BaseClient):
         self,
         *,
         request_class: type[Request] | None = None,
+        response_class: type[Response] | None = None,
         auth: AuthTypes | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -706,6 +707,8 @@ class Client(BaseClient):
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
+        self._response_class = response_class or Response
+
         self._transport = self._init_transport(
             verify=verify,
             cert=cert,
@@ -737,6 +740,14 @@ class Client(BaseClient):
 
         self._mounts = dict(sorted(self._mounts.items()))
 
+    @property
+    def response_class(self) -> type[Response]:
+        return self._response_class
+
+    @response_class.setter
+    def response_class(self, response_class: type[Response]) -> None:
+        self._response_class = response_class
+
     def _init_transport(
         self,
         verify: VerifyTypes = True,
@@ -761,6 +772,7 @@ class Client(BaseClient):
             http2=http2,
             limits=limits,
             trust_env=trust_env,
+            response_class=self.response_class,
         )
 
     def _init_proxy_transport(
@@ -1390,6 +1402,7 @@ class AsyncClient(BaseClient):
         self,
         *,
         request_class: type[Request] | None = None,
+        response_class: type[Response] | None = None,
         auth: AuthTypes | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -1455,6 +1468,8 @@ class AsyncClient(BaseClient):
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
+        self._response_class = response_class or Response
+
         self._transport = self._init_transport(
             verify=verify,
             cert=cert,
@@ -1486,6 +1501,14 @@ class AsyncClient(BaseClient):
             )
         self._mounts = dict(sorted(self._mounts.items()))
 
+    @property
+    def response_class(self) -> type[Response]:
+        return self._response_class
+
+    @response_class.setter
+    def response_class(self, response_class: type[Response]) -> None:
+        self._response_class = response_class
+
     def _init_transport(
         self,
         verify: VerifyTypes = True,
@@ -1510,6 +1533,7 @@ class AsyncClient(BaseClient):
             http2=http2,
             limits=limits,
             trust_env=trust_env,
+            response_class=self.response_class,
         )
 
     def _init_proxy_transport(
