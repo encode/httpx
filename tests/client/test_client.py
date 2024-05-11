@@ -482,6 +482,12 @@ def test_client_request_class():
     assert isinstance(request, Request)
     assert request.content == b"foobar"
 
+    client = httpx.Client()
+    client.request_class = Request
+    request = client.build_request("GET", "http://www.example.com/")
+    assert isinstance(request, Request)
+    assert request.content == b"foobar"
+
 
 @pytest.mark.anyio
 async def test_client_response_class(server):
