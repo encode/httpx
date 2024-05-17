@@ -392,8 +392,17 @@ def normalize_path(path: str) -> str:
 
         normalize_path("/path/./to/somewhere/..") == "/path/to"
     """
-    # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
+    # Fast return when no '.' characters in the path.
+    if "." not in path:
+        return path
+
     components = path.split("/")
+
+    # Fast return when no '.' or '..' components in the path.
+    if "." not in components and ".." not in components:
+        return path
+
+    # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
     output: list[str] = []
     for component in components:
         if component == ".":
