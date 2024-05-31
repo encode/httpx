@@ -67,15 +67,18 @@ def primitive_value_to_str(value: PrimitiveData) -> str:
     return str(value)
 
 
-def primitive_value_to_bytes_str(value: PrimitiveData) -> str | bytes:
-    """
-    Coerce a primitive data type into a string value.
-
-    Note that we prefer JSON-style 'true'/'false' for boolean values here.
-    """
-    if isinstance(value, bytes):
+def encode_query_value(value: typing.Any) -> str | bytes:
+    if isinstance(value, str | bytes):
         return value
-    return primitive_value_to_str(value)
+    if value is True:
+        return 'true'
+    if value is False:
+        return 'false'
+    if value is None:
+        return ''
+    if isinstance(value, int | float):
+        return str(value)
+    raise TypeError(f"can't use {type(value)!r} as query value")
 
 
 def is_known_encoding(encoding: str) -> bool:

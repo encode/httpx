@@ -8,7 +8,7 @@ import idna
 
 from ._types import QueryParamTypes, RawURL, URLTypes
 from ._urlparse import urlencode, urlparse
-from ._utils import primitive_value_to_bytes_str
+from ._utils import encode_query_value
 
 __all__ = ["URL", "QueryParams"]
 
@@ -469,7 +469,7 @@ class QueryParams(typing.Mapping[str, str | bytes]):
             # We coerce values `True` and `False` to JSON-like "true" and "false"
             # representations, and coerce `None` values to the empty string.
             self._dict = {
-                str(k): [primitive_value_to_bytes_str(item) for item in v]
+                str(k): [encode_query_value(item) for item in v]
                 for k, v in dict_value.items()
             }
 
@@ -559,7 +559,7 @@ class QueryParams(typing.Mapping[str, str | bytes]):
         """
         q = QueryParams()
         q._dict = copy.deepcopy(self._dict)
-        q._dict[str(key)] = [primitive_value_to_bytes_str(value)]
+        q._dict[str(key)] = [encode_query_value(value)]
         return q
 
     def add(self, key: str, value: typing.Any = None) -> QueryParams:
@@ -574,7 +574,7 @@ class QueryParams(typing.Mapping[str, str | bytes]):
         """
         q = QueryParams()
         q._dict = copy.deepcopy(self._dict)
-        q._dict[str(key)] = q.get_list(key) + [primitive_value_to_bytes_str(value)]
+        q._dict[str(key)] = q.get_list(key) + [encode_query_value(value)]
         return q
 
     def remove(self, key: str) -> QueryParams:
