@@ -424,7 +424,7 @@ def percent_encoded(string: str, safe: str = "/") -> str:
     """
     Use percent-encoding to quote a string.
     """
-    if isinstance(string,bytes):
+    if isinstance(string, bytes):
         return quote_from_bytes(string)
 
     NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe

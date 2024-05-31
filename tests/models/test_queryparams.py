@@ -138,4 +138,4 @@ def test_queryparams_are_hashable():
 
 def test_queryparams_bytes():
     q = httpx.QueryParams({"q": bytes.fromhex("E1EE0E2734986F5419BB6C")})
-    assert str(q) == 'q=%E1%EE%0E%274%98oT%19%BBl'
+    assert str(q) == "q=%E1%EE%0E%274%98oT%19%BBl"
