@@ -425,17 +425,17 @@ class QueryParams(typing.Mapping[str, str | bytes]):
 
     _dict: dict[str, list[str | bytes]]
 
-    __slots__ = '_dict',
+    __slots__ = ("_dict",)
 
     @typing.overload
-    def __init__(self, qs: QueryParamTypes, /) -> None:
+    def __init__(self, qs: QueryParamTypes | None, /) -> None:
         ...
 
     @typing.overload
     def __init__(self, /, **kwargs: typing.Any) -> None:
         ...
 
-    def __init__(self, *args: QueryParamTypes | None, **kwargs: typing.Any) -> None:
+    def __init__(self, /, *args: QueryParamTypes | None, **kwargs: typing.Any) -> None:
         assert len(args) < 2, "Too many arguments."
         assert not (args and kwargs), "Cannot mix named and unnamed arguments."
 
@@ -443,7 +443,7 @@ class QueryParams(typing.Mapping[str, str | bytes]):
 
         if value is None or isinstance(value, (str, bytes)):
             value = value.decode("ascii") if isinstance(value, bytes) else value
-            self._dict = dict(parse_qs(value, keep_blank_values=True))
+            self._dict = parse_qs(value, keep_blank_values=True)  # type: ignore[assignment]
         elif isinstance(value, QueryParams):
             self._dict = {k: list(v) for k, v in value._dict.items()}
         else:
@@ -469,9 +469,7 @@ class QueryParams(typing.Mapping[str, str | bytes]):
             # We coerce values `True` and `False` to JSON-like "true" and "false"
             # representations, and coerce `None` values to the empty string.
             self._dict = {
-                str(k): [
-                    primitive_value_to_bytes_str(item) for item in v
-                ]
+                str(k): [primitive_value_to_bytes_str(item) for item in v]
                 for k, v in dict_value.items()
             }
 
@@ -612,7 +610,7 @@ class QueryParams(typing.Mapping[str, str | bytes]):
         q._dict = {**self._dict, **q._dict}
         return q
 
-    def __getitem__(self, key: typing.Any) -> str:
+    def __getitem__(self, key: typing.Any) -> str | bytes:
         return self._dict[key][0]
 
     def __contains__(self, key: typing.Any) -> bool:
@@ -665,8 +663,8 @@ class QueryParams(typing.Mapping[str, str | bytes]):
 
 if typing.TYPE_CHECKING:
     # assert typing error
-    QueryParams('q=a', {'q': 'a'})  # type: ignore[call-overload]
-    QueryParams({'a': 1}, {'q': 'a'})  # type: ignore[call-overload]
-    QueryParams('q=a')
-    QueryParams({'q': 'a'})
-    QueryParams(q='a')
+    QueryParams("q=a", {"q": "a"})  # type: ignore[call-overload]
+    QueryParams({"a": 1}, {"q": "a"})  # type: ignore[call-overload]
+    QueryParams("q=a")
+    QueryParams({"q": "a"})
+    QueryParams(q="a")

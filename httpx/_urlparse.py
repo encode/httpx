@@ -481,7 +481,7 @@ def quote(string: str, safe: str = "/") -> str:
     return "".join(parts)
 
 
-def urlencode(items: list[tuple[str, str]]) -> str:
+def urlencode(items: list[tuple[str, str | bytes]]) -> str:
     """
     We can use a much simpler version of the stdlib urlencode here because
     we don't need to handle a bunch of different typing cases, such as bytes vs str.
