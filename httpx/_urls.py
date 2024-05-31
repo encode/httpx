@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import typing
 from urllib.parse import parse_qs, unquote
 
@@ -7,7 +8,7 @@ import idna
 
 from ._types import QueryParamTypes, RawURL, URLTypes
 from ._urlparse import urlencode, urlparse
-from ._utils import primitive_value_to_str
+from ._utils import primitive_value_to_bytes_str
 
 __all__ = ["URL", "QueryParams"]
 
@@ -417,10 +418,22 @@ class URL:
         return f"{self.__class__.__name__}({url!r})"
 
 
-class QueryParams(typing.Mapping[str, str]):
+class QueryParams(typing.Mapping[str, str | bytes]):
     """
     URL query parameters, as a multi-dict.
     """
+
+    _dict: dict[str, list[str | bytes]]
+
+    __slots__ = '_dict',
+
+    @typing.overload
+    def __init__(self, qs: QueryParamTypes, /) -> None:
+        ...
+
+    @typing.overload
+    def __init__(self, /, **kwargs: typing.Any) -> None:
+        ...
 
     def __init__(self, *args: QueryParamTypes | None, **kwargs: typing.Any) -> None:
         assert len(args) < 2, "Too many arguments."
@@ -430,7 +443,7 @@ class QueryParams(typing.Mapping[str, str]):
 
         if value is None or isinstance(value, (str, bytes)):
             value = value.decode("ascii") if isinstance(value, bytes) else value
-            self._dict = parse_qs(value, keep_blank_values=True)
+            self._dict = dict(parse_qs(value, keep_blank_values=True))
         elif isinstance(value, QueryParams):
             self._dict = {k: list(v) for k, v in value._dict.items()}
         else:
@@ -456,7 +469,9 @@ class QueryParams(typing.Mapping[str, str]):
             # We coerce values `True` and `False` to JSON-like "true" and "false"
             # representations, and coerce `None` values to the empty string.
             self._dict = {
-                str(k): [primitive_value_to_str(item) for item in v]
+                str(k): [
+                    primitive_value_to_bytes_str(item) for item in v
+                ]
                 for k, v in dict_value.items()
             }
 
@@ -471,7 +486,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return self._dict.keys()
 
-    def values(self) -> typing.ValuesView[str]:
+    def values(self) -> typing.ValuesView[str | bytes]:
         """
         Return all the values in the query params. If a key occurs more than once
         only the first item for that key is returned.
@@ -483,7 +498,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return {k: v[0] for k, v in self._dict.items()}.values()
 
-    def items(self) -> typing.ItemsView[str, str]:
+    def items(self) -> typing.ItemsView[str, str | bytes]:
         """
         Return all items in the query params. If a key occurs more than once
         only the first item for that key is returned.
@@ -495,7 +510,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return {k: v[0] for k, v in self._dict.items()}.items()
 
-    def multi_items(self) -> list[tuple[str, str]]:
+    def multi_items(self) -> list[tuple[str, str | bytes]]:
         """
         Return all items in the query params. Allow duplicate keys to occur.
 
@@ -504,7 +519,7 @@ class QueryParams(typing.Mapping[str, str]):
         q = httpx.QueryParams("a=123&a=456&b=789")
         assert list(q.multi_items()) == [("a", "123"), ("a", "456"), ("b", "789")]
         """
-        multi_items: list[tuple[str, str]] = []
+        multi_items: list[tuple[str, str | bytes]] = []
         for k, v in self._dict.items():
             multi_items.extend([(k, i) for i in v])
         return multi_items
@@ -523,7 +538,7 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[str(key)][0]
         return default
 
-    def get_list(self, key: str) -> list[str]:
+    def get_list(self, key: str) -> list[str | bytes]:
         """
         Get all values from the query param for a given key.
 
@@ -545,8 +560,8 @@ class QueryParams(typing.Mapping[str, str]):
         assert q == httpx.QueryParams("a=456")
         """
         q = QueryParams()
-        q._dict = dict(self._dict)
-        q._dict[str(key)] = [primitive_value_to_str(value)]
+        q._dict = copy.deepcopy(self._dict)
+        q._dict[str(key)] = [primitive_value_to_bytes_str(value)]
         return q
 
     def add(self, key: str, value: typing.Any = None) -> QueryParams:
@@ -560,8 +575,8 @@ class QueryParams(typing.Mapping[str, str]):
         assert q == httpx.QueryParams("a=123&a=456")
         """
         q = QueryParams()
-        q._dict = dict(self._dict)
-        q._dict[str(key)] = q.get_list(key) + [primitive_value_to_str(value)]
+        q._dict = copy.deepcopy(self._dict)
+        q._dict[str(key)] = q.get_list(key) + [primitive_value_to_bytes_str(value)]
         return q
 
     def remove(self, key: str) -> QueryParams:
@@ -575,7 +590,7 @@ class QueryParams(typing.Mapping[str, str]):
         assert q == httpx.QueryParams("")
         """
         q = QueryParams()
-        q._dict = dict(self._dict)
+        q._dict = copy.deepcopy(self._dict)
         q._dict.pop(str(key), None)
         return q
 
@@ -646,3 +661,12 @@ class QueryParams(typing.Mapping[str, str]):
             "QueryParams are immutable since 0.18.0. "
             "Use `q = q.set(key, value)` to create an updated copy."
         )
+
+
+if typing.TYPE_CHECKING:
+    # assert typing error
+    QueryParams('q=a', {'q': 'a'})  # type: ignore[call-overload]
+    QueryParams({'a': 1}, {'q': 'a'})  # type: ignore[call-overload]
+    QueryParams('q=a')
+    QueryParams({'q': 'a'})
+    QueryParams(q='a')

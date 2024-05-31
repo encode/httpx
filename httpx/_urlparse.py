@@ -21,6 +21,7 @@ from __future__ import annotations
 import ipaddress
 import re
 import typing
+import urllib.parse
 
 import idna
 
@@ -35,7 +36,6 @@ UNRESERVED_CHARACTERS = (
 SUB_DELIMS = "!$&'()*+,;="
 
 PERCENT_ENCODED_REGEX = re.compile("%[A-Fa-f0-9]{2}")
-
 
 # {scheme}:      (optional)
 # //{authority}  (optional)
@@ -72,7 +72,6 @@ AUTHORITY_REGEX = re.compile(
     )
 )
 
-
 # If we call urlparse with an individual component, then we need to regex
 # validate that component individually.
 # Note that we're duplicating the same strings as above. Shock! Horror!!
@@ -86,7 +85,6 @@ COMPONENT_REGEX = {
     "host": re.compile("(\\[.*\\]|[^:]*)"),
     "port": re.compile(".*"),
 }
-
 
 # We use these simple regexs as a first pass before handing off to
 # the stdlib 'ipaddress' module for IP address validation.
@@ -434,10 +432,13 @@ def is_safe(string: str, safe: str = "/") -> bool:
     return True
 
 
-def percent_encoded(string: str, safe: str = "/") -> str:
+def percent_encoded(string: str | bytes, safe: str = "/") -> str:
     """
     Use percent-encoding to quote a string.
     """
+    if isinstance(string, bytes):
+        return urllib.parse.quote_from_bytes(string)
+
     if is_safe(string, safe=safe):
         return string
 

@@ -18,7 +18,6 @@ from ._types import PrimitiveData
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._urls import URL
 
-
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
 _HTML5_FORM_ENCODING_REPLACEMENTS.update(
     {chr(c): "%{:02X}".format(c) for c in range(0x1F + 1) if c != 0x1B}
@@ -66,6 +65,17 @@ def primitive_value_to_str(value: PrimitiveData) -> str:
     elif value is None:
         return ""
     return str(value)
+
+
+def primitive_value_to_bytes_str(value: PrimitiveData) -> str | bytes:
+    """
+    Coerce a primitive data type into a string value.
+
+    Note that we prefer JSON-style 'true'/'false' for boolean values here.
+    """
+    if isinstance(value, bytes):
+        return value
+    return primitive_value_to_str(value)
 
 
 def is_known_encoding(encoding: str) -> bool:
