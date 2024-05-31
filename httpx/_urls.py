@@ -418,7 +418,7 @@ class URL:
         return f"{self.__class__.__name__}({url!r})"
 
 
-class QueryParams(typing.Mapping[str, str | bytes]):
+class QueryParams(typing.Mapping[str, typing.Union[str, bytes]]):
     """
     URL query parameters, as a multi-dict.
     """

@@ -68,7 +68,7 @@ def primitive_value_to_str(value: PrimitiveData) -> str:
 
 
 def encode_query_value(value: typing.Any) -> str | bytes:
-    if isinstance(value, str | bytes):
+    if isinstance(value, (str, bytes)):
         return value
     if value is True:
         return "true"
@@ -76,7 +76,7 @@ def encode_query_value(value: typing.Any) -> str | bytes:
         return "false"
     if value is None:
         return ""
-    if isinstance(value, int | float):
+    if isinstance(value, (int, float)):
         return str(value)
     raise TypeError(f"can't use {type(value)!r} as query value")
 
