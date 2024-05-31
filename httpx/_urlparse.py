@@ -21,7 +21,7 @@ from __future__ import annotations
 import ipaddress
 import re
 import typing
-import urllib.parse
+from urllib.parse import quote_from_bytes
 
 import idna
 
@@ -36,6 +36,7 @@ UNRESERVED_CHARACTERS = (
 SUB_DELIMS = "!$&'()*+,;="
 
 PERCENT_ENCODED_REGEX = re.compile("%[A-Fa-f0-9]{2}")
+
 
 # {scheme}:      (optional)
 # //{authority}  (optional)
@@ -72,6 +73,7 @@ AUTHORITY_REGEX = re.compile(
     )
 )
 
+
 # If we call urlparse with an individual component, then we need to regex
 # validate that component individually.
 # Note that we're duplicating the same strings as above. Shock! Horror!!
@@ -85,6 +87,7 @@ COMPONENT_REGEX = {
     "host": re.compile("(\\[.*\\]|[^:]*)"),
     "port": re.compile(".*"),
 }
+
 
 # We use these simple regexs as a first pass before handing off to
 # the stdlib 'ipaddress' module for IP address validation.
@@ -390,8 +393,17 @@ def normalize_path(path: str) -> str:
 
         normalize_path("/path/./to/somewhere/..") == "/path/to"
     """
-    # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
+    # Fast return when no '.' characters in the path.
+    if "." not in path:
+        return path
+
     components = path.split("/")
+
+    # Fast return when no '.' or '..' components in the path.
+    if "." not in components and ".." not in components:
+        return path
+
+    # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
     output: list[str] = []
     for component in components:
         if component == ".":
@@ -404,47 +416,25 @@ def normalize_path(path: str) -> str:
     return "/".join(output)
 
 
-def percent_encode(char: str) -> str:
-    """
-    Replace a single character with the percent-encoded representation.
-
-    Characters outside the ASCII range are represented with their a percent-encoded
-    representation of their UTF-8 byte sequence.
-
-    For example:
-
-        percent_encode(" ") == "%20"
-    """
-    return "".join([f"%{byte:02x}" for byte in char.encode("utf-8")]).upper()
+def PERCENT(string: str) -> str:
+    return "".join([f"%{byte:02X}" for byte in string.encode("utf-8")])
 
 
-def is_safe(string: str, safe: str = "/") -> bool:
-    """
-    Determine if a given string is already quote-safe.
-    """
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe + "%"
-
-    # All characters must already be non-escaping or '%'
-    for char in string:
-        if char not in NON_ESCAPED_CHARS:
-            return False
-
-    return True
-
-
-def percent_encoded(string: str | bytes, safe: str = "/") -> str:
+def percent_encoded(string: str, safe: str = "/") -> str:
     """
     Use percent-encoding to quote a string.
     """
-    if isinstance(string, bytes):
-        return urllib.parse.quote_from_bytes(string)
-
-    if is_safe(string, safe=safe):
-        return string
+    if isinstance(string,bytes):
+        return quote_from_bytes(string)
 
     NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
+
+    # Fast path for strings that don't need escaping.
+    if not string.rstrip(NON_ESCAPED_CHARS):
+        return string
+
     return "".join(
-        [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]
+        [char if char in NON_ESCAPED_CHARS else PERCENT(char) for char in string]
     )
 
 
@@ -481,7 +471,7 @@ def quote(string: str, safe: str = "/") -> str:
     return "".join(parts)
 
 
-def urlencode(items: list[tuple[str, str | bytes]]) -> str:
+def urlencode(items: list[tuple[str, str]]) -> str:
     """
     We can use a much simpler version of the stdlib urlencode here because
     we don't need to handle a bunch of different typing cases, such as bytes vs str.
