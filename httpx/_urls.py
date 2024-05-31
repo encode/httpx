@@ -659,7 +659,7 @@ class QueryParams(typing.Mapping[str, typing.Union[str, bytes]]):
         )
 
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     # assert typing error
     QueryParams("q=a", {"q": "a"})  # type: ignore[call-overload]
     QueryParams({"a": 1}, {"q": "a"})  # type: ignore[call-overload]
