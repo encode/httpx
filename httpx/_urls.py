@@ -428,12 +428,10 @@ class QueryParams(typing.Mapping[str, str | bytes]):
     __slots__ = ("_dict",)
 
     @typing.overload
-    def __init__(self, qs: QueryParamTypes | None, /) -> None:
-        ...
+    def __init__(self, qs: QueryParamTypes | None, /) -> None: ...
 
     @typing.overload
-    def __init__(self, /, **kwargs: typing.Any) -> None:
-        ...
+    def __init__(self, /, **kwargs: typing.Any) -> None: ...
 
     def __init__(self, /, *args: QueryParamTypes | None, **kwargs: typing.Any) -> None:
         assert len(args) < 2, "Too many arguments."
