@@ -7,7 +7,6 @@ import typing
 import urllib.request
 from collections.abc import Mapping
 from http.cookiejar import Cookie, CookieJar
-from typing import Self
 
 from ._content import ByteStream, UnattachedStream, encode_request, encode_response
 from ._decoders import (
@@ -726,7 +725,7 @@ class Response:
             and "Location" in self.headers
         )
 
-    def raise_for_status(self: Type[Self]) -> Self:
+    def raise_for_status(self) -> Response:
         """
         Raise the `HTTPStatusError` if one occurred.
         """
@@ -824,7 +823,7 @@ class Response:
         if hasattr(self, "_content"):
             chunk_size = len(self._content) if chunk_size is None else chunk_size
             for i in range(0, len(self._content), max(chunk_size, 1)):
-                yield self._content[i: i + chunk_size]
+                yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
             chunker = ByteChunker(chunk_size=chunk_size)
@@ -924,7 +923,7 @@ class Response:
         if hasattr(self, "_content"):
             chunk_size = len(self._content) if chunk_size is None else chunk_size
             for i in range(0, len(self._content), max(chunk_size, 1)):
-                yield self._content[i: i + chunk_size]
+                yield self._content[i : i + chunk_size]
         else:
             decoder = self._get_content_decoder()
             chunker = ByteChunker(chunk_size=chunk_size)
@@ -1117,8 +1116,8 @@ class Cookies(typing.MutableMapping[str, str]):
             cookie
             for cookie in self.jar
             if cookie.name == name
-               and (domain is None or cookie.domain == domain)
-               and (path is None or cookie.path == path)
+            and (domain is None or cookie.domain == domain)
+            and (path is None or cookie.path == path)
         ]
 
         for cookie in remove:
