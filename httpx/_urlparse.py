@@ -420,7 +420,7 @@ def PERCENT(string: str) -> str:
     return "".join([f"%{byte:02X}" for byte in string.encode("utf-8")])
 
 
-def percent_encoded(string: str, safe: str = "/") -> str:
+def percent_encoded(string: str | bytes, safe: str = "/") -> str:
     """
     Use percent-encoding to quote a string.
     """
@@ -471,7 +471,7 @@ def quote(string: str, safe: str = "/") -> str:
     return "".join(parts)
 
 
-def urlencode(items: list[tuple[str, str]]) -> str:
+def urlencode(items: list[tuple[str, str | bytes]]) -> str:
     """
     We can use a much simpler version of the stdlib urlencode here because
     we don't need to handle a bunch of different typing cases, such as bytes vs str.
