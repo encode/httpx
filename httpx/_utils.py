@@ -65,14 +65,7 @@ def primitive_value_to_str(value: PrimitiveData) -> str:
         return "false"
     elif value is None:
         return ""
-    elif isinstance(value, (int, float)):
-        return str(value)
-    elif isinstance(value, str):
-        return value
-    elif isinstance(value, enum.Enum):
-        # StrEnum and IntEnum is handled above
-        return primitive_value_to_str(value.value)
-    raise TypeError(f"unsupported data type {type(value)}")
+    return str(value)
 
 
 def primitive_form_value_to_str(value: FormPrimitiveData) -> str:
