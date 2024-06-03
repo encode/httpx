@@ -1,3 +1,4 @@
+import enum
 import re
 import types
 
@@ -77,6 +78,13 @@ def test_queryparam_types():
 
     q = httpx.QueryParams({"a": [1, 2]})
     assert str(q) == "a=1&a=2"
+
+    class E(enum.Enum):
+        v1 = 1
+        v2 = "v2"
+
+    q = httpx.QueryParams({"a": [E.v1, E.v2]})
+    assert str(q) == "a=1&a=v2"
 
 
 def test_empty_query_params():
