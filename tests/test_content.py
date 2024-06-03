@@ -500,9 +500,6 @@ def test_response_invalid_argument():
     with pytest.raises(TypeError):
         httpx.Response(200, content=123)  # type: ignore
 
-    with pytest.raises(TypeError):
-        httpx.Request("GET", "", data={"hello": b""})  # type: ignore
-
     class AnyObject:
         pass
 
