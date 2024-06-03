@@ -87,7 +87,7 @@ def primitive_form_value_to_str(value: FormPrimitiveData) -> str:
         return str(value)
     if isinstance(value, str):
         return value
-    raise TypeError(f"unsupported data type {type(value)} as form-data value")
+    raise TypeError(f"unsupported data type {type(value)} as form value")
 
 
 def is_known_encoding(encoding: str) -> bool:
