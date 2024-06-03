@@ -174,7 +174,7 @@ class BaseClient:
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URLTypes = "",
         trust_env: bool = True,
-        default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
+        default_encoding: str | typing.Callable[[bytes], str | None] = "utf-8",
     ) -> None:
         event_hooks = {} if event_hooks is None else event_hooks
 
@@ -649,7 +649,7 @@ class Client(BaseClient):
         transport: BaseTransport | None = None,
         app: typing.Callable[..., typing.Any] | None = None,
         trust_env: bool = True,
-        default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
+        default_encoding: str | typing.Callable[[bytes], str | None] = "utf-8",
     ) -> None:
         super().__init__(
             auth=auth,
@@ -1396,7 +1396,7 @@ class AsyncClient(BaseClient):
         transport: AsyncBaseTransport | None = None,
         app: typing.Callable[..., typing.Any] | None = None,
         trust_env: bool = True,
-        default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
+        default_encoding: str | typing.Callable[[bytes], str | None] = "utf-8",
     ) -> None:
         super().__init__(
             auth=auth,
