@@ -47,7 +47,7 @@ class DataField:
                 f"Invalid type for name. Expected str, got {type(name)}: {name!r}"
             )
         if value is not None and not isinstance(value, (str, bytes)):
-            raise TypeError(
+            raise TypeError(  # pragma: no cover
                 "Invalid type for value. Expected primitive type,"
                 f" got {type(value)}: {value!r}"
             )
