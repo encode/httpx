@@ -189,7 +189,13 @@ async def test_urlencoded_content():
     request = httpx.Request(
         method,
         url,
-        data={"Hello": "world!", "foo": Flag.flag, "like": True, "bar": 123},
+        data={
+            "Hello": "world!",
+            "foo": Flag.flag,
+            "like": True,
+            "bar": 123,
+            "egg": False,
+        },
     )
     assert isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
@@ -199,11 +205,11 @@ async def test_urlencoded_content():
 
     assert request.headers == {
         "Host": "www.example.com",
-        "Content-Length": "38",
+        "Content-Length": "48",
         "Content-Type": "application/x-www-form-urlencoded",
     }
-    assert sync_content == b"Hello=world%21&foo=f&like=true&bar=123"
-    assert async_content == b"Hello=world%21&foo=f&like=true&bar=123"
+    assert sync_content == b"Hello=world%21&foo=f&like=true&bar=123&egg=false"
+    assert async_content == b"Hello=world%21&foo=f&like=true&bar=123&egg=false"
 
 
 @pytest.mark.anyio
