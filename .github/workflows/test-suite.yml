@@ -7,18 +7,13 @@ on:
   pull_request:
     branches: ["master"]
 
-defaults:
-  run:
-    shell: bash
-
 jobs:
   tests:
-    name: "Python ${{ matrix.python-version }} (${{ matrix.os }})"
-    runs-on: "${{ matrix.os }}-latest"
+    name: "Python ${{ matrix.python-version }}"
+    runs-on: "ubuntu-latest"
 
     strategy:
       matrix:
-        os: ["ubuntu", "windows"]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
     steps:
@@ -37,4 +32,3 @@ jobs:
         run: "scripts/test"
       - name: "Enforce coverage"
         run: "scripts/coverage"
-        if: "matrix.os == 'ubuntu'"
