@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import codecs
 import email.message
+import enum
 import ipaddress
 import mimetypes
 import os
@@ -78,6 +79,8 @@ def encode_query_value(value: typing.Any) -> str | bytes:
         return ""
     if isinstance(value, (int, float)):
         return str(value)
+    if isinstance(value, enum.Enum):
+        return encode_query_value(value.value)
     raise TypeError(f"can't use {type(value)!r} as query value")
 
 
