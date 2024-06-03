@@ -68,7 +68,7 @@ def primitive_value_to_str(value: PrimitiveData) -> str:
     return str(value)
 
 
-def primitive_form_value_to_str(value: FormPrimitiveData) -> str:
+def primitive_form_value_to_str(value: FormPrimitiveData) -> str | bytes:
     """
     Coerce a primitive data type into a string value.
 
@@ -85,7 +85,7 @@ def primitive_form_value_to_str(value: FormPrimitiveData) -> str:
         return primitive_form_value_to_str(value.value)
     if isinstance(value, (int, float)):
         return str(value)
-    if isinstance(value, str):
+    if isinstance(value, (str, bytes)):
         return value
     raise TypeError(f"unsupported data type {type(value)} as form value")
 
