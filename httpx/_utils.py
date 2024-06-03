@@ -87,7 +87,9 @@ def primitive_form_value_to_str(value: FormPrimitiveData) -> str | bytes:
         return str(value)
     if isinstance(value, (str, bytes)):
         return value
-    raise TypeError(f"unsupported data type {type(value)} as form value")
+    raise TypeError(
+        f"Invalid type for value. Expected FormPrimitiveData, got {type(value)} instead"
+    )
 
 
 def is_known_encoding(encoding: str) -> bool:
