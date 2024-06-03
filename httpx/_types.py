@@ -32,7 +32,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from ._urls import URL, QueryParams  # noqa: F401
 
 
-PrimitiveData = Optional[Union[str, int, float, bool, enum.Enum]]
+PrimitiveData = Optional[Union[str, int, float, bool]]
 
 RawURL = NamedTuple(
     "RawURL",
@@ -92,7 +92,14 @@ RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseExtensions = MutableMapping[str, Any]
 
-RequestData = Mapping[str, PrimitiveData | Sequence[PrimitiveData]]
+RequestData = Mapping[
+    str,
+    Union[
+        Union[PrimitiveData, None, enum.Enum],
+        List[Union[PrimitiveData, None, enum.Enum]],
+        Tuple[Union[PrimitiveData, None, enum.Enum],...],
+    ],
+]
 
 FileContent = Union[IO[bytes], bytes, str]
 FileTypes = Union[

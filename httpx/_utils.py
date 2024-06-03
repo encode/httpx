@@ -54,7 +54,7 @@ def normalize_header_value(value: str | bytes, encoding: str | None = None) -> b
     return value.encode(encoding or "ascii")
 
 
-def primitive_value_to_str(value: PrimitiveData) -> str:
+def primitive_value_to_str(value: PrimitiveData|None|enum.Enum) -> str:
     """
     Coerce a primitive data type into a string value.
 

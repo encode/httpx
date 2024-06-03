@@ -127,7 +127,7 @@ def test_multipart_file_tuple():
 
     # Test with a list of values 'data' argument,
     #     and a tuple style 'files' argument.
-    data = {"text": ["abc"]}
+    data: typing.Any = {"text": ["abc"]}
     files = {"file": ("name.txt", io.BytesIO(b"<file content>"))}
     response = client.post("http://127.0.0.1:8000/", data=data, files=files)
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
