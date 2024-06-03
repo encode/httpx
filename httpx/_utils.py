@@ -70,7 +70,7 @@ def primitive_value_to_str(value: PrimitiveData) -> str:
 
 def primitive_form_value_to_str(value: FormPrimitiveData) -> str | bytes:
     """
-    Coerce a primitive data type into a string value.
+    Coerce a primitive data type into a form value.
 
     Note that we prefer JSON-style 'true'/'false' for boolean values here.
     """
