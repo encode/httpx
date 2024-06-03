@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import random
-import sys
 
 import certifi
 import pytest
@@ -123,7 +122,6 @@ def test_logging_redirect_chain(server, caplog):
     ]
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Path separator problem")
 def test_logging_ssl(caplog):
     caplog.set_level(logging.DEBUG)
     with httpx.Client():
@@ -144,7 +142,6 @@ def test_logging_ssl(caplog):
     ]
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Path separator problem")
 def test_get_ssl_cert_file():
     # Two environments is not set.
     assert get_ca_bundle_from_env() is None

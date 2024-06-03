@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import sys
 import tempfile
 import typing
 
@@ -372,9 +371,6 @@ def test_multipart_encode_files_raises_exception_with_StringIO_content() -> None
         httpx.Request("POST", url, data={}, files=files)  # type: ignore
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="TemporaryFile on windows is binary mode"
-)
 def test_multipart_encode_files_raises_exception_with_text_mode_file() -> None:
     url = "https://www.example.com"
     with tempfile.TemporaryFile(mode="w") as upload:
