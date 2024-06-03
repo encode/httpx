@@ -91,7 +91,7 @@ RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseExtensions = MutableMapping[str, Any]
 
-FormPrimitiveData = Union[str, int, float, bool, None, enum.Enum]
+FormPrimitiveData = Union[str, bytes, int, float, bool, None, enum.Enum]
 
 RequestData = Mapping[
     str,

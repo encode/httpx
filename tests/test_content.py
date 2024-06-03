@@ -71,7 +71,7 @@ async def test_async_bytesio_content():
             self._content = content
 
         async def aread(self, chunk_size: int) -> bytes:
-            chunk = self._content[self._idx: self._idx + chunk_size]
+            chunk = self._content[self._idx : self._idx + chunk_size]
             self._idx = self._idx + chunk_size
             return chunk
 
@@ -195,7 +195,7 @@ async def test_urlencoded_content():
             "like": True,
             "bar": 123,
             "egg": False,
-            'b': b'\x01\x02',
+            "b": b"\x01\x02",
         },
     )
     assert isinstance(request.stream, typing.Iterable)
