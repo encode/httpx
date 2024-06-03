@@ -14,7 +14,7 @@ from urllib.request import getproxies
 
 import sniffio
 
-from ._types import PrimitiveData, FormPrimitiveData
+from ._types import FormPrimitiveData, PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._urls import URL
