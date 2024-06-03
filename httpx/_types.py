@@ -31,7 +31,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from ._models import Cookies, Headers, Request  # noqa: F401
     from ._urls import URL, QueryParams  # noqa: F401
 
-
 PrimitiveData = Optional[Union[str, int, float, bool]]
 
 RawURL = NamedTuple(
@@ -92,12 +91,14 @@ RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseExtensions = MutableMapping[str, Any]
 
+FormPrimitiveData = Union[str, int, float, bool, None, enum.Enum]
+
 RequestData = Mapping[
     str,
     Union[
-        Union[PrimitiveData, None, enum.Enum],
-        List[Union[PrimitiveData, None, enum.Enum]],
-        Tuple[Union[PrimitiveData, None, enum.Enum],...],
+        FormPrimitiveData,
+        List[FormPrimitiveData],
+        Tuple[FormPrimitiveData, ...],
     ],
 ]
 

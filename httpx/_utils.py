@@ -14,11 +14,10 @@ from urllib.request import getproxies
 
 import sniffio
 
-from ._types import PrimitiveData
+from ._types import PrimitiveData, FormPrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._urls import URL
-
 
 _HTML5_FORM_ENCODING_REPLACEMENTS = {'"': "%22", "\\": "\\\\"}
 _HTML5_FORM_ENCODING_REPLACEMENTS.update(
@@ -54,7 +53,7 @@ def normalize_header_value(value: str | bytes, encoding: str | None = None) -> b
     return value.encode(encoding or "ascii")
 
 
-def primitive_value_to_str(value: PrimitiveData|None|enum.Enum) -> str:
+def primitive_value_to_str(value: PrimitiveData) -> str:
     """
     Coerce a primitive data type into a string value.
 
@@ -74,6 +73,28 @@ def primitive_value_to_str(value: PrimitiveData|None|enum.Enum) -> str:
         # StrEnum and IntEnum is handled above
         return primitive_value_to_str(value.value)
     raise TypeError(f"unsupported data type {type(value)}")
+
+
+def primitive_form_value_to_str(value: FormPrimitiveData) -> str:
+    """
+    Coerce a primitive data type into a string value.
+
+    Note that we prefer JSON-style 'true'/'false' for boolean values here.
+    """
+    if value is True:
+        return "true"
+    elif value is False:
+        return "false"
+    elif value is None:
+        return ""
+    if isinstance(value, enum.Enum):
+        # StrEnum, IntEnum and `class (int|str, Enum)` is handled above
+        return primitive_form_value_to_str(value.value)
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, str):
+        return value
+    raise TypeError(f"unsupported data type {type(value)} as form-data value")
 
 
 def is_known_encoding(encoding: str) -> bool:

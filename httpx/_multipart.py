@@ -9,6 +9,7 @@ from ._types import (
     AsyncByteStream,
     FileContent,
     FileTypes,
+    FormPrimitiveData,
     RequestData,
     RequestFiles,
     SyncByteStream,
@@ -17,7 +18,7 @@ from ._utils import (
     format_form_param,
     guess_content_type,
     peek_filelike_length,
-    primitive_value_to_str,
+    primitive_form_value_to_str,
     to_bytes,
 )
 
@@ -41,7 +42,7 @@ class DataField:
     A single form field item, within a multipart form field.
     """
 
-    def __init__(self, name: str, value: str | bytes | int | float | None) -> None:
+    def __init__(self, name: str, value: FormPrimitiveData) -> None:
         if not isinstance(name, str):
             raise TypeError(
                 f"Invalid type for name. Expected str, got {type(name)}: {name!r}"
@@ -53,7 +54,7 @@ class DataField:
             )
         self.name = name
         self.value: str | bytes = (
-            value if isinstance(value, bytes) else primitive_value_to_str(value)
+            value if isinstance(value, bytes) else primitive_form_value_to_str(value)
         )
 
     def render_headers(self) -> bytes:
@@ -221,8 +222,8 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
                 yield DataField(name=name, value=value)
 
         file_items = files.items() if isinstance(files, typing.Mapping) else files
-        for name, value in file_items:
-            yield FileField(name=name, value=value)
+
+        yield from (FileField(name=name, value=value) for name, value in file_items)
 
     def iter_chunks(self) -> typing.Iterator[bytes]:
         for field in self.fields:
