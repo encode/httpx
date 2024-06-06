@@ -30,6 +30,7 @@ Our exception hierarchy:
   x ResponseNotRead
   x RequestNotRead
 """
+
 from __future__ import annotations
 
 import contextlib

@@ -28,7 +28,7 @@ HTTPX is a fully featured HTTP client for Python 3, which provides sync and asyn
 Install HTTPX using pip:
 
 ```shell
-$ pip install httpx
+pip install httpx
 ```
 
 Now, let's get started:
@@ -50,7 +50,7 @@ Or, using the command-line client.
 
 ```shell
 # The command line client is an optional dependency.
-$ pip install 'httpx[cli]'
+pip install 'httpx[cli]'
 ```
 
 Which now allows us to use HTTPX directly from the command-line...
@@ -68,7 +68,7 @@ HTTPX builds on the well-established usability of `requests`, and gives you:
 * A broadly [requests-compatible API](compatibility.md).
 * Standard synchronous interface, but with [async support if you need it](async.md).
 * HTTP/1.1 [and HTTP/2 support](http2.md).
-* Ability to make requests directly to [WSGI applications](async.md#calling-into-python-web-apps) or [ASGI applications](async.md#calling-into-python-web-apps).
+* Ability to make requests directly to [WSGI applications](advanced/transports.md#wsgi-transport) or [ASGI applications](advanced/transports.md#asgi-transport).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 100% test coverage.
@@ -119,6 +119,7 @@ As well as these optional installs:
 * `rich` - Rich terminal support. *(Optional, with `httpx[cli]`)*
 * `click` - Command line client support. *(Optional, with `httpx[cli]`)*
 * `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx[brotli]`)*
+* `zstandard` - Decoding for "zstd" compressed responses. *(Optional, with `httpx[zstd]`)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
@@ -129,19 +130,19 @@ inspiration around the lower-level networking details.
 Install with pip:
 
 ```shell
-$ pip install httpx
+pip install httpx
 ```
 
 Or, to include the optional HTTP/2 support, use:
 
 ```shell
-$ pip install httpx[http2]
+pip install httpx[http2]
 ```
 
-To include the optional brotli decoder support, use:
+To include the optional brotli and zstandard decoders support, use:
 
 ```shell
-$ pip install httpx[brotli]
+pip install httpx[brotli,zstd]
 ```
 
 HTTPX requires Python 3.8+
