@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import random
+import sys
 
 import certifi
 import pytest
@@ -122,6 +123,7 @@ def test_logging_redirect_chain(server, caplog):
     ]
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="os path sep escaped on windows")
 def test_logging_ssl(caplog):
     caplog.set_level(logging.DEBUG)
     with httpx.Client():
@@ -155,7 +157,9 @@ def test_get_ssl_cert_file():
     os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
     # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
     ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
+    assert ca_bundle is not None and ca_bundle.endswith(
+        os.path.join("tests", "test_utils.py")
+    )
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
@@ -170,7 +174,9 @@ def test_get_ssl_cert_file():
     os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
     # Two environments is correctly set.
     ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
+    assert ca_bundle is not None and ca_bundle.endswith(
+        os.path.join("tests", "test_utils.py")
+    )
 
     os.environ["SSL_CERT_FILE"] = "wrongfile"
     # Two environments is set but SSL_CERT_FILE is not a file.
