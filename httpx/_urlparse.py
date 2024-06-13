@@ -253,22 +253,27 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
         parsed_userinfo != "" or parsed_host != "" or parsed_port is not None
     )
     validate_path(path, has_scheme=has_scheme, has_authority=has_authority)
-    if has_authority:
+    if has_scheme or has_authority:
         path = normalize_path(path)
 
     # The GEN_DELIMS set is... : / ? # [ ] @
     # These do not need to be percent-quoted unless they serve as delimiters for the
     # specific component.
+    WHATWG_SAFE = '`{}%|^\\"'
 
     # For 'path' we need to drop ? and # from the GEN_DELIMS set.
-    parsed_path: str = quote(path, safe=SUB_DELIMS + ":/[]@")
+    parsed_path: str = quote(path, safe=SUB_DELIMS + WHATWG_SAFE + ":/[]@")
     # For 'query' we need to drop '#' from the GEN_DELIMS set.
     parsed_query: str | None = (
-        None if query is None else quote(query, safe=SUB_DELIMS + ":/?[]@")
+        None
+        if query is None
+        else quote(query, safe=SUB_DELIMS + WHATWG_SAFE + ":/?[]@")
     )
     # For 'fragment' we can include all of the GEN_DELIMS set.
     parsed_fragment: str | None = (
-        None if fragment is None else quote(fragment, safe=SUB_DELIMS + ":/?#[]@")
+        None
+        if fragment is None
+        else quote(fragment, safe=SUB_DELIMS + WHATWG_SAFE + ":/?#[]@")
     )
 
     # The parsed ASCII bytestrings are our canonical form.
@@ -321,7 +326,8 @@ def encode_host(host: str) -> str:
         # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2
         #
         # reg-name    = *( unreserved / pct-encoded / sub-delims )
-        return quote(host.lower(), safe=SUB_DELIMS)
+        WHATWG_SAFE = '"`{}%|\\'
+        return quote(host.lower(), safe=SUB_DELIMS + WHATWG_SAFE)
 
     # IDNA hostnames
     try:
@@ -369,19 +375,17 @@ def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:
         # must either be empty or begin with a slash ("/") character."
         if path and not path.startswith("/"):
             raise InvalidURL("For absolute URLs, path must be empty or begin with '/'")
-    else:
+
+    if not has_scheme and not has_authority:
         # If a URI does not contain an authority component, then the path cannot begin
         # with two slash characters ("//").
         if path.startswith("//"):
-            raise InvalidURL(
-                "URLs with no authority component cannot have a path starting with '//'"
-            )
+            raise InvalidURL("Relative URLs cannot have a path starting with '//'")
+
         # In addition, a URI reference (Section 4.1) may be a relative-path reference,
         # in which case the first path segment cannot contain a colon (":") character.
-        if path.startswith(":") and not has_scheme:
-            raise InvalidURL(
-                "URLs with no scheme component cannot have a path starting with ':'"
-            )
+        if path.startswith(":"):
+            raise InvalidURL("Relative URLs cannot have a path starting with ':'")
 
 
 def normalize_path(path: str) -> str:
