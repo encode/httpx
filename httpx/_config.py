@@ -14,7 +14,7 @@ from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._urls import URL
 from ._utils import get_ca_bundle_from_env
 
-__all__ = ["Limits", "Proxy", "Timeout", "create_ssl_context"]
+__all__ = ["Limits", "Proxy", "Timeout", "NetworkOptions", "create_ssl_context"]
 
 SOCKET_OPTION = typing.Union[
     typing.Tuple[int, int, int],

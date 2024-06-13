@@ -26,7 +26,18 @@ Configure the local address that the socket should be bound too. The most common
 
 ### `socket_options`
 
-*TODO: Example*
+Configure the list of socket options to be applied to the underlying sockets used for network connections.
+For example, you can use it to explicitly specify which network interface should be used for the connection in this manner:
+
+```python
+import httpx
+
+socket_options = [(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, b"ETH999")]
+
+network_options = httpx.NetworkOptions(
+    socket_options=socket_options
+)
+```
 
 ### `uds`
 
