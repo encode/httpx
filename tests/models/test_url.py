@@ -230,8 +230,8 @@ def test_url_normalized_host():
 
 
 def test_url_percent_escape_host():
-    url = httpx.URL("https://exam%le.com/")
-    assert url.host == "exam%25le.com"
+    url = httpx.URL("https://exam le.com/")
+    assert url.host == "exam%20le.com"
 
 
 def test_url_ipv4_like_host():
@@ -415,17 +415,11 @@ def test_urlparse_with_invalid_path():
 
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL(path="//abc")
-    assert (
-        str(exc.value)
-        == "URLs with no authority component cannot have a path starting with '//'"
-    )
+    assert str(exc.value) == "Relative URLs cannot have a path starting with '//'"
 
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL(path=":abc")
-    assert (
-        str(exc.value)
-        == "URLs with no scheme component cannot have a path starting with ':'"
-    )
+    assert str(exc.value) == "Relative URLs cannot have a path starting with ':'"
 
 
 def test_url_with_relative_path():
