@@ -23,6 +23,9 @@ client = httpx.Client(transport=transport)
 transport = httpx.HTTPTransport(uds="socket.uds")
 client = httpx.Client(transport=transport)
 """
+
+from __future__ import annotations
+
 import contextlib
 import typing
 from types import TracebackType
@@ -60,6 +63,16 @@ from .base import AsyncBaseTransport, BaseTransport
 
 T = typing.TypeVar("T", bound="HTTPTransport")
 A = typing.TypeVar("A", bound="AsyncHTTPTransport")
+
+
+__all__ = ["AsyncHTTPTransport", "HTTPTransport"]
+
+
+SOCKET_OPTION = typing.Union[
+    typing.Tuple[int, int, int],
+    typing.Tuple[int, int, typing.Union[bytes, bytearray]],
+    typing.Tuple[int, int, None, int],
+]
 
 
 @contextlib.contextmanager
@@ -121,7 +134,7 @@ class HTTPTransport(BaseTransport):
     def __init__(
         self,
         verify: VerifyTypes = True,
-        cert: typing.Optional[CertTypes] = None,
+        cert: CertTypes | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -203,9 +216,9 @@ class HTTPTransport(BaseTransport):
 
     def __exit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]] = None,
-        exc_value: typing.Optional[BaseException] = None,
-        traceback: typing.Optional[TracebackType] = None,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         with map_httpcore_exceptions():
             self._pool.__exit__(exc_type, exc_value, traceback)
@@ -262,7 +275,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
         verify: VerifyTypes = True,
-        cert: typing.Optional[CertTypes] = None,
+        cert: CertTypes | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -296,6 +309,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 ),
                 proxy_auth=proxy.raw_auth,
                 proxy_headers=proxy.headers.raw,
+                proxy_ssl_context=proxy.ssl_context,
                 ssl_context=ssl_context,
                 max_connections=limits.max_connections,
                 max_keepalive_connections=limits.max_keepalive_connections,
@@ -343,9 +357,9 @@ class AsyncHTTPTransport(AsyncBaseTransport):
 
     async def __aexit__(
         self,
-        exc_type: typing.Optional[typing.Type[BaseException]] = None,
-        exc_value: typing.Optional[BaseException] = None,
-        traceback: typing.Optional[TracebackType] = None,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         with map_httpcore_exceptions():
             await self._pool.__aexit__(exc_type, exc_value, traceback)

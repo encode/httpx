@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import ssl
@@ -11,6 +13,8 @@ from ._models import Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, URLTypes, VerifyTypes
 from ._urls import URL
 from ._utils import get_ca_bundle_from_env
+
+__all__ = ["Limits", "Proxy", "Timeout", "create_ssl_context"]
 
 SOCKET_OPTION = typing.Union[
     typing.Tuple[int, int, int],
@@ -49,7 +53,7 @@ UNSET = UnsetType()
 
 
 def create_ssl_context(
-    cert: typing.Optional[CertTypes] = None,
+    cert: CertTypes | None = None,
     verify: VerifyTypes = True,
     trust_env: bool = True,
     http2: bool = False,
@@ -69,7 +73,7 @@ class SSLConfig:
     def __init__(
         self,
         *,
-        cert: typing.Optional[CertTypes] = None,
+        cert: CertTypes | None = None,
         verify: VerifyTypes = True,
         trust_env: bool = True,
         http2: bool = False,
@@ -211,12 +215,12 @@ class Timeout:
 
     def __init__(
         self,
-        timeout: typing.Union[TimeoutTypes, UnsetType] = UNSET,
+        timeout: TimeoutTypes | UnsetType = UNSET,
         *,
-        connect: typing.Union[None, float, UnsetType] = UNSET,
-        read: typing.Union[None, float, UnsetType] = UNSET,
-        write: typing.Union[None, float, UnsetType] = UNSET,
-        pool: typing.Union[None, float, UnsetType] = UNSET,
+        connect: None | float | UnsetType = UNSET,
+        read: None | float | UnsetType = UNSET,
+        write: None | float | UnsetType = UNSET,
+        pool: None | float | UnsetType = UNSET,
     ) -> None:
         if isinstance(timeout, Timeout):
             # Passed as a single explicit Timeout.
@@ -255,7 +259,7 @@ class Timeout:
             self.write = timeout if isinstance(write, UnsetType) else write
             self.pool = timeout if isinstance(pool, UnsetType) else pool
 
-    def as_dict(self) -> typing.Dict[str, typing.Optional[float]]:
+    def as_dict(self) -> dict[str, float | None]:
         return {
             "connect": self.connect,
             "read": self.read,
@@ -299,9 +303,9 @@ class Limits:
     def __init__(
         self,
         *,
-        max_connections: typing.Optional[int] = None,
-        max_keepalive_connections: typing.Optional[int] = None,
-        keepalive_expiry: typing.Optional[float] = 5.0,
+        max_connections: int | None = None,
+        max_keepalive_connections: int | None = None,
+        keepalive_expiry: float | None = 5.0,
     ) -> None:
         self.max_connections = max_connections
         self.max_keepalive_connections = max_keepalive_connections
@@ -329,9 +333,9 @@ class Proxy:
         self,
         url: URLTypes,
         *,
-        ssl_context: typing.Optional[ssl.SSLContext] = None,
-        auth: typing.Optional[typing.Tuple[str, str]] = None,
-        headers: typing.Optional[HeaderTypes] = None,
+        ssl_context: ssl.SSLContext | None = None,
+        auth: tuple[str, str] | None = None,
+        headers: HeaderTypes | None = None,
     ) -> None:
         url = URL(url)
         headers = Headers(headers)
@@ -350,7 +354,7 @@ class Proxy:
         self.ssl_context = ssl_context
 
     @property
-    def raw_auth(self) -> typing.Optional[typing.Tuple[bytes, bytes]]:
+    def raw_auth(self) -> tuple[bytes, bytes] | None:
         # The proxy authentication as raw bytes.
         return (
             None

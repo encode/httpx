@@ -15,6 +15,9 @@ Previously we relied on the excellent `rfc3986` package to handle URL parsing an
 validation, but this module provides a simpler alternative, with less indirection
 required.
 """
+
+from __future__ import annotations
+
 import ipaddress
 import re
 import typing
@@ -95,10 +98,10 @@ class ParseResult(typing.NamedTuple):
     scheme: str
     userinfo: str
     host: str
-    port: typing.Optional[int]
+    port: int | None
     path: str
-    query: typing.Optional[str]
-    fragment: typing.Optional[str]
+    query: str | None
+    fragment: str | None
 
     @property
     def authority(self) -> str:
@@ -119,7 +122,7 @@ class ParseResult(typing.NamedTuple):
             ]
         )
 
-    def copy_with(self, **kwargs: typing.Optional[str]) -> "ParseResult":
+    def copy_with(self, **kwargs: str | None) -> ParseResult:
         if not kwargs:
             return self
 
@@ -146,7 +149,7 @@ class ParseResult(typing.NamedTuple):
         )
 
 
-def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
+def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     # Initial basic checks on allowable URLs.
     # ---------------------------------------
 
@@ -243,7 +246,7 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     parsed_scheme: str = scheme.lower()
     parsed_userinfo: str = quote(userinfo, safe=SUB_DELIMS + ":")
     parsed_host: str = encode_host(host)
-    parsed_port: typing.Optional[int] = normalize_port(port, scheme)
+    parsed_port: int | None = normalize_port(port, scheme)
 
     has_scheme = parsed_scheme != ""
     has_authority = (
@@ -260,11 +263,11 @@ def urlparse(url: str = "", **kwargs: typing.Optional[str]) -> ParseResult:
     # For 'path' we need to drop ? and # from the GEN_DELIMS set.
     parsed_path: str = quote(path, safe=SUB_DELIMS + ":/[]@")
     # For 'query' we need to drop '#' from the GEN_DELIMS set.
-    parsed_query: typing.Optional[str] = (
+    parsed_query: str | None = (
         None if query is None else quote(query, safe=SUB_DELIMS + ":/?[]@")
     )
     # For 'fragment' we can include all of the GEN_DELIMS set.
-    parsed_fragment: typing.Optional[str] = (
+    parsed_fragment: str | None = (
         None if fragment is None else quote(fragment, safe=SUB_DELIMS + ":/?#[]@")
     )
 
@@ -327,9 +330,7 @@ def encode_host(host: str) -> str:
         raise InvalidURL(f"Invalid IDNA hostname: {host!r}")
 
 
-def normalize_port(
-    port: typing.Optional[typing.Union[str, int]], scheme: str
-) -> typing.Optional[int]:
+def normalize_port(port: str | int | None, scheme: str) -> int | None:
     # From https://tools.ietf.org/html/rfc3986#section-3.2.3
     #
     # "A scheme may define a default port.  For example, the "http" scheme
@@ -391,9 +392,18 @@ def normalize_path(path: str) -> str:
 
         normalize_path("/path/./to/somewhere/..") == "/path/to"
     """
-    # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
+    # Fast return when no '.' characters in the path.
+    if "." not in path:
+        return path
+
     components = path.split("/")
-    output: typing.List[str] = []
+
+    # Fast return when no '.' or '..' components in the path.
+    if "." not in components and ".." not in components:
+        return path
+
+    # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
+    output: list[str] = []
     for component in components:
         if component == ".":
             pass
@@ -405,44 +415,22 @@ def normalize_path(path: str) -> str:
     return "/".join(output)
 
 
-def percent_encode(char: str) -> str:
-    """
-    Replace a single character with the percent-encoded representation.
-
-    Characters outside the ASCII range are represented with their a percent-encoded
-    representation of their UTF-8 byte sequence.
-
-    For example:
-
-        percent_encode(" ") == "%20"
-    """
-    return "".join([f"%{byte:02x}" for byte in char.encode("utf-8")]).upper()
-
-
-def is_safe(string: str, safe: str = "/") -> bool:
-    """
-    Determine if a given string is already quote-safe.
-    """
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe + "%"
-
-    # All characters must already be non-escaping or '%'
-    for char in string:
-        if char not in NON_ESCAPED_CHARS:
-            return False
-
-    return True
+def PERCENT(string: str) -> str:
+    return "".join([f"%{byte:02X}" for byte in string.encode("utf-8")])
 
 
 def percent_encoded(string: str, safe: str = "/") -> str:
     """
     Use percent-encoding to quote a string.
     """
-    if is_safe(string, safe=safe):
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
+
+    # Fast path for strings that don't need escaping.
+    if not string.rstrip(NON_ESCAPED_CHARS):
         return string
 
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
     return "".join(
-        [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]
+        [char if char in NON_ESCAPED_CHARS else PERCENT(char) for char in string]
     )
 
 
@@ -479,7 +467,7 @@ def quote(string: str, safe: str = "/") -> str:
     return "".join(parts)
 
 
-def urlencode(items: typing.List[typing.Tuple[str, str]]) -> str:
+def urlencode(items: list[tuple[str, str]]) -> str:
     """
     We can use a much simpler version of the stdlib urlencode here because
     we don't need to handle a bunch of different typing cases, such as bytes vs str.

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 import typing
 import wsgiref.validate
@@ -12,7 +14,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
 
 
-def application_factory(output: typing.Iterable[bytes]) -> "WSGIApplication":
+def application_factory(output: typing.Iterable[bytes]) -> WSGIApplication:
     def application(environ, start_response):
         status = "200 OK"
 
@@ -29,7 +31,7 @@ def application_factory(output: typing.Iterable[bytes]) -> "WSGIApplication":
 
 
 def echo_body(
-    environ: "WSGIEnvironment", start_response: "StartResponse"
+    environ: WSGIEnvironment, start_response: StartResponse
 ) -> typing.Iterable[bytes]:
     status = "200 OK"
     output = environ["wsgi.input"].read()
@@ -44,7 +46,7 @@ def echo_body(
 
 
 def echo_body_with_response_stream(
-    environ: "WSGIEnvironment", start_response: "StartResponse"
+    environ: WSGIEnvironment, start_response: StartResponse
 ) -> typing.Iterable[bytes]:
     status = "200 OK"
 
@@ -63,9 +65,9 @@ def echo_body_with_response_stream(
 
 
 def raise_exc(
-    environ: "WSGIEnvironment",
-    start_response: "StartResponse",
-    exc: typing.Type[Exception] = ValueError,
+    environ: WSGIEnvironment,
+    start_response: StartResponse,
+    exc: type[Exception] = ValueError,
 ) -> typing.Iterable[bytes]:
     status = "500 Server Error"
     output = b"Nope!"
@@ -90,41 +92,47 @@ def log_to_wsgi_log_buffer(environ, start_response):
 
 
 def test_wsgi():
-    client = httpx.Client(app=application_factory([b"Hello, World!"]))
+    transport = httpx.WSGITransport(app=application_factory([b"Hello, World!"]))
+    client = httpx.Client(transport=transport)
     response = client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == "Hello, World!"
 
 
 def test_wsgi_upload():
-    client = httpx.Client(app=echo_body)
+    transport = httpx.WSGITransport(app=echo_body)
+    client = httpx.Client(transport=transport)
     response = client.post("http://www.example.org/", content=b"example")
     assert response.status_code == 200
     assert response.text == "example"
 
 
 def test_wsgi_upload_with_response_stream():
-    client = httpx.Client(app=echo_body_with_response_stream)
+    transport = httpx.WSGITransport(app=echo_body_with_response_stream)
+    client = httpx.Client(transport=transport)
     response = client.post("http://www.example.org/", content=b"example")
     assert response.status_code == 200
     assert response.text == "example"
 
 
 def test_wsgi_exc():
-    client = httpx.Client(app=raise_exc)
+    transport = httpx.WSGITransport(app=raise_exc)
+    client = httpx.Client(transport=transport)
     with pytest.raises(ValueError):
         client.get("http://www.example.org/")
 
 
 def test_wsgi_http_error():
-    client = httpx.Client(app=partial(raise_exc, exc=RuntimeError))
+    transport = httpx.WSGITransport(app=partial(raise_exc, exc=RuntimeError))
+    client = httpx.Client(transport=transport)
     with pytest.raises(RuntimeError):
         client.get("http://www.example.org/")
 
 
 def test_wsgi_generator():
     output = [b"", b"", b"Some content", b" and more content"]
-    client = httpx.Client(app=application_factory(output))
+    transport = httpx.WSGITransport(app=application_factory(output))
+    client = httpx.Client(transport=transport)
     response = client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == "Some content and more content"
@@ -132,7 +140,8 @@ def test_wsgi_generator():
 
 def test_wsgi_generator_empty():
     output = [b"", b"", b"", b""]
-    client = httpx.Client(app=application_factory(output))
+    transport = httpx.WSGITransport(app=application_factory(output))
+    client = httpx.Client(transport=transport)
     response = client.get("http://www.example.org/")
     assert response.status_code == 200
     assert response.text == ""
@@ -161,14 +170,15 @@ def test_wsgi_server_port(url: str, expected_server_port: str) -> None:
     SERVER_PORT is populated correctly from the requested URL.
     """
     hello_world_app = application_factory([b"Hello, World!"])
-    server_port: typing.Optional[str] = None
+    server_port: str | None = None
 
     def app(environ, start_response):
         nonlocal server_port
         server_port = environ["SERVER_PORT"]
         return hello_world_app(environ, start_response)
 
-    client = httpx.Client(app=app)
+    transport = httpx.WSGITransport(app=app)
+    client = httpx.Client(transport=transport)
     response = client.get(url)
     assert response.status_code == 200
     assert response.text == "Hello, World!"
@@ -184,9 +194,19 @@ def test_wsgi_server_protocol():
         start_response("200 OK", [("Content-Type", "text/plain")])
         return [b"success"]
 
-    with httpx.Client(app=app, base_url="http://testserver") as client:
+    transport = httpx.WSGITransport(app=app)
+    with httpx.Client(transport=transport, base_url="http://testserver") as client:
         response = client.get("/")
 
     assert response.status_code == 200
     assert response.text == "success"
     assert server_protocol == "HTTP/1.1"
+
+
+def test_deprecated_shortcut():
+    """
+    The `app=...` shortcut is now deprecated.
+    Use the explicit transport style instead.
+    """
+    with pytest.warns(DeprecationWarning):
+        httpx.Client(app=application_factory([b"Hello, World!"]))
