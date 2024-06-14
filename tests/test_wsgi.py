@@ -64,6 +64,22 @@ def echo_body_with_response_stream(
     return output_generator(f=environ["wsgi.input"])
 
 
+def echo_body_with_write_callable(
+    environ: "WSGIEnvironment", start_response: "StartResponse"
+) -> typing.Iterable[bytes]:
+    status = "200 OK"
+    output = environ["wsgi.input"].read()
+
+    response_headers = [
+        ("Content-type", "text/plain"),
+    ]
+
+    write = start_response(status, response_headers)
+    write(output)
+
+    return (b" and ", b"more")
+
+
 def raise_exc(
     environ: WSGIEnvironment,
     start_response: StartResponse,
@@ -113,6 +129,13 @@ def test_wsgi_upload_with_response_stream():
     response = client.post("http://www.example.org/", content=b"example")
     assert response.status_code == 200
     assert response.text == "example"
+
+
+def test_wsgi_upload_with_write_callable():
+    client = httpx.Client(app=echo_body_with_write_callable)
+    response = client.post("http://www.example.org/", content=b"example")
+    assert response.status_code == 200
+    assert response.text == "example and more"
 
 
 def test_wsgi_exc():
