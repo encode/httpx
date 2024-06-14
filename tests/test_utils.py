@@ -9,11 +9,8 @@ import pytest
 import httpx
 from httpx._utils import (
     URLPattern,
-    get_ca_bundle_from_env,
     get_environment_proxies,
 )
-
-from .common import TESTS_DIR
 
 
 @pytest.mark.parametrize(
@@ -132,7 +129,7 @@ def test_logging_ssl(caplog):
         (
             "httpx",
             logging.DEBUG,
-            "load_ssl_context verify=True cert=None trust_env=True http2=False",
+            "load_ssl_context verify=True cert=None",
         ),
         (
             "httpx",
@@ -140,46 +137,6 @@ def test_logging_ssl(caplog):
             f"load_verify_locations cafile='{cafile}'",
         ),
     ]
-
-
-def test_get_ssl_cert_file():
-    # Two environments is not set.
-    assert get_ca_bundle_from_env() is None
-
-    os.environ["SSL_CERT_DIR"] = str(TESTS_DIR)
-    # SSL_CERT_DIR is correctly set, SSL_CERT_FILE is not set.
-    ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests")
-
-    del os.environ["SSL_CERT_DIR"]
-    os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
-    # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.
-    ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
-
-    os.environ["SSL_CERT_FILE"] = "wrongfile"
-    # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.
-    assert get_ca_bundle_from_env() is None
-
-    del os.environ["SSL_CERT_FILE"]
-    os.environ["SSL_CERT_DIR"] = "wrongpath"
-    # SSL_CERT_DIR is set with wrong path,  SSL_CERT_FILE is not set.
-    assert get_ca_bundle_from_env() is None
-
-    os.environ["SSL_CERT_DIR"] = str(TESTS_DIR)
-    os.environ["SSL_CERT_FILE"] = str(TESTS_DIR / "test_utils.py")
-    # Two environments is correctly set.
-    ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests/test_utils.py")
-
-    os.environ["SSL_CERT_FILE"] = "wrongfile"
-    # Two environments is set but SSL_CERT_FILE is not a file.
-    ca_bundle = get_ca_bundle_from_env()
-    assert ca_bundle is not None and ca_bundle.endswith("tests")
-
-    os.environ["SSL_CERT_DIR"] = "wrongpath"
-    # Two environments is set but both are not correct.
-    assert get_ca_bundle_from_env() is None
 
 
 @pytest.mark.parametrize(
