@@ -58,7 +58,7 @@ from ._utils import (
     same_origin,
 )
 
-__all__ = ["USE_CLIENT_DEFAULT", "AsyncClient", "Client"]
+__all__ = ["USE_CLIENT_DEFAULT", "AsyncClient", "Client", "default_user_agent"]
 
 # The type annotation for @classmethod and context managers here follows PEP 484
 # https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
@@ -91,10 +91,16 @@ USE_CLIENT_DEFAULT = UseClientDefault()
 
 logger = logging.getLogger("httpx")
 
-USER_AGENT = f"python-httpx/{__version__}"
 ACCEPT_ENCODING = ", ".join(
     [key for key in SUPPORTED_DECODERS.keys() if key != "identity"]
 )
+
+
+def default_user_agent() -> str:
+    """
+    Return the default User-Agent string.
+    """
+    return f"python-httpx/{__version__}"
 
 
 class ClientState(enum.Enum):
@@ -290,7 +296,7 @@ class BaseClient:
                 b"Accept": b"*/*",
                 b"Accept-Encoding": ACCEPT_ENCODING.encode("ascii"),
                 b"Connection": b"keep-alive",
-                b"User-Agent": USER_AGENT.encode("ascii"),
+                b"User-Agent": default_user_agent().encode("ascii"),
             }
         )
         client_headers.update(headers)
