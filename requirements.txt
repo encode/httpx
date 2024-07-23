@@ -15,7 +15,7 @@ mkdocs-material==9.5.25
 
 # Packaging
 build==1.2.1
-twine==5.1.0
+twine==5.1.1
 
 # Tests & Linting
 coverage[toml]==7.5.3
