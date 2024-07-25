@@ -22,7 +22,7 @@ and async APIs**.
 Install HTTPX using pip:
 
 ```shell
-$ pip install httpx
+pip install httpx
 ```
 
 Now, let's get started:
@@ -43,7 +43,7 @@ Now, let's get started:
 Or, using the command-line client.
 
 ```shell
-$ pip install 'httpx[cli]'  # The command line client is an optional dependency.
+pip install 'httpx[cli]'  # The command line client is an optional dependency.
 ```
 
 Which now allows us to use HTTPX directly from the command-line...
@@ -66,7 +66,7 @@ HTTPX builds on the well-established usability of `requests`, and gives you:
 * An integrated command-line client.
 * HTTP/1.1 [and HTTP/2 support](https://www.python-httpx.org/http2/).
 * Standard synchronous interface, but with [async support if you need it](https://www.python-httpx.org/async/).
-* Ability to make requests directly to [WSGI applications](https://www.python-httpx.org/advanced/#calling-into-python-web-apps) or [ASGI applications](https://www.python-httpx.org/async/#calling-into-python-web-apps).
+* Ability to make requests directly to [WSGI applications](https://www.python-httpx.org/advanced/transports/#wsgi-transport) or [ASGI applications](https://www.python-httpx.org/advanced/transports/#asgi-transport).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 100% test coverage.
@@ -94,13 +94,13 @@ Plus all the standard features of `requests`...
 Install with pip:
 
 ```shell
-$ pip install httpx
+pip install httpx
 ```
 
 Or, to include the optional HTTP/2 support, use:
 
 ```shell
-$ pip install httpx[http2]
+pip install httpx[http2]
 ```
 
 HTTPX requires Python 3.8+.
@@ -138,6 +138,7 @@ As well as these optional installs:
 * `rich` - Rich terminal support. *(Optional, with `httpx[cli]`)*
 * `click` - Command line client support. *(Optional, with `httpx[cli]`)*
 * `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx[brotli]`)*
+* `zstandard` - Decoding for "zstd" compressed responses. *(Optional, with `httpx[zstd]`)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design

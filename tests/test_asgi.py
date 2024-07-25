@@ -157,7 +157,7 @@ async def test_asgi_headers():
         "headers": [
             ["host", "www.example.org"],
             ["accept", "*/*"],
-            ["accept-encoding", "gzip, deflate, br"],
+            ["accept-encoding", "gzip, deflate, br, zstd"],
             ["connection", "keep-alive"],
             ["user-agent", f"python-httpx/{httpx.__version__}"],
         ]
