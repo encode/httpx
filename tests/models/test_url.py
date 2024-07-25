@@ -373,10 +373,7 @@ def test_url_non_printing_character_in_url():
 def test_url_non_printing_character_in_component():
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL("https://www.example.com", path="/\n")
-    assert (
-        str(exc.value)
-        == "Invalid non-printable character in URL component 'path'"
-    )
+    assert str(exc.value) == "Invalid non-printable character in URL component 'path'"
 
 
 # Test for url components
