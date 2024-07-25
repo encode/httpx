@@ -30,6 +30,22 @@ def test_cookies_update():
     assert cookies.get("name", domain="example.com") == "value"
 
 
+def test_get_missing_cookie_raises_exception():
+    cookies = httpx.Cookies()
+    with pytest.raises(KeyError):
+        cookies["missing"]
+
+
+def test_cookie_value_can_be_none():
+    cookies = httpx.Cookies()
+    more_cookies = httpx.Cookies()
+    more_cookies.set("no-value", None, domain="example.com")
+
+    cookies.update(more_cookies)
+    assert dict(cookies) == {"no-value": None}
+    assert cookies["no-value"] is None
+
+
 def test_cookies_with_domain():
     cookies = httpx.Cookies()
     cookies.set("name", "value", domain="example.com")
@@ -91,8 +107,18 @@ def test_cookies_repr():
     cookies = httpx.Cookies()
     cookies.set(name="foo", value="bar", domain="http://blah.com")
     cookies.set(name="fizz", value="buzz", domain="http://hello.com")
+    cookies.set(name="only-name", value=None, domain="http://hello.com")
 
     assert repr(cookies) == (
         "<Cookies[<Cookie foo=bar for http://blah.com />,"
-        " <Cookie fizz=buzz for http://hello.com />]>"
+        " <Cookie fizz=buzz for http://hello.com />,"
+        " <Cookie only-name=None for http://hello.com />]>"
     )
+
+
+def test_cookie_headers():
+    cookies = httpx.Cookies()
+    cookies.set("foo", "bar", domain="example.org")
+    cookies.set("no-value", None, domain="example.org")
+    request = httpx.Request("GET", "https://www.example.org", cookies=cookies)
+    assert request.headers["cookie"] == "foo=bar; no-value"
