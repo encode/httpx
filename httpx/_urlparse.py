@@ -160,7 +160,13 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     # If a URL includes any ASCII control characters including \t, \r, \n,
     # then treat it as invalid.
     if not url.isprintable():
-        raise InvalidURL("Invalid non-printable character in URL")
+        char = [char for char in url if not char.isprintable()]
+        idx = url.find(char)
+        error = (
+            f"Invalid non-printable character in URL. "
+            f"{char!r} at position {idx}."
+        )
+        raise InvalidURL(error)
 
     # Some keyword arguments require special handling.
     # ------------------------------------------------
@@ -205,8 +211,11 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
             # If a component includes any ASCII control characters including \t, \r, \n,
             # then treat it as invalid.
             if not value.isprintable():
+                char = [char for char in value if not char.isprintable()]
+                idx = value.find(char)
                 raise InvalidURL(
-                    f"Invalid non-printable character in URL component '{key}'"
+                    f"Invalid non-printable character in URL component. "
+                    f"{char!r} at position {idx}."
                 )
 
             # Ensure that keyword arguments match as a valid regex.
