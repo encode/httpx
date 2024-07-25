@@ -211,7 +211,7 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
                 char = [
                     char for char in value if char.isascii() and not char.isprintable()
                 ][0]
-                idx = url.find(char)
+                idx = value.find(char)
                 error = (
                     f"Invalid non-printable character in URL {key} component, "
                     f"{char!r} at position {idx}."
