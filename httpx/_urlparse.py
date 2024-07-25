@@ -162,10 +162,7 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     if not url.isprintable():
         char = [char for char in url if not char.isprintable()]
         idx = url.find(char)
-        error = (
-            f"Invalid non-printable character in URL. "
-            f"{char!r} at position {idx}."
-        )
+        error = f"Invalid non-printable character in URL. {char!r} at position {idx}."
         raise InvalidURL(error)
 
     # Some keyword arguments require special handling.
