@@ -209,7 +209,7 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
             # then treat it as invalid.
             if any(char.isascii() and not char.isprintable() for char in value):
                 char = [
-                    char for char in url if char.isascii() and not char.isprintable()
+                    char for char in value if char.isascii() and not char.isprintable()
                 ][0]
                 idx = url.find(char)
                 error = (
