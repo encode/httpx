@@ -367,15 +367,17 @@ def test_url_excessively_long_component():
 def test_url_non_printing_character_in_url():
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL("https://www.example.com/\n")
-    assert str(exc.value) == "Invalid non-printable ASCII character in URL"
+    assert str(exc.value) == (
+        "Invalid non-printable ASCII character in URL, '\\n' at position 24."
+    )
 
 
 def test_url_non_printing_character_in_component():
     with pytest.raises(httpx.InvalidURL) as exc:
         httpx.URL("https://www.example.com", path="/\n")
-    assert (
-        str(exc.value)
-        == "Invalid non-printable ASCII character in URL component 'path'"
+    assert str(exc.value) == (
+        "Invalid non-printable ASCII character in URL path component, "
+        "'\\n' at position 1."
     )
 
 
