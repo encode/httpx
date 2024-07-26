@@ -39,7 +39,7 @@ def normalize_header_key(
     if isinstance(value, bytes):
         bytes_value = value
     else:
-        bytes_value = value.encode(encoding or "ascii")
+        bytes_value = value.encode(encoding or "utf-8")
 
     return bytes_value.lower() if lower else bytes_value
 
@@ -50,7 +50,7 @@ def normalize_header_value(value: str | bytes, encoding: str | None = None) -> b
     """
     if isinstance(value, bytes):
         return value
-    return value.encode(encoding or "ascii")
+    return value.encode(encoding or "utf-8")
 
 
 def primitive_value_to_str(value: PrimitiveData) -> str:
