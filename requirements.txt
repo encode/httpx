@@ -20,10 +20,10 @@ twine==5.1.1
 # Tests & Linting
 coverage[toml]==7.6.0
 cryptography==43.0.0
-mypy==1.11.0
-pytest==8.3.1
-ruff==0.5.4
+mypy==1.11.1
+pytest==8.3.2
+ruff==0.5.5
 trio==0.26.0
 trio-typing==0.10.0
 trustme==1.1.0
-uvicorn==0.30.3
+uvicorn==0.30.4
