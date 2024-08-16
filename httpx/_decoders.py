@@ -7,6 +7,7 @@ See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 from __future__ import annotations
 
 import codecs
+import enum
 import io
 import typing
 import zlib
@@ -64,21 +65,37 @@ class DeflateDecoder(ContentDecoder):
             raise DecodingError(str(exc)) from exc
 
 
+class GzipDecoderState(enum.Enum):
+    FIRST_MEMBER = 0
+    OTHER_MEMBERS = 1
+    SWALLOW_DATA = 2
+
+
 class GZipDecoder(ContentDecoder):
-    """
-    Handle 'gzip' decoding.
-
-    See: https://stackoverflow.com/questions/1838699
-    """
-
     def __init__(self) -> None:
         self.decompressor = zlib.decompressobj(zlib.MAX_WBITS | 16)
+        self.state = GzipDecoderState.FIRST_MEMBER
 
     def decode(self, data: bytes) -> bytes:
-        try:
-            return self.decompressor.decompress(data)
-        except zlib.error as exc:
-            raise DecodingError(str(exc)) from exc
+        ret = bytearray()
+        if self.state == GzipDecoderState.SWALLOW_DATA or not data:
+            return bytes(ret)
+        while True:
+            try:
+                ret += self.decompressor.decompress(data)
+            except zlib.error as exc:
+                previous_state = self.state
+                # Ignore data after the first error
+                self.state = GzipDecoderState.SWALLOW_DATA
+                if previous_state == GzipDecoderState.OTHER_MEMBERS:
+                    # Allow trailing garbage acceptable in other gzip clients
+                    return bytes(ret)
+                raise DecodingError(str(exc)) from exc
+            data = self.decompressor.unused_data
+            if not data:
+                return bytes(ret)
+            self.state = GzipDecoderState.OTHER_MEMBERS
+            self.decompressor = zlib.decompressobj(zlib.MAX_WBITS | 16)
 
     def flush(self) -> bytes:
         try:
@@ -363,7 +380,6 @@ SUPPORTED_DECODERS = {
     "br": BrotliDecoder,
     "zstd": ZStandardDecoder,
 }
-
 
 if brotli is None:
     SUPPORTED_DECODERS.pop("br")  # pragma: no cover
