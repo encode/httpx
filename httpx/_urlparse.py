@@ -149,7 +149,7 @@ class ParseResult(typing.NamedTuple):
         )
 
 
-def _check_ascii_printable(url: str, key=None) -> None:
+def _check_ascii_printable(url: str, key: str | None = None) -> None:
     for idx, char in enumerate(url):
         if char.isascii() and not char.isprintable():
             error = "Invalid non-printable ASCII character in URL"
