@@ -199,7 +199,7 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
         if ":" in host and not (host.startswith("[") and host.endswith("]")):
             kwargs["host"] = f"[{host}]"
 
-    strict_idna = kwargs.pop("strict_idna", False)
+    strict_idna = bool(kwargs.pop("strict_idna", False))
 
     # If any keyword arguments are provided, ensure they are valid.
     # -------------------------------------------------------------
@@ -302,7 +302,7 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     )
 
 
-def encode_host(host: str, strict_idna: typing.Any = False) -> str:
+def encode_host(host: str, strict_idna: bool = False) -> str:
     if not host:
         return ""
 
