@@ -126,6 +126,7 @@ what gets sent over the wire.*
 * `.is_ssl` - **bool**
 * `.is_absolute_url` - **bool**
 * `.is_relative_url` - **bool**
+* `.strict_idna` - **bool**
 * `def .copy_with([scheme], [authority], [path], [query], [fragment])` - **URL**
 
 ## `Headers`
