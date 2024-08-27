@@ -5,6 +5,7 @@ from urllib.parse import parse_qs, unquote
 
 import idna
 
+from ._exceptions import InvalidURL
 from ._types import QueryParamTypes, RawURL
 from ._urlparse import urlencode, urlparse
 from ._utils import primitive_value_to_str
@@ -190,9 +191,9 @@ class URL:
         if host.startswith("xn--"):
             try:
                 host = idna.decode(host)
-            except idna.IDNAError:
+            except (idna.IDNAError, idna.core.InvalidCodepoint):
                 if self._strict_idna:
-                    raise
+                    raise InvalidURL(f"Invalid IDNA host: {host!r}")
 
         return host
 

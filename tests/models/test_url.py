@@ -350,6 +350,8 @@ def test_url_invalid_hostname():
     """
     with pytest.raises(httpx.InvalidURL):
         httpx.URL("https://😇/", strict_idna=True)
+    with pytest.raises(httpx.InvalidURL):
+        assert httpx.URL("https://xn--n3h.com/", strict_idna=True).host
 
 
 def test_url_with_emoji():
