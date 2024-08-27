@@ -349,7 +349,14 @@ def test_url_invalid_hostname():
     Ensure that invalid URLs raise an `httpx.InvalidURL` exception.
     """
     with pytest.raises(httpx.InvalidURL):
-        httpx.URL("https://😇/")
+        httpx.URL("https://😇/", strict_idna=True)
+
+
+def test_url_with_emoji():
+    assert str(httpx.URL("https://😇/")) == "https://xn--l28h/"
+    assert httpx.URL("https://😇/") == httpx.URL("https://xn--l28h/")
+    assert httpx.URL("https://😇/", strict_idna=False) == httpx.URL("https://xn--l28h/")
+    assert str(httpx.URL("https://☃.com/")) == "https://xn--n3h.com/"
 
 
 def test_url_excessively_long_url():
@@ -802,7 +809,7 @@ def test_url_escaped_idna_host():
 
 def test_url_invalid_idna_host():
     with pytest.raises(httpx.InvalidURL) as exc:
-        httpx.URL("https://☃.com/")
+        httpx.URL("https://☃.com/", strict_idna=True)
     assert str(exc.value) == "Invalid IDNA hostname: '☃.com'"
 
 
