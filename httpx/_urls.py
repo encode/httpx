@@ -75,6 +75,7 @@ class URL:
     """
 
     def __init__(self, url: URL | str = "", **kwargs: typing.Any) -> None:
+        self._strict_idna = kwargs.pop("strict_idna", False)
         if kwargs:
             allowed = {
                 "scheme": str,
@@ -114,7 +115,7 @@ class URL:
                 kwargs["query"] = None if not params else str(QueryParams(params))
 
         if isinstance(url, str):
-            self._uri_reference = urlparse(url, **kwargs)
+            self._uri_reference = urlparse(url, strict_idna=self._strict_idna, **kwargs)
         elif isinstance(url, URL):
             self._uri_reference = url._uri_reference.copy_with(**kwargs)
         else:
@@ -186,9 +187,12 @@ class URL:
         assert url.host == "::ffff:192.168.0.1"
         """
         host: str = self._uri_reference.host
-
         if host.startswith("xn--"):
-            host = idna.decode(host)
+            try:
+                host = idna.decode(host)
+            except idna.IDNAError:
+                if self._strict_idna:
+                    raise
 
         return host
 

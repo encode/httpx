@@ -199,6 +199,8 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
         if ":" in host and not (host.startswith("[") and host.endswith("]")):
             kwargs["host"] = f"[{host}]"
 
+    strict_idna = kwargs.pop("strict_idna", False)
+
     # If any keyword arguments are provided, ensure they are valid.
     # -------------------------------------------------------------
 
@@ -256,7 +258,7 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     # with components that are plain ASCII bytestrings.
     parsed_scheme: str = scheme.lower()
     parsed_userinfo: str = quote(userinfo, safe=SUB_DELIMS + ":")
-    parsed_host: str = encode_host(host)
+    parsed_host: str = encode_host(host, strict_idna=strict_idna)
     parsed_port: int | None = normalize_port(port, scheme)
 
     has_scheme = parsed_scheme != ""
@@ -300,7 +302,7 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     )
 
 
-def encode_host(host: str) -> str:
+def encode_host(host: str, strict_idna: typing.Any = False) -> str:
     if not host:
         return ""
 
@@ -342,9 +344,15 @@ def encode_host(host: str) -> str:
 
     # IDNA hostnames
     try:
-        return idna.encode(host.lower()).decode("ascii")
+        encoded = idna.encode(host.lower())
     except idna.IDNAError:
-        raise InvalidURL(f"Invalid IDNA hostname: {host!r}")
+        if strict_idna:
+            raise InvalidURL(f"Invalid IDNA hostname: {host!r}")
+        try:
+            encoded = host.lower().encode("idna")
+        except UnicodeEncodeError:
+            raise InvalidURL(f"Invalid hostname: {host!r}")
+    return encoded.decode("ascii")
 
 
 def normalize_port(port: str | int | None, scheme: str) -> int | None:
