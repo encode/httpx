@@ -4,9 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.27.1 (22st August, 2024)
+## 0.27.2 (27th August, 2024)
 
-## Added
+### Fixed
+
+* Reintroduced supposedly-private `URLTypes` shortcut. (#2673)
+
+## 0.27.1 (27th August, 2024)
+
+### Added
 
 * Support for `zstd` content decoding using the python `zstandard` package is added. Installable using `httpx[zstd]`. (#3139)
 

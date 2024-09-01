@@ -43,6 +43,8 @@ RawURL = NamedTuple(
     ],
 )
 
+URLTypes = Union["URL", str]
+
 QueryParamTypes = Union[
     "QueryParams",
     Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],
