@@ -679,7 +679,7 @@ class Client(BaseClient):
                 "The 'proxies' argument is now deprecated."
                 " Use 'proxy' or 'mounts' instead."
             )
-            warnings.warn(message, DeprecationWarning)
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
             if proxy:
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
 
@@ -688,7 +688,7 @@ class Client(BaseClient):
                 "The 'app' shortcut is now deprecated."
                 " Use the explicit style 'transport=WSGITransport(app=...)' instead."
             )
-            warnings.warn(message, DeprecationWarning)
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
 
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
