@@ -46,7 +46,6 @@ from ._types import (
     RequestFiles,
     SyncByteStream,
     TimeoutTypes,
-    URLTypes,
 )
 from ._urls import URL, QueryParams
 from ._utils import (
@@ -171,7 +170,7 @@ class BaseClient:
         follow_redirects: bool = False,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
-        base_url: URLTypes = "",
+        base_url: URL | str = "",
         trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
     ) -> None:
@@ -272,7 +271,7 @@ class BaseClient:
         return self._base_url
 
     @base_url.setter
-    def base_url(self, url: URLTypes) -> None:
+    def base_url(self, url: URL | str) -> None:
         self._base_url = self._enforce_trailing_slash(URL(url))
 
     @property
@@ -320,7 +319,7 @@ class BaseClient:
     def build_request(
         self,
         method: str,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
@@ -368,7 +367,7 @@ class BaseClient:
             extensions=extensions,
         )
 
-    def _merge_url(self, url: URLTypes) -> URL:
+    def _merge_url(self, url: URL | str) -> URL:
         """
         Merge a URL argument together with any 'base_url' on the client,
         to create the URL used for the outgoing request.
@@ -637,7 +636,7 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
-        base_url: URLTypes = "",
+        base_url: URL | str = "",
         transport: BaseTransport | None = None,
         app: typing.Callable[..., typing.Any] | None = None,
         trust_env: bool = True,
@@ -764,7 +763,7 @@ class Client(BaseClient):
     def request(
         self,
         method: str,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
@@ -821,7 +820,7 @@ class Client(BaseClient):
     def stream(
         self,
         method: str,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
@@ -1029,7 +1028,7 @@ class Client(BaseClient):
 
     def get(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -1058,7 +1057,7 @@ class Client(BaseClient):
 
     def options(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -1087,7 +1086,7 @@ class Client(BaseClient):
 
     def head(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -1116,7 +1115,7 @@ class Client(BaseClient):
 
     def post(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
@@ -1153,7 +1152,7 @@ class Client(BaseClient):
 
     def put(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
@@ -1190,7 +1189,7 @@ class Client(BaseClient):
 
     def patch(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
@@ -1227,7 +1226,7 @@ class Client(BaseClient):
 
     def delete(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -1365,7 +1364,7 @@ class AsyncClient(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
-        base_url: URLTypes = "",
+        base_url: URL | str = "",
         transport: AsyncBaseTransport | None = None,
         app: typing.Callable[..., typing.Any] | None = None,
         trust_env: bool = True,
@@ -1492,7 +1491,7 @@ class AsyncClient(BaseClient):
     async def request(
         self,
         method: str,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
@@ -1550,7 +1549,7 @@ class AsyncClient(BaseClient):
     async def stream(
         self,
         method: str,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
@@ -1758,7 +1757,7 @@ class AsyncClient(BaseClient):
 
     async def get(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -1787,7 +1786,7 @@ class AsyncClient(BaseClient):
 
     async def options(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -1816,7 +1815,7 @@ class AsyncClient(BaseClient):
 
     async def head(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -1845,7 +1844,7 @@ class AsyncClient(BaseClient):
 
     async def post(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
@@ -1882,7 +1881,7 @@ class AsyncClient(BaseClient):
 
     async def put(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
@@ -1919,7 +1918,7 @@ class AsyncClient(BaseClient):
 
     async def patch(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
@@ -1956,7 +1955,7 @@ class AsyncClient(BaseClient):
 
     async def delete(
         self,
-        url: URLTypes,
+        url: URL | str,
         *,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,

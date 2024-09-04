@@ -17,8 +17,8 @@ from ._types import (
     RequestData,
     RequestFiles,
     TimeoutTypes,
-    URLTypes,
 )
+from ._urls import URL
 
 __all__ = [
     "delete",
@@ -35,7 +35,7 @@ __all__ = [
 
 def request(
     method: str,
-    url: URLTypes,
+    url: URL | str,
     *,
     params: QueryParamTypes | None = None,
     content: RequestContent | None = None,
@@ -122,7 +122,7 @@ def request(
 @contextmanager
 def stream(
     method: str,
-    url: URLTypes,
+    url: URL | str,
     *,
     params: QueryParamTypes | None = None,
     content: RequestContent | None = None,
@@ -173,7 +173,7 @@ def stream(
 
 
 def get(
-    url: URLTypes,
+    url: URL | str,
     *,
     params: QueryParamTypes | None = None,
     headers: HeaderTypes | None = None,
@@ -211,7 +211,7 @@ def get(
 
 
 def options(
-    url: URLTypes,
+    url: URL | str,
     *,
     params: QueryParamTypes | None = None,
     headers: HeaderTypes | None = None,
@@ -249,7 +249,7 @@ def options(
 
 
 def head(
-    url: URLTypes,
+    url: URL | str,
     *,
     params: QueryParamTypes | None = None,
     headers: HeaderTypes | None = None,
@@ -287,7 +287,7 @@ def head(
 
 
 def post(
-    url: URLTypes,
+    url: URL | str,
     *,
     content: RequestContent | None = None,
     data: RequestData | None = None,
@@ -330,7 +330,7 @@ def post(
 
 
 def put(
-    url: URLTypes,
+    url: URL | str,
     *,
     content: RequestContent | None = None,
     data: RequestData | None = None,
@@ -373,7 +373,7 @@ def put(
 
 
 def patch(
-    url: URLTypes,
+    url: URL | str,
     *,
     content: RequestContent | None = None,
     data: RequestData | None = None,
@@ -416,7 +416,7 @@ def patch(
 
 
 def delete(
-    url: URLTypes,
+    url: URL | str,
     *,
     params: QueryParamTypes | None = None,
     headers: HeaderTypes | None = None,
