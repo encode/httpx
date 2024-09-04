@@ -136,7 +136,9 @@ class HTTPTransport(BaseTransport):
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env, http2=http2)
+        ssl_context = create_ssl_context(
+            verify=verify, cert=cert, trust_env=trust_env, http2=http2
+        )
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
 
         if proxy is None:
@@ -277,7 +279,9 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env, http2=http2)
+        ssl_context = create_ssl_context(
+            verify=verify, cert=cert, trust_env=trust_env, http2=http2
+        )
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
 
         if proxy is None:
