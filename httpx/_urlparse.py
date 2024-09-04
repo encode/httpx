@@ -160,7 +160,12 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     # If a URL includes any ASCII control characters including \t, \r, \n,
     # then treat it as invalid.
     if any(char.isascii() and not char.isprintable() for char in url):
-        raise InvalidURL("Invalid non-printable ASCII character in URL")
+        char = next(char for char in url if char.isascii() and not char.isprintable())
+        idx = url.find(char)
+        error = (
+            f"Invalid non-printable ASCII character in URL, {char!r} at position {idx}."
+        )
+        raise InvalidURL(error)
 
     # Some keyword arguments require special handling.
     # ------------------------------------------------
@@ -205,9 +210,15 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
             # If a component includes any ASCII control characters including \t, \r, \n,
             # then treat it as invalid.
             if any(char.isascii() and not char.isprintable() for char in value):
-                raise InvalidURL(
-                    f"Invalid non-printable ASCII character in URL component '{key}'"
+                char = next(
+                    char for char in value if char.isascii() and not char.isprintable()
                 )
+                idx = value.find(char)
+                error = (
+                    f"Invalid non-printable ASCII character in URL {key} component, "
+                    f"{char!r} at position {idx}."
+                )
+                raise InvalidURL(error)
 
             # Ensure that keyword arguments match as a valid regex.
             if not COMPONENT_REGEX[key].fullmatch(value):
@@ -253,22 +264,27 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
         parsed_userinfo != "" or parsed_host != "" or parsed_port is not None
     )
     validate_path(path, has_scheme=has_scheme, has_authority=has_authority)
-    if has_authority:
+    if has_scheme or has_authority:
         path = normalize_path(path)
 
     # The GEN_DELIMS set is... : / ? # [ ] @
     # These do not need to be percent-quoted unless they serve as delimiters for the
     # specific component.
+    WHATWG_SAFE = '`{}%|^\\"'
 
     # For 'path' we need to drop ? and # from the GEN_DELIMS set.
-    parsed_path: str = quote(path, safe=SUB_DELIMS + ":/[]@")
+    parsed_path: str = quote(path, safe=SUB_DELIMS + WHATWG_SAFE + ":/[]@")
     # For 'query' we need to drop '#' from the GEN_DELIMS set.
     parsed_query: str | None = (
-        None if query is None else quote(query, safe=SUB_DELIMS + ":/?[]@")
+        None
+        if query is None
+        else quote(query, safe=SUB_DELIMS + WHATWG_SAFE + ":/?[]@")
     )
     # For 'fragment' we can include all of the GEN_DELIMS set.
     parsed_fragment: str | None = (
-        None if fragment is None else quote(fragment, safe=SUB_DELIMS + ":/?#[]@")
+        None
+        if fragment is None
+        else quote(fragment, safe=SUB_DELIMS + WHATWG_SAFE + ":/?#[]@")
     )
 
     # The parsed ASCII bytestrings are our canonical form.
@@ -321,7 +337,8 @@ def encode_host(host: str) -> str:
         # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2
         #
         # reg-name    = *( unreserved / pct-encoded / sub-delims )
-        return quote(host.lower(), safe=SUB_DELIMS)
+        WHATWG_SAFE = '"`{}%|\\'
+        return quote(host.lower(), safe=SUB_DELIMS + WHATWG_SAFE)
 
     # IDNA hostnames
     try:
@@ -369,19 +386,17 @@ def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:
         # must either be empty or begin with a slash ("/") character."
         if path and not path.startswith("/"):
             raise InvalidURL("For absolute URLs, path must be empty or begin with '/'")
-    else:
+
+    if not has_scheme and not has_authority:
         # If a URI does not contain an authority component, then the path cannot begin
         # with two slash characters ("//").
         if path.startswith("//"):
-            raise InvalidURL(
-                "URLs with no authority component cannot have a path starting with '//'"
-            )
+            raise InvalidURL("Relative URLs cannot have a path starting with '//'")
+
         # In addition, a URI reference (Section 4.1) may be a relative-path reference,
         # in which case the first path segment cannot contain a colon (":") character.
-        if path.startswith(":") and not has_scheme:
-            raise InvalidURL(
-                "URLs with no scheme component cannot have a path starting with ':'"
-            )
+        if path.startswith(":"):
+            raise InvalidURL("Relative URLs cannot have a path starting with ':'")
 
 
 def normalize_path(path: str) -> str:
@@ -392,8 +407,17 @@ def normalize_path(path: str) -> str:
 
         normalize_path("/path/./to/somewhere/..") == "/path/to"
     """
-    # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
+    # Fast return when no '.' characters in the path.
+    if "." not in path:
+        return path
+
     components = path.split("/")
+
+    # Fast return when no '.' or '..' components in the path.
+    if "." not in components and ".." not in components:
+        return path
+
+    # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
     output: list[str] = []
     for component in components:
         if component == ".":
@@ -406,44 +430,22 @@ def normalize_path(path: str) -> str:
     return "/".join(output)
 
 
-def percent_encode(char: str) -> str:
-    """
-    Replace a single character with the percent-encoded representation.
-
-    Characters outside the ASCII range are represented with their a percent-encoded
-    representation of their UTF-8 byte sequence.
-
-    For example:
-
-        percent_encode(" ") == "%20"
-    """
-    return "".join([f"%{byte:02x}" for byte in char.encode("utf-8")]).upper()
-
-
-def is_safe(string: str, safe: str = "/") -> bool:
-    """
-    Determine if a given string is already quote-safe.
-    """
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe + "%"
-
-    # All characters must already be non-escaping or '%'
-    for char in string:
-        if char not in NON_ESCAPED_CHARS:
-            return False
-
-    return True
+def PERCENT(string: str) -> str:
+    return "".join([f"%{byte:02X}" for byte in string.encode("utf-8")])
 
 
 def percent_encoded(string: str, safe: str = "/") -> str:
     """
     Use percent-encoding to quote a string.
     """
-    if is_safe(string, safe=safe):
+    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
+
+    # Fast path for strings that don't need escaping.
+    if not string.rstrip(NON_ESCAPED_CHARS):
         return string
 
-    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
     return "".join(
-        [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]
+        [char if char in NON_ESCAPED_CHARS else PERCENT(char) for char in string]
     )
 
 

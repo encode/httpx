@@ -5,7 +5,7 @@ from urllib.parse import parse_qs, unquote
 
 import idna
 
-from ._types import QueryParamTypes, RawURL, URLTypes
+from ._types import QueryParamTypes, RawURL
 from ._urlparse import urlencode, urlparse
 from ._utils import primitive_value_to_str
 
@@ -367,7 +367,7 @@ class URL:
     def copy_merge_params(self, params: QueryParamTypes) -> URL:
         return self.copy_with(params=self.params.merge(params))
 
-    def join(self, url: URLTypes) -> URL:
+    def join(self, url: URL | str) -> URL:
         """
         Return an absolute URL, using this URL as the base.
 
