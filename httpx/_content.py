@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 import warnings
-from json import dumps as json_dumps
+from json import dumps as json_dumps, loads as json_loads
 from typing import (
     Any,
     AsyncIterable,
@@ -10,6 +10,7 @@ from typing import (
     Iterable,
     Iterator,
     Mapping,
+    Callable,
 )
 from urllib.parse import urlencode
 
@@ -25,7 +26,21 @@ from ._types import (
 )
 from ._utils import peek_filelike_length, primitive_value_to_str
 
-__all__ = ["ByteStream"]
+__all__ = ["ByteStream", "register_json_decoder", "register_json_encoder"]
+
+
+json_encoder = lambda json_data: json_dumps(json_data).encode("utf-8")
+json_decoder = lambda json_data, **kwargs: json_loads(json_data, **kwargs)
+
+
+def register_json_encoder(json_encode_callable: Callable) -> None:
+    global json_encoder
+    json_encoder = json_encode_callable
+
+
+def register_json_decoder(json_decode_callable: Callable) -> None:
+    global json_decoder
+    json_decoder = json_decode_callable
 
 
 class ByteStream(AsyncByteStream, SyncByteStream):
@@ -133,6 +148,10 @@ def encode_content(
     raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
 
 
+def decode_json(json_data: bytes, **kwargs) -> Any:
+    return json_decoder(json_data, **kwargs)
+
+
 def encode_urlencoded_data(
     data: RequestData,
 ) -> tuple[dict[str, str], ByteStream]:
@@ -174,7 +193,7 @@ def encode_html(html: str) -> tuple[dict[str, str], ByteStream]:
 
 
 def encode_json(json: Any) -> tuple[dict[str, str], ByteStream]:
-    body = json_dumps(json).encode("utf-8")
+    body = json_encoder(json)
     content_length = str(len(body))
     content_type = "application/json"
     headers = {"Content-Length": content_length, "Content-Type": content_type}

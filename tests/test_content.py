@@ -1,4 +1,5 @@
 import io
+import json
 import typing
 
 import pytest
@@ -178,6 +179,38 @@ async def test_json_content():
     }
     assert sync_content == b'{"Hello": "world!"}'
     assert async_content == b'{"Hello": "world!"}'
+
+
+def test_json_content_register_custom_encoder():
+    try:
+
+        def test_encoder(json_content):
+            raise Exception("Encoder raise")
+
+        httpx.register_json_encoder(test_encoder)
+        with pytest.raises(Exception, match="Encoder raise"):
+            httpx.Request(method, url, json={"Hello": "world!"})
+    finally:
+        httpx.register_json_encoder(
+            lambda json_content: json.dumps(json_content).encode("utf-8")
+        )
+
+
+def test_json_content_register_custom_decoder():
+    try:
+
+        def test_decoder(json_content, **kwargs):
+            raise Exception("Decoder raise")
+
+        httpx.register_json_decoder(test_decoder)
+
+        with pytest.raises(Exception, match="Decoder raise"):
+            response = httpx.Response(200, content='{"Hello": "world!"}')
+            response.json()
+    finally:
+        httpx.register_json_decoder(
+            lambda json_data, **kwargs: json.loads(json_data, **kwargs)
+        )
 
 
 @pytest.mark.anyio

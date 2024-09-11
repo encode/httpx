@@ -2,13 +2,18 @@ from __future__ import annotations
 
 import datetime
 import email.message
-import json as jsonlib
 import typing
 import urllib.request
 from collections.abc import Mapping
 from http.cookiejar import Cookie, CookieJar
 
-from ._content import ByteStream, UnattachedStream, encode_request, encode_response
+from ._content import (
+    ByteStream,
+    UnattachedStream,
+    encode_request,
+    encode_response,
+    decode_json,
+)
 from ._decoders import (
     SUPPORTED_DECODERS,
     ByteChunker,
@@ -763,7 +768,7 @@ class Response:
         raise HTTPStatusError(message, request=request, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
-        return jsonlib.loads(self.content, **kwargs)
+        return decode_json(self.content, **kwargs)
 
     @property
     def cookies(self) -> Cookies:

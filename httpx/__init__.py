@@ -74,6 +74,8 @@ __all__ = [
     "QueryParams",
     "ReadError",
     "ReadTimeout",
+    "register_json_decoder",
+    "register_json_encoder",
     "RemoteProtocolError",
     "request",
     "Request",
