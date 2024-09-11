@@ -7,10 +7,10 @@ from typing import (
     Any,
     AsyncIterable,
     AsyncIterator,
+    Callable,
     Iterable,
     Iterator,
     Mapping,
-    Callable,
 )
 from urllib.parse import urlencode
 
@@ -29,16 +29,27 @@ from ._utils import peek_filelike_length, primitive_value_to_str
 __all__ = ["ByteStream", "register_json_decoder", "register_json_encoder"]
 
 
-json_encoder = lambda json_data: json_dumps(json_data).encode("utf-8")
-json_decoder = lambda json_data, **kwargs: json_loads(json_data, **kwargs)
+def json_encoder(json_data: Any) -> bytes:
+    return json_dumps(json_data).encode("utf-8")
 
 
-def register_json_encoder(json_encode_callable: Callable) -> None:
+def json_decoder(json_data: bytes, **kwargs: Any) -> Any:
+    return json_loads(json_data, **kwargs)
+
+
+def register_json_encoder(
+    json_encode_callable: Callable[[Any], bytes],
+) -> None:
     global json_encoder
     json_encoder = json_encode_callable
 
 
-def register_json_decoder(json_decode_callable: Callable) -> None:
+def register_json_decoder(
+    json_decode_callable: Callable[
+        [bytes, Any],
+        Any,
+    ],
+) -> None:
     global json_decoder
     json_decoder = json_decode_callable
 
@@ -148,7 +159,7 @@ def encode_content(
     raise TypeError(f"Unexpected type for 'content', {type(content)!r}")
 
 
-def decode_json(json_data: bytes, **kwargs) -> Any:
+def decode_json(json_data: bytes, **kwargs: Any) -> Any:
     return json_decoder(json_data, **kwargs)
 
 

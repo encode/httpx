@@ -199,7 +199,7 @@ def test_json_content_register_custom_encoder():
 def test_json_content_register_custom_decoder():
     try:
 
-        def test_decoder(json_content, **kwargs):
+        def test_decoder(json_content: bytes, **kwargs: typing.Any) -> typing.Any:
             raise Exception("Decoder raise")
 
         httpx.register_json_decoder(test_decoder)

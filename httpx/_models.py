@@ -10,9 +10,9 @@ from http.cookiejar import Cookie, CookieJar
 from ._content import (
     ByteStream,
     UnattachedStream,
+    decode_json,
     encode_request,
     encode_response,
-    decode_json,
 )
 from ._decoders import (
     SUPPORTED_DECODERS,
