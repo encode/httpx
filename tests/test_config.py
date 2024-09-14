@@ -82,10 +82,10 @@ def test_load_ssl_config_cert_without_key_raises(cert_pem_file):
 
 def test_load_ssl_config_with_unsupported_cert_types():
     with pytest.raises(TypeError):
-        httpx.create_ssl_context(cert=Path("some_path"))
+        httpx.create_ssl_context(cert=Path("some_path"))  # type: ignore
 
     with pytest.raises(TypeError):
-        httpx.create_ssl_context(cert=42)
+        httpx.create_ssl_context(cert=42)  # type: ignore
 
 
 def test_load_ssl_config_no_verify():
