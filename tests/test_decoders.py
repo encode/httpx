@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import io
 import typing
 import zlib
@@ -9,7 +10,6 @@ import pytest
 import zstandard as zstd
 
 import httpx
-from httpx._decoders import GZipDecoder
 
 
 def test_deflate():
@@ -338,19 +338,34 @@ def test_invalid_content_encoding_header():
 
 
 def test_multi_part_gzip_data():
-    raw_bytes = b"""\x1f\x8b\x08\x00\x00\tn\x88\x00\xff\x00\x15\x00\xea\xff\
-{"status": "success",\x03\x00\xeb\xdb\xa3\xb0\x15\x00\x00\x00\x1f\x8b\x08\x00\x00\t\
-n\x88\x00\xff\x00\x08\x00\xf7\xff"data": \
-\x03\x00\x1d\xb4\xe6\xc8\x08\x00\x00\x00\x1f\x8b\x08\x00\x00\t\
-n\x88\x00\xff\x00#\x00\xdc\xff{"resultType":"matrix","result":[]}\
-\x03\x00\x12\xb7\x95\x1b#\x00\x00\x00\x1f\x8b\x08\x00\x00\t\
-n\x88\x00\xff\x00\x01\x00\xfe\xff}\x03\x00\x0c\xe2\xb6\xfc\x01\x00\x00\x00"""
+    buffer = io.BytesIO()
+
+    with gzip.GzipFile(fileobj=buffer, mode="w") as gz:
+        gz.write(b'{"status": "success",')
+        gz.close()
+
+        gz = gzip.GzipFile(fileobj=buffer, mode="w")
+        gz.write(b'"data": {"resultType":"matrix","result":[]}}')
+        gz.close()
+
+    compressed_body = buffer.getvalue()
+    headers = [(b"Content-Encoding", b"gzip")]
+    response = httpx.Response(
+        200,
+        headers=headers,
+        content=compressed_body,
+    )
     assert (
-        GZipDecoder().decode(raw_bytes)
+        response.content
         == b'{"status": "success","data": {"resultType":"matrix","result":[]}}'
     )
 
+    response = httpx.Response(
+        200,
+        headers=headers,
+        content=compressed_body + b"invalid",
+    )
     assert (
-        GZipDecoder().decode(raw_bytes + b"invalid")
+        response.content
         == b'{"status": "success","data": {"resultType":"matrix","result":[]}}'
     )
