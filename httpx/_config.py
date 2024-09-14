@@ -192,7 +192,9 @@ class SSLConfig:
                     password=self.cert[2],
                 )
             else:
-                raise TypeError(f"Unsupported type for `cert` (must be 'str' or 'tuple')")
+                raise TypeError(
+                    "Unsupported type for `cert` (must be 'str' or 'tuple')"
+                )
 
 
 class Timeout:
