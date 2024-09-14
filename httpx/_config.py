@@ -191,6 +191,8 @@ class SSLConfig:
                     keyfile=self.cert[1],
                     password=self.cert[2],
                 )
+            else:
+                raise TypeError(f"Unsupported type for `cert` (must be 'str' or 'tuple')")
 
 
 class Timeout:
