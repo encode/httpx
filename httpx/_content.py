@@ -41,7 +41,7 @@ def register_json_encoder(
     json_encode_callable: Callable[[Any], bytes],
 ) -> None:
     global json_encoder
-    json_encoder = json_encode_callable
+    json_encoder = json_encode_callable  # type: ignore
 
 
 def register_json_decoder(
@@ -51,7 +51,7 @@ def register_json_decoder(
     ],
 ) -> None:
     global json_decoder
-    json_decoder = json_decode_callable
+    json_decoder = json_decode_callable  # type: ignore
 
 
 class ByteStream(AsyncByteStream, SyncByteStream):

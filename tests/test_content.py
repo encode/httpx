@@ -202,7 +202,7 @@ def test_json_content_register_custom_decoder():
         def test_decoder(json_content: bytes, **kwargs: typing.Any) -> typing.Any:
             raise Exception("Decoder raise")
 
-        httpx.register_json_decoder(test_decoder)
+        httpx.register_json_decoder(test_decoder)  # type: ignore
 
         with pytest.raises(Exception, match="Decoder raise"):
             response = httpx.Response(200, content='{"Hello": "world!"}')
