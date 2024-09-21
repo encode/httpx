@@ -1,6 +1,7 @@
 import json
 from contextlib import aclosing
 
+import anyio
 import pytest
 
 import httpx
@@ -55,6 +56,21 @@ async def echo_headers(scope, receive, send):
 
     await send({"type": "http.response.start", "status": status, "headers": headers})
     await send({"type": "http.response.body", "body": output})
+
+
+async def hello_world_3_times(scope, receive, send):
+    status = 200
+    output = b"Hello, World!"
+    headers = [(b"content-type", "text/plain"), (b"content-length", str(len(output)))]
+
+    await send({"type": "http.response.start", "status": status, "headers": headers})
+
+    for i in range(3):
+        body = b"%d: %s\n" % (i, output)
+        await send({"type": "http.response.body", "body": body, "more_body": True})
+
+    else:
+        await send({"type": "http.response.body", "body": b"", "more_body": False})
 
 
 async def hello_world_endlessly(scope, receive, send):
@@ -210,6 +226,31 @@ async def test_asgi_disconnect_after_response_complete():
 
 @pytest.mark.anyio
 async def test_asgi_streaming():
+    "Exhaust resource and verify that it has been closed"
+    client = httpx.AsyncClient(app=hello_world_3_times)
+    async with client.stream("GET", "http://www.example.org/") as response:
+        assert response.status_code == 200
+        lines = []
+
+        async with aclosing(response.aiter_lines()) as stream:
+            async for line in stream:
+                lines.append(line)
+
+            # Make sure resource was released
+            with pytest.raises(StopAsyncIteration):
+                with anyio.fail_after(0.1):
+                    await stream.__anext__()
+
+        assert lines == [
+            "0: Hello, World!\n",
+            "1: Hello, World!\n",
+            "2: Hello, World!\n",
+        ]
+
+
+@pytest.mark.anyio
+async def test_asgi_streaming_interrupt():
+    "Interrupt, and make sure resource is cleaned and released"
     client = httpx.AsyncClient(app=hello_world_endlessly)
     async with client.stream("GET", "http://www.example.org/") as response:
         assert response.status_code == 200
@@ -221,10 +262,75 @@ async def test_asgi_streaming():
                     break
                 lines.append(line)
 
+        # Make sure resource was released
+        with pytest.raises(StopAsyncIteration):
+            with anyio.fail_after(0.1, shield=True):
+                await stream.__anext__()
+
         assert lines == [
             "0: Hello, World!\n",
             "1: Hello, World!\n",
             "2: Hello, World!\n",
+        ]
+
+
+@pytest.mark.anyio
+async def test_asgi_streaming_interrupt_no_aclosing():
+    "Interrupt without wrapping stream with aclosing, and make sure resource is cleaned and released"
+    client = httpx.AsyncClient(app=hello_world_endlessly)
+    async with client.stream("GET", "http://www.example.org/") as response:
+        assert response.status_code == 200
+        lines = []
+
+        stream = response.aiter_lines()
+        async for line in stream:
+            if line.startswith("3: "):
+                break
+            lines.append(line)
+
+        assert lines == [
+            "0: Hello, World!\n",
+            "1: Hello, World!\n",
+            "2: Hello, World!\n",
+        ]
+
+    # Make sure resource was released
+    with pytest.raises(StopAsyncIteration):
+        with anyio.fail_after(0.1, shield=True):
+            await stream.__anext__()
+
+
+@pytest.mark.anyio
+async def test_asgi_streaming_interrupt_then_continue():
+    "Interrupt, and make sure resource is alive while in context block, and then check if it has been cleaned and released"
+    
+    # TODO: this loops indefinitely, fix it
+    client = httpx.AsyncClient(app=hello_world_endlessly)
+    async with client.stream("GET", "http://www.example.org/") as response:
+        assert response.status_code == 200
+        lines = []
+
+        async with aclosing(response.aiter_lines()) as stream:
+            async for line in stream:
+                if line.startswith("3: "):
+                    break
+                lines.append(line)
+
+            async for line in stream:
+                lines.append(line)
+                if line.startswith("4: "):
+                    break
+
+        # Make sure resource was released
+        with pytest.raises(StopAsyncIteration):
+            with anyio.fail_after(0.1):
+                await stream.__anext__()
+
+        assert lines == [
+            "0: Hello, World!\n",
+            "1: Hello, World!\n",
+            "2: Hello, World!\n",
+            "4: Hello, World!\n",
         ]
 
 

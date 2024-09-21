@@ -179,6 +179,8 @@ async def run_asgi(
     async def watch_disconnect(cancel_scope: anyio.CancelScope) -> None:
         await disconnected.wait()
         cancel_scope.cancel()
+        await send_stream.aclose()
+        await receive_stream.aclose()
 
     async def run_app(cancel_scope: anyio.CancelScope) -> None:
         try:
@@ -227,6 +229,7 @@ async def run_asgi(
 
             if not more_body:
                 response_complete.set()
+                await send_stream.aclose()
 
     async with anyio.create_task_group() as tg:
         tg.start_soon(watch_disconnect, tg.cancel_scope)
