@@ -186,6 +186,8 @@ async def run_asgi(
         try:
             await app(scope, receive, send)
         except Exception:  # noqa: PIE-786
+            cancel_scope.cancel()
+            
             if raise_app_exceptions or not response_complete.is_set():
                 raise
 
