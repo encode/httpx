@@ -187,7 +187,7 @@ async def run_asgi(
             await app(scope, receive, send)
         except Exception:  # noqa: PIE-786
             cancel_scope.cancel()
-            
+
             if raise_app_exceptions or not response_complete.is_set():
                 raise
 
@@ -211,6 +211,9 @@ async def run_asgi(
         nonlocal status_code, response_headers
 
         if disconnected.is_set():
+            await anyio.sleep(
+                0
+            )  # temp fix - yield control for disconnect watcher when loop is tight
             return
 
         if message["type"] == "http.response.start":
