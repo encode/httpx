@@ -4,14 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
+## 0.27.2 (27th August, 2024)
 
-## Added
+### Fixed
+
+* Reintroduced supposedly-private `URLTypes` shortcut. (#2673)
+
+## 0.27.1 (27th August, 2024)
+
+### Added
 
 * Support for `zstd` content decoding using the python `zstandard` package is added. Installable using `httpx[zstd]`. (#3139)
 
 ### Fixed
 
+* Improved error messaging for `InvalidURL` exceptions. (#3250)
 * Fix `app` type signature in `ASGITransport`. (#3109)
 
 ## 0.27.0 (21st February, 2024)
