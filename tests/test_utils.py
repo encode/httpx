@@ -304,8 +304,8 @@ def test_url_matches(pattern, url, expected):
 @pytest.mark.parametrize(
     ["value", "expected"],
     [
-        (b"value", "value"),
-        ("success", "success"),
+        (b"value", b"value"),
+        (b"success", b"success"),
     ],
 )
 def test_normalize_header_value(value, expected):
