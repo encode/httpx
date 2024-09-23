@@ -8,7 +8,7 @@ import pytest
 
 import httpx
 from httpx._utils import (
-    URLPattern,-
+    URLPattern,
     get_ca_bundle_from_env,
     get_environment_proxies,
     normalize_header_value,
