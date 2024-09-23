@@ -299,6 +299,7 @@ def test_url_matches(pattern, url, expected):
     pattern = URLPattern(pattern)
     assert pattern.matches(httpx.URL(url)) == expected
 
+
 @pytest.mark.parametrize(
     ["value", "expected"],
     [
