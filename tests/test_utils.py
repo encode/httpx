@@ -299,6 +299,21 @@ def test_url_matches(pattern, url, expected):
     pattern = URLPattern(pattern)
     assert pattern.matches(httpx.URL(url)) == expected
 
+@pytest.mark.parametrize(
+    ["value", "expected"],
+    [
+        (b"value", "value"),
+        ("success", "success"),
+    ],
+)
+def test_normalize_header_value(value, expected):
+    assert normalize_header_value(value) == expected
+
+
+def test_normalize_header_incorrect_value(value):
+    with pytest.raises(TypeError, match=f"Header value must be str or bytes, not {type(value)}"):
+        normalize_header_value(value)
+
 
 def test_pattern_priority():
     matchers = [
