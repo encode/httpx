@@ -313,7 +313,7 @@ def test_normalize_header_value(value, expected):
 
 def test_normalize_header_incorrect_value():
     with pytest.raises(
-        TypeError, match=f"Header value must be str or bytes, not {type(value)}"
+        TypeError, match=f"Header value must be str or bytes, not {type(None)}"
     ):
         normalize_header_value(None)
 
