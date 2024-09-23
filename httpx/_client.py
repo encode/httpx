@@ -164,7 +164,8 @@ class BaseClient:
     def __init__(
         self,
         *,
-        request_class: type[Request] | None = None,
+        request_class: type[Request] = Request,
+        response_class: type[Response] = Response,
         auth: AuthTypes | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -179,7 +180,8 @@ class BaseClient:
     ) -> None:
         event_hooks = {} if event_hooks is None else event_hooks
 
-        self._request_class = request_class or Request
+        self._request_class = request_class
+        self._response_class = response_class
 
         self._base_url = self._enforce_trailing_slash(URL(base_url))
 
@@ -201,6 +203,10 @@ class BaseClient:
     @property
     def request_class(self) -> type[Request]:
         return self._request_class
+
+    @property
+    def response_class(self) -> type[Response]:
+        return self._response_class
 
     @property
     def is_closed(self) -> bool:
@@ -636,8 +642,8 @@ class Client(BaseClient):
     def __init__(
         self,
         *,
-        request_class: type[Request] | None = None,
-        response_class: type[Response] | None = None,
+        request_class: type[Request] = Request,
+        response_class: type[Response] = Response,
         auth: AuthTypes | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -662,6 +668,7 @@ class Client(BaseClient):
     ) -> None:
         super().__init__(
             request_class=request_class,
+            response_class=response_class,
             auth=auth,
             params=params,
             headers=headers,
@@ -703,8 +710,6 @@ class Client(BaseClient):
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
-        self._response_class = response_class or Response
-
         self._transport = self._init_transport(
             verify=verify,
             cert=cert,
@@ -735,10 +740,6 @@ class Client(BaseClient):
             )
 
         self._mounts = dict(sorted(self._mounts.items()))
-
-    @property
-    def response_class(self) -> type[Response]:
-        return self._response_class
 
     def _init_transport(
         self,
@@ -1394,8 +1395,8 @@ class AsyncClient(BaseClient):
     def __init__(
         self,
         *,
-        request_class: type[Request] | None = None,
-        response_class: type[Response] | None = None,
+        request_class: type[Request] = Request,
+        response_class: type[Response] = Response,
         auth: AuthTypes | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -1420,6 +1421,7 @@ class AsyncClient(BaseClient):
     ) -> None:
         super().__init__(
             request_class=request_class,
+            response_class=response_class,
             auth=auth,
             params=params,
             headers=headers,
@@ -1461,8 +1463,6 @@ class AsyncClient(BaseClient):
         allow_env_proxies = trust_env and app is None and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
-        self._response_class = response_class or Response
-
         self._transport = self._init_transport(
             verify=verify,
             cert=cert,
@@ -1493,10 +1493,6 @@ class AsyncClient(BaseClient):
                 {URLPattern(key): transport for key, transport in mounts.items()}
             )
         self._mounts = dict(sorted(self._mounts.items()))
-
-    @property
-    def response_class(self) -> type[Response]:
-        return self._response_class
 
     def _init_transport(
         self,
