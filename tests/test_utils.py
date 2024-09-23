@@ -311,11 +311,11 @@ def test_normalize_header_value(value, expected):
     assert normalize_header_value(value) == expected
 
 
-def test_normalize_header_incorrect_value(value):
+def test_normalize_header_incorrect_value():
     with pytest.raises(
         TypeError, match=f"Header value must be str or bytes, not {type(value)}"
     ):
-        normalize_header_value(value)
+        normalize_header_value(None)
 
 
 def test_pattern_priority():
