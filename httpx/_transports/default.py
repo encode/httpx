@@ -135,7 +135,7 @@ class HTTPTransport(BaseTransport):
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
-        response_class: type[Response] | None = None,
+        response_class: type[Response] = Response,
     ) -> None:
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
@@ -202,7 +202,7 @@ class HTTPTransport(BaseTransport):
                 f" but got {proxy.url.scheme!r}."
             )
 
-        self._response_class = response_class or Response
+        self._response_class = response_class
 
     def __enter__(self: T) -> T:  # Use generics for subclass support.
         self._pool.__enter__()
