@@ -173,7 +173,7 @@ ssl_context = httpx.SSLContext(verify=verify)
 
 ### Working with `SSLKEYLOGFILE`
 
-This environment variable is used for [inspecing and debugging SSL](https://everything.curl.dev/usingcurl/tls/sslkeylogfile).
+This environment variable is used for [inspecting and debugging SSL](https://everything.curl.dev/usingcurl/tls/sslkeylogfile).
 
 Unlike `requests` or the standard library [`ssl.create_default_context`](https://docs.python.org/3/library/ssl.html#ssl.create_default_context) the `httpx` package does not automatically configure an SSL context to use `SSLKEYLOGFILE`. If you want to use this it needs to be configured explicitly.
 
