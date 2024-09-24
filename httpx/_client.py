@@ -616,8 +616,6 @@ class Client(BaseClient):
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
-    * **app** - *(optional)* An WSGI application to send requests to,
-    rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
     * **default_encoding** - *(optional)* The default encoding to use for decoding
@@ -646,7 +644,6 @@ class Client(BaseClient):
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
         transport: BaseTransport | None = None,
-        app: typing.Callable[..., typing.Any] | None = None,
         trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
     ) -> None:
@@ -682,14 +679,7 @@ class Client(BaseClient):
             if proxy:
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
 
-        if app:
-            message = (
-                "The 'app' shortcut is now deprecated."
-                " Use the explicit style 'transport=WSGITransport(app=...)' instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-
-        allow_env_proxies = trust_env and app is None and transport is None
+        allow_env_proxies = trust_env and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
@@ -699,7 +689,6 @@ class Client(BaseClient):
             http2=http2,
             limits=limits,
             transport=transport,
-            app=app,
             trust_env=trust_env,
         )
         self._mounts: dict[URLPattern, BaseTransport | None] = {
@@ -731,14 +720,10 @@ class Client(BaseClient):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: BaseTransport | None = None,
-        app: typing.Callable[..., typing.Any] | None = None,
         trust_env: bool = True,
     ) -> BaseTransport:
         if transport is not None:
             return transport
-
-        if app is not None:
-            return WSGITransport(app=app)
 
         return HTTPTransport(
             verify=verify,
@@ -1363,8 +1348,6 @@ class AsyncClient(BaseClient):
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
-    * **app** - *(optional)* An ASGI application to send requests to,
-    rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
     * **default_encoding** - *(optional)* The default encoding to use for decoding
@@ -1393,7 +1376,6 @@ class AsyncClient(BaseClient):
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
         transport: AsyncBaseTransport | None = None,
-        app: typing.Callable[..., typing.Any] | None = None,
         trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
     ) -> None:
@@ -1429,14 +1411,7 @@ class AsyncClient(BaseClient):
             if proxy:
                 raise RuntimeError("Use either `proxy` or 'proxies', not both.")
 
-        if app:
-            message = (
-                "The 'app' shortcut is now deprecated."
-                " Use the explicit style 'transport=ASGITransport(app=...)' instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-
-        allow_env_proxies = trust_env and app is None and transport is None
+        allow_env_proxies = trust_env and transport is None
         proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
@@ -1446,7 +1421,6 @@ class AsyncClient(BaseClient):
             http2=http2,
             limits=limits,
             transport=transport,
-            app=app,
             trust_env=trust_env,
         )
 
@@ -1478,14 +1452,10 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: AsyncBaseTransport | None = None,
-        app: typing.Callable[..., typing.Any] | None = None,
         trust_env: bool = True,
     ) -> AsyncBaseTransport:
         if transport is not None:
             return transport
-
-        if app is not None:
-            return ASGITransport(app=app)
 
         return AsyncHTTPTransport(
             verify=verify,
