@@ -13,42 +13,6 @@ def url_to_origin(url: str) -> httpcore.URL:
     return httpcore.URL(scheme=u.raw_scheme, host=u.raw_host, port=u.port, target="/")
 
 
-@pytest.mark.parametrize(
-    ["proxies", "expected_proxies"],
-    [
-        ("http://127.0.0.1", [("all://", "http://127.0.0.1")]),
-        ({"all://": "http://127.0.0.1"}, [("all://", "http://127.0.0.1")]),
-        (
-            {"http://": "http://127.0.0.1", "https://": "https://127.0.0.1"},
-            [("http://", "http://127.0.0.1"), ("https://", "https://127.0.0.1")],
-        ),
-        (httpx.Proxy("http://127.0.0.1"), [("all://", "http://127.0.0.1")]),
-        (
-            {
-                "https://": httpx.Proxy("https://127.0.0.1"),
-                "all://": "http://127.0.0.1",
-            },
-            [("all://", "http://127.0.0.1"), ("https://", "https://127.0.0.1")],
-        ),
-    ],
-)
-def test_proxies_parameter(proxies, expected_proxies):
-    mounts = {key: httpx.HTTPTransport(proxy=value) for key, value in proxies.items()}
-    client = httpx.Client(mounts=mounts)
-
-    client_patterns = [p.pattern for p in client._mounts.keys()]
-    client_proxies = list(client._mounts.values())
-
-    for proxy_key, url in expected_proxies:
-        assert proxy_key in client_patterns
-        proxy = client_proxies[client_patterns.index(proxy_key)]
-        assert isinstance(proxy, httpx.HTTPTransport)
-        assert isinstance(proxy._pool, httpcore.HTTPProxy)
-        assert proxy._pool._proxy_url == url_to_origin(url)
-
-    assert len(expected_proxies) == len(client._mounts)
-
-
 def test_socks_proxy():
     url = httpx.URL("http://www.example.com")
 
@@ -69,7 +33,6 @@ PROXY_URL = "http://[::1]"
 @pytest.mark.parametrize(
     ["url", "proxies", "expected"],
     [
-        ("http://example.com", None, None),
         ("http://example.com", {}, None),
         ("http://example.com", {"https://": PROXY_URL}, None),
         ("http://example.com", {"http://example.net": PROXY_URL}, None),
