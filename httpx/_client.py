@@ -37,7 +37,6 @@ from ._types import (
     CertTypes,
     CookieTypes,
     HeaderTypes,
-    ProxiesTypes,
     ProxyTypes,
     QueryParamTypes,
     RequestContent,
@@ -211,23 +210,17 @@ class BaseClient:
         return url.copy_with(raw_path=url.raw_path + b"/")
 
     def _get_proxy_map(
-        self, proxies: ProxiesTypes | None, allow_env_proxies: bool
+        self, proxy: ProxyTypes | None, allow_env_proxies: bool
     ) -> dict[str, Proxy | None]:
-        if proxies is None:
+        if proxy is None:
             if allow_env_proxies:
                 return {
                     key: None if url is None else Proxy(url=url)
                     for key, url in get_environment_proxies().items()
                 }
             return {}
-        if isinstance(proxies, dict):
-            new_proxies = {}
-            for key, value in proxies.items():
-                proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
-                new_proxies[str(key)] = proxy
-            return new_proxies
         else:
-            proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
+            proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
             return {"all://": proxy}
 
     @property
@@ -637,7 +630,6 @@ class Client(BaseClient):
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
-        proxies: ProxiesTypes | None = None,
         mounts: None | (typing.Mapping[str, BaseTransport | None]) = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
@@ -673,15 +665,6 @@ class Client(BaseClient):
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
-        if proxies:
-            message = (
-                "The 'proxies' argument is now deprecated."
-                " Use 'proxy' or 'mounts' instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-            if proxy:
-                raise RuntimeError("Use either `proxy` or 'proxies', not both.")
-
         if app:
             message = (
                 "The 'app' shortcut is now deprecated."
@@ -690,7 +673,7 @@ class Client(BaseClient):
             warnings.warn(message, DeprecationWarning)
 
         allow_env_proxies = trust_env and app is None and transport is None
-        proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
+        proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
             verify=verify,
@@ -1352,8 +1335,6 @@ class AsyncClient(BaseClient):
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
-    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
-    URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
     * **limits** - *(optional)* The limits configuration to use.
@@ -1384,7 +1365,6 @@ class AsyncClient(BaseClient):
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
-        proxies: ProxiesTypes | None = None,
         mounts: None | (typing.Mapping[str, AsyncBaseTransport | None]) = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
@@ -1420,15 +1400,6 @@ class AsyncClient(BaseClient):
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
-        if proxies:
-            message = (
-                "The 'proxies' argument is now deprecated."
-                " Use 'proxy' or 'mounts' instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-            if proxy:
-                raise RuntimeError("Use either `proxy` or 'proxies', not both.")
-
         if app:
             message = (
                 "The 'app' shortcut is now deprecated."
@@ -1437,7 +1408,7 @@ class AsyncClient(BaseClient):
             warnings.warn(message, DeprecationWarning)
 
         allow_env_proxies = trust_env and app is None and transport is None
-        proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
+        proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
             verify=verify,
