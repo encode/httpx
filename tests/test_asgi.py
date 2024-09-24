@@ -222,13 +222,3 @@ async def test_asgi_exc_no_raise():
         response = await client.get("http://www.example.org/")
 
         assert response.status_code == 500
-
-
-@pytest.mark.anyio
-async def test_deprecated_shortcut():
-    """
-    The `app=...` shortcut is now deprecated.
-    Use the explicit transport style instead.
-    """
-    with pytest.warns(DeprecationWarning):
-        httpx.AsyncClient(app=hello_world)
