@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+* The deprecated `app` argument has now been removed.
 * The `URL.raw` property has now been removed.
 
 ## 0.27.2 (27th August, 2024)
