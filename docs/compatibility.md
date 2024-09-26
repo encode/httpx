@@ -86,8 +86,7 @@ And using `data=...` to send form data:
 httpx.post(..., data={"message": "Hello, world"})
 ```
 
-Using the `data=<text/byte content>` will raise a deprecation warning,
-and is expected to be fully removed with the HTTPX 1.0 release.
+Unlike `requests`, Using it as `data=<text/byte content>` wont work.
 
 ## Upload files
 

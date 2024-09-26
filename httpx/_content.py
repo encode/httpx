@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-import warnings
 from json import dumps as json_dumps
 from typing import (
     Any,
@@ -9,7 +8,6 @@ from typing import (
     AsyncIterator,
     Iterable,
     Iterator,
-    Mapping,
 )
 from urllib.parse import urlencode
 
@@ -192,18 +190,6 @@ def encode_request(
     Handles encoding the given `content`, `data`, `files`, and `json`,
     returning a two-tuple of (<headers>, <stream>).
     """
-    if data is not None and not isinstance(data, Mapping):
-        # We prefer to separate `content=<bytes|str|byte iterator|bytes aiterator>`
-        # for raw request content, and `data=<form data>` for url encoded or
-        # multipart form content.
-        #
-        # However for compat with requests, we *do* still support
-        # `data=<bytes...>` usages. We deal with that case here, treating it
-        # as if `content=<...>` had been supplied instead.
-        message = "Use 'content=<...>' to upload raw bytes/text content."
-        warnings.warn(message, DeprecationWarning)
-        return encode_content(data)
-
     if content is not None:
         return encode_content(content)
     elif files:
