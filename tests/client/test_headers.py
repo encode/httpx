@@ -194,7 +194,7 @@ def test_header_with_incorrect_value():
         TypeError,
         match=f"Header value must be str or bytes, not {type(None)}",
     ):
-        httpx.Headers({"foo": None})
+        httpx.Headers({"foo": None})  # type: ignore
 
 
 def test_host_with_auth_and_port_in_url():
