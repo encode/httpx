@@ -301,24 +301,6 @@ def test_url_matches(pattern, url, expected):
     assert pattern.matches(httpx.URL(url)) == expected
 
 
-@pytest.mark.parametrize(
-    ["value", "expected"],
-    [
-        (b"value", b"value"),
-        (b"success", b"success"),
-    ],
-)
-def test_normalize_header_value(value, expected):
-    assert normalize_header_value(value) == expected
-
-
-def test_normalize_header_incorrect_value():
-    with pytest.raises(
-        TypeError, match=f"Header value must be str or bytes, not {type(None)}"
-    ):
-        normalize_header_value(None)  # type: ignore
-
-
 def test_pattern_priority():
     matchers = [
         URLPattern("all://"),

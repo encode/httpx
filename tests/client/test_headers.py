@@ -177,6 +177,23 @@ def test_header_does_not_exist():
         del headers["baz"]
 
 
+@pytest.mark.parametrize(
+    ["value", "expected"],
+    [
+        (b"value", b"value"),
+        ("success", "success"),
+    ],
+)
+def test_header_with_correct_value(value, expected):
+    headers = httpx.Headers({"foo": value})
+    assert headers["foo"] == expected
+
+
+def test_header_with_incorrect_value():
+    with pytest.raises(TypeError, match=f"Header value must be str or bytes, not {type(None)}"):
+        httpx.Headers({"foo": None})
+
+
 def test_host_with_auth_and_port_in_url():
     """
     The Host header should only include the hostname, or hostname:port
