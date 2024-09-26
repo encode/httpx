@@ -17,7 +17,6 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
-    NamedTuple,
     Optional,
     Sequence,
     Tuple,
@@ -32,16 +31,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
-
-RawURL = NamedTuple(
-    "RawURL",
-    [
-        ("raw_scheme", bytes),
-        ("raw_host", bytes),
-        ("port", Optional[int]),
-        ("raw_path", bytes),
-    ],
-)
 
 URLTypes = Union["URL", str]
 
