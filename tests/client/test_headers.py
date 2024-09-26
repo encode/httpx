@@ -191,7 +191,8 @@ def test_header_with_correct_value(value, expected):
 
 def test_header_with_incorrect_value():
     with pytest.raises(
-        TypeError, match=f"Header value must be str or bytes, not {type(None)}",
+        TypeError,
+        match=f"Header value must be str or bytes, not {type(None)}",
     ):
         httpx.Headers({"foo": None})
 
