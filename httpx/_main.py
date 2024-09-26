@@ -475,6 +475,7 @@ def main(
 
     try:
         with Client(
+            cookies=dict(cookies),
             proxy=proxy,
             timeout=timeout,
             verify=verify,
@@ -489,7 +490,6 @@ def main(
                 files=files,  # type: ignore
                 json=json,
                 headers=headers,
-                cookies=dict(cookies),
                 auth=auth,
                 follow_redirects=follow_redirects,
                 extensions={"trace": functools.partial(trace, verbose=verbose)},

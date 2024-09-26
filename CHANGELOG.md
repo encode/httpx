@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+* The deprecated using of `cookies` argument now been removed.
 * The deprecated `proxies` argument has now been removed.
 * The deprecated `app` argument has now been removed.
 * The `URL.raw` property has now been removed.
