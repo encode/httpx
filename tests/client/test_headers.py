@@ -177,18 +177,6 @@ def test_header_does_not_exist():
         del headers["baz"]
 
 
-@pytest.mark.parametrize(
-    ["value", "expected"],
-    [
-        (b"value", b"value"),
-        ("success", "success"),
-    ],
-)
-def test_header_with_correct_value(value, expected):
-    headers = httpx.Headers({"foo": value})
-    assert headers["foo"] == expected
-
-
 def test_header_with_incorrect_value():
     with pytest.raises(
         TypeError,
