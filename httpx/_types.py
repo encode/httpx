@@ -16,7 +16,6 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
-    NamedTuple,
     Optional,
     Sequence,
     Tuple,
@@ -31,16 +30,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
-
-RawURL = NamedTuple(
-    "RawURL",
-    [
-        ("raw_scheme", bytes),
-        ("raw_host", bytes),
-        ("port", Optional[int]),
-        ("raw_path", bytes),
-    ],
-)
 
 URLTypes = Union["URL", str]
 
@@ -78,7 +67,6 @@ TimeoutTypes = Union[
     "Timeout",
 ]
 ProxyTypes = Union["URL", str, "Proxy"]
-ProxiesTypes = Union[ProxyTypes, Dict[Union["URL", str], Union[None, ProxyTypes]]]
 
 AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
