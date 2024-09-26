@@ -10,7 +10,7 @@ import certifi
 
 from ._compat import set_minimum_tls_version_1_2
 from ._models import Headers
-from ._types import CertTypes, HeaderTypes, TimeoutTypes, VerifyTypes
+from ._types import CertTypes, HeaderTypes, VerifyTypes
 from ._urls import URL
 from ._utils import get_ca_bundle_from_env
 
@@ -209,7 +209,7 @@ class Timeout:
 
     def __init__(
         self,
-        timeout: TimeoutTypes | UnsetType = UNSET,
+        timeout: None | float | Timeout | UnsetType = UNSET,
         *,
         connect: None | float | UnsetType = UNSET,
         read: None | float | UnsetType = UNSET,
@@ -226,12 +226,6 @@ class Timeout:
             self.read = timeout.read  # type: typing.Optional[float]
             self.write = timeout.write  # type: typing.Optional[float]
             self.pool = timeout.pool  # type: typing.Optional[float]
-        elif isinstance(timeout, tuple):
-            # Passed as a tuple.
-            self.connect = timeout[0]
-            self.read = timeout[1]
-            self.write = None if len(timeout) < 3 else timeout[2]
-            self.pool = None if len(timeout) < 4 else timeout[3]
         elif not (
             isinstance(connect, UnsetType)
             or isinstance(read, UnsetType)
