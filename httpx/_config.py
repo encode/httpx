@@ -63,28 +63,12 @@ class SSLContext(ssl.SSLContext):
             cert,
         )
 
-        if verify:
-            self.load_ssl_context_verify(cert, verify)
-        else:
-            self.load_ssl_context_no_verify(cert)
+        if not verify:
+            self.check_hostname = False
+            self.verify_mode = ssl.CERT_NONE
+            self._load_client_certs(cert)
+            return
 
-    def load_ssl_context_no_verify(
-        self, cert: typing.Optional[CertTypes]
-    ) -> ssl.SSLContext:
-        """
-        Return an SSL context for unverified connections.
-        """
-        self.check_hostname = False
-        self.verify_mode = ssl.CERT_NONE
-        self._load_client_certs(cert)
-        return self
-
-    def load_ssl_context_verify(
-        self, cert: typing.Optional[CertTypes], verify: VerifyTypes
-    ) -> None:
-        """
-        Return an SSL context for verified connections.
-        """
         if isinstance(verify, bool):
             ca_bundle_path = self.DEFAULT_CA_BUNDLE_PATH
         elif Path(verify).exists():
