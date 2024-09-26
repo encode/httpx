@@ -143,22 +143,17 @@ def test_timeout_from_one_none_value():
 
 def test_timeout_from_one_value():
     timeout = httpx.Timeout(None, read=5.0)
-    assert timeout == httpx.Timeout(timeout=(None, 5.0, None, None))
+    assert timeout == httpx.Timeout(connect=None, read=5.0, write=None, pool=None)
 
 
 def test_timeout_from_one_value_and_default():
     timeout = httpx.Timeout(5.0, pool=60.0)
-    assert timeout == httpx.Timeout(timeout=(5.0, 5.0, 5.0, 60.0))
+    assert timeout == httpx.Timeout(connect=5.0, read=5.0, write=5.0, pool=60.0)
 
 
 def test_timeout_missing_default():
     with pytest.raises(ValueError):
         httpx.Timeout(pool=60.0)
-
-
-def test_timeout_from_tuple():
-    timeout = httpx.Timeout(timeout=(5.0, 5.0, 5.0, 5.0))
-    assert timeout == httpx.Timeout(timeout=5.0)
 
 
 def test_timeout_from_config_instance():

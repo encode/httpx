@@ -62,11 +62,7 @@ CertTypes = Union[
     Tuple[str, Optional[str], Optional[str]],
 ]
 VerifyTypes = Union[str, bool, ssl.SSLContext]
-TimeoutTypes = Union[
-    Optional[float],
-    Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
-    "Timeout",
-]
+TimeoutTypes = Optional[Union["Timeout", float]]
 ProxyTypes = Union["URL", str, "Proxy"]
 
 AuthTypes = Union[
