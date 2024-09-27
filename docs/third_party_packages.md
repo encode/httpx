@@ -6,6 +6,12 @@ As HTTPX usage grows, there is an expanding community of developers building too
 
 <!-- NOTE: this list is in alphabetical order. -->
 
+### httpx-socks
+
+[GitHub](https://github.com/romis2012/httpx-socks)
+
+Proxy (HTTP, SOCKS) transports for httpx.
+
 ### Hishel
 
 [GitHub](https://github.com/karpetrosyan/hishel) - [Documentation](https://hishel.com/)
