@@ -32,6 +32,7 @@ def is_running_trio() -> bool:
 
         # See https://github.com/python-trio/trio/issues/2802
         import sniffio
+
         if sniffio.current_async_library() == "trio":
             return True
     except ImportError:
@@ -43,9 +44,11 @@ def is_running_trio() -> bool:
 def create_event() -> Event:
     if is_running_trio():
         import trio
+
         return trio.Event()
 
     import asyncio
+
     return asyncio.Event()
 
 
