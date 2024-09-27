@@ -34,7 +34,7 @@ def test_client_header():
     assert response.json() == {
         "headers": {
             "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
+            "accept-encoding": "gzip, deflate, br, zstd",
             "connection": "keep-alive",
             "example-header": "example-value",
             "host": "example.org",
@@ -56,7 +56,7 @@ def test_header_merge():
     assert response.json() == {
         "headers": {
             "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
+            "accept-encoding": "gzip, deflate, br, zstd",
             "connection": "keep-alive",
             "host": "example.org",
             "user-agent": "python-myclient/0.2.1",
@@ -78,7 +78,7 @@ def test_header_merge_conflicting_headers():
     assert response.json() == {
         "headers": {
             "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
+            "accept-encoding": "gzip, deflate, br, zstd",
             "connection": "keep-alive",
             "host": "example.org",
             "user-agent": f"python-httpx/{httpx.__version__}",
@@ -100,7 +100,7 @@ def test_header_update():
     assert first_response.json() == {
         "headers": {
             "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
+            "accept-encoding": "gzip, deflate, br, zstd",
             "connection": "keep-alive",
             "host": "example.org",
             "user-agent": f"python-httpx/{httpx.__version__}",
@@ -111,7 +111,7 @@ def test_header_update():
     assert second_response.json() == {
         "headers": {
             "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
+            "accept-encoding": "gzip, deflate, br, zstd",
             "another-header": "AThing",
             "connection": "keep-alive",
             "host": "example.org",
@@ -164,7 +164,7 @@ def test_remove_default_header():
     assert response.json() == {
         "headers": {
             "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
+            "accept-encoding": "gzip, deflate, br, zstd",
             "connection": "keep-alive",
             "host": "example.org",
         }
@@ -175,6 +175,14 @@ def test_header_does_not_exist():
     headers = httpx.Headers({"foo": "bar"})
     with pytest.raises(KeyError):
         del headers["baz"]
+
+
+def test_header_with_incorrect_value():
+    with pytest.raises(
+        TypeError,
+        match=f"Header value must be str or bytes, not {type(None)}",
+    ):
+        httpx.Headers({"foo": None})  # type: ignore
 
 
 def test_host_with_auth_and_port_in_url():
@@ -192,7 +200,7 @@ def test_host_with_auth_and_port_in_url():
     assert response.json() == {
         "headers": {
             "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
+            "accept-encoding": "gzip, deflate, br, zstd",
             "connection": "keep-alive",
             "host": "example.org",
             "user-agent": f"python-httpx/{httpx.__version__}",
@@ -215,7 +223,7 @@ def test_host_with_non_default_port_in_url():
     assert response.json() == {
         "headers": {
             "accept": "*/*",
-            "accept-encoding": "gzip, deflate, br",
+            "accept-encoding": "gzip, deflate, br, zstd",
             "connection": "keep-alive",
             "host": "example.org:123",
             "user-agent": f"python-httpx/{httpx.__version__}",

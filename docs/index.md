@@ -68,7 +68,7 @@ HTTPX builds on the well-established usability of `requests`, and gives you:
 * A broadly [requests-compatible API](compatibility.md).
 * Standard synchronous interface, but with [async support if you need it](async.md).
 * HTTP/1.1 [and HTTP/2 support](http2.md).
-* Ability to make requests directly to [WSGI applications](advanced.md#calling-into-python-web-apps) or [ASGI applications](async.md#calling-into-python-web-apps).
+* Ability to make requests directly to [WSGI applications](advanced/transports.md#wsgi-transport) or [ASGI applications](advanced/transports.md#asgi-transport).
 * Strict timeouts everywhere.
 * Fully type annotated.
 * 100% test coverage.
@@ -95,7 +95,7 @@ Plus all the standard features of `requests`...
 
 For a run-through of all the basics, head over to the [QuickStart](quickstart.md).
 
-For more advanced topics, see the [Advanced Usage](advanced.md) section,
+For more advanced topics, see the **Advanced** section,
 the [async support](async.md) section, or the [HTTP/2](http2.md) section.
 
 The [Developer Interface](api.md) provides a comprehensive API reference.
@@ -119,6 +119,7 @@ As well as these optional installs:
 * `rich` - Rich terminal support. *(Optional, with `httpx[cli]`)*
 * `click` - Command line client support. *(Optional, with `httpx[cli]`)*
 * `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx[brotli]`)*
+* `zstandard` - Decoding for "zstd" compressed responses. *(Optional, with `httpx[zstd]`)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
@@ -138,10 +139,10 @@ Or, to include the optional HTTP/2 support, use:
 $ pip install httpx[http2]
 ```
 
-To include the optional brotli decoder support, use:
+To include the optional brotli and zstandard decoders support, use:
 
 ```shell
-$ pip install httpx[brotli]
+$ pip install httpx[brotli,zstd]
 ```
 
 HTTPX requires Python 3.8+

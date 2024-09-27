@@ -159,7 +159,7 @@ httpx.get('https://www.example.com', timeout=None)
 
 HTTPX uses the mounts argument for HTTP proxying and transport routing.
 It can do much more than proxies and allows you to configure more than just the proxy route.
-For more detailed documentation, see [Mounting Transports](advanced.md#mounting-transports).
+For more detailed documentation, see [Mounting Transports](advanced/transports.md#mounting-transports).
 
 When using `httpx.Client(mounts={...})` to map to a selection of different transports, we use full URL schemes, such as `mounts={"http://": ..., "https://": ...}`.
 
@@ -197,9 +197,9 @@ We don't support `response.is_ok` since the naming is ambiguous there, and might
 
 ## Request instantiation
 
-There is no notion of [prepared requests](https://requests.readthedocs.io/en/stable/user/advanced/#prepared-requests) in HTTPX. If you need to customize request instantiation, see [Request instances](advanced.md#request-instances).
+There is no notion of [prepared requests](https://requests.readthedocs.io/en/stable/user/advanced/#prepared-requests) in HTTPX. If you need to customize request instantiation, see [Request instances](advanced/clients.md#request-instances).
 
-Besides, `httpx.Request()` does not support the `auth`, `timeout`, `follow_redirects`, `mounts`, `verify` and `cert` parameters. However these are available in `httpx.request`, `httpx.get`, `httpx.post` etc., as well as on [`Client` instances](advanced.md#client-instances).
+Besides, `httpx.Request()` does not support the `auth`, `timeout`, `follow_redirects`, `mounts`, `verify` and `cert` parameters. However these are available in `httpx.request`, `httpx.get`, `httpx.post` etc., as well as on [`Client` instances](advanced/clients.md#client-instances).
 
 ## Mocking
 
@@ -227,4 +227,4 @@ For both query params (`params=`) and form data (`data=`), `requests` supports s
 
 In HTTPX, event hooks may access properties of requests and responses, but event hook callbacks cannot mutate the original request/response.
 
-If you are looking for more control, consider checking out [Custom Transports](advanced.md#custom-transports).
+If you are looking for more control, consider checking out [Custom Transports](advanced/transports.md#custom-transports).

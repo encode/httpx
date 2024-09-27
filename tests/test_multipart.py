@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import tempfile
 import typing
@@ -148,7 +150,7 @@ def test_multipart_file_tuple():
 
 
 @pytest.mark.parametrize("file_content_type", [None, "text/plain"])
-def test_multipart_file_tuple_headers(file_content_type: typing.Optional[str]) -> None:
+def test_multipart_file_tuple_headers(file_content_type: str | None) -> None:
     file_name = "test.txt"
     file_content = io.BytesIO(b"<file content>")
     file_headers = {"Expires": "0"}
@@ -460,8 +462,8 @@ class TestHeaderParamHTML5Formatting:
         assert expected in request.read()
 
     def test_unicode_with_control_character(self):
-        filename = "hello\x1A\x1B\x1C"
-        expected = b'filename="hello%1A\x1B%1C"'
+        filename = "hello\x1a\x1b\x1c"
+        expected = b'filename="hello%1A\x1b%1C"'
         files = {"upload": (filename, b"<file content>")}
         request = httpx.Request("GET", "https://www.example.com", files=files)
         assert expected in request.read()

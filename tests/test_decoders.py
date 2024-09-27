@@ -1,8 +1,12 @@
+from __future__ import annotations
+
+import io
 import typing
 import zlib
 
 import chardet
 import pytest
+import zstandard as zstd
 
 import httpx
 
@@ -69,6 +73,53 @@ def test_brotli():
         content=compressed_body,
     )
     assert response.content == body
+
+
+def test_zstd():
+    body = b"test 123"
+    compressed_body = zstd.compress(body)
+
+    headers = [(b"Content-Encoding", b"zstd")]
+    response = httpx.Response(
+        200,
+        headers=headers,
+        content=compressed_body,
+    )
+    assert response.content == body
+
+
+def test_zstd_decoding_error():
+    compressed_body = "this_is_not_zstd_compressed_data"
+
+    headers = [(b"Content-Encoding", b"zstd")]
+    with pytest.raises(httpx.DecodingError):
+        httpx.Response(
+            200,
+            headers=headers,
+            content=compressed_body,
+        )
+
+
+def test_zstd_multiframe():
+    # test inspired by urllib3 test suite
+    data = (
+        # Zstandard frame
+        zstd.compress(b"foo")
+        # skippable frame (must be ignored)
+        + bytes.fromhex(
+            "50 2A 4D 18"  # Magic_Number (little-endian)
+            "07 00 00 00"  # Frame_Size (little-endian)
+            "00 00 00 00 00 00 00"  # User_Data
+        )
+        # Zstandard frame
+        + zstd.compress(b"bar")
+    )
+    compressed_body = io.BytesIO(data)
+
+    headers = [(b"Content-Encoding", b"zstd")]
+    response = httpx.Response(200, headers=headers, content=compressed_body)
+    response.read()
+    assert response.content == b"foobar"
 
 
 def test_multi():
@@ -224,7 +275,7 @@ def test_text_decoder_empty_cases():
     [((b"Hello,", b" world!"), ["Hello,", " world!"])],
 )
 def test_streaming_text_decoder(
-    data: typing.Iterable[bytes], expected: typing.List[str]
+    data: typing.Iterable[bytes], expected: list[str]
 ) -> None:
     response = httpx.Response(200, content=iter(data))
     assert list(response.iter_text()) == expected
