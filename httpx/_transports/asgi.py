@@ -35,7 +35,7 @@ def is_running_trio() -> bool:
 
         if sniffio.current_async_library() == "trio":
             return True
-    except ImportError:
+    except ImportError:  # pragma: nocover
         pass
 
     return False
