@@ -138,8 +138,8 @@ As well as these optional installs:
 * `trio` - Async support for `trio`. *(Optional, with `httpx['trio']`)*
 * `h2` - HTTP/2 support. *(Optional, with `httpx['http2']`)*
 * `socksio` - SOCKS proxy support. *(Optional, with `httpx['socks']`)*
-* `rich` - Command line client support. *(Optional, with `httpx['cli']`)*
 * `click` - Command line client support. *(Optional, with `httpx['cli']`)*
+* `rich` - Command line client support. *(Optional, with `httpx['cli']`)*
 * `pygments` - Command line client support. *(Optional, with `httpx['cli']`)*
 * `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx['brotli']`)*
 * `zstandard` - Decoding for "zstd" compressed responses. *(Optional, with `httpx[zstd]`)*
