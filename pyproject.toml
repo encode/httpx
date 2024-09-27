@@ -32,7 +32,6 @@ dependencies = [
     "httpcore==1.*",
     "anyio",
     "idna",
-    "sniffio",
 ]
 dynamic = ["readme", "version"]
 
