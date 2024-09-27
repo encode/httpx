@@ -6,6 +6,12 @@ As HTTPX usage grows, there is an expanding community of developers building too
 
 <!-- NOTE: this list is in alphabetical order. -->
 
+### httpdbg
+
+[GitHub](https://github.com/cle-b/httpdbg) - [Documentation](https://httpdbg.readthedocs.io/)
+
+A tool for Python developers to easily debug the HTTP(S) client requests in a Python program.
+
 ### Hishel
 
 [GitHub](https://github.com/karpetrosyan/hishel) - [Documentation](https://hishel.com/)
