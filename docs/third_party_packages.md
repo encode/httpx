@@ -4,7 +4,17 @@ As HTTPX usage grows, there is an expanding community of developers building too
 
 ## Plugins
 
-<!-- NOTE: this list is in alphabetical order. -->
+### httpx-ws
+
+[GitHub](https://github.com/frankie567/httpx-ws) - [Documentation](https://frankie567.github.io/httpx-ws/)
+
+WebSocket support for HTTPX.
+
+### httpx-socks
+
+[GitHub](https://github.com/romis2012/httpx-socks)
+
+Proxy (HTTP, SOCKS) transports for httpx.
 
 ### Hishel
 
