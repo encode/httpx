@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import ssl
 import typing
 from pathlib import Path
@@ -51,11 +52,17 @@ class SSLContext(ssl.SSLContext):
         self,
         verify: VerifyTypes = True,
         cert: CertTypes | None = None,
+        trust_env: bool = True,
     ) -> None:
         self.verify = verify
         set_minimum_tls_version_1_2(self)
         self.options |= ssl.OP_NO_COMPRESSION
         self.set_ciphers(DEFAULT_CIPHERS)
+        self.trust_env = trust_env
+
+        keylogfile = os.environ.get("SSLKEYLOGFILE")
+        if keylogfile and self.trust_env:
+            self.keylog_filename = keylogfile
 
         logger.debug(
             "load_ssl_context verify=%r cert=%r",

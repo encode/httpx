@@ -687,6 +687,7 @@ class Client(BaseClient):
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
+        trust_env: bool = True,
         transport: typing.Optional[BaseTransport] = None,
     ) -> BaseTransport:
         if transport is not None:
@@ -697,6 +698,7 @@ class Client(BaseClient):
             http1=http1,
             http2=http2,
             limits=limits,
+            trust_env=trust_env,
         )
 
     def _init_proxy_transport(
@@ -706,12 +708,14 @@ class Client(BaseClient):
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
+        trust_env: bool = True,
     ) -> BaseTransport:
         return HTTPTransport(
             ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
+            trust_env=trust_env,
             proxy=proxy,
         )
 
