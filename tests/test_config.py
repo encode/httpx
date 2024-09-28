@@ -1,4 +1,5 @@
 import ssl
+import typing as t
 from pathlib import Path
 
 import certifi
@@ -16,6 +17,21 @@ def test_load_ssl_config():
 def test_load_ssl_config_verify_non_existing_path():
     with pytest.raises(IOError):
         httpx.SSLContext(verify="/path/to/nowhere")
+
+
+@pytest.mark.parametrize(
+    "trust_env, expected_keylog_filename",
+    [
+        pytest.param(True, "test", id="With trasting env"),
+        pytest.param(False, None, id="Without trasting env"),
+    ],
+)
+def test_load_ssl_with_keylog(
+    monkeypatch: t.Any, trust_env: bool, expected_keylog_filename: t.Union[str, None]
+) -> None:
+    monkeypatch.setenv("SSLKEYLOGFILE", "test")
+    context = httpx.SSLContext(trust_env=trust_env)
+    assert context.keylog_filename == expected_keylog_filename
 
 
 def test_load_ssl_config_verify_existing_file():
