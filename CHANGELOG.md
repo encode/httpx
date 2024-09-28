@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+* Added `httpx[asyncio]` and `httpx[trio]` extras.
+* Default support for `asyncio` has been removed, you need to explicitly install `httpx[asyncio]`.
 * The deprecated `proxies` argument has now been removed.
 * The deprecated `app` argument has now been removed.
 * The `URL.raw` property has now been removed.

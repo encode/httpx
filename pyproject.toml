@@ -29,30 +29,35 @@ classifiers = [
 ]
 dependencies = [
     "certifi",
-    "httpcore==1.*",
-    "anyio",
+    "httpcore>=1.0.0,<2.0.0",
     "idna",
 ]
 dynamic = ["readme", "version"]
 
 [project.optional-dependencies]
+asyncio = [
+    "httpcore[asyncio]",
+]
 brotli = [
     "brotli; platform_python_implementation == 'CPython'",
     "brotlicffi; platform_python_implementation != 'CPython'",
 ]
 cli = [
-    "click==8.*",
-    "pygments==2.*",
-    "rich>=10,<14",
+    "click>=8.0.0,<9.0.0",
+    "pygments>=2.0.0,<3.0.0",
+    "rich>=10.0.0,<14.0.0",
 ]
 http2 = [
-    "h2>=3,<5",
+    "httpcore[http2]",
 ]
 socks = [
-    "socksio==1.*",
+    "httpcore[socks]",
+]
+trio = [
+    "httpcore[trio]",
 ]
 zstd = [
-  "zstandard>=0.18.0",
+  "zstandard>=0.18.0,<1.0.0",
 ]
 
 [project.scripts]
