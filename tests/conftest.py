@@ -56,17 +56,6 @@ Send = typing.Callable[
 ]
 Scope = typing.Dict[str, typing.Any]
 
-if sys.platform=="emscripten":
-    # add permissive access control headers - this is important on emscripten in
-    # a web-browser, as otherwise our test servers won't be accessible to scripts.
-    DEFAULT_HEADERS = [
-        ["access-control-allow-origin", "*"],
-        ["access-control-allow-methods", "PUT, GET, HEAD, POST, DELETE, OPTIONS"],
-        ["Access-Control-Allow-Headers", "*"],
-    ]
-else:
-    DEFAULT_HEADERS = []
-
 
 async def app(scope: Scope, receive: Receive, send: Send) -> None:
     assert scope["type"] == "http"
@@ -84,6 +73,8 @@ async def app(scope: Scope, receive: Receive, send: Send) -> None:
         await redirect_301(scope, receive, send)
     elif scope["path"].startswith("/json"):
         await hello_world_json(scope, receive, send)
+    elif scope["path"].startswith("/emscripten"):
+        await hello_world_emscripten(scope, receive, send)
     else:
         await hello_world(scope, receive, send)
 
@@ -93,7 +84,28 @@ async def hello_world(scope: Scope, receive: Receive, send: Send) -> None:
         {
             "type": "http.response.start",
             "status": 200,
-            "headers": [[b"content-type", b"text/plain"]] + DEFAULT_HEADERS,
+            "headers": [[b"content-type", b"text/plain"]],
+        }
+    )
+    await send({"type": "http.response.body", "body": b"Hello, world!"})
+
+
+# For testing on emscripten, we require cross origin isolation headers
+# to be set or else browsers won't be able to read from us from javascript
+async def hello_world_emscripten(scope: Scope, receive: Receive, send: Send) -> None:
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [
+                [b"content-type", b"text/plain"],
+                [b"access-control-allow-origin", "*"],
+                [
+                    b"access-control-allow-methods",
+                    b"PUT, GET, HEAD, POST, DELETE, OPTIONS",
+                ],
+                [b"Access-Control-Allow-Headers", b"*"],
+            ],
         }
     )
     await send({"type": "http.response.body", "body": b"Hello, world!"})
@@ -104,7 +116,7 @@ async def hello_world_json(scope: Scope, receive: Receive, send: Send) -> None:
         {
             "type": "http.response.start",
             "status": 200,
-            "headers": [[b"content-type", b"application/json"]] + DEFAULT_HEADERS,
+            "headers": [[b"content-type", b"application/json"]],
         }
     )
     await send({"type": "http.response.body", "body": b'{"Hello": "world!"}'})
@@ -115,7 +127,7 @@ async def slow_response(scope: Scope, receive: Receive, send: Send) -> None:
         {
             "type": "http.response.start",
             "status": 200,
-            "headers": [[b"content-type", b"text/plain"]] + DEFAULT_HEADERS,
+            "headers": [[b"content-type", b"text/plain"]],
         }
     )
     await sleep(1.0)  # Allow triggering a read timeout.
@@ -128,7 +140,7 @@ async def status_code(scope: Scope, receive: Receive, send: Send) -> None:
         {
             "type": "http.response.start",
             "status": status_code,
-            "headers": [[b"content-type", b"text/plain"]] + DEFAULT_HEADERS,
+            "headers": [[b"content-type", b"text/plain"]],
         }
     )
     await send({"type": "http.response.body", "body": b"Hello, world!"})
@@ -147,7 +159,7 @@ async def echo_body(scope: Scope, receive: Receive, send: Send) -> None:
         {
             "type": "http.response.start",
             "status": 200,
-            "headers": [[b"content-type", b"text/plain"]] + DEFAULT_HEADERS,
+            "headers": [[b"content-type", b"text/plain"]],
         }
     )
     await send({"type": "http.response.body", "body": body})
@@ -166,8 +178,7 @@ async def echo_binary(scope: Scope, receive: Receive, send: Send) -> None:
         {
             "type": "http.response.start",
             "status": 200,
-            "headers": [[b"content-type", b"application/octet-stream"]]
-            + DEFAULT_HEADERS,
+            "headers": [[b"content-type", b"application/octet-stream"]],
         }
     )
     await send({"type": "http.response.body", "body": body})
@@ -182,7 +193,7 @@ async def echo_headers(scope: Scope, receive: Receive, send: Send) -> None:
         {
             "type": "http.response.start",
             "status": 200,
-            "headers": [[b"content-type", b"application/json"]] + DEFAULT_HEADERS,
+            "headers": [[b"content-type", b"application/json"]],
         }
     )
     await send({"type": "http.response.body", "body": json.dumps(body).encode()})

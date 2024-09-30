@@ -9,7 +9,7 @@ flag. Firefox is not currently supported.
 
 See https://github.com/WebAssembly/js-promise-integration/
 
-In async mode it uses pyodide's pyfetch api, which should work
+In async mode it uses the standard fetch api, which should work
 anywhere that pyodide works.
 """
 
@@ -17,8 +17,8 @@ from __future__ import annotations
 
 import typing
 from types import TracebackType
-from warnings import warn
 
+import email.parser
 import js
 import pyodide
 
@@ -165,8 +165,6 @@ class EmscriptenStream(SyncByteStream):
                 yield this_buffer
 
     def close(self) -> None:
-        if self._stream_js is not None and hasattr(self._stream_js, "Close"):
-            self._stream_js.Close()
         self._stream_js = None
 
 
@@ -185,8 +183,7 @@ class EmscriptenTransport(BaseTransport):
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
-        if proxy is not None:
-            warn("HTTPX does not support custom proxy setting on Emscripten")
+        pass
 
     def __enter__(self: T) -> T:  # Use generics for subclass support.
         return self
@@ -204,6 +201,8 @@ class EmscriptenTransport(BaseTransport):
         request: Request,
     ) -> Response:
         assert isinstance(request.stream, SyncByteStream)
+        if not self._can_use_jspi():
+            return self._no_jspi_fallback(request)
         req_body: bytes | None = b"".join(request.stream)
         if req_body is not None and len(req_body) == 0:
             req_body = None
@@ -252,25 +251,82 @@ class EmscriptenTransport(BaseTransport):
         headers["content-encoding"] = "identity"
         status_code = response_js.status
 
-        if response_js.body is not None:
-            # get a reader from the fetch response
-            body_stream_js = response_js.body.getReader()
-            return Response(
-                status_code=status_code,
-                headers=headers,
-                stream=EmscriptenStream(
-                    body_stream_js, read_timeout, abort_controller_js
-                ),
-            )
+        # get a reader from the fetch response
+        body_stream_js = response_js.body.getReader()
+        return Response(
+            status_code=status_code,
+            headers=headers,
+            stream=EmscriptenStream(
+                body_stream_js, read_timeout, abort_controller_js
+            ),
+        )
+
+    def _can_use_jspi(self) -> bool:
+        """Returns true if the pyodide environment allows for use of synchronous javascript promise
+        calls. If not we have to fall back to the browser XMLHttpRequest api.
+        """
+        if hasattr(pyodide.ffi,"can_run_sync"):
+            return bool(pyodide.ffi.can_run_sync())
         else:
-            return Response(
-                status_code=status_code,
-                headers=headers,
-                stream=None,
+            from pyodide_js._module import (  # type: ignore[import-not-found]
+                validSuspender,
             )
-        
-    def _no_jspi_fallback():
-        pass
+            return bool(validSuspender.value)
+
+    def _is_in_browser_main_thread(self) -> bool:
+        return hasattr(js, "window") and hasattr(js, "self") and js.self == js.window
+
+    def _no_jspi_fallback(self, request: Request) -> Response:
+        try:
+            js_xhr = js.XMLHttpRequest.new()
+
+            req_body: bytes | None = b"".join(request.stream)
+            if req_body is not None and len(req_body) == 0:
+                req_body = None
+
+            timeout = 0.0
+            if "timeout" in request.extensions:
+                timeout_dict = request.extensions["timeout"]
+                if timeout_dict is not None:
+                    if "connect" in timeout_dict:
+                        timeout = timeout_dict["connect"]
+                    if "read" in timeout_dict:
+                        timeout = timeout_dict["connect"]
+
+            # XHMLHttpRequest only supports timeouts and proper
+            # binary file reading in web-workers
+            if not self._is_in_browser_main_thread():
+                js_xhr.responseType = "arraybuffer"
+                if timeout > 0.0:
+                    js_xhr.timeout = int(request.timeout * 1000)
+            else:
+                # this is a nasty hack to be able to read binary files on
+                # main browser thread using xmlhttprequest
+                js_xhr.overrideMimeType("text/plain; charset=ISO-8859-15")
+
+            js_xhr.open(request.method, request.url, False)
+
+            for name, value in request.headers.items():
+                if name.lower() not in HEADERS_TO_IGNORE:
+                    js_xhr.setRequestHeader(name, value)
+
+            js_xhr.send(pyodide.ffi.to_js(req_body))
+
+            headers = dict(
+                email.parser.Parser().parsestr(js_xhr.getAllResponseHeaders())
+            )
+
+            if not self._is_in_browser_main_thread():
+                body = js_xhr.response.to_py().tobytes()
+            else:
+                body = js_xhr.response.encode("ISO-8859-15")
+
+            return Response(status_code=js_xhr.status, headers=headers, content=body)
+        except pyodide.ffi.JsException as err:
+            if err.name == "TimeoutError":
+                raise ConnectTimeout(message="Request timed out")
+            else:
+                raise ConnectError(message=err.message)
 
     def close(self) -> None:
         pass
@@ -303,8 +359,6 @@ class AsyncEmscriptenStream(AsyncByteStream):
                 yield this_buffer
 
     async def aclose(self) -> None:
-        if self._stream_js is not None and hasattr(self._stream_js, "Close"):
-            self._stream_js.Close()
         self._stream_js = None
 
 
@@ -323,8 +377,7 @@ class AsyncEmscriptenTransport(AsyncBaseTransport):
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
-        if proxy is not None:
-            warn("HTTPX does not support custom proxy setting on Emscripten")
+        pass
 
     async def __aenter__(self: A) -> A:  # Use generics for subclass support.
         return self
@@ -393,22 +446,15 @@ class AsyncEmscriptenTransport(AsyncBaseTransport):
                 headers[str(iter_value_js.value[0])] = str(iter_value_js.value[1])
         status_code = response_js.status
 
-        if response_js.body is not None:
-            # get a reader from the fetch response
-            body_stream_js = response_js.body.getReader()
-            return Response(
-                status_code=status_code,
-                headers=headers,
-                stream=AsyncEmscriptenStream(
-                    body_stream_js, read_timeout, abort_controller_js
-                ),
-            )
-        else:
-            return Response(
-                status_code=status_code,
-                headers=headers,
-                stream=None,
-            )
+        # get a reader from the fetch response
+        body_stream_js = response_js.body.getReader()
+        return Response(
+            status_code=status_code,
+            headers=headers,
+            stream=AsyncEmscriptenStream(
+                body_stream_js, read_timeout, abort_controller_js
+            ),
+        )
 
     async def aclose(self) -> None:
         pass

@@ -1,0 +1,24 @@
+[run]
+source =
+    httpx
+
+[paths]
+source =
+    httpx
+    */httpx
+    *\httpx
+
+[report]
+
+exclude_lines =
+    except ModuleNotFoundError:
+    except ImportError:
+    pass
+    import
+    raise NotImplementedError
+    .* # Platform-specific.*
+    .*:.* # Python \d.*
+    .* # Abstract
+    .* # Defensive:
+    if (?:typing.)?TYPE_CHECKING:
+    ^\s*?\.\.\.\s*$
