@@ -1,10 +1,12 @@
 # emscripten specific test fixtures
 
 
+import pytest
 import random
+import textwrap
+
 from typing import Any, Generator
 
-import pytest
 
 _coverage_count = 0
 
@@ -22,12 +24,10 @@ def selenium_with_jspi_if_possible(
 ) -> Generator[Any, None, None]:
     if runtime == "firefox":
         fixture_name = "selenium"
-        with_jspi = False
     else:
         fixture_name = "selenium_jspi"
-        with_jspi = True
     selenium_obj = request.getfixturevalue(fixture_name)
-    selenium_obj.with_jspi = with_jspi
+    selenium_obj.with_jspi = has_jspi
     yield selenium_obj
 
 
@@ -51,52 +51,27 @@ _coverage.start()
         )"""
         )
 
-    if not hasattr(selenium_with_jspi_if_possible,"old_run_async"):
+    if not hasattr(selenium_with_jspi_if_possible, "old_run_async"):
         selenium_with_jspi_if_possible.old_run_async = (
             selenium_with_jspi_if_possible.run_async
         )
-
 
     selenium_with_jspi_if_possible._install_packages = _install_packages.__get__(
         selenium_with_jspi_if_possible, selenium_with_jspi_if_possible.__class__
     )
 
-    def _run_async_and_force_jspi_off(self: Any, code: str) -> Any:
-        self.old_run_async(
-           """
-            try:
-                import httpx
-                httpx._transport.emscripten.EmscriptenTransport._can_use_jspi = lambda x: False
-            except:
-                pass
-           """
+    def run_with_jspi(self: Any, code: str) -> Any:
+        code = textwrap.dedent(code)
+        code = (
+                "import httpx\n"
+            +f"httpx._transports.emscripten.DISABLE_JSPI={self.with_jspi ==False}\n"
+            + code
         )
         self.old_run_async(code)
 
-    def _run_async_and_force_jspi_on(self: Any, code: str) -> Any:
-        self.old_run_async(
-           """
-            try:
-                import httpx
-                httpx._transport.emscripten.EmscriptenTransport._can_use_jspi = lambda x: True
-            except:
-                pass
-           """
-        )
-        self.old_run_async(code)
-
-
-    if has_jspi:
-        # force JSPI to be disabled
-        selenium_with_jspi_if_possible.run_async = _run_async_and_force_jspi_off.__get__(
-            selenium_with_jspi_if_possible, selenium_with_jspi_if_possible.__class__
-        )
-    else:
-        # force JSPI to be disabled
-        selenium_with_jspi_if_possible.run_async = _run_async_and_force_jspi_on.__get__(
-            selenium_with_jspi_if_possible, selenium_with_jspi_if_possible.__class__
-        )
-
+    selenium_with_jspi_if_possible.run_with_jspi = run_with_jspi.__get__(
+        selenium_with_jspi_if_possible, selenium_with_jspi_if_possible.__class__
+    )
 
     selenium_with_jspi_if_possible._install_packages()
     yield selenium_with_jspi_if_possible

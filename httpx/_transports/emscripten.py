@@ -45,6 +45,8 @@ SOCKET_OPTION = typing.Union[
 
 __all__ = ["AsyncEmscriptenTransport", "EmscriptenTransport"]
 
+DISABLE_JSPI = False
+
 """
 There are some headers that trigger unintended CORS preflight requests.
 See also https://github.com/koenvo/pyodide-http/issues/22
@@ -256,21 +258,23 @@ class EmscriptenTransport(BaseTransport):
         return Response(
             status_code=status_code,
             headers=headers,
-            stream=EmscriptenStream(
-                body_stream_js, read_timeout, abort_controller_js
-            ),
+            stream=EmscriptenStream(body_stream_js, read_timeout, abort_controller_js),
         )
 
     def _can_use_jspi(self) -> bool:
         """Returns true if the pyodide environment allows for use of synchronous javascript promise
         calls. If not we have to fall back to the browser XMLHttpRequest api.
         """
-        if hasattr(pyodide.ffi,"can_run_sync"):
+        global DISABLE_JSPI
+        if DISABLE_JSPI:
+            return False
+        if hasattr(pyodide.ffi, "can_run_sync"):
             return bool(pyodide.ffi.can_run_sync())
         else:
             from pyodide_js._module import (  # type: ignore[import-not-found]
                 validSuspender,
             )
+
             return bool(validSuspender.value)
 
     def _is_in_browser_main_thread(self) -> bool:

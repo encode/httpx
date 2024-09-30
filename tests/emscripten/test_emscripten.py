@@ -16,7 +16,7 @@ pyodide_config.set_flags(
 
 @copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
 def test_get(server_url, selenium_coverage):
-    selenium_coverage.run_async(
+    selenium_coverage.run_with_jspi(
         f"""
     import httpx
     response = httpx.get('{server_url}')
@@ -30,7 +30,7 @@ def test_get(server_url, selenium_coverage):
 
 @copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
 def test_post_http(server_url, selenium_coverage):
-    selenium_coverage.run_async(
+    selenium_coverage.run_with_jspi(
         f"""
     import httpx
     response = httpx.post('{server_url}', content=b"Hello, world!")
@@ -42,7 +42,7 @@ def test_post_http(server_url, selenium_coverage):
 
 @copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
 def test_async_get(server_url, selenium_coverage):
-    selenium_coverage.run_async(
+    selenium_coverage.run_with_jspi(
         f"""
         import httpx
         url = '{server_url}'
@@ -61,7 +61,7 @@ def test_async_get_timeout(server_url, selenium_coverage):
     # test timeout on https and http
     # this is a blackhole ip address which should never respond
     timeout_url = str(server_url).split(":")[0]+"://192.0.2.1"
-    selenium_coverage.run_async(
+    selenium_coverage.run_with_jspi(
         f"""
         import httpx
         import pytest
@@ -77,7 +77,7 @@ def test_sync_get_timeout(server_url, selenium_coverage):
     # test timeout on https and http
     # this is a blackhole ip address which should never respond
     timeout_url = str(server_url).split(":")[0]+"://192.0.2.1"
-    selenium_coverage.run_async(
+    selenium_coverage.run_with_jspi(
         f"""
         import httpx
         import pytest
@@ -94,7 +94,7 @@ def test_async_get_error(server_url, selenium_coverage):
     # test timeout on https and http
     # 255.255.255.255 should always return an error
     error_url = str(server_url).split(":")[0]+"://255.255.255.255/"
-    selenium_coverage.run_async(
+    selenium_coverage.run_with_jspi(
         f"""
         import httpx
         import pytest
@@ -109,7 +109,7 @@ def test_sync_get_error(server_url, selenium_coverage):
     # test timeout on https and http
     # 255.255.255.255 should always return an error
     error_url = str(server_url).split(":")[0]+"://255.255.255.255/"
-    selenium_coverage.run_async(
+    selenium_coverage.run_with_jspi(
         f"""
         import httpx
         import pytest
@@ -123,7 +123,7 @@ def test_sync_get_error(server_url, selenium_coverage):
 
 @copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
 def test_async_post_json(server_url, selenium_coverage):
-    selenium_coverage.run_async(
+    selenium_coverage.run_with_jspi(
         f"""
         import httpx
         url     = '{server_url}'
