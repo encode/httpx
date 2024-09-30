@@ -98,8 +98,8 @@ def test_async_get_error(server_url, selenium_coverage):
         f"""
         import httpx
         import pytest
-        url = '{timeout_url}'
-        with pytest.raises(httpx.ConnectTimeout):
+        url = '{error_url}'
+        with pytest.raises(httpx.ConnectError):
             response = httpx.get(url)        
     """
     )
