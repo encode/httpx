@@ -11,7 +11,10 @@ import typing
 from pathlib import Path
 from urllib.request import getproxies
 
-import sniffio
+try:
+    from sniffio import current_async_library
+except ImportError:
+    current_async_library = lambda : 'asyncio'
 
 from ._types import PrimitiveData
 
@@ -290,7 +293,7 @@ def peek_filelike_length(stream: typing.Any) -> int | None:
 
 class Timer:
     async def _get_time(self) -> float:
-        library = sniffio.current_async_library()
+        library = current_async_library()
         if library == "trio":
             import trio
 

@@ -268,6 +268,9 @@ class EmscriptenTransport(BaseTransport):
                 headers=headers,
                 stream=None,
             )
+        
+    def _no_jspi_fallback():
+        pass
 
     def close(self) -> None:
         pass
@@ -346,6 +349,7 @@ class AsyncEmscriptenTransport(AsyncBaseTransport):
             req_body = None
         else:
             req_body = body_data
+        print(req_body)
         conn_timeout = 0.0
         read_timeout = 0.0
         if "timeout" in request.extensions:

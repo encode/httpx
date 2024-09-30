@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-import sniffio
+from sniffio import current_async_library
 
 from .._models import Request, Response
 from .._types import AsyncByteStream
@@ -29,7 +29,7 @@ __all__ = ["ASGITransport"]
 
 
 def create_event() -> Event:
-    if sniffio.current_async_library() == "trio":
+    if current_async_library() == "trio":
         import trio
 
         return trio.Event()
