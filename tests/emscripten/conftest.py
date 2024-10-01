@@ -2,6 +2,7 @@
 
 
 import pytest
+import httpx
 import random
 import textwrap
 
@@ -31,70 +32,91 @@ def selenium_with_jspi_if_possible(
     yield selenium_obj
 
 
+def wrapRunner(wrapped: Any, has_jspi: bool):
+
+    SuperClass = type(wrapped)
+
+    class CoverageRunner(SuperClass):
+
+        COVERAGE_INIT_CODE = textwrap.dedent(
+            """
+            import ssl
+            import idna
+            import certifi
+            import pyodide_js as pjs
+            await pjs.loadPackage("coverage")
+            await pjs.loadPackage("ssl")            
+            import coverage
+            _coverage= coverage.Coverage(source_pkgs=['httpx'])
+            _coverage.start()
+            """
+        )
+
+        COVERAGE_TEARDOWN_CODE = textwrap.dedent(
+            """            
+            _coverage.stop()
+            _coverage.save()
+            _coverage_datafile = open(".coverage","rb")
+            _coverage_outdata = _coverage_datafile.read()
+            # avoid polluting main namespace too much
+            import js as _coverage_js
+            # convert to js Array (as default conversion is TypedArray which does
+            # bad things in firefox)
+            _coverage_js.Array.from_(_coverage_outdata) # last line is return value
+            """
+        )
+
+        def __init__(self, base_runner, has_jspi):
+            self.has_jspi = has_jspi
+            for k, v in base_runner.__dict__.items():
+                self.__dict__[k] = v
+
+        #            self._runner = base_runner
+
+        def _wrap_code(self, code, wheel_url: httpx.URL):
+            wrapped_code = (
+                self.COVERAGE_INIT_CODE
+                + "import httpx\n"
+                + f"httpx._transports.emscripten.DISABLE_JSPI={self.has_jspi ==False}\n"
+                + textwrap.dedent(code)
+                + self.COVERAGE_TEARDOWN_CODE
+            )
+            if wheel_url:
+                wrapped_code = (
+                    f"""import pyodide_js as pjs\nawait pjs.loadPackage("{wheel_url}")\n"""
+                    + wrapped_code
+                )
+            return wrapped_code
+
+        def run_webworker_with_httpx(self, code, wheel_url: httpx.URL):
+            wrapped_code = self._wrap_code(code, wheel_url)
+            coverage_out_binary = bytes(self.run_webworker(wrapped_code))
+            with open(
+                f"{_get_coverage_filename('.coverage.emscripten.')}", "wb"
+            ) as outfile:
+                outfile.write(coverage_out_binary)
+
+        def run_with_httpx(self: Any, code: str, wheel_url: httpx.URL) -> Any:
+            if self.browser == "node":
+                # stop node.js checking our https certificates
+                self.run_js('process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;')
+            wrapped_code = self._wrap_code(code, wheel_url)
+            print(wrapped_code)
+            coverage_out_binary = bytes(self.run_async(wrapped_code))
+            with open(
+                f"{_get_coverage_filename('.coverage.emscripten.')}", "wb"
+            ) as outfile:
+                outfile.write(coverage_out_binary)
+
+    return CoverageRunner(wrapped, has_jspi)
+
+
 @pytest.fixture()
-def selenium_coverage(
+def pyodide_coverage(
     selenium_with_jspi_if_possible: Any, has_jspi: bool
 ) -> Generator[Any, None, None]:
-    def _install_packages(self: Any) -> None:
-        if self.browser == "node":
-            # stop node.js checking our https certificates
-            self.run_js('process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;')
-
-        self.run_js(
-            """
-            await pyodide.loadPackage("coverage")
-            await pyodide.loadPackage("ssl")            
-            await pyodide.runPythonAsync(`import coverage
-_coverage= coverage.Coverage(source_pkgs=['httpx'])
-_coverage.start()
-        `
-        )"""
-        )
-
-    if not hasattr(selenium_with_jspi_if_possible, "old_run_async"):
-        selenium_with_jspi_if_possible.old_run_async = (
-            selenium_with_jspi_if_possible.run_async
-        )
-
-    selenium_with_jspi_if_possible._install_packages = _install_packages.__get__(
-        selenium_with_jspi_if_possible, selenium_with_jspi_if_possible.__class__
-    )
-
-    def run_with_jspi(self: Any, code: str) -> Any:
-        code = textwrap.dedent(code)
-        code = (
-                "import httpx\n"
-            +f"httpx._transports.emscripten.DISABLE_JSPI={self.with_jspi ==False}\n"
-            + code
-        )
-        self.old_run_async(code)
-
-    selenium_with_jspi_if_possible.run_with_jspi = run_with_jspi.__get__(
-        selenium_with_jspi_if_possible, selenium_with_jspi_if_possible.__class__
-    )
-
-    selenium_with_jspi_if_possible._install_packages()
-    yield selenium_with_jspi_if_possible
-    # on teardown, save _coverage output
-    coverage_out_binary = bytes(
-        selenium_with_jspi_if_possible.run_js(
-            """
-return await pyodide.runPythonAsync(`
-_coverage.stop()
-_coverage.save()
-_coverage_datafile = open(".coverage","rb")
-_coverage_outdata = _coverage_datafile.read()
-# avoid polluting main namespace too much
-import js as _coverage_js
-# convert to js Array (as default conversion is TypedArray which does
-# bad things in firefox)
-_coverage_js.Array.from_(_coverage_outdata)
-`)
-    """
-        )
-    )
-    with open(f"{_get_coverage_filename('.coverage.emscripten.')}", "wb") as outfile:
-        outfile.write(coverage_out_binary)
+    runner = wrapRunner(selenium_with_jspi_if_possible, has_jspi)
+    yield runner
 
 
 @pytest.fixture(scope="session", params=["https", "http"])
@@ -104,6 +126,9 @@ def server_url(request, server, https_server):
     else:
         yield server.url.copy_with(path="/emscripten")
 
+@pytest.fixture()
+def wheel_url(server_url):
+    yield server_url.copy_with(path="/wheel_download/httpx.whl")
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """Generate Webassembly Javascript Promise Integration based tests

@@ -4,8 +4,9 @@ import pytest
 # so we don't break non-emscripten pytest running
 pytest_pyodide = pytest.importorskip("pytest_pyodide")
 
-from pytest_pyodide import copy_files_to_pyodide
 from pytest_pyodide import config as pconfig
+
+import httpx
 
 # make our ssl certificates work in chrome
 pyodide_config = pconfig.get_global_config()
@@ -14,9 +15,8 @@ pyodide_config.set_flags(
 )
 
 
-@copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
-def test_get(server_url, selenium_coverage):
-    selenium_coverage.run_with_jspi(
+def test_get(server_url, wheel_url, pyodide_coverage):
+    pyodide_coverage.run_with_httpx(
         f"""
     import httpx
     response = httpx.get('{server_url}')
@@ -24,25 +24,25 @@ def test_get(server_url, selenium_coverage):
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert response.http_version == "HTTP/1.1"
-    """
+    """,
+        wheel_url,
     )
 
 
-@copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
-def test_post_http(server_url, selenium_coverage):
-    selenium_coverage.run_with_jspi(
+def test_post_http(server_url, wheel_url, pyodide_coverage):
+    pyodide_coverage.run_with_httpx(
         f"""
     import httpx
     response = httpx.post('{server_url}', content=b"Hello, world!")
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
-    """
+    """,
+        wheel_url,
     )
 
 
-@copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
-def test_async_get(server_url, selenium_coverage):
-    selenium_coverage.run_with_jspi(
+def test_async_get(server_url, wheel_url, pyodide_coverage):
+    pyodide_coverage.run_with_httpx(
         f"""
         import httpx
         url = '{server_url}'
@@ -53,15 +53,16 @@ def test_async_get(server_url, selenium_coverage):
             assert response.http_version == "HTTP/1.1"
             assert response.headers
             assert repr(response) == "<Response [200 OK]>"
-    """
+    """,
+        wheel_url,
     )
 
-@copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
-def test_async_get_timeout(server_url, selenium_coverage):
+
+def test_async_get_timeout(server_url, wheel_url, pyodide_coverage):
     # test timeout on https and http
     # this is a blackhole ip address which should never respond
-    timeout_url = str(server_url).split(":")[0]+"://192.0.2.1"
-    selenium_coverage.run_with_jspi(
+    timeout_url = str(server_url).split(":")[0] + "://192.0.2.1"
+    pyodide_coverage.run_with_httpx(
         f"""
         import httpx
         import pytest
@@ -69,47 +70,83 @@ def test_async_get_timeout(server_url, selenium_coverage):
         with pytest.raises(httpx.ConnectTimeout):
             async with httpx.AsyncClient(timeout=1.0) as client:
                 response = await client.get(url)
-    """
+    """,
+        wheel_url,
     )
 
-@copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
-def test_sync_get_timeout(server_url, selenium_coverage):
+
+def test_sync_get_timeout(server_url, wheel_url, pyodide_coverage, has_jspi):
     # test timeout on https and http
     # this is a blackhole ip address which should never respond
-    timeout_url = str(server_url).split(":")[0]+"://192.0.2.1"
-    selenium_coverage.run_with_jspi(
+    if not has_jspi:
+        # if we are using XMLHttpRequest in a main browser thread then
+        # this will never timeout, or at least it will use the default
+        # browser timeout which is VERY long!
+        pytest.skip()
+    timeout_url = str(server_url).split(":")[0] + "://192.0.2.1"
+    pyodide_coverage.run_with_httpx(
         f"""
         import httpx
         import pytest
         url = '{timeout_url}'
         with pytest.raises(httpx.ConnectTimeout):
             response = httpx.get(url)
-    """
+    """,
+        wheel_url,
     )
 
 
+def test_sync_get_timeout_worker(server_url, wheel_url, pyodide_coverage, has_jspi):
+    # test timeout on https and http
+    # this is a blackhole ip address which should never respond
+    timeout_url = str(server_url).split(":")[0] + "://192.0.2.1"
+    pyodide_coverage.run_webworker_with_httpx(
+        f"""
+        import httpx
+        import pytest
+        url = '{timeout_url}'
+        with pytest.raises(httpx.ConnectTimeout):
+            response = httpx.get(url)
+    """,
+        wheel_url,
+    )
 
-@copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
-def test_async_get_error(server_url, selenium_coverage):
+
+def test_get_worker(server_url: httpx.URL, wheel_url, pyodide_coverage):
+    pyodide_coverage.run_webworker_with_httpx(
+        f"""
+        import httpx
+        response = httpx.get('{server_url}')
+        assert response.status_code == 200
+        assert response.reason_phrase == "OK"
+        assert response.text == "Hello, world!"
+        1
+        """,
+        wheel_url,
+    )
+
+
+def test_async_get_error(server_url, wheel_url, pyodide_coverage):
     # test timeout on https and http
     # 255.255.255.255 should always return an error
-    error_url = str(server_url).split(":")[0]+"://255.255.255.255/"
-    selenium_coverage.run_with_jspi(
+    error_url = str(server_url).split(":")[0] + "://255.255.255.255/"
+    pyodide_coverage.run_with_httpx(
         f"""
         import httpx
         import pytest
         url = '{error_url}'
         with pytest.raises(httpx.ConnectError):
             response = httpx.get(url)        
-    """
+    """,
+        wheel_url,
     )
 
-@copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
-def test_sync_get_error(server_url, selenium_coverage):
+
+def test_sync_get_error(server_url, wheel_url, pyodide_coverage):
     # test timeout on https and http
     # 255.255.255.255 should always return an error
-    error_url = str(server_url).split(":")[0]+"://255.255.255.255/"
-    selenium_coverage.run_with_jspi(
+    error_url = str(server_url).split(":")[0] + "://255.255.255.255/"
+    pyodide_coverage.run_with_httpx(
         f"""
         import httpx
         import pytest
@@ -117,19 +154,19 @@ def test_sync_get_error(server_url, selenium_coverage):
         with pytest.raises(httpx.ConnectError):
             async with httpx.AsyncClient(timeout=1.0) as client:
                 response = await client.get(url)
-    """
+    """,
+        wheel_url,
     )
 
 
-@copy_files_to_pyodide(file_list=[("dist/*.whl", "/tmp")])
-def test_async_post_json(server_url, selenium_coverage):
-    selenium_coverage.run_with_jspi(
+def test_async_post_json(server_url, wheel_url, pyodide_coverage):
+    pyodide_coverage.run_with_httpx(
         f"""
         import httpx
         url     = '{server_url}'
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json={{"text": "Hello, world!"}})
             assert response.status_code == 200
-    """
+    """,
+        wheel_url,
     )
-

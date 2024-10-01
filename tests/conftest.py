@@ -1,7 +1,7 @@
 import asyncio
 import json
 import os
-import sys
+from pathlib import Path
 import threading
 import time
 import typing
@@ -73,6 +73,8 @@ async def app(scope: Scope, receive: Receive, send: Send) -> None:
         await redirect_301(scope, receive, send)
     elif scope["path"].startswith("/json"):
         await hello_world_json(scope, receive, send)
+    elif scope["path"].startswith("/wheel_download"):
+        await wheel_download(scope, receive, send)
     elif scope["path"].startswith("/emscripten"):
         await hello_world_emscripten(scope, receive, send)
     else:
@@ -109,6 +111,30 @@ async def hello_world_emscripten(scope: Scope, receive: Receive, send: Send) -> 
         }
     )
     await send({"type": "http.response.body", "body": b"Hello, world!"})
+
+# For testing on emscripten, it is useful to be able to
+# get the wheel package so that we can install it e.g.
+# on web-workers
+async def wheel_download(scope: Scope, receive: Receive, send: Send) -> None:
+    wheel_file = list(Path("dist").glob("*.whl"))[0]
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": [
+                [b"content-type", b"application/x-wheel"],
+                [b"access-control-allow-origin", "*"],
+                [
+                    b"access-control-allow-methods",
+                    b"PUT, GET, HEAD, POST, DELETE, OPTIONS",
+                ],
+                [b"Access-Control-Allow-Headers", b"*"],
+            ],
+        }
+    )
+    wheel_bytes = wheel_file.read_bytes()
+    await send({"type": "http.response.body", "body": wheel_bytes})
+
 
 
 async def hello_world_json(scope: Scope, receive: Receive, send: Send) -> None:

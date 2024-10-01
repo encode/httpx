@@ -268,7 +268,9 @@ class EmscriptenTransport(BaseTransport):
         global DISABLE_JSPI
         if DISABLE_JSPI:
             return False
-        if hasattr(pyodide.ffi, "can_run_sync"):
+        # Ignore this next if statement from coverage because only one part 
+        # will be run depending on the pyodide version
+        if hasattr(pyodide.ffi, "can_run_sync"): # pragma: no cover
             return bool(pyodide.ffi.can_run_sync())
         else:
             from pyodide_js._module import (  # type: ignore[import-not-found]
@@ -302,7 +304,7 @@ class EmscriptenTransport(BaseTransport):
             if not self._is_in_browser_main_thread():
                 js_xhr.responseType = "arraybuffer"
                 if timeout > 0.0:
-                    js_xhr.timeout = int(request.timeout * 1000)
+                    js_xhr.timeout = int(timeout * 1000)
             else:
                 # this is a nasty hack to be able to read binary files on
                 # main browser thread using xmlhttprequest

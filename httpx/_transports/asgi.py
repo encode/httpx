@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import typing
 
-from sniffio import current_async_library
+try:
+    from sniffio import current_async_library
+except (ImportError,ModuleNotFoundError):
+    current_async_library = lambda : 'asyncio'
 
 from .._models import Request, Response
 from .._types import AsyncByteStream
