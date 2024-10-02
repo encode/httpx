@@ -174,18 +174,11 @@ async def run_asgi(
     response_complete = anyio.Event()
 
     send_stream, receive_stream = anyio.create_memory_object_stream()
-    disconnected = anyio.Event()
 
-    async def watch_disconnect(cancel_scope: anyio.CancelScope) -> None:
-        await disconnected.wait()
-        cancel_scope.cancel()
-
-    async def run_app(cancel_scope: anyio.CancelScope) -> None:
+    async def run_app() -> None:
         try:
             await app(scope, receive, send)
         except Exception:  # noqa: PIE-786
-            cancel_scope.cancel()
-
             if raise_app_exceptions or not response_complete.is_set():
                 raise
 
@@ -207,12 +200,6 @@ async def run_asgi(
 
     async def send(message: _Message) -> None:
         nonlocal status_code, response_headers
-
-        if disconnected.is_set():
-            await anyio.sleep(
-                0
-            )  # temp fix - yield control for disconnect watcher when loop is tight
-            return
 
         if message["type"] == "http.response.start":
             assert not response_started.is_set()
@@ -236,8 +223,7 @@ async def run_asgi(
 
     try:
         async with anyio.create_task_group() as tg:
-            tg.start_soon(watch_disconnect, tg.cancel_scope)
-            tg.start_soon(run_app, tg.cancel_scope)
+            tg.start_soon(run_app)
 
             await response_started.wait()
             assert status_code is not None
@@ -248,9 +234,11 @@ async def run_asgi(
                     yield chunk
 
             yield (status_code, response_headers, stream())
-            disconnected.set()
+            # Once the yielded value stops being used by the client cancel, cancel tasks
+            tg.cancel_scope.cancel()
     except ExceptionGroup as exc_group:
         raise exc_group.exceptions[0]  # only run_app should raise exceptions
     finally:
+        # Make sure memory streams are closed
         await send_stream.aclose()
         await receive_stream.aclose()
