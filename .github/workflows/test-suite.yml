@@ -22,13 +22,13 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
           allow-prereleases: true
-      - uses: pyodide/pyodide-actions/install-browser
+      - uses: pyodide/pyodide-actions/install-browser@v2
         if: ${{ matrix.python-version ==3.12 }}
         with:
           runner: selenium
           browser: chrome
           browser-version: latest
-      - uses: pyodide/pyodide-actions/download-pyodide
+      - uses: pyodide/pyodide-actions/download-pyodide@v2
         if: ${{ matrix.python-version ==3.12 }}
         with:
           version: 0.26.2
