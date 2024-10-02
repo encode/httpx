@@ -11,7 +11,14 @@ if [ -z $GITHUB_ACTIONS ]; then
     scripts/check
 fi
 
-${PREFIX}coverage run -m pytest "$@"
+PYTEST_EXTRA_ARGS=""
+
+if [ -d 'pyodide' ]; then
+    PYTEST_EXTRA_ARGS="--dist-dir=pyodide --rt=chrome"
+fi
+
+
+${PREFIX}coverage run -m pytest ${PYTEST_EXTRA_ARGS} "$@" 
 
 if [ -z $GITHUB_ACTIONS ]; then
     scripts/coverage

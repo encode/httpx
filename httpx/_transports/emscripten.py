@@ -20,6 +20,7 @@ import typing
 from types import TracebackType
 
 import js
+
 import pyodide
 
 from .._config import DEFAULT_LIMITS, Limits
@@ -271,12 +272,12 @@ class EmscriptenTransport(BaseTransport):
             return False
         # Ignore this next if statement from coverage because only one part
         # will be run depending on the pyodide version
-        if hasattr(pyodide.ffi, "can_run_sync"):  # pragma: no cover
-            return bool(pyodide.ffi.can_run_sync())
+        if hasattr(pyodide.ffi, "can_run_sync"):
+            return bool(pyodide.ffi.can_run_sync())  # pragma: no cover
         else:
             from pyodide_js._module import (
                 validSuspender,
-            )
+            )  # pragma: no cover
 
             return bool(validSuspender.value)
 

@@ -29,10 +29,10 @@ classifiers = [
 ]
 dependencies = [
     "certifi",
-    "httpcore==1.*",
-    "anyio",
+    "httpcore==1.*; platform_system!='Emscripten'",
+    "anyio; platform_system!='Emscripten'",
     "idna",
-    "sniffio",
+    "sniffio; platform_system!='Emscripten'",
 ]
 dynamic = ["readme", "version"]
 
