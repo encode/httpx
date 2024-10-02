@@ -1,21 +1,23 @@
+from typing import Any
+
 import pytest
+
+import httpx
 
 # only run these tests if pytest_pyodide is installed
 # so we don't break non-emscripten pytest running
 pytest_pyodide = pytest.importorskip("pytest_pyodide")
 
-from pytest_pyodide import config as pconfig
-
-import httpx
-
 # make our ssl certificates work in chrome
-pyodide_config = pconfig.get_global_config()
+pyodide_config = pytest_pyodide.config.get_global_config()
 pyodide_config.set_flags(
     "chrome", ["ignore-certificate-errors"] + pyodide_config.get_flags("chrome")
 )
 
 
-def test_get(server_url, wheel_url, pyodide_coverage):
+def test_get(
+    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
+) -> None:
     pyodide_coverage.run_with_httpx(
         f"""
     import httpx
@@ -29,7 +31,9 @@ def test_get(server_url, wheel_url, pyodide_coverage):
     )
 
 
-def test_post_http(server_url, wheel_url, pyodide_coverage):
+def test_post_http(
+    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
+) -> None:
     pyodide_coverage.run_with_httpx(
         f"""
     import httpx
@@ -41,7 +45,9 @@ def test_post_http(server_url, wheel_url, pyodide_coverage):
     )
 
 
-def test_async_get(server_url, wheel_url, pyodide_coverage):
+def test_async_get(
+    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
+) -> None:
     pyodide_coverage.run_with_httpx(
         f"""
         import httpx
@@ -58,7 +64,9 @@ def test_async_get(server_url, wheel_url, pyodide_coverage):
     )
 
 
-def test_async_get_timeout(server_url, wheel_url, pyodide_coverage):
+def test_async_get_timeout(
+    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
+) -> None:
     # test timeout on https and http
     # this is a blackhole ip address which should never respond
     timeout_url = str(server_url).split(":")[0] + "://192.0.2.1"
@@ -75,7 +83,9 @@ def test_async_get_timeout(server_url, wheel_url, pyodide_coverage):
     )
 
 
-def test_sync_get_timeout(server_url, wheel_url, pyodide_coverage, has_jspi):
+def test_sync_get_timeout(
+    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any, has_jspi: bool
+) -> None:
     # test timeout on https and http
     # this is a blackhole ip address which should never respond
     if not has_jspi:
@@ -96,7 +106,9 @@ def test_sync_get_timeout(server_url, wheel_url, pyodide_coverage, has_jspi):
     )
 
 
-def test_sync_get_timeout_worker(server_url, wheel_url, pyodide_coverage, has_jspi):
+def test_sync_get_timeout_worker(
+    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
+) -> None:
     # test timeout on https and http
     # this is a blackhole ip address which should never respond
     timeout_url = str(server_url).split(":")[0] + "://192.0.2.1"
@@ -112,7 +124,9 @@ def test_sync_get_timeout_worker(server_url, wheel_url, pyodide_coverage, has_js
     )
 
 
-def test_get_worker(server_url: httpx.URL, wheel_url, pyodide_coverage):
+def test_get_worker(
+    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
+) -> None:
     pyodide_coverage.run_webworker_with_httpx(
         f"""
         import httpx
@@ -126,7 +140,9 @@ def test_get_worker(server_url: httpx.URL, wheel_url, pyodide_coverage):
     )
 
 
-def test_async_get_error(server_url, wheel_url, pyodide_coverage):
+def test_async_get_error(
+    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
+) -> None:
     # test timeout on https and http
     # 255.255.255.255 should always return an error
     error_url = str(server_url).split(":")[0] + "://255.255.255.255/"
@@ -142,7 +158,9 @@ def test_async_get_error(server_url, wheel_url, pyodide_coverage):
     )
 
 
-def test_sync_get_error(server_url, wheel_url, pyodide_coverage):
+def test_sync_get_error(
+    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
+) -> None:
     # test timeout on https and http
     # 255.255.255.255 should always return an error
     error_url = str(server_url).split(":")[0] + "://255.255.255.255/"
@@ -159,7 +177,9 @@ def test_sync_get_error(server_url, wheel_url, pyodide_coverage):
     )
 
 
-def test_async_post_json(server_url, wheel_url, pyodide_coverage):
+def test_async_post_json(
+    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
+) -> None:
     pyodide_coverage.run_with_httpx(
         f"""
         import httpx

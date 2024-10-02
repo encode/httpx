@@ -1,13 +1,13 @@
 # emscripten specific test fixtures
 
 
-import pytest
-import httpx
 import random
 import textwrap
+from typing import Any, Generator, Type, TypeVar
 
-from typing import Any, Generator
+import pytest
 
+import httpx
 
 _coverage_count = 0
 
@@ -32,12 +32,14 @@ def selenium_with_jspi_if_possible(
     yield selenium_obj
 
 
-def wrapRunner(wrapped: Any, has_jspi: bool):
+T = TypeVar("T", bound=object)
 
-    SuperClass = type(wrapped)
 
-    class CoverageRunner(SuperClass):
+def wrapRunner(wrapped: T, has_jspi: bool) -> T:
+    BaseType: Type[T] = type(wrapped)
 
+    # need to ignore type of BaseType because it is dynamic
+    class CoverageRunner(BaseType):  # type:ignore
         COVERAGE_INIT_CODE = textwrap.dedent(
             """
             import ssl
@@ -66,29 +68,29 @@ def wrapRunner(wrapped: Any, has_jspi: bool):
             """
         )
 
-        def __init__(self, base_runner, has_jspi):
+        def __init__(self, base_runner: T, has_jspi: bool):
             self.has_jspi = has_jspi
+            # copy attributes of base_runner
             for k, v in base_runner.__dict__.items():
                 self.__dict__[k] = v
 
-        #            self._runner = base_runner
-
-        def _wrap_code(self, code, wheel_url: httpx.URL):
+        def _wrap_code(self, code: str, wheel_url: httpx.URL) -> str:
             wrapped_code = (
                 self.COVERAGE_INIT_CODE
                 + "import httpx\n"
-                + f"httpx._transports.emscripten.DISABLE_JSPI={self.has_jspi ==False}\n"
+                + f"httpx._transports.emscripten.DISABLE_JSPI={not self.has_jspi}\n"
                 + textwrap.dedent(code)
                 + self.COVERAGE_TEARDOWN_CODE
             )
             if wheel_url:
                 wrapped_code = (
-                    f"""import pyodide_js as pjs\nawait pjs.loadPackage("{wheel_url}")\n"""
+                    "import pyodide_js as pjs\n"
+                    + f"await pjs.loadPackage('{wheel_url}')\n"
                     + wrapped_code
                 )
             return wrapped_code
 
-        def run_webworker_with_httpx(self, code, wheel_url: httpx.URL):
+        def run_webworker_with_httpx(self, code: str, wheel_url: httpx.URL) -> None:
             wrapped_code = self._wrap_code(code, wheel_url)
             coverage_out_binary = bytes(self.run_webworker(wrapped_code))
             with open(
@@ -96,7 +98,7 @@ def wrapRunner(wrapped: Any, has_jspi: bool):
             ) as outfile:
                 outfile.write(coverage_out_binary)
 
-        def run_with_httpx(self: Any, code: str, wheel_url: httpx.URL) -> Any:
+        def run_with_httpx(self: Any, code: str, wheel_url: httpx.URL) -> None:
             if self.browser == "node":
                 # stop node.js checking our https certificates
                 self.run_js('process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;')
@@ -126,9 +128,11 @@ def server_url(request, server, https_server):
     else:
         yield server.url.copy_with(path="/emscripten")
 
+
 @pytest.fixture()
 def wheel_url(server_url):
     yield server_url.copy_with(path="/wheel_download/httpx.whl")
+
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """Generate Webassembly Javascript Promise Integration based tests

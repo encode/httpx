@@ -14,7 +14,10 @@ from urllib.request import getproxies
 try:
     from sniffio import current_async_library
 except ImportError:
-    current_async_library = lambda : 'asyncio'
+
+    def current_async_library() -> str:
+        return "asyncio"
+
 
 from ._types import PrimitiveData
 

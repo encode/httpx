@@ -4,8 +4,11 @@ import typing
 
 try:
     from sniffio import current_async_library
-except (ImportError,ModuleNotFoundError):
-    current_async_library = lambda : 'asyncio'
+except (ImportError, ModuleNotFoundError):
+
+    def current_async_library() -> str:
+        return "asyncio"
+
 
 from .._models import Request, Response
 from .._types import AsyncByteStream

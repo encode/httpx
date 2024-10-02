@@ -15,10 +15,10 @@ anywhere that pyodide works.
 
 from __future__ import annotations
 
+import email.parser
 import typing
 from types import TracebackType
 
-import email.parser
 import js
 import pyodide
 
@@ -262,18 +262,19 @@ class EmscriptenTransport(BaseTransport):
         )
 
     def _can_use_jspi(self) -> bool:
-        """Returns true if the pyodide environment allows for use of synchronous javascript promise
-        calls. If not we have to fall back to the browser XMLHttpRequest api.
+        """Returns true if the pyodide environment allows for use
+        of synchronous javascript promise calls. If not we have to
+        fall back to the browser XMLHttpRequest api.
         """
         global DISABLE_JSPI
         if DISABLE_JSPI:
             return False
-        # Ignore this next if statement from coverage because only one part 
+        # Ignore this next if statement from coverage because only one part
         # will be run depending on the pyodide version
-        if hasattr(pyodide.ffi, "can_run_sync"): # pragma: no cover
+        if hasattr(pyodide.ffi, "can_run_sync"):  # pragma: no cover
             return bool(pyodide.ffi.can_run_sync())
         else:
-            from pyodide_js._module import (  # type: ignore[import-not-found]
+            from pyodide_js._module import (
                 validSuspender,
             )
 
@@ -283,6 +284,7 @@ class EmscriptenTransport(BaseTransport):
         return hasattr(js, "window") and hasattr(js, "self") and js.self == js.window
 
     def _no_jspi_fallback(self, request: Request) -> Response:
+        assert isinstance(request.stream, SyncByteStream)
         try:
             js_xhr = js.XMLHttpRequest.new()
 

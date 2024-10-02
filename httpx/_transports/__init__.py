@@ -1,8 +1,8 @@
 import sys
 
+from .asgi import *
 from .base import *
 from .mock import *
-from .asgi import *
 from .wsgi import *
 
 if sys.platform == "emscripten":

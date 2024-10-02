@@ -1,10 +1,10 @@
 import asyncio
 import json
 import os
-from pathlib import Path
 import threading
 import time
 import typing
+from pathlib import Path
 
 import pytest
 import trustme
@@ -112,6 +112,7 @@ async def hello_world_emscripten(scope: Scope, receive: Receive, send: Send) -> 
     )
     await send({"type": "http.response.body", "body": b"Hello, world!"})
 
+
 # For testing on emscripten, it is useful to be able to
 # get the wheel package so that we can install it e.g.
 # on web-workers
@@ -134,7 +135,6 @@ async def wheel_download(scope: Scope, receive: Receive, send: Send) -> None:
     )
     wheel_bytes = wheel_file.read_bytes()
     await send({"type": "http.response.body", "body": wheel_bytes})
-
 
 
 async def hello_world_json(scope: Scope, receive: Receive, send: Send) -> None:

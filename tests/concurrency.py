@@ -4,8 +4,8 @@ Async environment-agnostic concurrency utilities that are only used in tests.
 
 import asyncio
 
-from sniffio import current_async_library
 import trio
+from sniffio import current_async_library
 
 
 async def sleep(seconds: float) -> None:
