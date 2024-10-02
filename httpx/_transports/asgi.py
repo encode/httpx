@@ -252,6 +252,5 @@ async def run_asgi(
     except ExceptionGroup as exc_group:
         raise exc_group.exceptions[0]  # only run_app should raise exceptions
     finally:
-        disconnected.set()
         await send_stream.aclose()
         await receive_stream.aclose()
