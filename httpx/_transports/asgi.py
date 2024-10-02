@@ -174,13 +174,8 @@ async def run_asgi(
     response_complete = anyio.Event()
 
     send_stream, receive_stream = anyio.create_memory_object_stream()
-    disconnected = anyio.Event()
 
-    async def watch_disconnect(cancel_scope: anyio.CancelScope) -> None:
-        await disconnected.wait()
-        cancel_scope.cancel()
-
-    async def run_app(cancel_scope: anyio.CancelScope) -> None:
+    async def run_app() -> None:
         try:
             await app(scope, receive, send)
         except Exception:  # noqa: PIE-786
@@ -206,9 +201,6 @@ async def run_asgi(
     async def send(message: _Message) -> None:
         nonlocal status_code, response_headers
 
-        if disconnected.is_set():
-            return
-
         if message["type"] == "http.response.start":
             assert not response_started.is_set()
 
@@ -227,18 +219,26 @@ async def run_asgi(
 
             if not more_body:
                 response_complete.set()
+                await send_stream.aclose()
 
-    async with anyio.create_task_group() as tg:
-        tg.start_soon(watch_disconnect, tg.cancel_scope)
-        tg.start_soon(run_app, tg.cancel_scope)
+    try:
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(run_app)
 
-        await response_started.wait()
-        assert status_code is not None
-        assert response_headers is not None
+            await response_started.wait()
+            assert status_code is not None
+            assert response_headers is not None
 
-        async def stream() -> typing.AsyncGenerator[bytes, None]:
-            async for chunk in receive_stream:
-                yield chunk
+            async def stream() -> typing.AsyncGenerator[bytes, None]:
+                async for chunk in receive_stream:
+                    yield chunk
 
-        yield (status_code, response_headers, stream())
-        disconnected.set()
+            yield (status_code, response_headers, stream())
+            # Once the yielded value stops being used by the client cancel, cancel tasks
+            tg.cancel_scope.cancel()
+    except ExceptionGroup as exc_group:
+        raise exc_group.exceptions[0]  # only run_app should raise exceptions
+    finally:
+        # Make sure memory streams are closed
+        await send_stream.aclose()
+        await receive_stream.aclose()
