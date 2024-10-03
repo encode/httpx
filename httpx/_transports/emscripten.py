@@ -92,6 +92,7 @@ def _run_sync_with_timeout(
     except pyodide.ffi.JsException as err:
         if err.name == "AbortError":
             raise TimeoutExceptionType(message="Request timed out")
+            timer_id = None
         else:
             raise ErrorExceptionType(message=err.message)
     finally:
@@ -133,6 +134,7 @@ async def _run_async_with_timeout(
     except pyodide.ffi.JsException as err:
         if err.name == "AbortError":
             raise TimeoutExceptionType(message="Request timed out")
+            timer_id = None
         else:
             raise ErrorExceptionType(message=err.message)
     finally:
