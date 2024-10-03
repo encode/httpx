@@ -19,6 +19,6 @@ fi
 "$PIP" install -U pip
 "$PIP" install -r "$REQUIREMENTS"
 
-if [ -d 'pyodide' ]; then
+if [ -d 'pyodide_dist' ]; then
     "$PIP" install -r "$REQUIREMENTS_EMSCRIPTEN"
 fi
