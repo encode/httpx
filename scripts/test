@@ -13,13 +13,13 @@ fi
 
 PYTEST_EXTRA_ARGS=""
 
-if [ -d 'pyodide' ]; then
+if [ -d 'pyodide_dist' ]; then
     PYTEST_EXTRA_ARGS="--dist-dir=pyodide_dist --rt=chrome"
 fi
 
 
-${PREFIX}coverage run -m pytest ${PYTEST_EXTRA_ARGS} "$@" 
+${PREFIX}coverage run -p -m pytest ${PYTEST_EXTRA_ARGS} "$@" 
 
 if [ -z $GITHUB_ACTIONS ]; then
-    scripts/coverage
+        scripts/coverage
 fi

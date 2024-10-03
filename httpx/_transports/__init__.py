@@ -5,7 +5,7 @@ from .base import *
 from .mock import *
 from .wsgi import *
 
-if sys.platform == "emscripten":
+if sys.platform == "emscripten":  # pragma: nocover
     from .emscripten import *
 
     HTTPTransport = EmscriptenTransport

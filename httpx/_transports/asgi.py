@@ -4,7 +4,7 @@ import typing
 
 try:
     from sniffio import current_async_library
-except (ImportError, ModuleNotFoundError):
+except (ImportError, ModuleNotFoundError):  # pragma: nocover
 
     def current_async_library() -> str:
         return "asyncio"

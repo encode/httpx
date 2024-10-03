@@ -8,13 +8,13 @@ export SOURCE_FILES="httpx tests"
 
 set -x
 
-if [ -d 'pyodide']; then
+if [ -d 'pyodide_dist']; then
     IGNORE_ARGS=""
 else
     # if we don't have a pyodide environment set up, then don't test coverage 
     # for the emscripten transport
-    IGNORE_ARGS="--omit=httpx/_transports/emscripten.py "
+    IGNORE_ARGS="--omit=httpx/_transports/emscripten.py,tests/emscripten/*"
 fi
 
-${PREFIX}coverage combine || true
+${PREFIX}coverage combine 
 ${PREFIX}coverage report ${IGNORE_ARGS} --show-missing --skip-covered --fail-under=100

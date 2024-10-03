@@ -13,7 +13,7 @@ from urllib.request import getproxies
 
 try:
     from sniffio import current_async_library
-except ImportError:
+except ImportError:  # pragma: nocover
 
     def current_async_library() -> str:
         return "asyncio"

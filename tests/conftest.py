@@ -73,9 +73,9 @@ async def app(scope: Scope, receive: Receive, send: Send) -> None:
         await redirect_301(scope, receive, send)
     elif scope["path"].startswith("/json"):
         await hello_world_json(scope, receive, send)
-    elif scope["path"].startswith("/wheel_download"):
+    elif scope["path"].startswith("/wheel_download"):  # pragma: nocover for emscripten
         await wheel_download(scope, receive, send)
-    elif scope["path"].startswith("/emscripten"):
+    elif scope["path"].startswith("/emscripten"):  # pragma: nocover for emscripten
         await hello_world_emscripten(scope, receive, send)
     else:
         await hello_world(scope, receive, send)
@@ -94,7 +94,9 @@ async def hello_world(scope: Scope, receive: Receive, send: Send) -> None:
 
 # For testing on emscripten, we require cross origin isolation headers
 # to be set or else browsers won't be able to read from us from javascript
-async def hello_world_emscripten(scope: Scope, receive: Receive, send: Send) -> None:
+async def hello_world_emscripten(
+    scope: Scope, receive: Receive, send: Send
+) -> None:  # pragma: nocover for emscripten
     await send(
         {
             "type": "http.response.start",
@@ -116,7 +118,9 @@ async def hello_world_emscripten(scope: Scope, receive: Receive, send: Send) -> 
 # For testing on emscripten, it is useful to be able to
 # get the wheel package so that we can install it e.g.
 # on web-workers
-async def wheel_download(scope: Scope, receive: Receive, send: Send) -> None:
+async def wheel_download(
+    scope: Scope, receive: Receive, send: Send
+) -> None:  # pragma: nocover for emscripten
     wheel_file = list(Path("dist").glob("*.whl"))[0]
     await send(
         {
