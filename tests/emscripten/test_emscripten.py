@@ -77,6 +77,7 @@ def test_async_get_timeout(
         with pytest.raises(httpx.TimeoutException):
             async with httpx.AsyncClient() as client:
                 response = await client.get(url,timeout=0.1)
+                print(response.text)
     """,
         wheel_url,
     )
@@ -86,7 +87,6 @@ def test_sync_get_timeout(
     server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any, has_jspi: bool
 ) -> None:
     # test timeout on https and http
-    # this is a blackhole ip address which should never respond
     if not has_jspi:
         # if we are using XMLHttpRequest in a main browser thread then
         # this will never timeout, or at least it will use the default
@@ -100,6 +100,7 @@ def test_sync_get_timeout(
         url = '{timeout_url}'
         with pytest.raises(httpx.TimeoutException):
             response = httpx.get(url,timeout=0.1)
+            print(response.text)
     """,
         wheel_url,
     )
@@ -117,7 +118,9 @@ def test_sync_get_timeout_worker(
         import pytest
         url = '{timeout_url}'
         with pytest.raises(httpx.TimeoutException):
-            response = httpx.get(url,timeout=0.5)
+            response = httpx.get(url,timeout=0.1)
+            print(response.text)
+
     """,
         wheel_url,
     )
@@ -171,6 +174,7 @@ def test_sync_get_error(
         with pytest.raises(httpx.ConnectError):
             async with httpx.AsyncClient(timeout=1.0) as client:
                 response = await client.get(url)
+                print(response.text)
     """,
         wheel_url,
     )
