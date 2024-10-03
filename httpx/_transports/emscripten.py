@@ -16,11 +16,12 @@ anywhere that pyodide works.
 from __future__ import annotations
 
 import email.parser
-import js
-import pyodide
-from types import TracebackType
 import typing
+from types import TracebackType
 
+import js
+
+import pyodide
 
 from .._config import DEFAULT_LIMITS, Limits
 from .._exceptions import (
