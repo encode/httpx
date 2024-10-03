@@ -69,14 +69,15 @@ def test_async_get_timeout(
 ) -> None:
     # test timeout on https and http
     timeout_url = server_url.copy_with(path="/slow_response")
+    print(server_url,timeout_url)
     pyodide_coverage.run_with_httpx(
         f"""
         import httpx
         import pytest
         url = '{timeout_url}'
         with pytest.raises(httpx.TimeoutException):
-            async with httpx.AsyncClient(timeout=0.1) as client:
-                response = await client.get(url)
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url,timeout=0.1)
     """,
         wheel_url,
     )
@@ -117,7 +118,7 @@ def test_sync_get_timeout_worker(
         import pytest
         url = '{timeout_url}'
         with pytest.raises(httpx.TimeoutException):
-            response = httpx.get(url,timeout=0.1)
+            response = httpx.get(url,timeout=0.5)
     """,
         wheel_url,
     )

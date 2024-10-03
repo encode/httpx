@@ -157,7 +157,15 @@ async def slow_response(scope: Scope, receive: Receive, send: Send) -> None:
         {
             "type": "http.response.start",
             "status": 200,
-            "headers": [[b"content-type", b"text/plain"]],
+            "headers": [
+                [b"content-type", b"text/plain"],
+                [b"access-control-allow-origin", "*"],
+                [
+                    b"access-control-allow-methods",
+                    b"PUT, GET, HEAD, POST, DELETE, OPTIONS",
+                ],
+                [b"Access-Control-Allow-Headers", b"*"],
+            ],
         }
     )
     await sleep(1.0)  # Allow triggering a read timeout.
