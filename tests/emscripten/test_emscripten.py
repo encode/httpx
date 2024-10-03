@@ -68,15 +68,14 @@ def test_async_get_timeout(
     server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
 ) -> None:
     # test timeout on https and http
-    # this is a blackhole ip address which should never respond
-    timeout_url = str(server_url).split(":")[0] + "://192.0.2.1"
+    timeout_url = server_url.copy_with(path="/slow_response")
     pyodide_coverage.run_with_httpx(
         f"""
         import httpx
         import pytest
         url = '{timeout_url}'
         with pytest.raises(httpx.ConnectTimeout):
-            async with httpx.AsyncClient(timeout=1.0) as client:
+            async with httpx.AsyncClient(timeout=0.1) as client:
                 response = await client.get(url)
     """,
         wheel_url,
@@ -93,14 +92,14 @@ def test_sync_get_timeout(
         # this will never timeout, or at least it will use the default
         # browser timeout which is VERY long!
         pytest.skip()
-    timeout_url = str(server_url).split(":")[0] + "://192.0.2.1"
+    timeout_url = server_url.copy_with(path="/slow_response")
     pyodide_coverage.run_with_httpx(
         f"""
         import httpx
         import pytest
         url = '{timeout_url}'
         with pytest.raises(httpx.ConnectTimeout):
-            response = httpx.get(url,timeout=1.0)
+            response = httpx.get(url,timeout=0.1)
     """,
         wheel_url,
     )
@@ -111,14 +110,14 @@ def test_sync_get_timeout_worker(
 ) -> None:
     # test timeout on https and http
     # this is a blackhole ip address which should never respond
-    timeout_url = str(server_url).split(":")[0] + "://192.0.2.1"
+    timeout_url = server_url.copy_with(path="/slow_response")
     pyodide_coverage.run_webworker_with_httpx(
         f"""
         import httpx
         import pytest
         url = '{timeout_url}'
         with pytest.raises(httpx.ConnectTimeout):
-            response = httpx.get(url,timeout=1.0)
+            response = httpx.get(url,timeout=0.1)
     """,
         wheel_url,
     )
