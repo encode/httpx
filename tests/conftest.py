@@ -165,6 +165,7 @@ async def slow_response(scope: Scope, receive: Receive, send: Send) -> None:
                     b"PUT, GET, HEAD, POST, DELETE, OPTIONS",
                 ],
                 [b"Access-Control-Allow-Headers", b"*"],
+                [b"Cache-control", "no-store,private,no-cache,must-revalidate"],
             ],
         }
     )
