@@ -32,7 +32,7 @@ jobs:
         if: ${{ matrix.python-version ==3.12 }}
         with:
           version: 0.26.2
-          to: pyodide
+          to: pyodide_dist
       - name: "Install dependencies"
         run: "scripts/install"
       - name: "Run linting checks"

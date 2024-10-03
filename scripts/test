@@ -14,7 +14,7 @@ fi
 PYTEST_EXTRA_ARGS=""
 
 if [ -d 'pyodide' ]; then
-    PYTEST_EXTRA_ARGS="--dist-dir=pyodide --rt=chrome"
+    PYTEST_EXTRA_ARGS="--dist-dir=pyodide_dist --rt=chrome"
 fi
 
 

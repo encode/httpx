@@ -20,7 +20,6 @@ import typing
 from types import TracebackType
 
 import js
-
 import pyodide
 
 from .._config import DEFAULT_LIMITS, Limits
