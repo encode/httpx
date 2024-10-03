@@ -123,6 +123,7 @@ def test_sync_get_timeout_worker(
         wheel_url,
     )
 
+
 def test_get_worker(
     server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
 ) -> None:
