@@ -1,8 +1,9 @@
 #!/bin/sh
 
-export PREFIX=""
+# don't call this PREFIX, because that is used by node.js
+export VENV_PREFIX=""
 if [ -d 'venv' ] ; then
-    export PREFIX="venv/bin/"
+    export VENV_PREFIX="venv/bin/"
 fi
 
 set -ex
@@ -11,16 +12,15 @@ if [ -z $GITHUB_ACTIONS ]; then
     scripts/check
 fi
 
-PYTEST_EXTRA_ARGS=""
-
 # run all host tests first
-${PREFIX}coverage run -p -m pytest "$@" --ignore=tests/emscripten
+${VENV_PREFIX}coverage run -p -m pytest "$@" --ignore=tests/emscripten
 
 if [ -d 'pyodide_dist' ]; then
     # run emscripten specific tests on chrome and node.js (20+)
-    ${PREFIX}coverage run -p -m pytest --dist-dir=pyodide_dist --rt=node-no-host tests/emscripten "$@"   
-    ${PREFIX}coverage run -p -m pytest --dist-dir=pyodide_dist --rt=chrome-no-host tests/emscripten "$@" 
+    ${VENV_PREFIX}coverage run -p -m pytest -v -x --dist-dir=${PWD}/pyodide_dist --rt=node-no-host "$@"
+    ${VENV_PREFIX}coverage run -p -m pytest -v -x --dist-dir=${PWD}/pyodide_dist --rt=chrome-no-host tests/emscripten/test_emscripten.py "$@"
 fi
+
 
 if [ -z $GITHUB_ACTIONS ]; then
         scripts/coverage
