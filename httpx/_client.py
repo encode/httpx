@@ -163,6 +163,8 @@ class BaseClient:
     def __init__(
         self,
         *,
+        request_class: type[Request] = Request,
+        response_class: type[Response] = Response,
         auth: AuthTypes | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -176,6 +178,9 @@ class BaseClient:
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
     ) -> None:
         event_hooks = {} if event_hooks is None else event_hooks
+
+        self._request_class = request_class
+        self._response_class = response_class
 
         self._base_url = self._enforce_trailing_slash(URL(base_url))
 
@@ -193,6 +198,14 @@ class BaseClient:
         self._trust_env = trust_env
         self._default_encoding = default_encoding
         self._state = ClientState.UNOPENED
+
+    @property
+    def request_class(self) -> type[Request]:
+        return self._request_class
+
+    @property
+    def response_class(self) -> type[Response]:
+        return self._response_class
 
     @property
     def is_closed(self) -> bool:
@@ -355,7 +368,7 @@ class BaseClient:
                 else Timeout(timeout)
             )
             extensions = dict(**extensions, timeout=timeout.as_dict())
-        return Request(
+        return self.request_class(
             method,
             url,
             content=content,
@@ -462,7 +475,7 @@ class BaseClient:
         headers = self._redirect_headers(request, url, method)
         stream = self._redirect_stream(request, method)
         cookies = Cookies(self.cookies)
-        return Request(
+        return self.request_class(
             method=method,
             url=url,
             headers=headers,
@@ -628,6 +641,8 @@ class Client(BaseClient):
     def __init__(
         self,
         *,
+        request_class: type[Request] = Request,
+        response_class: type[Response] = Response,
         auth: AuthTypes | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -651,6 +666,8 @@ class Client(BaseClient):
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
     ) -> None:
         super().__init__(
+            request_class=request_class,
+            response_class=response_class,
             auth=auth,
             params=params,
             headers=headers,
@@ -747,6 +764,7 @@ class Client(BaseClient):
             http2=http2,
             limits=limits,
             trust_env=trust_env,
+            response_class=self.response_class,
         )
 
     def _init_proxy_transport(
@@ -767,6 +785,7 @@ class Client(BaseClient):
             limits=limits,
             trust_env=trust_env,
             proxy=proxy,
+            response_class=self.response_class,
         )
 
     def _transport_for_url(self, url: URL) -> BaseTransport:
@@ -1375,6 +1394,8 @@ class AsyncClient(BaseClient):
     def __init__(
         self,
         *,
+        request_class: type[Request] = Request,
+        response_class: type[Response] = Response,
         auth: AuthTypes | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
@@ -1398,6 +1419,8 @@ class AsyncClient(BaseClient):
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
     ) -> None:
         super().__init__(
+            request_class=request_class,
+            response_class=response_class,
             auth=auth,
             params=params,
             headers=headers,
@@ -1494,6 +1517,7 @@ class AsyncClient(BaseClient):
             http2=http2,
             limits=limits,
             trust_env=trust_env,
+            response_class=self.response_class,
         )
 
     def _init_proxy_transport(
@@ -1514,6 +1538,7 @@ class AsyncClient(BaseClient):
             limits=limits,
             trust_env=trust_env,
             proxy=proxy,
+            response_class=self.response_class,
         )
 
     def _transport_for_url(self, url: URL) -> AsyncBaseTransport:
