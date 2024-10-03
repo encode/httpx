@@ -23,7 +23,7 @@ def _get_coverage_filename(prefix: str) -> str:
 def selenium_with_jspi_if_possible(
     request: pytest.FixtureRequest, runtime: str, has_jspi: bool
 ) -> Generator[Any, None, None]:
-    if runtime == "firefox":
+    if runtime == "firefox":  # pragma: no cover
         fixture_name = "selenium"
     else:
         fixture_name = "selenium_jspi"
@@ -91,6 +91,9 @@ def wrapRunner(wrapped: T, has_jspi: bool) -> T:
             return wrapped_code
 
         def run_webworker_with_httpx(self, code: str, wheel_url: httpx.URL) -> None:
+            if self.browser == "node":
+                pytest.skip("Don't test web-workers in node.js")
+
             wrapped_code = self._wrap_code(code, wheel_url)
             coverage_out_binary = bytes(self.run_webworker(wrapped_code))
             with open(
@@ -149,7 +152,9 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if "has_jspi" in metafunc.fixturenames:
         if metafunc.config.getoption("--runtime").startswith("node"):
             metafunc.parametrize("has_jspi", [True])
-        elif metafunc.config.getoption("--runtime").startswith("firefox"):
+        elif metafunc.config.getoption("--runtime").startswith(
+            "firefox"
+        ):  # pragma: no cover
             metafunc.parametrize("has_jspi", [False])
         else:
             metafunc.parametrize("has_jspi", [True, False])

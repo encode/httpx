@@ -13,12 +13,14 @@ fi
 
 PYTEST_EXTRA_ARGS=""
 
+# run all host tests first
+${PREFIX}coverage run -p -m pytest "$@" --ignore=tests/emscripten
+
 if [ -d 'pyodide_dist' ]; then
-    PYTEST_EXTRA_ARGS="--dist-dir=pyodide_dist --rt=chrome"
+    # run emscripten specific tests on chrome and node.js (20+)
+    ${PREFIX}coverage run -p -m pytest --dist-dir=pyodide_dist --rt=node-no-host tests/emscripten "$@"   
+    ${PREFIX}coverage run -p -m pytest --dist-dir=pyodide_dist --rt=chrome-no-host tests/emscripten "$@" 
 fi
-
-
-${PREFIX}coverage run -p -m pytest ${PYTEST_EXTRA_ARGS} "$@" 
 
 if [ -z $GITHUB_ACTIONS ]; then
         scripts/coverage
