@@ -27,7 +27,7 @@ jobs:
         with:
           runner: selenium
           browser: chrome
-          browser-version: latest
+          browser-version: 120
       - uses: pyodide/pyodide-actions/install-browser@v2
         if: ${{ matrix.python-version ==3.12 }}
         with:

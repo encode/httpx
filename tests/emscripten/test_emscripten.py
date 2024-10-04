@@ -65,10 +65,15 @@ def test_async_get(
 
 
 def test_async_get_timeout(
-    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
+    server_url: httpx.URL,
+    wheel_url: httpx.URL,
+    pyodide_coverage: Any,
+    request: pytest.FixtureRequest,
 ) -> None:
     # test timeout on https and http
-    timeout_url = server_url.copy_with(path="/slow_response")
+    timeout_url = server_url.copy_with(
+        path="/slow_response", query=request.node.callspec.id.encode("UTF-8")
+    )
     pyodide_coverage.run_with_httpx(
         f"""
         import httpx
@@ -84,7 +89,11 @@ def test_async_get_timeout(
 
 
 def test_sync_get_timeout(
-    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any, has_jspi: bool
+    server_url: httpx.URL,
+    wheel_url: httpx.URL,
+    pyodide_coverage: Any,
+    has_jspi: bool,
+    request: pytest.FixtureRequest,
 ) -> None:
     # test timeout on https and http
     if not has_jspi:
@@ -92,7 +101,9 @@ def test_sync_get_timeout(
         # this will never timeout, or at least it will use the default
         # browser timeout which is VERY long!
         pytest.skip()
-    timeout_url = server_url.copy_with(path="/slow_response")
+    timeout_url = server_url.copy_with(
+        path="/slow_response", query=request.node.callspec.id.encode("UTF-8")
+    )
     pyodide_coverage.run_with_httpx(
         f"""
         import httpx
@@ -107,11 +118,17 @@ def test_sync_get_timeout(
 
 
 def test_sync_get_timeout_worker(
-    server_url: httpx.URL, wheel_url: httpx.URL, pyodide_coverage: Any
+    server_url: httpx.URL,
+    wheel_url: httpx.URL,
+    pyodide_coverage: Any,
+    request: pytest.FixtureRequest,
 ) -> None:
     # test timeout on https and http
-    # this is a blackhole ip address which should never respond
-    timeout_url = server_url.copy_with(path="/slow_response")
+    # this should timeout in 0.1 seconds
+    # (and shouldn't hit cache because of query string)
+    timeout_url = server_url.copy_with(
+        path="/slow_response", query=request.node.callspec.id.encode("UTF-8")
+    )
     pyodide_coverage.run_webworker_with_httpx(
         f"""
         import httpx

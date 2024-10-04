@@ -52,7 +52,6 @@ def wrapRunner(wrapped: T, has_jspi: bool) -> T:
             source_file = str(distribution('httpx').locate_file('httpx'))
             import coverage
             _coverage= coverage.Coverage(source=[source_file])
-            _coverage.set_option("run:relative_files",True)
             _coverage.start()
             """
         )
