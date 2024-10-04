@@ -445,3 +445,132 @@ async def test_async_invalid_redirect():
             await client.get(
                 "http://example.org/invalid_redirect", follow_redirects=True
             )
+
+
+def cookies_redirects(request: httpx.Request) -> httpx.Response:
+    if request.url.scheme not in ("http", "https"):
+        raise httpx.UnsupportedProtocol(f"Scheme {request.url.scheme!r} not supported.")
+
+    if request.url.path == "/redir_echo":
+        status_code = httpx.codes.MOVED_PERMANENTLY
+        headers = {"location": "https://example.com/echo"}
+        return httpx.Response(status_code, headers=headers)
+
+    if request.url.path == "/redir_double":
+        status_code = httpx.codes.MOVED_PERMANENTLY
+        headers = {"location": "https://not-example.com/redir_echo"}
+        return httpx.Response(status_code, headers=headers)
+
+    elif request.url.path == "/redir_other":
+        status_code = httpx.codes.MOVED_PERMANENTLY
+        headers = {"location": "https://not-example.com/echo"}
+        return httpx.Response(status_code, headers=headers)
+
+    elif request.url.path == "/redir_http":
+        status_code = httpx.codes.MOVED_PERMANENTLY
+        headers = {"location": "http://example.com/echo"}
+        return httpx.Response(status_code, headers=headers)
+
+    elif request.url.path == "/echo":
+        data = {"cookies": request.headers.get("cookie")}
+        return httpx.Response(200, json=data)
+
+    return httpx.Response(404, html="<html><body>Not found!</body></html>")
+
+
+def test_cookies_dont_cross_domain_on_redirect():
+    cookies = httpx.Cookies()
+    cookies.set("with_domain", "example-value", domain="example.com")
+
+    client = httpx.Client(
+        transport=httpx.MockTransport(cookies_redirects),
+        follow_redirects=True,
+        cookies=cookies,
+    )
+
+    response = client.get("http://example.com/redir_other")
+    assert response.status_code == 200
+    assert response.json() == {"cookies": None}
+
+
+def test_dict_cookies_dont_cross_domain_on_redirect():
+    cookies = {
+        "with_domain": "example-value",
+    }
+
+    client = httpx.Client(
+        transport=httpx.MockTransport(cookies_redirects),
+        follow_redirects=True,
+    )
+
+    with pytest.warns(DeprecationWarning):
+        response = client.get("http://example.com/redir_other", cookies=cookies)
+    assert response.status_code == 200
+    assert response.json() == {"cookies": None}
+
+
+def test_dict_cookies_follow_redirect():
+    cookies = {
+        "with_domain": "example-value",
+    }
+
+    client = httpx.Client(
+        transport=httpx.MockTransport(cookies_redirects),
+        follow_redirects=True,
+    )
+
+    with pytest.warns(DeprecationWarning):
+        response = client.get("http://example.com/redir_echo", cookies=cookies)
+    assert response.status_code == 200
+    assert response.json() == {"cookies": "with_domain=example-value"}
+
+
+def test_request_cookies_dont_cross_domain_on_redirect():
+    cookies = httpx.Cookies()
+    cookies.set("with_domain", "example-value", domain="example.com")
+
+    client = httpx.Client(
+        transport=httpx.MockTransport(cookies_redirects),
+        follow_redirects=True,
+    )
+
+    with pytest.warns(DeprecationWarning):
+        response = client.get(
+            "http://example.com/redir_other",
+            cookies=cookies,
+        )
+    assert response.status_code == 200
+    assert response.json() == {"cookies": None}
+
+
+def test_request_cookies_follow_double_redirect_across_hosts():
+    cookies = {
+        "with_domain": "example-value",
+    }
+
+    with httpx.Client(
+        transport=httpx.MockTransport(cookies_redirects), follow_redirects=True
+    ) as client:
+        with pytest.warns(DeprecationWarning):
+            response = client.get("http://example.com/redir_double", cookies=cookies)
+
+            assert response.status_code == 200
+            assert response.json() == {"cookies": "with_domain=example-value"}
+
+            intermediate_response = response.history[1]
+            assert "Cookie" not in intermediate_response.request.headers
+
+
+def test_request_cookies_dont_follow_on_http_downgrade():
+    cookies = {
+        "with_domain": "example-value",
+    }
+
+    with httpx.Client(
+        transport=httpx.MockTransport(cookies_redirects), follow_redirects=True
+    ) as client:
+        with pytest.warns(DeprecationWarning):
+            response = client.get("https://example.com/redir_http", cookies=cookies)
+
+            assert response.status_code == 200
+            assert response.json() == {"cookies": None}
