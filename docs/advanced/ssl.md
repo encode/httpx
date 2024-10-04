@@ -185,7 +185,7 @@ Example:
 # test_script.py
 import httpx
 
-with httpx.AsyncClient() as client:
+with httpx.Client() as client:
     r = client.get("https://google.com")
 ```
 
