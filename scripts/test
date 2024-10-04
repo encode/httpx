@@ -17,8 +17,8 @@ ${VENV_PREFIX}coverage run -p -m pytest "$@" --ignore=tests/emscripten
 
 if [ -d 'pyodide_dist' ]; then
     # run emscripten specific tests on chrome and node.js (20+)
-    ${VENV_PREFIX}coverage run -p -m pytest -v -x --dist-dir=${PWD}/pyodide_dist --rt=node-no-host tests/emscripten/test_emscripten.py "$@"
-    ${VENV_PREFIX}coverage run -p -m pytest -v -x --dist-dir=${PWD}/pyodide_dist --rt=chrome-no-host tests/emscripten/test_emscripten.py "$@"
+    ${VENV_PREFIX}coverage run -p -m pytest -v --dist-dir=${PWD}/pyodide_dist --rt=node-no-host tests/emscripten/test_emscripten.py "$@"
+    ${VENV_PREFIX}coverage run -p -m pytest -v --dist-dir=${PWD}/pyodide_dist --rt=chrome-no-host tests/emscripten/test_emscripten.py "$@"
 fi
 
 
