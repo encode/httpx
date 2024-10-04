@@ -22,8 +22,8 @@ def test_load_ssl_config_verify_non_existing_path():
 @pytest.mark.parametrize(
     "trust_env, expected_keylog_filename",
     [
-        pytest.param(True, "test", id="With trasting env"),
-        pytest.param(False, None, id="Without trasting env"),
+        pytest.param(True, "test", id="With trusting env"),
+        pytest.param(False, None, id="Without trusting env"),
     ],
 )
 def test_load_ssl_with_keylog(
