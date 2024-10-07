@@ -33,7 +33,7 @@ SSLContext(verify=False)
 
 If you're using a `Client()` instance, then you should pass any SSL settings when instantiating the client.
 
-```python
+```pycon
 >>> ssl_context = httpx.SSLContext()
 >>> client = httpx.Client(ssl_context=ssl_context)
 ```
