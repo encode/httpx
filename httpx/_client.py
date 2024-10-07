@@ -683,12 +683,12 @@ class Client(BaseClient):
 
     def _init_transport(
         self,
-        ssl_context: typing.Optional[ssl.SSLContext],
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
+        transport: BaseTransport | None = None,
         trust_env: bool = True,
-        transport: typing.Optional[BaseTransport] = None,
     ) -> BaseTransport:
         if transport is not None:
             return transport
@@ -704,7 +704,7 @@ class Client(BaseClient):
     def _init_proxy_transport(
         self,
         proxy: Proxy,
-        ssl_context: typing.Optional[ssl.SSLContext] = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -1393,7 +1393,6 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: AsyncBaseTransport | None = None,
-        app: typing.Callable[..., typing.Any] | None = None,
     ) -> AsyncBaseTransport:
         if transport is not None:
             return transport

@@ -48,7 +48,7 @@ def request(
     proxy: ProxyTypes | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     follow_redirects: bool = False,
-    ssl_context: typing.Optional[ssl.SSLContext] = None,
+    ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
 ) -> Response:
     """
@@ -132,7 +132,7 @@ def stream(
     proxy: ProxyTypes | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     follow_redirects: bool = False,
-    ssl_context: typing.Optional[ssl.SSLContext] = None,
+    ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
 ) -> typing.Iterator[Response]:
     """
@@ -176,7 +176,7 @@ def get(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: typing.Optional[ssl.SSLContext] = None,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -212,7 +212,7 @@ def options(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: typing.Optional[ssl.SSLContext] = None,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -248,7 +248,7 @@ def head(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: typing.Optional[ssl.SSLContext] = None,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -288,7 +288,7 @@ def post(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: typing.Optional[ssl.SSLContext] = None,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -329,7 +329,7 @@ def put(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: typing.Optional[ssl.SSLContext] = None,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -370,7 +370,7 @@ def patch(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: typing.Optional[ssl.SSLContext] = None,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -408,7 +408,7 @@ def delete(
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-    ssl_context: typing.Optional[ssl.SSLContext] = None,
+    ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
 ) -> Response:
     """
