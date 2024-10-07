@@ -150,4 +150,4 @@ HTTPX requires Python 3.8+
 [sync-support]: https://github.com/encode/httpx/issues/572
 
 ## Pyodide / Emscripten Support
-There is experimental support for running in Webassembly under the pyodide runtime. See the [Emscripten](emscripten.md) page for more details.
+There is experimental support for running in Webassembly under the pyodide runtime. See the [Emscripten](advanced/emscripten.md) page for more details.
