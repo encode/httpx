@@ -27,9 +27,9 @@ from ._exceptions import (
 )
 from ._models import Cookies, Headers, Request, Response
 from ._status_codes import codes
+from ._transports import AsyncHTTPTransport, HTTPTransport
 from ._transports.asgi import ASGITransport
 from ._transports.base import AsyncBaseTransport, BaseTransport
-from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._transports.wsgi import WSGITransport
 from ._types import (
     AsyncByteStream,

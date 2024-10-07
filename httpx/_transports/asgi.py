@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import typing
 
-import sniffio
+try:
+    from sniffio import current_async_library
+except (ImportError, ModuleNotFoundError):  # pragma: nocover
+
+    def current_async_library() -> str:
+        return "asyncio"
+
 
 from .._models import Request, Response
 from .._types import AsyncByteStream
@@ -29,7 +35,7 @@ __all__ = ["ASGITransport"]
 
 
 def create_event() -> Event:
-    if sniffio.current_async_library() == "trio":
+    if current_async_library() == "trio":
         import trio
 
         return trio.Event()

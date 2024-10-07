@@ -1,8 +1,18 @@
+import sys
+
 from .asgi import *
 from .base import *
-from .default import *
 from .mock import *
 from .wsgi import *
+
+if sys.platform == "emscripten":  # pragma: nocover
+    from .emscripten import *
+
+    HTTPTransport = EmscriptenTransport
+    AsyncHTTPTransport = AsyncEmscriptenTransport
+
+else:
+    from .default import *
 
 __all__ = [
     "ASGITransport",

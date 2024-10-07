@@ -1006,6 +1006,7 @@ class Response:
 
         if not self.is_closed:
             self.is_closed = True
+            print("ACLOSE _models")
             with request_context(request=self._request):
                 await self.stream.aclose()
 
