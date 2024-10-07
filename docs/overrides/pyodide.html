@@ -42,7 +42,7 @@ https://cdn.jsdelivr.net/npm/ace-builds@1.36.2/css/ace.min.css
     editor.setTheme("ace/theme/monokai");
     editor.session.setMode("ace/mode/python");
     let outputDiv = document.getElementById("pyodide_output")
-    outputDiv.innerText="Loading python in browser";
+    outputDiv.innerText="Loading python in your browser";
 
     async function initPyodide()
     {
@@ -64,7 +64,7 @@ https://cdn.jsdelivr.net/npm/ace-builds@1.36.2/css/ace.min.css
             await pyodide.loadPackage("micropip");
             await pyodide.runPythonAsync("await micropip.install('httpx')")
         }
-        outputDiv.innerText="Ready...\n"
+        outputDiv.innerText="Python runtime ready...\n"
     }
 
     loadPromise = initPyodide();
