@@ -29,7 +29,7 @@ def test_load_ssl_config_verify_non_existing_path():
 def test_load_ssl_with_keylog(
     monkeypatch: typing.Any,
     trust_env: bool,
-    expected_keylog_filename: typing.Union[str, None]
+    expected_keylog_filename: typing.Union[str, None],
 ) -> None:
     monkeypatch.setenv("SSLKEYLOGFILE", "test")
     context = httpx.SSLContext(trust_env=trust_env)
