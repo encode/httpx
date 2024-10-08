@@ -3,7 +3,6 @@ import logging
 import os
 import random
 
-import certifi
 import pytest
 
 import httpx
@@ -115,26 +114,6 @@ def test_logging_redirect_chain(server, caplog):
             "httpx",
             logging.INFO,
             'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"',
-        ),
-    ]
-
-
-def test_logging_ssl(caplog):
-    caplog.set_level(logging.DEBUG)
-    with httpx.Client():
-        pass
-
-    cafile = certifi.where()
-    assert caplog.record_tuples == [
-        (
-            "httpx",
-            logging.DEBUG,
-            "load_ssl_context verify=True cert=None",
-        ),
-        (
-            "httpx",
-            logging.DEBUG,
-            f"load_verify_locations cafile='{cafile}'",
         ),
     ]
 

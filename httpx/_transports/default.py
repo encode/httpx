@@ -129,7 +129,6 @@ class HTTPTransport(BaseTransport):
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
         proxy: ProxyTypes | None = None,
         uds: str | None = None,
         local_address: str | None = None,

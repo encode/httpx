@@ -12,30 +12,30 @@ httpx.ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: 
 You can configure the verification using `httpx.SSLContext()`.
 
 ```pycon
->>> ssl_context = httpx.SSLContext()
->>> ssl_context
-SSLContext(verify=True)
->>> httpx.get("https://www.example.com", ssl_context=ssl_context)
+>>> context = httpx.SSLContext()
+>>> context
+<SSLContext(verify=True)>
+>>> httpx.get("https://www.example.com", ssl_context=context)
 httpx.ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:997)
 ```
 
-For example, you can use this to disable verification completely and allow insecure requests...
+You can use this to disable verification completely and allow insecure requests...
 
 ```pycon
->>> no_verify = httpx.SSLContext(verify=False)
->>> no_verify
-SSLContext(verify=False)
->>> httpx.get("https://expired.badssl.com/", ssl_context=no_verify)
+>>> context = httpx.SSLContext(verify=False)
+>>> context
+<SSLContext(verify=False)>
+>>> httpx.get("https://expired.badssl.com/", ssl_context=context)
 <Response [200 OK]>
 ```
 
 ### Configuring client instances
 
-If you're using a `Client()` instance, then you should pass any SSL settings when instantiating the client.
+If you're using a `Client()` instance you should pass any SSL settings when instantiating the client.
 
 ```pycon
->>> ssl_context = httpx.SSLContext()
->>> client = httpx.Client(ssl_context=ssl_context)
+>>> context = httpx.SSLContext()
+>>> client = httpx.Client(ssl_context=context)
 ```
 
 The `client.get(...)` method and other request methods on a `Client` instance *do not* support changing the SSL settings on a per-request basis.
@@ -59,8 +59,8 @@ Using the default SSL context.
 Using the default SSL context, but specified explicitly.
 
 ```pycon
->>> default = httpx.SSLContext()
->>> client = httpx.Client(ssl_context=default)
+>>> context = httpx.SSLContext()
+>>> client = httpx.Client(ssl_context=context)
 >>> client.get("https://www.example.com")
 <Response [200 OK]>
 ```
@@ -68,26 +68,20 @@ Using the default SSL context, but specified explicitly.
 Using the default SSL context, with `verify=True` specified explicitly.
 
 ```pycon
->>> default = httpx.SSLContext(verify=True)
->>> client = httpx.Client(ssl_context=default)
+>>> context = httpx.SSLContext(verify=True)
+>>> client = httpx.Client(ssl_context=context)
 >>> client.get("https://www.example.com")
 <Response [200 OK]>
 ```
 
-Using an SSL context, with `certifi.where()` explicitly specified.
+### Configuring certificate verification
+
+You can load additional certificate verification using the [`.load_verify_locations()`](https://docs.python.org/3/library/ssl.html#ssl.SSLContext.load_verify_locations) API:
 
 ```pycon
->>> default = httpx.SSLContext(verify=certifi.where())
->>> client = httpx.Client(ssl_context=default)
->>> client.get("https://www.example.com")
-<Response [200 OK]>
-```
-
-For some advanced situations may require you to use a different set of certificates, either by specifying a PEM file:
-
-```pycon
->>> custom_cafile = httpx.SSLContext(verify="path/to/certs.pem")
->>> client = httpx.Client(ssl_context=custom_cafile)
+>>> context = httpx.SSLContext()
+>>> context.load_verify_locations(cafile="path/to/certs.pem")
+>>> client = httpx.Client(ssl_context=context)
 >>> client.get("https://www.example.com")
 <Response [200 OK]>
 ```
@@ -95,44 +89,49 @@ For some advanced situations may require you to use a different set of certifica
 Or by providing an certificate directory:
 
 ```pycon
->>> custom_capath = httpx.SSLContext(verify="path/to/certs")
->>> client = httpx.Client(ssl_context=custom_capath)
+>>> context = httpx.SSLContext()
+>>> context.load_verify_locations(capath="path/to/certs")
+>>> client = httpx.Client(ssl_context=context)
 >>> client.get("https://www.example.com")
 <Response [200 OK]>
 ```
 
-These usages are equivelent to using [`.load_verify_locations()`](https://docs.python.org/3/library/ssl.html#ssl.SSLContext.load_verify_locations) with either `cafile=...` or `capath=...`.
-
 ### Client side certificates
 
-You can also specify a local cert to use as a client-side certificate, either a path to an SSL certificate file...
+You can also specify a local cert to use as a client-side certificate, using the [`.load_cert_chain()`](https://docs.python.org/3/library/ssl.html#ssl.SSLContext.load_cert_chain) API:
 
 ```pycon
->>> cert = "path/to/client.pem"
->>> ssl_context = httpx.SSLContext(cert=cert)
+>>> context = httpx.SSLContext()
+>>> context.load_cert_chain(certfile="path/to/client.pem")
 >>> httpx.get("https://example.org", ssl_context=ssl_context)
 <Response [200 OK]>
 ```
 
-Or two-tuple of (certificate file, key file)...
+Or including a keyfile...
 
 ```pycon
->>> cert = ("path/to/client.pem", "path/to/client.key")
->>> ssl_context = httpx.SSLContext(cert=cert)
->>> httpx.get("https://example.org", ssl_context=ssl_context)
+>>> context = httpx.SSLContext()
+>>> context.load_cert_chain(
+        certfile="path/to/client.pem",
+        keyfile="path/to/client.key"
+    )
+>>> httpx.get("https://example.org", ssl_context=context)
 <Response [200 OK]>
 ```
 
-Or a three-tuple of (certificate file, key file, password)...
+Or including a keyfile and password...
 
 ```pycon
->>> cert = ("path/to/client.pem", "path/to/client.key", "password")
->>> ssl_context = httpx.SSLContext(cert=cert)
->>> httpx.get("https://example.org", ssl_context=ssl_context)
+>>> context = httpx.SSLContext(cert=cert)
+>>> context = httpx.SSLContext()
+>>> context.load_cert_chain(
+        certfile="path/to/client.pem",
+        keyfile="path/to/client.key"
+        password="password"
+    )
+>>> httpx.get("https://example.org", ssl_context=context)
 <Response [200 OK]>
 ```
-
-These configurations are equivalent to using [`.load_cert_chain()`](https://docs.python.org/3/library/ssl.html#ssl.SSLContext.load_cert_chain).
 
 ### Using alternate SSL contexts
 
@@ -166,9 +165,14 @@ Unlike `requests`, the `httpx` package does not automatically pull in [the envir
 For example...
 
 ```python
-# Use `SSL_CERT_FILE` or `SSL_CERT_DIR` if configured, otherwise use certifi.
-verify = os.environ.get("SSL_CERT_FILE", os.environ.get("SSL_CERT_DIR", True))
-ssl_context = httpx.SSLContext(verify=verify)
+context = httpx.SSLContext()
+
+# Use `SSL_CERT_FILE` or `SSL_CERT_DIR` if configured.
+if os.environ.get("SSL_CERT_FILE") or os.environ.get("SSL_CERT_DIR"):
+    context.load_verify_locations(
+        cafile=os.environ.get("SSL_CERT_FILE"),
+        capath=os.environ.get("SSL_CERT_DIR"),
+    )
 ```
 
 ## `SSLKEYLOGFILE`
@@ -217,8 +221,9 @@ If you do need to make HTTPS connections to a local server, for example to test 
 
 ```pycon
 >>> import httpx
->>> ssl_context = httpx.SSLContext(verify="/tmp/client.pem")
->>> r = httpx.get("https://localhost:8000", ssl_context=ssl_context)
+>>> context = httpx.SSLContext()
+>>> context.load_verify_locations(cafile="/tmp/client.pem")
+>>> r = httpx.get("https://localhost:8000", ssl_context=context)
 >>> r
 Response <200 OK>
 ```
