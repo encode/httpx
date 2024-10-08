@@ -52,6 +52,8 @@ class SSLContext(ssl.SSLContext):
         super().__init__()
         self._verify = verify
 
+        # Our SSL setup here is similar to the stdlib `ssl.create_default_context()`
+        # implementation, except with `certifi` used for certificate verification.
         if not verify:
             self.check_hostname = False
             self.verify_mode = ssl.CERT_NONE
@@ -61,9 +63,9 @@ class SSLContext(ssl.SSLContext):
         self.check_hostname = True
 
         # Use stricter verify flags where possible.
-        if hasattr(ssl, "VERIFY_X509_PARTIAL_CHAIN"):
+        if hasattr(ssl, "VERIFY_X509_PARTIAL_CHAIN"):  # pragma: nocover
             self.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
-        if hasattr(ssl, "VERIFY_X509_STRICT"):
+        if hasattr(ssl, "VERIFY_X509_STRICT"):  # pragma: nocover
             self.verify_flags |= ssl.VERIFY_X509_STRICT
 
         # Default to `certifi` for certificiate verification.
