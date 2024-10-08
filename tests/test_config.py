@@ -19,13 +19,10 @@ def test_load_ssl_config_verify_non_existing_path():
         httpx.SSLContext(verify="/path/to/nowhere")
 
 
-def test_load_ssl_with_keylog(
-    monkeypatch: typing.Any,
-    expected_keylog_filename: typing.Union[str, None],
-) -> None:
+def test_load_ssl_with_keylog(monkeypatch: typing.Any) -> None:
     monkeypatch.setenv("SSLKEYLOGFILE", "test")
     context = httpx.SSLContext()
-    assert context.keylog_filename == expected_keylog_filename
+    assert context.keylog_filename == "test"
 
 
 def test_load_ssl_config_verify_existing_file():
