@@ -19,20 +19,12 @@ def test_load_ssl_config_verify_non_existing_path():
         httpx.SSLContext(verify="/path/to/nowhere")
 
 
-@pytest.mark.parametrize(
-    "trust_env, expected_keylog_filename",
-    [
-        pytest.param(True, "test", id="With trusting env"),
-        pytest.param(False, None, id="Without trusting env"),
-    ],
-)
 def test_load_ssl_with_keylog(
     monkeypatch: typing.Any,
-    trust_env: bool,
     expected_keylog_filename: typing.Union[str, None],
 ) -> None:
     monkeypatch.setenv("SSLKEYLOGFILE", "test")
-    context = httpx.SSLContext(trust_env=trust_env)
+    context = httpx.SSLContext()
     assert context.keylog_filename == expected_keylog_filename
 
 
