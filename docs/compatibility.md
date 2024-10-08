@@ -171,9 +171,11 @@ Also note that `requests.Session.request(...)` allows a `proxies=...` parameter,
 
 ## SSL configuration
 
-When using a `Client` instance, the ssl configurations should always be passed on client instantiation, rather than passed to the request method.
+hen using a `Client` instance, the `ssl_context=` should always be passed on client instantiation, rather than passed to the request method.
 
 If you need more than one different SSL configuration, you should use different client instances for each SSL configuration.
+
+Requests supports `REQUESTS_CA_BUNDLE` which points to either a file or a directory. In HTTPX you should explicitly handle it, see [Working with SSL_CERT_FILE and SSL_CERT_DIR](advanced/ssl.md#working-with-ssl_cert_file-and-ssl_cert_dir).
 
 ## Request body on HTTP methods
 
@@ -197,7 +199,9 @@ We don't support `response.is_ok` since the naming is ambiguous there, and might
 
 There is no notion of [prepared requests](https://requests.readthedocs.io/en/stable/user/advanced/#prepared-requests) in HTTPX. If you need to customize request instantiation, see [Request instances](advanced/clients.md#request-instances).
 
-Besides, `httpx.Request()` does not support the `auth`, `timeout`, `follow_redirects`, `mounts`, `verify` and `cert` parameters. However these are available in `httpx.request`, `httpx.get`, `httpx.post` etc., as well as on [`Client` instances](advanced/clients.md#client-instances).
+HTTPX Uses `ssl_context` instead of `cert` and `verify` arguments in client instantiation.
+
+Besides, `httpx.Request()` does not support the `auth`, `timeout`, `follow_redirects` and `mounts` parameters. However these are available in `httpx.request`, `httpx.get`, `httpx.post` etc., as well as on [`Client` instances](advanced/clients.md#client-instances).
 
 ## Mocking
 

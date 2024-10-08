@@ -7,11 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## Unreleased
 
 * Added `httpx.SSLContext` class and `ssl_context` argument. (#3022)
-* Removed `cert` and `verify` arguments, you should use the `ssl_context=...` instead. (#3022)
-* The deprecated `proxies` argument has now been removed.
-* The deprecated `app` argument has now been removed.
-* The `URL.raw` property has now been removed.
-* The `sniffio` project dependency has now been removed.
+* Removed `cert` and `verify`, Use the `ssl_context=...` instead. (#3022)
+* `SSLKEYLOGFILE` is now always available environment variable. (#3022)
+* Removed `SSL_CERT_FILE` and `SSL_CERT_DIR` environment variables support. (#3022)
+* The deprecated `proxies` argument has now been removed. (#3314)
+* The deprecated `app` argument has now been removed. (#3315)
+* The `URL.raw` property has now been removed. (#3317)
+* The `sniffio` project dependency has now been removed. (#3323)
 
 ## 0.27.2 (27th August, 2024)
 
