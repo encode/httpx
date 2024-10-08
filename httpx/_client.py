@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import enum
 import logging
+import ssl
 import typing
 import warnings
 from contextlib import asynccontextmanager, contextmanager
@@ -32,7 +33,6 @@ from ._transports.default import AsyncHTTPTransport, HTTPTransport
 from ._types import (
     AsyncByteStream,
     AuthTypes,
-    CertTypes,
     CookieTypes,
     HeaderTypes,
     ProxyTypes,
@@ -43,7 +43,6 @@ from ._types import (
     RequestFiles,
     SyncByteStream,
     TimeoutTypes,
-    VerifyTypes,
 )
 from ._urls import URL, QueryParams
 from ._utils import (
@@ -585,14 +584,8 @@ class Client(BaseClient):
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
     sending requests.
-    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
-    verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
-    (which will disable verification).
-    * **cert** - *(optional)* An SSL certificate used by the requested host
-    to authenticate the client. Either a path to an SSL certificate file, or
-    two-tuple of (certificate file, key file), or a three-tuple of (certificate
-    file, key file, password).
+    * **ssl_context** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client.
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
@@ -621,8 +614,7 @@ class Client(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
@@ -664,25 +656,21 @@ class Client(BaseClient):
         proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
             transport=transport,
-            trust_env=trust_env,
         )
         self._mounts: dict[URLPattern, BaseTransport | None] = {
             URLPattern(key): None
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
-                verify=verify,
-                cert=cert,
+                ssl_context=ssl_context,
                 http1=http1,
                 http2=http2,
                 limits=limits,
-                trust_env=trust_env,
             )
             for key, proxy in proxy_map.items()
         }
@@ -695,8 +683,7 @@ class Client(BaseClient):
 
     def _init_transport(
         self,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -707,8 +694,7 @@ class Client(BaseClient):
             return transport
 
         return HTTPTransport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -718,16 +704,14 @@ class Client(BaseClient):
     def _init_proxy_transport(
         self,
         proxy: Proxy,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
     ) -> BaseTransport:
         return HTTPTransport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -1307,14 +1291,8 @@ class AsyncClient(BaseClient):
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
     sending requests.
-    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
-    verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
-    (which will disable verification).
-    * **cert** - *(optional)* An SSL certificate used by the requested host
-    to authenticate the client. Either a path to an SSL certificate file, or
-    two-tuple of (certificate file, key file), or a three-tuple of (certificate
-    file, key file, password).
+    * **ssl_context** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client.
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
@@ -1341,8 +1319,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
@@ -1384,13 +1361,11 @@ class AsyncClient(BaseClient):
         proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
             transport=transport,
-            trust_env=trust_env,
         )
 
         self._mounts: dict[URLPattern, AsyncBaseTransport | None] = {
@@ -1398,12 +1373,10 @@ class AsyncClient(BaseClient):
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
-                verify=verify,
-                cert=cert,
+                ssl_context=ssl_context,
                 http1=http1,
                 http2=http2,
                 limits=limits,
-                trust_env=trust_env,
             )
             for key, proxy in proxy_map.items()
         }
@@ -1415,43 +1388,35 @@ class AsyncClient(BaseClient):
 
     def _init_transport(
         self,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: AsyncBaseTransport | None = None,
-        trust_env: bool = True,
     ) -> AsyncBaseTransport:
         if transport is not None:
             return transport
 
         return AsyncHTTPTransport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
-            trust_env=trust_env,
         )
 
     def _init_proxy_transport(
         self,
         proxy: Proxy,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
     ) -> AsyncBaseTransport:
         return AsyncHTTPTransport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
-            trust_env=trust_env,
             proxy=proxy,
         )
 
