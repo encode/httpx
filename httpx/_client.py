@@ -168,7 +168,6 @@ class BaseClient:
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
-        trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
     ) -> None:
         event_hooks = {} if event_hooks is None else event_hooks
@@ -186,7 +185,6 @@ class BaseClient:
             "request": list(event_hooks.get("request", [])),
             "response": list(event_hooks.get("response", [])),
         }
-        self._trust_env = trust_env
         self._default_encoding = default_encoding
         self._state = ClientState.UNOPENED
 
@@ -196,10 +194,6 @@ class BaseClient:
         Check if the client being closed
         """
         return self._state == ClientState.CLOSED
-
-    @property
-    def trust_env(self) -> bool:
-        return self._trust_env
 
     def _enforce_trailing_slash(self, url: URL) -> URL:
         if url.raw_path.endswith(b"/"):
@@ -639,7 +633,6 @@ class Client(BaseClient):
             max_redirects=max_redirects,
             event_hooks=event_hooks,
             base_url=base_url,
-            trust_env=trust_env,
             default_encoding=default_encoding,
         )
 
@@ -688,7 +681,6 @@ class Client(BaseClient):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: BaseTransport | None = None,
-        trust_env: bool = True,
     ) -> BaseTransport:
         if transport is not None:
             return transport
@@ -698,7 +690,6 @@ class Client(BaseClient):
             http1=http1,
             http2=http2,
             limits=limits,
-            trust_env=trust_env,
         )
 
     def _init_proxy_transport(
@@ -708,14 +699,12 @@ class Client(BaseClient):
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
     ) -> BaseTransport:
         return HTTPTransport(
             ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
-            trust_env=trust_env,
             proxy=proxy,
         )
 
@@ -1344,7 +1333,6 @@ class AsyncClient(BaseClient):
             max_redirects=max_redirects,
             event_hooks=event_hooks,
             base_url=base_url,
-            trust_env=trust_env,
             default_encoding=default_encoding,
         )
 
