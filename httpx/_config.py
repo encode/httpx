@@ -46,6 +46,7 @@ UNSET = UnsetType()
 
 
 class SSLContext(ssl.SSLContext):
+    _default_contexts: dict[tuple[bool, bool], "SSLContext"] = {}
     DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
 
     def __init__(
@@ -127,6 +128,24 @@ class SSLContext(ssl.SSLContext):
                     keyfile=cert[1],
                     password=cert[2],
                 )
+
+    @classmethod
+    def from_defaults(cls, http1: bool = True, http2: bool = False) -> "SSLContext":
+        context = cls._default_contexts.get((http1, http2))
+        if context is not None:
+            return context
+
+        context = SSLContext()
+        if ssl.HAS_ALPN:
+            alpn_idents = []
+            if http1:
+                alpn_idents.append("http/1.1")
+            if http2:
+                alpn_idents.append("h2")
+            context.set_alpn_protocols(alpn_idents)
+
+        cls._default_contexts[(http1, http2)] = context
+        return context
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__

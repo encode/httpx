@@ -137,7 +137,7 @@ class HTTPTransport(BaseTransport):
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-        ssl_context = ssl_context or SSLContext()
+        ssl_context = ssl_context or SSLContext.from_defaults(http1=http1, http2=http2)
 
         if proxy is None:
             self._pool = httpcore.ConnectionPool(
@@ -276,7 +276,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-        ssl_context = ssl_context or SSLContext()
+        ssl_context = ssl_context or SSLContext.from_defaults(http1=http1, http2=http2)
 
         if proxy is None:
             self._pool = httpcore.AsyncConnectionPool(

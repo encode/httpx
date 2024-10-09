@@ -121,8 +121,7 @@ def test_logging_redirect_chain(server, caplog):
 
 def test_logging_ssl(caplog):
     caplog.set_level(logging.DEBUG)
-    with httpx.Client():
-        pass
+    _context = httpx.SSLContext()
 
     cafile = certifi.where()
     assert caplog.record_tuples == [
