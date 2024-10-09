@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ssl
 import typing
 from contextlib import contextmanager
 
@@ -8,7 +9,6 @@ from ._config import DEFAULT_TIMEOUT_CONFIG
 from ._models import Response
 from ._types import (
     AuthTypes,
-    CertTypes,
     CookieTypes,
     HeaderTypes,
     ProxyTypes,
@@ -17,7 +17,6 @@ from ._types import (
     RequestData,
     RequestFiles,
     TimeoutTypes,
-    VerifyTypes,
 )
 from ._urls import URL
 
@@ -49,8 +48,7 @@ def request(
     proxy: ProxyTypes | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     follow_redirects: bool = False,
-    verify: VerifyTypes = True,
-    cert: CertTypes | None = None,
+    ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
 ) -> Response:
     """
@@ -81,14 +79,8 @@ def request(
     * **timeout** - *(optional)* The timeout configuration to use when sending
     the request.
     * **follow_redirects** - *(optional)* Enables or disables HTTP redirects.
-    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
-    verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
-    (which will disable verification).
-    * **cert** - *(optional)* An SSL certificate used by the requested host
-    to authenticate the client. Either a path to an SSL certificate file, or
-    two-tuple of (certificate file, key file), or a three-tuple of (certificate
-    file, key file, password).
+    * **ssl_context** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
 
@@ -106,8 +98,7 @@ def request(
     with Client(
         cookies=cookies,
         proxy=proxy,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     ) as client:
@@ -141,8 +132,7 @@ def stream(
     proxy: ProxyTypes | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     follow_redirects: bool = False,
-    verify: VerifyTypes = True,
-    cert: CertTypes | None = None,
+    ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
 ) -> typing.Iterator[Response]:
     """
@@ -158,8 +148,7 @@ def stream(
     with Client(
         cookies=cookies,
         proxy=proxy,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     ) as client:
@@ -187,8 +176,7 @@ def get(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: CertTypes | None = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -209,8 +197,7 @@ def get(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -225,8 +212,7 @@ def options(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: CertTypes | None = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -247,8 +233,7 @@ def options(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -263,8 +248,7 @@ def head(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: CertTypes | None = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -285,8 +269,7 @@ def head(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -305,8 +288,7 @@ def post(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: CertTypes | None = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -328,8 +310,7 @@ def post(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -348,8 +329,7 @@ def put(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: CertTypes | None = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -371,8 +351,7 @@ def put(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -391,8 +370,7 @@ def patch(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: CertTypes | None = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -414,8 +392,7 @@ def patch(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -430,9 +407,8 @@ def delete(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: CertTypes | None = None,
-    verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
 ) -> Response:
     """
@@ -452,8 +428,7 @@ def delete(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
     )

@@ -16,6 +16,7 @@ import rich.syntax
 import rich.table
 
 from ._client import Client
+from ._config import SSLContext
 from ._exceptions import RequestError
 from ._models import Response
 from ._status_codes import codes
@@ -473,12 +474,10 @@ def main(
     if not method:
         method = "POST" if content or data or files or json else "GET"
 
+    ssl_context = SSLContext(verify=verify)
     try:
         with Client(
-            proxy=proxy,
-            timeout=timeout,
-            verify=verify,
-            http2=http2,
+            proxy=proxy, timeout=timeout, http2=http2, ssl_context=ssl_context
         ) as client:
             with client.stream(
                 method,
