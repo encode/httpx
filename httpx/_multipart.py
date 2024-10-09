@@ -5,6 +5,7 @@ import mimetypes
 import os
 import re
 import typing
+from collections.abc import AsyncIterable
 from pathlib import Path
 
 from ._types import (
@@ -201,6 +202,8 @@ class FileField:
         return self._headers
 
     def render_data(self) -> typing.Iterator[bytes]:
+        if isinstance(self.file, AsyncIterable):
+            raise TypeError("Invalid type for file. AsyncIterable is not supported.")
         if isinstance(self.file, (str, bytes)):
             yield to_bytes(self.file)
             return
@@ -216,9 +219,23 @@ class FileField:
             yield to_bytes(chunk)
             chunk = self.file.read(self.CHUNK_SIZE)
 
+    async def arender_data(self) -> typing.AsyncIterator[bytes]:
+        if not isinstance(self.file, AsyncIterable):
+            for chunk in self.render_data():
+                yield chunk
+            return
+
+        async for achunk in self.file:
+            yield to_bytes(achunk)
+
     def render(self) -> typing.Iterator[bytes]:
         yield self.render_headers()
         yield from self.render_data()
+
+    async def arender(self) -> typing.AsyncIterator[bytes]:
+        yield self.render_headers()
+        async for chunk in self.arender_data():
+            yield chunk
 
 
 class MultipartStream(SyncByteStream, AsyncByteStream):
@@ -262,6 +279,18 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
             yield b"\r\n"
         yield b"--%s--\r\n" % self.boundary
 
+    async def aiter_chunks(self) -> typing.AsyncIterator[bytes]:
+        for field in self.fields:
+            yield b"--%s\r\n" % self.boundary
+            if isinstance(field, FileField):
+                async for chunk in field.arender():
+                    yield chunk
+            else:
+                for chunk in field.render():
+                    yield chunk
+            yield b"\r\n"
+        yield b"--%s--\r\n" % self.boundary
+
     def get_content_length(self) -> int | None:
         """
         Return the length of the multipart encoded content, or `None` if
@@ -296,5 +325,5 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
             yield chunk
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        for chunk in self.iter_chunks():
+        async for chunk in self.aiter_chunks():
             yield chunk
