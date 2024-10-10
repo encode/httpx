@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+* The deprecated using of `data` argument now been removed.
 * Added `httpx.SSLContext` class and `ssl_context` argument. (#3022)
 * Removed `cert` and `verify` arguments, you should use the `ssl_context=...` instead. (#3022)
 * The deprecated `proxies` argument has now been removed.
