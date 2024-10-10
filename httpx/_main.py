@@ -477,7 +477,11 @@ def main(
     ssl_context = SSLContext(verify=verify)
     try:
         with Client(
-            proxy=proxy, timeout=timeout, http2=http2, ssl_context=ssl_context
+            cookies=dict(cookies),
+            ssl_context=ssl_context,
+            http2=http2,
+            proxy=proxy,
+            timeout=timeout,
         ) as client:
             with client.stream(
                 method,
@@ -488,7 +492,6 @@ def main(
                 files=files,  # type: ignore
                 json=json,
                 headers=headers,
-                cookies=dict(cookies),
                 auth=auth,
                 follow_redirects=follow_redirects,
                 extensions={"trace": functools.partial(trace, verbose=verbose)},
