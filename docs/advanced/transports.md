@@ -447,8 +447,44 @@ mounts = {
 
 ### Environment variables
 
-There are also environment variables that can be used to control the dictionary of the client mounts. 
-They can be used to configure HTTP proxying for clients.
+There are also environment variables that can be used to control the dictionary of the client mounts.
+They can be used to configure HTTP proxying for clients. To ignore environment variables, `trust_env` has to be set `False`.
 
-See documentation on [`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`](../environment_variables.md#http_proxy-https_proxy-all_proxy)
-and [`NO_PROXY`](../environment_variables.md#no_proxy) for more information.
+The environment variables documented below are used as a convention by various HTTP tooling, including [cURL](https://github.com/curl/curl/blob/master/docs/MANUAL.md#environment-variables) and [requests](https://github.com/psf/requests/blob/master/docs/user/advanced.rst#proxies).
+
+For more information on using proxies in HTTPX, see [HTTP Proxying](advanced/proxies.md#http-proxying).
+
+#### `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`
+
+Valid values: A URL to a proxy
+
+`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` set the proxy to be used for `http`, `https`, or all requests respectively.
+
+```bash
+export HTTP_PROXY=http://my-external-proxy.com:1234
+
+# This request will be sent through the proxy
+python -c "import httpx; httpx.get('http://example.com')"
+
+# This request will be sent directly, as we set `trust_env=False`
+python -c "import httpx; httpx.get('http://example.com', trust_env=False)"
+
+```
+
+#### `NO_PROXY`
+
+Valid values: a comma-separated list of hostnames/urls
+
+`NO_PROXY` disables the proxy for specific urls
+
+```bash
+export HTTP_PROXY=http://my-external-proxy.com:1234
+export NO_PROXY=http://127.0.0.1,python-httpx.org
+
+# As in the previous example, this request will be sent through the proxy
+python -c "import httpx; httpx.get('http://example.com')"
+
+# These requests will be sent directly, bypassing the proxy
+python -c "import httpx; httpx.get('http://127.0.0.1:5000/my-api')"
+python -c "import httpx; httpx.get('https://www.python-httpx.org')"
+```
