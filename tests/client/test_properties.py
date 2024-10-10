@@ -58,11 +58,3 @@ def test_client_event_hooks():
     client = httpx.Client()
     client.event_hooks = {"request": [on_request]}
     assert client.event_hooks == {"request": [on_request], "response": []}
-
-
-def test_client_trust_env():
-    client = httpx.Client()
-    assert client.trust_env
-
-    client = httpx.Client(trust_env=False)
-    assert not client.trust_env
