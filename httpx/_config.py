@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import os
 import ssl
 import sys
@@ -13,28 +12,6 @@ from ._types import HeaderTypes, TimeoutTypes
 from ._urls import URL
 
 __all__ = ["Limits", "Proxy", "SSLContext", "Timeout"]
-
-DEFAULT_CIPHERS = ":".join(
-    [
-        "ECDHE+AESGCM",
-        "ECDHE+CHACHA20",
-        "DHE+AESGCM",
-        "DHE+CHACHA20",
-        "ECDH+AESGCM",
-        "DH+AESGCM",
-        "ECDH+AES",
-        "DH+AES",
-        "RSA+AESGCM",
-        "RSA+AES",
-        "!aNULL",
-        "!eNULL",
-        "!MD5",
-        "!DSS",
-    ]
-)
-
-
-logger = logging.getLogger("httpx")
 
 
 class UnsetType:
