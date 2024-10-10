@@ -4,6 +4,7 @@ import datetime
 import enum
 import logging
 import ssl
+import time
 import typing
 import warnings
 from contextlib import asynccontextmanager, contextmanager
@@ -46,7 +47,6 @@ from ._types import (
 )
 from ._urls import URL, QueryParams
 from ._utils import (
-    Timer,
     URLPattern,
     get_environment_proxies,
     is_https_redirect,
@@ -113,19 +113,19 @@ class BoundSyncStream(SyncByteStream):
     """
 
     def __init__(
-        self, stream: SyncByteStream, response: Response, timer: Timer
+        self, stream: SyncByteStream, response: Response, start: float
     ) -> None:
         self._stream = stream
         self._response = response
-        self._timer = timer
+        self._start = start
 
     def __iter__(self) -> typing.Iterator[bytes]:
         for chunk in self._stream:
             yield chunk
 
     def close(self) -> None:
-        seconds = self._timer.sync_elapsed()
-        self._response.elapsed = datetime.timedelta(seconds=seconds)
+        elapsed = time.perf_counter() - self._start
+        self._response.elapsed = datetime.timedelta(seconds=elapsed)
         self._stream.close()
 
 
@@ -136,19 +136,19 @@ class BoundAsyncStream(AsyncByteStream):
     """
 
     def __init__(
-        self, stream: AsyncByteStream, response: Response, timer: Timer
+        self, stream: AsyncByteStream, response: Response, start: float
     ) -> None:
         self._stream = stream
         self._response = response
-        self._timer = timer
+        self._start = start
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         async for chunk in self._stream:
             yield chunk
 
     async def aclose(self) -> None:
-        seconds = await self._timer.async_elapsed()
-        self._response.elapsed = datetime.timedelta(seconds=seconds)
+        elapsed = time.perf_counter() - self._start
+        self._response.elapsed = datetime.timedelta(seconds=elapsed)
         await self._stream.aclose()
 
 
@@ -963,8 +963,7 @@ class Client(BaseClient):
         Sends a single request, without handling any redirections.
         """
         transport = self._transport_for_url(request.url)
-        timer = Timer()
-        timer.sync_start()
+        start = time.perf_counter()
 
         if not isinstance(request.stream, SyncByteStream):
             raise RuntimeError(
@@ -978,7 +977,7 @@ class Client(BaseClient):
 
         response.request = request
         response.stream = BoundSyncStream(
-            response.stream, response=response, timer=timer
+            response.stream, response=response, start=start
         )
         self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
@@ -1666,8 +1665,7 @@ class AsyncClient(BaseClient):
         Sends a single request, without handling any redirections.
         """
         transport = self._transport_for_url(request.url)
-        timer = Timer()
-        await timer.async_start()
+        start = time.perf_counter()
 
         if not isinstance(request.stream, AsyncByteStream):
             raise RuntimeError(
@@ -1680,7 +1678,7 @@ class AsyncClient(BaseClient):
         assert isinstance(response.stream, AsyncByteStream)
         response.request = request
         response.stream = BoundAsyncStream(
-            response.stream, response=response, timer=timer
+            response.stream, response=response, start=start
         )
         self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding

@@ -6,7 +6,6 @@ import ipaddress
 import mimetypes
 import os
 import re
-import time
 import typing
 from urllib.request import getproxies
 
@@ -273,22 +272,6 @@ def peek_filelike_length(stream: typing.Any) -> int | None:
             return None
 
     return length
-
-
-class Timer:
-    def sync_start(self) -> None:
-        self.started = time.perf_counter()
-
-    async def async_start(self) -> None:
-        self.started = time.perf_counter()
-
-    def sync_elapsed(self) -> float:
-        now = time.perf_counter()
-        return now - self.started
-
-    async def async_elapsed(self) -> float:
-        now = time.perf_counter()
-        return now - self.started
 
 
 class URLPattern:
