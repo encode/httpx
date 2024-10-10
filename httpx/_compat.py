@@ -35,5 +35,4 @@ else:
     if _zstd_version < (0, 18):  # Defensive:
         zstd = None
 
-
-__all__ = ["brotli"]
+__all__ = ["brotli", "zstd"]
