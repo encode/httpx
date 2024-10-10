@@ -26,6 +26,9 @@ class SSLContext(ssl.SSLContext):
         self,
         verify: bool = True,
     ) -> None:
+        # ssl.SSLContext sets OP_NO_SSLv2, OP_NO_SSLv3, OP_NO_COMPRESSION,
+        # OP_CIPHER_SERVER_PREFERENCE, OP_SINGLE_DH_USE and OP_SINGLE_ECDH_USE
+        # by default. (from `ssl.create_default_context`)
         super().__init__()
         self._verify = verify
 
