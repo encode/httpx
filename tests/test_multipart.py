@@ -43,35 +43,39 @@ def test_multipart(value, output):
     )
 
 
-@pytest.mark.parametrize(("value,output"), (("abc", b"abc"), (b"abc", b"abc")))
-async def test_async_multipart_streaming(
-    value, output, tmp_path, server, anyio_backend
-):
-    data = {"text": value}
+async def test_async_multipart_streaming(tmp_path, server, anyio_backend):
     to_upload = tmp_path / "test.txt"
     to_upload.write_bytes(b"<file content>")
-    opener: typing.Coroutine[
-        typing.Any, typing.Any, typing.Union[anyio.AsyncFile[bytes], trio.AsyncBinaryIO]
-    ]
+    if typing.TYPE_CHECKING:
+        opener_t = typing.Coroutine[  # pragma: no cover
+            typing.Any,
+            typing.Any,
+            typing.Union[
+                anyio.AsyncFile[bytes],
+                anyio.AsyncFile[str],
+                trio.AsyncBinaryIO,
+                trio.AsyncTextIO,
+            ],
+        ]
+    opener: opener_t
+    text_opener: opener_t
     if anyio_backend == "trio":
         opener = trio.open_file(to_upload, "rb")
+        text_opener = trio.open_file(to_upload, "rt")
     else:
         opener = anyio.open_file(to_upload, "rb")
+        text_opener = anyio.open_file(to_upload, "rt")
     url = server.url.copy_with(path="/echo_body")
     async with await opener as fp:
         files = {"file": fp}
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, data=data, files=files)
+            response = await client.post(url, files=files)
             boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
             boundary_bytes = boundary.encode("ascii")
 
             assert response.status_code == 200
             assert response.content == b"".join(
                 [
-                    b"--" + boundary_bytes + b"\r\n",
-                    b'Content-Disposition: form-data; name="text"\r\n',
-                    b"\r\n",
-                    b"abc\r\n",
                     b"--" + boundary_bytes + b"\r\n",
                     b'Content-Disposition: form-data; name="file";'
                     b' filename="test.txt"\r\n',
@@ -84,7 +88,26 @@ async def test_async_multipart_streaming(
 
         with httpx.Client() as sync_client:
             with pytest.raises(TypeError, match="AsyncIterable is not supported"):
-                sync_client.post(url, data=data, files=files)
+                sync_client.post(url, files=files)
+
+    async with await text_opener as fp:
+        files = {"file": fp}
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, files=files)
+            boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
+            boundary_bytes = boundary.encode("ascii")
+            assert response.status_code == 200
+            assert response.content == b"".join(
+                [
+                    b"--" + boundary_bytes + b"\r\n",
+                    b'Content-Disposition: form-data; name="file";'
+                    b' filename="test.txt"\r\n',
+                    b"Content-Type: text/plain\r\n",
+                    b"\r\n",
+                    b"<file content>\r\n",
+                    b"--" + boundary_bytes + b"--\r\n",
+                ]
+            )
 
 
 @pytest.mark.parametrize(
