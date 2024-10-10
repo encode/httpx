@@ -1,41 +1,17 @@
 from __future__ import annotations
 
-import logging
 import os
 import ssl
+import sys
 import typing
-from pathlib import Path
 
 import certifi
 
-from ._compat import set_minimum_tls_version_1_2
 from ._models import Headers
-from ._types import CertTypes, HeaderTypes, TimeoutTypes, VerifyTypes
+from ._types import HeaderTypes, TimeoutTypes
 from ._urls import URL
 
 __all__ = ["Limits", "Proxy", "SSLContext", "Timeout"]
-
-DEFAULT_CIPHERS = ":".join(
-    [
-        "ECDHE+AESGCM",
-        "ECDHE+CHACHA20",
-        "DHE+AESGCM",
-        "DHE+CHACHA20",
-        "ECDH+AESGCM",
-        "DH+AESGCM",
-        "ECDH+AES",
-        "DH+AES",
-        "RSA+AESGCM",
-        "RSA+AES",
-        "!aNULL",
-        "!eNULL",
-        "!MD5",
-        "!DSS",
-    ]
-)
-
-
-logger = logging.getLogger("httpx")
 
 
 class UnsetType:
@@ -46,92 +22,44 @@ UNSET = UnsetType()
 
 
 class SSLContext(ssl.SSLContext):
-    DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
-
     def __init__(
         self,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        verify: bool = True,
     ) -> None:
-        self.verify = verify
-        set_minimum_tls_version_1_2(self)
-        self.options |= ssl.OP_NO_COMPRESSION
-        self.set_ciphers(DEFAULT_CIPHERS)
+        # ssl.SSLContext sets OP_NO_SSLv2, OP_NO_SSLv3, OP_NO_COMPRESSION,
+        # OP_CIPHER_SERVER_PREFERENCE, OP_SINGLE_DH_USE and OP_SINGLE_ECDH_USE
+        # by default. (from `ssl.create_default_context`)
+        super().__init__()
+        self._verify = verify
 
-        keylogfile = os.environ.get("SSLKEYLOGFILE")
-        if keylogfile:
-            self.keylog_filename = keylogfile
-
-        logger.debug(
-            "load_ssl_context verify=%r cert=%r",
-            verify,
-            cert,
-        )
-
+        # Our SSL setup here is similar to the stdlib `ssl.create_default_context()`
+        # implementation, except with `certifi` used for certificate verification.
         if not verify:
             self.check_hostname = False
             self.verify_mode = ssl.CERT_NONE
-            self._load_client_certs(cert)
             return
-
-        if isinstance(verify, bool):
-            ca_bundle_path = self.DEFAULT_CA_BUNDLE_PATH
-        elif Path(verify).exists():
-            ca_bundle_path = Path(verify)
-        else:
-            raise IOError(
-                "Could not find a suitable TLS CA certificate bundle, "
-                "invalid path: {}".format(verify)
-            )
 
         self.verify_mode = ssl.CERT_REQUIRED
         self.check_hostname = True
 
-        # Signal to server support for PHA in TLS 1.3. Raises an
-        # AttributeError if only read-only access is implemented.
-        try:
-            self.post_handshake_auth = True
-        except AttributeError:  # pragma: no cover
-            pass
+        # Use stricter verify flags where possible.
+        if hasattr(ssl, "VERIFY_X509_PARTIAL_CHAIN"):  # pragma: nocover
+            self.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
+        if hasattr(ssl, "VERIFY_X509_STRICT"):  # pragma: nocover
+            self.verify_flags |= ssl.VERIFY_X509_STRICT
 
-        # Disable using 'commonName' for SSLContext.check_hostname
-        # when the 'subjectAltName' extension isn't available.
-        try:
-            self.hostname_checks_common_name = False
-        except AttributeError:  # pragma: no cover
-            pass
+        # Default to `certifi` for certificiate verification.
+        self.load_verify_locations(cafile=certifi.where())
 
-        if ca_bundle_path.is_file():
-            cafile = str(ca_bundle_path)
-            logger.debug("load_verify_locations cafile=%r", cafile)
-            self.load_verify_locations(cafile=cafile)
-        elif ca_bundle_path.is_dir():
-            capath = str(ca_bundle_path)
-            logger.debug("load_verify_locations capath=%r", capath)
-            self.load_verify_locations(capath=capath)
-
-        self._load_client_certs(cert)
-
-    def _load_client_certs(self, cert: typing.Optional[CertTypes] = None) -> None:
-        """
-        Loads client certificates into our SSLContext object
-        """
-        if cert is not None:
-            if isinstance(cert, str):
-                self.load_cert_chain(certfile=cert)
-            elif isinstance(cert, tuple) and len(cert) == 2:
-                self.load_cert_chain(certfile=cert[0], keyfile=cert[1])
-            elif isinstance(cert, tuple) and len(cert) == 3:
-                self.load_cert_chain(
-                    certfile=cert[0],
-                    keyfile=cert[1],
-                    password=cert[2],
-                )
+        # OpenSSL keylog file support.
+        if hasattr(self, "keylog_filename"):
+            keylogfile = os.environ.get("SSLKEYLOGFILE")
+            if keylogfile and not sys.flags.ignore_environment:
+                self.keylog_filename = keylogfile
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-
-        return f"{class_name}(verify={self.verify!r})"
+        return f"<{class_name}(verify={self._verify!r})>"
 
     def __new__(
         cls,

@@ -14,9 +14,10 @@ def test_load_ssl_config():
     assert context.check_hostname is True
 
 
-def test_load_ssl_config_verify_non_existing_path():
+def test_load_ssl_config_verify_non_existing_file():
     with pytest.raises(IOError):
-        httpx.SSLContext(verify="/path/to/nowhere")
+        context = httpx.SSLContext()
+        context.load_verify_locations(cafile="/path/to/nowhere")
 
 
 def test_load_ssl_with_keylog(monkeypatch: typing.Any) -> None:
@@ -26,20 +27,22 @@ def test_load_ssl_with_keylog(monkeypatch: typing.Any) -> None:
 
 
 def test_load_ssl_config_verify_existing_file():
-    context = httpx.SSLContext(verify=certifi.where())
+    context = httpx.SSLContext()
+    context.load_verify_locations(capath=certifi.where())
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
 
 def test_load_ssl_config_verify_directory():
-    path = Path(certifi.where()).parent
-    context = httpx.SSLContext(verify=str(path))
+    context = httpx.SSLContext()
+    context.load_verify_locations(capath=Path(certifi.where()).parent)
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
 
 def test_load_ssl_config_cert_and_key(cert_pem_file, cert_private_key_file):
-    context = httpx.SSLContext(cert=(cert_pem_file, cert_private_key_file))
+    context = httpx.SSLContext()
+    context.load_cert_chain(cert_pem_file, cert_private_key_file)
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
@@ -48,9 +51,8 @@ def test_load_ssl_config_cert_and_key(cert_pem_file, cert_private_key_file):
 def test_load_ssl_config_cert_and_encrypted_key(
     cert_pem_file, cert_encrypted_private_key_file, password
 ):
-    context = httpx.SSLContext(
-        cert=(cert_pem_file, cert_encrypted_private_key_file, password)
-    )
+    context = httpx.SSLContext()
+    context.load_cert_chain(cert_pem_file, cert_encrypted_private_key_file, password)
     assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
     assert context.check_hostname is True
 
@@ -59,14 +61,16 @@ def test_load_ssl_config_cert_and_key_invalid_password(
     cert_pem_file, cert_encrypted_private_key_file
 ):
     with pytest.raises(ssl.SSLError):
-        httpx.SSLContext(
-            cert=(cert_pem_file, cert_encrypted_private_key_file, "password1")
+        context = httpx.SSLContext()
+        context.load_cert_chain(
+            cert_pem_file, cert_encrypted_private_key_file, "password1"
         )
 
 
 def test_load_ssl_config_cert_without_key_raises(cert_pem_file):
     with pytest.raises(ssl.SSLError):
-        httpx.SSLContext(cert=cert_pem_file)
+        context = httpx.SSLContext()
+        context.load_cert_chain(cert_pem_file)
 
 
 def test_load_ssl_config_no_verify():
@@ -76,7 +80,8 @@ def test_load_ssl_config_no_verify():
 
 
 def test_SSLContext_with_get_request(server, cert_pem_file):
-    context = httpx.SSLContext(verify=cert_pem_file)
+    context = httpx.SSLContext()
+    context.load_verify_locations(cert_pem_file)
     response = httpx.get(server.url, ssl_context=context)
     assert response.status_code == 200
 
@@ -84,11 +89,7 @@ def test_SSLContext_with_get_request(server, cert_pem_file):
 def test_SSLContext_repr():
     ssl_context = httpx.SSLContext()
 
-    assert repr(ssl_context) == "SSLContext(verify=True)"
-
-    ssl_context = httpx.SSLContext(verify=certifi.where())
-
-    assert repr(ssl_context) == "SSLContext(verify='{}')".format(certifi.where())
+    assert repr(ssl_context) == "<SSLContext(verify=True)>"
 
 
 def test_limits_repr():

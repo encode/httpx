@@ -698,7 +698,6 @@ class Client(BaseClient):
             http1=http1,
             http2=http2,
             limits=limits,
-            trust_env=trust_env,
         )
 
     def _init_proxy_transport(
@@ -715,7 +714,6 @@ class Client(BaseClient):
             http1=http1,
             http2=http2,
             limits=limits,
-            trust_env=trust_env,
             proxy=proxy,
         )
 
