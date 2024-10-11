@@ -226,7 +226,12 @@ class FileField:
             return
 
         async for achunk in self.file:
-            yield to_bytes(achunk)
+            if not isinstance(achunk, bytes):
+                raise TypeError(
+                    "Multipart file uploads must be opened in binary mode,"
+                    " not text mode."
+                )
+            yield achunk
 
     def render(self) -> typing.Iterator[bytes]:
         yield self.render_headers()
