@@ -274,6 +274,14 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
+        try:
+            import sniffio  # noqa: F401
+        except ImportError:  # pragma: nocover
+            raise RuntimeError(
+                "Using httpx in async mode, but neither "
+                "'httpx[asyncio]' or 'httpx[trio]' is installed."
+            )
+
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
         ssl_context = ssl_context or SSLContext()
 
