@@ -124,6 +124,22 @@ def test_unsupported_proxy_scheme():
         httpx.Client(proxy="ftp://127.0.0.1")
 
 
+@pytest.mark.parametrize("client_class", [httpx.Client, httpx.AsyncClient])
+def test_proxies_environ_trust(monkeypatch, client_class):
+    url = "http://google.com"
+    proxy_url = "http://example.com"
+
+    monkeypatch.setenv("HTTP_PROXY", proxy_url)
+
+    client = client_class()
+    transport = client._transport_for_url(httpx.URL(url))
+    assert transport._pool._proxy_url == url_to_origin(proxy_url)
+
+    client = client_class(trust_env=False)
+    transport = client._transport_for_url(httpx.URL(url))
+    assert transport == client._transport
+
+
 @pytest.mark.parametrize(
     ["url", "env", "expected"],
     [
