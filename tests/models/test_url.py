@@ -865,19 +865,3 @@ def test_ipv6_url_copy_with_host(url_str, new_host):
     assert url.host == "::ffff:192.168.0.1"
     assert url.netloc == b"[::ffff:192.168.0.1]:1234"
     assert str(url) == "http://[::ffff:192.168.0.1]:1234"
-
-
-# Test for deprecated API
-
-
-def test_url_raw_compatibility():
-    """
-    Test case for the (to-be-deprecated) `url.raw` accessor.
-    """
-    url = httpx.URL("https://www.example.com/path")
-    scheme, host, port, raw_path = url.raw
-
-    assert scheme == b"https"
-    assert host == b"www.example.com"
-    assert port is None
-    assert raw_path == b"/path"
