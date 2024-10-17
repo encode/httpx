@@ -21,8 +21,6 @@ import httpx
 from tests.concurrency import sleep
 
 ENVIRONMENT_VARIABLES = {
-    "SSL_CERT_FILE",
-    "SSL_CERT_DIR",
     "HTTP_PROXY",
     "HTTPS_PROXY",
     "ALL_PROXY",

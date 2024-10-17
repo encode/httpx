@@ -1,5 +1,4 @@
 import ssl
-import typing
 from pathlib import Path
 
 import certifi
@@ -20,7 +19,7 @@ def test_load_ssl_config_verify_non_existing_file():
         context.load_verify_locations(cafile="/path/to/nowhere")
 
 
-def test_load_ssl_with_keylog(monkeypatch: typing.Any) -> None:
+def test_load_ssl_with_keylog(monkeypatch):
     monkeypatch.setenv("SSLKEYLOGFILE", "test")
     context = httpx.SSLContext()
     assert context.keylog_filename == "test"
