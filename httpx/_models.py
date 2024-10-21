@@ -137,16 +137,15 @@ class Headers(typing.MutableMapping[str, str]):
     def values(self) -> typing.ValuesView[str]:
         return self.items(_keys=False)
 
-    def items(self, _keys=True) -> typing.ItemsView[str, str]:
+    def items(self, _keys: bool = True) -> typing.ItemsView[str, str]:
         """
         Return `(key, value)` items of headers. Concatenate headers
         into a single comma-separated value when a key occurs multiple times.
         """
-        values_dict: dict[str, str] = {}
+        values_dict: dict[bytes, list[str]] = {}
         for _, key, value in self._list:
-            str_key = key.decode(self.encoding)
             str_value = value.decode(self.encoding)
-            values_dict.setdefault(str_key, []).append(str_value)
+            values_dict.setdefault(key, []).append(str_value)
         if _keys:
             for key in values_dict:
                 yield key, ", ".join(values_dict[key])
