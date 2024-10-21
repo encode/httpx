@@ -128,39 +128,37 @@ class Headers(typing.MutableMapping[str, str]):
         return [(raw_key, value) for raw_key, _, value in self._list]
 
     def keys(self) -> typing.KeysView[str]:
-        return {key.decode(self.encoding): None for _, key, value in self._list}.keys()
+        stream = set()
+        for _, key, value in self._list:
+            if key not in stream:
+                stream.add(key)
+                yield key.decode(self.encoding)
 
     def values(self) -> typing.ValuesView[str]:
-        values_dict: dict[str, str] = {}
-        for _, key, value in self._list:
-            str_key = key.decode(self.encoding)
-            str_value = value.decode(self.encoding)
-            if str_key in values_dict:
-                values_dict[str_key] += f", {str_value}"
-            else:
-                values_dict[str_key] = str_value
-        return values_dict.values()
+        return self.items(_keys=False)
 
-    def items(self) -> typing.ItemsView[str, str]:
+    def items(self, _keys=True) -> typing.ItemsView[str, str]:
         """
         Return `(key, value)` items of headers. Concatenate headers
-        into a single comma separated value when a key occurs multiple times.
+        into a single comma-separated value when a key occurs multiple times.
         """
         values_dict: dict[str, str] = {}
         for _, key, value in self._list:
             str_key = key.decode(self.encoding)
             str_value = value.decode(self.encoding)
-            if str_key in values_dict:
-                values_dict[str_key] += f", {str_value}"
-            else:
-                values_dict[str_key] = str_value
-        return values_dict.items()
+            values_dict.setdefault(str_key, []).append(str_value)
+        if _keys:
+            for key in values_dict:
+                yield key, ", ".join(values_dict[key])
+        else:
+            for key in values_dict:
+                yield ", ".join(values_dict[key])
 
     def multi_items(self) -> list[tuple[str, str]]:
         """
         Return a list of `(key, value)` pairs of headers. Allow multiple
         occurrences of the same key without concatenating into a single
-        comma separated value.
+        comma-separated value.
         """
         return [
             (key.decode(self.encoding), value.decode(self.encoding))
