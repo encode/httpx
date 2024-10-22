@@ -17,7 +17,7 @@ class UnsetType:
 UNSET = UnsetType()
 
 
-def create_ssl_context(verify: bool = True, trust_env: bool = True) -> ssl.SSLContext:
+def create_ssl_context(verify: bool = True) -> ssl.SSLContext:
     if verify is False:
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.check_hostname = False
