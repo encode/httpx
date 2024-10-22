@@ -48,6 +48,7 @@ __all__ = [
     "Cookies",
     "create_ssl_context",
     "DecodingError",
+    "DEFAULT_TIMEOUT_CONFIG",
     "delete",
     "DigestAuth",
     "get",
