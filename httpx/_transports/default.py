@@ -126,6 +126,7 @@ class HTTPTransport(BaseTransport):
     def __init__(
         self,
         verify: ssl.SSLContext | bool = True,
+        trust_env: bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -139,7 +140,7 @@ class HTTPTransport(BaseTransport):
         ssl_context = (
             verify
             if isinstance(verify, ssl.SSLContext)
-            else create_ssl_context(verify=verify)
+            else create_ssl_context(verify=verify, trust_env=trust_env)
         )
 
         if proxy is None:
@@ -269,6 +270,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
         verify: ssl.SSLContext | bool = True,
+        trust_env: bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -282,7 +284,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         ssl_context = (
             verify
             if isinstance(verify, ssl.SSLContext)
-            else create_ssl_context(verify=verify)
+            else create_ssl_context(verify=verify, trust_env=trust_env)
         )
 
         if proxy is None:

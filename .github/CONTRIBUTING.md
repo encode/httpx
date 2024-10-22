@@ -210,10 +210,11 @@ this is where our previously generated `client.pem` comes in:
 
 ```
 import httpx
+import ssl
 
-ssl_context = httpx.SSLContext(verify="/path/to/client.pem"))
+ssl_context = ssl.create_default_context(cafile="/path/to/client.pem")
 
-with httpx.Client(proxy="http://127.0.0.1:8080/", ssl_context=ssl_context) as client:
+with httpx.Client(proxy="http://127.0.0.1:8080/", verify=ssl_context) as client:
     response = client.get("https://example.org")
     print(response.status_code)  # should print 200
 ```
