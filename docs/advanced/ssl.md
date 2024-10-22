@@ -29,6 +29,8 @@ The following is equivalent to using `verify=True`...
 >>> httpx.get("https://www.example.com/", verify=ssl_context)
 ```
 
+Note that `certifi` is highly recommended for consistent cross-platform certificate behaviour, but may not be required on all platforms.
+
 ### Configuring client instances
 
 If you're using a `Client()` instance you should pass any SSL settings when instantiating the client.
