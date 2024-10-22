@@ -24,9 +24,9 @@ has been overhauled...
 
 Additionally...
 
-* The previously deprecated `proxies` argument has now been removed.
-* The previously deprecated `app` argument has now been removed.
-* The `URL.raw` property has now been removed.
+* The `proxies` argument has now been removed. (Previously deprecated in 0.26)
+* The `app` argument has now been removed. (Previously deprecated in 0.27)
+* The `URL.raw` property has now been removed. (Undocumented)
 * The `sniffio` project dependency has now been removed. (Internal)
 
 ## 0.27.2 (27th August, 2024)
