@@ -48,7 +48,7 @@ def request(
     proxy: ProxyTypes | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     follow_redirects: bool = False,
-    ssl_context: ssl.SSLContext | None = None,
+    verify: ssl.SSLContext | bool = True,
     trust_env: bool = True,
 ) -> Response:
     """
@@ -98,7 +98,7 @@ def request(
     with Client(
         cookies=cookies,
         proxy=proxy,
-        ssl_context=ssl_context,
+        verify=verify,
         timeout=timeout,
         trust_env=trust_env,
     ) as client:
@@ -132,7 +132,7 @@ def stream(
     proxy: ProxyTypes | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     follow_redirects: bool = False,
-    ssl_context: ssl.SSLContext | None = None,
+    verify: ssl.SSLContext | bool = True,
     trust_env: bool = True,
 ) -> typing.Iterator[Response]:
     """
@@ -148,7 +148,7 @@ def stream(
     with Client(
         cookies=cookies,
         proxy=proxy,
-        ssl_context=ssl_context,
+        verify=verify,
         timeout=timeout,
         trust_env=trust_env,
     ) as client:
@@ -176,7 +176,7 @@ def get(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: ssl.SSLContext | None = None,
+    verify: ssl.SSLContext | bool = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -197,7 +197,7 @@ def get(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        ssl_context=ssl_context,
+        verify=verify,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -212,7 +212,7 @@ def options(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: ssl.SSLContext | None = None,
+    verify: ssl.SSLContext | bool = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -233,7 +233,7 @@ def options(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        ssl_context=ssl_context,
+        verify=verify,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -248,7 +248,7 @@ def head(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: ssl.SSLContext | None = None,
+    verify: ssl.SSLContext | bool = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -269,7 +269,7 @@ def head(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        ssl_context=ssl_context,
+        verify=verify,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -288,7 +288,7 @@ def post(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: ssl.SSLContext | None = None,
+    verify: ssl.SSLContext | bool = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -310,7 +310,7 @@ def post(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        ssl_context=ssl_context,
+        verify=verify,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -329,7 +329,7 @@ def put(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: ssl.SSLContext | None = None,
+    verify: ssl.SSLContext | bool = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -351,7 +351,7 @@ def put(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        ssl_context=ssl_context,
+        verify=verify,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -370,7 +370,7 @@ def patch(
     auth: AuthTypes | None = None,
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    ssl_context: ssl.SSLContext | None = None,
+    verify: ssl.SSLContext | bool = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
 ) -> Response:
@@ -392,7 +392,7 @@ def patch(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        ssl_context=ssl_context,
+        verify=verify,
         timeout=timeout,
         trust_env=trust_env,
     )
@@ -408,7 +408,7 @@ def delete(
     proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
-    ssl_context: ssl.SSLContext | None = None,
+    verify: ssl.SSLContext | bool = True,
     trust_env: bool = True,
 ) -> Response:
     """
@@ -428,7 +428,7 @@ def delete(
         auth=auth,
         proxy=proxy,
         follow_redirects=follow_redirects,
-        ssl_context=ssl_context,
+        verify=verify,
         timeout=timeout,
         trust_env=trust_env,
     )

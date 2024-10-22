@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-import os
 import ssl
-import sys
 import typing
-
-import certifi
 
 from ._models import Headers
 from ._types import HeaderTypes, TimeoutTypes
 from ._urls import URL
 
-__all__ = ["Limits", "Proxy", "SSLContext", "Timeout"]
+__all__ = ["create_ssl_context", "Limits", "Proxy", "Timeout"]
 
 
 class UnsetType:
@@ -21,53 +17,16 @@ class UnsetType:
 UNSET = UnsetType()
 
 
-class SSLContext(ssl.SSLContext):
-    def __init__(
-        self,
-        verify: bool = True,
-    ) -> None:
-        # ssl.SSLContext sets OP_NO_SSLv2, OP_NO_SSLv3, OP_NO_COMPRESSION,
-        # OP_CIPHER_SERVER_PREFERENCE, OP_SINGLE_DH_USE and OP_SINGLE_ECDH_USE
-        # by default. (from `ssl.create_default_context`)
-        super().__init__()
-        self._verify = verify
+def create_ssl_context(verify: bool = True) -> ssl.SSLContext:
+    if verify is False:
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        return ssl_context
 
-        # Our SSL setup here is similar to the stdlib `ssl.create_default_context()`
-        # implementation, except with `certifi` used for certificate verification.
-        if not verify:
-            self.check_hostname = False
-            self.verify_mode = ssl.CERT_NONE
-            return
+    import certifi
 
-        self.verify_mode = ssl.CERT_REQUIRED
-        self.check_hostname = True
-
-        # Use stricter verify flags where possible.
-        if hasattr(ssl, "VERIFY_X509_PARTIAL_CHAIN"):  # pragma: nocover
-            self.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
-        if hasattr(ssl, "VERIFY_X509_STRICT"):  # pragma: nocover
-            self.verify_flags |= ssl.VERIFY_X509_STRICT
-
-        # Default to `certifi` for certificiate verification.
-        self.load_verify_locations(cafile=certifi.where())
-
-        # OpenSSL keylog file support.
-        if hasattr(self, "keylog_filename"):
-            keylogfile = os.environ.get("SSLKEYLOGFILE")
-            if keylogfile and not sys.flags.ignore_environment:
-                self.keylog_filename = keylogfile
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return f"<{class_name}(verify={self._verify!r})>"
-
-    def __new__(
-        cls,
-        protocol: ssl._SSLMethod = ssl.PROTOCOL_TLS_CLIENT,
-        *args: typing.Any,
-        **kwargs: typing.Any,
-    ) -> "SSLContext":
-        return super().__new__(cls, protocol, *args, **kwargs)
+    return ssl.create_default_context(cafile=certifi.where())
 
 
 class Timeout:

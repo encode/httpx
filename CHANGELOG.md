@@ -4,14 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
+## 0.28.0
 
-* Added `httpx.SSLContext` class and `ssl_context` argument. (#3022)
-* Removed `cert` and `verify` arguments, you should use the `ssl_context=...` instead. (#3022)
-* The deprecated `proxies` argument has now been removed.
-* The deprecated `app` argument has now been removed.
+The 0.28.0 has some alterations over the 0.27.x series.
+
+In particular, [the SSL configuration](https://www.python-httpx.org/advanced/ssl/)
+has been overhauled...
+
+* The `verify` parameter no longer supports usage with a `str` parameter.
+  For custom verify locations use the `.load_verify_locations` API.
+  See the SSL configuration docs for details.
+* The `cert` parameter has now been removed.
+  To configure client side certificates, use the `.load_cert_chain()` API.
+  See the SSL configuration docs for details.
+* The `SSL_CERT_FILE` and `SSL_CERT_DIR` environment variables are no
+  longer supported by default.
+  See the SSL configuration docs for details.
+* The internal SSLContext setup removes various obsolete configuration.
+
+Additionally...
+
+* The previously deprecated `proxies` argument has now been removed.
+* The previously deprecated `app` argument has now been removed.
 * The `URL.raw` property has now been removed.
-* The `sniffio` project dependency has now been removed.
+* The `sniffio` project dependency has now been removed. (Internal)
 
 ## 0.27.2 (27th August, 2024)
 

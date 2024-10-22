@@ -589,8 +589,6 @@ class Client(BaseClient):
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
-    * **proxies** - *(optional)* A dictionary mapping proxy keys to proxy
-    URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
     * **limits** - *(optional)* The limits configuration to use.
@@ -614,7 +612,7 @@ class Client(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | bool = True,
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
@@ -656,7 +654,7 @@ class Client(BaseClient):
         proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
-            ssl_context=ssl_context,
+            verify=verify,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -667,7 +665,7 @@ class Client(BaseClient):
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
-                ssl_context=ssl_context,
+                verify=verify,
                 http1=http1,
                 http2=http2,
                 limits=limits,
@@ -683,18 +681,17 @@ class Client(BaseClient):
 
     def _init_transport(
         self,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: BaseTransport | None = None,
-        trust_env: bool = True,
     ) -> BaseTransport:
         if transport is not None:
             return transport
 
         return HTTPTransport(
-            ssl_context=ssl_context,
+            verify=verify,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -703,14 +700,13 @@ class Client(BaseClient):
     def _init_proxy_transport(
         self,
         proxy: Proxy,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
     ) -> BaseTransport:
         return HTTPTransport(
-            ssl_context=ssl_context,
+            verify=verify,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -1316,7 +1312,7 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | bool = True,
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
@@ -1358,7 +1354,7 @@ class AsyncClient(BaseClient):
         proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
-            ssl_context=ssl_context,
+            verify=verify,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -1370,7 +1366,7 @@ class AsyncClient(BaseClient):
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
-                ssl_context=ssl_context,
+                verify=verify,
                 http1=http1,
                 http2=http2,
                 limits=limits,
@@ -1385,7 +1381,7 @@ class AsyncClient(BaseClient):
 
     def _init_transport(
         self,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -1395,7 +1391,7 @@ class AsyncClient(BaseClient):
             return transport
 
         return AsyncHTTPTransport(
-            ssl_context=ssl_context,
+            verify=verify,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -1404,13 +1400,13 @@ class AsyncClient(BaseClient):
     def _init_proxy_transport(
         self,
         proxy: Proxy,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
     ) -> AsyncBaseTransport:
         return AsyncHTTPTransport(
-            ssl_context=ssl_context,
+            verify=verify,
             http1=http1,
             http2=http2,
             limits=limits,

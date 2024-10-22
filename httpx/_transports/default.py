@@ -33,7 +33,7 @@ from types import TracebackType
 
 import httpcore
 
-from .._config import DEFAULT_LIMITS, Limits, Proxy, SSLContext
+from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._exceptions import (
     ConnectError,
     ConnectTimeout,
@@ -125,7 +125,7 @@ class ResponseStream(SyncByteStream):
 class HTTPTransport(BaseTransport):
     def __init__(
         self,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -136,7 +136,11 @@ class HTTPTransport(BaseTransport):
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-        ssl_context = ssl_context or SSLContext()
+        ssl_context = (
+            verify
+            if isinstance(verify, ssl.SSLContext)
+            else create_ssl_context(verify=verify)
+        )
 
         if proxy is None:
             self._pool = httpcore.ConnectionPool(
@@ -264,7 +268,7 @@ class AsyncResponseStream(AsyncByteStream):
 class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -275,7 +279,11 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-        ssl_context = ssl_context or SSLContext()
+        ssl_context = (
+            verify
+            if isinstance(verify, ssl.SSLContext)
+            else create_ssl_context(verify=verify)
+        )
 
         if proxy is None:
             self._pool = httpcore.AsyncConnectionPool(
