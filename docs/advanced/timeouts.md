@@ -38,6 +38,15 @@ client = httpx.Client(timeout=10.0)  # Use a default 10s timeout everywhere.
 client = httpx.Client(timeout=None)  # Disable all timeouts by default.
 ```
 
+## Setting a global timeout
+You can set a global timeout for all requests made by HTTPX.
+
+```python
+import httpx
+httpx.DEFAULT_TIMEOUT_CONFIG = httpx.Timeout(10.0)
+```
+
+
 ## Fine tuning the configuration
 
 HTTPX also allows you to specify the timeout behavior in more fine grained detail.
