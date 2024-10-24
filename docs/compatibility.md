@@ -143,7 +143,7 @@ Within a `stream()` block request data is made available with:
 * `.iter_text()` - Instead of `response.iter_content(decode_unicode=True)`
 * `.iter_lines()` - Corresponding to `response.iter_lines()`
 * `.iter_raw()` - Use this instead of `response.raw`
-* `.read()` - Read the entire response body, making `request.text` and `response.content` available.
+* `.read()` - Read the entire response body, making `response.text` and `response.content` available.
 
 ## Timeouts
 
