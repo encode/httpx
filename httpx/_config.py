@@ -14,7 +14,13 @@ from ._types import CertTypes, HeaderTypes, TimeoutTypes, VerifyTypes
 from ._urls import URL
 from ._utils import get_ca_bundle_from_env
 
-__all__ = ["Limits", "Proxy", "Timeout", "create_ssl_context"]
+__all__ = ["Limits", "Proxy", "Timeout", "NetworkOptions", "create_ssl_context"]
+
+SOCKET_OPTION = typing.Union[
+    typing.Tuple[int, int, int],
+    typing.Tuple[int, int, typing.Union[bytes, bytearray]],
+    typing.Tuple[int, int, None, int],
+]
 
 DEFAULT_CIPHERS = ":".join(
     [
@@ -367,6 +373,37 @@ class Proxy:
         return f"Proxy({url_str}{auth_str}{headers_str})"
 
 
+class NetworkOptions:
+    def __init__(
+        self,
+        connection_retries: int = 0,
+        local_address: typing.Optional[str] = None,
+        socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,
+        uds: typing.Optional[str] = None,
+    ) -> None:
+        self.connection_retries = connection_retries
+        self.local_address = local_address
+        self.socket_options = socket_options
+        self.uds = uds
+
+    def __repr__(self) -> str:
+        defaults = {
+            "connection_retries": 0,
+            "local_address": None,
+            "socket_options": None,
+            "uds": None,
+        }
+        params = ", ".join(
+            [
+                f"{attr}={getattr(self, attr)!r}"
+                for attr, default in defaults.items()
+                if getattr(self, attr) != default
+            ]
+        )
+        return f"NetworkOptions({params})"
+
+
 DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
 DEFAULT_LIMITS = Limits(max_connections=100, max_keepalive_connections=20)
+DEFAULT_NETWORK_OPTIONS = NetworkOptions(connection_retries=0)
 DEFAULT_MAX_REDIRECTS = 20
