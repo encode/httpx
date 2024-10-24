@@ -187,11 +187,11 @@ class HTTPSRedirect(httpx.BaseTransport):
         return httpx.Response(303, headers={"Location": str(url)})
 
 # A client where any `http` requests are always redirected to `https`
-transport = httpx.Mounts({
+mounts = {
     'http://': HTTPSRedirect()
     'https://': httpx.HTTPTransport()
-})
-client = httpx.Client(transport=transport)
+}
+client = httpx.Client(mounts=mounts)
 ```
 
 A useful pattern here is custom transport classes that wrap the default HTTP implementation. For example...
