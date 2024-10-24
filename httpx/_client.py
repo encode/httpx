@@ -628,6 +628,9 @@ class Client(BaseClient):
         transport: BaseTransport | None = None,
         trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> None:
         super().__init__(
             auth=auth,
@@ -661,6 +664,10 @@ class Client(BaseClient):
             http2=http2,
             limits=limits,
             transport=transport,
+            trust_env=trust_env,
+            # Deprecated in favor of ssl_context...
+            verify=verify,
+            cert=cert,
         )
         self._mounts: dict[URLPattern, BaseTransport | None] = {
             URLPattern(key): None
@@ -671,6 +678,9 @@ class Client(BaseClient):
                 http1=http1,
                 http2=http2,
                 limits=limits,
+                # Deprecated in favor of ssl_context...
+                verify=verify,
+                cert=cert,
             )
             for key, proxy in proxy_map.items()
         }
@@ -689,6 +699,9 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         transport: BaseTransport | None = None,
         trust_env: bool = True,
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> BaseTransport:
         if transport is not None:
             return transport
@@ -698,6 +711,8 @@ class Client(BaseClient):
             http1=http1,
             http2=http2,
             limits=limits,
+            verify=verify,
+            cert=cert,
         )
 
     def _init_proxy_transport(
@@ -708,6 +723,9 @@ class Client(BaseClient):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> BaseTransport:
         return HTTPTransport(
             ssl_context=ssl_context,
@@ -715,6 +733,8 @@ class Client(BaseClient):
             http2=http2,
             limits=limits,
             proxy=proxy,
+            verify=verify,
+            cert=cert,
         )
 
     def _transport_for_url(self, url: URL) -> BaseTransport:
@@ -1330,6 +1350,9 @@ class AsyncClient(BaseClient):
         transport: AsyncBaseTransport | None = None,
         trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> None:
         super().__init__(
             auth=auth,
@@ -1363,6 +1386,9 @@ class AsyncClient(BaseClient):
             http2=http2,
             limits=limits,
             transport=transport,
+            # Deprecated in favor of ssl_context
+            verify=verify,
+            cert=cert,
         )
 
         self._mounts: dict[URLPattern, AsyncBaseTransport | None] = {
@@ -1374,6 +1400,9 @@ class AsyncClient(BaseClient):
                 http1=http1,
                 http2=http2,
                 limits=limits,
+                # Deprecated in favor of `ssl_context`...
+                verify=verify,
+                cert=cert,
             )
             for key, proxy in proxy_map.items()
         }
@@ -1390,6 +1419,9 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: AsyncBaseTransport | None = None,
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> AsyncBaseTransport:
         if transport is not None:
             return transport
@@ -1399,6 +1431,8 @@ class AsyncClient(BaseClient):
             http1=http1,
             http2=http2,
             limits=limits,
+            verify=verify,
+            cert=cert,
         )
 
     def _init_proxy_transport(
@@ -1408,6 +1442,9 @@ class AsyncClient(BaseClient):
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> AsyncBaseTransport:
         return AsyncHTTPTransport(
             ssl_context=ssl_context,
@@ -1415,6 +1452,8 @@ class AsyncClient(BaseClient):
             http2=http2,
             limits=limits,
             proxy=proxy,
+            verify=verify,
+            cert=cert,
         )
 
     def _transport_for_url(self, url: URL) -> AsyncBaseTransport:

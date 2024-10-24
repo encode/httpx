@@ -21,6 +21,30 @@ class UnsetType:
 UNSET = UnsetType()
 
 
+def create_ssl_context(
+    verify: typing.Any, cert: typing.Any
+) -> ssl.SSLContext:  # pragma: nocover
+    # TODO: deprecation warning.
+    if isinstance(verify, bool):
+        ssl_context = SSLContext(verify=verify)
+    elif isinstance(verify, ssl.SSLContext):
+        ssl_context = ssl_context
+    else:
+        ssl_context = SSLContext()
+        if os.path.isfile(verify):
+            ssl_context.load_verify_locations(cafile=verify)
+        elif os.path.isdir(verify):
+            ssl_context.load_verify_locations(capath=verify)
+
+    if cert is not None:
+        if isinstance(cert, str):
+            ssl_context.load_cert_chain(cert)
+        else:
+            ssl_context.load_cert_chain(*cert)
+
+    return ssl_context
+
+
 class SSLContext(ssl.SSLContext):
     def __init__(
         self,
