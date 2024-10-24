@@ -40,7 +40,6 @@ from ._types import (
     QueryParamTypes,
     RequestContent,
     RequestData,
-    RequestExtensions,
     RequestFiles,
     SyncByteStream,
     TimeoutTypes,
@@ -320,7 +319,7 @@ class BaseClient:
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Request:
         """
         Build and return a request instance.
@@ -337,14 +336,15 @@ class BaseClient:
         headers = self._merge_headers(headers)
         cookies = self._merge_cookies(cookies)
         params = self._merge_queryparams(params)
-        extensions = {} if extensions is None else extensions
+        extensions = {} if extensions is None else dict(extensions)
         if "timeout" not in extensions:
             timeout = (
                 self.timeout
                 if isinstance(timeout, UseClientDefault)
                 else Timeout(timeout)
             )
-            extensions = dict(**extensions, timeout=timeout.as_dict())
+            extensions["timeout"] = timeout.as_dict()
+
         return Request(
             method,
             url,
@@ -739,7 +739,7 @@ class Client(BaseClient):
         auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Build and send a request.
@@ -796,7 +796,7 @@ class Client(BaseClient):
         auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> typing.Iterator[Response]:
         """
         Alternative to `httpx.request()` that streams the response body
@@ -999,7 +999,7 @@ class Client(BaseClient):
         auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `GET` request.
@@ -1028,7 +1028,7 @@ class Client(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send an `OPTIONS` request.
@@ -1057,7 +1057,7 @@ class Client(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `HEAD` request.
@@ -1090,7 +1090,7 @@ class Client(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `POST` request.
@@ -1127,7 +1127,7 @@ class Client(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `PUT` request.
@@ -1164,7 +1164,7 @@ class Client(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `PATCH` request.
@@ -1197,7 +1197,7 @@ class Client(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `DELETE` request.
@@ -1439,7 +1439,7 @@ class AsyncClient(BaseClient):
         auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Build and send a request.
@@ -1497,7 +1497,7 @@ class AsyncClient(BaseClient):
         auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> typing.AsyncIterator[Response]:
         """
         Alternative to `httpx.request()` that streams the response body
@@ -1700,7 +1700,7 @@ class AsyncClient(BaseClient):
         auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `GET` request.
@@ -1729,7 +1729,7 @@ class AsyncClient(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send an `OPTIONS` request.
@@ -1758,7 +1758,7 @@ class AsyncClient(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `HEAD` request.
@@ -1791,7 +1791,7 @@ class AsyncClient(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `POST` request.
@@ -1828,7 +1828,7 @@ class AsyncClient(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `PUT` request.
@@ -1865,7 +1865,7 @@ class AsyncClient(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `PATCH` request.
@@ -1898,7 +1898,7 @@ class AsyncClient(BaseClient):
         auth: AuthTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
-        extensions: RequestExtensions | None = None,
+        extensions: typing.Mapping[str, typing.Any] | None = None,
     ) -> Response:
         """
         Send a `DELETE` request.
