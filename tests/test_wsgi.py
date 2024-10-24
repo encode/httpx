@@ -201,12 +201,3 @@ def test_wsgi_server_protocol():
     assert response.status_code == 200
     assert response.text == "success"
     assert server_protocol == "HTTP/1.1"
-
-
-def test_deprecated_shortcut():
-    """
-    The `app=...` shortcut is now deprecated.
-    Use the explicit transport style instead.
-    """
-    with pytest.warns(DeprecationWarning):
-        httpx.Client(app=application_factory([b"Hello, World!"]))

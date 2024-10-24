@@ -32,7 +32,6 @@ dependencies = [
     "httpcore==1.*",
     "anyio",
     "idna",
-    "sniffio",
 ]
 dynamic = ["readme", "version"]
 
@@ -129,5 +128,5 @@ markers = [
 ]
 
 [tool.coverage.run]
-omit = ["venv/*", "httpx/_compat.py"]
+omit = ["venv/*"]
 include = ["httpx/*", "tests/*"]
