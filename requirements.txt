@@ -2,7 +2,7 @@
 # On the other hand, we're not pinning package dependencies, because our tests
 # needs to pass with the latest version of the packages.
 # Reference: https://github.com/encode/httpx/pull/1721#discussion_r661241588
--e .[brotli,cli,http2,socks,zstd]
+-e .[asyncio,trio,brotli,cli,http2,socks,zstd]
 
 # Optional charset auto-detection
 # Used in our test cases
@@ -24,6 +24,5 @@ mypy==1.11.2
 pytest==8.3.3
 ruff==0.6.8
 trio==0.26.2
-trio-typing==0.10.0
 trustme==1.1.0
 uvicorn==0.31.0
