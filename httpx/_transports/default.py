@@ -139,7 +139,8 @@ class HTTPTransport(BaseTransport):
         cert: typing.Any = None,
     ) -> None:
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-        if verify is not None or cert is not None:
+        if verify is not None or cert is not None:  # pragma: nocover
+            # Deprecated...
             ssl_context = create_ssl_context(verify, cert)
         else:
             ssl_context = ssl_context or SSLContext()
@@ -284,7 +285,8 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         cert: typing.Any = None,
     ) -> None:
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-        if verify is not None or cert is not None:
+        if verify is not None or cert is not None:  # pragma: nocover
+            # Deprecated...
             ssl_context = create_ssl_context(verify, cert)
         else:
             ssl_context = ssl_context or SSLContext()
