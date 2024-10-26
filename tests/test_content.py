@@ -174,11 +174,11 @@ async def test_json_content():
 
     assert request.headers == {
         "Host": "www.example.com",
-        "Content-Length": "19",
+        "Content-Length": "18",
         "Content-Type": "application/json",
     }
-    assert sync_content == b'{"Hello": "world!"}'
-    assert async_content == b'{"Hello": "world!"}'
+    assert sync_content == b'{"Hello":"world!"}'
+    assert async_content == b'{"Hello":"world!"}'
 
 
 @pytest.mark.anyio

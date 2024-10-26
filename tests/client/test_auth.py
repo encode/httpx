@@ -743,7 +743,7 @@ async def test_async_auth_reads_response_body() -> None:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
-    assert response.json() == {"auth": '{"auth": "xyz"}'}
+    assert response.json() == {"auth": '{"auth":"xyz"}'}
 
 
 def test_sync_auth_reads_response_body() -> None:
@@ -759,7 +759,7 @@ def test_sync_auth_reads_response_body() -> None:
         response = client.get(url, auth=auth)
 
     assert response.status_code == 200
-    assert response.json() == {"auth": '{"auth": "xyz"}'}
+    assert response.json() == {"auth": '{"auth":"xyz"}'}
 
 
 @pytest.mark.anyio
