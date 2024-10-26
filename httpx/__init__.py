@@ -63,6 +63,7 @@ __all__ = [
     "MockTransport",
     "NetRCAuth",
     "NetworkError",
+    "NetworkOptions",
     "options",
     "patch",
     "PoolTimeout",
