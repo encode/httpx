@@ -221,3 +221,16 @@ def test_proxy_with_auth_from_url():
 def test_invalid_proxy_scheme():
     with pytest.raises(ValueError):
         httpx.Proxy("invalid://example.com")
+
+def test_certifi_lazy_loading():
+    global httpx,certifi
+    import sys
+    del sys.modules["httpx"]
+    del sys.modules["certifi"]
+    del httpx
+    del certifi
+    import httpx
+    assert("certifi" not in sys.modules)
+    context = httpx.create_ssl_context()
+    assert("certifi" in sys.modules)
+
