@@ -222,15 +222,32 @@ def test_invalid_proxy_scheme():
     with pytest.raises(ValueError):
         httpx.Proxy("invalid://example.com")
 
+
 def test_certifi_lazy_loading():
-    global httpx,certifi
+    global httpx, certifi
     import sys
+
     del sys.modules["httpx"]
     del sys.modules["certifi"]
     del httpx
     del certifi
     import httpx
-    assert("certifi" not in sys.modules)
-    context = httpx.create_ssl_context()
-    assert("certifi" in sys.modules)
 
+    assert "certifi" not in sys.modules
+    _context = httpx.create_ssl_context()
+    assert "certifi" in sys.modules
+
+
+def test_ssl_lazy_loading():
+    global httpx, ssl
+    import sys
+
+    del sys.modules["httpx"]
+    del sys.modules["ssl"]
+    del httpx
+    del ssl
+    import httpx
+
+    assert "ssl" not in sys.modules
+    _context = httpx.create_ssl_context()
+    assert "ssl" in sys.modules

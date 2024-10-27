@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 import os
-import ssl
 import typing
 from pathlib import Path
+
+if typing.TYPE_CHECKING:
+    import ssl
 
 from ._compat import set_minimum_tls_version_1_2
 from ._models import Headers
@@ -59,7 +61,8 @@ class SSLConfig:
     """
     SSL Configuration.
     """
-    DEFAULT_CA_BUNDLE_PATH: Path | None = None
+
+    DEFAULT_CA_BUNDLE_PATH = Path()
 
     def __init__(
         self,
@@ -70,6 +73,7 @@ class SSLConfig:
         http2: bool = False,
     ) -> None:
         import certifi
+
         SSLConfig.DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
         self.cert = cert
         self.verify = verify
@@ -94,6 +98,8 @@ class SSLConfig:
         """
         Return an SSL context for unverified connections.
         """
+        import ssl
+
         context = self._create_default_ssl_context()
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
@@ -104,6 +110,8 @@ class SSLConfig:
         """
         Return an SSL context for verified connections.
         """
+        import ssl
+
         if self.trust_env and self.verify is True:
             ca_bundle = get_ca_bundle_from_env()
             if ca_bundle is not None:
@@ -160,6 +168,8 @@ class SSLConfig:
         Creates the default SSLContext object that's used for both verified
         and unverified connections.
         """
+        import ssl
+
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         set_minimum_tls_version_1_2(context)
         context.options |= ssl.OP_NO_COMPRESSION

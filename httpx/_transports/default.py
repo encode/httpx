@@ -30,15 +30,6 @@ import contextlib
 import typing
 from types import TracebackType
 
-# don't import httpcore until
-# we instantiate a transport 
-# which uses it
-if typing.TYPE_CHECKING:
-    import httpcore
-else:
-    # lazily imported module
-    httpcore:types.ModuleType|None = None
-
 from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._exceptions import (
     ConnectError,
@@ -73,9 +64,11 @@ SOCKET_OPTION = typing.Union[
 __all__ = ["AsyncHTTPTransport", "HTTPTransport"]
 
 
-
 @contextlib.contextmanager
 def map_httpcore_exceptions() -> typing.Iterator[None]:
+    global HTTPCORE_EXC_MAP
+    if len(HTTPCORE_EXC_MAP) == 0:
+        HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
     try:
         yield
     except Exception as exc:
@@ -96,14 +89,17 @@ def map_httpcore_exceptions() -> typing.Iterator[None]:
         message = str(exc)
         raise mapped_exc(message) from exc
 
-HTTPCORE_EXC_MAP: None|dict = None
 
-def _load_httpcore():
-    global httpcore, HTTPCORE_EXC_MAP
-    import httpcore as httpcore_actual
-    httpcore = httpcore_actual
+if typing.TYPE_CHECKING:
+    import httpx
 
-    HTTPCORE_EXC_MAP = {
+HTTPCORE_EXC_MAP: dict[type[Exception], type[httpx.HTTPError]] = {}
+
+
+def _load_httpcore_exceptions() -> dict[type[Exception], type[httpx.HTTPError]]:
+    import httpcore
+
+    return {
         httpcore.TimeoutException: TimeoutException,
         httpcore.ConnectTimeout: ConnectTimeout,
         httpcore.ReadTimeout: ReadTimeout,
@@ -150,7 +146,8 @@ class HTTPTransport(BaseTransport):
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
-        _load_httpcore()
+        import httpcore
+
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
 
@@ -234,6 +231,7 @@ class HTTPTransport(BaseTransport):
         request: Request,
     ) -> Response:
         assert isinstance(request.stream, SyncByteStream)
+        import httpcore
 
         req = httpcore.Request(
             method=request.method,
@@ -292,7 +290,8 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
-        _load_httpcore()
+        import httpcore
+
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
 
@@ -376,6 +375,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         request: Request,
     ) -> Response:
         assert isinstance(request.stream, AsyncByteStream)
+        import httpcore
 
         req = httpcore.Request(
             method=request.method,
