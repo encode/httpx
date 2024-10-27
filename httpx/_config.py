@@ -6,8 +6,6 @@ import ssl
 import typing
 from pathlib import Path
 
-import certifi
-
 from ._compat import set_minimum_tls_version_1_2
 from ._models import Headers
 from ._types import CertTypes, HeaderTypes, TimeoutTypes, VerifyTypes
@@ -61,8 +59,7 @@ class SSLConfig:
     """
     SSL Configuration.
     """
-
-    DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
+    DEFAULT_CA_BUNDLE_PATH: Path | None = None
 
     def __init__(
         self,
@@ -72,6 +69,8 @@ class SSLConfig:
         trust_env: bool = True,
         http2: bool = False,
     ) -> None:
+        import certifi
+        SSLConfig.DEFAULT_CA_PATH = Path(certifi.where())
         self.cert = cert
         self.verify = verify
         self.trust_env = trust_env
