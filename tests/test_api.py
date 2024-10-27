@@ -4,6 +4,18 @@ import pytest
 
 import httpx
 
+# check that httpcore isn't imported until we do a request
+def test_httpcore_lazy_loading(server):
+    import sys
+    # unload our module if it is already loaded
+    if httpx in sys.modules:
+        del sys.modules['httpx']
+        del sys.modules['httpcore']
+    import httpx
+    assert("httpcore" not in sys.modules)
+    response = httpx.get(server.url)
+    assert("httpcore" in sys.modules)
+
 
 def test_get(server):
     response = httpx.get(server.url)
@@ -85,3 +97,4 @@ def test_stream(server):
 def test_get_invalid_url():
     with pytest.raises(httpx.UnsupportedProtocol):
         httpx.get("invalid://example.org")
+

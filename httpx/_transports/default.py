@@ -30,7 +30,14 @@ import contextlib
 import typing
 from types import TracebackType
 
-import httpcore
+# don't import httpcore until
+# we instantiate a transport 
+# which uses it
+if typing.TYPE_CHECKING:
+    import httpcore
+else:
+    # lazily imported module
+    httpcore:types.ModuleType|None = None
 
 from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._exceptions import (
@@ -66,6 +73,7 @@ SOCKET_OPTION = typing.Union[
 __all__ = ["AsyncHTTPTransport", "HTTPTransport"]
 
 
+
 @contextlib.contextmanager
 def map_httpcore_exceptions() -> typing.Iterator[None]:
     try:
@@ -88,23 +96,29 @@ def map_httpcore_exceptions() -> typing.Iterator[None]:
         message = str(exc)
         raise mapped_exc(message) from exc
 
+HTTPCORE_EXC_MAP: None|dict = None
 
-HTTPCORE_EXC_MAP = {
-    httpcore.TimeoutException: TimeoutException,
-    httpcore.ConnectTimeout: ConnectTimeout,
-    httpcore.ReadTimeout: ReadTimeout,
-    httpcore.WriteTimeout: WriteTimeout,
-    httpcore.PoolTimeout: PoolTimeout,
-    httpcore.NetworkError: NetworkError,
-    httpcore.ConnectError: ConnectError,
-    httpcore.ReadError: ReadError,
-    httpcore.WriteError: WriteError,
-    httpcore.ProxyError: ProxyError,
-    httpcore.UnsupportedProtocol: UnsupportedProtocol,
-    httpcore.ProtocolError: ProtocolError,
-    httpcore.LocalProtocolError: LocalProtocolError,
-    httpcore.RemoteProtocolError: RemoteProtocolError,
-}
+def _load_httpcore():
+    global httpcore, HTTPCORE_EXC_MAP
+    import httpcore as httpcore_actual
+    httpcore = httpcore_actual
+
+    HTTPCORE_EXC_MAP = {
+        httpcore.TimeoutException: TimeoutException,
+        httpcore.ConnectTimeout: ConnectTimeout,
+        httpcore.ReadTimeout: ReadTimeout,
+        httpcore.WriteTimeout: WriteTimeout,
+        httpcore.PoolTimeout: PoolTimeout,
+        httpcore.NetworkError: NetworkError,
+        httpcore.ConnectError: ConnectError,
+        httpcore.ReadError: ReadError,
+        httpcore.WriteError: WriteError,
+        httpcore.ProxyError: ProxyError,
+        httpcore.UnsupportedProtocol: UnsupportedProtocol,
+        httpcore.ProtocolError: ProtocolError,
+        httpcore.LocalProtocolError: LocalProtocolError,
+        httpcore.RemoteProtocolError: RemoteProtocolError,
+    }
 
 
 class ResponseStream(SyncByteStream):
@@ -136,6 +150,7 @@ class HTTPTransport(BaseTransport):
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
+        _load_httpcore()
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
 
@@ -277,6 +292,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
+        _load_httpcore()
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
 

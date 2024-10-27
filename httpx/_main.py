@@ -6,7 +6,6 @@ import sys
 import typing
 
 import click
-import httpcore
 import pygments.lexers
 import pygments.util
 import rich.console
@@ -20,6 +19,10 @@ from ._exceptions import RequestError
 from ._models import Response
 from ._status_codes import codes
 
+# don't import httpcore until we
+# use a transport which needs it
+if typing.TYPE_CHECKING:
+    import httpcore
 
 def print_help() -> None:
     console = rich.console.Console()
@@ -111,7 +114,7 @@ def get_lexer_for_response(response: Response) -> str:
     return ""  # pragma: no cover
 
 
-def format_request_headers(request: httpcore.Request, http2: bool = False) -> str:
+def format_request_headers(request:  httpcore.Request, http2: bool = False) -> str:
     version = "HTTP/2" if http2 else "HTTP/1.1"
     headers = [
         (name.lower() if http2 else name, value) for name, value in request.headers
