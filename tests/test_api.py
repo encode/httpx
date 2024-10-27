@@ -8,7 +8,7 @@ import httpx
 def test_httpcore_lazy_loading(server):
     import sys
     # unload our module if it is already loaded
-    if httpx in sys.modules:
+    if "httpx" in sys.modules:
         del sys.modules['httpx']
         del sys.modules['httpcore']
     import httpx

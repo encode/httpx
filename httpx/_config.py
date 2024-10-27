@@ -70,7 +70,7 @@ class SSLConfig:
         http2: bool = False,
     ) -> None:
         import certifi
-        SSLConfig.DEFAULT_CA_PATH = Path(certifi.where())
+        SSLConfig.DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
         self.cert = cert
         self.verify = verify
         self.trust_env = trust_env
