@@ -81,9 +81,9 @@ def test_response_json():
 
     assert response.status_code == 200
     assert response.reason_phrase == "OK"
-    assert response.json() == {"hello": "world"}
+    assert str(response.json()) == "{'hello': 'world'}"
     assert response.headers == {
-        "Content-Length": "18",
+        "Content-Length": "17",
         "Content-Type": "application/json",
     }
 

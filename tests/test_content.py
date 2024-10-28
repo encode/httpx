@@ -4,6 +4,7 @@ import typing
 import pytest
 
 import httpx
+from httpx._content import encode_json
 
 method = "POST"
 url = "https://www.example.com"
@@ -173,11 +174,11 @@ async def test_json_content():
 
     assert request.headers == {
         "Host": "www.example.com",
-        "Content-Length": "19",
+        "Content-Length": "18",
         "Content-Type": "application/json",
     }
-    assert sync_content == b'{"Hello": "world!"}'
-    assert async_content == b'{"Hello": "world!"}'
+    assert sync_content == b'{"Hello":"world!"}'
+    assert async_content == b'{"Hello":"world!"}'
 
 
 @pytest.mark.anyio
@@ -484,3 +485,39 @@ async def test_response_aiterator_content():
 def test_response_invalid_argument():
     with pytest.raises(TypeError):
         httpx.Response(200, content=123)  # type: ignore
+
+
+def test_ensure_ascii_false_with_french_characters():
+    data = {"greeting": "Bonjour, ça va ?"}
+    headers, byte_stream = encode_json(data)
+    json_output = b"".join(byte_stream).decode("utf-8")
+
+    assert (
+        "ça va" in json_output
+    ), "ensure_ascii=False should preserve French accented characters"
+    assert headers["Content-Type"] == "application/json"
+
+
+def test_separators_for_compact_json():
+    data = {"clé": "valeur", "liste": [1, 2, 3]}
+    headers, byte_stream = encode_json(data)
+    json_output = b"".join(byte_stream).decode("utf-8")
+
+    assert (
+        json_output == '{"clé":"valeur","liste":[1,2,3]}'
+    ), "separators=(',', ':') should produce a compact representation"
+    assert headers["Content-Type"] == "application/json"
+
+
+def test_allow_nan_false():
+    data_with_nan = {"nombre": float("nan")}
+    data_with_inf = {"nombre": float("inf")}
+
+    with pytest.raises(
+        ValueError, match="Out of range float values are not JSON compliant"
+    ):
+        encode_json(data_with_nan)
+    with pytest.raises(
+        ValueError, match="Out of range float values are not JSON compliant"
+    ):
+        encode_json(data_with_inf)
