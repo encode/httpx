@@ -328,9 +328,7 @@ class Request:
             if isinstance(method, bytes)
             else method.upper()
         )
-        self.url = URL(url)
-        if params is not None:
-            self.url = self.url.copy_merge_params(params=params)
+        self.url = URL(url) if params is None else URL(url, params=params)
         self.headers = Headers(headers)
         self.extensions = {} if extensions is None else extensions
 
