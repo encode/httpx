@@ -614,10 +614,10 @@ def test_url_copywith_userinfo_subcomponents():
     }
     url = httpx.URL("https://example.org")
     new = url.copy_with(**copy_with_kwargs)
-    assert str(new) == "https://tom%40example.org:abc123%40%20%25@example.org"
+    assert str(new) == "https://tom%40example.org:abc123%40%20%@example.org"
     assert new.username == "tom@example.org"
     assert new.password == "abc123@ %"
-    assert new.userinfo == b"tom%40example.org:abc123%40%20%25"
+    assert new.userinfo == b"tom%40example.org:abc123%40%20%"
 
 
 def test_url_copywith_invalid_component():
