@@ -294,7 +294,7 @@ def test_param_with_space():
     assert str(url) == "http://webservice?u=with%20spaces"
 
 
-def test_param_does_not_require_encoding():
+def test_param_requires_encoding():
     # Params passed as form key-value pairs should be escaped.
     url = httpx.URL("http://webservice", params={"u": "%"})
     assert str(url) == "http://webservice?u=%25"
