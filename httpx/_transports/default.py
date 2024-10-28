@@ -27,12 +27,13 @@ client = httpx.Client(transport=transport)
 from __future__ import annotations
 
 import contextlib
+import ssl
 import typing
 from types import TracebackType
 
 import httpcore
 
-from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
+from .._config import DEFAULT_LIMITS, Limits, Proxy, SSLContext, create_ssl_context
 from .._exceptions import (
     ConnectError,
     ConnectTimeout,
@@ -50,7 +51,7 @@ from .._exceptions import (
     WriteTimeout,
 )
 from .._models import Request, Response
-from .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream, VerifyTypes
+from .._types import AsyncByteStream, ProxyTypes, SyncByteStream
 from .._urls import URL
 from .base import AsyncBaseTransport, BaseTransport
 
@@ -124,20 +125,25 @@ class ResponseStream(SyncByteStream):
 class HTTPTransport(BaseTransport):
     def __init__(
         self,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
         proxy: ProxyTypes | None = None,
         uds: str | None = None,
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
+        # Deprecated...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> None:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
+        if verify is not None or cert is not None:  # pragma: nocover
+            # Deprecated...
+            ssl_context = create_ssl_context(verify, cert)
+        else:
+            ssl_context = ssl_context or SSLContext()
 
         if proxy is None:
             self._pool = httpcore.ConnectionPool(
@@ -265,20 +271,25 @@ class AsyncResponseStream(AsyncByteStream):
 class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
         proxy: ProxyTypes | None = None,
         uds: str | None = None,
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
+        # Deprecated...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> None:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
+        if verify is not None or cert is not None:  # pragma: nocover
+            # Deprecated...
+            ssl_context = create_ssl_context(verify, cert)
+        else:
+            ssl_context = ssl_context or SSLContext()
 
         if proxy is None:
             self._pool = httpcore.AsyncConnectionPool(

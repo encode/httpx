@@ -3,6 +3,8 @@ from __future__ import annotations
 import datetime
 import enum
 import logging
+import ssl
+import time
 import typing
 import warnings
 from contextlib import asynccontextmanager, contextmanager
@@ -27,17 +29,13 @@ from ._exceptions import (
 )
 from ._models import Cookies, Headers, Request, Response
 from ._status_codes import codes
-from ._transports.asgi import ASGITransport
 from ._transports.base import AsyncBaseTransport, BaseTransport
 from ._transports.default import AsyncHTTPTransport, HTTPTransport
-from ._transports.wsgi import WSGITransport
 from ._types import (
     AsyncByteStream,
     AuthTypes,
-    CertTypes,
     CookieTypes,
     HeaderTypes,
-    ProxiesTypes,
     ProxyTypes,
     QueryParamTypes,
     RequestContent,
@@ -46,11 +44,9 @@ from ._types import (
     RequestFiles,
     SyncByteStream,
     TimeoutTypes,
-    VerifyTypes,
 )
 from ._urls import URL, QueryParams
 from ._utils import (
-    Timer,
     URLPattern,
     get_environment_proxies,
     is_https_redirect,
@@ -117,19 +113,19 @@ class BoundSyncStream(SyncByteStream):
     """
 
     def __init__(
-        self, stream: SyncByteStream, response: Response, timer: Timer
+        self, stream: SyncByteStream, response: Response, start: float
     ) -> None:
         self._stream = stream
         self._response = response
-        self._timer = timer
+        self._start = start
 
     def __iter__(self) -> typing.Iterator[bytes]:
         for chunk in self._stream:
             yield chunk
 
     def close(self) -> None:
-        seconds = self._timer.sync_elapsed()
-        self._response.elapsed = datetime.timedelta(seconds=seconds)
+        elapsed = time.perf_counter() - self._start
+        self._response.elapsed = datetime.timedelta(seconds=elapsed)
         self._stream.close()
 
 
@@ -140,19 +136,19 @@ class BoundAsyncStream(AsyncByteStream):
     """
 
     def __init__(
-        self, stream: AsyncByteStream, response: Response, timer: Timer
+        self, stream: AsyncByteStream, response: Response, start: float
     ) -> None:
         self._stream = stream
         self._response = response
-        self._timer = timer
+        self._start = start
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         async for chunk in self._stream:
             yield chunk
 
     async def aclose(self) -> None:
-        seconds = await self._timer.async_elapsed()
-        self._response.elapsed = datetime.timedelta(seconds=seconds)
+        elapsed = time.perf_counter() - self._start
+        self._response.elapsed = datetime.timedelta(seconds=elapsed)
         await self._stream.aclose()
 
 
@@ -211,23 +207,17 @@ class BaseClient:
         return url.copy_with(raw_path=url.raw_path + b"/")
 
     def _get_proxy_map(
-        self, proxies: ProxiesTypes | None, allow_env_proxies: bool
+        self, proxy: ProxyTypes | None, allow_env_proxies: bool
     ) -> dict[str, Proxy | None]:
-        if proxies is None:
+        if proxy is None:
             if allow_env_proxies:
                 return {
                     key: None if url is None else Proxy(url=url)
                     for key, url in get_environment_proxies().items()
                 }
             return {}
-        if isinstance(proxies, dict):
-            new_proxies = {}
-            for key, value in proxies.items():
-                proxy = Proxy(url=value) if isinstance(value, (str, URL)) else value
-                new_proxies[str(key)] = proxy
-            return new_proxies
         else:
-            proxy = Proxy(url=proxies) if isinstance(proxies, (str, URL)) else proxies
+            proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
             return {"all://": proxy}
 
     @property
@@ -594,14 +584,8 @@ class Client(BaseClient):
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
     sending requests.
-    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
-    verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
-    (which will disable verification).
-    * **cert** - *(optional)* An SSL certificate used by the requested host
-    to authenticate the client. Either a path to an SSL certificate file, or
-    two-tuple of (certificate file, key file), or a three-tuple of (certificate
-    file, key file, password).
+    * **ssl_context** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client.
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
@@ -616,8 +600,6 @@ class Client(BaseClient):
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
-    * **app** - *(optional)* An WSGI application to send requests to,
-    rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
     * **default_encoding** - *(optional)* The default encoding to use for decoding
@@ -632,12 +614,10 @@ class Client(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
-        proxies: ProxiesTypes | None = None,
         mounts: None | (typing.Mapping[str, BaseTransport | None]) = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
@@ -646,9 +626,11 @@ class Client(BaseClient):
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
         transport: BaseTransport | None = None,
-        app: typing.Callable[..., typing.Any] | None = None,
         trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> None:
         super().__init__(
             auth=auth,
@@ -673,46 +655,32 @@ class Client(BaseClient):
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
-        if proxies:
-            message = (
-                "The 'proxies' argument is now deprecated."
-                " Use 'proxy' or 'mounts' instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-            if proxy:
-                raise RuntimeError("Use either `proxy` or 'proxies', not both.")
-
-        if app:
-            message = (
-                "The 'app' shortcut is now deprecated."
-                " Use the explicit style 'transport=WSGITransport(app=...)' instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-
-        allow_env_proxies = trust_env and app is None and transport is None
-        proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
+        allow_env_proxies = trust_env and transport is None
+        proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
             transport=transport,
-            app=app,
             trust_env=trust_env,
+            # Deprecated in favor of ssl_context...
+            verify=verify,
+            cert=cert,
         )
         self._mounts: dict[URLPattern, BaseTransport | None] = {
             URLPattern(key): None
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
-                verify=verify,
-                cert=cert,
+                ssl_context=ssl_context,
                 http1=http1,
                 http2=http2,
                 limits=limits,
-                trust_env=trust_env,
+                # Deprecated in favor of ssl_context...
+                verify=verify,
+                cert=cert,
             )
             for key, proxy in proxy_map.items()
         }
@@ -725,48 +693,48 @@ class Client(BaseClient):
 
     def _init_transport(
         self,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: BaseTransport | None = None,
-        app: typing.Callable[..., typing.Any] | None = None,
         trust_env: bool = True,
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> BaseTransport:
         if transport is not None:
             return transport
 
-        if app is not None:
-            return WSGITransport(app=app)
-
         return HTTPTransport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
-            trust_env=trust_env,
+            verify=verify,
+            cert=cert,
         )
 
     def _init_proxy_transport(
         self,
         proxy: Proxy,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         trust_env: bool = True,
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> BaseTransport:
         return HTTPTransport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
-            trust_env=trust_env,
             proxy=proxy,
+            verify=verify,
+            cert=cert,
         )
 
     def _transport_for_url(self, url: URL) -> BaseTransport:
@@ -819,7 +787,7 @@ class Client(BaseClient):
                 "the expected behaviour on cookie persistence is ambiguous. Set "
                 "cookies directly on the client instance instead."
             )
-            warnings.warn(message, DeprecationWarning)
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
 
         request = self.build_request(
             method=method,
@@ -1015,8 +983,7 @@ class Client(BaseClient):
         Sends a single request, without handling any redirections.
         """
         transport = self._transport_for_url(request.url)
-        timer = Timer()
-        timer.sync_start()
+        start = time.perf_counter()
 
         if not isinstance(request.stream, SyncByteStream):
             raise RuntimeError(
@@ -1030,7 +997,7 @@ class Client(BaseClient):
 
         response.request = request
         response.stream = BoundSyncStream(
-            response.stream, response=response, timer=timer
+            response.stream, response=response, start=start
         )
         self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
@@ -1341,19 +1308,11 @@ class AsyncClient(BaseClient):
     sending requests.
     * **cookies** - *(optional)* Dictionary of Cookie items to include when
     sending requests.
-    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
-    verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
-    (which will disable verification).
-    * **cert** - *(optional)* An SSL certificate used by the requested host
-    to authenticate the client. Either a path to an SSL certificate file, or
-    two-tuple of (certificate file, key file), or a three-tuple of (certificate
-    file, key file, password).
+    * **ssl_context** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client.
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
-    * **proxies** - *(optional)* A dictionary mapping HTTP protocols to proxy
-    URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
     * **limits** - *(optional)* The limits configuration to use.
@@ -1363,8 +1322,6 @@ class AsyncClient(BaseClient):
     request URLs.
     * **transport** - *(optional)* A transport class to use for sending requests
     over the network.
-    * **app** - *(optional)* An ASGI application to send requests to,
-    rather than sending actual network requests.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
     * **default_encoding** - *(optional)* The default encoding to use for decoding
@@ -1379,12 +1336,10 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
-        proxies: ProxiesTypes | None = None,
         mounts: None | (typing.Mapping[str, AsyncBaseTransport | None]) = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
@@ -1393,9 +1348,11 @@ class AsyncClient(BaseClient):
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
         transport: AsyncBaseTransport | None = None,
-        app: typing.Callable[..., typing.Any] | None = None,
         trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> None:
         super().__init__(
             auth=auth,
@@ -1420,34 +1377,18 @@ class AsyncClient(BaseClient):
                     "Make sure to install httpx using `pip install httpx[http2]`."
                 ) from None
 
-        if proxies:
-            message = (
-                "The 'proxies' argument is now deprecated."
-                " Use 'proxy' or 'mounts' instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-            if proxy:
-                raise RuntimeError("Use either `proxy` or 'proxies', not both.")
-
-        if app:
-            message = (
-                "The 'app' shortcut is now deprecated."
-                " Use the explicit style 'transport=ASGITransport(app=...)' instead."
-            )
-            warnings.warn(message, DeprecationWarning)
-
-        allow_env_proxies = trust_env and app is None and transport is None
-        proxy_map = self._get_proxy_map(proxies or proxy, allow_env_proxies)
+        allow_env_proxies = trust_env and transport is None
+        proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
 
         self._transport = self._init_transport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
             transport=transport,
-            app=app,
-            trust_env=trust_env,
+            # Deprecated in favor of ssl_context
+            verify=verify,
+            cert=cert,
         )
 
         self._mounts: dict[URLPattern, AsyncBaseTransport | None] = {
@@ -1455,12 +1396,13 @@ class AsyncClient(BaseClient):
             if proxy is None
             else self._init_proxy_transport(
                 proxy,
-                verify=verify,
-                cert=cert,
+                ssl_context=ssl_context,
                 http1=http1,
                 http2=http2,
                 limits=limits,
-                trust_env=trust_env,
+                # Deprecated in favor of `ssl_context`...
+                verify=verify,
+                cert=cert,
             )
             for key, proxy in proxy_map.items()
         }
@@ -1472,48 +1414,46 @@ class AsyncClient(BaseClient):
 
     def _init_transport(
         self,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: AsyncBaseTransport | None = None,
-        app: typing.Callable[..., typing.Any] | None = None,
-        trust_env: bool = True,
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> AsyncBaseTransport:
         if transport is not None:
             return transport
 
-        if app is not None:
-            return ASGITransport(app=app)
-
         return AsyncHTTPTransport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
-            trust_env=trust_env,
+            verify=verify,
+            cert=cert,
         )
 
     def _init_proxy_transport(
         self,
         proxy: Proxy,
-        verify: VerifyTypes = True,
-        cert: CertTypes | None = None,
+        ssl_context: ssl.SSLContext | None = None,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
+        # Deprecated in favor of `ssl_context`...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> AsyncBaseTransport:
         return AsyncHTTPTransport(
-            verify=verify,
-            cert=cert,
+            ssl_context=ssl_context,
             http1=http1,
             http2=http2,
             limits=limits,
-            trust_env=trust_env,
             proxy=proxy,
+            verify=verify,
+            cert=cert,
         )
 
     def _transport_for_url(self, url: URL) -> AsyncBaseTransport:
@@ -1567,7 +1507,7 @@ class AsyncClient(BaseClient):
                 "the expected behaviour on cookie persistence is ambiguous. Set "
                 "cookies directly on the client instance instead."
             )
-            warnings.warn(message, DeprecationWarning)
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
 
         request = self.build_request(
             method=method,
@@ -1764,8 +1704,7 @@ class AsyncClient(BaseClient):
         Sends a single request, without handling any redirections.
         """
         transport = self._transport_for_url(request.url)
-        timer = Timer()
-        await timer.async_start()
+        start = time.perf_counter()
 
         if not isinstance(request.stream, AsyncByteStream):
             raise RuntimeError(
@@ -1778,7 +1717,7 @@ class AsyncClient(BaseClient):
         assert isinstance(response.stream, AsyncByteStream)
         response.request = request
         response.stream = BoundAsyncStream(
-            response.stream, response=response, timer=timer
+            response.stream, response=response, start=start
         )
         self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
