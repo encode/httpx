@@ -13,6 +13,7 @@ Version 0.28.0 introduces an `httpx.SSLContext()` class and `ssl_context` parame
 * The deprecated `proxies` argument has now been removed.
 * The deprecated `app` argument has now been removed.
 * The `URL.raw` property has now been removed.
+* Ensure JSON request bodies are compact. (#3363)
 
 ## 0.27.2 (27th August, 2024)
 
