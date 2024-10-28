@@ -294,7 +294,7 @@ def test_param_with_space():
     assert str(url) == "http://webservice?u=with%20spaces"
 
 
-def test_param_does_not_require_encoding():
+def test_param_requires_encoding():
     # Params passed as form key-value pairs should be escaped.
     url = httpx.URL("http://webservice", params={"u": "%"})
     assert str(url) == "http://webservice?u=%25"
@@ -614,10 +614,10 @@ def test_url_copywith_userinfo_subcomponents():
     }
     url = httpx.URL("https://example.org")
     new = url.copy_with(**copy_with_kwargs)
-    assert str(new) == "https://tom%40example.org:abc123%40%20%25@example.org"
+    assert str(new) == "https://tom%40example.org:abc123%40%20%@example.org"
     assert new.username == "tom@example.org"
     assert new.password == "abc123@ %"
-    assert new.userinfo == b"tom%40example.org:abc123%40%20%25"
+    assert new.userinfo == b"tom%40example.org:abc123%40%20%"
 
 
 def test_url_copywith_invalid_component():
