@@ -97,6 +97,7 @@ USERINFO_SAFE = "".join(
     ]
 )
 
+
 # {scheme}:      (optional)
 # //{authority}  (optional)
 # {path}
@@ -478,7 +479,7 @@ def PERCENT(string: str) -> str:
     return "".join([f"%{byte:02X}" for byte in string.encode("utf-8")])
 
 
-def percent_encoded(string: str, safe: str = "/") -> str:
+def percent_encoded(string: str, safe: str) -> str:
     """
     Use percent-encoding to quote a string.
     """
@@ -493,7 +494,7 @@ def percent_encoded(string: str, safe: str = "/") -> str:
     )
 
 
-def quote(string: str, safe: str = "/") -> str:
+def quote(string: str, safe: str) -> str:
     """
     Use percent-encoding to quote a string, omitting existing '%xx' escape sequences.
 
@@ -524,26 +525,3 @@ def quote(string: str, safe: str = "/") -> str:
         parts.append(percent_encoded(trailing_text, safe=safe))
 
     return "".join(parts)
-
-
-def urlencode(items: list[tuple[str, str]]) -> str:
-    """
-    We can use a much simpler version of the stdlib urlencode here because
-    we don't need to handle a bunch of different typing cases, such as bytes vs str.
-
-    https://github.com/python/cpython/blob/b2f7b2ef0b5421e01efb8c7bee2ef95d3bab77eb/Lib/urllib/parse.py#L926
-
-    Note that we use '%20' encoding for spaces. and '%2F  for '/'.
-    This is slightly different than `requests`, but is the behaviour that browsers use.
-
-    See
-    - https://github.com/encode/httpx/issues/2536
-    - https://github.com/encode/httpx/issues/2721
-    - https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
-    """
-    return "&".join(
-        [
-            percent_encoded(k, safe="") + "=" + percent_encoded(v, safe="")
-            for k, v in items
-        ]
-    )

@@ -141,19 +141,14 @@ def test_path_query_fragment(url, raw_path, path, query, fragment):
 
 
 def test_url_query_encoding():
-    """
-    URL query parameters should use '%20' for encoding spaces,
-    and should treat '/' as a safe character. This behaviour differs
-    across clients, but we're matching browser behaviour here.
-
-    See https://github.com/encode/httpx/issues/2536
-    and https://github.com/encode/httpx/discussions/2460
-    """
     url = httpx.URL("https://www.example.com/?a=b c&d=e/f")
     assert url.raw_path == b"/?a=b%20c&d=e/f"
 
+    url = httpx.URL("https://www.example.com/?a=b+c&d=e/f")
+    assert url.raw_path == b"/?a=b+c&d=e/f"
+
     url = httpx.URL("https://www.example.com/", params={"a": "b c", "d": "e/f"})
-    assert url.raw_path == b"/?a=b%20c&d=e%2Ff"
+    assert url.raw_path == b"/?a=b+c&d=e/f"
 
 
 def test_url_params():
@@ -289,9 +284,10 @@ def test_url_leading_dot_prefix_on_relative_url():
 
 
 def test_param_with_space():
-    # Params passed as form key-value pairs should be escaped.
+    # Params passed as form key-value pairs should be form escaped,
+    # Including the special case of "+" for space seperators.
     url = httpx.URL("http://webservice", params={"u": "with spaces"})
-    assert str(url) == "http://webservice?u=with%20spaces"
+    assert str(url) == "http://webservice?u=with+spaces"
 
 
 def test_param_requires_encoding():
@@ -313,7 +309,7 @@ def test_param_with_existing_escape_requires_encoding():
     # even if they include a valid escape sequence.
     # We want to match browser form behaviour here.
     url = httpx.URL("http://webservice", params={"u": "http://example.com?q=foo%2Fa"})
-    assert str(url) == "http://webservice?u=http%3A%2F%2Fexample.com%3Fq%3Dfoo%252Fa"
+    assert str(url) == "http://webservice?u=http://example.com?q%3Dfoo%252Fa"
 
 
 # Tests for query parameter percent encoding.
