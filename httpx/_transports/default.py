@@ -33,7 +33,7 @@ from types import TracebackType
 
 import httpcore
 
-from .._config import DEFAULT_LIMITS, Limits, Proxy, SSLContext
+from .._config import DEFAULT_LIMITS, Limits, Proxy, SSLContext, create_ssl_context
 from .._exceptions import (
     ConnectError,
     ConnectTimeout,
@@ -134,9 +134,16 @@ class HTTPTransport(BaseTransport):
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
+        # Deprecated...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> None:
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-        ssl_context = ssl_context or SSLContext()
+        if verify is not None or cert is not None:  # pragma: nocover
+            # Deprecated...
+            ssl_context = create_ssl_context(verify, cert)
+        else:
+            ssl_context = ssl_context or SSLContext()
 
         if proxy is None:
             self._pool = httpcore.ConnectionPool(
@@ -273,9 +280,16 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
+        # Deprecated...
+        verify: typing.Any = None,
+        cert: typing.Any = None,
     ) -> None:
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-        ssl_context = ssl_context or SSLContext()
+        if verify is not None or cert is not None:  # pragma: nocover
+            # Deprecated...
+            ssl_context = create_ssl_context(verify, cert)
+        else:
+            ssl_context = ssl_context or SSLContext()
 
         if proxy is None:
             self._pool = httpcore.AsyncConnectionPool(

@@ -50,6 +50,9 @@ def request(
     follow_redirects: bool = False,
     ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends an HTTP request.
@@ -101,6 +104,8 @@ def request(
         ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     ) as client:
         return client.request(
             method=method,
@@ -134,6 +139,9 @@ def stream(
     follow_redirects: bool = False,
     ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> typing.Iterator[Response]:
     """
     Alternative to `httpx.request()` that streams the response body
@@ -151,6 +159,8 @@ def stream(
         ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     ) as client:
         with client.stream(
             method=method,
@@ -179,6 +189,9 @@ def get(
     ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `GET` request.
@@ -200,6 +213,8 @@ def get(
         ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
@@ -215,6 +230,9 @@ def options(
     ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends an `OPTIONS` request.
@@ -236,6 +254,8 @@ def options(
         ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
@@ -251,6 +271,9 @@ def head(
     ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `HEAD` request.
@@ -272,6 +295,8 @@ def head(
         ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
@@ -291,6 +316,9 @@ def post(
     ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `POST` request.
@@ -313,6 +341,8 @@ def post(
         ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
@@ -332,6 +362,9 @@ def put(
     ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `PUT` request.
@@ -354,6 +387,8 @@ def put(
         ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
@@ -373,6 +408,9 @@ def patch(
     ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `PATCH` request.
@@ -395,6 +433,8 @@ def patch(
         ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
@@ -410,6 +450,9 @@ def delete(
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `DELETE` request.
@@ -431,4 +474,6 @@ def delete(
         ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )

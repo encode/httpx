@@ -4,6 +4,7 @@ import os
 import ssl
 import sys
 import typing
+import warnings
 
 import certifi
 
@@ -11,7 +12,7 @@ from ._models import Headers
 from ._types import HeaderTypes, TimeoutTypes
 from ._urls import URL
 
-__all__ = ["Limits", "Proxy", "SSLContext", "Timeout"]
+__all__ = ["Limits", "Proxy", "SSLContext", "Timeout", "create_ssl_context"]
 
 
 class UnsetType:
@@ -19,6 +20,54 @@ class UnsetType:
 
 
 UNSET = UnsetType()
+
+
+def create_ssl_context(
+    verify: typing.Any = None,
+    cert: typing.Any = None,
+    trust_env: bool = True,
+    http2: bool = False,
+) -> ssl.SSLContext:  # pragma: nocover
+    if isinstance(verify, bool):
+        ssl_context: ssl.SSLContext = SSLContext(verify=verify)
+        warnings.warn(
+            "The verify=<bool> parameter is deprecated since 0.28.0. "
+            "Use `ssl_context=httpx.SSLContext(verify=<bool>)`."
+        )
+    elif isinstance(verify, str):
+        warnings.warn(
+            "The verify=<str> parameter is deprecated since 0.28.0. "
+            "Use `ssl_context=httpx.SSLContext()` and `.load_verify_locations()`."
+        )
+        ssl_context = SSLContext()
+        if os.path.isfile(verify):
+            ssl_context.load_verify_locations(cafile=verify)
+        elif os.path.isdir(verify):
+            ssl_context.load_verify_locations(capath=verify)
+    elif isinstance(verify, ssl.SSLContext):
+        warnings.warn(
+            "The verify=<ssl context> parameter is deprecated since 0.28.0. "
+            "Use `ssl_context = httpx.SSLContext()`."
+        )
+        ssl_context = verify
+    else:
+        warnings.warn(
+            "`create_ssl_context()` is deprecated since 0.28.0."
+            "Use `ssl_context = httpx.SSLContext()`."
+        )
+        ssl_context = SSLContext()
+
+    if cert is not None:
+        warnings.warn(
+            "The `cert=<...>` parameter is deprecated since 0.28.0. "
+            "Use `ssl_context = httpx.SSLContext()` and `.load_cert_chain()`."
+        )
+        if isinstance(cert, str):
+            ssl_context.load_cert_chain(cert)
+        else:
+            ssl_context.load_cert_chain(*cert)
+
+    return ssl_context
 
 
 class SSLContext(ssl.SSLContext):
