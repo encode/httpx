@@ -1,9 +1,12 @@
+from __future__ import annotations
+
+import io
 import typing
 import zlib
 
-import brotli
 import chardet
 import pytest
+import zstandard as zstd
 
 import httpx
 
@@ -61,7 +64,7 @@ def test_gzip():
 
 def test_brotli():
     body = b"test 123"
-    compressed_body = brotli.compress(body)
+    compressed_body = b"\x8b\x03\x80test 123\x03"
 
     headers = [(b"Content-Encoding", b"br")]
     response = httpx.Response(
@@ -70,6 +73,53 @@ def test_brotli():
         content=compressed_body,
     )
     assert response.content == body
+
+
+def test_zstd():
+    body = b"test 123"
+    compressed_body = zstd.compress(body)
+
+    headers = [(b"Content-Encoding", b"zstd")]
+    response = httpx.Response(
+        200,
+        headers=headers,
+        content=compressed_body,
+    )
+    assert response.content == body
+
+
+def test_zstd_decoding_error():
+    compressed_body = "this_is_not_zstd_compressed_data"
+
+    headers = [(b"Content-Encoding", b"zstd")]
+    with pytest.raises(httpx.DecodingError):
+        httpx.Response(
+            200,
+            headers=headers,
+            content=compressed_body,
+        )
+
+
+def test_zstd_multiframe():
+    # test inspired by urllib3 test suite
+    data = (
+        # Zstandard frame
+        zstd.compress(b"foo")
+        # skippable frame (must be ignored)
+        + bytes.fromhex(
+            "50 2A 4D 18"  # Magic_Number (little-endian)
+            "07 00 00 00"  # Frame_Size (little-endian)
+            "00 00 00 00 00 00 00"  # User_Data
+        )
+        # Zstandard frame
+        + zstd.compress(b"bar")
+    )
+    compressed_body = io.BytesIO(data)
+
+    headers = [(b"Content-Encoding", b"zstd")]
+    response = httpx.Response(200, headers=headers, content=compressed_body)
+    response.read()
+    assert response.content == b"foobar"
 
 
 def test_multi():
@@ -94,7 +144,7 @@ def test_multi():
 
 def test_multi_with_identity():
     body = b"test 123"
-    compressed_body = brotli.compress(body)
+    compressed_body = b"\x8b\x03\x80test 123\x03"
 
     headers = [(b"Content-Encoding", b"br, identity")]
     response = httpx.Response(
@@ -153,8 +203,7 @@ def test_decoders_empty_cases(header_value):
 @pytest.mark.parametrize("header_value", (b"deflate", b"gzip", b"br"))
 def test_decoding_errors(header_value):
     headers = [(b"Content-Encoding", header_value)]
-    body = b"test 123"
-    compressed_body = brotli.compress(body)[3:]
+    compressed_body = b"invalid"
     with pytest.raises(httpx.DecodingError):
         request = httpx.Request("GET", "https://example.org")
         httpx.Response(200, headers=headers, content=compressed_body, request=request)
@@ -219,6 +268,17 @@ def test_text_decoder_empty_cases():
     response = httpx.Response(200, content=[b""])
     response.read()
     assert response.text == ""
+
+
+@pytest.mark.parametrize(
+    ["data", "expected"],
+    [((b"Hello,", b" world!"), ["Hello,", " world!"])],
+)
+def test_streaming_text_decoder(
+    data: typing.Iterable[bytes], expected: list[str]
+) -> None:
+    response = httpx.Response(200, content=iter(data))
+    assert list(response.iter_text()) == expected
 
 
 def test_line_decoder_nl():

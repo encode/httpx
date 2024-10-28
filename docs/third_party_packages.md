@@ -4,7 +4,17 @@ As HTTPX usage grows, there is an expanding community of developers building too
 
 ## Plugins
 
-<!-- NOTE: this list is in alphabetical order. -->
+### httpx-ws
+
+[GitHub](https://github.com/frankie567/httpx-ws) - [Documentation](https://frankie567.github.io/httpx-ws/)
+
+WebSocket support for HTTPX.
+
+### httpx-socks
+
+[GitHub](https://github.com/romis2012/httpx-socks)
+
+Proxy (HTTP, SOCKS) transports for httpx.
 
 ### Hishel
 
@@ -28,7 +38,7 @@ An asynchronous GitHub API library. Includes [HTTPX support](https://gidgethub.r
 
 [GitHub](https://github.com/Colin-b/httpx_auth) - [Documentation](https://colin-b.github.io/httpx_auth/)
 
-Provides authentication classes to be used with HTTPX [authentication parameter](advanced.md#customizing-authentication).
+Provides authentication classes to be used with HTTPX [authentication parameter](advanced/authentication.md#customizing-authentication).
 
 ### pytest-HTTPX
 
@@ -80,4 +90,4 @@ A library for scraping the web built on top of HTTPX.
 
 [GitHub](https://gist.github.com/florimondmanca/d56764d78d748eb9f73165da388e546e)
 
-This public gist provides an example implementation for a [custom transport](advanced.md#custom-transports) implementation on top of the battle-tested [`urllib3`](https://urllib3.readthedocs.io) library.
+This public gist provides an example implementation for a [custom transport](advanced/transports.md#custom-transports) implementation on top of the battle-tested [`urllib3`](https://urllib3.readthedocs.io) library.

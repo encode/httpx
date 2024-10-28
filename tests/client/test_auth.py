@@ -3,6 +3,7 @@ Integration tests for authentication.
 
 Unit tests for auth classes also exist in tests/test_auth.py
 """
+
 import hashlib
 import netrc
 import os
@@ -93,7 +94,7 @@ class RepeatAuth(httpx.Auth):
 
     requires_request_body = True
 
-    def __init__(self, repeat: int):
+    def __init__(self, repeat: int) -> None:
         self.repeat = repeat
 
     def auth_flow(
@@ -596,7 +597,8 @@ async def test_digest_auth_resets_nonce_count_after_401() -> None:
         # with this we now force a 401 on a subsequent (but initial) request
         app.send_response_after_attempt = 2
 
-        # we expect the client again to try to authenticate, i.e. the history length must be 1
+        # we expect the client again to try to authenticate,
+        # i.e. the history length must be 1
         response_2 = await client.get(url, auth=auth)
         assert response_2.status_code == 200
         assert len(response_2.history) == 1
@@ -741,7 +743,7 @@ async def test_async_auth_reads_response_body() -> None:
         response = await client.get(url, auth=auth)
 
     assert response.status_code == 200
-    assert response.json() == {"auth": '{"auth": "xyz"}'}
+    assert response.json() == {"auth": '{"auth":"xyz"}'}
 
 
 def test_sync_auth_reads_response_body() -> None:
@@ -757,7 +759,7 @@ def test_sync_auth_reads_response_body() -> None:
         response = client.get(url, auth=auth)
 
     assert response.status_code == 200
-    assert response.json() == {"auth": '{"auth": "xyz"}'}
+    assert response.json() == {"auth": '{"auth":"xyz"}'}
 
 
 @pytest.mark.anyio

@@ -206,16 +206,14 @@ UI options.
 
 At this point the server is ready to start serving requests, you'll need to
 configure HTTPX as described in the
-[proxy section](https://www.python-httpx.org/advanced/#http-proxying) and
-the [SSL certificates section](https://www.python-httpx.org/advanced/#ssl-certificates),
+[proxy section](https://www.python-httpx.org/advanced/proxies/#http-proxies) and
+the [SSL certificates section](https://www.python-httpx.org/advanced/ssl/),
 this is where our previously generated `client.pem` comes in:
 
 ```
 import httpx
 
-proxies = {"all://": "http://127.0.0.1:8080/"}
-
-with httpx.Client(proxies=proxies, verify="/path/to/client.pem") as client:
+with httpx.Client(proxy="http://127.0.0.1:8080/", verify="/path/to/client.pem") as client:
     response = client.get("https://example.org")
     print(response.status_code)  # should print 200
 ```

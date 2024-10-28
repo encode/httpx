@@ -1,11 +1,29 @@
+from __future__ import annotations
+
 import typing
-from urllib.parse import parse_qs, unquote
+from urllib.parse import parse_qs, unquote, urlencode
 
 import idna
 
-from ._types import QueryParamTypes, RawURL, URLTypes
-from ._urlparse import urlencode, urlparse
+from ._types import QueryParamTypes
+from ._urlparse import urlparse
 from ._utils import primitive_value_to_str
+
+__all__ = ["URL", "QueryParams"]
+
+
+# To urlencode query parameters, we use the whatwg query percent-encode set
+# and additionally escape U+0025 (%), U+0026 (&), U+002B (+) and U+003D (=).
+
+# https://url.spec.whatwg.org/#percent-encoded-bytes
+
+URLENCODE_SAFE = "".join(
+    [
+        chr(i)
+        for i in range(0x20, 0x7F)
+        if i not in (0x20, 0x22, 0x23, 0x25, 0x26, 0x2B, 0x3C, 0x3D, 0x3E)
+    ]
+)
 
 
 class URL:
@@ -51,26 +69,26 @@ class URL:
       assert url.raw_host == b"xn--fiqs8s.icom.museum"
 
     * `url.port` is either None or an integer. URLs that include the default port for
-      "http", "https", "ws", "wss", and "ftp" schemes have their port normalized to `None`.
+      "http", "https", "ws", "wss", and "ftp" schemes have their port
+      normalized to `None`.
 
       assert httpx.URL("http://example.com") == httpx.URL("http://example.com:80")
       assert httpx.URL("http://example.com").port is None
       assert httpx.URL("http://example.com:80").port is None
 
-    * `url.userinfo` is raw bytes, without URL escaping. Usually you'll want to work with
-      `url.username` and `url.password` instead, which handle the URL escaping.
+    * `url.userinfo` is raw bytes, without URL escaping. Usually you'll want to work
+      with `url.username` and `url.password` instead, which handle the URL escaping.
 
     * `url.raw_path` is raw bytes of both the path and query, without URL escaping.
       This portion is used as the target when constructing HTTP requests. Usually you'll
       want to work with `url.path` instead.
 
-    * `url.query` is raw bytes, without URL escaping. A URL query string portion can only
-      be properly URL escaped when decoding the parameter names and values themselves.
+    * `url.query` is raw bytes, without URL escaping. A URL query string portion can
+      only be properly URL escaped when decoding the parameter names and values
+      themselves.
     """
 
-    def __init__(
-        self, url: typing.Union["URL", str] = "", **kwargs: typing.Any
-    ) -> None:
+    def __init__(self, url: URL | str = "", **kwargs: typing.Any) -> None:
         if kwargs:
             allowed = {
                 "scheme": str,
@@ -115,7 +133,8 @@ class URL:
             self._uri_reference = url._uri_reference.copy_with(**kwargs)
         else:
             raise TypeError(
-                f"Invalid type for url.  Expected str or httpx.URL, got {type(url)}: {url!r}"
+                "Invalid type for url.  Expected str or httpx.URL,"
+                f" got {type(url)}: {url!r}"
             )
 
     @property
@@ -210,7 +229,7 @@ class URL:
         return self._uri_reference.host.encode("ascii")
 
     @property
-    def port(self) -> typing.Optional[int]:
+    def port(self) -> int | None:
         """
         The URL port as an integer.
 
@@ -267,7 +286,7 @@ class URL:
         return query.encode("ascii")
 
     @property
-    def params(self) -> "QueryParams":
+    def params(self) -> QueryParams:
         """
         The URL query parameters, neatly parsed and packaged into an immutable
         multidict representation.
@@ -300,21 +319,6 @@ class URL:
         return unquote(self._uri_reference.fragment or "")
 
     @property
-    def raw(self) -> RawURL:
-        """
-        Provides the (scheme, host, port, target) for the outgoing request.
-
-        In older versions of `httpx` this was used in the low-level transport API.
-        We no longer use `RawURL`, and this property will be deprecated in a future release.
-        """
-        return RawURL(
-            self.raw_scheme,
-            self.raw_host,
-            self.port,
-            self.raw_path,
-        )
-
-    @property
     def is_absolute_url(self) -> bool:
         """
         Return `True` for absolute URLs such as 'http://example.com/path',
@@ -334,7 +338,7 @@ class URL:
         """
         return not self.is_absolute_url
 
-    def copy_with(self, **kwargs: typing.Any) -> "URL":
+    def copy_with(self, **kwargs: typing.Any) -> URL:
         """
         Copy this URL, returning a new URL with some components altered.
         Accepts the same set of parameters as the components that are made
@@ -342,24 +346,26 @@ class URL:
 
         For example:
 
-        url = httpx.URL("https://www.example.com").copy_with(username="jo@gmail.com", password="a secret")
+        url = httpx.URL("https://www.example.com").copy_with(
+            username="jo@gmail.com", password="a secret"
+        )
         assert url == "https://jo%40email.com:a%20secret@www.example.com"
         """
         return URL(self, **kwargs)
 
-    def copy_set_param(self, key: str, value: typing.Any = None) -> "URL":
+    def copy_set_param(self, key: str, value: typing.Any = None) -> URL:
         return self.copy_with(params=self.params.set(key, value))
 
-    def copy_add_param(self, key: str, value: typing.Any = None) -> "URL":
+    def copy_add_param(self, key: str, value: typing.Any = None) -> URL:
         return self.copy_with(params=self.params.add(key, value))
 
-    def copy_remove_param(self, key: str) -> "URL":
+    def copy_remove_param(self, key: str) -> URL:
         return self.copy_with(params=self.params.remove(key))
 
-    def copy_merge_params(self, params: QueryParamTypes) -> "URL":
+    def copy_merge_params(self, params: QueryParamTypes) -> URL:
         return self.copy_with(params=self.params.merge(params))
 
-    def join(self, url: URLTypes) -> "URL":
+    def join(self, url: URL | str) -> URL:
         """
         Return an absolute URL, using this URL as the base.
 
@@ -414,9 +420,7 @@ class QueryParams(typing.Mapping[str, str]):
     URL query parameters, as a multi-dict.
     """
 
-    def __init__(
-        self, *args: typing.Optional[QueryParamTypes], **kwargs: typing.Any
-    ) -> None:
+    def __init__(self, *args: QueryParamTypes | None, **kwargs: typing.Any) -> None:
         assert len(args) < 2, "Too many arguments."
         assert not (args and kwargs), "Cannot mix named and unnamed arguments."
 
@@ -428,7 +432,7 @@ class QueryParams(typing.Mapping[str, str]):
         elif isinstance(value, QueryParams):
             self._dict = {k: list(v) for k, v in value._dict.items()}
         else:
-            dict_value: typing.Dict[typing.Any, typing.List[typing.Any]] = {}
+            dict_value: dict[typing.Any, list[typing.Any]] = {}
             if isinstance(value, (list, tuple)):
                 # Convert list inputs like:
                 #     [("a", "123"), ("a", "456"), ("b", "789")]
@@ -489,7 +493,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return {k: v[0] for k, v in self._dict.items()}.items()
 
-    def multi_items(self) -> typing.List[typing.Tuple[str, str]]:
+    def multi_items(self) -> list[tuple[str, str]]:
         """
         Return all items in the query params. Allow duplicate keys to occur.
 
@@ -498,7 +502,7 @@ class QueryParams(typing.Mapping[str, str]):
         q = httpx.QueryParams("a=123&a=456&b=789")
         assert list(q.multi_items()) == [("a", "123"), ("a", "456"), ("b", "789")]
         """
-        multi_items: typing.List[typing.Tuple[str, str]] = []
+        multi_items: list[tuple[str, str]] = []
         for k, v in self._dict.items():
             multi_items.extend([(k, i) for i in v])
         return multi_items
@@ -517,7 +521,7 @@ class QueryParams(typing.Mapping[str, str]):
             return self._dict[str(key)][0]
         return default
 
-    def get_list(self, key: str) -> typing.List[str]:
+    def get_list(self, key: str) -> list[str]:
         """
         Get all values from the query param for a given key.
 
@@ -528,7 +532,7 @@ class QueryParams(typing.Mapping[str, str]):
         """
         return list(self._dict.get(str(key), []))
 
-    def set(self, key: str, value: typing.Any = None) -> "QueryParams":
+    def set(self, key: str, value: typing.Any = None) -> QueryParams:
         """
         Return a new QueryParams instance, setting the value of a key.
 
@@ -543,7 +547,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict[str(key)] = [primitive_value_to_str(value)]
         return q
 
-    def add(self, key: str, value: typing.Any = None) -> "QueryParams":
+    def add(self, key: str, value: typing.Any = None) -> QueryParams:
         """
         Return a new QueryParams instance, setting or appending the value of a key.
 
@@ -558,7 +562,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict[str(key)] = q.get_list(key) + [primitive_value_to_str(value)]
         return q
 
-    def remove(self, key: str) -> "QueryParams":
+    def remove(self, key: str) -> QueryParams:
         """
         Return a new QueryParams instance, removing the value of a key.
 
@@ -573,7 +577,7 @@ class QueryParams(typing.Mapping[str, str]):
         q._dict.pop(str(key), None)
         return q
 
-    def merge(self, params: typing.Optional[QueryParamTypes] = None) -> "QueryParams":
+    def merge(self, params: QueryParamTypes | None = None) -> QueryParams:
         """
         Return a new QueryParams instance, updated with.
 
@@ -615,21 +619,14 @@ class QueryParams(typing.Mapping[str, str]):
         return sorted(self.multi_items()) == sorted(other.multi_items())
 
     def __str__(self) -> str:
-        """
-        Note that we use '%20' encoding for spaces, and treat '/' as a safe
-        character.
-
-        See https://github.com/encode/httpx/issues/2536 and
-        https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
-        """
-        return urlencode(self.multi_items())
+        return urlencode(self.multi_items(), safe=URLENCODE_SAFE)
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         query_string = str(self)
         return f"{class_name}({query_string!r})"
 
-    def update(self, params: typing.Optional[QueryParamTypes] = None) -> None:
+    def update(self, params: QueryParamTypes | None = None) -> None:
         raise RuntimeError(
             "QueryParams are immutable since 0.18.0. "
             "Use `q = q.merge(...)` to create an updated copy."

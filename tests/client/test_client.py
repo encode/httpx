@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing
 from datetime import timedelta
 
@@ -230,7 +232,7 @@ def test_merge_relative_url_with_encoded_slashes():
 def test_context_managed_transport():
     class Transport(httpx.BaseTransport):
         def __init__(self) -> None:
-            self.events: typing.List[str] = []
+            self.events: list[str] = []
 
         def close(self):
             # The base implementation of httpx.BaseTransport just
@@ -260,9 +262,9 @@ def test_context_managed_transport():
 
 def test_context_managed_transport_and_mount():
     class Transport(httpx.BaseTransport):
-        def __init__(self, name: str):
+        def __init__(self, name: str) -> None:
             self.name: str = name
-            self.events: typing.List[str] = []
+            self.events: list[str] = []
 
         def close(self):
             # The base implementation of httpx.BaseTransport just
@@ -355,7 +357,7 @@ def test_raw_client_header():
     assert response.json() == [
         ["Host", "example.org"],
         ["Accept", "*/*"],
-        ["Accept-Encoding", "gzip, deflate, br"],
+        ["Accept-Encoding", "gzip, deflate, br, zstd"],
         ["Connection", "keep-alive"],
         ["User-Agent", f"python-httpx/{httpx.__version__}"],
         ["Example-Header", "example-value"],

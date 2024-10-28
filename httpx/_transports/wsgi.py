@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import itertools
 import sys
@@ -12,6 +14,9 @@ if typing.TYPE_CHECKING:
     from _typeshed.wsgi import WSGIApplication  # pragma: no cover
 
 _T = typing.TypeVar("_T")
+
+
+__all__ = ["WSGITransport"]
 
 
 def _skip_leading_empty_chunks(body: typing.Iterable[_T]) -> typing.Iterable[_T]:
@@ -71,11 +76,11 @@ class WSGITransport(BaseTransport):
 
     def __init__(
         self,
-        app: "WSGIApplication",
+        app: WSGIApplication,
         raise_app_exceptions: bool = True,
         script_name: str = "",
         remote_addr: str = "127.0.0.1",
-        wsgi_errors: typing.Optional[typing.TextIO] = None,
+        wsgi_errors: typing.TextIO | None = None,
     ) -> None:
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
@@ -117,8 +122,8 @@ class WSGITransport(BaseTransport):
 
         def start_response(
             status: str,
-            response_headers: typing.List[typing.Tuple[str, str]],
-            exc_info: typing.Optional["OptExcInfo"] = None,
+            response_headers: list[tuple[str, str]],
+            exc_info: OptExcInfo | None = None,
         ) -> typing.Callable[[bytes], typing.Any]:
             nonlocal seen_status, seen_response_headers, seen_exc_info
             seen_status = status

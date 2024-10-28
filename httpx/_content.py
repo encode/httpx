@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import warnings
 from json import dumps as json_dumps
@@ -5,13 +7,9 @@ from typing import (
     Any,
     AsyncIterable,
     AsyncIterator,
-    Dict,
     Iterable,
     Iterator,
     Mapping,
-    Optional,
-    Tuple,
-    Union,
 )
 from urllib.parse import urlencode
 
@@ -26,6 +24,8 @@ from ._types import (
     SyncByteStream,
 )
 from ._utils import peek_filelike_length, primitive_value_to_str
+
+__all__ = ["ByteStream"]
 
 
 class ByteStream(AsyncByteStream, SyncByteStream):
@@ -42,7 +42,7 @@ class ByteStream(AsyncByteStream, SyncByteStream):
 class IteratorByteStream(SyncByteStream):
     CHUNK_SIZE = 65_536
 
-    def __init__(self, stream: Iterable[bytes]):
+    def __init__(self, stream: Iterable[bytes]) -> None:
         self._stream = stream
         self._is_stream_consumed = False
         self._is_generator = inspect.isgenerator(stream)
@@ -67,7 +67,7 @@ class IteratorByteStream(SyncByteStream):
 class AsyncIteratorByteStream(AsyncByteStream):
     CHUNK_SIZE = 65_536
 
-    def __init__(self, stream: AsyncIterable[bytes]):
+    def __init__(self, stream: AsyncIterable[bytes]) -> None:
         self._stream = stream
         self._is_stream_consumed = False
         self._is_generator = inspect.isasyncgen(stream)
@@ -105,8 +105,8 @@ class UnattachedStream(AsyncByteStream, SyncByteStream):
 
 
 def encode_content(
-    content: Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
-) -> Tuple[Dict[str, str], Union[SyncByteStream, AsyncByteStream]]:
+    content: str | bytes | Iterable[bytes] | AsyncIterable[bytes],
+) -> tuple[dict[str, str], SyncByteStream | AsyncByteStream]:
     if isinstance(content, (bytes, str)):
         body = content.encode("utf-8") if isinstance(content, str) else content
         content_length = len(body)
@@ -135,7 +135,7 @@ def encode_content(
 
 def encode_urlencoded_data(
     data: RequestData,
-) -> Tuple[Dict[str, str], ByteStream]:
+) -> tuple[dict[str, str], ByteStream]:
     plain_data = []
     for key, value in data.items():
         if isinstance(value, (list, tuple)):
@@ -150,14 +150,14 @@ def encode_urlencoded_data(
 
 
 def encode_multipart_data(
-    data: RequestData, files: RequestFiles, boundary: Optional[bytes]
-) -> Tuple[Dict[str, str], MultipartStream]:
+    data: RequestData, files: RequestFiles, boundary: bytes | None
+) -> tuple[dict[str, str], MultipartStream]:
     multipart = MultipartStream(data=data, files=files, boundary=boundary)
     headers = multipart.get_headers()
     return headers, multipart
 
 
-def encode_text(text: str) -> Tuple[Dict[str, str], ByteStream]:
+def encode_text(text: str) -> tuple[dict[str, str], ByteStream]:
     body = text.encode("utf-8")
     content_length = str(len(body))
     content_type = "text/plain; charset=utf-8"
@@ -165,7 +165,7 @@ def encode_text(text: str) -> Tuple[Dict[str, str], ByteStream]:
     return headers, ByteStream(body)
 
 
-def encode_html(html: str) -> Tuple[Dict[str, str], ByteStream]:
+def encode_html(html: str) -> tuple[dict[str, str], ByteStream]:
     body = html.encode("utf-8")
     content_length = str(len(body))
     content_type = "text/html; charset=utf-8"
@@ -173,8 +173,10 @@ def encode_html(html: str) -> Tuple[Dict[str, str], ByteStream]:
     return headers, ByteStream(body)
 
 
-def encode_json(json: Any) -> Tuple[Dict[str, str], ByteStream]:
-    body = json_dumps(json).encode("utf-8")
+def encode_json(json: Any) -> tuple[dict[str, str], ByteStream]:
+    body = json_dumps(
+        json, ensure_ascii=False, separators=(",", ":"), allow_nan=False
+    ).encode("utf-8")
     content_length = str(len(body))
     content_type = "application/json"
     headers = {"Content-Length": content_length, "Content-Type": content_type}
@@ -182,12 +184,12 @@ def encode_json(json: Any) -> Tuple[Dict[str, str], ByteStream]:
 
 
 def encode_request(
-    content: Optional[RequestContent] = None,
-    data: Optional[RequestData] = None,
-    files: Optional[RequestFiles] = None,
-    json: Optional[Any] = None,
-    boundary: Optional[bytes] = None,
-) -> Tuple[Dict[str, str], Union[SyncByteStream, AsyncByteStream]]:
+    content: RequestContent | None = None,
+    data: RequestData | None = None,
+    files: RequestFiles | None = None,
+    json: Any | None = None,
+    boundary: bytes | None = None,
+) -> tuple[dict[str, str], SyncByteStream | AsyncByteStream]:
     """
     Handles encoding the given `content`, `data`, `files`, and `json`,
     returning a two-tuple of (<headers>, <stream>).
@@ -201,7 +203,7 @@ def encode_request(
         # `data=<bytes...>` usages. We deal with that case here, treating it
         # as if `content=<...>` had been supplied instead.
         message = "Use 'content=<...>' to upload raw bytes/text content."
-        warnings.warn(message, DeprecationWarning)
+        warnings.warn(message, DeprecationWarning, stacklevel=2)
         return encode_content(data)
 
     if content is not None:
@@ -217,11 +219,11 @@ def encode_request(
 
 
 def encode_response(
-    content: Optional[ResponseContent] = None,
-    text: Optional[str] = None,
-    html: Optional[str] = None,
-    json: Optional[Any] = None,
-) -> Tuple[Dict[str, str], Union[SyncByteStream, AsyncByteStream]]:
+    content: ResponseContent | None = None,
+    text: str | None = None,
+    html: str | None = None,
+    json: Any | None = None,
+) -> tuple[dict[str, str], SyncByteStream | AsyncByteStream]:
     """
     Handles encoding the given `content`, returning a two-tuple of
     (<headers>, <stream>).

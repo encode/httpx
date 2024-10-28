@@ -3,6 +3,7 @@ Unit tests for auth classes.
 
 Integration tests also exist in tests/client/test_auth.py
 """
+
 from urllib.request import parse_keqv_list
 
 import pytest
@@ -138,5 +139,170 @@ def test_digest_auth_setting_cookie_in_request():
     response = httpx.Response(
         content=b"Hello, world!", status_code=200, request=request
     )
+    with pytest.raises(StopIteration):
+        flow.send(response)
+
+
+def test_digest_auth_rfc_2069():
+    # Example from https://datatracker.ietf.org/doc/html/rfc2069#section-2.4
+    # with corrected response from https://www.rfc-editor.org/errata/eid749
+
+    auth = httpx.DigestAuth(username="Mufasa", password="CircleOfLife")
+    request = httpx.Request("GET", "https://www.example.com/dir/index.html")
+
+    # The initial request should not include an auth header.
+    flow = auth.sync_auth_flow(request)
+    request = next(flow)
+    assert "Authorization" not in request.headers
+
+    # If a 401 response is returned, then a digest auth request is made.
+    headers = {
+        "WWW-Authenticate": (
+            'Digest realm="testrealm@host.com", '
+            'nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093", '
+            'opaque="5ccc069c403ebaf9f0171e9517f40e41"'
+        )
+    }
+    response = httpx.Response(
+        content=b"Auth required", status_code=401, headers=headers, request=request
+    )
+    request = flow.send(response)
+    assert request.headers["Authorization"].startswith("Digest")
+    assert 'username="Mufasa"' in request.headers["Authorization"]
+    assert 'realm="testrealm@host.com"' in request.headers["Authorization"]
+    assert (
+        'nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093"' in request.headers["Authorization"]
+    )
+    assert 'uri="/dir/index.html"' in request.headers["Authorization"]
+    assert (
+        'opaque="5ccc069c403ebaf9f0171e9517f40e41"' in request.headers["Authorization"]
+    )
+    assert (
+        'response="1949323746fe6a43ef61f9606e7febea"'
+        in request.headers["Authorization"]
+    )
+
+    # No other requests are made.
+    response = httpx.Response(content=b"Hello, world!", status_code=200)
+    with pytest.raises(StopIteration):
+        flow.send(response)
+
+
+def test_digest_auth_rfc_7616_md5(monkeypatch):
+    # Example from https://datatracker.ietf.org/doc/html/rfc7616#section-3.9.1
+
+    def mock_get_client_nonce(nonce_count: int, nonce: bytes) -> bytes:
+        return "f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ".encode()
+
+    auth = httpx.DigestAuth(username="Mufasa", password="Circle of Life")
+    monkeypatch.setattr(auth, "_get_client_nonce", mock_get_client_nonce)
+
+    request = httpx.Request("GET", "https://www.example.com/dir/index.html")
+
+    # The initial request should not include an auth header.
+    flow = auth.sync_auth_flow(request)
+    request = next(flow)
+    assert "Authorization" not in request.headers
+
+    # If a 401 response is returned, then a digest auth request is made.
+    headers = {
+        "WWW-Authenticate": (
+            'Digest realm="http-auth@example.org", '
+            'qop="auth, auth-int", '
+            "algorithm=MD5, "
+            'nonce="7ypf/xlj9XXwfDPEoM4URrv/xwf94BcCAzFZH4GiTo0v", '
+            'opaque="FQhe/qaU925kfnzjCev0ciny7QMkPqMAFRtzCUYo5tdS"'
+        )
+    }
+    response = httpx.Response(
+        content=b"Auth required", status_code=401, headers=headers, request=request
+    )
+    request = flow.send(response)
+    assert request.headers["Authorization"].startswith("Digest")
+    assert 'username="Mufasa"' in request.headers["Authorization"]
+    assert 'realm="http-auth@example.org"' in request.headers["Authorization"]
+    assert 'uri="/dir/index.html"' in request.headers["Authorization"]
+    assert "algorithm=MD5" in request.headers["Authorization"]
+    assert (
+        'nonce="7ypf/xlj9XXwfDPEoM4URrv/xwf94BcCAzFZH4GiTo0v"'
+        in request.headers["Authorization"]
+    )
+    assert "nc=00000001" in request.headers["Authorization"]
+    assert (
+        'cnonce="f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ"'
+        in request.headers["Authorization"]
+    )
+    assert "qop=auth" in request.headers["Authorization"]
+    assert (
+        'opaque="FQhe/qaU925kfnzjCev0ciny7QMkPqMAFRtzCUYo5tdS"'
+        in request.headers["Authorization"]
+    )
+    assert (
+        'response="8ca523f5e9506fed4657c9700eebdbec"'
+        in request.headers["Authorization"]
+    )
+
+    # No other requests are made.
+    response = httpx.Response(content=b"Hello, world!", status_code=200)
+    with pytest.raises(StopIteration):
+        flow.send(response)
+
+
+def test_digest_auth_rfc_7616_sha_256(monkeypatch):
+    # Example from https://datatracker.ietf.org/doc/html/rfc7616#section-3.9.1
+
+    def mock_get_client_nonce(nonce_count: int, nonce: bytes) -> bytes:
+        return "f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ".encode()
+
+    auth = httpx.DigestAuth(username="Mufasa", password="Circle of Life")
+    monkeypatch.setattr(auth, "_get_client_nonce", mock_get_client_nonce)
+
+    request = httpx.Request("GET", "https://www.example.com/dir/index.html")
+
+    # The initial request should not include an auth header.
+    flow = auth.sync_auth_flow(request)
+    request = next(flow)
+    assert "Authorization" not in request.headers
+
+    # If a 401 response is returned, then a digest auth request is made.
+    headers = {
+        "WWW-Authenticate": (
+            'Digest realm="http-auth@example.org", '
+            'qop="auth, auth-int", '
+            "algorithm=SHA-256, "
+            'nonce="7ypf/xlj9XXwfDPEoM4URrv/xwf94BcCAzFZH4GiTo0v", '
+            'opaque="FQhe/qaU925kfnzjCev0ciny7QMkPqMAFRtzCUYo5tdS"'
+        )
+    }
+    response = httpx.Response(
+        content=b"Auth required", status_code=401, headers=headers, request=request
+    )
+    request = flow.send(response)
+    assert request.headers["Authorization"].startswith("Digest")
+    assert 'username="Mufasa"' in request.headers["Authorization"]
+    assert 'realm="http-auth@example.org"' in request.headers["Authorization"]
+    assert 'uri="/dir/index.html"' in request.headers["Authorization"]
+    assert "algorithm=SHA-256" in request.headers["Authorization"]
+    assert (
+        'nonce="7ypf/xlj9XXwfDPEoM4URrv/xwf94BcCAzFZH4GiTo0v"'
+        in request.headers["Authorization"]
+    )
+    assert "nc=00000001" in request.headers["Authorization"]
+    assert (
+        'cnonce="f2/wE4q74E6zIJEtWaHKaf5wv/H5QzzpXusqGemxURZJ"'
+        in request.headers["Authorization"]
+    )
+    assert "qop=auth" in request.headers["Authorization"]
+    assert (
+        'opaque="FQhe/qaU925kfnzjCev0ciny7QMkPqMAFRtzCUYo5tdS"'
+        in request.headers["Authorization"]
+    )
+    assert (
+        'response="753927fa0e85d155564e2e272a28d1802ca10daf4496794697cf8db5856cb6c1"'
+        in request.headers["Authorization"]
+    )
+
+    # No other requests are made.
+    response = httpx.Response(content=b"Hello, world!", status_code=200)
     with pytest.raises(StopIteration):
         flow.send(response)

@@ -1,6 +1,6 @@
-import typing
+from __future__ import annotations
 
-import sniffio
+import typing
 
 from .._models import Request, Response
 from .._types import AsyncByteStream
@@ -14,29 +14,46 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     Event = typing.Union[asyncio.Event, trio.Event]
 
 
-_Message = typing.Dict[str, typing.Any]
+_Message = typing.MutableMapping[str, typing.Any]
 _Receive = typing.Callable[[], typing.Awaitable[_Message]]
 _Send = typing.Callable[
-    [typing.Dict[str, typing.Any]], typing.Coroutine[None, None, None]
+    [typing.MutableMapping[str, typing.Any]], typing.Awaitable[None]
 ]
 _ASGIApp = typing.Callable[
-    [typing.Dict[str, typing.Any], _Receive, _Send], typing.Coroutine[None, None, None]
+    [typing.MutableMapping[str, typing.Any], _Receive, _Send], typing.Awaitable[None]
 ]
 
+__all__ = ["ASGITransport"]
 
-def create_event() -> "Event":
-    if sniffio.current_async_library() == "trio":
+
+def is_running_trio() -> bool:
+    try:
+        # sniffio is a dependency of trio.
+
+        # See https://github.com/python-trio/trio/issues/2802
+        import sniffio
+
+        if sniffio.current_async_library() == "trio":
+            return True
+    except ImportError:  # pragma: nocover
+        pass
+
+    return False
+
+
+def create_event() -> Event:
+    if is_running_trio():
         import trio
 
         return trio.Event()
-    else:
-        import asyncio
 
-        return asyncio.Event()
+    import asyncio
+
+    return asyncio.Event()
 
 
 class ASGIResponseStream(AsyncByteStream):
-    def __init__(self, body: typing.List[bytes]) -> None:
+    def __init__(self, body: list[bytes]) -> None:
         self._body = body
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
@@ -46,17 +63,8 @@ class ASGIResponseStream(AsyncByteStream):
 class ASGITransport(AsyncBaseTransport):
     """
     A custom AsyncTransport that handles sending requests directly to an ASGI app.
-    The simplest way to use this functionality is to use the `app` argument.
 
-    ```
-    client = httpx.AsyncClient(app=app)
-    ```
-
-    Alternatively, you can setup the transport instance explicitly.
-    This allows you to include any additional configuration arguments specific
-    to the ASGITransport class:
-
-    ```
+    ```python
     transport = httpx.ASGITransport(
         app=app,
         root_path="/submount",
@@ -81,7 +89,7 @@ class ASGITransport(AsyncBaseTransport):
         app: _ASGIApp,
         raise_app_exceptions: bool = True,
         root_path: str = "",
-        client: typing.Tuple[str, int] = ("127.0.0.1", 123),
+        client: tuple[str, int] = ("127.0.0.1", 123),
     ) -> None:
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
@@ -103,7 +111,7 @@ class ASGITransport(AsyncBaseTransport):
             "headers": [(k.lower(), v) for (k, v) in request.headers.raw],
             "scheme": request.url.scheme,
             "path": request.url.path,
-            "raw_path": request.url.raw_path,
+            "raw_path": request.url.raw_path.split(b"?")[0],
             "query_string": request.url.query,
             "server": (request.url.host, request.url.port),
             "client": self.client,
@@ -123,7 +131,7 @@ class ASGITransport(AsyncBaseTransport):
 
         # ASGI callables.
 
-        async def receive() -> typing.Dict[str, typing.Any]:
+        async def receive() -> dict[str, typing.Any]:
             nonlocal request_complete
 
             if request_complete:
@@ -137,7 +145,7 @@ class ASGITransport(AsyncBaseTransport):
                 return {"type": "http.request", "body": b"", "more_body": False}
             return {"type": "http.request", "body": body, "more_body": True}
 
-        async def send(message: typing.Dict[str, typing.Any]) -> None:
+        async def send(message: typing.MutableMapping[str, typing.Any]) -> None:
             nonlocal status_code, response_headers, response_started
 
             if message["type"] == "http.response.start":

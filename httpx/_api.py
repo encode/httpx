@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import ssl
 import typing
 from contextlib import contextmanager
 
@@ -6,38 +9,50 @@ from ._config import DEFAULT_TIMEOUT_CONFIG
 from ._models import Response
 from ._types import (
     AuthTypes,
-    CertTypes,
     CookieTypes,
     HeaderTypes,
-    ProxiesTypes,
+    ProxyTypes,
     QueryParamTypes,
     RequestContent,
     RequestData,
     RequestFiles,
     TimeoutTypes,
-    URLTypes,
-    VerifyTypes,
 )
+from ._urls import URL
+
+__all__ = [
+    "delete",
+    "get",
+    "head",
+    "options",
+    "patch",
+    "post",
+    "put",
+    "request",
+    "stream",
+]
 
 
 def request(
     method: str,
-    url: URLTypes,
+    url: URL | str,
     *,
-    params: typing.Optional[QueryParamTypes] = None,
-    content: typing.Optional[RequestContent] = None,
-    data: typing.Optional[RequestData] = None,
-    files: typing.Optional[RequestFiles] = None,
-    json: typing.Optional[typing.Any] = None,
-    headers: typing.Optional[HeaderTypes] = None,
-    cookies: typing.Optional[CookieTypes] = None,
-    auth: typing.Optional[AuthTypes] = None,
-    proxies: typing.Optional[ProxiesTypes] = None,
+    params: QueryParamTypes | None = None,
+    content: RequestContent | None = None,
+    data: RequestData | None = None,
+    files: RequestFiles | None = None,
+    json: typing.Any | None = None,
+    headers: HeaderTypes | None = None,
+    cookies: CookieTypes | None = None,
+    auth: AuthTypes | None = None,
+    proxy: ProxyTypes | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     follow_redirects: bool = False,
-    verify: VerifyTypes = True,
-    cert: typing.Optional[CertTypes] = None,
+    ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends an HTTP request.
@@ -63,18 +78,12 @@ def request(
     request.
     * **auth** - *(optional)* An authentication class to use when sending the
     request.
-    * **proxies** - *(optional)* A dictionary mapping proxy keys to proxy URLs.
+    * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     the request.
     * **follow_redirects** - *(optional)* Enables or disables HTTP redirects.
-    * **verify** - *(optional)* SSL certificates (a.k.a CA bundle) used to
-    verify the identity of requested hosts. Either `True` (default CA bundle),
-    a path to an SSL certificate file, an `ssl.SSLContext`, or `False`
-    (which will disable verification).
-    * **cert** - *(optional)* An SSL certificate used by the requested host
-    to authenticate the client. Either a path to an SSL certificate file, or
-    two-tuple of (certificate file, key file), or a three-tuple of (certificate
-    file, key file, password).
+    * **ssl_context** - *(optional)* An SSL certificate used by the requested host
+    to authenticate the client.
     * **trust_env** - *(optional)* Enables or disables usage of environment
     variables for configuration.
 
@@ -91,11 +100,12 @@ def request(
     """
     with Client(
         cookies=cookies,
-        proxies=proxies,
-        cert=cert,
-        verify=verify,
+        proxy=proxy,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     ) as client:
         return client.request(
             method=method,
@@ -114,22 +124,24 @@ def request(
 @contextmanager
 def stream(
     method: str,
-    url: URLTypes,
+    url: URL | str,
     *,
-    params: typing.Optional[QueryParamTypes] = None,
-    content: typing.Optional[RequestContent] = None,
-    data: typing.Optional[RequestData] = None,
-    files: typing.Optional[RequestFiles] = None,
-    json: typing.Optional[typing.Any] = None,
-    headers: typing.Optional[HeaderTypes] = None,
-    cookies: typing.Optional[CookieTypes] = None,
-    auth: typing.Optional[AuthTypes] = None,
-    proxies: typing.Optional[ProxiesTypes] = None,
+    params: QueryParamTypes | None = None,
+    content: RequestContent | None = None,
+    data: RequestData | None = None,
+    files: RequestFiles | None = None,
+    json: typing.Any | None = None,
+    headers: HeaderTypes | None = None,
+    cookies: CookieTypes | None = None,
+    auth: AuthTypes | None = None,
+    proxy: ProxyTypes | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     follow_redirects: bool = False,
-    verify: VerifyTypes = True,
-    cert: typing.Optional[CertTypes] = None,
+    ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> typing.Iterator[Response]:
     """
     Alternative to `httpx.request()` that streams the response body
@@ -143,11 +155,12 @@ def stream(
     """
     with Client(
         cookies=cookies,
-        proxies=proxies,
-        cert=cert,
-        verify=verify,
+        proxy=proxy,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     ) as client:
         with client.stream(
             method=method,
@@ -165,18 +178,20 @@ def stream(
 
 
 def get(
-    url: URLTypes,
+    url: URL | str,
     *,
-    params: typing.Optional[QueryParamTypes] = None,
-    headers: typing.Optional[HeaderTypes] = None,
-    cookies: typing.Optional[CookieTypes] = None,
-    auth: typing.Optional[AuthTypes] = None,
-    proxies: typing.Optional[ProxiesTypes] = None,
+    params: QueryParamTypes | None = None,
+    headers: HeaderTypes | None = None,
+    cookies: CookieTypes | None = None,
+    auth: AuthTypes | None = None,
+    proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `GET` request.
@@ -193,28 +208,31 @@ def get(
         headers=headers,
         cookies=cookies,
         auth=auth,
-        proxies=proxies,
+        proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
 def options(
-    url: URLTypes,
+    url: URL | str,
     *,
-    params: typing.Optional[QueryParamTypes] = None,
-    headers: typing.Optional[HeaderTypes] = None,
-    cookies: typing.Optional[CookieTypes] = None,
-    auth: typing.Optional[AuthTypes] = None,
-    proxies: typing.Optional[ProxiesTypes] = None,
+    params: QueryParamTypes | None = None,
+    headers: HeaderTypes | None = None,
+    cookies: CookieTypes | None = None,
+    auth: AuthTypes | None = None,
+    proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends an `OPTIONS` request.
@@ -231,28 +249,31 @@ def options(
         headers=headers,
         cookies=cookies,
         auth=auth,
-        proxies=proxies,
+        proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
 def head(
-    url: URLTypes,
+    url: URL | str,
     *,
-    params: typing.Optional[QueryParamTypes] = None,
-    headers: typing.Optional[HeaderTypes] = None,
-    cookies: typing.Optional[CookieTypes] = None,
-    auth: typing.Optional[AuthTypes] = None,
-    proxies: typing.Optional[ProxiesTypes] = None,
+    params: QueryParamTypes | None = None,
+    headers: HeaderTypes | None = None,
+    cookies: CookieTypes | None = None,
+    auth: AuthTypes | None = None,
+    proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `HEAD` request.
@@ -269,32 +290,35 @@ def head(
         headers=headers,
         cookies=cookies,
         auth=auth,
-        proxies=proxies,
+        proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
 def post(
-    url: URLTypes,
+    url: URL | str,
     *,
-    content: typing.Optional[RequestContent] = None,
-    data: typing.Optional[RequestData] = None,
-    files: typing.Optional[RequestFiles] = None,
-    json: typing.Optional[typing.Any] = None,
-    params: typing.Optional[QueryParamTypes] = None,
-    headers: typing.Optional[HeaderTypes] = None,
-    cookies: typing.Optional[CookieTypes] = None,
-    auth: typing.Optional[AuthTypes] = None,
-    proxies: typing.Optional[ProxiesTypes] = None,
+    content: RequestContent | None = None,
+    data: RequestData | None = None,
+    files: RequestFiles | None = None,
+    json: typing.Any | None = None,
+    params: QueryParamTypes | None = None,
+    headers: HeaderTypes | None = None,
+    cookies: CookieTypes | None = None,
+    auth: AuthTypes | None = None,
+    proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `POST` request.
@@ -312,32 +336,35 @@ def post(
         headers=headers,
         cookies=cookies,
         auth=auth,
-        proxies=proxies,
+        proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
 def put(
-    url: URLTypes,
+    url: URL | str,
     *,
-    content: typing.Optional[RequestContent] = None,
-    data: typing.Optional[RequestData] = None,
-    files: typing.Optional[RequestFiles] = None,
-    json: typing.Optional[typing.Any] = None,
-    params: typing.Optional[QueryParamTypes] = None,
-    headers: typing.Optional[HeaderTypes] = None,
-    cookies: typing.Optional[CookieTypes] = None,
-    auth: typing.Optional[AuthTypes] = None,
-    proxies: typing.Optional[ProxiesTypes] = None,
+    content: RequestContent | None = None,
+    data: RequestData | None = None,
+    files: RequestFiles | None = None,
+    json: typing.Any | None = None,
+    params: QueryParamTypes | None = None,
+    headers: HeaderTypes | None = None,
+    cookies: CookieTypes | None = None,
+    auth: AuthTypes | None = None,
+    proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `PUT` request.
@@ -355,32 +382,35 @@ def put(
         headers=headers,
         cookies=cookies,
         auth=auth,
-        proxies=proxies,
+        proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
 def patch(
-    url: URLTypes,
+    url: URL | str,
     *,
-    content: typing.Optional[RequestContent] = None,
-    data: typing.Optional[RequestData] = None,
-    files: typing.Optional[RequestFiles] = None,
-    json: typing.Optional[typing.Any] = None,
-    params: typing.Optional[QueryParamTypes] = None,
-    headers: typing.Optional[HeaderTypes] = None,
-    cookies: typing.Optional[CookieTypes] = None,
-    auth: typing.Optional[AuthTypes] = None,
-    proxies: typing.Optional[ProxiesTypes] = None,
+    content: RequestContent | None = None,
+    data: RequestData | None = None,
+    files: RequestFiles | None = None,
+    json: typing.Any | None = None,
+    params: QueryParamTypes | None = None,
+    headers: HeaderTypes | None = None,
+    cookies: CookieTypes | None = None,
+    auth: AuthTypes | None = None,
+    proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
+    ssl_context: ssl.SSLContext | None = None,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `PATCH` request.
@@ -398,28 +428,31 @@ def patch(
         headers=headers,
         cookies=cookies,
         auth=auth,
-        proxies=proxies,
+        proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
 
 
 def delete(
-    url: URLTypes,
+    url: URL | str,
     *,
-    params: typing.Optional[QueryParamTypes] = None,
-    headers: typing.Optional[HeaderTypes] = None,
-    cookies: typing.Optional[CookieTypes] = None,
-    auth: typing.Optional[AuthTypes] = None,
-    proxies: typing.Optional[ProxiesTypes] = None,
+    params: QueryParamTypes | None = None,
+    headers: HeaderTypes | None = None,
+    cookies: CookieTypes | None = None,
+    auth: AuthTypes | None = None,
+    proxy: ProxyTypes | None = None,
     follow_redirects: bool = False,
-    cert: typing.Optional[CertTypes] = None,
-    verify: VerifyTypes = True,
     timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
+    ssl_context: ssl.SSLContext | None = None,
     trust_env: bool = True,
+    # Deprecated in favor of `ssl_context`...
+    verify: typing.Any = None,
+    cert: typing.Any = None,
 ) -> Response:
     """
     Sends a `DELETE` request.
@@ -436,10 +469,11 @@ def delete(
         headers=headers,
         cookies=cookies,
         auth=auth,
-        proxies=proxies,
+        proxy=proxy,
         follow_redirects=follow_redirects,
-        cert=cert,
-        verify=verify,
+        ssl_context=ssl_context,
         timeout=timeout,
         trust_env=trust_env,
+        verify=verify,
+        cert=cert,
     )
