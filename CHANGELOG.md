@@ -4,9 +4,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
+## Version 0.28.0
 
-Version <...> introduces an `httpx.SSLContext()` class and `ssl_context` parameter.
+Version 0.28.0 introduces an `httpx.SSLContext()` class and `ssl_context` parameter.
 
 * Added `httpx.SSLContext` class and `ssl_context` parameter. (#3022, #3335)
 * The `verify` and `cert` arguments have been deprecated and will now raise warnings. (#3022, #3335)
