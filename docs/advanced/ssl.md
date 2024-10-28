@@ -9,7 +9,7 @@ By default httpx will verify HTTPS connections, and raise an error for invalid S
 httpx.ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:997)
 ```
 
-You can create and use new SSL context other than the default.
+Verification is configured through [the SSL Context API](https://docs.python.org/3/library/ssl.html#ssl-contexts).
 
 ```pycon
 >>> context = httpx.SSLContext()
