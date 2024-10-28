@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## Version 0.28.0
+
+Version 0.28.0 introduces an `httpx.SSLContext()` class and `ssl_context` parameter.
+
+* Added `httpx.SSLContext` class and `ssl_context` parameter. (#3022, #3335)
+* The `verify` and `cert` arguments have been deprecated and will now raise warnings. (#3022, #3335)
+* The deprecated `proxies` argument has now been removed.
+* The deprecated `app` argument has now been removed.
+* The `URL.raw` property has now been removed.
+
 ## 0.27.2 (27th August, 2024)
 
 ### Fixed

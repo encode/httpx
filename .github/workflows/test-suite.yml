@@ -5,7 +5,7 @@ on:
   push:
     branches: ["master"]
   pull_request:
-    branches: ["master", 'version*']
+    branches: ["master", "version-*"]
 
 jobs:
   tests:

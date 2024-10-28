@@ -2,7 +2,6 @@
 Type definitions for type checking purposes.
 """
 
-import ssl
 from http.cookiejar import CookieJar
 from typing import (
     IO,
@@ -17,7 +16,6 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
-    NamedTuple,
     Optional,
     Sequence,
     Tuple,
@@ -32,16 +30,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 PrimitiveData = Optional[Union[str, int, float, bool]]
-
-RawURL = NamedTuple(
-    "RawURL",
-    [
-        ("raw_scheme", bytes),
-        ("raw_host", bytes),
-        ("port", Optional[int]),
-        ("raw_path", bytes),
-    ],
-)
 
 URLTypes = Union["URL", str]
 
@@ -64,22 +52,12 @@ HeaderTypes = Union[
 
 CookieTypes = Union["Cookies", CookieJar, Dict[str, str], List[Tuple[str, str]]]
 
-CertTypes = Union[
-    # certfile
-    str,
-    # (certfile, keyfile)
-    Tuple[str, Optional[str]],
-    # (certfile, keyfile, password)
-    Tuple[str, Optional[str], Optional[str]],
-]
-VerifyTypes = Union[str, bool, ssl.SSLContext]
 TimeoutTypes = Union[
     Optional[float],
     Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],
     "Timeout",
 ]
 ProxyTypes = Union["URL", str, "Proxy"]
-ProxiesTypes = Union[ProxyTypes, Dict[Union["URL", str], Union[None, ProxyTypes]]]
 
 AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
