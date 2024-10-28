@@ -62,7 +62,7 @@ def test_json_encoded_data():
     request.read()
 
     assert request.headers["Content-Type"] == "application/json"
-    assert request.content == b'{"test": 123}'
+    assert request.content == b'{"test":123}'
 
 
 def test_headers():
@@ -71,7 +71,7 @@ def test_headers():
     assert request.headers == {
         "Host": "example.org",
         "Content-Type": "application/json",
-        "Content-Length": "13",
+        "Content-Length": "12",
     }
 
 
@@ -183,12 +183,12 @@ def test_request_picklable():
     assert pickle_request.method == "POST"
     assert pickle_request.url.path == "/"
     assert pickle_request.headers["Content-Type"] == "application/json"
-    assert pickle_request.content == b'{"test": 123}'
+    assert pickle_request.content == b'{"test":123}'
     assert pickle_request.stream is not None
     assert request.headers == {
         "Host": "example.org",
         "Content-Type": "application/json",
-        "content-length": "13",
+        "content-length": "12",
     }
 
 
