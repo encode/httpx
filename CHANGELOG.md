@@ -14,6 +14,7 @@ Version 0.28.0 introduces an `httpx.SSLContext()` class and `ssl_context` parame
 * The deprecated `app` argument has now been removed.
 * The `URL.raw` property has now been removed.
 * Ensure JSON request bodies are compact. (#3363)
+* Review URL percent escape sets, based on WHATWG spec. (#3371, #3373)
 
 ## 0.27.2 (27th August, 2024)
 
