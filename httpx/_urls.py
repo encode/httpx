@@ -1,15 +1,29 @@
 from __future__ import annotations
 
 import typing
-from urllib.parse import parse_qs, unquote
+from urllib.parse import parse_qs, unquote, urlencode
 
 import idna
 
 from ._types import QueryParamTypes
-from ._urlparse import urlencode, urlparse
+from ._urlparse import urlparse
 from ._utils import primitive_value_to_str
 
 __all__ = ["URL", "QueryParams"]
+
+
+# To urlencode query parameters, we use the whatwg query percent-encode set
+# and additionally escape U+0025 (%), U+0026 (&), U+002B (+) and U+003D (=).
+
+# https://url.spec.whatwg.org/#percent-encoded-bytes
+
+URLENCODE_SAFE = "".join(
+    [
+        chr(i)
+        for i in range(0x20, 0x7F)
+        if i not in (0x20, 0x22, 0x23, 0x25, 0x26, 0x2B, 0x3C, 0x3D, 0x3E)
+    ]
+)
 
 
 class URL:
@@ -605,14 +619,7 @@ class QueryParams(typing.Mapping[str, str]):
         return sorted(self.multi_items()) == sorted(other.multi_items())
 
     def __str__(self) -> str:
-        """
-        Note that we use '%20' encoding for spaces, and treat '/' as a safe
-        character.
-
-        See https://github.com/encode/httpx/issues/2536 and
-        https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
-        """
-        return urlencode(self.multi_items())
+        return urlencode(self.multi_items(), safe=URLENCODE_SAFE)
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
