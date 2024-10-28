@@ -40,7 +40,7 @@ If you're using a `Client()` instance you should pass any SSL context when insta
 
 The `client.get(...)` method and other request methods on a `Client` instance *do not* support changing the SSL settings on a per-request basis.
 
-If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
+If you need different SSL settings in different cases you should use more than one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
 
 ### Configuring certificate stores
 
