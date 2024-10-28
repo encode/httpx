@@ -9,7 +9,7 @@ By default httpx will verify HTTPS connections, and raise an error for invalid S
 httpx.ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:997)
 ```
 
-You can configure the verification using `httpx.SSLContext()`.
+You can configure the verification by specfiying an SSL context.
 
 ```pycon
 >>> context = httpx.SSLContext()
@@ -31,7 +31,7 @@ You can use this to disable verification completely and allow insecure requests.
 
 ### Configuring client instances
 
-If you're using a `Client()` instance you should pass any SSL settings when instantiating the client.
+If you're using a `Client()` instance you should pass any SSL context when instantiating the client.
 
 ```pycon
 >>> context = httpx.SSLContext()
@@ -42,39 +42,9 @@ The `client.get(...)` method and other request methods on a `Client` instance *d
 
 If you need different SSL settings in different cases you should use more that one client instance, with different settings on each. Each client will then be using an isolated connection pool with a specific fixed SSL configuration on all connections within that pool.
 
-### Changing the verification defaults
+### Configuring certificate stores
 
 By default, HTTPX uses the CA bundle provided by [Certifi](https://pypi.org/project/certifi/).
-
-The following all have the same behaviour...
-
-Using the default SSL context.
-
-```pycon
->>> client = httpx.Client()
->>> client.get("https://www.example.com")
-<Response [200 OK]>
-```
-
-Using the default SSL context, but specified explicitly.
-
-```pycon
->>> context = httpx.SSLContext()
->>> client = httpx.Client(ssl_context=context)
->>> client.get("https://www.example.com")
-<Response [200 OK]>
-```
-
-Using the default SSL context, with `verify=True` specified explicitly.
-
-```pycon
->>> context = httpx.SSLContext(verify=True)
->>> client = httpx.Client(ssl_context=context)
->>> client.get("https://www.example.com")
-<Response [200 OK]>
-```
-
-### Configuring certificate verification
 
 You can load additional certificate verification using the [`.load_verify_locations()`](https://docs.python.org/3/library/ssl.html#ssl.SSLContext.load_verify_locations) API:
 

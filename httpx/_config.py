@@ -28,6 +28,8 @@ def create_ssl_context(
     trust_env: bool = True,
     http2: bool = False,
 ) -> ssl.SSLContext:  # pragma: nocover
+    # The `create_ssl_context` helper function is now deprecated
+    # in favour of `httpx.SSLContext()`.
     if isinstance(verify, bool):
         ssl_context: ssl.SSLContext = SSLContext(verify=verify)
         warnings.warn(
