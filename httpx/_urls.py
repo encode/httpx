@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import typing
-from urllib.parse import parse_qs, unquote
+from urllib.parse import parse_qs, unquote, urlencode
 
 import idna
 
-from ._types import QueryParamTypes, RawURL, URLTypes
-from ._urlparse import urlencode, urlparse
+from ._types import QueryParamTypes
+from ._urlparse import urlparse
 from ._utils import primitive_value_to_str
 
 __all__ = ["URL", "QueryParams"]
@@ -305,22 +305,6 @@ class URL:
         return unquote(self._uri_reference.fragment or "")
 
     @property
-    def raw(self) -> RawURL:
-        """
-        Provides the (scheme, host, port, target) for the outgoing request.
-
-        In older versions of `httpx` this was used in the low-level transport API.
-        We no longer use `RawURL`, and this property will be deprecated
-        in a future release.
-        """
-        return RawURL(
-            self.raw_scheme,
-            self.raw_host,
-            self.port,
-            self.raw_path,
-        )
-
-    @property
     def is_absolute_url(self) -> bool:
         """
         Return `True` for absolute URLs such as 'http://example.com/path',
@@ -367,7 +351,7 @@ class URL:
     def copy_merge_params(self, params: QueryParamTypes) -> URL:
         return self.copy_with(params=self.params.merge(params))
 
-    def join(self, url: URLTypes) -> URL:
+    def join(self, url: URL | str) -> URL:
         """
         Return an absolute URL, using this URL as the base.
 
@@ -621,13 +605,6 @@ class QueryParams(typing.Mapping[str, str]):
         return sorted(self.multi_items()) == sorted(other.multi_items())
 
     def __str__(self) -> str:
-        """
-        Note that we use '%20' encoding for spaces, and treat '/' as a safe
-        character.
-
-        See https://github.com/encode/httpx/issues/2536 and
-        https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
-        """
         return urlencode(self.multi_items())
 
     def __repr__(self) -> str:
