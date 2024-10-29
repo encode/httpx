@@ -310,7 +310,7 @@ class Headers(typing.MutableMapping[str, str]):
 class Request:
     def __init__(
         self,
-        method: str | bytes,
+        method: str,
         url: URL | str,
         *,
         params: QueryParamTypes | None = None,
@@ -323,11 +323,7 @@ class Request:
         stream: SyncByteStream | AsyncByteStream | None = None,
         extensions: RequestExtensions | None = None,
     ) -> None:
-        self.method = (
-            method.decode("ascii").upper()
-            if isinstance(method, bytes)
-            else method.upper()
-        )
+        self.method = method.upper()
         self.url = URL(url) if params is None else URL(url, params=params)
         self.headers = Headers(headers)
         self.extensions = {} if extensions is None else extensions
