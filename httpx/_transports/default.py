@@ -189,7 +189,7 @@ class HTTPTransport(BaseTransport):
                 http2=http2,
                 socket_options=socket_options,
             )
-        elif proxy.url.scheme == "socks5":
+        elif proxy.url.scheme in ("socks5", "socks5h"):
             try:
                 import socksio  # noqa
             except ImportError:  # pragma: no cover
@@ -215,7 +215,7 @@ class HTTPTransport(BaseTransport):
             )
         else:  # pragma: no cover
             raise ValueError(
-                "Proxy protocol must be either 'http', 'https', or 'socks5',"
+                "Proxy protocol must be either 'http', 'https', 'socks5', or 'socks5h',"
                 f" but got {proxy.url.scheme!r}."
             )
 
@@ -338,7 +338,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 http2=http2,
                 socket_options=socket_options,
             )
-        elif proxy.url.scheme == "socks5":
+        elif proxy.url.scheme in ("socks5", "socks5h"):
             try:
                 import socksio  # noqa
             except ImportError:  # pragma: no cover
@@ -364,7 +364,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
             )
         else:  # pragma: no cover
             raise ValueError(
-                "Proxy protocol must be either 'http', 'https', or 'socks5',"
+                "Proxy protocol must be either 'http', 'https', 'socks5', or 'socks5h',"
                 " but got {proxy.url.scheme!r}."
             )
 
