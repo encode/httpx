@@ -148,7 +148,7 @@ def test_url_query_encoding():
     assert url.raw_path == b"/?a=b+c&d=e/f"
 
     url = httpx.URL("https://www.example.com/", params={"a": "b c", "d": "e/f"})
-    assert url.raw_path == b"/?a=b+c&d=e/f"
+    assert url.raw_path == b"/?a=b+c&d=e%2Ff"
 
 
 def test_url_params():
@@ -309,7 +309,7 @@ def test_param_with_existing_escape_requires_encoding():
     # even if they include a valid escape sequence.
     # We want to match browser form behaviour here.
     url = httpx.URL("http://webservice", params={"u": "http://example.com?q=foo%2Fa"})
-    assert str(url) == "http://webservice?u=http://example.com?q%3Dfoo%252Fa"
+    assert str(url) == "http://webservice?u=http%3A%2F%2Fexample.com%3Fq%3Dfoo%252Fa"
 
 
 # Tests for query parameter percent encoding.

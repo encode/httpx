@@ -16,15 +16,16 @@ def url_to_origin(url: str) -> httpcore.URL:
 def test_socks_proxy():
     url = httpx.URL("http://www.example.com")
 
-    client = httpx.Client(proxy="socks5://localhost/")
-    transport = client._transport_for_url(url)
-    assert isinstance(transport, httpx.HTTPTransport)
-    assert isinstance(transport._pool, httpcore.SOCKSProxy)
+    for proxy in ("socks5://localhost/", "socks5h://localhost/"):
+        client = httpx.Client(proxy=proxy)
+        transport = client._transport_for_url(url)
+        assert isinstance(transport, httpx.HTTPTransport)
+        assert isinstance(transport._pool, httpcore.SOCKSProxy)
 
-    async_client = httpx.AsyncClient(proxy="socks5://localhost/")
-    async_transport = async_client._transport_for_url(url)
-    assert isinstance(async_transport, httpx.AsyncHTTPTransport)
-    assert isinstance(async_transport._pool, httpcore.AsyncSOCKSProxy)
+        async_client = httpx.AsyncClient(proxy=proxy)
+        async_transport = async_client._transport_for_url(url)
+        assert isinstance(async_transport, httpx.AsyncHTTPTransport)
+        assert isinstance(async_transport._pool, httpcore.AsyncSOCKSProxy)
 
 
 PROXY_URL = "http://[::1]"
