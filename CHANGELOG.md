@@ -17,6 +17,7 @@ This release introduces an `httpx.SSLContext()` class and `ssl_context` paramete
 * Review URL percent escape sets, based on WHATWG spec. (#3371, #3373)
 * Ensure `certifi` and `httpcore` are only imported if required. (#3377)
 * Treat `socks5h` as a valid proxy scheme. (#3178)
+* Cleanup `Request()` method signature in line with `client.request()` and `httpx.request()`. (#3378)
 
 ## 0.27.2 (27th August, 2024)
 
