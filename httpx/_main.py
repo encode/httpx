@@ -6,7 +6,6 @@ import sys
 import typing
 
 import click
-import httpcore
 import pygments.lexers
 import pygments.util
 import rich.console
@@ -20,6 +19,9 @@ from ._config import SSLContext
 from ._exceptions import RequestError
 from ._models import Response
 from ._status_codes import codes
+
+if typing.TYPE_CHECKING:
+    import httpcore  # pragma: no cover
 
 
 def print_help() -> None:

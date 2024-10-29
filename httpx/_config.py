@@ -6,8 +6,6 @@ import sys
 import typing
 import warnings
 
-import certifi
-
 from ._models import Headers
 from ._types import HeaderTypes, TimeoutTypes
 from ._urls import URL
@@ -77,6 +75,8 @@ class SSLContext(ssl.SSLContext):
         self,
         verify: bool = True,
     ) -> None:
+        import certifi
+
         # ssl.SSLContext sets OP_NO_SSLv2, OP_NO_SSLv3, OP_NO_COMPRESSION,
         # OP_CIPHER_SERVER_PREFERENCE, OP_SINGLE_DH_USE and OP_SINGLE_ECDH_USE
         # by default. (from `ssl.create_default_context`)
