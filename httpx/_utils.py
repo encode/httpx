@@ -24,33 +24,6 @@ _HTML5_FORM_ENCODING_RE = re.compile(
 )
 
 
-def normalize_header_key(
-    value: str | bytes,
-    lower: bool,
-    encoding: str | None = None,
-) -> bytes:
-    """
-    Coerce str/bytes into a strictly byte-wise HTTP header key.
-    """
-    if isinstance(value, bytes):
-        bytes_value = value
-    else:
-        bytes_value = value.encode(encoding or "ascii")
-
-    return bytes_value.lower() if lower else bytes_value
-
-
-def normalize_header_value(value: str | bytes, encoding: str | None = None) -> bytes:
-    """
-    Coerce str/bytes into a strictly byte-wise HTTP header value.
-    """
-    if isinstance(value, bytes):
-        return value
-    if not isinstance(value, str):
-        raise TypeError(f"Header value must be str or bytes, not {type(value)}")
-    return value.encode(encoding or "ascii")
-
-
 def primitive_value_to_str(value: PrimitiveData) -> str:
     """
     Coerce a primitive data type into a string value.
