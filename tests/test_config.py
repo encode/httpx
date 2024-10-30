@@ -1,4 +1,6 @@
 import ssl
+import subprocess
+import sys
 import typing
 from pathlib import Path
 
@@ -191,15 +193,52 @@ def test_invalid_proxy_scheme():
 
 
 def test_certifi_lazy_loading():
-    global httpx, certifi
-    import sys
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-c",
+            "import httpx,sys;assert 'certifi' not in sys.modules;"
+            + "_context = httpx.SSLContext();"
+            + "assert 'certifi' in sys.modules",
+        ]
+    )
 
-    del sys.modules["httpx"]
-    del sys.modules["certifi"]
-    del httpx
-    del certifi
-    import httpx
 
-    assert "certifi" not in sys.modules
-    _context = httpx.SSLContext()
-    assert "certifi" in sys.modules
+# ignore warning about unclosed socket which is
+# thrown by a failed ssl connection
+@pytest.mark.filterwarnings("ignore:unclosed")
+def test_can_request_http_without_ssl(
+    server,
+):
+    # make the SSLContext object not derive from ssl
+    # as it would if ssl wasn't available
+    try:
+        old_sslcontext_class = httpx.SSLContext
+
+        class _DummySSLContext:
+            def __init__(
+                self,
+                verify: bool = True,
+            ) -> None:
+                self.verify = verify
+
+        httpx._config.SSLContext = _DummySSLContext  # type: ignore
+        httpx.SSLContext = _DummySSLContext  # type: ignore
+
+        # At this point, http get should still succeed
+        response = httpx.get(str(server.url))
+        assert response.status_code == 200
+        assert response.reason_phrase == "OK"
+        assert response.text == "Hello, world!"
+        assert response.http_version == "HTTP/1.1"
+
+        # check the SSLContext isn't a valid context
+        context = httpx.SSLContext()
+        assert not hasattr(context, "verify_mode")
+
+        # https get should raise errors
+        with pytest.raises(AttributeError):
+            _response = httpx.get("https://example.org", ssl_context=context)
+    finally:
+        # fix the SSLContext to be back to normal
+        httpx.SSLContext = httpx._config.SSLContext = old_sslcontext_class  # type: ignore
