@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 This release introduces an `httpx.SSLContext()` class and `ssl_context` parameter.
 
+* Made it possible to run on environments where 'ssl' is not importable (#3385)
 * Added `httpx.SSLContext` class and `ssl_context` parameter. (#3022, #3335)
 * The `verify` and `cert` arguments have been deprecated and will now raise warnings. (#3022, #3335)
 * The deprecated `proxies` argument has now been removed.
