@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 import enum
 import logging
-import ssl
 import time
 import typing
 import warnings
@@ -52,6 +51,10 @@ from ._utils import (
     is_https_redirect,
     same_origin,
 )
+
+if typing.TYPE_CHECKING:
+    import ssl  # pragma: no cover
+
 
 __all__ = ["USE_CLIENT_DEFAULT", "AsyncClient", "Client"]
 

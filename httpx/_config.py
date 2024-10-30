@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import os
-import ssl
 import sys
 import typing
 import warnings
+
+try:
+    import ssl
+except ImportError:  # pragma: no cover
+    ssl = None  # type: ignore[assignment]
+
 
 from ._models import Headers
 from ._types import HeaderTypes, TimeoutTypes
@@ -70,55 +75,67 @@ def create_ssl_context(
     return ssl_context
 
 
-class SSLContext(ssl.SSLContext):
-    def __init__(
-        self,
-        verify: bool = True,
-    ) -> None:
-        import certifi
+if ssl is not None:
 
-        # ssl.SSLContext sets OP_NO_SSLv2, OP_NO_SSLv3, OP_NO_COMPRESSION,
-        # OP_CIPHER_SERVER_PREFERENCE, OP_SINGLE_DH_USE and OP_SINGLE_ECDH_USE
-        # by default. (from `ssl.create_default_context`)
-        super().__init__()
-        self._verify = verify
+    class SSLContext(ssl.SSLContext):
+        def __init__(
+            self,
+            verify: bool = True,
+        ) -> None:
+            import certifi
 
-        # Our SSL setup here is similar to the stdlib `ssl.create_default_context()`
-        # implementation, except with `certifi` used for certificate verification.
-        if not verify:
-            self.check_hostname = False
-            self.verify_mode = ssl.CERT_NONE
-            return
+            # ssl.SSLContext sets OP_NO_SSLv2, OP_NO_SSLv3, OP_NO_COMPRESSION,
+            # OP_CIPHER_SERVER_PREFERENCE, OP_SINGLE_DH_USE and OP_SINGLE_ECDH_USE
+            # by default. (from `ssl.create_default_context`)
+            super().__init__()
+            self._verify = verify
 
-        self.verify_mode = ssl.CERT_REQUIRED
-        self.check_hostname = True
+            # Our SSL setup here is similar to the stdlib `ssl.create_default_context()`
+            # implementation, except with `certifi` used for certificate verification.
+            if not verify:
+                self.check_hostname = False
+                self.verify_mode = ssl.CERT_NONE
+                return
 
-        # Use stricter verify flags where possible.
-        if hasattr(ssl, "VERIFY_X509_PARTIAL_CHAIN"):  # pragma: nocover
-            self.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
-        if hasattr(ssl, "VERIFY_X509_STRICT"):  # pragma: nocover
-            self.verify_flags |= ssl.VERIFY_X509_STRICT
+            self.verify_mode = ssl.CERT_REQUIRED
+            self.check_hostname = True
 
-        # Default to `certifi` for certificiate verification.
-        self.load_verify_locations(cafile=certifi.where())
+            # Use stricter verify flags where possible.
+            if hasattr(ssl, "VERIFY_X509_PARTIAL_CHAIN"):  # pragma: nocover
+                self.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
+            if hasattr(ssl, "VERIFY_X509_STRICT"):  # pragma: nocover
+                self.verify_flags |= ssl.VERIFY_X509_STRICT
 
-        # OpenSSL keylog file support.
-        if hasattr(self, "keylog_filename"):
-            keylogfile = os.environ.get("SSLKEYLOGFILE")
-            if keylogfile and not sys.flags.ignore_environment:
-                self.keylog_filename = keylogfile
+            # Default to `certifi` for certificiate verification.
+            self.load_verify_locations(cafile=certifi.where())
 
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        return f"<{class_name}(verify={self._verify!r})>"
+            # OpenSSL keylog file support.
+            if hasattr(self, "keylog_filename"):
+                keylogfile = os.environ.get("SSLKEYLOGFILE")
+                if keylogfile and not sys.flags.ignore_environment:
+                    self.keylog_filename = keylogfile
 
-    def __new__(
-        cls,
-        protocol: ssl._SSLMethod = ssl.PROTOCOL_TLS_CLIENT,
-        *args: typing.Any,
-        **kwargs: typing.Any,
-    ) -> "SSLContext":
-        return super().__new__(cls, protocol, *args, **kwargs)
+        def __repr__(self) -> str:
+            class_name = self.__class__.__name__
+            return f"<{class_name}(verify={self._verify!r})>"
+
+        def __new__(
+            cls,
+            protocol: ssl._SSLMethod = ssl.PROTOCOL_TLS_CLIENT,
+            *args: typing.Any,
+            **kwargs: typing.Any,
+        ) -> "SSLContext":
+            return super().__new__(cls, protocol, *args, **kwargs)
+else:  # pragma: no cover
+    # dummy SSLContext if ssl isn't importable
+    # (as may be the case on Emscripten where the Javascript engine
+    # handles https connetions)
+    class SSLContext:  # type: ignore
+        def __init__(
+            self,
+            verify: bool = True,
+        ) -> None:
+            self.verify = verify
 
 
 class Timeout:

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-import ssl
 import typing
 from contextlib import contextmanager
+
+if typing.TYPE_CHECKING:
+    import ssl  # pragma: no cover
 
 from ._client import Client
 from ._config import DEFAULT_TIMEOUT_CONFIG
