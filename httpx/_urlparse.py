@@ -36,6 +36,67 @@ SUB_DELIMS = "!$&'()*+,;="
 
 PERCENT_ENCODED_REGEX = re.compile("%[A-Fa-f0-9]{2}")
 
+# https://url.spec.whatwg.org/#percent-encoded-bytes
+
+# The fragment percent-encode set is the C0 control percent-encode set
+# and U+0020 SPACE, U+0022 ("), U+003C (<), U+003E (>), and U+0060 (`).
+FRAG_SAFE = "".join(
+    [chr(i) for i in range(0x20, 0x7F) if i not in (0x20, 0x22, 0x3C, 0x3E, 0x60)]
+)
+
+# The query percent-encode set is the C0 control percent-encode set
+# and U+0020 SPACE, U+0022 ("), U+0023 (#), U+003C (<), and U+003E (>).
+QUERY_SAFE = "".join(
+    [chr(i) for i in range(0x20, 0x7F) if i not in (0x20, 0x22, 0x23, 0x3C, 0x3E)]
+)
+
+# The path percent-encode set is the query percent-encode set
+# and U+003F (?), U+0060 (`), U+007B ({), and U+007D (}).
+PATH_SAFE = "".join(
+    [
+        chr(i)
+        for i in range(0x20, 0x7F)
+        if i not in (0x20, 0x22, 0x23, 0x3C, 0x3E) + (0x3F, 0x60, 0x7B, 0x7D)
+    ]
+)
+
+# The userinfo percent-encode set is the path percent-encode set
+# and U+002F (/), U+003A (:), U+003B (;), U+003D (=), U+0040 (@),
+# U+005B ([) to U+005E (^), inclusive, and U+007C (|).
+USERNAME_SAFE = "".join(
+    [
+        chr(i)
+        for i in range(0x20, 0x7F)
+        if i
+        not in (0x20, 0x22, 0x23, 0x3C, 0x3E)
+        + (0x3F, 0x60, 0x7B, 0x7D)
+        + (0x2F, 0x3A, 0x3B, 0x3D, 0x40, 0x5B, 0x5C, 0x5D, 0x5E, 0x7C)
+    ]
+)
+PASSWORD_SAFE = "".join(
+    [
+        chr(i)
+        for i in range(0x20, 0x7F)
+        if i
+        not in (0x20, 0x22, 0x23, 0x3C, 0x3E)
+        + (0x3F, 0x60, 0x7B, 0x7D)
+        + (0x2F, 0x3A, 0x3B, 0x3D, 0x40, 0x5B, 0x5C, 0x5D, 0x5E, 0x7C)
+    ]
+)
+# Note... The terminology 'userinfo' percent-encode set in the WHATWG document
+# is used for the username and password quoting. For the joint userinfo component
+# we remove U+003A (:) from the safe set.
+USERINFO_SAFE = "".join(
+    [
+        chr(i)
+        for i in range(0x20, 0x7F)
+        if i
+        not in (0x20, 0x22, 0x23, 0x3C, 0x3E)
+        + (0x3F, 0x60, 0x7B, 0x7D)
+        + (0x2F, 0x3B, 0x3D, 0x40, 0x5B, 0x5C, 0x5D, 0x5E, 0x7C)
+    ]
+)
+
 
 # {scheme}:      (optional)
 # //{authority}  (optional)
@@ -182,8 +243,8 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
 
     # Replace "username" and/or "password" with "userinfo".
     if "username" in kwargs or "password" in kwargs:
-        username = quote(kwargs.pop("username", "") or "")
-        password = quote(kwargs.pop("password", "") or "")
+        username = quote(kwargs.pop("username", "") or "", safe=USERNAME_SAFE)
+        password = quote(kwargs.pop("password", "") or "", safe=PASSWORD_SAFE)
         kwargs["userinfo"] = f"{username}:{password}" if password else username
 
     # Replace "raw_path" with "path" and "query".
@@ -238,7 +299,7 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     authority = kwargs.get("authority", url_dict["authority"]) or ""
     path = kwargs.get("path", url_dict["path"]) or ""
     query = kwargs.get("query", url_dict["query"])
-    fragment = kwargs.get("fragment", url_dict["fragment"])
+    frag = kwargs.get("fragment", url_dict["fragment"])
 
     # The AUTHORITY_REGEX will always match, but may have empty components.
     authority_match = AUTHORITY_REGEX.match(authority)
@@ -255,7 +316,7 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     # We end up with a parsed representation of the URL,
     # with components that are plain ASCII bytestrings.
     parsed_scheme: str = scheme.lower()
-    parsed_userinfo: str = quote(userinfo, safe=SUB_DELIMS + ":")
+    parsed_userinfo: str = quote(userinfo, safe=USERINFO_SAFE)
     parsed_host: str = encode_host(host)
     parsed_port: int | None = normalize_port(port, scheme)
 
@@ -267,25 +328,9 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
     if has_scheme or has_authority:
         path = normalize_path(path)
 
-    # The GEN_DELIMS set is... : / ? # [ ] @
-    # These do not need to be percent-quoted unless they serve as delimiters for the
-    # specific component.
-    WHATWG_SAFE = '`{}%|^\\"'
-
-    # For 'path' we need to drop ? and # from the GEN_DELIMS set.
-    parsed_path: str = quote(path, safe=SUB_DELIMS + WHATWG_SAFE + ":/[]@")
-    # For 'query' we need to drop '#' from the GEN_DELIMS set.
-    parsed_query: str | None = (
-        None
-        if query is None
-        else quote(query, safe=SUB_DELIMS + WHATWG_SAFE + ":/?[]@")
-    )
-    # For 'fragment' we can include all of the GEN_DELIMS set.
-    parsed_fragment: str | None = (
-        None
-        if fragment is None
-        else quote(fragment, safe=SUB_DELIMS + WHATWG_SAFE + ":/?#[]@")
-    )
+    parsed_path: str = quote(path, safe=PATH_SAFE)
+    parsed_query: str | None = None if query is None else quote(query, safe=QUERY_SAFE)
+    parsed_frag: str | None = None if frag is None else quote(frag, safe=FRAG_SAFE)
 
     # The parsed ASCII bytestrings are our canonical form.
     # All properties of the URL are derived from these.
@@ -296,7 +341,7 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
         parsed_port,
         parsed_path,
         parsed_query,
-        parsed_fragment,
+        parsed_frag,
     )
 
 
@@ -434,7 +479,7 @@ def PERCENT(string: str) -> str:
     return "".join([f"%{byte:02X}" for byte in string.encode("utf-8")])
 
 
-def percent_encoded(string: str, safe: str = "/") -> str:
+def percent_encoded(string: str, safe: str) -> str:
     """
     Use percent-encoding to quote a string.
     """
@@ -449,7 +494,7 @@ def percent_encoded(string: str, safe: str = "/") -> str:
     )
 
 
-def quote(string: str, safe: str = "/") -> str:
+def quote(string: str, safe: str) -> str:
     """
     Use percent-encoding to quote a string, omitting existing '%xx' escape sequences.
 
@@ -480,26 +525,3 @@ def quote(string: str, safe: str = "/") -> str:
         parts.append(percent_encoded(trailing_text, safe=safe))
 
     return "".join(parts)
-
-
-def urlencode(items: list[tuple[str, str]]) -> str:
-    """
-    We can use a much simpler version of the stdlib urlencode here because
-    we don't need to handle a bunch of different typing cases, such as bytes vs str.
-
-    https://github.com/python/cpython/blob/b2f7b2ef0b5421e01efb8c7bee2ef95d3bab77eb/Lib/urllib/parse.py#L926
-
-    Note that we use '%20' encoding for spaces. and '%2F  for '/'.
-    This is slightly different than `requests`, but is the behaviour that browsers use.
-
-    See
-    - https://github.com/encode/httpx/issues/2536
-    - https://github.com/encode/httpx/issues/2721
-    - https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode
-    """
-    return "&".join(
-        [
-            percent_encoded(k, safe="") + "=" + percent_encoded(v, safe="")
-            for k, v in items
-        ]
-    )

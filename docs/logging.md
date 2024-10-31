@@ -20,25 +20,25 @@ httpx.get("https://www.example.com")
 Will send debug level output to the console, or wherever `stdout` is directed too...
 
 ```
-DEBUG [2023-03-16 14:36:20] httpx - load_ssl_context verify=True cert=None trust_env=True http2=False
-DEBUG [2023-03-16 14:36:20] httpx - load_verify_locations cafile='/Users/tomchristie/GitHub/encode/httpx/venv/lib/python3.10/site-packages/certifi/cacert.pem'
-DEBUG [2023-03-16 14:36:20] httpcore - connection.connect_tcp.started host='www.example.com' port=443 local_address=None timeout=5.0
-DEBUG [2023-03-16 14:36:20] httpcore - connection.connect_tcp.complete return_value=<httpcore.backends.sync.SyncStream object at 0x1068fd270>
-DEBUG [2023-03-16 14:36:20] httpcore - connection.start_tls.started ssl_context=<ssl.SSLContext object at 0x10689aa40> server_hostname='www.example.com' timeout=5.0
-DEBUG [2023-03-16 14:36:20] httpcore - connection.start_tls.complete return_value=<httpcore.backends.sync.SyncStream object at 0x1068fd240>
-DEBUG [2023-03-16 14:36:20] httpcore - http11.send_request_headers.started request=<Request [b'GET']>
-DEBUG [2023-03-16 14:36:20] httpcore - http11.send_request_headers.complete
-DEBUG [2023-03-16 14:36:20] httpcore - http11.send_request_body.started request=<Request [b'GET']>
-DEBUG [2023-03-16 14:36:20] httpcore - http11.send_request_body.complete
-DEBUG [2023-03-16 14:36:20] httpcore - http11.receive_response_headers.started request=<Request [b'GET']>
-DEBUG [2023-03-16 14:36:21] httpcore - http11.receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Encoding', b'gzip'), (b'Accept-Ranges', b'bytes'), (b'Age', b'507675'), (b'Cache-Control', b'max-age=604800'), (b'Content-Type', b'text/html; charset=UTF-8'), (b'Date', b'Thu, 16 Mar 2023 14:36:21 GMT'), (b'Etag', b'"3147526947+ident"'), (b'Expires', b'Thu, 23 Mar 2023 14:36:21 GMT'), (b'Last-Modified', b'Thu, 17 Oct 2019 07:18:26 GMT'), (b'Server', b'ECS (nyb/1D2E)'), (b'Vary', b'Accept-Encoding'), (b'X-Cache', b'HIT'), (b'Content-Length', b'648')])
-INFO [2023-03-16 14:36:21] httpx - HTTP Request: GET https://www.example.com "HTTP/1.1 200 OK"
-DEBUG [2023-03-16 14:36:21] httpcore - http11.receive_response_body.started request=<Request [b'GET']>
-DEBUG [2023-03-16 14:36:21] httpcore - http11.receive_response_body.complete
-DEBUG [2023-03-16 14:36:21] httpcore - http11.response_closed.started
-DEBUG [2023-03-16 14:36:21] httpcore - http11.response_closed.complete
-DEBUG [2023-03-16 14:36:21] httpcore - connection.close.started
-DEBUG [2023-03-16 14:36:21] httpcore - connection.close.complete
+DEBUG [2024-09-28 17:27:40] httpx - load_ssl_context verify=True cert=None
+DEBUG [2024-09-28 17:27:40] httpx - load_verify_locations cafile='/Users/karenpetrosyan/oss/karhttpx/.venv/lib/python3.9/site-packages/certifi/cacert.pem'
+DEBUG [2024-09-28 17:27:40] httpcore.connection - connect_tcp.started host='www.example.com' port=443 local_address=None timeout=5.0 socket_options=None
+DEBUG [2024-09-28 17:27:41] httpcore.connection - connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x101f1e8e0>
+DEBUG [2024-09-28 17:27:41] httpcore.connection - start_tls.started ssl_context=SSLContext(verify=True) server_hostname='www.example.com' timeout=5.0
+DEBUG [2024-09-28 17:27:41] httpcore.connection - start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x1020f49a0>
+DEBUG [2024-09-28 17:27:41] httpcore.http11 - send_request_headers.started request=<Request [b'GET']>
+DEBUG [2024-09-28 17:27:41] httpcore.http11 - send_request_headers.complete
+DEBUG [2024-09-28 17:27:41] httpcore.http11 - send_request_body.started request=<Request [b'GET']>
+DEBUG [2024-09-28 17:27:41] httpcore.http11 - send_request_body.complete
+DEBUG [2024-09-28 17:27:41] httpcore.http11 - receive_response_headers.started request=<Request [b'GET']>
+DEBUG [2024-09-28 17:27:41] httpcore.http11 - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Encoding', b'gzip'), (b'Accept-Ranges', b'bytes'), (b'Age', b'407727'), (b'Cache-Control', b'max-age=604800'), (b'Content-Type', b'text/html; charset=UTF-8'), (b'Date', b'Sat, 28 Sep 2024 13:27:42 GMT'), (b'Etag', b'"3147526947+gzip"'), (b'Expires', b'Sat, 05 Oct 2024 13:27:42 GMT'), (b'Last-Modified', b'Thu, 17 Oct 2019 07:18:26 GMT'), (b'Server', b'ECAcc (dcd/7D43)'), (b'Vary', b'Accept-Encoding'), (b'X-Cache', b'HIT'), (b'Content-Length', b'648')])
+INFO [2024-09-28 17:27:41] httpx - HTTP Request: GET https://www.example.com "HTTP/1.1 200 OK"
+DEBUG [2024-09-28 17:27:41] httpcore.http11 - receive_response_body.started request=<Request [b'GET']>
+DEBUG [2024-09-28 17:27:41] httpcore.http11 - receive_response_body.complete
+DEBUG [2024-09-28 17:27:41] httpcore.http11 - response_closed.started
+DEBUG [2024-09-28 17:27:41] httpcore.http11 - response_closed.complete
+DEBUG [2024-09-28 17:27:41] httpcore.connection - close.started
+DEBUG [2024-09-28 17:27:41] httpcore.connection - close.complete
 ```
 
 Logging output includes information from both the high-level `httpx` logger, and the network-level `httpcore` logger, which can be configured separately.

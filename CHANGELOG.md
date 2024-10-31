@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+This release introduces an `httpx.SSLContext()` class and `ssl_context` parameter.
+
+* Added `httpx.SSLContext` class and `ssl_context` parameter. (#3022, #3335)
+* The `verify` and `cert` arguments have been deprecated and will now raise warnings. (#3022, #3335)
+* The deprecated `proxies` argument has now been removed.
+* The deprecated `app` argument has now been removed.
+* The `URL.raw` property has now been removed.
+* Ensure JSON request bodies are compact. (#3363)
+* Review URL percent escape sets, based on WHATWG spec. (#3371, #3373)
+* Ensure `certifi` and `httpcore` are only imported if required. (#3377)
+* Treat `socks5h` as a valid proxy scheme. (#3178)
+* Cleanup `Request()` method signature in line with `client.request()` and `httpx.request()`. (#3378)
+
 ## 0.27.2 (27th August, 2024)
 
 ### Fixed

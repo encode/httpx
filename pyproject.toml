@@ -29,10 +29,9 @@ classifiers = [
 ]
 dependencies = [
     "certifi",
-    "httpcore==1.*; platform_system!='Emscripten'",
-    "anyio; platform_system!='Emscripten'",
+    "httpcore==1.*",
+    "anyio",
     "idna",
-    "sniffio; platform_system!='Emscripten'",
 ]
 dynamic = ["readme", "version"]
 
@@ -129,8 +128,5 @@ markers = [
 ]
 
 [tool.coverage.run]
-omit = ["venv/*", "httpx/_compat.py"]
+omit = ["venv/*"]
 include = ["httpx/*", "tests/*"]
-
-[tool.coverage.paths]
-source=["httpx/","*/site-packages/httpx"]

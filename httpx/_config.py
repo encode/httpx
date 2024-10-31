@@ -1,42 +1,21 @@
 from __future__ import annotations
 
-import logging
 import os
-import ssl
+import sys
 import typing
-from pathlib import Path
+import warnings
 
-import certifi
+try:
+    import ssl
+except ImportError:  # pragma: no cover
+    ssl = None  # type: ignore[assignment]
 
-from ._compat import set_minimum_tls_version_1_2
+
 from ._models import Headers
-from ._types import CertTypes, HeaderTypes, TimeoutTypes, VerifyTypes
+from ._types import HeaderTypes, TimeoutTypes
 from ._urls import URL
-from ._utils import get_ca_bundle_from_env
 
-__all__ = ["Limits", "Proxy", "Timeout", "create_ssl_context"]
-
-DEFAULT_CIPHERS = ":".join(
-    [
-        "ECDHE+AESGCM",
-        "ECDHE+CHACHA20",
-        "DHE+AESGCM",
-        "DHE+CHACHA20",
-        "ECDH+AESGCM",
-        "DH+AESGCM",
-        "ECDH+AES",
-        "DH+AES",
-        "RSA+AESGCM",
-        "RSA+AES",
-        "!aNULL",
-        "!eNULL",
-        "!MD5",
-        "!DSS",
-    ]
-)
-
-
-logger = logging.getLogger("httpx")
+__all__ = ["Limits", "Proxy", "SSLContext", "Timeout", "create_ssl_context"]
 
 
 class UnsetType:
@@ -47,150 +26,116 @@ UNSET = UnsetType()
 
 
 def create_ssl_context(
-    cert: CertTypes | None = None,
-    verify: VerifyTypes = True,
+    verify: typing.Any = None,
+    cert: typing.Any = None,
     trust_env: bool = True,
     http2: bool = False,
-) -> ssl.SSLContext:
-    return SSLConfig(
-        cert=cert, verify=verify, trust_env=trust_env, http2=http2
-    ).ssl_context
-
-
-class SSLConfig:
-    """
-    SSL Configuration.
-    """
-
-    DEFAULT_CA_BUNDLE_PATH = Path(certifi.where())
-
-    def __init__(
-        self,
-        *,
-        cert: CertTypes | None = None,
-        verify: VerifyTypes = True,
-        trust_env: bool = True,
-        http2: bool = False,
-    ) -> None:
-        self.cert = cert
-        self.verify = verify
-        self.trust_env = trust_env
-        self.http2 = http2
-        self.ssl_context = self.load_ssl_context()
-
-    def load_ssl_context(self) -> ssl.SSLContext:
-        logger.debug(
-            "load_ssl_context verify=%r cert=%r trust_env=%r http2=%r",
-            self.verify,
-            self.cert,
-            self.trust_env,
-            self.http2,
+) -> ssl.SSLContext:  # pragma: nocover
+    # The `create_ssl_context` helper function is now deprecated
+    # in favour of `httpx.SSLContext()`.
+    if isinstance(verify, bool):
+        ssl_context: ssl.SSLContext = SSLContext(verify=verify)
+        warnings.warn(
+            "The verify=<bool> parameter is deprecated since 0.28.0. "
+            "Use `ssl_context=httpx.SSLContext(verify=<bool>)`."
         )
+    elif isinstance(verify, str):
+        warnings.warn(
+            "The verify=<str> parameter is deprecated since 0.28.0. "
+            "Use `ssl_context=httpx.SSLContext()` and `.load_verify_locations()`."
+        )
+        ssl_context = SSLContext()
+        if os.path.isfile(verify):
+            ssl_context.load_verify_locations(cafile=verify)
+        elif os.path.isdir(verify):
+            ssl_context.load_verify_locations(capath=verify)
+    elif isinstance(verify, ssl.SSLContext):
+        warnings.warn(
+            "The verify=<ssl context> parameter is deprecated since 0.28.0. "
+            "Use `ssl_context = httpx.SSLContext()`."
+        )
+        ssl_context = verify
+    else:
+        warnings.warn(
+            "`create_ssl_context()` is deprecated since 0.28.0."
+            "Use `ssl_context = httpx.SSLContext()`."
+        )
+        ssl_context = SSLContext()
 
-        if self.verify:
-            return self.load_ssl_context_verify()
-        return self.load_ssl_context_no_verify()
-
-    def load_ssl_context_no_verify(self) -> ssl.SSLContext:
-        """
-        Return an SSL context for unverified connections.
-        """
-        context = self._create_default_ssl_context()
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-        self._load_client_certs(context)
-        return context
-
-    def load_ssl_context_verify(self) -> ssl.SSLContext:
-        """
-        Return an SSL context for verified connections.
-        """
-        if self.trust_env and self.verify is True:
-            ca_bundle = get_ca_bundle_from_env()
-            if ca_bundle is not None:
-                self.verify = ca_bundle
-
-        if isinstance(self.verify, ssl.SSLContext):
-            # Allow passing in our own SSLContext object that's pre-configured.
-            context = self.verify
-            self._load_client_certs(context)
-            return context
-        elif isinstance(self.verify, bool):
-            ca_bundle_path = self.DEFAULT_CA_BUNDLE_PATH
-        elif Path(self.verify).exists():
-            ca_bundle_path = Path(self.verify)
+    if cert is not None:
+        warnings.warn(
+            "The `cert=<...>` parameter is deprecated since 0.28.0. "
+            "Use `ssl_context = httpx.SSLContext()` and `.load_cert_chain()`."
+        )
+        if isinstance(cert, str):
+            ssl_context.load_cert_chain(cert)
         else:
-            raise IOError(
-                "Could not find a suitable TLS CA certificate bundle, "
-                "invalid path: {}".format(self.verify)
-            )
+            ssl_context.load_cert_chain(*cert)
 
-        context = self._create_default_ssl_context()
-        context.verify_mode = ssl.CERT_REQUIRED
-        context.check_hostname = True
+    return ssl_context
 
-        # Signal to server support for PHA in TLS 1.3. Raises an
-        # AttributeError if only read-only access is implemented.
-        try:
-            context.post_handshake_auth = True
-        except AttributeError:  # pragma: no cover
-            pass
 
-        # Disable using 'commonName' for SSLContext.check_hostname
-        # when the 'subjectAltName' extension isn't available.
-        try:
-            context.hostname_checks_common_name = False
-        except AttributeError:  # pragma: no cover
-            pass
+if ssl is not None:
 
-        if ca_bundle_path.is_file():
-            cafile = str(ca_bundle_path)
-            logger.debug("load_verify_locations cafile=%r", cafile)
-            context.load_verify_locations(cafile=cafile)
-        elif ca_bundle_path.is_dir():
-            capath = str(ca_bundle_path)
-            logger.debug("load_verify_locations capath=%r", capath)
-            context.load_verify_locations(capath=capath)
+    class SSLContext(ssl.SSLContext):
+        def __init__(
+            self,
+            verify: bool = True,
+        ) -> None:
+            import certifi
 
-        self._load_client_certs(context)
+            # ssl.SSLContext sets OP_NO_SSLv2, OP_NO_SSLv3, OP_NO_COMPRESSION,
+            # OP_CIPHER_SERVER_PREFERENCE, OP_SINGLE_DH_USE and OP_SINGLE_ECDH_USE
+            # by default. (from `ssl.create_default_context`)
+            super().__init__()
+            self._verify = verify
 
-        return context
+            # Our SSL setup here is similar to the stdlib `ssl.create_default_context()`
+            # implementation, except with `certifi` used for certificate verification.
+            if not verify:
+                self.check_hostname = False
+                self.verify_mode = ssl.CERT_NONE
+                return
 
-    def _create_default_ssl_context(self) -> ssl.SSLContext:
-        """
-        Creates the default SSLContext object that's used for both verified
-        and unverified connections.
-        """
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        set_minimum_tls_version_1_2(context)
-        context.options |= ssl.OP_NO_COMPRESSION
-        context.set_ciphers(DEFAULT_CIPHERS)
+            self.verify_mode = ssl.CERT_REQUIRED
+            self.check_hostname = True
 
-        if ssl.HAS_ALPN:
-            alpn_idents = ["http/1.1", "h2"] if self.http2 else ["http/1.1"]
-            context.set_alpn_protocols(alpn_idents)
+            # Use stricter verify flags where possible.
+            if hasattr(ssl, "VERIFY_X509_PARTIAL_CHAIN"):  # pragma: nocover
+                self.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
+            if hasattr(ssl, "VERIFY_X509_STRICT"):  # pragma: nocover
+                self.verify_flags |= ssl.VERIFY_X509_STRICT
 
-        keylogfile = os.environ.get("SSLKEYLOGFILE")
-        if keylogfile and self.trust_env:
-            context.keylog_filename = keylogfile
+            # Default to `certifi` for certificiate verification.
+            self.load_verify_locations(cafile=certifi.where())
 
-        return context
+            # OpenSSL keylog file support.
+            if hasattr(self, "keylog_filename"):
+                keylogfile = os.environ.get("SSLKEYLOGFILE")
+                if keylogfile and not sys.flags.ignore_environment:
+                    self.keylog_filename = keylogfile
 
-    def _load_client_certs(self, ssl_context: ssl.SSLContext) -> None:
-        """
-        Loads client certificates into our SSLContext object
-        """
-        if self.cert is not None:
-            if isinstance(self.cert, str):
-                ssl_context.load_cert_chain(certfile=self.cert)
-            elif isinstance(self.cert, tuple) and len(self.cert) == 2:
-                ssl_context.load_cert_chain(certfile=self.cert[0], keyfile=self.cert[1])
-            elif isinstance(self.cert, tuple) and len(self.cert) == 3:
-                ssl_context.load_cert_chain(
-                    certfile=self.cert[0],
-                    keyfile=self.cert[1],
-                    password=self.cert[2],
-                )
+        def __repr__(self) -> str:
+            class_name = self.__class__.__name__
+            return f"<{class_name}(verify={self._verify!r})>"
+
+        def __new__(
+            cls,
+            protocol: ssl._SSLMethod = ssl.PROTOCOL_TLS_CLIENT,
+            *args: typing.Any,
+            **kwargs: typing.Any,
+        ) -> "SSLContext":
+            return super().__new__(cls, protocol, *args, **kwargs)
+else:  # pragma: no cover
+    # dummy SSLContext if ssl isn't importable
+    # (as may be the case on Emscripten where the Javascript engine
+    # handles https connetions)
+    class SSLContext:  # type: ignore
+        def __init__(
+            self,
+            verify: bool = True,
+        ) -> None:
+            self.verify = verify
 
 
 class Timeout:
@@ -334,7 +279,7 @@ class Proxy:
         url = URL(url)
         headers = Headers(headers)
 
-        if url.scheme not in ("http", "https", "socks5"):
+        if url.scheme not in ("http", "https", "socks5", "socks5h"):
             raise ValueError(f"Unknown scheme for proxy URL {url!r}")
 
         if url.username or url.password:
