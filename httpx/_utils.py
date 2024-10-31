@@ -23,6 +23,52 @@ _HTML5_FORM_ENCODING_RE = re.compile(
     r"|".join([re.escape(c) for c in _HTML5_FORM_ENCODING_REPLACEMENTS.keys()])
 )
 
+# For our supported text codecs, we start with the text codecs as supported by Chromium, Oct. 2023.
+# https://chromium.googlesource.com/chromium/chromium/+/refs/heads/trunk/chrome/browser/character_encoding.cc#36
+#
+# Then limit them to only includec codecs which are documented as included by cpython.
+# https://docs.python.org/3/library/codecs.html#standard-encodings
+#
+# We're referencing them with the canonical name as used by the Python codecs.
+# The alias given in the chromium source is included as a comment for comparison.
+SUPPORTED_CODECS = {
+    "big5",  # big5
+    "big5hkscs",  # big5-hkscs
+    "cp1250",  # windows-1250
+    "cp1251",  # windows-1251
+    "cp1252",  # windows-1252
+    "cp1253",  # windows-1253
+    "cp1254",  # windows-1254
+    "cp1255",  # windows-1255
+    "cp1256",  # windows-1256
+    "cp1257",  # windows-1257
+    "cp1258",  # windows-1258
+    "euc_jp",  # euc-jp
+    "euc_kr",  # euc-kr
+    "gb18030",  # gb18030
+    "gbk",  # gbk
+    "iso2022_jp",  # iso-2022-jp
+    "iso8859-1",  # iso-8859-1
+    "iso8859-2",  # iso-8859-2
+    "iso8859-3",  # iso-8859-3
+    "iso8859-4",  # iso-8859-4
+    "iso8859-5",  # iso-8859-5
+    "iso8859-6",  # iso-8859-6
+    "iso8859-7",  # iso-8859-7
+    "iso8859-8",  # iso-8859-8
+    "iso8859-10",  # iso-8859-10
+    "iso8859-13",  # iso-8859-13
+    "iso8859-14",  # iso-8859-14
+    "iso8859-15",  # iso-8859-15
+    "iso8859-16",  # iso-8859-16
+    "koi8-r",  # koi8-r
+    "koi8-u",  # koi8-u
+    "mac-roman",  # macintosh
+    "shift_jis",  # shift-jis
+    "utf-8",  # utf-8
+    "utf-16-le",  # utf-16le
+}
+
 
 def primitive_value_to_str(value: PrimitiveData) -> str:
     """
@@ -41,13 +87,14 @@ def primitive_value_to_str(value: PrimitiveData) -> str:
 
 def is_known_encoding(encoding: str) -> bool:
     """
-    Return `True` if `encoding` is a known codec.
+    Return `True` if `encoding` is a supported text codec.
     """
     try:
-        codecs.lookup(encoding)
+        codec = codecs.lookup(encoding)
     except LookupError:
         return False
-    return True
+
+    return codec.name in SUPPORTED_CODECS
 
 
 def format_form_param(name: str, value: str) -> bytes:
