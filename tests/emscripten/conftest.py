@@ -23,7 +23,7 @@ def _get_coverage_filename(prefix: str) -> str:
 def selenium_with_jspi_if_possible(
     request: pytest.FixtureRequest, runtime: str, has_jspi: bool
 ) -> Generator[Any, None, None]:
-    if has_jspi==False:  # pragma: no cover
+    if has_jspi == False:  # pragma: no cover
         fixture_name = "selenium"
     else:
         fixture_name = "selenium_jspi"

@@ -187,6 +187,7 @@ class URL:
 
         if host.startswith("xn--"):
             import idna
+
             host = idna.decode(host)
 
         return host

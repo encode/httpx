@@ -383,6 +383,7 @@ def encode_host(host: str) -> str:
         WHATWG_SAFE = '"`{}%|\\'
         return quote(host.lower(), safe=SUB_DELIMS + WHATWG_SAFE)
     import idna
+
     # IDNA hostnames
     try:
         return idna.encode(host.lower()).decode("ascii")
