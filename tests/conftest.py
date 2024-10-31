@@ -348,3 +348,22 @@ def server() -> typing.Iterator[TestServer]:
     config = Config(app=app, lifespan="off", loop="asyncio")
     server = TestServer(config=config)
     yield from serve_in_thread(server)
+
+@pytest.fixture(scope="session")
+def https_server() -> typing.Iterator[TestServer]:
+    config = Config(app=app, lifespan="off", loop="asyncio")
+    server = TestServer(config=config)
+    yield from serve_in_thread(server)
+
+@pytest.fixture(scope="session")
+def https_server(cert_pem_file, cert_private_key_file):
+    config = Config(
+        app=app,
+        lifespan="off",
+        ssl_certfile=cert_pem_file,
+        ssl_keyfile=cert_private_key_file,
+        port=8001,
+        loop="asyncio",
+    )
+    server = TestServer(config=config)
+    yield from serve_in_thread(server)

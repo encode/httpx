@@ -6,13 +6,16 @@ from .mock import *
 from .wsgi import *
 
 if sys.platform == "emscripten":  # pragma: nocover
-    from .emscripten import *
-
-    HTTPTransport = EmscriptenTransport
-    AsyncHTTPTransport = AsyncEmscriptenTransport
-
+    # in emscripten we use javascript fetch
+    from .jsfetch import *
+    # override default transport names
+    HTTPTransport = JavascriptFetchTransport
+    AsyncHTTPTransport = AsyncJavascriptFetchTransport
 else:
-    from .default import *
+    # everywhere else we use httpcore
+    from .httpcore import *
+    HTTPTransport = HTTPCoreTransport
+    AsyncHTTPTransport = AsyncHTTPCoreTransport
 
 __all__ = [
     "ASGITransport",

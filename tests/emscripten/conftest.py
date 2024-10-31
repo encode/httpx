@@ -23,12 +23,11 @@ def _get_coverage_filename(prefix: str) -> str:
 def selenium_with_jspi_if_possible(
     request: pytest.FixtureRequest, runtime: str, has_jspi: bool
 ) -> Generator[Any, None, None]:
-    if runtime == "firefox":  # pragma: no cover
+    if has_jspi==False:  # pragma: no cover
         fixture_name = "selenium"
     else:
         fixture_name = "selenium_jspi"
     selenium_obj = request.getfixturevalue(fixture_name)
-    selenium_obj.with_jspi = has_jspi
     yield selenium_obj
 
 
@@ -42,9 +41,6 @@ def wrapRunner(wrapped: T, has_jspi: bool) -> T:
     class CoverageRunner(BaseType):  # type:ignore
         COVERAGE_INIT_CODE = textwrap.dedent(
             """
-            import ssl
-            import idna
-            import certifi
             import pyodide_js as pjs
             await pjs.loadPackage("coverage")
             await pjs.loadPackage("ssl")
@@ -80,7 +76,6 @@ def wrapRunner(wrapped: T, has_jspi: bool) -> T:
             wrapped_code = (
                 self.COVERAGE_INIT_CODE
                 + "import httpx\n"
-                + f"httpx._transports.emscripten.DISABLE_JSPI={not self.has_jspi}\n"
                 + textwrap.dedent(code)
                 + self.COVERAGE_TEARDOWN_CODE
             )

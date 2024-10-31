@@ -82,7 +82,6 @@ if ssl is not None:
             self,
             verify: bool = True,
         ) -> None:
-            import certifi
 
             # ssl.SSLContext sets OP_NO_SSLv2, OP_NO_SSLv3, OP_NO_COMPRESSION,
             # OP_CIPHER_SERVER_PREFERENCE, OP_SINGLE_DH_USE and OP_SINGLE_ECDH_USE
@@ -107,7 +106,11 @@ if ssl is not None:
                 self.verify_flags |= ssl.VERIFY_X509_STRICT
 
             # Default to `certifi` for certificiate verification.
-            self.load_verify_locations(cafile=certifi.where())
+            try:
+                import certifi
+                self.load_verify_locations(cafile=certifi.where())
+            except ImportError:
+                pass
 
             # OpenSSL keylog file support.
             if hasattr(self, "keylog_filename"):
