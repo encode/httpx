@@ -275,15 +275,6 @@ class Proxy:
         self.headers = headers
         self.ssl_context = ssl_context
 
-    @property
-    def raw_auth(self) -> tuple[bytes, bytes] | None:
-        # The proxy authentication as raw bytes.
-        return (
-            None
-            if self.auth is None
-            else (self.auth[0].encode("utf-8"), self.auth[1].encode("utf-8"))
-        )
-
     def __repr__(self) -> str:
         # The authentication is represented with the password component masked.
         auth = (self.auth[0], "********") if self.auth else None

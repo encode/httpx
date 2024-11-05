@@ -211,47 +211,6 @@ async def test_context_managed_transport():
     ]
 
 
-@pytest.mark.anyio
-async def test_context_managed_transport_and_mount():
-    class Transport(httpx.AsyncBaseTransport):
-        def __init__(self, name: str) -> None:
-            self.name: str = name
-            self.events: list[str] = []
-
-        async def aclose(self):
-            # The base implementation of httpx.AsyncBaseTransport just
-            # calls into `.aclose`, so simple transport cases can just override
-            # this method for any cleanup, where more complex cases
-            # might want to additionally override `__aenter__`/`__aexit__`.
-            self.events.append(f"{self.name}.aclose")
-
-        async def __aenter__(self):
-            await super().__aenter__()
-            self.events.append(f"{self.name}.__aenter__")
-
-        async def __aexit__(self, *args):
-            await super().__aexit__(*args)
-            self.events.append(f"{self.name}.__aexit__")
-
-    transport = Transport(name="transport")
-    mounted = Transport(name="mounted")
-    async with httpx.AsyncClient(
-        transport=transport, mounts={"http://www.example.org": mounted}
-    ):
-        pass
-
-    assert transport.events == [
-        "transport.__aenter__",
-        "transport.aclose",
-        "transport.__aexit__",
-    ]
-    assert mounted.events == [
-        "mounted.__aenter__",
-        "mounted.aclose",
-        "mounted.__aexit__",
-    ]
-
-
 def hello_world(request):
     return httpx.Response(200, text="Hello, world!")
 
@@ -286,31 +245,6 @@ async def test_client_closed_state_using_with_block():
     assert client.is_closed
     with pytest.raises(RuntimeError):
         await client.get("http://example.com")
-
-
-def unmounted(request: httpx.Request) -> httpx.Response:
-    data = {"app": "unmounted"}
-    return httpx.Response(200, json=data)
-
-
-def mounted(request: httpx.Request) -> httpx.Response:
-    data = {"app": "mounted"}
-    return httpx.Response(200, json=data)
-
-
-@pytest.mark.anyio
-async def test_mounted_transport():
-    transport = httpx.MockTransport(unmounted)
-    mounts = {"custom://": httpx.MockTransport(mounted)}
-
-    async with httpx.AsyncClient(transport=transport, mounts=mounts) as client:
-        response = await client.get("https://www.example.com")
-        assert response.status_code == 200
-        assert response.json() == {"app": "unmounted"}
-
-        response = await client.get("custom://www.example.com")
-        assert response.status_code == 200
-        assert response.json() == {"app": "mounted"}
 
 
 @pytest.mark.anyio

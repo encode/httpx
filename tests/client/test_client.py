@@ -260,44 +260,6 @@ def test_context_managed_transport():
     ]
 
 
-def test_context_managed_transport_and_mount():
-    class Transport(httpx.BaseTransport):
-        def __init__(self, name: str) -> None:
-            self.name: str = name
-            self.events: list[str] = []
-
-        def close(self):
-            # The base implementation of httpx.BaseTransport just
-            # calls into `.close`, so simple transport cases can just override
-            # this method for any cleanup, where more complex cases
-            # might want to additionally override `__enter__`/`__exit__`.
-            self.events.append(f"{self.name}.close")
-
-        def __enter__(self):
-            super().__enter__()
-            self.events.append(f"{self.name}.__enter__")
-
-        def __exit__(self, *args):
-            super().__exit__(*args)
-            self.events.append(f"{self.name}.__exit__")
-
-    transport = Transport(name="transport")
-    mounted = Transport(name="mounted")
-    with httpx.Client(transport=transport, mounts={"http://www.example.org": mounted}):
-        pass
-
-    assert transport.events == [
-        "transport.__enter__",
-        "transport.close",
-        "transport.__exit__",
-    ]
-    assert mounted.events == [
-        "mounted.__enter__",
-        "mounted.close",
-        "mounted.__exit__",
-    ]
-
-
 def hello_world(request):
     return httpx.Response(200, text="Hello, world!")
 
@@ -362,41 +324,6 @@ def test_raw_client_header():
         ["User-Agent", f"python-httpx/{httpx.__version__}"],
         ["Example-Header", "example-value"],
     ]
-
-
-def unmounted(request: httpx.Request) -> httpx.Response:
-    data = {"app": "unmounted"}
-    return httpx.Response(200, json=data)
-
-
-def mounted(request: httpx.Request) -> httpx.Response:
-    data = {"app": "mounted"}
-    return httpx.Response(200, json=data)
-
-
-def test_mounted_transport():
-    transport = httpx.MockTransport(unmounted)
-    mounts = {"custom://": httpx.MockTransport(mounted)}
-
-    client = httpx.Client(transport=transport, mounts=mounts)
-
-    response = client.get("https://www.example.com")
-    assert response.status_code == 200
-    assert response.json() == {"app": "unmounted"}
-
-    response = client.get("custom://www.example.com")
-    assert response.status_code == 200
-    assert response.json() == {"app": "mounted"}
-
-
-def test_all_mounted_transport():
-    mounts = {"all://": httpx.MockTransport(mounted)}
-
-    client = httpx.Client(mounts=mounts)
-
-    response = client.get("https://www.example.com")
-    assert response.status_code == 200
-    assert response.json() == {"app": "mounted"}
 
 
 def test_server_extensions(server):

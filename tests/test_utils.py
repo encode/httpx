@@ -1,15 +1,9 @@
 import json
 import logging
-import os
-import random
 
 import pytest
 
 import httpx
-from httpx._utils import (
-    URLPattern,
-    get_environment_proxies,
-)
 
 
 @pytest.mark.parametrize(
@@ -119,32 +113,6 @@ def test_logging_redirect_chain(server, caplog):
 
 
 @pytest.mark.parametrize(
-    ["environment", "proxies"],
-    [
-        ({}, {}),
-        ({"HTTP_PROXY": "http://127.0.0.1"}, {"http://": "http://127.0.0.1"}),
-        (
-            {"https_proxy": "http://127.0.0.1", "HTTP_PROXY": "https://127.0.0.1"},
-            {"https://": "http://127.0.0.1", "http://": "https://127.0.0.1"},
-        ),
-        ({"all_proxy": "http://127.0.0.1"}, {"all://": "http://127.0.0.1"}),
-        ({"TRAVIS_APT_PROXY": "http://127.0.0.1"}, {}),
-        ({"no_proxy": "127.0.0.1"}, {"all://127.0.0.1": None}),
-        ({"no_proxy": "192.168.0.0/16"}, {"all://192.168.0.0/16": None}),
-        ({"no_proxy": "::1"}, {"all://[::1]": None}),
-        ({"no_proxy": "localhost"}, {"all://localhost": None}),
-        ({"no_proxy": "github.com"}, {"all://*github.com": None}),
-        ({"no_proxy": ".github.com"}, {"all://*.github.com": None}),
-        ({"no_proxy": "http://github.com"}, {"http://github.com": None}),
-    ],
-)
-def test_get_environment_proxies(environment, proxies):
-    os.environ.update(environment)
-
-    assert get_environment_proxies() == proxies
-
-
-@pytest.mark.parametrize(
     "headers, output",
     [
         ([("content-type", "text/html")], [("content-type", "text/html")]),
@@ -212,41 +180,3 @@ def test_is_not_https_redirect_if_not_default_ports():
     headers = client._redirect_headers(request, url, "GET")
 
     assert "Authorization" not in headers
-
-
-@pytest.mark.parametrize(
-    ["pattern", "url", "expected"],
-    [
-        ("http://example.com", "http://example.com", True),
-        ("http://example.com", "https://example.com", False),
-        ("http://example.com", "http://other.com", False),
-        ("http://example.com:123", "http://example.com:123", True),
-        ("http://example.com:123", "http://example.com:456", False),
-        ("http://example.com:123", "http://example.com", False),
-        ("all://example.com", "http://example.com", True),
-        ("all://example.com", "https://example.com", True),
-        ("http://", "http://example.com", True),
-        ("http://", "https://example.com", False),
-        ("all://", "https://example.com:123", True),
-        ("", "https://example.com:123", True),
-    ],
-)
-def test_url_matches(pattern, url, expected):
-    pattern = URLPattern(pattern)
-    assert pattern.matches(httpx.URL(url)) == expected
-
-
-def test_pattern_priority():
-    matchers = [
-        URLPattern("all://"),
-        URLPattern("http://"),
-        URLPattern("http://example.com"),
-        URLPattern("http://example.com:123"),
-    ]
-    random.shuffle(matchers)
-    assert sorted(matchers) == [
-        URLPattern("http://example.com:123"),
-        URLPattern("http://example.com"),
-        URLPattern("http://"),
-        URLPattern("all://"),
-    ]

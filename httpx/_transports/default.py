@@ -148,6 +148,15 @@ class HTTPTransport(BaseTransport):
         verify: typing.Any = None,
         cert: typing.Any = None,
     ) -> None:
+        if http2:
+            try:
+                import h2  # noqa
+            except ImportError:  # pragma: no cover
+                raise ImportError(
+                    "Using http2=True, but the 'h2' package is not installed. "
+                    "Make sure to install httpx using `pip install httpx[http2]`."
+                ) from None
+
         import httpcore
 
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
@@ -297,6 +306,15 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         verify: typing.Any = None,
         cert: typing.Any = None,
     ) -> None:
+        if http2:
+            try:
+                import h2  # noqa
+            except ImportError:  # pragma: no cover
+                raise ImportError(
+                    "Using http2=True, but the 'h2' package is not installed. "
+                    "Make sure to install httpx using `pip install httpx[http2]`."
+                ) from None
+
         import httpcore
 
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy

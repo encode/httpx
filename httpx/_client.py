@@ -17,7 +17,6 @@ from ._config import (
     DEFAULT_MAX_REDIRECTS,
     DEFAULT_TIMEOUT_CONFIG,
     Limits,
-    Proxy,
     Timeout,
 )
 from ._decoders import SUPPORTED_DECODERS
@@ -47,8 +46,6 @@ from ._types import (
 )
 from ._urls import URL, QueryParams
 from ._utils import (
-    URLPattern,
-    get_environment_proxies,
     is_https_redirect,
     same_origin,
 )
@@ -205,20 +202,6 @@ class BaseClient:
         if url.raw_path.endswith(b"/"):
             return url
         return url.copy_with(raw_path=url.raw_path + b"/")
-
-    def _get_proxy_map(
-        self, proxy: ProxyTypes | None, allow_env_proxies: bool
-    ) -> dict[str, Proxy | None]:
-        if proxy is None:
-            if allow_env_proxies:
-                return {
-                    key: None if url is None else Proxy(url=url)
-                    for key, url in get_environment_proxies().items()
-                }
-            return {}
-        else:
-            proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-            return {"all://": proxy}
 
     @property
     def timeout(self) -> Timeout:
@@ -618,7 +601,6 @@ class Client(BaseClient):
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
-        mounts: None | (typing.Mapping[str, BaseTransport | None]) = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -646,106 +628,21 @@ class Client(BaseClient):
             default_encoding=default_encoding,
         )
 
-        if http2:
-            try:
-                import h2  # noqa
-            except ImportError:  # pragma: no cover
-                raise ImportError(
-                    "Using http2=True, but the 'h2' package is not installed. "
-                    "Make sure to install httpx using `pip install httpx[http2]`."
-                ) from None
-
-        allow_env_proxies = trust_env and transport is None
-        proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
-
-        self._transport = self._init_transport(
-            ssl_context=ssl_context,
-            http1=http1,
-            http2=http2,
-            limits=limits,
-            transport=transport,
-            trust_env=trust_env,
-            # Deprecated in favor of ssl_context...
-            verify=verify,
-            cert=cert,
-        )
-        self._mounts: dict[URLPattern, BaseTransport | None] = {
-            URLPattern(key): None
-            if proxy is None
-            else self._init_proxy_transport(
-                proxy,
+        if transport is not None:
+            self._transport = transport
+        else:
+            self._transport = HTTPTransport(
                 ssl_context=ssl_context,
+                proxy=proxy,
                 http1=http1,
                 http2=http2,
                 limits=limits,
-                # Deprecated in favor of ssl_context...
                 verify=verify,
                 cert=cert,
             )
-            for key, proxy in proxy_map.items()
-        }
-        if mounts is not None:
-            self._mounts.update(
-                {URLPattern(key): transport for key, transport in mounts.items()}
-            )
 
-        self._mounts = dict(sorted(self._mounts.items()))
-
-    def _init_transport(
-        self,
-        ssl_context: ssl.SSLContext | None = None,
-        http1: bool = True,
-        http2: bool = False,
-        limits: Limits = DEFAULT_LIMITS,
-        transport: BaseTransport | None = None,
-        trust_env: bool = True,
-        # Deprecated in favor of `ssl_context`...
-        verify: typing.Any = None,
-        cert: typing.Any = None,
-    ) -> BaseTransport:
-        if transport is not None:
-            return transport
-
-        return HTTPTransport(
-            ssl_context=ssl_context,
-            http1=http1,
-            http2=http2,
-            limits=limits,
-            verify=verify,
-            cert=cert,
-        )
-
-    def _init_proxy_transport(
-        self,
-        proxy: Proxy,
-        ssl_context: ssl.SSLContext | None = None,
-        http1: bool = True,
-        http2: bool = False,
-        limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
-        # Deprecated in favor of `ssl_context`...
-        verify: typing.Any = None,
-        cert: typing.Any = None,
-    ) -> BaseTransport:
-        return HTTPTransport(
-            ssl_context=ssl_context,
-            http1=http1,
-            http2=http2,
-            limits=limits,
-            proxy=proxy,
-            verify=verify,
-            cert=cert,
-        )
-
-    def _transport_for_url(self, url: URL) -> BaseTransport:
-        """
-        Returns the transport instance that should be used for a given URL.
-        This will either be the standard connection pool, or a proxy.
-        """
-        for pattern, transport in self._mounts.items():
-            if pattern.matches(url):
-                return self._transport if transport is None else transport
-
+    @property
+    def transport(self) -> BaseTransport:
         return self._transport
 
     def request(
@@ -982,7 +879,6 @@ class Client(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-        transport = self._transport_for_url(request.url)
         start = time.perf_counter()
 
         if not isinstance(request.stream, SyncByteStream):
@@ -991,7 +887,7 @@ class Client(BaseClient):
             )
 
         with request_context(request=request):
-            response = transport.handle_request(request)
+            response = self.transport.handle_request(request)
 
         assert isinstance(response.stream, SyncByteStream)
 
@@ -1242,15 +1138,11 @@ class Client(BaseClient):
 
     def close(self) -> None:
         """
-        Close transport and proxies.
+        Close transport.
         """
         if self._state != ClientState.CLOSED:
             self._state = ClientState.CLOSED
-
-            self._transport.close()
-            for transport in self._mounts.values():
-                if transport is not None:
-                    transport.close()
+            self.transport.close()
 
     def __enter__(self: T) -> T:
         if self._state != ClientState.UNOPENED:
@@ -1263,11 +1155,7 @@ class Client(BaseClient):
             raise RuntimeError(msg)
 
         self._state = ClientState.OPENED
-
-        self._transport.__enter__()
-        for transport in self._mounts.values():
-            if transport is not None:
-                transport.__enter__()
+        self.transport.__enter__()
         return self
 
     def __exit__(
@@ -1277,11 +1165,7 @@ class Client(BaseClient):
         traceback: TracebackType | None = None,
     ) -> None:
         self._state = ClientState.CLOSED
-
-        self._transport.__exit__(exc_type, exc_value, traceback)
-        for transport in self._mounts.values():
-            if transport is not None:
-                transport.__exit__(exc_type, exc_value, traceback)
+        self.transport.__exit__(exc_type, exc_value, traceback)
 
 
 class AsyncClient(BaseClient):
@@ -1340,7 +1224,6 @@ class AsyncClient(BaseClient):
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
-        mounts: None | (typing.Mapping[str, AsyncBaseTransport | None]) = None,
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -1367,104 +1250,21 @@ class AsyncClient(BaseClient):
             trust_env=trust_env,
             default_encoding=default_encoding,
         )
-
-        if http2:
-            try:
-                import h2  # noqa
-            except ImportError:  # pragma: no cover
-                raise ImportError(
-                    "Using http2=True, but the 'h2' package is not installed. "
-                    "Make sure to install httpx using `pip install httpx[http2]`."
-                ) from None
-
-        allow_env_proxies = trust_env and transport is None
-        proxy_map = self._get_proxy_map(proxy, allow_env_proxies)
-
-        self._transport = self._init_transport(
-            ssl_context=ssl_context,
-            http1=http1,
-            http2=http2,
-            limits=limits,
-            transport=transport,
-            # Deprecated in favor of ssl_context
-            verify=verify,
-            cert=cert,
-        )
-
-        self._mounts: dict[URLPattern, AsyncBaseTransport | None] = {
-            URLPattern(key): None
-            if proxy is None
-            else self._init_proxy_transport(
-                proxy,
+        if transport is not None:
+            self._transport = transport
+        else:
+            self._transport = AsyncHTTPTransport(
                 ssl_context=ssl_context,
+                proxy=proxy,
                 http1=http1,
                 http2=http2,
                 limits=limits,
-                # Deprecated in favor of `ssl_context`...
                 verify=verify,
                 cert=cert,
             )
-            for key, proxy in proxy_map.items()
-        }
-        if mounts is not None:
-            self._mounts.update(
-                {URLPattern(key): transport for key, transport in mounts.items()}
-            )
-        self._mounts = dict(sorted(self._mounts.items()))
 
-    def _init_transport(
-        self,
-        ssl_context: ssl.SSLContext | None = None,
-        http1: bool = True,
-        http2: bool = False,
-        limits: Limits = DEFAULT_LIMITS,
-        transport: AsyncBaseTransport | None = None,
-        # Deprecated in favor of `ssl_context`...
-        verify: typing.Any = None,
-        cert: typing.Any = None,
-    ) -> AsyncBaseTransport:
-        if transport is not None:
-            return transport
-
-        return AsyncHTTPTransport(
-            ssl_context=ssl_context,
-            http1=http1,
-            http2=http2,
-            limits=limits,
-            verify=verify,
-            cert=cert,
-        )
-
-    def _init_proxy_transport(
-        self,
-        proxy: Proxy,
-        ssl_context: ssl.SSLContext | None = None,
-        http1: bool = True,
-        http2: bool = False,
-        limits: Limits = DEFAULT_LIMITS,
-        # Deprecated in favor of `ssl_context`...
-        verify: typing.Any = None,
-        cert: typing.Any = None,
-    ) -> AsyncBaseTransport:
-        return AsyncHTTPTransport(
-            ssl_context=ssl_context,
-            http1=http1,
-            http2=http2,
-            limits=limits,
-            proxy=proxy,
-            verify=verify,
-            cert=cert,
-        )
-
-    def _transport_for_url(self, url: URL) -> AsyncBaseTransport:
-        """
-        Returns the transport instance that should be used for a given URL.
-        This will either be the standard connection pool, or a proxy.
-        """
-        for pattern, transport in self._mounts.items():
-            if pattern.matches(url):
-                return self._transport if transport is None else transport
-
+    @property
+    def transport(self) -> AsyncBaseTransport:
         return self._transport
 
     async def request(
@@ -1703,7 +1503,6 @@ class AsyncClient(BaseClient):
         """
         Sends a single request, without handling any redirections.
         """
-        transport = self._transport_for_url(request.url)
         start = time.perf_counter()
 
         if not isinstance(request.stream, AsyncByteStream):
@@ -1712,7 +1511,7 @@ class AsyncClient(BaseClient):
             )
 
         with request_context(request=request):
-            response = await transport.handle_async_request(request)
+            response = await self.transport.handle_async_request(request)
 
         assert isinstance(response.stream, AsyncByteStream)
         response.request = request
@@ -1962,15 +1761,11 @@ class AsyncClient(BaseClient):
 
     async def aclose(self) -> None:
         """
-        Close transport and proxies.
+        Close transport.
         """
         if self._state != ClientState.CLOSED:
             self._state = ClientState.CLOSED
-
-            await self._transport.aclose()
-            for proxy in self._mounts.values():
-                if proxy is not None:
-                    await proxy.aclose()
+            await self.transport.aclose()
 
     async def __aenter__(self: U) -> U:
         if self._state != ClientState.UNOPENED:
@@ -1983,11 +1778,7 @@ class AsyncClient(BaseClient):
             raise RuntimeError(msg)
 
         self._state = ClientState.OPENED
-
-        await self._transport.__aenter__()
-        for proxy in self._mounts.values():
-            if proxy is not None:
-                await proxy.__aenter__()
+        await self.transport.__aenter__()
         return self
 
     async def __aexit__(
@@ -1997,8 +1788,4 @@ class AsyncClient(BaseClient):
         traceback: TracebackType | None = None,
     ) -> None:
         self._state = ClientState.CLOSED
-
-        await self._transport.__aexit__(exc_type, exc_value, traceback)
-        for proxy in self._mounts.values():
-            if proxy is not None:
-                await proxy.__aexit__(exc_type, exc_value, traceback)
+        await self.transport.__aexit__(exc_type, exc_value, traceback)
