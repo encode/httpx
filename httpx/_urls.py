@@ -400,6 +400,21 @@ class URL:
 
         return f"{self.__class__.__name__}({url!r})"
 
+    @property
+    def raw(self):  # pragma: nocover
+        import collections
+        import warnings
+
+        warnings.warn("URL.raw is deprecated.")
+        attributes = ["raw_scheme", "raw_host", "port", "raw_path"],
+        RawURL = collections.namedtuple('RawURL', attributes)
+        return RawURL(
+            self.raw_scheme,
+            self.raw_host,
+            self.port,
+            self.raw_path,
+        )
+
 
 class QueryParams(typing.Mapping[str, str]):
     """
