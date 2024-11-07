@@ -401,18 +401,19 @@ class URL:
         return f"{self.__class__.__name__}({url!r})"
 
     @property
-    def raw(self):  # pragma: nocover
+    def raw(self) -> tuple[bytes, bytes, int, bytes]:  # pragma: nocover
         import collections
         import warnings
 
         warnings.warn("URL.raw is deprecated.")
-        attributes = ["raw_scheme", "raw_host", "port", "raw_path"]
-        RawURL = collections.namedtuple("RawURL", attributes)
+        RawURL = collections.namedtuple(
+            "RawURL", ["raw_scheme", "raw_host", "port", "raw_path"]
+        )
         return RawURL(
-            self.raw_scheme,
-            self.raw_host,
-            self.port,
-            self.raw_path,
+            raw_scheme=self.raw_scheme,
+            raw_host=self.raw_host,
+            port=self.port,
+            raw_path=self.raw_path,
         )
 
 
