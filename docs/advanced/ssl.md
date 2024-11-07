@@ -93,7 +93,7 @@ If you do need to make HTTPS connections to a local server, for example to test 
 
 1. Use [trustme](https://github.com/python-trio/trustme) to generate a pair of server key/cert files, and a client cert file.
 2. Pass the server key/cert files when starting your local server. (This depends on the particular web server you're using. For example, [Uvicorn](https://www.uvicorn.org) provides the `--ssl-keyfile` and `--ssl-certfile` options.)
-3. Tell HTTPX to use the certificates stored in `client.pem`.
+3. Configure `httpx` to use the certificates stored in `client.pem`.
 
 ```python
 ctx = ssl.create_default_context(cafile="client.pem")
