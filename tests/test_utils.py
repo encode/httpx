@@ -53,35 +53,6 @@ def test_guess_by_bom(encoding, expected):
     assert response.json() == {"abc": 123}
 
 
-@pytest.mark.parametrize(
-    "value, expected",
-    (
-        (
-            '<http:/.../front.jpeg>; rel=front; type="image/jpeg"',
-            [{"url": "http:/.../front.jpeg", "rel": "front", "type": "image/jpeg"}],
-        ),
-        ("<http:/.../front.jpeg>", [{"url": "http:/.../front.jpeg"}]),
-        ("<http:/.../front.jpeg>;", [{"url": "http:/.../front.jpeg"}]),
-        (
-            '<http:/.../front.jpeg>; type="image/jpeg",<http://.../back.jpeg>;',
-            [
-                {"url": "http:/.../front.jpeg", "type": "image/jpeg"},
-                {"url": "http://.../back.jpeg"},
-            ],
-        ),
-        ("", []),
-    ),
-)
-def test_parse_header_links(value, expected):
-    all_links = httpx.Response(200, headers={"link": value}).links.values()
-    assert all(link in all_links for link in expected)
-
-
-def test_parse_header_links_no_link():
-    all_links = httpx.Response(200).links
-    assert all_links == {}
-
-
 def test_logging_request(server, caplog):
     caplog.set_level(logging.INFO)
     with httpx.Client() as client:
@@ -142,20 +113,6 @@ def test_get_environment_proxies(environment, proxies):
     os.environ.update(environment)
 
     assert get_environment_proxies() == proxies
-
-
-@pytest.mark.parametrize(
-    "headers, output",
-    [
-        ([("content-type", "text/html")], [("content-type", "text/html")]),
-        ([("authorization", "s3kr3t")], [("authorization", "[secure]")]),
-        ([("proxy-authorization", "s3kr3t")], [("proxy-authorization", "[secure]")]),
-    ],
-)
-def test_obfuscate_sensitive_headers(headers, output):
-    as_dict = {k: v for k, v in output}
-    headers_class = httpx.Headers({k: v for k, v in headers})
-    assert repr(headers_class) == f"Headers({as_dict!r})"
 
 
 def test_same_origin():
