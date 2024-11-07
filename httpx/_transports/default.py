@@ -35,7 +35,7 @@ if typing.TYPE_CHECKING:
 
     import httpx  # pragma: no cover
 
-from .._config import DEFAULT_LIMITS, Limits, Proxy, SSLContext, create_ssl_context
+from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._exceptions import (
     ConnectError,
     ConnectTimeout,
@@ -135,7 +135,7 @@ class ResponseStream(SyncByteStream):
 class HTTPTransport(BaseTransport):
     def __init__(
         self,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -144,18 +144,11 @@ class HTTPTransport(BaseTransport):
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
-        # Deprecated...
-        verify: typing.Any = None,
-        cert: typing.Any = None,
     ) -> None:
         import httpcore
 
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-        if verify is not None or cert is not None:  # pragma: nocover
-            # Deprecated...
-            ssl_context = create_ssl_context(verify, cert)
-        else:
-            ssl_context = ssl_context or SSLContext()
+        ssl_context = create_ssl_context(verify=verify)
 
         if proxy is None:
             self._pool = httpcore.ConnectionPool(
@@ -284,7 +277,7 @@ class AsyncResponseStream(AsyncByteStream):
 class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -293,18 +286,11 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
-        # Deprecated...
-        verify: typing.Any = None,
-        cert: typing.Any = None,
     ) -> None:
         import httpcore
 
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
-        if verify is not None or cert is not None:  # pragma: nocover
-            # Deprecated...
-            ssl_context = create_ssl_context(verify, cert)
-        else:
-            ssl_context = ssl_context or SSLContext()
+        ssl_context = create_ssl_context(verify=verify)
 
         if proxy is None:
             self._pool = httpcore.AsyncConnectionPool(

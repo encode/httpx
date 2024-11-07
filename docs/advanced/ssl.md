@@ -9,33 +9,30 @@ By default httpx will verify HTTPS connections, and raise an error for invalid S
 httpx.ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:997)
 ```
 
-Verification is configured through [the SSL Context API](https://docs.python.org/3/library/ssl.html#ssl-contexts).
+You can disable SSL verification completely and allow insecure requests...
 
 ```pycon
->>> context = httpx.SSLContext()
->>> context
-<SSLContext(verify=True)>
->>> httpx.get("https://www.example.com", ssl_context=context)
-httpx.ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:997)
-```
-
-You can use this to disable verification completely and allow insecure requests...
-
-```pycon
->>> context = httpx.SSLContext(verify=False)
->>> context
-<SSLContext(verify=False)>
->>> httpx.get("https://expired.badssl.com/", ssl_context=context)
+>>> httpx.get("https://expired.badssl.com/", verify=False)
 <Response [200 OK]>
 ```
 
-### Configuring client instances
-
-If you're using a `Client()` instance you should pass any SSL context when instantiating the client.
+For more complex configurations you can pass an SSL Context instance...
 
 ```pycon
->>> context = httpx.SSLContext()
->>> client = httpx.Client(ssl_context=context)
+>>> import certifi, ssl
+>>> ctx = ssl.create_default_context(cafile=certifi.where())
+>>> response = httpx.get("https://www.example.com", verify=ctx)
+```
+
+The default configuration of `verify=True` uses certificates from `certifi` for the SSL context.
+
+### Configuring client instances
+
+If you're using a `Client()` instance you should pass any verification settings when instantiating the client.
+
+```pycon
+>>> ctx = ssl.create_default_context(cafile=certifi.where())
+>>> client = httpx.Client(verify=ctx)
 ```
 
 The `client.get(...)` method and other request methods on a `Client` instance *do not* support changing the SSL settings on a per-request basis.
@@ -49,9 +46,8 @@ By default, HTTPX uses the CA bundle provided by [Certifi](https://pypi.org/proj
 You can load additional certificate verification using the [`.load_verify_locations()`](https://docs.python.org/3/library/ssl.html#ssl.SSLContext.load_verify_locations) API:
 
 ```pycon
->>> context = httpx.SSLContext()
->>> context.load_verify_locations(cafile="path/to/certs.pem")
->>> client = httpx.Client(ssl_context=context)
+>>> ctx = ssl.create_default_context(cafile="path/to/certs.pem")
+>>> client = httpx.Client(verify=ctx)
 >>> client.get("https://www.example.com")
 <Response [200 OK]>
 ```
@@ -59,9 +55,8 @@ You can load additional certificate verification using the [`.load_verify_locati
 Or by providing an certificate directory:
 
 ```pycon
->>> context = httpx.SSLContext()
->>> context.load_verify_locations(capath="path/to/certs")
->>> client = httpx.Client(ssl_context=context)
+>>> ctx = ssl.create_default_context(capath="path/to/certdir")
+>>> client = httpx.Client(verify=ctx)
 >>> client.get("https://www.example.com")
 <Response [200 OK]>
 ```
@@ -71,35 +66,34 @@ Or by providing an certificate directory:
 You can also specify a local cert to use as a client-side certificate, using the [`.load_cert_chain()`](https://docs.python.org/3/library/ssl.html#ssl.SSLContext.load_cert_chain) API:
 
 ```pycon
->>> context = httpx.SSLContext()
->>> context.load_cert_chain(certfile="path/to/client.pem")
->>> httpx.get("https://example.org", ssl_context=ssl_context)
+>>> ctx = ssl.create_default_context()
+>>> ctx.load_cert_chain(certfile="path/to/client.pem")
+>>> httpx.get("https://example.org", verify=ctx)
 <Response [200 OK]>
 ```
 
 Or including a keyfile...
 
 ```pycon
->>> context = httpx.SSLContext()
->>> context.load_cert_chain(
+>>> ctx = ssl.create_default_context()
+>>> ctx.load_cert_chain(
         certfile="path/to/client.pem",
         keyfile="path/to/client.key"
     )
->>> httpx.get("https://example.org", ssl_context=context)
+>>> httpx.get("https://example.org", verify=ctx)
 <Response [200 OK]>
 ```
 
 Or including a keyfile and password...
 
 ```pycon
->>> context = httpx.SSLContext(cert=cert)
->>> context = httpx.SSLContext()
->>> context.load_cert_chain(
+>>> ctx = ssl.create_default_context()
+>>> ctx.load_cert_chain(
         certfile="path/to/client.pem",
         keyfile="path/to/client.key"
         password="password"
     )
->>> httpx.get("https://example.org", ssl_context=context)
+>>> httpx.get("https://example.org", verify=ctx)
 <Response [200 OK]>
 ```
 
@@ -114,18 +108,8 @@ import ssl
 import truststore
 import httpx
 
-ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-client = httpx.Client(ssl_context=ssl_context)
-```
-
-Or working [directly with Python's standard library](https://docs.python.org/3/library/ssl.html)...
-
-```python
-import ssl
-import httpx
-
-ssl_context = ssl.create_default_context()
-client = httpx.Client(ssl_context=ssl_context)
+ctx = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+client = httpx.Client(verify=ctx)
 ```
 
 ### Working with `SSL_CERT_FILE` and `SSL_CERT_DIR`
@@ -135,14 +119,12 @@ Unlike `requests`, the `httpx` package does not automatically pull in [the envir
 For example...
 
 ```python
-context = httpx.SSLContext()
-
 # Use `SSL_CERT_FILE` or `SSL_CERT_DIR` if configured.
-if os.environ.get("SSL_CERT_FILE") or os.environ.get("SSL_CERT_DIR"):
-    context.load_verify_locations(
-        cafile=os.environ.get("SSL_CERT_FILE"),
-        capath=os.environ.get("SSL_CERT_DIR"),
-    )
+# Default to certifi.
+ctx = ssl.create_default_context(
+    cafile=os.environ.get("SSL_CERT_FILE", certifi.where()),
+    capath=os.environ.get("SSL_CERT_DIR"),
+)
 ```
 
 ## `SSLKEYLOGFILE`
@@ -190,10 +172,9 @@ If you do need to make HTTPS connections to a local server, for example to test 
 3. Tell HTTPX to use the certificates stored in `client.pem`:
 
 ```pycon
->>> import httpx
->>> context = httpx.SSLContext()
->>> context.load_verify_locations(cafile="/tmp/client.pem")
->>> r = httpx.get("https://localhost:8000", ssl_context=context)
+>>> ctx = ssl.create_default_context()
+>>> ctx.load_verify_locations(cafile="/tmp/client.pem")
+>>> r = httpx.get("https://localhost:8000", verify=ctx)
 >>> r
 Response <200 OK>
 ```
