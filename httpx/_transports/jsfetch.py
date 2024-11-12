@@ -467,4 +467,4 @@ class AsyncJavascriptFetchTransport(AsyncBaseTransport):
         )
 
     async def aclose(self) -> None:
-        pass # pragma: nocover
+        pass  # pragma: nocover
