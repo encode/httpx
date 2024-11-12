@@ -43,7 +43,6 @@ def wrapRunner(wrapped: T, has_jspi: bool) -> T:
             """
             import pyodide_js as pjs
             await pjs.loadPackage("coverage")
-            await pjs.loadPackage("ssl")
             from importlib.metadata import distribution
             source_file = str(distribution('httpx').locate_file('httpx'))
             import coverage

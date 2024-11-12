@@ -210,12 +210,9 @@ configure HTTPX as described in the
 the [SSL certificates section](https://www.python-httpx.org/advanced/ssl/),
 this is where our previously generated `client.pem` comes in:
 
-```
-import httpx
-
-with httpx.Client(proxy="http://127.0.0.1:8080/", verify="/path/to/client.pem") as client:
-    response = client.get("https://example.org")
-    print(response.status_code)  # should print 200
+```python
+ctx = ssl.create_default_context(cafile="/path/to/client.pem")
+client = httpx.Client(proxy="http://127.0.0.1:8080/", verify=ctx)
 ```
 
 Note, however, that HTTPS requests will only succeed to the host specified

@@ -350,6 +350,8 @@ def server() -> typing.Iterator[TestServer]:
     yield from serve_in_thread(server)
 
 
+# a local https server is need for emscripten tests
+# to work
 @pytest.fixture(scope="session")
 def https_server(
     cert_pem_file, cert_private_key_file
