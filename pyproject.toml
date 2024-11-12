@@ -130,3 +130,9 @@ markers = [
 [tool.coverage.run]
 omit = ["venv/*"]
 include = ["httpx/*", "tests/*"]
+
+[tool.coverage.paths]
+source = [
+    "httpx/",
+    "**/httpx/",
+    ]
