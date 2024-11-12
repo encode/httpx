@@ -279,7 +279,7 @@ class JavascriptFetchTransport(BaseTransport):
                 validSuspender,
             )  # pragma: no cover
 
-            return bool(validSuspender.value)
+            return bool(validSuspender.value)  # pragma: no cover
 
     def _is_in_browser_main_thread(self) -> bool:
         return hasattr(js, "window") and hasattr(js, "self") and js.self == js.window
@@ -338,7 +338,7 @@ class JavascriptFetchTransport(BaseTransport):
                 raise ConnectError(message=err.message)
 
     def close(self) -> None:
-        pass
+        pass  # pragma: nocover
 
 
 class AsyncEmscriptenStream(AsyncByteStream):
