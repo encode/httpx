@@ -23,7 +23,7 @@ import js
 import pyodide
 
 if typing.TYPE_CHECKING:
-    import ssl
+    import ssl  # pragma: nocover
 
 from .._config import DEFAULT_LIMITS, Limits
 from .._exceptions import (
@@ -47,8 +47,6 @@ SOCKET_OPTION = typing.Union[
 ]
 
 __all__ = ["AsyncJavascriptFetchTransport", "JavascriptFetchTransport"]
-
-DISABLE_JSPI = False
 
 """
 There are some headers that trigger unintended CORS preflight requests.
@@ -272,9 +270,6 @@ class JavascriptFetchTransport(BaseTransport):
         of synchronous javascript promise calls. If not we have to
         fall back to the browser XMLHttpRequest api.
         """
-        global DISABLE_JSPI
-        if DISABLE_JSPI:
-            return False
         # Ignore this next if statement from coverage because only one part
         # will be run depending on the pyodide version
         if hasattr(pyodide.ffi, "can_run_sync"):
@@ -472,4 +467,4 @@ class AsyncJavascriptFetchTransport(AsyncBaseTransport):
         )
 
     async def aclose(self) -> None:
-        pass
+        pass # pragma: nocover
