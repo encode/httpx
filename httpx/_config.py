@@ -109,7 +109,7 @@ if ssl is not None:
                 import certifi
 
                 self.load_verify_locations(cafile=certifi.where())
-            except ImportError:
+            except ImportError:  # pragma: nocover (emscripten only)
                 pass
 
             # OpenSSL keylog file support.

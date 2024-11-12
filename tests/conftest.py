@@ -351,7 +351,9 @@ def server() -> typing.Iterator[TestServer]:
 
 
 @pytest.fixture(scope="session")
-def https_server(cert_pem_file, cert_private_key_file):
+def https_server(
+    cert_pem_file, cert_private_key_file
+):  # pragma: nocover (only used by emscripten)
     config = Config(
         app=app,
         lifespan="off",

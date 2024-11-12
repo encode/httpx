@@ -8,12 +8,12 @@ export SOURCE_FILES="httpx tests"
 
 set -x
 
-if [ -d 'pyodide_dist']; then
-    IGNORE_ARGS="--omit=venv/*,httpx/_compat.py"
+if [ -d 'pyodide_dist' ]; then
+    IGNORE_ARGS="--omit=venv/*"
 else
     # if we don't have a pyodide environment set up, then don't test coverage 
     # for the emscripten transport
-    IGNORE_ARGS="--omit=httpx/_transports/emscripten.py,tests/emscripten/*,venv/*,httpx/_compat.py"
+    IGNORE_ARGS="--omit=httpx/_transports/emscripten.py,tests/emscripten/*,venv/*"
 fi
 
 ${PREFIX}coverage combine 
