@@ -6,6 +6,9 @@ from ._models import Headers
 from ._types import HeaderTypes, TimeoutTypes
 from ._urls import URL
 
+if typing.TYPE_CHECKING:
+    import ssl  # pragma: no cover
+
 __all__ = ["Limits", "Proxy", "Timeout", "create_ssl_context"]
 
 
