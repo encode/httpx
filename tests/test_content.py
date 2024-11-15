@@ -5,7 +5,6 @@ import pytest
 
 import httpx
 
-
 method = "POST"
 url = "https://www.example.com"
 
