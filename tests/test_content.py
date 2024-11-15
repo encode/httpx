@@ -520,7 +520,12 @@ def test_allow_nan_false():
 
 
 def test_encode_request_with_data_and_empty_files():
-    request = httpx.Request(data={"key": "value"}, files={})
+    request = httpx.Request(
+        url="https://www.example.com",
+        method="POST",
+        data={"key": "value"},
+        files={}
+    )
     assert request.headers["Content-Type"].startswith("multipart/form-data; boundary=")
     request.read()
     assert b'Content-Disposition: form-data; name="key"' in request.content
