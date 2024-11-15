@@ -81,7 +81,6 @@ __all__ = [
     "RequestNotRead",
     "Response",
     "ResponseNotRead",
-    "SSLContext",
     "stream",
     "StreamClosed",
     "StreamConsumed",
