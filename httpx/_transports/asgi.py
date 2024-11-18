@@ -50,17 +50,8 @@ class ASGIResponseStream(AsyncByteStream):
 class ASGITransport(AsyncBaseTransport):
     """
     A custom AsyncTransport that handles sending requests directly to an ASGI app.
-    The simplest way to use this functionality is to use the `app` argument.
 
-    ```
-    client = httpx.AsyncClient(app=app)
-    ```
-
-    Alternatively, you can setup the transport instance explicitly.
-    This allows you to include any additional configuration arguments specific
-    to the ASGITransport class:
-
-    ```
+    ```python
     transport = httpx.ASGITransport(
         app=app,
         root_path="/submount",
