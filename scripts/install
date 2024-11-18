@@ -10,7 +10,7 @@ set -x
 
 if [ -z "$GITHUB_ACTIONS" ]; then
     "$PYTHON" -m venv "$VENV"
-    PIP="$VENV/bin/python -m pip"
+    PIP="$VENV/bin/pip"
 else
     PIP="pip"
 fi

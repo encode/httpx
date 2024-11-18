@@ -28,7 +28,10 @@ jobs:
           python-version: "${{ matrix.python-version }}"
           allow-prereleases: true
       - name: "Install dependencies"
-        run: "scripts/install"
+        run: |
+          python -m pip install pip
+          python -m pip install -r requirements.txt
+
       - name: "Run linting checks"
         run: "scripts/check"
       - name: "Build package & docs"
