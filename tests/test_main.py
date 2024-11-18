@@ -114,7 +114,7 @@ def test_post(server):
         "content-type: text/plain",
         "Transfer-Encoding: chunked",
         "",
-        '{"hello": "world"}',
+        '{"hello":"world"}',
     ]
 
 

@@ -211,9 +211,10 @@ this is where our previously generated `client.pem` comes in:
 ```
 import httpx
 
-proxies = {"all": "http://127.0.0.1:8080/"}
+ssl_context = httpx.SSLContext()
+ssl_context.load_verify_locations("/path/to/client.pem")
 
-with httpx.Client(proxies=proxies, verify="/path/to/client.pem") as client:
+with httpx.Client(proxy="http://127.0.0.1:8080/", ssl_context=ssl_context) as client:
     response = client.get("https://example.org")
     print(response.status_code)  # should print 200
 ```

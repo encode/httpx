@@ -10,7 +10,7 @@ from httpx._urlparse import urlparse
 
 # URL test cases from...
 # https://github.com/web-platform-tests/wpt/blob/master/url/resources/urltestdata.json
-with open("tests/models/whatwg.json", "r") as input:
+with open("tests/models/whatwg.json", "r", encoding="utf-8") as input:
     test_cases = json.load(input)
     test_cases = [
         item
