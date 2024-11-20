@@ -44,8 +44,9 @@ def test_multipart(value, output):
 
 
 async def test_async_multipart_streaming(tmp_path, server, anyio_backend):
+    content = b"\n".join([b"a" * io.DEFAULT_BUFFER_SIZE] * 3)
     to_upload = tmp_path / "test.txt"
-    to_upload.write_bytes(b"<file content>")
+    to_upload.write_bytes(content)
     empty_file = tmp_path / "empty.txt"
     empty_file.write_bytes(b"")
     opener: typing.Any
@@ -74,7 +75,8 @@ async def test_async_multipart_streaming(tmp_path, server, anyio_backend):
                 b' filename="test.txt"\r\n',
                 b"Content-Type: text/plain\r\n",
                 b"\r\n",
-                b"<file content>\r\n",
+                content,
+                b"\r\n",
                 b"--" + boundary_bytes + b"--\r\n",
             ]
         )
