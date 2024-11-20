@@ -225,12 +225,22 @@ class FileField:
                 yield chunk
             return
 
-        async for achunk in self.file:
-            if not isinstance(achunk, bytes):
-                raise TypeError(
-                    "Multipart file uploads must be opened in binary mode,"
-                    " not text mode."
-                )
+        file_aiter = self.file.__aiter__()
+
+        try:
+            achunk = await file_aiter.__anext__()
+        except StopIteration:
+            return
+
+        if not isinstance(achunk, bytes):
+            raise TypeError(
+                "Multipart file uploads must be opened in binary mode,"
+                " not text mode."
+            )
+
+        yield achunk
+
+        async for achunk in file_aiter:
             yield achunk
 
     def render(self) -> typing.Iterator[bytes]:
