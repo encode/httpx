@@ -46,14 +46,19 @@ def test_multipart(value, output):
 async def test_async_multipart_streaming(tmp_path, server, anyio_backend):
     to_upload = tmp_path / "test.txt"
     to_upload.write_bytes(b"<file content>")
+    empty_file = tmp_path / "empty.txt"
+    empty_file.write_bytes(b"")
     opener: typing.Any
     text_opener: typing.Any
+    empty_opener: typing.Any
     if anyio_backend == "trio":
         opener = trio.open_file(to_upload, "b+r")
         text_opener = trio.open_file(to_upload, "t+r")
+        empty_opener = trio.open_file(empty_file, "b+r")
     else:
         opener = anyio.open_file(to_upload, "b+r")
         text_opener = anyio.open_file(to_upload, "t+r")
+        empty_opener = anyio.open_file(empty_file, "b+r")
     url = server.url.copy_with(path="/echo_body")
     async with await opener as fp, httpx.AsyncClient() as client:
         files = {"file": fp}
@@ -85,6 +90,10 @@ async def test_async_multipart_streaming(tmp_path, server, anyio_backend):
             match="Multipart file uploads must be opened in binary mode",
         ):
             await client.post(url, files=files)
+
+    async with await empty_opener as fp, httpx.AsyncClient() as client:
+        files = {"file": fp}
+        await client.post(url, files=files)
 
 
 @pytest.mark.parametrize(

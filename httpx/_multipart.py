@@ -229,7 +229,7 @@ class FileField:
 
         try:
             achunk = await file_aiter.__anext__()
-        except StopIteration:
+        except StopAsyncIteration:
             return
 
         if not isinstance(achunk, bytes):
