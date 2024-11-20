@@ -617,7 +617,7 @@ See pull requests #1057, #1058.
 
 * Added dedicated exception class `httpx.HTTPStatusError` for `.raise_for_status()` exceptions. (Pull #1072)
 * Added `httpx.create_ssl_context()` helper function. (Pull #996)
-* Support for proxy exlcusions like `proxies={"https://www.example.com": None}`. (Pull #1099)
+* Support for proxy exclusions like `proxies={"https://www.example.com": None}`. (Pull #1099)
 * Support `QueryParams(None)` and `client.params = None`. (Pull #1060)
 
 ### Changed
@@ -845,7 +845,7 @@ We believe the API is now pretty much stable, and are aiming for a 1.0 release s
 
 ### Fixed
 
-- Fix issue with concurrent connection acquiry. (Pull #700)
+- Fix issue with concurrent connection acquisition. (Pull #700)
 - Fix write error on closing HTTP/2 connections. (Pull #699)
 
 ## 0.10.0 (December 29th, 2019)
@@ -1094,7 +1094,7 @@ importing modules within the package.
 
 ## 0.6.7 (July 8, 2019)
 
-- Check for connection aliveness on re-acquiry (Pull #111)
+- Check for connection aliveness on re-acquisition (Pull #111)
 
 ## 0.6.6 (July 3, 2019)
 
