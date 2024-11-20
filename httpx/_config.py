@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import typing
 
+if typing.TYPE_CHECKING:
+    import ssl  # pragma: no cover
+
+
 from ._models import Headers
 from ._types import HeaderTypes, TimeoutTypes
 from ._urls import URL

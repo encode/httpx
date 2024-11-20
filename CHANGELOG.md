@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+* Made it possible to run on environments where 'ssl' is not importable (#3385)
+* Support for Emscripten (#3330)
 
 The 0.28 release includes a limited set of backwards incompatible changes.
 
