@@ -50,9 +50,9 @@ client = httpx.Client(verify=ctx)
 
 ### Working with `SSL_CERT_FILE` and `SSL_CERT_DIR`
 
-Unlike `requests`, the `httpx` package does not automatically pull in [the environment variables `SSL_CERT_FILE` or `SSL_CERT_DIR`](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set_default_verify_paths.html). If you want to use these they need to be enabled explicitly.
+Unlike `requests`, the `httpx` package does not automatically pull in [the environment variables `SSL_CERT_FILE` or `SSL_CERT_DIR`](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set_default_verify_paths.html). 
 
-For example...
+These environment variables shouldn't be required since they're obsoleted by `truststore`. They can be enabled if required like so...
 
 ```python
 # Use `SSL_CERT_FILE` or `SSL_CERT_DIR` if configured.
@@ -66,7 +66,7 @@ client = httpx.Client(verify=ctx)
 
 ### Making HTTPS requests to a local server
 
-When making requests to local servers, such as a development server running on `localhost`, you will typically be using unencrypted HTTP connections.
+When making requests to local servers such as a development server running on `localhost`, you will typically be using unencrypted HTTP connections.
 
 If you do need to make HTTPS connections to a local server, for example to test an HTTPS-only service, you will need to create and use your own certificates. Here's one way to do it...
 
