@@ -1,26 +1,28 @@
 When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
 
-### Enabling and disabling verification
+### SSL verification
 
 By default httpx will verify HTTPS connections, and raise an error for invalid SSL cases...
 
-```pycon
+```python
 >>> httpx.get("https://expired.badssl.com/")
 httpx.ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:997)
 ```
 
-You can disable SSL verification completely and allow insecure requests...
+If you're confident that you want to visit a site without using SSL you can disable SSL verification completely...
 
-```pycon
+```python
 >>> httpx.get("https://expired.badssl.com/", verify=False)
 <Response [200 OK]>
 ```
 
-### Configuring client instances
+### Custom SSL configurations
 
-If you're using a `Client()` instance you should pass any `verify=<...>` configuration when instantiating the client.
+If you're using a `Client()` instance you can pass the `verify=<...>` configuration when instantiating the client.
 
-By default the [certifi CA bundle](https://certifiio.readthedocs.io/en/latest/) is used for SSL verification.
+```python
+>>> client = httpx.Client(verify=True)
+```
 
 For more complex configurations you can pass an [SSL Context](https://docs.python.org/3/library/ssl.html) instance...
 
@@ -29,31 +31,8 @@ import certifi
 import httpx
 import ssl
 
-# This SSL context is equivelent to the default `verify=True`.
+# Use certifi for certificate validation, rather than the system truststore.
 ctx = ssl.create_default_context(cafile=certifi.where())
-client = httpx.Client(verify=ctx)
-```
-
-Using [the `truststore` package](https://truststore.readthedocs.io/) to support system certificate stores...
-
-```python
-import ssl
-import truststore
-import httpx
-
-# Use system certificate stores.
-ctx = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-client = httpx.Client(verify=ctx)
-```
-
-Loding an alternative certificate verification store using [the standard SSL context API](https://docs.python.org/3/library/ssl.html)...
-
-```python
-import httpx
-import ssl
-
-# Use an explicitly configured certificate store.
-ctx = ssl.create_default_context(cafile="path/to/certs.pem")  # Either cafile or capath.
 client = httpx.Client(verify=ctx)
 ```
 
