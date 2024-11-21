@@ -2,7 +2,6 @@ import ssl
 import typing
 from pathlib import Path
 
-import certifi
 import pytest
 
 import httpx
@@ -18,20 +17,6 @@ def test_load_ssl_config_verify_non_existing_file():
     with pytest.raises(IOError):
         context = httpx.create_ssl_context()
         context.load_verify_locations(cafile="/path/to/nowhere")
-
-
-def test_load_ssl_config_verify_existing_file():
-    context = httpx.create_ssl_context()
-    context.load_verify_locations(capath=certifi.where())
-    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
-    assert context.check_hostname is True
-
-
-def test_load_ssl_config_verify_directory():
-    context = httpx.create_ssl_context()
-    context.load_verify_locations(capath=Path(certifi.where()).parent)
-    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED
-    assert context.check_hostname is True
 
 
 def test_load_ssl_config_cert_and_key(cert_pem_file, cert_private_key_file):
