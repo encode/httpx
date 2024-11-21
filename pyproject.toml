@@ -28,7 +28,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
-    "truststore",
+    "truststore==0.10.0",
     "httpcore==1.*",
     "anyio",
     "idna",
