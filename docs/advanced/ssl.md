@@ -1,4 +1,4 @@
-When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. We rely on the [`truststore`](https://truststore.readthedocs.io/en/latest/) package to load the system certificates, ensuring that `httpx` has the same behaviour on SSL sites as your browser.
+When making a request over HTTPS we need to verify the identity of the requested host. We rely on the [`truststore`](https://truststore.readthedocs.io/en/latest/) package to load the system certificates, ensuring that `httpx` has the same behaviour on SSL sites as your browser.
 
 ### SSL verification
 
