@@ -22,10 +22,10 @@ UNSET = UnsetType()
 def create_ssl_context(verify: ssl.SSLContext | bool = True) -> ssl.SSLContext:
     import ssl
 
-    import certifi
+    import truststore
 
     if verify is True:
-        return ssl.create_default_context(cafile=certifi.where())
+        return  truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     elif verify is False:
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.check_hostname = False
