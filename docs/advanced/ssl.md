@@ -52,7 +52,7 @@ client = httpx.Client(verify=ctx)
 
 Unlike `requests`, the `httpx` package does not automatically pull in [the environment variables `SSL_CERT_FILE` or `SSL_CERT_DIR`](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set_default_verify_paths.html). 
 
-These environment variables shouldn't be required since they're obsoleted by `truststore`. They can be enabled if required like so...
+These environment variables shouldn't be necessary since they're obsoleted by `truststore`. They can be enabled if required like so...
 
 ```python
 # Use `SSL_CERT_FILE` or `SSL_CERT_DIR` if configured.
