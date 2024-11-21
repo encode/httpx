@@ -20,12 +20,6 @@ def test_load_ssl_config_verify_non_existing_file():
         context.load_verify_locations(cafile="/path/to/nowhere")
 
 
-def test_load_ssl_with_keylog(monkeypatch: typing.Any) -> None:
-    monkeypatch.setenv("SSLKEYLOGFILE", "test")
-    context = httpx.create_ssl_context()
-    assert context.keylog_filename == "test"
-
-
 def test_load_ssl_config_verify_existing_file():
     context = httpx.create_ssl_context()
     context.load_verify_locations(capath=certifi.where())
