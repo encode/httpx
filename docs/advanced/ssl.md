@@ -1,4 +1,4 @@
-When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it relies on the [`truststore`](https://truststore.readthedocs.io/en/latest/) package to load the system certificates, ensuring that `httpx` has the same behaviour on SSL sites as your browser.
+When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. We rely on the [`truststore`](https://truststore.readthedocs.io/en/latest/) package to load the system certificates, ensuring that `httpx` has the same behaviour on SSL sites as your browser.
 
 ### SSL verification
 
@@ -9,7 +9,7 @@ By default httpx will verify HTTPS connections, and raise an error for invalid S
 httpx.ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:997)
 ```
 
-If you're confident that you want to visit a site without using SSL you can disable SSL verification completely...
+If you're confident that you want to visit a site with an invalid certificate you can disable SSL verification completely...
 
 ```python
 >>> httpx.get("https://expired.badssl.com/", verify=False)
