@@ -16,7 +16,7 @@ SSL configuration has been significantly simplified.
 
 * The `verify` argument no longer accepts string arguments.
 * The `cert` argument has now been removed.
-* The `SSL_CERT_FILE` and `SSL_CERT_DIR` environment variables are no longer automatically used. They can be enabled manually although should be obsoleted by our switch to `truststore`.
+* The `SSL_CERT_FILE` and `SSL_CERT_DIR` environment variables are no longer used. They can be enabled manually although should be obsoleted by our switch to `truststore`.
 
 For users of the standard `verify=True` or `verify=False` cases this should require no changes.
 
