@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import os
 import typing
 
 from ._models import Headers
-from ._types import HeaderTypes, TimeoutTypes
+from ._types import CertTypes, HeaderTypes, TimeoutTypes
 from ._urls import URL
 
 if typing.TYPE_CHECKING:
@@ -19,28 +20,54 @@ class UnsetType:
 UNSET = UnsetType()
 
 
-def create_ssl_context(verify: ssl.SSLContext | bool = True) -> ssl.SSLContext:
+def create_ssl_context(
+    verify: ssl.SSLContext | str | bool = True,
+    cert: CertTypes | None = None,
+    trust_env: bool = True,
+) -> ssl.SSLContext:
     import ssl
+    import warnings
 
     import certifi
 
     if verify is True:
-        return ssl.create_default_context(cafile=certifi.where())
+        if trust_env and os.environ.get("SSL_CERT_FILE"):  # pragma: nocover
+            ctx = ssl.create_default_context(cafile=os.environ["SSL_CERT_FILE"])
+        elif trust_env and os.environ.get("SSL_CERT_DIR"):  # pragma: nocover
+            ctx = ssl.create_default_context(capath=os.environ["SSL_CERT_DIR"])
+        else:
+            # Default case...
+            ctx = ssl.create_default_context(cafile=certifi.where())
     elif verify is False:
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
         return ssl_context
-    elif isinstance(verify, str):  # pagma: nocover
-        # Explicitly handle this deprecated usage pattern.
-        msg = (
-            "verify should be a boolean or SSLContext, since version 0.28. "
+    elif isinstance(verify, str):  # pragma: nocover
+        message = (
+            "`verify=<str>` is deprecated. "
             "Use `verify=ssl.create_default_context(cafile=...)` "
-            "or `verify=ssl.create_default_context(capath=...)`."
+            "or `verify=ssl.create_default_context(capath=...)` instead."
         )
-        raise RuntimeError(msg)
+        warnings.warn(message, DeprecationWarning)
+        if os.path.isdir(verify):
+            return ssl.create_default_context(capath=verify)
+        return ssl.create_default_context(cafile=verify)
+    else:
+        ctx = verify
 
-    return verify
+    if cert:  # pragma: nocover
+        message = (
+            "`cert=...` is deprecated. Use `verify=<ssl_context>` instead,"
+            "with `.load_cert_chain()` to configure the certificate chain."
+        )
+        warnings.warn(message, DeprecationWarning)
+        if isinstance(cert, str):
+            ctx.load_cert_chain(cert)
+        else:
+            ctx.load_cert_chain(*cert)
+
+    return ctx
 
 
 class Timeout:

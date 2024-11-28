@@ -58,6 +58,7 @@ TimeoutTypes = Union[
     "Timeout",
 ]
 ProxyTypes = Union["URL", str, "Proxy"]
+CertTypes = Union[str, Tuple[str, str] | Tuple[str, str, str]]
 
 AuthTypes = Union[
     Tuple[Union[str, bytes], Union[str, bytes]],
