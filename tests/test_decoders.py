@@ -100,6 +100,25 @@ def test_zstd_decoding_error():
         )
 
 
+def test_zstd_empty():
+    headers = [(b"Content-Encoding", b"zstd")]
+    response = httpx.Response(200, headers=headers, content=b"")
+    assert response.content == b""
+
+
+def test_zstd_truncated():
+    body = b"test 123"
+    compressed_body = zstd.compress(body)
+
+    headers = [(b"Content-Encoding", b"zstd")]
+    with pytest.raises(httpx.DecodingError):
+        httpx.Response(
+            200,
+            headers=headers,
+            content=compressed_body[1:3],
+        )
+
+
 def test_zstd_multiframe():
     # test inspired by urllib3 test suite
     data = (
