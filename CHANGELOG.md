@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.28.0 (28th August, 2024)
+## 0.28.0 (28th November, 2024)
 
 The 0.28 release includes a limited set of deprecations.
 
@@ -12,7 +12,7 @@ The 0.28 release includes a limited set of deprecations.
 
 We are working towards a simplified SSL configuration API.
 
-For users of the standard `verify=True` or `verify=False` cases, or `verify=<ssl_context>` case this should require no changes.
+*For users of the standard `verify=True` or `verify=False` cases, or `verify=<ssl_context>` case this should require no changes. The following cases have been deprecated...*
 
 * The `verify` argument as a string argument is now deprecated and will raise warnings.
 * The `cert` argument is now deprecated and will raise warnings.
@@ -23,7 +23,7 @@ Our revised [SSL documentation](docs/advanced/ssl.md) covers how to implement th
 
 * The deprecated `proxies` argument has now been removed.
 * The deprecated `app` argument has now been removed.
-* Ensure JSON request bodies are compact. (#3363)
+* JSON request bodies use a compact representation. (#3363)
 * Review URL percent escape sets, based on WHATWG spec. (#3371, #3373)
 * Ensure `certifi` and `httpcore` are only imported if required. (#3377)
 * Treat `socks5h` as a valid proxy scheme. (#3178)
