@@ -9,11 +9,11 @@ You can set timeouts for an individual request:
 
 ```python
 # Using the top-level API:
-httpx.get('http://example.com/api/v1/example', timeout=10.0)
+httpx.get('http://example.com/api/v1/example', timeout=10)
 
 # Using a client instance:
 with httpx.Client() as client:
-    client.get("http://example.com/api/v1/example", timeout=10.0)
+    client.get("http://example.com/api/v1/example", timeout=10)
 ```
 
 Or disable timeouts for an individual request:
