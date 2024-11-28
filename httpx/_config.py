@@ -31,7 +31,7 @@ def create_ssl_context(verify: ssl.SSLContext | bool = True) -> ssl.SSLContext:
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
         return ssl_context
-    elif isinstance(verify, str):  # pagma: nocover
+    elif isinstance(verify, str):  # pragma: nocover
         # Explicitly handle this deprecated usage pattern.
         msg = (
             "verify should be a boolean or SSLContext, since version 0.28. "
