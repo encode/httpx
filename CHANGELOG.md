@@ -6,15 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## 0.28.0 (...)
 
+TODO... writeup `truststore` switch & 3.10+ requirement.
+
 The 0.28 release includes a limited set of backwards incompatible changes.
 
 **Backwards incompatible changes**:
 
 SSL configuration has been significantly simplified.
 
-* The `verify` argument no longer accepts string arguments.
-* The `cert` argument has now been removed.
-* The `SSL_CERT_FILE` and `SSL_CERT_DIR` environment variables are no longer automatically used.
+* The `verify` argument no longer accepts string arguments. Explicitly specified certificate stores can still be enabled through the SSL configuration API.
+* The `cert` argument has now been removed. Client side certificates can still be enabled through the SSL configuration API.
+* The `SSL_CERT_FILE` and `SSL_CERT_DIR` environment variables are no longer used. These environment variables can be enabled manually although should be obsoleted by our switch to `truststore`.
 
 For users of the standard `verify=True` or `verify=False` cases this should require no changes.
 

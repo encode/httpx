@@ -101,7 +101,7 @@ Or, to include the optional HTTP/2 support, use:
 $ pip install httpx[http2]
 ```
 
-HTTPX requires Python 3.8+.
+HTTPX requires Python 3.10+.
 
 ## Documentation
 
@@ -125,7 +125,7 @@ The HTTPX project relies on these excellent libraries:
 
 * `httpcore` - The underlying transport implementation for `httpx`.
   * `h11` - HTTP/1.1 support.
-* `certifi` - SSL certificates.
+* `truststore` - System SSL certificates.
 * `idna` - Internationalized domain name support.
 * `sniffio` - Async library autodetection.
 

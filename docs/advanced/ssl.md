@@ -1,26 +1,28 @@
-When making a request over HTTPS, HTTPX needs to verify the identity of the requested host. To do this, it uses a bundle of SSL certificates (a.k.a. CA bundle) delivered by a trusted certificate authority (CA).
+When making a request over HTTPS we need to verify the identity of the requested host. We rely on the [`truststore`](https://truststore.readthedocs.io/en/latest/) package to load the system certificates, ensuring that `httpx` has the same behaviour on SSL sites as your browser.
 
-### Enabling and disabling verification
+### SSL verification
 
 By default httpx will verify HTTPS connections, and raise an error for invalid SSL cases...
 
-```pycon
+```python
 >>> httpx.get("https://expired.badssl.com/")
 httpx.ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:997)
 ```
 
-You can disable SSL verification completely and allow insecure requests...
+If you're confident that you want to visit a site with an invalid certificate you can disable SSL verification completely...
 
-```pycon
+```python
 >>> httpx.get("https://expired.badssl.com/", verify=False)
 <Response [200 OK]>
 ```
 
-### Configuring client instances
+### Custom SSL configurations
 
-If you're using a `Client()` instance you should pass any `verify=<...>` configuration when instantiating the client.
+If you're using a `Client()` instance you can pass the `verify=<...>` configuration when instantiating the client.
 
-By default the [certifi CA bundle](https://certifiio.readthedocs.io/en/latest/) is used for SSL verification.
+```python
+>>> client = httpx.Client(verify=True)
+```
 
 For more complex configurations you can pass an [SSL Context](https://docs.python.org/3/library/ssl.html) instance...
 
@@ -28,32 +30,10 @@ For more complex configurations you can pass an [SSL Context](https://docs.pytho
 import certifi
 import httpx
 import ssl
+import certifi
 
-# This SSL context is equivelent to the default `verify=True`.
+# Use certifi for certificate validation, rather than the system truststore.
 ctx = ssl.create_default_context(cafile=certifi.where())
-client = httpx.Client(verify=ctx)
-```
-
-Using [the `truststore` package](https://truststore.readthedocs.io/) to support system certificate stores...
-
-```python
-import ssl
-import truststore
-import httpx
-
-# Use system certificate stores.
-ctx = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-client = httpx.Client(verify=ctx)
-```
-
-Loding an alternative certificate verification store using [the standard SSL context API](https://docs.python.org/3/library/ssl.html)...
-
-```python
-import httpx
-import ssl
-
-# Use an explicitly configured certificate store.
-ctx = ssl.create_default_context(cafile="path/to/certs.pem")  # Either cafile or capath.
 client = httpx.Client(verify=ctx)
 ```
 
@@ -71,9 +51,9 @@ client = httpx.Client(verify=ctx)
 
 ### Working with `SSL_CERT_FILE` and `SSL_CERT_DIR`
 
-Unlike `requests`, the `httpx` package does not automatically pull in [the environment variables `SSL_CERT_FILE` or `SSL_CERT_DIR`](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set_default_verify_paths.html). If you want to use these they need to be enabled explicitly.
+Unlike `requests`, the `httpx` package does not automatically pull in [the environment variables `SSL_CERT_FILE` or `SSL_CERT_DIR`](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set_default_verify_paths.html). 
 
-For example...
+These environment variables shouldn't be necessary since they're obsoleted by `truststore`. They can be enabled if required like so...
 
 ```python
 # Use `SSL_CERT_FILE` or `SSL_CERT_DIR` if configured.
@@ -87,7 +67,7 @@ client = httpx.Client(verify=ctx)
 
 ### Making HTTPS requests to a local server
 
-When making requests to local servers, such as a development server running on `localhost`, you will typically be using unencrypted HTTP connections.
+When making requests to local servers such as a development server running on `localhost`, you will typically be using unencrypted HTTP connections.
 
 If you do need to make HTTPS connections to a local server, for example to test an HTTPS-only service, you will need to create and use your own certificates. Here's one way to do it...
 
