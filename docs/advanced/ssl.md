@@ -30,6 +30,7 @@ For more complex configurations you can pass an [SSL Context](https://docs.pytho
 import certifi
 import httpx
 import ssl
+import certifi
 
 # Use certifi for certificate validation, rather than the system truststore.
 ctx = ssl.create_default_context(cafile=certifi.where())
