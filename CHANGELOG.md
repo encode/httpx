@@ -4,28 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 0.28.0 (...)
+## 0.28.0 (28th November, 2024)
 
-The 0.28 release includes a limited set of backwards incompatible changes.
+The 0.28 release includes a limited set of deprecations.
 
-**Backwards incompatible changes**:
+**Deprecations**:
 
-SSL configuration has been significantly simplified.
+We are working towards a simplified SSL configuration API.
 
-* The `verify` argument no longer accepts string arguments.
-* The `cert` argument has now been removed.
-* The `SSL_CERT_FILE` and `SSL_CERT_DIR` environment variables are no longer automatically used.
+*For users of the standard `verify=True` or `verify=False` cases, or `verify=<ssl_context>` case this should require no changes. The following cases have been deprecated...*
 
-For users of the standard `verify=True` or `verify=False` cases this should require no changes.
+* The `verify` argument as a string argument is now deprecated and will raise warnings.
+* The `cert` argument is now deprecated and will raise warnings.
 
-For information on configuring more complex SSL cases, please see the [SSL documentation](docs/advanced/ssl.md).
+Our revised [SSL documentation](docs/advanced/ssl.md) covers how to implement the same behaviour with a more constrained API.
 
 **The following changes are also included**:
 
-* The undocumented `URL.raw` property has now been deprecated, and will raise warnings.
 * The deprecated `proxies` argument has now been removed.
 * The deprecated `app` argument has now been removed.
-* Ensure JSON request bodies are compact. (#3363)
+* JSON request bodies use a compact representation. (#3363)
 * Review URL percent escape sets, based on WHATWG spec. (#3371, #3373)
 * Ensure `certifi` and `httpcore` are only imported if required. (#3377)
 * Treat `socks5h` as a valid proxy scheme. (#3178)
