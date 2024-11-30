@@ -7,7 +7,7 @@ import httpx
 
 def test_get(server):
     response = httpx.get(server.url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert response.http_version == "HTTP/1.1"
@@ -15,7 +15,7 @@ def test_get(server):
 
 def test_post(server):
     response = httpx.post(server.url, content=b"Hello, world!")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
@@ -26,7 +26,7 @@ def test_post_byte_iterator(server):
         yield b"world!"
 
     response = httpx.post(server.url, content=data())
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
@@ -38,37 +38,37 @@ def test_post_byte_stream(server):
             yield b"world!"
 
     response = httpx.post(server.url, content=Data())
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
 def test_options(server):
     response = httpx.options(server.url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
 def test_head(server):
     response = httpx.head(server.url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
 def test_put(server):
     response = httpx.put(server.url, content=b"Hello, world!")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
 def test_patch(server):
     response = httpx.patch(server.url, content=b"Hello, world!")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
 def test_delete(server):
     response = httpx.delete(server.url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
@@ -76,7 +76,7 @@ def test_stream(server):
     with httpx.stream("GET", server.url) as response:
         response.read()
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert response.http_version == "HTTP/1.1"

@@ -24,7 +24,7 @@ def test_multipart(value, output):
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
     boundary_bytes = boundary.encode("ascii")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.content == b"".join(
         [
             b"--" + boundary_bytes + b"\r\n",
@@ -62,7 +62,7 @@ def test_multipart_explicit_boundary(header: str) -> None:
     response = client.post("http://127.0.0.1:8000/", files=files, headers=headers)
     boundary_bytes = b"+++"
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.request.headers["Content-Type"] == header
     assert response.content == b"".join(
         [
@@ -90,7 +90,7 @@ def test_multipart_header_without_boundary(header: str) -> None:
     headers = {"content-type": header}
     response = client.post("http://127.0.0.1:8000/", files=files, headers=headers)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.request.headers["Content-Type"] == header
 
 
@@ -132,7 +132,7 @@ def test_multipart_file_tuple():
     boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
     boundary_bytes = boundary.encode("ascii")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.content == b"".join(
         [
             b"--" + boundary_bytes + b"\r\n",
@@ -429,13 +429,13 @@ def test_multipart_rewinds_files():
 
         files = {"file": upload}
         response = client.post("http://127.0.0.1:8000/", files=files)
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
         assert b"\r\nHello, world!\r\n" in response.content
 
         # POSTing the same file instance a second time should have the same content.
         files = {"file": upload}
         response = client.post("http://127.0.0.1:8000/", files=files)
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
         assert b"\r\nHello, world!\r\n" in response.content
 
 

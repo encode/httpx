@@ -17,7 +17,7 @@ def test_get(server):
     url = server.url
     with httpx.Client(http2=True) as http:
         response = http.get(url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.url == url
     assert response.content == b"Hello, world!"
     assert response.text == "Hello, world!"
@@ -53,7 +53,7 @@ def test_build_request(server):
         request.headers.update(headers)
         response = client.send(request)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.url == url
 
     assert response.json()["Custom-header"] == "value"
@@ -68,7 +68,7 @@ def test_build_post_request(server):
         request.headers.update(headers)
         response = client.send(request)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.url == url
 
     assert response.json()["Content-length"] == "0"
@@ -78,14 +78,14 @@ def test_build_post_request(server):
 def test_post(server):
     with httpx.Client() as client:
         response = client.post(server.url, content=b"Hello, world!")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
 def test_post_json(server):
     with httpx.Client() as client:
         response = client.post(server.url, json={"text": "Hello, world!"})
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
@@ -93,7 +93,7 @@ def test_stream_response(server):
     with httpx.Client() as client:
         with client.stream("GET", server.url) as response:
             content = response.read()
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert content == b"Hello, world!"
 
 
@@ -105,7 +105,7 @@ def test_stream_iterator(server):
             for chunk in response.iter_bytes():
                 body += chunk
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert body == b"Hello, world!"
 
 
@@ -117,7 +117,7 @@ def test_raw_iterator(server):
             for chunk in response.iter_raw():
                 body += chunk
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert body == b"Hello, world!"
 
 
@@ -149,35 +149,35 @@ def test_raise_for_status(server):
 def test_options(server):
     with httpx.Client() as client:
         response = client.options(server.url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
 def test_head(server):
     with httpx.Client() as client:
         response = client.head(server.url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
 def test_put(server):
     with httpx.Client() as client:
         response = client.put(server.url, content=b"Hello, world!")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
 def test_patch(server):
     with httpx.Client() as client:
         response = client.patch(server.url, content=b"Hello, world!")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
 def test_delete(server):
     with httpx.Client() as client:
         response = client.delete(server.url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
 
 
@@ -185,7 +185,7 @@ def test_base_url(server):
     base_url = server.url
     with httpx.Client(base_url=base_url) as client:
         response = client.get("/")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.url == base_url
 
 
@@ -353,7 +353,7 @@ def test_raw_client_header():
     )
     response = client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == [
         ["Host", "example.org"],
         ["Accept", "*/*"],
@@ -381,11 +381,11 @@ def test_mounted_transport():
     client = httpx.Client(transport=transport, mounts=mounts)
 
     response = client.get("https://www.example.com")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"app": "unmounted"}
 
     response = client.get("custom://www.example.com")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"app": "mounted"}
 
 
@@ -395,7 +395,7 @@ def test_all_mounted_transport():
     client = httpx.Client(mounts=mounts)
 
     response = client.get("https://www.example.com")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"app": "mounted"}
 
 
@@ -403,7 +403,7 @@ def test_server_extensions(server):
     url = server.url.copy_with(path="/http_version_2")
     with httpx.Client(http2=True) as client:
         response = client.get(url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.extensions["http_version"] == b"HTTP/1.1"
 
 
@@ -429,7 +429,7 @@ def test_client_decode_text_using_autodetect():
     with httpx.Client(transport=transport, default_encoding=autodetect) as client:
         response = client.get("http://www.example.com")
 
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
         assert response.reason_phrase == "OK"
         assert response.encoding == "ISO-8859-1"
         assert response.text == text
@@ -456,7 +456,7 @@ def test_client_decode_text_using_explicit_encoding():
     with httpx.Client(transport=transport, default_encoding=autodetect) as client:
         response = client.get("http://www.example.com")
 
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
         assert response.reason_phrase == "OK"
         assert response.encoding == "ISO-8859-1"
         assert response.text == text

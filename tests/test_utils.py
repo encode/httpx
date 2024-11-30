@@ -54,7 +54,7 @@ def test_logging_request(server, caplog):
     caplog.set_level(logging.INFO)
     with httpx.Client() as client:
         response = client.get(server.url)
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
 
     assert caplog.record_tuples == [
         (
@@ -69,7 +69,7 @@ def test_logging_redirect_chain(server, caplog):
     caplog.set_level(logging.INFO)
     with httpx.Client(follow_redirects=True) as client:
         response = client.get(server.url.copy_with(path="/redirect_301"))
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
 
     assert caplog.record_tuples == [
         (

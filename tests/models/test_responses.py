@@ -35,7 +35,7 @@ def test_response():
         request=httpx.Request("GET", "https://example.org"),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert response.request.method == "GET"
@@ -46,7 +46,7 @@ def test_response():
 def test_response_content():
     response = httpx.Response(200, content="Hello, world!")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert response.headers == {"Content-Length": "13"}
@@ -55,7 +55,7 @@ def test_response_content():
 def test_response_text():
     response = httpx.Response(200, text="Hello, world!")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert response.headers == {
@@ -67,7 +67,7 @@ def test_response_text():
 def test_response_html():
     response = httpx.Response(200, html="<html><body>Hello, world!</html></body>")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert response.text == "<html><body>Hello, world!</html></body>"
     assert response.headers == {
@@ -79,7 +79,7 @@ def test_response_html():
 def test_response_json():
     response = httpx.Response(200, json={"hello": "world"})
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert str(response.json()) == "{'hello': 'world'}"
     assert response.headers == {
@@ -209,7 +209,7 @@ def test_response_no_charset_with_ascii_content():
         content=content,
         headers=headers,
     )
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.encoding == "utf-8"
     assert response.text == "Hello, world!"
 
@@ -292,7 +292,7 @@ def test_response_force_encoding():
         content="Snowman: ☃".encode("utf-8"),
     )
     response.encoding = "iso-8859-1"
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert response.text == "Snowman: â\x98\x83"
     assert response.encoding == "iso-8859-1"
@@ -303,7 +303,7 @@ def test_response_force_encoding_after_text_accessed():
         200,
         content=b"Hello, world!",
     )
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert response.encoding == "utf-8"
@@ -321,7 +321,7 @@ def test_read():
         content=b"Hello, world!",
     )
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "Hello, world!"
     assert response.encoding == "utf-8"
     assert response.is_closed
@@ -336,7 +336,7 @@ def test_read():
 def test_empty_read():
     response = httpx.Response(200)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == ""
     assert response.encoding == "utf-8"
     assert response.is_closed
@@ -355,7 +355,7 @@ async def test_aread():
         content=b"Hello, world!",
     )
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "Hello, world!"
     assert response.encoding == "utf-8"
     assert response.is_closed
@@ -371,7 +371,7 @@ async def test_aread():
 async def test_empty_aread():
     response = httpx.Response(200)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == ""
     assert response.encoding == "utf-8"
     assert response.is_closed
@@ -687,7 +687,7 @@ def test_sync_streaming_response():
         content=streaming_body(),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert not response.is_closed
 
     content = response.read()
@@ -704,7 +704,7 @@ async def test_async_streaming_response():
         content=async_streaming_body(),
     )
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert not response.is_closed
 
     content = await response.aread()
@@ -916,7 +916,7 @@ def test_value_error_without_request(header_value):
 def test_response_with_unset_request():
     response = httpx.Response(200, content=b"Hello, world!")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert response.text == "Hello, world!"
     assert not response.is_error
@@ -967,7 +967,7 @@ def test_response_picklable():
     assert pickle_response.next_request is None
     assert pickle_response.stream is not None
     assert pickle_response.content == b"Hello, world!"
-    assert pickle_response.status_code == 200
+    assert pickle_response.status_code == httpx.codes.OK.value
     assert pickle_response.request.url == response.request.url
     assert pickle_response.extensions == {}
     assert pickle_response.history == []
@@ -1009,7 +1009,7 @@ def test_response_decode_text_using_autodetect():
     content = text.encode("ISO-8859-1")
     response = httpx.Response(200, content=content, default_encoding=autodetect)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert response.encoding == "ISO-8859-1"
     assert response.text == text
@@ -1031,7 +1031,7 @@ def test_response_decode_text_using_explicit_encoding():
     content = text.encode("cp1252")
     response = httpx.Response(200, content=content, default_encoding="cp1252")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.reason_phrase == "OK"
     assert response.encoding == "cp1252"
     assert response.text == text

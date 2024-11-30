@@ -168,7 +168,7 @@ async def test_basic_auth() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
@@ -187,7 +187,7 @@ async def test_basic_auth_with_stream() -> None:
         async with client.stream("GET", url) as response:
             await response.aread()
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
@@ -199,7 +199,7 @@ async def test_basic_auth_in_url() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
@@ -214,7 +214,7 @@ async def test_basic_auth_on_session() -> None:
     ) as client:
         response = await client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
@@ -230,7 +230,7 @@ async def test_custom_auth() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": "Token 123"}
 
 
@@ -247,7 +247,7 @@ def test_netrc_auth_credentials_exist() -> None:
     with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
         response = client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {
         "auth": "Basic ZXhhbXBsZS11c2VybmFtZTpleGFtcGxlLXBhc3N3b3Jk"
     }
@@ -266,7 +266,7 @@ def test_netrc_auth_credentials_do_not_exist() -> None:
     with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
         response = client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": None}
 
 
@@ -296,7 +296,7 @@ async def test_auth_disable_per_request() -> None:
     ) as client:
         response = await client.get(url, auth=None)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": None}
 
 
@@ -331,7 +331,7 @@ async def test_auth_property() -> None:
 
         url = "https://example.org/"
         response = await client.get(url)
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
         assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
@@ -362,7 +362,7 @@ async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": None}
     assert len(response.history) == 0
 
@@ -376,7 +376,7 @@ def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
     client = httpx.Client(transport=httpx.MockTransport(app))
     response = client.get(url, auth=auth)
 
-    assert response.status_code == 401
+    assert response.status_code == httpx.codes.UNAUTHORIZED.value
     assert response.json() == {"auth": None}
     assert len(response.history) == 0
 
@@ -391,7 +391,7 @@ async def test_digest_auth_200_response_including_digest_auth_header() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": None}
     assert len(response.history) == 0
 
@@ -405,7 +405,7 @@ async def test_digest_auth_401_response_without_digest_auth_header() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 401
+    assert response.status_code == httpx.codes.UNAUTHORIZED.value
     assert response.json() == {"auth": None}
     assert len(response.history) == 0
 
@@ -434,7 +434,7 @@ async def test_digest_auth(
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert len(response.history) == 1
 
     authorization = typing.cast(typing.Dict[str, typing.Any], response.json())["auth"]
@@ -465,7 +465,7 @@ async def test_digest_auth_no_specified_qop() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert len(response.history) == 1
 
     authorization = typing.cast(typing.Dict[str, typing.Any], response.json())["auth"]
@@ -497,7 +497,7 @@ async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert len(response.history) == 1
 
 
@@ -532,7 +532,7 @@ async def test_digest_auth_incorrect_credentials() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 401
+    assert response.status_code == httpx.codes.UNAUTHORIZED.value
     assert len(response.history) == 1
 
 
@@ -546,8 +546,8 @@ async def test_digest_auth_reuses_challenge() -> None:
         response_1 = await client.get(url, auth=auth)
         response_2 = await client.get(url, auth=auth)
 
-        assert response_1.status_code == 200
-        assert response_2.status_code == 200
+        assert response_1.status_code == httpx.codes.OK.value
+        assert response_2.status_code == httpx.codes.OK.value
 
         assert len(response_1.history) == 1
         assert len(response_2.history) == 0
@@ -561,7 +561,7 @@ async def test_digest_auth_resets_nonce_count_after_401() -> None:
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response_1 = await client.get(url, auth=auth)
-        assert response_1.status_code == 200
+        assert response_1.status_code == httpx.codes.OK.value
         assert len(response_1.history) == 1
 
         first_nonce = parse_keqv_list(
@@ -577,7 +577,7 @@ async def test_digest_auth_resets_nonce_count_after_401() -> None:
         # we expect the client again to try to authenticate,
         # i.e. the history length must be 1
         response_2 = await client.get(url, auth=auth)
-        assert response_2.status_code == 200
+        assert response_2.status_code == httpx.codes.OK.value
         assert len(response_2.history) == 1
 
         second_nonce = parse_keqv_list(
@@ -645,7 +645,7 @@ async def test_async_auth_history() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": "Repeat abc.abc"}
 
     assert len(response.history) == 2
@@ -671,7 +671,7 @@ def test_sync_auth_history() -> None:
     with httpx.Client(transport=httpx.MockTransport(app)) as client:
         response = client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": "Repeat abc.abc"}
 
     assert len(response.history) == 2
@@ -719,7 +719,7 @@ async def test_async_auth_reads_response_body() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": '{"auth":"xyz"}'}
 
 
@@ -735,7 +735,7 @@ def test_sync_auth_reads_response_body() -> None:
     with httpx.Client(transport=httpx.MockTransport(app)) as client:
         response = client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": '{"auth":"xyz"}'}
 
 
@@ -753,7 +753,7 @@ async def test_async_auth() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
         response = await client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": "async-auth"}
 
 
@@ -768,5 +768,5 @@ def test_sync_auth() -> None:
     with httpx.Client(transport=httpx.MockTransport(app)) as client:
         response = client.get(url, auth=auth)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"auth": "sync-auth"}

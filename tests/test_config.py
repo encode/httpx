@@ -83,7 +83,7 @@ def test_SSLContext_with_get_request(server, cert_pem_file):
     context = httpx.create_ssl_context()
     context.load_verify_locations(cert_pem_file)
     response = httpx.get(server.url, verify=context)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
 
 
 def test_limits_repr():

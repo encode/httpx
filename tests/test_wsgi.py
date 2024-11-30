@@ -95,7 +95,7 @@ def test_wsgi():
     transport = httpx.WSGITransport(app=application_factory([b"Hello, World!"]))
     client = httpx.Client(transport=transport)
     response = client.get("http://www.example.org/")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "Hello, World!"
 
 
@@ -103,7 +103,7 @@ def test_wsgi_upload():
     transport = httpx.WSGITransport(app=echo_body)
     client = httpx.Client(transport=transport)
     response = client.post("http://www.example.org/", content=b"example")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "example"
 
 
@@ -111,7 +111,7 @@ def test_wsgi_upload_with_response_stream():
     transport = httpx.WSGITransport(app=echo_body_with_response_stream)
     client = httpx.Client(transport=transport)
     response = client.post("http://www.example.org/", content=b"example")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "example"
 
 
@@ -134,7 +134,7 @@ def test_wsgi_generator():
     transport = httpx.WSGITransport(app=application_factory(output))
     client = httpx.Client(transport=transport)
     response = client.get("http://www.example.org/")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "Some content and more content"
 
 
@@ -143,7 +143,7 @@ def test_wsgi_generator_empty():
     transport = httpx.WSGITransport(app=application_factory(output))
     client = httpx.Client(transport=transport)
     response = client.get("http://www.example.org/")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == ""
 
 
@@ -152,7 +152,7 @@ def test_logging():
     transport = httpx.WSGITransport(app=log_to_wsgi_log_buffer, wsgi_errors=buffer)
     client = httpx.Client(transport=transport)
     response = client.post("http://www.example.org/", content=b"example")
-    assert response.status_code == 200  # no errors
+    assert response.status_code == httpx.codes.OK.value  # no errors
     buffer.seek(0)
     assert buffer.read() == "test1\ntest2"
 
@@ -180,7 +180,7 @@ def test_wsgi_server_port(url: str, expected_server_port: str) -> None:
     transport = httpx.WSGITransport(app=app)
     client = httpx.Client(transport=transport)
     response = client.get(url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "Hello, World!"
     assert server_port == expected_server_port
 
@@ -198,6 +198,6 @@ def test_wsgi_server_protocol():
     with httpx.Client(transport=transport, base_url="http://testserver") as client:
         response = client.get("/")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "success"
     assert server_protocol == "HTTP/1.1"

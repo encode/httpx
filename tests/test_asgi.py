@@ -76,7 +76,7 @@ async def test_asgi_transport():
         request = httpx.Request("GET", "http://www.example.com/")
         response = await transport.handle_async_request(request)
         await response.aread()
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
         assert response.content == b"Hello, World!"
 
 
@@ -86,7 +86,7 @@ async def test_asgi_transport_no_body():
         request = httpx.Request("GET", "http://www.example.com/")
         response = await transport.handle_async_request(request)
         await response.aread()
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
         assert response.content == b""
 
 
@@ -96,7 +96,7 @@ async def test_asgi():
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.get("http://www.example.org/")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "Hello, World!"
 
 
@@ -107,7 +107,7 @@ async def test_asgi_urlencoded_path():
         url = httpx.URL("http://www.example.org/").copy_with(path="/user@example.org")
         response = await client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"path": "/user@example.org"}
 
 
@@ -118,7 +118,7 @@ async def test_asgi_raw_path():
         url = httpx.URL("http://www.example.org/").copy_with(path="/user@example.org")
         response = await client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"raw_path": "/user@example.org"}
 
 
@@ -132,7 +132,7 @@ async def test_asgi_raw_path_should_not_include_querystring_portion():
         url = httpx.URL("http://www.example.org/path?query")
         response = await client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {"raw_path": "/path"}
 
 
@@ -142,7 +142,7 @@ async def test_asgi_upload():
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.post("http://www.example.org/", content=b"example")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "example"
 
 
@@ -152,7 +152,7 @@ async def test_asgi_headers():
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.get("http://www.example.org/")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {
         "headers": [
             ["host", "www.example.org"],
@@ -211,7 +211,7 @@ async def test_asgi_disconnect_after_response_complete():
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.post("http://www.example.org/", content=b"example")
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert disconnect
 
 
@@ -221,4 +221,4 @@ async def test_asgi_exc_no_raise():
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.get("http://www.example.org/")
 
-        assert response.status_code == 500
+        assert response.status_code == httpx.codes.INTERNAL_SERVER_ERROR.value

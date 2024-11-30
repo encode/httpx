@@ -30,7 +30,7 @@ def test_client_header():
     client = httpx.Client(transport=httpx.MockTransport(echo_headers), headers=headers)
     response = client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {
         "headers": {
             "accept": "*/*",
@@ -52,7 +52,7 @@ def test_header_merge():
     )
     response = client.get(url, headers=request_headers)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {
         "headers": {
             "accept": "*/*",
@@ -74,7 +74,7 @@ def test_header_merge_conflicting_headers():
     )
     response = client.get(url, headers=request_headers)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {
         "headers": {
             "accept": "*/*",
@@ -96,7 +96,7 @@ def test_header_update():
     )
     second_response = client.get(url)
 
-    assert first_response.status_code == 200
+    assert first_response.status_code == httpx.codes.OK.value
     assert first_response.json() == {
         "headers": {
             "accept": "*/*",
@@ -107,7 +107,7 @@ def test_header_update():
         }
     }
 
-    assert second_response.status_code == 200
+    assert second_response.status_code == httpx.codes.OK.value
     assert second_response.json() == {
         "headers": {
             "accept": "*/*",
@@ -125,7 +125,7 @@ def test_header_repeated_items():
     client = httpx.Client(transport=httpx.MockTransport(echo_repeated_headers_items))
     response = client.get(url, headers=[("x-header", "1"), ("x-header", "2,3")])
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
 
     echoed_headers = response.json()["headers"]
     # as per RFC 7230, the whitespace after a comma is insignificant
@@ -142,7 +142,7 @@ def test_header_repeated_multi_items():
     )
     response = client.get(url, headers=[("x-header", "1"), ("x-header", "2,3")])
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
 
     echoed_headers = response.json()["headers"]
     assert ["x-header", "1"] in echoed_headers
@@ -160,7 +160,7 @@ def test_remove_default_header():
 
     response = client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {
         "headers": {
             "accept": "*/*",
@@ -196,7 +196,7 @@ def test_host_with_auth_and_port_in_url():
     client = httpx.Client(transport=httpx.MockTransport(echo_headers))
     response = client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {
         "headers": {
             "accept": "*/*",
@@ -219,7 +219,7 @@ def test_host_with_non_default_port_in_url():
     client = httpx.Client(transport=httpx.MockTransport(echo_headers))
     response = client.get(url)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.json() == {
         "headers": {
             "accept": "*/*",

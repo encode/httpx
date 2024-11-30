@@ -13,7 +13,7 @@ async def test_get(server):
     url = server.url
     async with httpx.AsyncClient(http2=True) as client:
         response = await client.get(url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "Hello, world!"
     assert response.http_version == "HTTP/1.1"
     assert response.headers
@@ -45,7 +45,7 @@ async def test_build_request(server):
         request.headers.update(headers)
         response = await client.send(request)
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.url == url
 
     assert response.json()["Custom-header"] == "value"
@@ -56,7 +56,7 @@ async def test_post(server):
     url = server.url
     async with httpx.AsyncClient() as client:
         response = await client.post(url, content=b"Hello, world!")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
 
 
 @pytest.mark.anyio
@@ -64,7 +64,7 @@ async def test_post_json(server):
     url = server.url
     async with httpx.AsyncClient() as client:
         response = await client.post(url, json={"text": "Hello, world!"})
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
 
 
 @pytest.mark.anyio
@@ -73,7 +73,7 @@ async def test_stream_response(server):
         async with client.stream("GET", server.url) as response:
             body = await response.aread()
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert body == b"Hello, world!"
     assert response.content == b"Hello, world!"
 
@@ -84,7 +84,7 @@ async def test_access_content_stream_response(server):
         async with client.stream("GET", server.url) as response:
             pass
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     with pytest.raises(httpx.ResponseNotRead):
         response.content  # noqa: B018
 
@@ -97,7 +97,7 @@ async def test_stream_request(server):
 
     async with httpx.AsyncClient() as client:
         response = await client.post(server.url, content=hello_world())
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
 
 
 @pytest.mark.anyio
@@ -131,7 +131,7 @@ async def test_raise_for_status(server):
 async def test_options(server):
     async with httpx.AsyncClient() as client:
         response = await client.options(server.url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "Hello, world!"
 
 
@@ -139,7 +139,7 @@ async def test_options(server):
 async def test_head(server):
     async with httpx.AsyncClient() as client:
         response = await client.head(server.url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == ""
 
 
@@ -147,21 +147,21 @@ async def test_head(server):
 async def test_put(server):
     async with httpx.AsyncClient() as client:
         response = await client.put(server.url, content=b"Hello, world!")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
 
 
 @pytest.mark.anyio
 async def test_patch(server):
     async with httpx.AsyncClient() as client:
         response = await client.patch(server.url, content=b"Hello, world!")
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
 
 
 @pytest.mark.anyio
 async def test_delete(server):
     async with httpx.AsyncClient() as client:
         response = await client.delete(server.url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.text == "Hello, world!"
 
 
@@ -175,7 +175,7 @@ async def test_100_continue(server):
             server.url.copy_with(path="/echo_body"), headers=headers, content=content
         )
 
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.content == content
 
 
@@ -305,11 +305,11 @@ async def test_mounted_transport():
 
     async with httpx.AsyncClient(transport=transport, mounts=mounts) as client:
         response = await client.get("https://www.example.com")
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
         assert response.json() == {"app": "unmounted"}
 
         response = await client.get("custom://www.example.com")
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
         assert response.json() == {"app": "mounted"}
 
 
@@ -322,7 +322,7 @@ async def test_async_mock_transport():
 
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.get("https://www.example.com")
-        assert response.status_code == 200
+        assert response.status_code == httpx.codes.OK.value
         assert response.text == "Hello, world!"
 
 
@@ -371,5 +371,5 @@ async def test_server_extensions(server):
     url = server.url
     async with httpx.AsyncClient(http2=True) as client:
         response = await client.get(url)
-    assert response.status_code == 200
+    assert response.status_code == httpx.codes.OK.value
     assert response.extensions["http_version"] == b"HTTP/1.1"
