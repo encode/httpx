@@ -8,6 +8,7 @@ import typing
 from collections.abc import AsyncIterable
 from pathlib import Path
 
+from ._compat import aclosing
 from ._types import (
     AsyncByteStream,
     FileContent,
@@ -219,7 +220,7 @@ class FileField:
             yield to_bytes(chunk)
             chunk = self.file.read(self.CHUNK_SIZE)
 
-    async def arender_data(self) -> typing.AsyncIterator[bytes]:
+    async def arender_data(self) -> typing.AsyncGenerator[bytes]:
         if not isinstance(self.file, AsyncIterable):
             for chunk in self.render_data():
                 yield chunk
@@ -247,10 +248,11 @@ class FileField:
         yield self.render_headers()
         yield from self.render_data()
 
-    async def arender(self) -> typing.AsyncIterator[bytes]:
+    async def arender(self) -> typing.AsyncGenerator[bytes]:
         yield self.render_headers()
-        async for chunk in self.arender_data():
-            yield chunk
+        async with aclosing(self.arender_data()) as data:
+            async for chunk in data:
+                yield chunk
 
 
 class MultipartStream(SyncByteStream, AsyncByteStream):
@@ -294,12 +296,13 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
             yield b"\r\n"
         yield b"--%s--\r\n" % self.boundary
 
-    async def aiter_chunks(self) -> typing.AsyncIterator[bytes]:
+    async def aiter_chunks(self) -> typing.AsyncGenerator[bytes]:
         for field in self.fields:
             yield b"--%s\r\n" % self.boundary
             if isinstance(field, FileField):
-                async for chunk in field.arender():
-                    yield chunk
+                async with aclosing(field.arender()) as data:
+                    async for chunk in data:
+                        yield chunk
             else:
                 for chunk in field.render():
                     yield chunk
@@ -340,5 +343,6 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
             yield chunk
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        async for chunk in self.aiter_chunks():
-            yield chunk
+        async with aclosing(self.aiter_chunks()) as data:
+            async for chunk in data:
+                yield chunk
