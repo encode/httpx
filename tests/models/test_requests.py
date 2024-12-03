@@ -228,7 +228,6 @@ def test_request_generator_content_picklable():
     assert pickle_request.content == b"test 123"
 
 
-
 def test_request_params():
     request = httpx.Request(
         "GET", "http://example.com?c=3", params={"a": "1", "b": "2"}
