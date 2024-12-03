@@ -18,7 +18,7 @@ build==1.2.2.post1
 twine==6.0.1
 
 # Tests & Linting
-coverage[toml]==7.6.8
+coverage[toml]==7.6.1
 cryptography==44.0.0
 mypy==1.13.0
 pytest==8.3.4
