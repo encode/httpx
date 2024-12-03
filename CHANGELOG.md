@@ -28,6 +28,7 @@ Our revised [SSL documentation](docs/advanced/ssl.md) covers how to implement th
 * Ensure `certifi` and `httpcore` are only imported if required. (#3377)
 * Treat `socks5h` as a valid proxy scheme. (#3178)
 * Cleanup `Request()` method signature in line with `client.request()` and `httpx.request()`. (#3378)
+* Introduced a behavior change in request parameter handling. (#3364)
 
 ## 0.27.2 (27th August, 2024)
 
@@ -1090,7 +1091,7 @@ importing modules within the package.
 - Disable using `commonName` for hostname checking for OpenSSL 1.1.0+ (Pull #118)
 - Detect encoding for `Response.json()` (Pull #116)
 
-## 0.6.7 (July 8, 2019)
+## 0.6.7 (July 8, 9, 2019)
 
 - Check for connection aliveness on re-acquisition (Pull #111)
 
