@@ -1091,7 +1091,7 @@ importing modules within the package.
 - Disable using `commonName` for hostname checking for OpenSSL 1.1.0+ (Pull #118)
 - Detect encoding for `Response.json()` (Pull #116)
 
-## 0.6.7 (July 8, 9, 2019)
+## 0.6.7 (July 8, 2019)
 
 - Check for connection aliveness on re-acquisition (Pull #111)
 
