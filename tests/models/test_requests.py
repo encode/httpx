@@ -226,3 +226,27 @@ def test_request_generator_content_picklable():
     request.read()
     pickle_request = pickle.loads(pickle.dumps(request))
     assert pickle_request.content == b"test 123"
+
+
+def test_with_params():
+    request = httpx.Request("GET", "http://example.com", params={"a": "1", "b": "2"})
+    assert str(request.url) == "http://example.com?a=1&b=2"
+
+
+def test_merge_existing_params():
+    request = httpx.Request(
+        "GET", "http://example.com?c=3", params={"a": "1", "b": "2"}
+    )
+    assert str(request.url) == "http://example.com?c=3&a=1&b=2"
+
+
+def test_empty_params():
+    request = httpx.Request("GET", "http://example.com", params={})
+    assert str(request.url) == "http://example.com"
+    request = httpx.Request("GET", "http://example.com?a=1", params={})
+    assert str(request.url) == "http://example.com?a=1"
+
+
+def test_override_params():
+    request = httpx.Request("GET", "http://example.com?a=1", params={"a": "2"})
+    assert str(request.url) == "http://example.com?a=2"
