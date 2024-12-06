@@ -388,6 +388,7 @@ class Request:
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
+        user_cookies: Cookies | None = None,
         content: RequestContent | None = None,
         data: RequestData | None = None,
         files: RequestFiles | None = None,
@@ -399,6 +400,12 @@ class Request:
         self.url = URL(url) if params is None else URL(url, params=params)
         self.headers = Headers(headers)
         self.extensions = {} if extensions is None else dict(extensions)
+
+        # Original cookies passed by the client code, extended with domain.
+        # Used by follow-up requests, when follow_redirects == True
+        self.user_cookies = (
+            Cookies.for_url(self.url, cookies) if user_cookies is None else user_cookies
+        )
 
         if cookies:
             Cookies(cookies).set_cookie_header(self)
@@ -502,7 +509,7 @@ class Request:
         return {
             name: value
             for name, value in self.__dict__.items()
-            if name not in ["extensions", "stream"]
+            if name not in ["extensions", "stream", "user_cookies"]
         }
 
     def __setstate__(self, state: dict[str, typing.Any]) -> None:
@@ -1098,6 +1105,21 @@ class Cookies(typing.MutableMapping[str, str]):
         else:
             self.jar = cookies
 
+    @classmethod
+    def for_url(cls, url: URL, cookies: CookieTypes | None = None) -> "Cookies":
+        if cookies is None or isinstance(cookies, (Cookies, CookieJar)):
+            return cls(cookies)
+        if isinstance(cookies, Mapping):
+            cookies = cookies.items()  # type: ignore
+
+        domain = url.host
+        secure = url.scheme == "https"
+        cookies_obj = Cookies()
+
+        for name, value in cookies:  # type: ignore
+            cookies_obj.set(name, value, domain, secure=secure)
+        return cookies_obj
+
     def extract_cookies(self, response: Response) -> None:
         """
         Loads any cookies based on the response `Set-Cookie` headers.
@@ -1114,7 +1136,14 @@ class Cookies(typing.MutableMapping[str, str]):
         urllib_request = self._CookieCompatRequest(request)
         self.jar.add_cookie_header(urllib_request)
 
-    def set(self, name: str, value: str, domain: str = "", path: str = "/") -> None:
+    def set(
+        self,
+        name: str,
+        value: str,
+        domain: str = "",
+        path: str = "/",
+        secure: bool = False,
+    ) -> None:
         """
         Set a cookie value by name. May optionally include domain and path.
         """
@@ -1129,7 +1158,7 @@ class Cookies(typing.MutableMapping[str, str]):
             "domain_initial_dot": domain.startswith("."),
             "path": path,
             "path_specified": bool(path),
-            "secure": False,
+            "secure": secure,
             "expires": None,
             "discard": True,
             "comment": None,
@@ -1146,6 +1175,7 @@ class Cookies(typing.MutableMapping[str, str]):
         default: str | None = None,
         domain: str | None = None,
         path: str | None = None,
+        secure: bool | None = None,
     ) -> str | None:
         """
         Get a cookie by name. May optionally include domain and path
@@ -1156,10 +1186,11 @@ class Cookies(typing.MutableMapping[str, str]):
             if cookie.name == name:
                 if domain is None or cookie.domain == domain:
                     if path is None or cookie.path == path:
-                        if value is not None:
-                            message = f"Multiple cookies exist with name={name}"
-                            raise CookieConflict(message)
-                        value = cookie.value
+                        if secure is None or cookie.secure == secure:
+                            if value is not None:
+                                message = f"Multiple cookies exist with name={name}"
+                                raise CookieConflict(message)
+                            value = cookie.value
 
         if value is None:
             return default
