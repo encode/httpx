@@ -1,0 +1,1626 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A next-generation HTTP client for Python.">
+      
+      
+      
+        <link rel="canonical" href="https://www.python-httpx.org/api/">
+      
+      
+        <link rel="prev" href="../troubleshooting/">
+      
+      
+        <link rel="next" href="../exceptions/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.47">
+    
+    
+      
+        <title>Developer Interface - HTTPX</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.6f8fc17f.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../css/custom.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#developer-interface" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="HTTPX" class="md-header__button md-logo" aria-label="HTTPX" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            HTTPX
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Developer Interface
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/encode/httpx/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    encode/httpx
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<!-- Determine class according to configuration -->
+ 
+ 
+ 
+
+ <!-- Main navigation -->
+ <nav
+   class="md-nav md-nav--primary"
+   aria-label="nav.title"
+   data-md-level="0"
+ >
+
+   <!-- Site title -->
+   <label class="md-nav__title" for="__drawer">
+     <a
+       href=".."
+       title="HTTPX"
+       class="md-nav__button md-logo"
+       aria-label="HTTPX"
+       data-md-component="logo"
+     >
+       
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+     </a>
+     HTTPX
+   </label>
+
+   <!-- Repository information -->
+   
+     <div class="md-nav__source">
+       <a href="https://github.com/encode/httpx/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    encode/httpx
+  </div>
+</a>
+     </div>
+   
+
+   <!-- Navigation list -->
+   <ul class="md-nav__list" data-md-scrollfix>
+     
+       
+       
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+     
+       
+       
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    QuickStart
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+     
+       
+       
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/clients/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Clients
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/authentication/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Authentication
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/ssl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SSL
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/proxies/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Proxies
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/timeouts/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timeouts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/resource-limits/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Resource Limits
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/event-hooks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Event Hooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/transports/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Transports
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/text-encodings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Text Encodings
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/extensions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Extensions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+     
+       
+       
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Guides
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Guides
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../async/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Async Support
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../http2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    HTTP/2 Support
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logging
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Requests Compatibility
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+     
+       
+       
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    API Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            API Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Developer Interface
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Developer Interface
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#helper-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Helper Functions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#client" class="md-nav__link">
+    <span class="md-ellipsis">
+      Client
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asyncclient" class="md-nav__link">
+    <span class="md-ellipsis">
+      AsyncClient
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#response" class="md-nav__link">
+    <span class="md-ellipsis">
+      Response
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#request" class="md-nav__link">
+    <span class="md-ellipsis">
+      Request
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#url" class="md-nav__link">
+    <span class="md-ellipsis">
+      URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Headers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cookies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cookies
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exceptions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exceptions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment_variables/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Environment Variables
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+     
+       
+       
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Community
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Community
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../third_party_packages/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Third Party Packages
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code_of_conduct/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Code of Conduct
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+     
+   </ul>
+
+   <ul class="md-nav__list" data-md-scrollfix style="padding-top: 15px; padding-left: 10px">
+     <div>
+       <a href="https://speakeasy.com"><img src="/img/speakeasy.png" width=150px style=></img></a>
+     </div>
+   </ul>
+ </nav>
+ 
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#helper-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Helper Functions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#client" class="md-nav__link">
+    <span class="md-ellipsis">
+      Client
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#asyncclient" class="md-nav__link">
+    <span class="md-ellipsis">
+      AsyncClient
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#response" class="md-nav__link">
+    <span class="md-ellipsis">
+      Response
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#request" class="md-nav__link">
+    <span class="md-ellipsis">
+      Request
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#url" class="md-nav__link">
+    <span class="md-ellipsis">
+      URL
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#headers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Headers
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cookies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cookies
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="developer-interface">Developer Interface</h1>
+<h2 id="helper-functions">Helper Functions</h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Only use these functions if you're testing HTTPX in a console
+or making a small number of requests. Using a <code>Client</code> will
+enable HTTP/2 and connection pooling for more efficient and
+long-lived connections.</p>
+</div>
+<div class="autodoc">
+<div class="autodoc-signature"><code>httpx.<strong>request</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">method</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proxy=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=Timeout(timeout=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">verify=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_env=True</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Sends an HTTP request.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>method</strong> - HTTP method for the new <code>Request</code> object: <code>GET</code>, <code>OPTIONS</code>,
+<code>HEAD</code>, <code>POST</code>, <code>PUT</code>, <code>PATCH</code>, or <code>DELETE</code>.</li>
+<li><strong>url</strong> - URL for the new <code>Request</code> object.</li>
+<li><strong>params</strong> - <em>(optional)</em> Query parameters to include in the URL, as a
+string, dictionary, or sequence of two-tuples.</li>
+<li><strong>content</strong> - <em>(optional)</em> Binary content to include in the body of the
+request, as bytes or a byte iterator.</li>
+<li><strong>data</strong> - <em>(optional)</em> Form data to include in the body of the request,
+as a dictionary.</li>
+<li><strong>files</strong> - <em>(optional)</em> A dictionary of upload files to include in the
+body of the request.</li>
+<li><strong>json</strong> - <em>(optional)</em> A JSON serializable object to include in the body
+of the request.</li>
+<li><strong>headers</strong> - <em>(optional)</em> Dictionary of HTTP headers to include in the
+request.</li>
+<li><strong>cookies</strong> - <em>(optional)</em> Dictionary of Cookie items to include in the
+request.</li>
+<li><strong>auth</strong> - <em>(optional)</em> An authentication class to use when sending the
+request.</li>
+<li><strong>proxy</strong> - <em>(optional)</em> A proxy URL where all the traffic should be routed.</li>
+<li><strong>timeout</strong> - <em>(optional)</em> The timeout configuration to use when sending
+the request.</li>
+<li><strong>follow_redirects</strong> - <em>(optional)</em> Enables or disables HTTP redirects.</li>
+<li><strong>verify</strong> - <em>(optional)</em> Either <code>True</code> to use an SSL context with the
+default CA bundle, <code>False</code> to disable verification, or an instance of
+<code>ssl.SSLContext</code> to use a custom context.</li>
+<li><strong>trust_env</strong> - <em>(optional)</em> Enables or disables usage of environment
+variables for configuration.</li>
+</ul>
+<p><strong>Returns:</strong> <code>Response</code></p>
+<p>Usage:</p>
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span><span class="w"> </span><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="o">&gt;&gt;&gt;</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">httpx</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;https://httpbin.org/get&#39;</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span><span class="w"> </span><span class="n">response</span>
+<span class="o">&lt;</span><span class="n">Response</span><span class="w"> </span><span class="p">[</span><span class="mi">200</span><span class="w"> </span><span class="n">OK</span><span class="p">]</span><span class="o">&gt;</span>
+</code></pre></div></div>
+</div>
+<div class="autodoc">
+<div class="autodoc-signature"><code>httpx.<strong>get</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proxy=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">verify=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=Timeout(timeout=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_env=True</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Sends a <code>GET</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p>
+<p>Note that the <code>data</code>, <code>files</code>, <code>json</code> and <code>content</code> parameters are not available
+on this function, as <code>GET</code> requests should not include a request body.</p></div>
+</div>
+<div class="autodoc">
+<div class="autodoc-signature"><code>httpx.<strong>options</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proxy=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">verify=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=Timeout(timeout=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_env=True</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Sends an <code>OPTIONS</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p>
+<p>Note that the <code>data</code>, <code>files</code>, <code>json</code> and <code>content</code> parameters are not available
+on this function, as <code>OPTIONS</code> requests should not include a request body.</p></div>
+</div>
+<div class="autodoc">
+<div class="autodoc-signature"><code>httpx.<strong>head</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proxy=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">verify=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=Timeout(timeout=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_env=True</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Sends a <code>HEAD</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p>
+<p>Note that the <code>data</code>, <code>files</code>, <code>json</code> and <code>content</code> parameters are not available
+on this function, as <code>HEAD</code> requests should not include a request body.</p></div>
+</div>
+<div class="autodoc">
+<div class="autodoc-signature"><code>httpx.<strong>post</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proxy=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">verify=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=Timeout(timeout=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_env=True</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Sends a <code>POST</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+</div>
+<div class="autodoc">
+<div class="autodoc-signature"><code>httpx.<strong>put</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proxy=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">verify=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=Timeout(timeout=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_env=True</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Sends a <code>PUT</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+</div>
+<div class="autodoc">
+<div class="autodoc-signature"><code>httpx.<strong>patch</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proxy=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">verify=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=Timeout(timeout=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_env=True</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Sends a <code>PATCH</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+</div>
+<div class="autodoc">
+<div class="autodoc-signature"><code>httpx.<strong>delete</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proxy=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=Timeout(timeout=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">verify=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_env=True</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Sends a <code>DELETE</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p>
+<p>Note that the <code>data</code>, <code>files</code>, <code>json</code> and <code>content</code> parameters are not available
+on this function, as <code>DELETE</code> requests should not include a request body.</p></div>
+</div>
+<div class="autodoc">
+<div class="autodoc-signature"><code>httpx.<strong>stream</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">method</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proxy=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=Timeout(timeout=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">verify=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_env=True</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Alternative to <code>httpx.request()</code> that streams the response body
+instead of loading it into memory at once.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p>
+<p>See also: <a href="/quickstart#streaming-responses">Streaming Responses</a></p></div>
+</div>
+<h2 id="client"><code>Client</code></h2>
+<div class="autodoc">
+<div class="autodoc-signature"><em>class </em><code>httpx.<strong>Client</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">verify=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cert=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_env=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">http1=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">http2=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proxy=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">mounts=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=Timeout(timeout=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">limits=Limits(max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">max_redirects=20</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">event_hooks=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">base_url=''</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">transport=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">default_encoding='utf-8'</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>An HTTP client, with connection pooling, HTTP/2, redirects, cookie persistence, etc.</p>
+<p>It can be shared between threads.</p>
+<p>Usage:</p>
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;https://example.org&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>auth</strong> - <em>(optional)</em> An authentication class to use when sending
+requests.</li>
+<li><strong>params</strong> - <em>(optional)</em> Query parameters to include in request URLs, as
+a string, dictionary, or sequence of two-tuples.</li>
+<li><strong>headers</strong> - <em>(optional)</em> Dictionary of HTTP headers to include when
+sending requests.</li>
+<li><strong>cookies</strong> - <em>(optional)</em> Dictionary of Cookie items to include when
+sending requests.</li>
+<li><strong>verify</strong> - <em>(optional)</em> Either <code>True</code> to use an SSL context with the
+default CA bundle, <code>False</code> to disable verification, or an instance of
+<code>ssl.SSLContext</code> to use a custom context.</li>
+<li><strong>http2</strong> - <em>(optional)</em> A boolean indicating if HTTP/2 support should be
+enabled. Defaults to <code>False</code>.</li>
+<li><strong>proxy</strong> - <em>(optional)</em> A proxy URL where all the traffic should be routed.</li>
+<li><strong>timeout</strong> - <em>(optional)</em> The timeout configuration to use when sending
+requests.</li>
+<li><strong>limits</strong> - <em>(optional)</em> The limits configuration to use.</li>
+<li><strong>max_redirects</strong> - <em>(optional)</em> The maximum number of redirect responses
+that should be followed.</li>
+<li><strong>base_url</strong> - <em>(optional)</em> A URL to use as the base when building
+request URLs.</li>
+<li><strong>transport</strong> - <em>(optional)</em> A transport class to use for sending requests
+over the network.</li>
+<li><strong>trust_env</strong> - <em>(optional)</em> Enables or disables usage of environment
+variables for configuration.</li>
+<li><strong>default_encoding</strong> - <em>(optional)</em> The default encoding to use for decoding
+response text, if no charset information is included in a response Content-Type
+header. Set to a callable for automatic character set detection. Default: "utf-8".</li>
+</ul></div>
+<div class="autodoc-members">
+<div class="autodoc-signature"><code><strong>headers</strong></code></div>
+<div class="autodoc-docstring"><p>HTTP headers to include when sending requests.</p></div>
+<div class="autodoc-signature"><code><strong>cookies</strong></code></div>
+<div class="autodoc-docstring"><p>Cookie values to include when sending requests.</p></div>
+<div class="autodoc-signature"><code><strong>params</strong></code></div>
+<div class="autodoc-docstring"><p>Query parameters to include in the URL when sending requests.</p></div>
+<div class="autodoc-signature"><code><strong>auth</strong></code></div>
+<div class="autodoc-docstring"><p>Authentication class used when none is passed at the request-level.</p>
+<p>See also <a href="/quickstart/#authentication">Authentication</a>.</p></div>
+<div class="autodoc-signature"><code><strong>request</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">method</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Build and send a request.</p>
+<p>Equivalent to:</p>
+<div class="highlight"><pre><span></span><code><span class="n">request</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">build_request</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+
+<p>See <code>Client.build_request()</code>, <code>Client.send()</code> and
+<a href="/advanced/clients/#merging-of-configuration">Merging of configuration</a> for how the various parameters
+are merged with client-level configuration.</p></div>
+<div class="autodoc-signature"><code><strong>get</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>GET</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><code><strong>head</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>HEAD</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><code><strong>options</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send an <code>OPTIONS</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><code><strong>post</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>POST</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><code><strong>put</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>PUT</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><code><strong>patch</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>PATCH</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><code><strong>delete</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>DELETE</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><code><strong>stream</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">method</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Alternative to <code>httpx.request()</code> that streams the response body
+instead of loading it into memory at once.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p>
+<p>See also: <a href="/quickstart#streaming-responses">Streaming Responses</a></p></div>
+<div class="autodoc-signature"><code><strong>build_request</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">method</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Build and return a request instance.</p>
+<ul>
+<li>The <code>params</code>, <code>headers</code> and <code>cookies</code> arguments
+are merged with any values set on the client.</li>
+<li>The <code>url</code> argument is merged with any <code>base_url</code> set on the client.</li>
+</ul>
+<p>See also: <a href="/advanced/clients/#request-instances">Request instances</a></p></div>
+<div class="autodoc-signature"><code><strong>send</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">request</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">stream=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a request.</p>
+<p>The request is sent as-is, unmodified.</p>
+<p>Typically you'll want to build one with <code>Client.build_request()</code>
+so that any client-level configuration is merged into the request,
+but passing an explicit <code>httpx.Request()</code> is supported as well.</p>
+<p>See also: <a href="/advanced/clients/#request-instances">Request instances</a></p></div>
+<div class="autodoc-signature"><code><strong>close</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Close transport and proxies.</p></div>
+</div>
+</div>
+<h2 id="asyncclient"><code>AsyncClient</code></h2>
+<div class="autodoc">
+<div class="autodoc-signature"><em>class </em><code>httpx.<strong>AsyncClient</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">verify=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cert=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">http1=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">http2=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proxy=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">mounts=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=Timeout(timeout=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">limits=Limits(max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.0)</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">max_redirects=20</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">event_hooks=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">base_url=''</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">transport=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_env=True</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">default_encoding='utf-8'</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>An asynchronous HTTP client, with connection pooling, HTTP/2, redirects,
+cookie persistence, etc.</p>
+<p>It can be shared between tasks.</p>
+<p>Usage:</p>
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+<span class="o">&gt;&gt;&gt;</span>     <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;https://example.org&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><strong>auth</strong> - <em>(optional)</em> An authentication class to use when sending
+requests.</li>
+<li><strong>params</strong> - <em>(optional)</em> Query parameters to include in request URLs, as
+a string, dictionary, or sequence of two-tuples.</li>
+<li><strong>headers</strong> - <em>(optional)</em> Dictionary of HTTP headers to include when
+sending requests.</li>
+<li><strong>cookies</strong> - <em>(optional)</em> Dictionary of Cookie items to include when
+sending requests.</li>
+<li><strong>verify</strong> - <em>(optional)</em> Either <code>True</code> to use an SSL context with the
+default CA bundle, <code>False</code> to disable verification, or an instance of
+<code>ssl.SSLContext</code> to use a custom context.</li>
+<li><strong>http2</strong> - <em>(optional)</em> A boolean indicating if HTTP/2 support should be
+enabled. Defaults to <code>False</code>.</li>
+<li><strong>proxy</strong> - <em>(optional)</em> A proxy URL where all the traffic should be routed.</li>
+<li><strong>timeout</strong> - <em>(optional)</em> The timeout configuration to use when sending
+requests.</li>
+<li><strong>limits</strong> - <em>(optional)</em> The limits configuration to use.</li>
+<li><strong>max_redirects</strong> - <em>(optional)</em> The maximum number of redirect responses
+that should be followed.</li>
+<li><strong>base_url</strong> - <em>(optional)</em> A URL to use as the base when building
+request URLs.</li>
+<li><strong>transport</strong> - <em>(optional)</em> A transport class to use for sending requests
+over the network.</li>
+<li><strong>trust_env</strong> - <em>(optional)</em> Enables or disables usage of environment
+variables for configuration.</li>
+<li><strong>default_encoding</strong> - <em>(optional)</em> The default encoding to use for decoding
+response text, if no charset information is included in a response Content-Type
+header. Set to a callable for automatic character set detection. Default: "utf-8".</li>
+</ul></div>
+<div class="autodoc-members">
+<div class="autodoc-signature"><code><strong>headers</strong></code></div>
+<div class="autodoc-docstring"><p>HTTP headers to include when sending requests.</p></div>
+<div class="autodoc-signature"><code><strong>cookies</strong></code></div>
+<div class="autodoc-docstring"><p>Cookie values to include when sending requests.</p></div>
+<div class="autodoc-signature"><code><strong>params</strong></code></div>
+<div class="autodoc-docstring"><p>Query parameters to include in the URL when sending requests.</p></div>
+<div class="autodoc-signature"><code><strong>auth</strong></code></div>
+<div class="autodoc-docstring"><p>Authentication class used when none is passed at the request-level.</p>
+<p>See also <a href="/quickstart/#authentication">Authentication</a>.</p></div>
+<div class="autodoc-signature"><em>async </em><code><strong>request</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">method</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Build and send a request.</p>
+<p>Equivalent to:</p>
+<div class="highlight"><pre><span></span><code><span class="n">request</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">build_request</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+
+<p>See <code>AsyncClient.build_request()</code>, <code>AsyncClient.send()</code>
+and <a href="/advanced/clients/#merging-of-configuration">Merging of configuration</a> for how the various parameters
+are merged with client-level configuration.</p></div>
+<div class="autodoc-signature"><em>async </em><code><strong>get</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>GET</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><em>async </em><code><strong>head</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>HEAD</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><em>async </em><code><strong>options</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send an <code>OPTIONS</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><em>async </em><code><strong>post</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>POST</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><em>async </em><code><strong>put</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>PUT</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><em>async </em><code><strong>patch</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>PATCH</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><em>async </em><code><strong>delete</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a <code>DELETE</code> request.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p></div>
+<div class="autodoc-signature"><code><strong>stream</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">method</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Alternative to <code>httpx.request()</code> that streams the response body
+instead of loading it into memory at once.</p>
+<p><strong>Parameters</strong>: See <code>httpx.request</code>.</p>
+<p>See also: <a href="/quickstart#streaming-responses">Streaming Responses</a></p></div>
+<div class="autodoc-signature"><code><strong>build_request</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">method</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">url</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">content=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">data=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">files=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">json=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">headers=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">cookies=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">timeout=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">extensions=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Build and return a request instance.</p>
+<ul>
+<li>The <code>params</code>, <code>headers</code> and <code>cookies</code> arguments
+are merged with any values set on the client.</li>
+<li>The <code>url</code> argument is merged with any <code>base_url</code> set on the client.</li>
+</ul>
+<p>See also: <a href="/advanced/clients/#request-instances">Request instances</a></p></div>
+<div class="autodoc-signature"><em>async </em><code><strong>send</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">request</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">*</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">stream=False</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">auth=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">, </span><em class="autodoc-param">follow_redirects=<httpx._client.UseClientDefault object at 0x7fbd8b024e50></em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Send a request.</p>
+<p>The request is sent as-is, unmodified.</p>
+<p>Typically you'll want to build one with <code>AsyncClient.build_request()</code>
+so that any client-level configuration is merged into the request,
+but passing an explicit <code>httpx.Request()</code> is supported as well.</p>
+<p>See also: <a href="/advanced/clients/#request-instances">Request instances</a></p></div>
+<div class="autodoc-signature"><em>async </em><code><strong>aclose</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Close transport and proxies.</p></div>
+</div>
+</div>
+<h2 id="response"><code>Response</code></h2>
+<p><em>An HTTP response.</em></p>
+<ul>
+<li><code>def __init__(...)</code></li>
+<li><code>.status_code</code> - <strong>int</strong></li>
+<li><code>.reason_phrase</code> - <strong>str</strong></li>
+<li><code>.http_version</code> - <code>"HTTP/2"</code> or <code>"HTTP/1.1"</code></li>
+<li><code>.url</code> - <strong>URL</strong></li>
+<li><code>.headers</code> - <strong>Headers</strong></li>
+<li><code>.content</code> - <strong>bytes</strong></li>
+<li><code>.text</code> - <strong>str</strong></li>
+<li><code>.encoding</code> - <strong>str</strong></li>
+<li><code>.is_redirect</code> - <strong>bool</strong></li>
+<li><code>.request</code> - <strong>Request</strong></li>
+<li><code>.next_request</code> - <strong>Optional[Request]</strong></li>
+<li><code>.cookies</code> - <strong>Cookies</strong></li>
+<li><code>.history</code> - <strong>List[Response]</strong></li>
+<li><code>.elapsed</code> - <strong><a href="https://docs.python.org/3/library/datetime.html">timedelta</a></strong></li>
+<li>The amount of time elapsed between sending the request and calling <code>close()</code> on the corresponding response received for that request.
+  <a href="https://docs.python.org/3/library/datetime.html#datetime.timedelta.total_seconds">total_seconds()</a> to correctly get
+  the total elapsed seconds.</li>
+<li><code>def .raise_for_status()</code> - <strong>Response</strong></li>
+<li><code>def .json()</code> - <strong>Any</strong></li>
+<li><code>def .read()</code> - <strong>bytes</strong></li>
+<li><code>def .iter_raw([chunk_size])</code> - <strong>bytes iterator</strong></li>
+<li><code>def .iter_bytes([chunk_size])</code> - <strong>bytes iterator</strong></li>
+<li><code>def .iter_text([chunk_size])</code> - <strong>text iterator</strong></li>
+<li><code>def .iter_lines()</code> - <strong>text iterator</strong></li>
+<li><code>def .close()</code> - <strong>None</strong></li>
+<li><code>def .next()</code> - <strong>Response</strong></li>
+<li><code>def .aread()</code> - <strong>bytes</strong></li>
+<li><code>def .aiter_raw([chunk_size])</code> - <strong>async bytes iterator</strong></li>
+<li><code>def .aiter_bytes([chunk_size])</code> - <strong>async bytes iterator</strong></li>
+<li><code>def .aiter_text([chunk_size])</code> - <strong>async text iterator</strong></li>
+<li><code>def .aiter_lines()</code> - <strong>async text iterator</strong></li>
+<li><code>def .aclose()</code> - <strong>None</strong></li>
+<li><code>def .anext()</code> - <strong>Response</strong></li>
+</ul>
+<h2 id="request"><code>Request</code></h2>
+<p><em>An HTTP request. Can be constructed explicitly for more control over exactly
+what gets sent over the wire.</em></p>
+<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">request</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;https://example.org&quot;</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;host&#39;</span><span class="p">:</span> <span class="s1">&#39;example.org&#39;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+</code></pre></div>
+
+<ul>
+<li><code>def __init__(method, url, [params], [headers], [cookies], [content], [data], [files], [json], [stream])</code></li>
+<li><code>.method</code> - <strong>str</strong></li>
+<li><code>.url</code> - <strong>URL</strong></li>
+<li><code>.content</code> - <strong>byte</strong>, <strong>byte iterator</strong>, or <strong>byte async iterator</strong></li>
+<li><code>.headers</code> - <strong>Headers</strong></li>
+<li><code>.cookies</code> - <strong>Cookies</strong></li>
+</ul>
+<h2 id="url"><code>URL</code></h2>
+<p><em>A normalized, IDNA supporting URL.</em></p>
+<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">url</span> <span class="o">=</span> <span class="n">URL</span><span class="p">(</span><span class="s2">&quot;https://example.org/&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">url</span><span class="o">.</span><span class="n">host</span>
+<span class="go">&#39;example.org&#39;</span>
+</code></pre></div>
+
+<ul>
+<li><code>def __init__(url, **kwargs)</code></li>
+<li><code>.scheme</code> - <strong>str</strong></li>
+<li><code>.authority</code> - <strong>str</strong></li>
+<li><code>.host</code> - <strong>str</strong></li>
+<li><code>.port</code> - <strong>int</strong></li>
+<li><code>.path</code> - <strong>str</strong></li>
+<li><code>.query</code> - <strong>str</strong></li>
+<li><code>.raw_path</code> - <strong>str</strong></li>
+<li><code>.fragment</code> - <strong>str</strong></li>
+<li><code>.is_ssl</code> - <strong>bool</strong></li>
+<li><code>.is_absolute_url</code> - <strong>bool</strong></li>
+<li><code>.is_relative_url</code> - <strong>bool</strong></li>
+<li><code>def .copy_with([scheme], [authority], [path], [query], [fragment])</code> - <strong>URL</strong></li>
+</ul>
+<h2 id="headers"><code>Headers</code></h2>
+<p><em>A case-insensitive multi-dict.</em></p>
+<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">headers</span> <span class="o">=</span> <span class="n">Headers</span><span class="p">({</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;content-type&#39;</span><span class="p">]</span>
+<span class="go">&#39;application/json&#39;</span>
+</code></pre></div>
+
+<ul>
+<li><code>def __init__(self, headers, encoding=None)</code></li>
+<li><code>def copy()</code> - <strong>Headers</strong></li>
+</ul>
+<h2 id="cookies"><code>Cookies</code></h2>
+<p><em>A dict-like cookie store.</em></p>
+<div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cookies</span> <span class="o">=</span> <span class="n">Cookies</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cookies</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;example.org&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<ul>
+<li><code>def __init__(cookies: [dict, Cookies, CookieJar])</code></li>
+<li><code>.jar</code> - <strong>CookieJar</strong></li>
+<li><code>def extract_cookies(response)</code></li>
+<li><code>def set_cookie_header(request)</code></li>
+<li><code>def set(name, value, [domain], [path])</code></li>
+<li><code>def get(name, [domain], [path])</code></li>
+<li><code>def delete(name, [domain], [path])</code></li>
+<li><code>def clear([domain], [path])</code></li>
+<li><em>Standard mutable mapping interface</em></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>
