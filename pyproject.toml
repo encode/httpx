@@ -30,7 +30,6 @@ classifiers = [
 dependencies = [
     "certifi",
     "httpcore==1.*",
-    "anyio",
     "idna",
 ]
 dynamic = ["readme", "version"]
@@ -53,6 +52,9 @@ socks = [
 ]
 zstd = [
   "zstandard>=0.18.0",
+]
+test = [
+    "anyio",
 ]
 
 [project.scripts]
