@@ -398,7 +398,7 @@ class Request:
         self.method = method.upper()
         self.url = URL(url) if params is None else URL(url, params=params)
         self.headers = Headers(headers)
-        self.extensions = {} if extensions is None else extensions
+        self.extensions = {} if extensions is None else dict(extensions)
 
         if cookies:
             Cookies(cookies).set_cookie_header(self)
@@ -537,7 +537,7 @@ class Response:
         # the client will set `response.next_request`.
         self.next_request: Request | None = None
 
-        self.extensions: ResponseExtensions = {} if extensions is None else extensions
+        self.extensions = {} if extensions is None else dict(extensions)
         self.history = [] if history is None else list(history)
 
         self.is_closed = False

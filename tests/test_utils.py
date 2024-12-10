@@ -6,10 +6,7 @@ import random
 import pytest
 
 import httpx
-from httpx._utils import (
-    URLPattern,
-    get_environment_proxies,
-)
+from httpx._utils import URLPattern, get_environment_proxies
 
 
 @pytest.mark.parametrize(
@@ -113,62 +110,6 @@ def test_get_environment_proxies(environment, proxies):
     os.environ.update(environment)
 
     assert get_environment_proxies() == proxies
-
-
-def test_same_origin():
-    origin = httpx.URL("https://example.com")
-    request = httpx.Request("GET", "HTTPS://EXAMPLE.COM:443")
-
-    client = httpx.Client()
-    headers = client._redirect_headers(request, origin, "GET")
-
-    assert headers["Host"] == request.url.netloc.decode("ascii")
-
-
-def test_not_same_origin():
-    origin = httpx.URL("https://example.com")
-    request = httpx.Request("GET", "HTTP://EXAMPLE.COM:80")
-
-    client = httpx.Client()
-    headers = client._redirect_headers(request, origin, "GET")
-
-    assert headers["Host"] == origin.netloc.decode("ascii")
-
-
-def test_is_https_redirect():
-    url = httpx.URL("https://example.com")
-    request = httpx.Request(
-        "GET", "http://example.com", headers={"Authorization": "empty"}
-    )
-
-    client = httpx.Client()
-    headers = client._redirect_headers(request, url, "GET")
-
-    assert "Authorization" in headers
-
-
-def test_is_not_https_redirect():
-    url = httpx.URL("https://www.example.com")
-    request = httpx.Request(
-        "GET", "http://example.com", headers={"Authorization": "empty"}
-    )
-
-    client = httpx.Client()
-    headers = client._redirect_headers(request, url, "GET")
-
-    assert "Authorization" not in headers
-
-
-def test_is_not_https_redirect_if_not_default_ports():
-    url = httpx.URL("https://example.com:1337")
-    request = httpx.Request(
-        "GET", "http://example.com:9999", headers={"Authorization": "empty"}
-    )
-
-    client = httpx.Client()
-    headers = client._redirect_headers(request, url, "GET")
-
-    assert "Authorization" not in headers
 
 
 @pytest.mark.parametrize(

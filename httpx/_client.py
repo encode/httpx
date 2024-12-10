@@ -37,6 +37,7 @@ from ._transports import (
 from ._types import (
     AsyncByteStream,
     AuthTypes,
+    CertTypes,
     CookieTypes,
     HeaderTypes,
     ProxyTypes,
@@ -49,12 +50,7 @@ from ._types import (
     TimeoutTypes,
 )
 from ._urls import URL, QueryParams
-from ._utils import (
-    URLPattern,
-    get_environment_proxies,
-    is_https_redirect,
-    same_origin,
-)
+from ._utils import URLPattern, get_environment_proxies
 
 if typing.TYPE_CHECKING:
     import ssl  # pragma: no cover
@@ -66,6 +62,38 @@ __all__ = ["USE_CLIENT_DEFAULT", "AsyncClient", "Client"]
 # https://www.python.org/dev/peps/pep-0484/#annotating-instance-and-class-methods
 T = typing.TypeVar("T", bound="Client")
 U = typing.TypeVar("U", bound="AsyncClient")
+
+
+def _is_https_redirect(url: URL, location: URL) -> bool:
+    """
+    Return 'True' if 'location' is a HTTPS upgrade of 'url'
+    """
+    if url.host != location.host:
+        return False
+
+    return (
+        url.scheme == "http"
+        and _port_or_default(url) == 80
+        and location.scheme == "https"
+        and _port_or_default(location) == 443
+    )
+
+
+def _port_or_default(url: URL) -> int | None:
+    if url.port is not None:
+        return url.port
+    return {"http": 80, "https": 443}.get(url.scheme)
+
+
+def _same_origin(url: URL, other: URL) -> bool:
+    """
+    Return 'True' if the given URLs share the same origin.
+    """
+    return (
+        url.scheme == other.scheme
+        and url.host == other.host
+        and _port_or_default(url) == _port_or_default(other)
+    )
 
 
 class UseClientDefault:
@@ -526,8 +554,8 @@ class BaseClient:
         """
         headers = Headers(request.headers)
 
-        if not same_origin(url, request.url):
-            if not is_https_redirect(request.url, url):
+        if not _same_origin(url, request.url):
+            if not _is_https_redirect(request.url, url):
                 # Strip Authorization headers when responses are redirected
                 # away from the origin. (Except for direct HTTP to HTTPS redirects.)
                 headers.pop("Authorization", None)
@@ -597,8 +625,6 @@ class Client(BaseClient):
     * **http2** - *(optional)* A boolean indicating if HTTP/2 support should be
     enabled. Defaults to `False`.
     * **proxy** - *(optional)* A proxy URL where all the traffic should be routed.
-    * **proxies** - *(optional)* A dictionary mapping proxy keys to proxy
-    URLs.
     * **timeout** - *(optional)* The timeout configuration to use when sending
     requests.
     * **limits** - *(optional)* The limits configuration to use.
@@ -622,7 +648,9 @@ class Client(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        verify: ssl.SSLContext | bool = True,
+        verify: ssl.SSLContext | str | bool = True,
+        cert: CertTypes | None = None,
+        trust_env: bool = True,
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
@@ -634,7 +662,6 @@ class Client(BaseClient):
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
         transport: BaseTransport | None = None,
-        trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
     ) -> None:
         super().__init__(
@@ -665,6 +692,8 @@ class Client(BaseClient):
 
         self._transport = self._init_transport(
             verify=verify,
+            cert=cert,
+            trust_env=trust_env,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -676,6 +705,8 @@ class Client(BaseClient):
             else self._init_proxy_transport(
                 proxy,
                 verify=verify,
+                cert=cert,
+                trust_env=trust_env,
                 http1=http1,
                 http2=http2,
                 limits=limits,
@@ -691,7 +722,9 @@ class Client(BaseClient):
 
     def _init_transport(
         self,
-        verify: ssl.SSLContext | bool = True,
+        verify: ssl.SSLContext | str | bool = True,
+        cert: CertTypes | None = None,
+        trust_env: bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -702,6 +735,8 @@ class Client(BaseClient):
 
         return HTTPTransport(
             verify=verify,
+            cert=cert,
+            trust_env=trust_env,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -710,13 +745,17 @@ class Client(BaseClient):
     def _init_proxy_transport(
         self,
         proxy: Proxy,
-        verify: ssl.SSLContext | bool = True,
+        verify: ssl.SSLContext | str | bool = True,
+        cert: CertTypes | None = None,
+        trust_env: bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
     ) -> BaseTransport:
         return HTTPTransport(
             verify=verify,
+            cert=cert,
+            trust_env=trust_env,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -1323,7 +1362,8 @@ class AsyncClient(BaseClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        verify: ssl.SSLContext | bool = True,
+        verify: ssl.SSLContext | str | bool = True,
+        cert: CertTypes | None = None,
         http1: bool = True,
         http2: bool = False,
         proxy: ProxyTypes | None = None,
@@ -1366,6 +1406,8 @@ class AsyncClient(BaseClient):
 
         self._transport = self._init_transport(
             verify=verify,
+            cert=cert,
+            trust_env=trust_env,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -1378,6 +1420,8 @@ class AsyncClient(BaseClient):
             else self._init_proxy_transport(
                 proxy,
                 verify=verify,
+                cert=cert,
+                trust_env=trust_env,
                 http1=http1,
                 http2=http2,
                 limits=limits,
@@ -1392,7 +1436,9 @@ class AsyncClient(BaseClient):
 
     def _init_transport(
         self,
-        verify: ssl.SSLContext | bool = True,
+        verify: ssl.SSLContext | str | bool = True,
+        cert: CertTypes | None = None,
+        trust_env: bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -1403,6 +1449,8 @@ class AsyncClient(BaseClient):
 
         return AsyncHTTPTransport(
             verify=verify,
+            cert=cert,
+            trust_env=trust_env,
             http1=http1,
             http2=http2,
             limits=limits,
@@ -1411,13 +1459,17 @@ class AsyncClient(BaseClient):
     def _init_proxy_transport(
         self,
         proxy: Proxy,
-        verify: ssl.SSLContext | bool = True,
+        verify: ssl.SSLContext | str | bool = True,
+        cert: CertTypes | None = None,
+        trust_env: bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
     ) -> AsyncBaseTransport:
         return AsyncHTTPTransport(
             verify=verify,
+            cert=cert,
+            trust_env=trust_env,
             http1=http1,
             http2=http2,
             limits=limits,
