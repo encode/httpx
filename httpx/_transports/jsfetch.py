@@ -34,7 +34,7 @@ from .._exceptions import (
     RequestError,
 )
 from .._models import Request, Response
-from .._types import AsyncByteStream, ProxyTypes, SyncByteStream
+from .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream
 from .base import AsyncBaseTransport, BaseTransport
 
 T = typing.TypeVar("T", bound="JavascriptFetchTransport")
@@ -176,7 +176,9 @@ class EmscriptenStream(SyncByteStream):
 class JavascriptFetchTransport(BaseTransport):
     def __init__(
         self,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | str | bool = True,
+        cert: CertTypes | None = None,
+        trust_env: bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -185,9 +187,6 @@ class JavascriptFetchTransport(BaseTransport):
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
-        # Deprecated...
-        verify: typing.Any = None,
-        cert: typing.Any = None,
     ) -> None:
         pass
 
@@ -374,7 +373,9 @@ class AsyncEmscriptenStream(AsyncByteStream):
 class AsyncJavascriptFetchTransport(AsyncBaseTransport):
     def __init__(
         self,
-        ssl_context: ssl.SSLContext | None = None,
+        verify: ssl.SSLContext | str | bool = True,
+        cert: CertTypes | None = None,
+        trust_env: bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
@@ -383,9 +384,6 @@ class AsyncJavascriptFetchTransport(AsyncBaseTransport):
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
-        # Deprecated...
-        verify: typing.Any = None,
-        cert: typing.Any = None,
     ) -> None:
         pass
 
