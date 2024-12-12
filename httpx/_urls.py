@@ -74,7 +74,7 @@ class URL:
       themselves.
     """
 
-    def __init__(self, url: URL | str = "", **kwargs: typing.Any) -> None:
+    def __init__(self, url: URL | str | typing.Any = "", **kwargs: typing.Any) -> None:
         if kwargs:
             allowed = {
                 "scheme": str,
