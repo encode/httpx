@@ -113,9 +113,7 @@ class URL:
                 params = kwargs.pop("params")
                 kwargs["query"] = None if not params else str(QueryParams(params))
 
-        if isinstance(url, str):
-            self._uri_reference = urlparse(url, **kwargs)
-        elif isinstance(url, URL):
+        if isinstance(url, URL):
             self._uri_reference = url._uri_reference.copy_with(**kwargs)
         else:
             self._uri_reference = urlparse(str(url), **kwargs)
