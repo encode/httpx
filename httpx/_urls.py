@@ -6,7 +6,7 @@ from urllib.parse import parse_qs, unquote, urlencode
 import idna
 
 from ._types import QueryParamTypes
-from ._urlparse import urlparse
+from ._urlparse import ParseResult, urlparse
 from ._utils import primitive_value_to_str
 
 __all__ = ["URL", "QueryParams"]
@@ -113,6 +113,7 @@ class URL:
                 params = kwargs.pop("params")
                 kwargs["query"] = None if not params else str(QueryParams(params))
 
+        self._uri_reference: ParseResult
         if isinstance(url, URL):
             self._uri_reference = url._uri_reference.copy_with(**kwargs)
         else:
