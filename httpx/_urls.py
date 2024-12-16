@@ -12,6 +12,10 @@ from ._utils import primitive_value_to_str
 __all__ = ["URL", "QueryParams"]
 
 
+class HasDunderStr(typing.Protocol):
+    def __str__(self): ...
+
+
 class URL:
     """
     url = httpx.URL("HTTPS://jo%40email.com:a%20secret@müller.de:1234/pa%20th?search=ab#anchorlink")
@@ -74,7 +78,9 @@ class URL:
       themselves.
     """
 
-    def __init__(self, url: URL | str | typing.Any = "", **kwargs: typing.Any) -> None:
+    def __init__(
+        self, url: URL | str | HasDunderStr = "", **kwargs: typing.Any
+    ) -> None:
         if kwargs:
             allowed = {
                 "scheme": str,
