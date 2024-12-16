@@ -113,7 +113,7 @@ what gets sent over the wire.*
 >>> url.host
 'example.org'
 
-from pydantic import HttpUrl
+>>> from pydantic import HttpUrl
 >>> pydantic_url = HttpUrl("https://example.org/")
 >>> url = URL(pydantic_url)
 >>> url.host
