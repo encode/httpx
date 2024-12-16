@@ -13,7 +13,7 @@ __all__ = ["URL", "QueryParams"]
 
 
 class HasDunderStr(typing.Protocol):
-    def __str__(self): ...
+    def __str__(self) -> str: ...
 
 
 class URL:
