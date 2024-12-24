@@ -365,7 +365,8 @@ class BaseClient:
         """
         url = self._merge_url(url)
         headers = self._merge_headers(headers)
-        cookies = self._merge_cookies(cookies)
+        user_cookies = Cookies.for_url(url, cookies)
+        cookies = self._merge_cookies(user_cookies)
         params = self._merge_queryparams(params)
         extensions = {} if extensions is None else extensions
         if "timeout" not in extensions:
@@ -385,6 +386,7 @@ class BaseClient:
             params=params,
             headers=headers,
             cookies=cookies,
+            user_cookies=user_cookies,
             extensions=extensions,
         )
 
@@ -481,12 +483,13 @@ class BaseClient:
         url = self._redirect_url(request, response)
         headers = self._redirect_headers(request, url, method)
         stream = self._redirect_stream(request, method)
-        cookies = Cookies(self.cookies)
+        cookies = self._merge_cookies(request.user_cookies)
         return Request(
             method=method,
             url=url,
             headers=headers,
             cookies=cookies,
+            user_cookies=request.user_cookies,
             stream=stream,
             extensions=request.extensions,
         )
