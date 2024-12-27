@@ -659,6 +659,7 @@ class Client(BaseClient):
         transport: BaseTransport | None = None,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
     ) -> None:
+        http2 = False # 强制不使用http2
         super().__init__(
             auth=auth,
             params=params,
@@ -672,7 +673,7 @@ class Client(BaseClient):
             trust_env=trust_env,
             default_encoding=default_encoding,
         )
-
+    
         if http2:
             try:
                 import h2  # noqa
@@ -694,6 +695,7 @@ class Client(BaseClient):
             limits=limits,
             transport=transport,
         )
+        http2=False
         self._mounts: dict[URLPattern, BaseTransport | None] = {
             URLPattern(key): None
             if proxy is None
@@ -725,6 +727,7 @@ class Client(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         transport: BaseTransport | None = None,
     ) -> BaseTransport:
+        http2=False
         if transport is not None:
             return transport
 
@@ -747,6 +750,7 @@ class Client(BaseClient):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
     ) -> BaseTransport:
+        http2=False
         return HTTPTransport(
             verify=verify,
             cert=cert,
@@ -1373,6 +1377,7 @@ class AsyncClient(BaseClient):
         trust_env: bool = True,
         default_encoding: str | typing.Callable[[bytes], str] = "utf-8",
     ) -> None:
+        http2 = False
         super().__init__(
             auth=auth,
             params=params,
@@ -1439,6 +1444,7 @@ class AsyncClient(BaseClient):
         limits: Limits = DEFAULT_LIMITS,
         transport: AsyncBaseTransport | None = None,
     ) -> AsyncBaseTransport:
+        http2 = False
         if transport is not None:
             return transport
 
@@ -1461,6 +1467,7 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
     ) -> AsyncBaseTransport:
+        http2 = False
         return AsyncHTTPTransport(
             verify=verify,
             cert=cert,
