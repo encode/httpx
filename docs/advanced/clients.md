@@ -270,8 +270,9 @@ multipart file encoding is available by passing a dictionary with the
 name of the payloads as keys and either tuple of elements or a file-like object or a string as values.
 
 ```pycon
->>> files = {'upload-file': ('report.xls', open('report.xls', 'rb'), 'application/vnd.ms-excel')}
->>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> with open('report.xls', 'rb') as report_file:
+...     files = {'upload-file': ('report.xls', report_file, 'application/vnd.ms-excel')}
+...     r = httpx.post("https://httpbin.org/post", files=files)
 >>> print(r.text)
 {
   ...
@@ -318,7 +319,10 @@ To do that, pass a list of `(field, <file>)` items instead of a dictionary, allo
 For instance this request sends 2 files, `foo.png` and `bar.png` in one request on the `images` form field:
 
 ```pycon
->>> files = [('images', ('foo.png', open('foo.png', 'rb'), 'image/png')),
-                      ('images', ('bar.png', open('bar.png', 'rb'), 'image/png'))]
->>> r = httpx.post("https://httpbin.org/post", files=files)
+>>> with open('foo.png', 'rb') as foo_file, open('bar.png', 'rb') as bar_file:
+...     files = [
+...         ('images', ('foo.png', foo_file, 'image/png')),
+...         ('images', ('bar.png', bar_file, 'image/png')),
+...     ]
+...     r = httpx.post("https://httpbin.org/post", files=files)
 ```
