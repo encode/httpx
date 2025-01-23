@@ -82,6 +82,12 @@ Allows consuming Server-Sent Events (SSE) with HTTPX.
 
 A library for scraping the web built on top of HTTPX.
 
+### httpx-retry
+
+[Github](https://github.com/mharrisb1/httpx-retry)
+
+Middleware for implementing retry policies with HTTPX
+
 ## Gists
 
 <!-- NOTE: this list is in alphabetical order. -->
