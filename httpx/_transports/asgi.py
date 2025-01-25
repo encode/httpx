@@ -9,9 +9,20 @@ from .base import AsyncBaseTransport
 if typing.TYPE_CHECKING:  # pragma: no cover
     import asyncio
 
+    import anyio.abc
+    import anyio.streams.memory
     import trio
 
     Event = typing.Union[asyncio.Event, trio.Event]
+    MessageReceiveStream = typing.Union[
+        anyio.streams.memory.MemoryObjectReceiveStream["_Message"],
+        trio.MemoryReceiveChannel["_Message"],
+    ]
+    MessageSendStream = typing.Union[
+        anyio.streams.memory.MemoryObjectSendStream["_Message"],
+        trio.MemorySendChannel["_Message"],
+    ]
+    TaskGroup = typing.Union[anyio.abc.TaskGroup, trio.Nursery]
 
 
 _Message = typing.MutableMapping[str, typing.Any]
@@ -50,12 +61,71 @@ def create_event() -> Event:
     return asyncio.Event()
 
 
+def create_memory_object_stream(
+    max_buffer_size: float,
+) -> tuple[MessageSendStream, MessageReceiveStream]:
+    if is_running_trio():
+        import trio
+
+        return trio.open_memory_channel(max_buffer_size)
+
+    import anyio
+
+    return anyio.create_memory_object_stream(max_buffer_size)
+
+
+def create_task_group() -> typing.AsyncContextManager[TaskGroup]:
+    if is_running_trio():
+        import trio
+
+        return trio.open_nursery()
+
+    import anyio
+
+    return anyio.create_task_group()
+
+
+def get_end_of_stream_error_type() -> type[anyio.EndOfStream | trio.EndOfChannel]:
+    if is_running_trio():
+        import trio
+
+        return trio.EndOfChannel
+
+    import anyio
+
+    return anyio.EndOfStream
+
+
 class ASGIResponseStream(AsyncByteStream):
-    def __init__(self, body: list[bytes]) -> None:
-        self._body = body
+    def __init__(
+        self,
+        ignore_body: bool,
+        asgi_generator: typing.AsyncGenerator[_Message, None],
+        disconnect_request_event: Event,
+    ) -> None:
+        self._ignore_body = ignore_body
+        self._asgi_generator = asgi_generator
+        self._disconnect_request_event = disconnect_request_event
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        yield b"".join(self._body)
+        more_body = True
+        try:
+            async for message in self._asgi_generator:
+                assert message["type"] != "http.response.start"
+                if message["type"] == "http.response.body":
+                    assert more_body
+                    chunk = message.get("body", b"")
+                    more_body = message.get("more_body", False)
+                    if chunk and not self._ignore_body:
+                        yield chunk
+                    if not more_body:
+                        self._disconnect_request_event.set()
+        finally:
+            await self.aclose()
+
+    async def aclose(self) -> None:
+        self._disconnect_request_event.set()
+        await self._asgi_generator.aclose()
 
 
 class ASGITransport(AsyncBaseTransport):
@@ -98,6 +168,27 @@ class ASGITransport(AsyncBaseTransport):
         self,
         request: Request,
     ) -> Response:
+        disconnect_request_event = create_event()
+        asgi_generator = self._stream_asgi_messages(request, disconnect_request_event)
+
+        async for message in asgi_generator:
+            if message["type"] == "http.response.start":
+                return Response(
+                    status_code=message["status"],
+                    headers=message.get("headers", []),
+                    stream=ASGIResponseStream(
+                        ignore_body=request.method == "HEAD",
+                        asgi_generator=asgi_generator,
+                        disconnect_request_event=disconnect_request_event,
+                    ),
+                )
+        else:
+            disconnect_request_event.set()
+            return Response(status_code=500, headers=[])
+
+    async def _stream_asgi_messages(
+        self, request: Request, disconnect_request_event: Event
+    ) -> typing.AsyncGenerator[typing.MutableMapping[str, typing.Any]]:
         assert isinstance(request.stream, AsyncByteStream)
 
         # ASGI scope.
@@ -120,12 +211,13 @@ class ASGITransport(AsyncBaseTransport):
         request_body_chunks = request.stream.__aiter__()
         request_complete = False
 
-        # Response.
-        status_code = None
-        response_headers = None
-        body_parts = []
-        response_started = False
-        response_complete = create_event()
+        # ASGI response messages stream
+        response_message_send_stream, response_message_recv_stream = (
+            create_memory_object_stream(0)
+        )
+
+        # ASGI app exception
+        app_exception: Exception | None = None
 
         # ASGI callables.
 
@@ -133,7 +225,7 @@ class ASGITransport(AsyncBaseTransport):
             nonlocal request_complete
 
             if request_complete:
-                await response_complete.wait()
+                await disconnect_request_event.wait()
                 return {"type": "http.disconnect"}
 
             try:
@@ -143,43 +235,25 @@ class ASGITransport(AsyncBaseTransport):
                 return {"type": "http.request", "body": b"", "more_body": False}
             return {"type": "http.request", "body": body, "more_body": True}
 
-        async def send(message: _Message) -> None:
-            nonlocal status_code, response_headers, response_started
+        async def run_app() -> None:
+            nonlocal app_exception
+            try:
+                await self.app(scope, receive, response_message_send_stream.send)
+            except Exception as ex:
+                app_exception = ex
+            finally:
+                await response_message_send_stream.aclose()
 
-            if message["type"] == "http.response.start":
-                assert not response_started
+        async with create_task_group() as task_group:
+            task_group.start_soon(run_app)
 
-                status_code = message["status"]
-                response_headers = message.get("headers", [])
-                response_started = True
+            async with response_message_recv_stream:
+                try:
+                    while True:
+                        message = await response_message_recv_stream.receive()
+                        yield message
+                except get_end_of_stream_error_type():
+                    pass
 
-            elif message["type"] == "http.response.body":
-                assert not response_complete.is_set()
-                body = message.get("body", b"")
-                more_body = message.get("more_body", False)
-
-                if body and request.method != "HEAD":
-                    body_parts.append(body)
-
-                if not more_body:
-                    response_complete.set()
-
-        try:
-            await self.app(scope, receive, send)
-        except Exception:  # noqa: PIE-786
-            if self.raise_app_exceptions:
-                raise
-
-            response_complete.set()
-            if status_code is None:
-                status_code = 500
-            if response_headers is None:
-                response_headers = {}
-
-        assert response_complete.is_set()
-        assert status_code is not None
-        assert response_headers is not None
-
-        stream = ASGIResponseStream(body_parts)
-
-        return Response(status_code, headers=response_headers, stream=stream)
+        if app_exception is not None and self.raise_app_exceptions:
+            raise app_exception
