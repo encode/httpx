@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import typing
 
 from .._models import Request, Response
@@ -101,11 +102,9 @@ class ASGIResponseStream(AsyncByteStream):
         self,
         ignore_body: bool,
         asgi_generator: typing.AsyncGenerator[_Message, None],
-        disconnect_request_event: Event,
     ) -> None:
         self._ignore_body = ignore_body
         self._asgi_generator = asgi_generator
-        self._disconnect_request_event = disconnect_request_event
 
     async def __aiter__(self) -> typing.AsyncIterator[bytes]:
         more_body = True
@@ -118,13 +117,10 @@ class ASGIResponseStream(AsyncByteStream):
                     more_body = message.get("more_body", False)
                     if chunk and not self._ignore_body:
                         yield chunk
-                    if not more_body:
-                        self._disconnect_request_event.set()
         finally:
             await self.aclose()
 
     async def aclose(self) -> None:
-        self._disconnect_request_event.set()
         await self._asgi_generator.aclose()
 
 
@@ -149,6 +145,9 @@ class ASGITransport(AsyncBaseTransport):
        such as testing the content of a client 500 response.
     * `root_path` - The root path on which the ASGI application should be mounted.
     * `client` - A two-tuple indicating the client IP and port of incoming requests.
+    * `streaming` - Set to `True` to enable streaming of response content. Default to
+      `False`, as activating this feature means that the ASGI `app` will run in a
+      sub-task, which has observable side effects for context variables.
     ```
     """
 
@@ -158,18 +157,20 @@ class ASGITransport(AsyncBaseTransport):
         raise_app_exceptions: bool = True,
         root_path: str = "",
         client: tuple[str, int] = ("127.0.0.1", 123),
+        *,
+        streaming: bool = False,
     ) -> None:
         self.app = app
         self.raise_app_exceptions = raise_app_exceptions
         self.root_path = root_path
         self.client = client
+        self.streaming = streaming
 
     async def handle_async_request(
         self,
         request: Request,
     ) -> Response:
-        disconnect_request_event = create_event()
-        asgi_generator = self._stream_asgi_messages(request, disconnect_request_event)
+        asgi_generator = self._stream_asgi_messages(request)
 
         async for message in asgi_generator:
             if message["type"] == "http.response.start":
@@ -179,15 +180,13 @@ class ASGITransport(AsyncBaseTransport):
                     stream=ASGIResponseStream(
                         ignore_body=request.method == "HEAD",
                         asgi_generator=asgi_generator,
-                        disconnect_request_event=disconnect_request_event,
                     ),
                 )
         else:
-            disconnect_request_event.set()
             return Response(status_code=500, headers=[])
 
     async def _stream_asgi_messages(
-        self, request: Request, disconnect_request_event: Event
+        self, request: Request
     ) -> typing.AsyncGenerator[typing.MutableMapping[str, typing.Any]]:
         assert isinstance(request.stream, AsyncByteStream)
 
@@ -211,9 +210,13 @@ class ASGITransport(AsyncBaseTransport):
         request_body_chunks = request.stream.__aiter__()
         request_complete = False
 
+        # Response.
+        response_complete = create_event()
+
         # ASGI response messages stream
+        stream_size = 0 if self.streaming else float("inf")
         response_message_send_stream, response_message_recv_stream = (
-            create_memory_object_stream(0)
+            create_memory_object_stream(stream_size)
         )
 
         # ASGI app exception
@@ -225,7 +228,7 @@ class ASGITransport(AsyncBaseTransport):
             nonlocal request_complete
 
             if request_complete:
-                await disconnect_request_event.wait()
+                await response_complete.wait()
                 return {"type": "http.disconnect"}
 
             try:
@@ -235,17 +238,29 @@ class ASGITransport(AsyncBaseTransport):
                 return {"type": "http.request", "body": b"", "more_body": False}
             return {"type": "http.request", "body": body, "more_body": True}
 
+        async def send(message: _Message) -> None:
+            await response_message_send_stream.send(message)
+            if message["type"] == "http.response.body" and not message.get(
+                "more_body", False
+            ):
+                response_complete.set()
+
         async def run_app() -> None:
             nonlocal app_exception
             try:
-                await self.app(scope, receive, response_message_send_stream.send)
+                await self.app(scope, receive, send)
             except Exception as ex:
                 app_exception = ex
             finally:
                 await response_message_send_stream.aclose()
 
-        async with create_task_group() as task_group:
-            task_group.start_soon(run_app)
+        async with contextlib.AsyncExitStack() as exit_stack:
+            exit_stack.callback(response_complete.set)
+            if self.streaming:
+                task_group = await exit_stack.enter_async_context(create_task_group())
+                task_group.start_soon(run_app)
+            else:
+                await run_app()
 
             async with response_message_recv_stream:
                 try:

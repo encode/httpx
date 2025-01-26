@@ -1,12 +1,27 @@
+from __future__ import annotations
+
+import contextvars
 import json
+import typing
 
 import anyio
 import pytest
 
 import httpx
 
+test_asgi_contextvar: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "test_asgi_contextvar"
+)
 
-def run_in_task_group(app):
+
+@pytest.fixture(params=[False, True], ids=["no_streaming", "with_streaming"])
+def streaming(request):
+    return request.param
+
+
+def run_in_task_group(
+    app: typing.Callable[..., typing.Awaitable[None]],
+) -> typing.Callable[..., typing.Awaitable[None]]:
     """A decorator that runs an ASGI callable in a task group"""
 
     async def wrapped_app(*args):
@@ -91,8 +106,8 @@ async def raise_exc_after_response(scope, receive, send):
 
 
 @pytest.mark.anyio
-async def test_asgi_transport():
-    async with httpx.ASGITransport(app=hello_world) as transport:
+async def test_asgi_transport(streaming):
+    async with httpx.ASGITransport(app=hello_world, streaming=streaming) as transport:
         request = httpx.Request("GET", "http://www.example.com/")
         response = await transport.handle_async_request(request)
         await response.aread()
@@ -101,8 +116,8 @@ async def test_asgi_transport():
 
 
 @pytest.mark.anyio
-async def test_asgi_transport_no_body():
-    async with httpx.ASGITransport(app=echo_body) as transport:
+async def test_asgi_transport_no_body(streaming):
+    async with httpx.ASGITransport(app=echo_body, streaming=streaming) as transport:
         request = httpx.Request("GET", "http://www.example.com/")
         response = await transport.handle_async_request(request)
         await response.aread()
@@ -111,8 +126,8 @@ async def test_asgi_transport_no_body():
 
 
 @pytest.mark.anyio
-async def test_asgi():
-    transport = httpx.ASGITransport(app=hello_world)
+async def test_asgi(streaming):
+    transport = httpx.ASGITransport(app=hello_world, streaming=streaming)
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.get("http://www.example.org/")
 
@@ -121,8 +136,8 @@ async def test_asgi():
 
 
 @pytest.mark.anyio
-async def test_asgi_urlencoded_path():
-    transport = httpx.ASGITransport(app=echo_path)
+async def test_asgi_urlencoded_path(streaming):
+    transport = httpx.ASGITransport(app=echo_path, streaming=streaming)
     async with httpx.AsyncClient(transport=transport) as client:
         url = httpx.URL("http://www.example.org/").copy_with(path="/user@example.org")
         response = await client.get(url)
@@ -132,8 +147,8 @@ async def test_asgi_urlencoded_path():
 
 
 @pytest.mark.anyio
-async def test_asgi_raw_path():
-    transport = httpx.ASGITransport(app=echo_raw_path)
+async def test_asgi_raw_path(streaming):
+    transport = httpx.ASGITransport(app=echo_raw_path, streaming=streaming)
     async with httpx.AsyncClient(transport=transport) as client:
         url = httpx.URL("http://www.example.org/").copy_with(path="/user@example.org")
         response = await client.get(url)
@@ -143,11 +158,11 @@ async def test_asgi_raw_path():
 
 
 @pytest.mark.anyio
-async def test_asgi_raw_path_should_not_include_querystring_portion():
+async def test_asgi_raw_path_should_not_include_querystring_portion(streaming):
     """
     See https://github.com/encode/httpx/issues/2810
     """
-    transport = httpx.ASGITransport(app=echo_raw_path)
+    transport = httpx.ASGITransport(app=echo_raw_path, streaming=streaming)
     async with httpx.AsyncClient(transport=transport) as client:
         url = httpx.URL("http://www.example.org/path?query")
         response = await client.get(url)
@@ -157,8 +172,8 @@ async def test_asgi_raw_path_should_not_include_querystring_portion():
 
 
 @pytest.mark.anyio
-async def test_asgi_upload():
-    transport = httpx.ASGITransport(app=echo_body)
+async def test_asgi_upload(streaming):
+    transport = httpx.ASGITransport(app=echo_body, streaming=streaming)
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.post("http://www.example.org/", content=b"example")
 
@@ -167,8 +182,8 @@ async def test_asgi_upload():
 
 
 @pytest.mark.anyio
-async def test_asgi_headers():
-    transport = httpx.ASGITransport(app=echo_headers)
+async def test_asgi_headers(streaming):
+    transport = httpx.ASGITransport(app=echo_headers, streaming=streaming)
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.get("http://www.example.org/")
 
@@ -185,31 +200,33 @@ async def test_asgi_headers():
 
 
 @pytest.mark.anyio
-async def test_asgi_exc():
-    transport = httpx.ASGITransport(app=raise_exc)
+async def test_asgi_exc(streaming):
+    transport = httpx.ASGITransport(app=raise_exc, streaming=streaming)
     async with httpx.AsyncClient(transport=transport) as client:
         with pytest.raises(RuntimeError):
             await client.get("http://www.example.org/")
 
 
 @pytest.mark.anyio
-async def test_asgi_exc_after_response_start():
-    transport = httpx.ASGITransport(app=raise_exc_after_response_start)
+async def test_asgi_exc_after_response_start(streaming):
+    transport = httpx.ASGITransport(
+        app=raise_exc_after_response_start, streaming=streaming
+    )
     async with httpx.AsyncClient(transport=transport) as client:
         with pytest.raises(RuntimeError):
             await client.get("http://www.example.org/")
 
 
 @pytest.mark.anyio
-async def test_asgi_exc_after_response():
-    transport = httpx.ASGITransport(app=raise_exc_after_response)
+async def test_asgi_exc_after_response(streaming):
+    transport = httpx.ASGITransport(app=raise_exc_after_response, streaming=streaming)
     async with httpx.AsyncClient(transport=transport) as client:
         with pytest.raises(RuntimeError):
             await client.get("http://www.example.org/")
 
 
 @pytest.mark.anyio
-async def test_asgi_disconnect_after_response_complete():
+async def test_asgi_disconnect_after_response_complete(streaming):
     disconnect = False
 
     async def read_body(scope, receive, send):
@@ -235,7 +252,7 @@ async def test_asgi_disconnect_after_response_complete():
         message = await receive()
         disconnect = message.get("type") == "http.disconnect"
 
-    transport = httpx.ASGITransport(app=read_body)
+    transport = httpx.ASGITransport(app=read_body, streaming=streaming)
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.post("http://www.example.org/", content=b"example")
 
@@ -244,8 +261,10 @@ async def test_asgi_disconnect_after_response_complete():
 
 
 @pytest.mark.anyio
-async def test_asgi_exc_no_raise():
-    transport = httpx.ASGITransport(app=raise_exc, raise_app_exceptions=False)
+async def test_asgi_exc_no_raise(streaming):
+    transport = httpx.ASGITransport(
+        app=raise_exc, raise_app_exceptions=False, streaming=streaming
+    )
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.get("http://www.example.org/")
 
@@ -253,9 +272,11 @@ async def test_asgi_exc_no_raise():
 
 
 @pytest.mark.anyio
-async def test_asgi_exc_no_raise_after_response_start():
+async def test_asgi_exc_no_raise_after_response_start(streaming):
     transport = httpx.ASGITransport(
-        app=raise_exc_after_response_start, raise_app_exceptions=False
+        app=raise_exc_after_response_start,
+        raise_app_exceptions=False,
+        streaming=streaming,
     )
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.get("http://www.example.org/")
@@ -264,14 +285,42 @@ async def test_asgi_exc_no_raise_after_response_start():
 
 
 @pytest.mark.anyio
-async def test_asgi_exc_no_raise_after_response():
+async def test_asgi_exc_no_raise_after_response(streaming):
     transport = httpx.ASGITransport(
-        app=raise_exc_after_response, raise_app_exceptions=False
+        app=raise_exc_after_response, raise_app_exceptions=False, streaming=streaming
     )
     async with httpx.AsyncClient(transport=transport) as client:
         response = await client.get("http://www.example.org/")
 
         assert response.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_asgi_app_runs_in_same_context_as_caller():
+    async def set_contextvar_in_app(scope, receive, send):
+        test_asgi_contextvar.set("value_from_app")
+
+        status = 200
+        output = b"Hello, World!"
+        headers = [
+            (b"content-type", "text/plain"),
+            (b"content-length", str(len(output))),
+        ]
+
+        await send(
+            {"type": "http.response.start", "status": status, "headers": headers}
+        )
+        await send({"type": "http.response.body", "body": output})
+
+    transport = httpx.ASGITransport(
+        app=set_contextvar_in_app, raise_app_exceptions=False, streaming=False
+    )
+    async with httpx.AsyncClient(transport=transport) as client:
+        response = await client.get("http://www.example.org/")
+
+        assert response.status_code == 200
+
+        assert test_asgi_contextvar.get(None) == "value_from_app"
 
 
 @pytest.mark.parametrize(
@@ -279,7 +328,7 @@ async def test_asgi_exc_no_raise_after_response():
     [pytest.param(False, id="no_sub_task"), pytest.param(True, id="with_sub_task")],
 )
 @pytest.mark.anyio
-async def test_asgi_stream_returns_before_waiting_for_body(send_in_sub_task: bool):
+async def test_asgi_stream_returns_before_waiting_for_body(send_in_sub_task):
     start_response_body = anyio.Event()
 
     async def send_response_body_after_event(scope, receive, send):
@@ -296,7 +345,7 @@ async def test_asgi_stream_returns_before_waiting_for_body(send_in_sub_task: boo
             send_response_body_after_event
         )
 
-    transport = httpx.ASGITransport(app=send_response_body_after_event)
+    transport = httpx.ASGITransport(app=send_response_body_after_event, streaming=True)
     async with httpx.AsyncClient(transport=transport) as client:
         with anyio.fail_after(0.1):
             async with client.stream("GET", "http://www.example.org/") as response:
@@ -311,7 +360,7 @@ async def test_asgi_stream_returns_before_waiting_for_body(send_in_sub_task: boo
     [pytest.param(False, id="no_sub_task"), pytest.param(True, id="with_sub_task")],
 )
 @pytest.mark.anyio
-async def test_asgi_stream_allows_iterative_streaming(send_in_sub_task: bool):
+async def test_asgi_stream_allows_iterative_streaming(send_in_sub_task):
     stream_events = [anyio.Event() for i in range(4)]
 
     async def send_response_body_after_event(scope, receive, send):
@@ -335,7 +384,7 @@ async def test_asgi_stream_allows_iterative_streaming(send_in_sub_task: bool):
             send_response_body_after_event
         )
 
-    transport = httpx.ASGITransport(app=send_response_body_after_event)
+    transport = httpx.ASGITransport(app=send_response_body_after_event, streaming=True)
     async with httpx.AsyncClient(transport=transport) as client:
         with anyio.fail_after(0.1):
             async with client.stream("GET", "http://www.example.org/") as response:
