@@ -410,7 +410,6 @@ class AsyncJavascriptFetchTransport(AsyncBaseTransport):
             req_body = None
         else:
             req_body = body_data
-        print(req_body)
         conn_timeout = 0.0
         read_timeout = 0.0
         if "timeout" in request.extensions:
