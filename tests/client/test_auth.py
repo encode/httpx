@@ -336,6 +336,24 @@ async def test_auth_property() -> None:
 
 
 @pytest.mark.anyio
+async def test_auth_property_none() -> None:
+    app = App()
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(app), auth=("user", "password123")
+    ) as client:
+        assert isinstance(client.auth, httpx.BasicAuth)
+
+        client.auth = None
+        assert client.auth is None
+
+        url = "https://example.org/"
+        response = await client.get(url)
+        assert response.status_code == 200
+        assert response.json() == {"auth": None}
+
+
+@pytest.mark.anyio
 async def test_auth_invalid_type() -> None:
     app = App()
 

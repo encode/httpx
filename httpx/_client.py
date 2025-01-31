@@ -281,7 +281,7 @@ class BaseClient:
         return self._auth
 
     @auth.setter
-    def auth(self, auth: AuthTypes) -> None:
+    def auth(self, auth: AuthTypes | None) -> None:
         self._auth = self._build_auth(auth)
 
     @property
