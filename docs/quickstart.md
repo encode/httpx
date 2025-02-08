@@ -305,6 +305,9 @@ The method returns the response instance, allowing you to use it inline. For exa
 >>> data = httpx.get('...').raise_for_status().json()
 ```
 
+!!! tip
+    If you want `raise_for_status()` to be always called after **every** request, use a [`Client` instance](advanced/clients.md) with an [event hook](advanced/event-hooks.md) like `httpx.Client(event_hooks={"response": [Response.raise_for_status]})` instead of the top-level interface.
+
 ## Response Headers
 
 The response headers are available as a dictionary-like interface.
