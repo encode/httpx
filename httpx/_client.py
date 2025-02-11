@@ -5,6 +5,7 @@ import enum
 import logging
 import time
 import typing
+import re
 import warnings
 from contextlib import asynccontextmanager, contextmanager
 from types import TracebackType
@@ -89,6 +90,17 @@ def _same_origin(url: URL, other: URL) -> bool:
         and url.host == other.host
         and _port_or_default(url) == _port_or_default(other)
     )
+
+
+SANITIZE_URL_PATTERN = re.compile(r"://([^:@]+):([^:@]+)@")
+
+
+def sanitize_url(url):
+    """
+    Removes credentials (password) from URLs while preserving username if present.
+    Example: 'http://user:pass@example.com' -> 'http://user@example.com'
+    """
+    return SANITIZE_URL_PATTERN.sub(r"://\1@", url)
 
 
 class UseClientDefault:
@@ -1022,10 +1034,10 @@ class Client(BaseClient):
         self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
 
-        logger.info(
+        logger.debug(
             'HTTP Request: %s %s "%s %d %s"',
             request.method,
-            request.url,
+            sanitize_url(request.url),
             response.http_version,
             response.status_code,
             response.reason_phrase,
@@ -1737,10 +1749,10 @@ class AsyncClient(BaseClient):
         self.cookies.extract_cookies(response)
         response.default_encoding = self._default_encoding
 
-        logger.info(
+        logger.debug(
             'HTTP Request: %s %s "%s %d %s"',
             request.method,
-            request.url,
+            sanitize_url(request.url),
             response.http_version,
             response.status_code,
             response.reason_phrase,
