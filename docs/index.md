@@ -136,13 +136,13 @@ $ pip install httpx
 Or, to include the optional HTTP/2 support, use:
 
 ```shell
-$ pip install httpx[http2]
+$ pip install 'httpx[http2]'
 ```
 
 To include the optional brotli and zstandard decoders support, use:
 
 ```shell
-$ pip install httpx[brotli,zstd]
+$ pip install 'httpx[brotli,zstd]'
 ```
 
 HTTPX requires Python 3.8+
