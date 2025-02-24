@@ -162,7 +162,7 @@ what gets sent over the wire.*
 
 ## `Proxy`
 
-*A configuration of the proxy server*
+*A configuration of the proxy server.*
 
 ```pycon
 >>> proxy = Proxy("http://proxy.example.com")
