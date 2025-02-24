@@ -28,3 +28,4 @@ trio-typing==0.10.0
 trustme==1.1.0; python_version < '3.9'
 trustme==1.2.0; python_version >= '3.9'
 uvicorn==0.32.1
+blockbuster==1.5.23
