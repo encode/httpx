@@ -165,7 +165,7 @@ what gets sent over the wire.*
 *A configuration of the proxy server.*
 
 ```pycon
->>> proxy = Proxy("http://proxy.example.com")
+>>> proxy = Proxy("http://proxy.example.com:8030")
 >>> client = Client(proxy=proxy)
 ```
 
