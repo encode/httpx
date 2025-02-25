@@ -1460,7 +1460,7 @@ class AsyncClient(BaseClient):
             limits=limits,
             handle_disconnects=handle_disconnects,
             reduce_disconnects=reduce_disconnects,
-            reduce_timeout_factor=reduce_timeout_factor
+            reduce_timeout_factor=reduce_timeout_factor,
         )
 
     def _init_proxy_transport(

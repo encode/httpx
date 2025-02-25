@@ -397,14 +397,13 @@ class AsyncHTTPTransport(AsyncBaseTransport):
             content=request.stream,
             extensions=request.extensions,
         )
-        
+
         try:
             with map_httpcore_exceptions():
                 resp = await self._pool.handle_async_request(req)
-        except RemoteProtocolError as e:
-            if format("%s" % e)  != "Server disconnected" or not self.handle_disconnects:
-                raise 
-            print("handling error %s, attempting reconnection" % e)
+        except RemoteProtocolError:
+            if not self.handle_disconnects:
+                raise
             await self.areconnect()
             with map_httpcore_exceptions():
                 resp = await self._pool.handle_async_request(req)
@@ -420,26 +419,17 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         )
 
     async def areconnect(self) -> None:
-        import httpcore
-        
         await self._pool.aclose()
-        
-        if self.reduce_disconnects:
-            print("Attempt to reduce future disconnects by reducing timeout by a facotr of %d" % self.reduce_timeout_factor)
-            self._pool._keepalive_expiry //= self.reduce_timeout_factor
-        
-        self._pool = httpcore.AsyncConnectionPool(
-                    ssl_context=self._pool._ssl_context,  # Reuse existing SSL context
-                    max_connections=self._pool._max_connections,
-                    max_keepalive_connections=self._pool._max_keepalive_connections,
-                    keepalive_expiry=self._pool._keepalive_expiry,
-                    http1=self._pool._http1,
-                    http2=self._pool._http2,
-                    uds=self._pool._uds,
-                    local_address=self._pool._local_address,
-                    retries=self._pool._retries,
-                    socket_options=self._pool._socket_options,
-                )
+
+        if not self.reduce_disconnects or self._pool._keepalive_expiry is None:
+            return
+        print(
+            "Attempt to reduce future disconnects \
+by reducing timeout by a facotr of %d"
+            % self.reduce_timeout_factor
+        )
+        self._pool._keepalive_expiry //= self.reduce_timeout_factor
+
 
     async def aclose(self) -> None:
         await self._pool.aclose()
