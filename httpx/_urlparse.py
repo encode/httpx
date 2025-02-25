@@ -166,9 +166,9 @@ class ParseResult(typing.NamedTuple):
 
     @property
     def authority(self) -> str:
+        # Do not include the userinfo here, to avoid leaking credentials
         return "".join(
             [
-                f"{self.userinfo}@" if self.userinfo else "",
                 f"[{self.host}]" if ":" in self.host else self.host,
                 f":{self.port}" if self.port is not None else "",
             ]

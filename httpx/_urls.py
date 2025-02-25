@@ -375,30 +375,7 @@ class URL:
         return str(self._uri_reference)
 
     def __repr__(self) -> str:
-        scheme, userinfo, host, port, path, query, fragment = self._uri_reference
-
-        if ":" in userinfo:
-            # Mask any password component.
-            userinfo = f'{userinfo.split(":")[0]}:[secure]'
-
-        authority = "".join(
-            [
-                f"{userinfo}@" if userinfo else "",
-                f"[{host}]" if ":" in host else host,
-                f":{port}" if port is not None else "",
-            ]
-        )
-        url = "".join(
-            [
-                f"{self.scheme}:" if scheme else "",
-                f"//{authority}" if authority else "",
-                path,
-                f"?{query}" if query is not None else "",
-                f"#{fragment}" if fragment is not None else "",
-            ]
-        )
-
-        return f"{self.__class__.__name__}({url!r})"
+        return f"{self.__class__.__name__}({str(self._uri_reference)!r})"
 
     @property
     def raw(self) -> tuple[bytes, bytes, int, bytes]:  # pragma: nocover
