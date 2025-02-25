@@ -1366,6 +1366,9 @@ class AsyncClient(BaseClient):
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
+        handle_disconnects: bool = True,
+        reduce_disconnects: bool = True,
+        reduce_timeout_factor: int = 2,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
@@ -1407,6 +1410,9 @@ class AsyncClient(BaseClient):
             http2=http2,
             limits=limits,
             transport=transport,
+            handle_disconnects=handle_disconnects,
+            reduce_disconnects=reduce_disconnects,
+            reduce_timeout_factor=reduce_timeout_factor,
         )
 
         self._mounts: dict[URLPattern, AsyncBaseTransport | None] = {
@@ -1438,6 +1444,9 @@ class AsyncClient(BaseClient):
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
         transport: AsyncBaseTransport | None = None,
+        handle_disconnects: bool = True,
+        reduce_disconnects: bool = True,
+        reduce_timeout_factor: int = 2,
     ) -> AsyncBaseTransport:
         if transport is not None:
             return transport
@@ -1449,6 +1458,9 @@ class AsyncClient(BaseClient):
             http1=http1,
             http2=http2,
             limits=limits,
+            handle_disconnects=handle_disconnects,
+            reduce_disconnects=reduce_disconnects,
+            reduce_timeout_factor=reduce_timeout_factor
         )
 
     def _init_proxy_transport(

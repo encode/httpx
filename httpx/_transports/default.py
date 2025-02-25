@@ -290,8 +290,15 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
+        handle_disconnects: bool = True,
+        reduce_disconnects: bool = True,
+        reduce_timeout_factor: int = 2,
     ) -> None:
         import httpcore
+
+        self.handle_disconnects = handle_disconnects
+        self.reduce_disconnects = reduce_disconnects
+        self.reduce_timeout_factor = reduce_timeout_factor
 
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
         ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
@@ -390,8 +397,18 @@ class AsyncHTTPTransport(AsyncBaseTransport):
             content=request.stream,
             extensions=request.extensions,
         )
-        with map_httpcore_exceptions():
-            resp = await self._pool.handle_async_request(req)
+        
+        try:
+            with map_httpcore_exceptions():
+                resp = await self._pool.handle_async_request(req)
+        except RemoteProtocolError as e:
+            if format("%s" % e)  != "Server disconnected" or not self.handle_disconnects:
+                raise 
+            print("handling error %s, attempting reconnection" % e)
+            await self.areconnect()
+            with map_httpcore_exceptions():
+                resp = await self._pool.handle_async_request(req)
+            print("Reconnection Attempt Successful")
 
         assert isinstance(resp.stream, typing.AsyncIterable)
 
@@ -401,6 +418,28 @@ class AsyncHTTPTransport(AsyncBaseTransport):
             stream=AsyncResponseStream(resp.stream),
             extensions=resp.extensions,
         )
+
+    async def areconnect(self) -> None:
+        import httpcore
+        
+        await self._pool.aclose()
+        
+        if self.reduce_disconnects:
+            print("Attempt to reduce future disconnects by reducing timeout by a facotr of %d" % self.reduce_timeout_factor)
+            self._pool._keepalive_expiry //= self.reduce_timeout_factor
+        
+        self._pool = httpcore.AsyncConnectionPool(
+                    ssl_context=self._pool._ssl_context,  # Reuse existing SSL context
+                    max_connections=self._pool._max_connections,
+                    max_keepalive_connections=self._pool._max_keepalive_connections,
+                    keepalive_expiry=self._pool._keepalive_expiry,
+                    http1=self._pool._http1,
+                    http2=self._pool._http2,
+                    uds=self._pool._uds,
+                    local_address=self._pool._local_address,
+                    retries=self._pool._retries,
+                    socket_options=self._pool._socket_options,
+                )
 
     async def aclose(self) -> None:
         await self._pool.aclose()
