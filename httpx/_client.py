@@ -706,7 +706,7 @@ class Client(BaseClient):
                 http2=http2,
                 limits=limits,
             )
-            for key, proxy in proxy_map.items()
+            for key, proxy in proxy_map.items() if proxy is not None
         }
         if mounts is not None:
             self._mounts.update(
@@ -1421,7 +1421,7 @@ class AsyncClient(BaseClient):
                 http2=http2,
                 limits=limits,
             )
-            for key, proxy in proxy_map.items()
+            for key, proxy in proxy_map.items() if proxy is not None
         }
         if mounts is not None:
             self._mounts.update(
