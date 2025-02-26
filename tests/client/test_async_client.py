@@ -116,7 +116,7 @@ async def test_remote_protocol_error_successfull_reconnect(server):
 async def test_remote_protocol_error_failure_reconnect(server):
     """
     If httpcore.RemoteProtocolError is rised but reconnections are
-    set it will try to reconnect once and return normally if it's successful
+    set it will try to reconnect once and return raised exception on second failure
     """
     import httpcore
 
