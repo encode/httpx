@@ -1,3 +1,4 @@
+"""
 from __future__ import annotations
 
 import typing
@@ -6,6 +7,109 @@ from datetime import timedelta
 import pytest
 
 import httpx
+"""
+
+import typing
+from datetime import timedelta
+from unittest.mock import AsyncMock
+
+import pytest
+
+import httpx
+from httpx._config import Limits
+from httpx._transports.default import AsyncHTTPTransport
+
+
+@pytest.mark.anyio
+async def test_areconnect_reduce_disconnects_false(server):
+    """Test areconnect when reduce_disconnects is False."""
+    transport = AsyncHTTPTransport(
+        http2=True,
+        reduce_disconnects=False,
+        limits=httpx.Limits(
+            keepalive_expiry=100,
+        ),
+    )
+    transport._pool = AsyncMock()  # Mock the pool
+    transport._pool.aclose = AsyncMock()
+    transport._pool._keepalive_expiry = 60.0
+
+    await transport.areconnect()
+    assert transport._pool._keepalive_expiry == 60.0  # Should remain unchanged
+    transport._pool.aclose.assert_called_once()
+
+
+@pytest.mark.anyio
+async def test_areconnect_keepalive_expiry_none(server):
+    """Test areconnect when keepalive_expiry is None."""
+    limits = Limits(keepalive_expiry=None)
+    transport = AsyncHTTPTransport(http2=True, limits=limits)
+    transport._pool = AsyncMock()  # Mock the pool
+    transport._pool.aclose = AsyncMock()
+    transport._pool._keepalive_expiry = None
+
+    await transport.areconnect()
+    assert transport._pool._keepalive_expiry is None  # Should remain None
+    transport._pool.aclose.assert_called_once()
+
+
+@pytest.mark.anyio
+async def test_aexit_exception_mapping():
+    """Test that httpcore exceptions during __aexit__ are mapped."""
+    import httpcore
+
+    transport = AsyncHTTPTransport()
+    transport._pool = AsyncMock()
+    # Configure the mock to raise a specific httpcore exception.
+    transport._pool.__aexit__ = AsyncMock(
+        side_effect=httpcore.ConnectError("Mocked ConnectError")
+    )
+
+    with pytest.raises(httpx.ConnectError) as exc_info:
+        async with transport:
+            pass  # The exception will occur during the 'async with' exit.
+
+    assert "Mocked ConnectError" in str(exc_info.value)
+
+
+@pytest.mark.anyio
+async def test_remote_protocol_error_reconnect_handling_disabled(server):
+    """
+    If we set the handle_disconnects parameter to false, it will not
+    attempt to recover from httpcore.RemoteProtocolError exceptions
+    """
+    import httpcore
+
+    transport = AsyncHTTPTransport(handle_disconnects=False)
+    transport._pool = AsyncMock()
+    transport._pool.handle_async_request = AsyncMock(
+        side_effect=httpcore.RemoteProtocolError("Mocked protocol error")
+    )
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        with pytest.raises(httpx.RemoteProtocolError):
+            await client.get(server.url)
+
+
+@pytest.mark.anyio
+async def test_remote_protocol_error_successfull_reconnect(server):
+    """
+    If httpcore.RemoteProtocolError is rised but reconnections are
+    set it will try to reconnect once and return normally if it's successful
+    """
+    import httpcore
+
+    transport = AsyncHTTPTransport()
+    transport._pool = AsyncMock()
+    transport._pool.handle_async_request = AsyncMock(
+        side_effect=[
+            httpcore.RemoteProtocolError("Mocked protocol error"),
+            httpcore.Response(200),
+        ]
+    )
+    async with httpx.AsyncClient(transport=transport) as client:
+        response = await client.get(server.url)
+    assert response.status_code == 200
 
 
 @pytest.mark.anyio
@@ -373,10 +477,3 @@ async def test_server_extensions(server):
         response = await client.get(url)
     assert response.status_code == 200
     assert response.extensions["http_version"] == b"HTTP/1.1"
-
-@pytest.mark.anyio
-async def test_received_RemoteProtocolError():
-    transport = httpx.AsyncHTTPTransport(handle_disconnects=True)
-    request = httpx.Request("GET", "http://example.com")
-    with pytest.raises(httpx.RemoteProtocolError):
-        await transport.handle_async_request(request)
