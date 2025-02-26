@@ -430,6 +430,5 @@ by reducing timeout by a facotr of %d"
         )
         self._pool._keepalive_expiry //= self.reduce_timeout_factor
 
-
     async def aclose(self) -> None:
         await self._pool.aclose()

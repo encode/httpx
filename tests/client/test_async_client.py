@@ -111,6 +111,7 @@ async def test_remote_protocol_error_successfull_reconnect(server):
         response = await client.get(server.url)
     assert response.status_code == 200
 
+
 @pytest.mark.anyio
 async def test_remote_protocol_error_failure_reconnect(server):
     """
@@ -130,6 +131,7 @@ async def test_remote_protocol_error_failure_reconnect(server):
     async with httpx.AsyncClient(transport=transport) as client:
         with pytest.raises(httpx.RemoteProtocolError):
             await client.get(server.url)
+
 
 @pytest.mark.anyio
 async def test_get(server):
