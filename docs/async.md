@@ -189,6 +189,26 @@ async def main():
 anyio.run(main, backend='trio')
 ```
 
+## Handling Server Disconnects
+
+In rare cases where the `keep_alive` value of the destination is shorter than the client a `RemoteProtocolException` may be thrown. With `handle_disconnects` set to True a reconnection will be attempeted.  If the reconnect is successful and `reduce_disconnects` is set to True it will attempt to reduce future disconencts by reducing the `keep_alive` value of the client.  The factor at whcih the keep_alive is reduced can be set by setting reduce_timeout_factor
+
+```python
+import httpx
+import trio
+
+async def main():
+    async with httpx.AsyncClient(
+        handle_disconnects=True,
+        reduce_disconnects=True,
+        reduce_timeout_factor=2
+    ) as client:
+        response = await client.get('https://www.example.com/')
+        print(response)
+
+trio.run(main)
+```
+
 ## Calling into Python Web Apps
 
 For details on calling directly into ASGI applications, see [the `ASGITransport` docs](../advanced/transports#asgitransport).
