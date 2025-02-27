@@ -96,6 +96,9 @@ text = "\n---\n\n[Full changelog](https://github.com/encode/httpx/blob/master/CH
 pattern = 'src="(docs/img/.*?)"'
 replacement = 'src="https://raw.githubusercontent.com/encode/httpx/master/\1"'
 
+[tool.ruff]
+exclude = ["tests/client/sync"]
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "PIE"]
 ignore = ["B904", "B028"]
@@ -129,5 +132,5 @@ markers = [
 ]
 
 [tool.coverage.run]
-omit = ["venv/*"]
+omit = ["venv/*", "tests/client/sync*"]
 include = ["httpx/*", "tests/*"]
