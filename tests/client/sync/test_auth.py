@@ -9,14 +9,14 @@ import netrc
 import os
 import sys
 import typing
+from threading import Lock
 from urllib.request import parse_keqv_list
 
-import anyio
 import pytest
 
 import httpx
 
-from ..common import FIXTURES_DIR
+from ...common import FIXTURES_DIR
 
 
 class App:
@@ -133,38 +133,34 @@ class ResponseBodyAuth(httpx.Auth):
         yield request
 
 
-class AsyncAuth(httpx.Auth):
+class Auth(httpx.Auth):
     """
     A mock authentication scheme that uses a different implementation for the
     sync and async cases.
     """
 
     def __init__(self) -> None:
-        self._async_lock = anyio.Lock()
+        self._lock = Lock()
 
-    async def async_auth_flow(
-        self, request: httpx.Request
-    ) -> typing.AsyncGenerator[httpx.Request, httpx.Response]:
-        async with self._async_lock:
-            request.headers["Authorization"] = "async-auth"
+    def sync_auth_flow(self, request: httpx.Request) -> typing.Any:
+        with self._lock:
+            request.headers["Authorization"] = "auth"
         yield request
 
 
-@pytest.mark.anyio
-async def test_basic_auth() -> None:
+def test_basic_auth() -> None:
     url = "https://example.org/"
     auth = ("user", "password123")
     app = App()
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
-@pytest.mark.anyio
-async def test_basic_auth_with_stream() -> None:
+def test_basic_auth_with_stream() -> None:
     """
     See: https://github.com/encode/httpx/pull/1312
     """
@@ -172,45 +168,38 @@ async def test_basic_auth_with_stream() -> None:
     auth = ("user", "password123")
     app = App()
 
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(app), auth=auth
-    ) as client:
-        async with client.stream("GET", url) as response:
-            await response.aread()
+    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+        with client.stream("GET", url) as response:
+            response.read()
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
-@pytest.mark.anyio
-async def test_basic_auth_in_url() -> None:
+def test_basic_auth_in_url() -> None:
     url = "https://user:password123@example.org/"
     app = App()
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
-@pytest.mark.anyio
-async def test_basic_auth_on_session() -> None:
+def test_basic_auth_on_session() -> None:
     url = "https://example.org/"
     auth = ("user", "password123")
     app = App()
 
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(app), auth=auth
-    ) as client:
-        response = await client.get(url)
+    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+        response = client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
-@pytest.mark.anyio
-async def test_custom_auth() -> None:
+def test_custom_auth() -> None:
     url = "https://example.org/"
     app = App()
 
@@ -218,15 +207,14 @@ async def test_custom_auth() -> None:
         request.headers["Authorization"] = "Token 123"
         return request
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Token 123"}
 
 
-@pytest.mark.anyio
-async def test_netrc_auth_credentials_exist() -> None:
+def test_netrc_auth_credentials_exist() -> None:
     """
     When netrc auth is being used and a request is made to a host that is
     in the netrc file, then the relevant credentials should be applied.
@@ -236,10 +224,8 @@ async def test_netrc_auth_credentials_exist() -> None:
     app = App()
     auth = httpx.NetRCAuth(netrc_file)
 
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(app), auth=auth
-    ) as client:
-        response = await client.get(url)
+    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+        response = client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {
@@ -247,8 +233,7 @@ async def test_netrc_auth_credentials_exist() -> None:
     }
 
 
-@pytest.mark.anyio
-async def test_netrc_auth_credentials_do_not_exist() -> None:
+def test_netrc_auth_credentials_do_not_exist() -> None:
     """
     When netrc auth is being used and a request is made to a host that is
     not in the netrc file, then no credentials should be applied.
@@ -258,10 +243,8 @@ async def test_netrc_auth_credentials_do_not_exist() -> None:
     app = App()
     auth = httpx.NetRCAuth(netrc_file)
 
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(app), auth=auth
-    ) as client:
-        response = await client.get(url)
+    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+        response = client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
@@ -271,8 +254,7 @@ async def test_netrc_auth_credentials_do_not_exist() -> None:
     sys.version_info >= (3, 11),
     reason="netrc files without a password are valid from Python >= 3.11",
 )
-@pytest.mark.anyio
-async def test_netrc_auth_nopassword_parse_error() -> None:  # pragma: no cover
+def test_netrc_auth_nopassword_parse_error() -> None:  # pragma: no cover
     """
     Python has different netrc parsing behaviours with different versions.
     For Python < 3.11 a netrc file with no password is invalid. In this case
@@ -283,127 +265,116 @@ async def test_netrc_auth_nopassword_parse_error() -> None:  # pragma: no cover
         httpx.NetRCAuth(netrc_file)
 
 
-@pytest.mark.anyio
-async def test_auth_disable_per_request() -> None:
+def test_auth_disable_per_request() -> None:
     url = "https://example.org/"
     auth = ("user", "password123")
     app = App()
 
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(app), auth=auth
-    ) as client:
-        response = await client.get(url, auth=None)
+    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+        response = client.get(url, auth=None)
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
 
 
-@pytest.mark.anyio
-async def test_auth_hidden_url() -> None:
+def test_auth_hidden_url() -> None:
     url = "http://example-username:example-password@example.org/"
     expected = "URL('http://example-username:[secure]@example.org/')"
     assert url == httpx.URL(url)
     assert expected == repr(httpx.URL(url))
 
 
-@pytest.mark.anyio
-async def test_auth_hidden_header() -> None:
+def test_auth_hidden_header() -> None:
     url = "https://example.org/"
     auth = ("example-username", "example-password")
     app = App()
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert "'authorization': '[secure]'" in str(response.request.headers)
 
 
-@pytest.mark.anyio
-async def test_auth_property() -> None:
+def test_auth_property() -> None:
     app = App()
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
         assert client.auth is None
 
         client.auth = ("user", "password123")  # type: ignore
         assert isinstance(client.auth, httpx.BasicAuth)
 
         url = "https://example.org/"
-        response = await client.get(url)
+        response = client.get(url)
         assert response.status_code == 200
         assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
-@pytest.mark.anyio
-async def test_auth_invalid_type() -> None:
+def test_auth_invalid_type() -> None:
     app = App()
 
     with pytest.raises(TypeError):
-        client = httpx.AsyncClient(
+        client = httpx.Client(
             transport=httpx.MockTransport(app),
             auth="not a tuple, not a callable",  # type: ignore
         )
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
         with pytest.raises(TypeError):
-            await client.get(auth="not a tuple, not a callable")  # type: ignore
+            client.get(auth="not a tuple, not a callable")  # type: ignore
 
         with pytest.raises(TypeError):
             client.auth = "not a tuple, not a callable"  # type: ignore
 
 
-@pytest.mark.anyio
-async def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> None:
+def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = App()
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
     assert len(response.history) == 0
 
 
-@pytest.mark.anyio
-async def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
+def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     auth_header = "Token ..."
     app = App(auth_header=auth_header, status_code=401)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
         assert response.status_code == 401
         assert response.json() == {"auth": None}
         assert len(response.history) == 0
 
 
-@pytest.mark.anyio
-async def test_digest_auth_200_response_including_digest_auth_header() -> None:
+def test_digest_auth_200_response_including_digest_auth_header() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     auth_header = 'Digest realm="realm@host.com",qop="auth",nonce="abc",opaque="xyz"'
     app = App(auth_header=auth_header, status_code=200)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
     assert len(response.history) == 0
 
 
-@pytest.mark.anyio
-async def test_digest_auth_401_response_without_digest_auth_header() -> None:
+def test_digest_auth_401_response_without_digest_auth_header() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = App(auth_header="", status_code=401)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 401
     assert response.json() == {"auth": None}
@@ -423,16 +394,15 @@ async def test_digest_auth_401_response_without_digest_auth_header() -> None:
         ("SHA-512-SESS", 64, 128),
     ],
 )
-@pytest.mark.anyio
-async def test_digest_auth(
+def test_digest_auth(
     algorithm: str, expected_hash_length: int, expected_response_length: int
 ) -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = DigestApp(algorithm=algorithm)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 200
     assert len(response.history) == 1
@@ -456,14 +426,13 @@ async def test_digest_auth(
     assert len(digest_data["cnonce"]) == 16 + 2
 
 
-@pytest.mark.anyio
-async def test_digest_auth_no_specified_qop() -> None:
+def test_digest_auth_no_specified_qop() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = DigestApp(qop="")
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 200
     assert len(response.history) == 1
@@ -488,63 +457,58 @@ async def test_digest_auth_no_specified_qop() -> None:
 
 
 @pytest.mark.parametrize("qop", ("auth, auth-int", "auth,auth-int", "unknown,auth"))
-@pytest.mark.anyio
-async def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) -> None:
+def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = DigestApp(qop=qop)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 200
     assert len(response.history) == 1
 
 
-@pytest.mark.anyio
-async def test_digest_auth_qop_auth_int_not_implemented() -> None:
+def test_digest_auth_qop_auth_int_not_implemented() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = DigestApp(qop="auth-int")
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
         with pytest.raises(NotImplementedError):
-            await client.get(url, auth=auth)
+            client.get(url, auth=auth)
 
 
-@pytest.mark.anyio
-async def test_digest_auth_qop_must_be_auth_or_auth_int() -> None:
+def test_digest_auth_qop_must_be_auth_or_auth_int() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = DigestApp(qop="not-auth")
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
         with pytest.raises(httpx.ProtocolError):
-            await client.get(url, auth=auth)
+            client.get(url, auth=auth)
 
 
-@pytest.mark.anyio
-async def test_digest_auth_incorrect_credentials() -> None:
+def test_digest_auth_incorrect_credentials() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = DigestApp(send_response_after_attempt=2)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 401
     assert len(response.history) == 1
 
 
-@pytest.mark.anyio
-async def test_digest_auth_reuses_challenge() -> None:
+def test_digest_auth_reuses_challenge() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = DigestApp()
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response_1 = await client.get(url, auth=auth)
-        response_2 = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response_1 = client.get(url, auth=auth)
+        response_2 = client.get(url, auth=auth)
 
         assert response_1.status_code == 200
         assert response_2.status_code == 200
@@ -553,14 +517,13 @@ async def test_digest_auth_reuses_challenge() -> None:
         assert len(response_2.history) == 0
 
 
-@pytest.mark.anyio
-async def test_digest_auth_resets_nonce_count_after_401() -> None:
+def test_digest_auth_resets_nonce_count_after_401() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = DigestApp()
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response_1 = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response_1 = client.get(url, auth=auth)
         assert response_1.status_code == 200
         assert len(response_1.history) == 1
 
@@ -576,7 +539,7 @@ async def test_digest_auth_resets_nonce_count_after_401() -> None:
 
         # we expect the client again to try to authenticate,
         # i.e. the history length must be 1
-        response_2 = await client.get(url, auth=auth)
+        response_2 = client.get(url, auth=auth)
         assert response_2.status_code == 200
         assert len(response_2.history) == 1
 
@@ -600,21 +563,19 @@ async def test_digest_auth_resets_nonce_count_after_401() -> None:
         'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
     ],
 )
-@pytest.mark.anyio
-async def test_digest_auth_raises_protocol_error_on_malformed_header(
+def test_digest_auth_raises_protocol_error_on_malformed_header(
     auth_header: str,
 ) -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = App(auth_header=auth_header, status_code=401)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
         with pytest.raises(httpx.ProtocolError):
-            await client.get(url, auth=auth)
+            client.get(url, auth=auth)
 
 
-@pytest.mark.anyio
-async def test_auth_history() -> None:
+def test_auth_history() -> None:
     """
     Test that intermediate requests sent as part of an authentication flow
     are recorded in the response history.
@@ -623,8 +584,8 @@ async def test_auth_history() -> None:
     auth = RepeatAuth(repeat=2)
     app = App(auth_header="abc")
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Repeat abc.abc"}
@@ -641,29 +602,27 @@ async def test_auth_history() -> None:
 
 
 class ConsumeBodyTransport(httpx.MockTransport):
-    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
-        assert isinstance(request.stream, httpx.AsyncByteStream)
-        async for _ in request.stream:
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        assert isinstance(request.stream, httpx.SyncByteStream)
+        for _ in request.stream:
             pass
         return self.handler(request)  # type: ignore[return-value]
 
 
-@pytest.mark.anyio
-async def test_digest_auth_unavailable_streaming_body():
+def test_digest_auth_unavailable_streaming_body():
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
     app = DigestApp()
 
-    async def streaming_body() -> typing.AsyncIterator[bytes]:
+    def streaming_body() -> typing.Iterator[bytes]:
         yield b"Example request body"  # pragma: no cover
 
-    async with httpx.AsyncClient(transport=ConsumeBodyTransport(app)) as client:
+    with httpx.Client(transport=ConsumeBodyTransport(app)) as client:
         with pytest.raises(httpx.StreamConsumed):
-            await client.post(url, content=streaming_body(), auth=auth)
+            client.post(url, content=streaming_body(), auth=auth)
 
 
-@pytest.mark.anyio
-async def test_auth_reads_response_body() -> None:
+def test_auth_reads_response_body() -> None:
     """
     Test that we can read the response body in an auth flow if `requires_response_body`
     is set.
@@ -672,26 +631,25 @@ async def test_auth_reads_response_body() -> None:
     auth = ResponseBodyAuth("xyz")
     app = App()
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 200
     assert response.json() == {"auth": '{"auth":"xyz"}'}
 
 
-@pytest.mark.anyio
-async def test_auth() -> None:
+def test_auth() -> None:
     """
     Test that we can use an auth implementation specific to the async case, to
     support cases that require performing I/O or using concurrency primitives (such
     as checking a disk-based cache or fetching a token from a remote auth server).
     """
     url = "https://example.org/"
-    auth = AsyncAuth()
+    auth = Auth()
     app = App()
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(app)) as client:
-        response = await client.get(url, auth=auth)
+    with httpx.Client(transport=httpx.MockTransport(app)) as client:
+        response = client.get(url, auth=auth)
 
     assert response.status_code == 200
-    assert response.json() == {"auth": "async-auth"}
+    assert response.json() == {"auth": "auth"}
