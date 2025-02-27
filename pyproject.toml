@@ -132,5 +132,5 @@ markers = [
 ]
 
 [tool.coverage.run]
-omit = ["venv/*", "tests/client/sync*"]
+omit = ["venv/*", "tests/client/sync/*"]
 include = ["httpx/*", "tests/*"]
