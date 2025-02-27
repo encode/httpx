@@ -159,3 +159,18 @@ what gets sent over the wire.*
 * `def delete(name, [domain], [path])`
 * `def clear([domain], [path])`
 * *Standard mutable mapping interface*
+
+## `Proxy`
+
+*A configuration of the proxy server.*
+
+```pycon
+>>> proxy = Proxy("http://proxy.example.com:8030")
+>>> client = Client(proxy=proxy)
+```
+
+* `def __init__(url, [ssl_context], [auth], [headers])`
+* `.url` - **URL**
+* `.auth` - **tuple[str, str]**
+* `.headers` - **Headers**
+* `.ssl_context` - **SSLContext**
