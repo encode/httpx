@@ -964,7 +964,7 @@ class Response:
         Automatically called if the response body is read to completion.
         """
         if not isinstance(self.stream, SyncByteStream):
-            raise RuntimeError("Attempted to call an sync close on an async stream.")
+            raise RuntimeError("Attempted to call a sync close on an async stream.")
 
         if not self.is_closed:
             self.is_closed = True
@@ -1045,7 +1045,7 @@ class Response:
         if self.is_closed:
             raise StreamClosed()
         if not isinstance(self.stream, AsyncByteStream):
-            raise RuntimeError("Attempted to call an async iterator on an sync stream.")
+            raise RuntimeError("Attempted to call an async iterator on a sync stream.")
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
@@ -1068,7 +1068,7 @@ class Response:
         Automatically called if the response body is read to completion.
         """
         if not isinstance(self.stream, AsyncByteStream):
-            raise RuntimeError("Attempted to call an async close on an sync stream.")
+            raise RuntimeError("Attempted to call an async close on a sync stream.")
 
         if not self.is_closed:
             self.is_closed = True
