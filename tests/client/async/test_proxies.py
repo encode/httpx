@@ -13,19 +13,15 @@ def url_to_origin(url: str) -> httpcore.URL:
     return httpcore.URL(scheme=u.raw_scheme, host=u.raw_host, port=u.port, target="/")
 
 
-def test_socks_proxy():
+@pytest.mark.anyio
+async def test_socks_proxy():
     url = httpx.URL("http://www.example.com")
 
     for proxy in ("socks5://localhost/", "socks5h://localhost/"):
-        client = httpx.Client(proxy=proxy)
-        transport = client._transport_for_url(url)
-        assert isinstance(transport, httpx.HTTPTransport)
-        assert isinstance(transport._pool, httpcore.SOCKSProxy)
-
-        async_client = httpx.AsyncClient(proxy=proxy)
-        async_transport = async_client._transport_for_url(url)
-        assert isinstance(async_transport, httpx.AsyncHTTPTransport)
-        assert isinstance(async_transport._pool, httpcore.AsyncSOCKSProxy)
+        async with httpx.AsyncClient(proxy=proxy) as client:
+            transport = client._transport_for_url(url)
+            assert isinstance(transport, httpx.AsyncHTTPTransport)
+            assert isinstance(transport._pool, httpcore.AsyncSOCKSProxy)
 
 
 PROXY_URL = "http://[::1]"
@@ -85,23 +81,25 @@ PROXY_URL = "http://[::1]"
         ),
     ],
 )
-def test_transport_for_request(url, proxies, expected):
-    mounts = {key: httpx.HTTPTransport(proxy=value) for key, value in proxies.items()}
-    client = httpx.Client(mounts=mounts)
+@pytest.mark.anyio
+async def test_transport_for_request(url, proxies, expected):
+    mounts = {
+        key: httpx.AsyncHTTPTransport(proxy=value) for key, value in proxies.items()
+    }
+    async with httpx.AsyncClient(mounts=mounts) as client:
+        transport = client._transport_for_url(httpx.URL(url))
 
-    transport = client._transport_for_url(httpx.URL(url))
-
-    if expected is None:
-        assert transport is client._transport
-    else:
-        assert isinstance(transport, httpx.HTTPTransport)
-        assert isinstance(transport._pool, httpcore.HTTPProxy)
-        assert transport._pool._proxy_url == url_to_origin(expected)
+        if expected is None:
+            assert transport is client._transport
+        else:
+            assert isinstance(transport, httpx.AsyncHTTPTransport)
+            assert isinstance(transport._pool, httpcore.AsyncHTTPProxy)
+            assert transport._pool._proxy_url == url_to_origin(expected)
 
 
 @pytest.mark.anyio
 @pytest.mark.network
-async def test_async_proxy_close():
+async def test_proxy_close():
     try:
         transport = httpx.AsyncHTTPTransport(proxy=PROXY_URL)
         client = httpx.AsyncClient(mounts={"https://": transport})
@@ -110,19 +108,10 @@ async def test_async_proxy_close():
         await client.aclose()
 
 
-@pytest.mark.network
-def test_sync_proxy_close():
-    try:
-        transport = httpx.HTTPTransport(proxy=PROXY_URL)
-        client = httpx.Client(mounts={"https://": transport})
-        client.get("http://example.com")
-    finally:
-        client.close()
-
-
-def test_unsupported_proxy_scheme():
+@pytest.mark.anyio
+async def test_unsupported_proxy_scheme():
     with pytest.raises(ValueError):
-        httpx.Client(proxy="ftp://127.0.0.1")
+        httpx.AsyncClient(proxy="ftp://127.0.0.1")
 
 
 @pytest.mark.parametrize(
@@ -222,18 +211,18 @@ def test_unsupported_proxy_scheme():
         ),
     ],
 )
-@pytest.mark.parametrize("client_class", [httpx.Client, httpx.AsyncClient])
-def test_proxies_environ(monkeypatch, client_class, url, env, expected):
+@pytest.mark.anyio
+async def test_proxies_environ(monkeypatch, url, env, expected):
     for name, value in env.items():
         monkeypatch.setenv(name, value)
 
-    client = client_class()
-    transport = client._transport_for_url(httpx.URL(url))
+    async with httpx.AsyncClient() as client:
+        transport = client._transport_for_url(httpx.URL(url))
 
-    if expected is None:
-        assert transport == client._transport
-    else:
-        assert transport._pool._proxy_url == url_to_origin(expected)
+        if expected is None:
+            assert transport == client._transport
+        else:
+            assert transport._pool._proxy_url == url_to_origin(expected)  # type: ignore
 
 
 @pytest.mark.parametrize(
@@ -247,19 +236,23 @@ def test_proxies_environ(monkeypatch, client_class, url, env, expected):
         ({"all://": "http://127.0.0.1"}, True),
     ],
 )
-def test_for_deprecated_proxy_params(proxies, is_valid):
-    mounts = {key: httpx.HTTPTransport(proxy=value) for key, value in proxies.items()}
+@pytest.mark.anyio
+async def test_for_deprecated_proxy_params(proxies, is_valid):
+    mounts = {
+        key: httpx.AsyncHTTPTransport(proxy=value) for key, value in proxies.items()
+    }
 
     if not is_valid:
         with pytest.raises(ValueError):
-            httpx.Client(mounts=mounts)
+            httpx.AsyncClient(mounts=mounts)
     else:
-        httpx.Client(mounts=mounts)
+        httpx.AsyncClient(mounts=mounts)
 
 
-def test_proxy_with_mounts():
-    proxy_transport = httpx.HTTPTransport(proxy="http://127.0.0.1")
-    client = httpx.Client(mounts={"http://": proxy_transport})
+@pytest.mark.anyio
+async def test_proxy_with_mounts():
+    proxy_transport = httpx.AsyncHTTPTransport(proxy="http://127.0.0.1")
 
-    transport = client._transport_for_url(httpx.URL("http://example.com"))
-    assert transport == proxy_transport
+    async with httpx.AsyncClient(mounts={"http://": proxy_transport}) as client:
+        transport = client._transport_for_url(httpx.URL("http://example.com"))
+        assert transport == proxy_transport
