@@ -1723,7 +1723,7 @@ class AsyncClient(BaseClient):
 
         if not isinstance(request.stream, AsyncByteStream):
             raise RuntimeError(
-                "Attempted to send an sync request with an AsyncClient instance."
+                "Attempted to send a sync request with an AsyncClient instance."
             )
 
         with request_context(request=request):
