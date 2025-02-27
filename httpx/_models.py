@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import codecs
 import datetime
 import email.message
 import json as jsonlib
+import re
 import typing
 import urllib.request
 from collections.abc import Mapping
@@ -44,16 +46,94 @@ from ._types import (
     SyncByteStream,
 )
 from ._urls import URL
-from ._utils import (
-    is_known_encoding,
-    normalize_header_key,
-    normalize_header_value,
-    obfuscate_sensitive_headers,
-    parse_content_type_charset,
-    parse_header_links,
-)
+from ._utils import to_bytes_or_str, to_str
 
 __all__ = ["Cookies", "Headers", "Request", "Response"]
+
+SENSITIVE_HEADERS = {"authorization", "proxy-authorization"}
+
+
+def _is_known_encoding(encoding: str) -> bool:
+    """
+    Return `True` if `encoding` is a known codec.
+    """
+    try:
+        codecs.lookup(encoding)
+    except LookupError:
+        return False
+    return True
+
+
+def _normalize_header_key(key: str | bytes, encoding: str | None = None) -> bytes:
+    """
+    Coerce str/bytes into a strictly byte-wise HTTP header key.
+    """
+    return key if isinstance(key, bytes) else key.encode(encoding or "ascii")
+
+
+def _normalize_header_value(value: str | bytes, encoding: str | None = None) -> bytes:
+    """
+    Coerce str/bytes into a strictly byte-wise HTTP header value.
+    """
+    if isinstance(value, bytes):
+        return value
+    if not isinstance(value, str):
+        raise TypeError(f"Header value must be str or bytes, not {type(value)}")
+    return value.encode(encoding or "ascii")
+
+
+def _parse_content_type_charset(content_type: str) -> str | None:
+    # We used to use `cgi.parse_header()` here, but `cgi` became a dead battery.
+    # See: https://peps.python.org/pep-0594/#cgi
+    msg = email.message.Message()
+    msg["content-type"] = content_type
+    return msg.get_content_charset(failobj=None)
+
+
+def _parse_header_links(value: str) -> list[dict[str, str]]:
+    """
+    Returns a list of parsed link headers, for more info see:
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Link
+    The generic syntax of those is:
+    Link: < uri-reference >; param1=value1; param2="value2"
+    So for instance:
+    Link; '<http:/.../front.jpeg>; type="image/jpeg",<http://.../back.jpeg>;'
+    would return
+        [
+            {"url": "http:/.../front.jpeg", "type": "image/jpeg"},
+            {"url": "http://.../back.jpeg"},
+        ]
+    :param value: HTTP Link entity-header field
+    :return: list of parsed link headers
+    """
+    links: list[dict[str, str]] = []
+    replace_chars = " '\""
+    value = value.strip(replace_chars)
+    if not value:
+        return links
+    for val in re.split(", *<", value):
+        try:
+            url, params = val.split(";", 1)
+        except ValueError:
+            url, params = val, ""
+        link = {"url": url.strip("<> '\"")}
+        for param in params.split(";"):
+            try:
+                key, value = param.split("=")
+            except ValueError:
+                break
+            link[key.strip(replace_chars)] = value.strip(replace_chars)
+        links.append(link)
+    return links
+
+
+def _obfuscate_sensitive_headers(
+    items: typing.Iterable[tuple[typing.AnyStr, typing.AnyStr]],
+) -> typing.Iterator[tuple[typing.AnyStr, typing.AnyStr]]:
+    for k, v in items:
+        if to_str(k.lower()) in SENSITIVE_HEADERS:
+            v = to_bytes_or_str("[secure]", match_type_of=v)
+        yield k, v
 
 
 class Headers(typing.MutableMapping[str, str]):
@@ -66,28 +146,20 @@ class Headers(typing.MutableMapping[str, str]):
         headers: HeaderTypes | None = None,
         encoding: str | None = None,
     ) -> None:
-        if headers is None:
-            self._list = []  # type: typing.List[typing.Tuple[bytes, bytes, bytes]]
-        elif isinstance(headers, Headers):
+        self._list = []  # type: typing.List[typing.Tuple[bytes, bytes, bytes]]
+
+        if isinstance(headers, Headers):
             self._list = list(headers._list)
         elif isinstance(headers, Mapping):
-            self._list = [
-                (
-                    normalize_header_key(k, lower=False, encoding=encoding),
-                    normalize_header_key(k, lower=True, encoding=encoding),
-                    normalize_header_value(v, encoding),
-                )
-                for k, v in headers.items()
-            ]
-        else:
-            self._list = [
-                (
-                    normalize_header_key(k, lower=False, encoding=encoding),
-                    normalize_header_key(k, lower=True, encoding=encoding),
-                    normalize_header_value(v, encoding),
-                )
-                for k, v in headers
-            ]
+            for k, v in headers.items():
+                bytes_key = _normalize_header_key(k, encoding)
+                bytes_value = _normalize_header_value(v, encoding)
+                self._list.append((bytes_key, bytes_key.lower(), bytes_value))
+        elif headers is not None:
+            for k, v in headers:
+                bytes_key = _normalize_header_key(k, encoding)
+                bytes_value = _normalize_header_value(v, encoding)
+                self._list.append((bytes_key, bytes_key.lower(), bytes_value))
 
         self._encoding = encoding
 
@@ -298,7 +370,7 @@ class Headers(typing.MutableMapping[str, str]):
         if self.encoding != "ascii":
             encoding_str = f", encoding={self.encoding!r}"
 
-        as_list = list(obfuscate_sensitive_headers(self.multi_items()))
+        as_list = list(_obfuscate_sensitive_headers(self.multi_items()))
         as_dict = dict(as_list)
 
         no_duplicate_keys = len(as_dict) == len(as_list)
@@ -310,7 +382,7 @@ class Headers(typing.MutableMapping[str, str]):
 class Request:
     def __init__(
         self,
-        method: str | bytes,
+        method: str,
         url: URL | str,
         *,
         params: QueryParamTypes | None = None,
@@ -323,16 +395,10 @@ class Request:
         stream: SyncByteStream | AsyncByteStream | None = None,
         extensions: RequestExtensions | None = None,
     ) -> None:
-        self.method = (
-            method.decode("ascii").upper()
-            if isinstance(method, bytes)
-            else method.upper()
-        )
-        self.url = URL(url)
-        if params is not None:
-            self.url = self.url.copy_merge_params(params=params)
+        self.method = method.upper()
+        self.url = URL(url) if params is None else URL(url, params=params)
         self.headers = Headers(headers)
-        self.extensions = {} if extensions is None else extensions
+        self.extensions = {} if extensions is None else dict(extensions)
 
         if cookies:
             Cookies(cookies).set_cookie_header(self)
@@ -471,7 +537,7 @@ class Response:
         # the client will set `response.next_request`.
         self.next_request: Request | None = None
 
-        self.extensions: ResponseExtensions = {} if extensions is None else extensions
+        self.extensions = {} if extensions is None else dict(extensions)
         self.history = [] if history is None else list(history)
 
         self.is_closed = False
@@ -597,7 +663,7 @@ class Response:
         """
         if not hasattr(self, "_encoding"):
             encoding = self.charset_encoding
-            if encoding is None or not is_known_encoding(encoding):
+            if encoding is None or not _is_known_encoding(encoding):
                 if isinstance(self.default_encoding, str):
                     encoding = self.default_encoding
                 elif hasattr(self, "_content"):
@@ -628,7 +694,7 @@ class Response:
         if content_type is None:
             return None
 
-        return parse_content_type_charset(content_type)
+        return _parse_content_type_charset(content_type)
 
     def _get_content_decoder(self) -> ContentDecoder:
         """
@@ -783,7 +849,7 @@ class Response:
 
         return {
             (link.get("rel") or link.get("url")): link
-            for link in parse_header_links(header)
+            for link in _parse_header_links(header)
         }
 
     @property
@@ -898,7 +964,7 @@ class Response:
         Automatically called if the response body is read to completion.
         """
         if not isinstance(self.stream, SyncByteStream):
-            raise RuntimeError("Attempted to call an sync close on an async stream.")
+            raise RuntimeError("Attempted to call a sync close on an async stream.")
 
         if not self.is_closed:
             self.is_closed = True
@@ -979,7 +1045,7 @@ class Response:
         if self.is_closed:
             raise StreamClosed()
         if not isinstance(self.stream, AsyncByteStream):
-            raise RuntimeError("Attempted to call an async iterator on an sync stream.")
+            raise RuntimeError("Attempted to call an async iterator on a sync stream.")
 
         self.is_stream_consumed = True
         self._num_bytes_downloaded = 0
@@ -1002,7 +1068,7 @@ class Response:
         Automatically called if the response body is read to completion.
         """
         if not isinstance(self.stream, AsyncByteStream):
-            raise RuntimeError("Attempted to call an async close on an sync stream.")
+            raise RuntimeError("Attempted to call an async close on a sync stream.")
 
         if not self.is_closed:
             self.is_closed = True

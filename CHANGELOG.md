@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.28.1 (6th December, 2024)
+
+* Fix SSL case where `verify=False` together with client side certificates.
+ 
+## 0.28.0 (28th November, 2024)
+
+Be aware that the default *JSON request bodies now use a more compact representation*. This is generally considered a prefered style, tho may require updates to test suites.
+
+The 0.28 release includes a limited set of deprecations...
+
+**Deprecations**:
+
+We are working towards a simplified SSL configuration API.
+
+*For users of the standard `verify=True` or `verify=False` cases, or `verify=<ssl_context>` case this should require no changes. The following cases have been deprecated...*
+
+* The `verify` argument as a string argument is now deprecated and will raise warnings.
+* The `cert` argument is now deprecated and will raise warnings.
+
+Our revised [SSL documentation](docs/advanced/ssl.md) covers how to implement the same behaviour with a more constrained API.
+
+**The following changes are also included**:
+
+* The deprecated `proxies` argument has now been removed.
+* The deprecated `app` argument has now been removed.
+* JSON request bodies use a compact representation. (#3363)
+* Review URL percent escape sets, based on WHATWG spec. (#3371, #3373)
+* Ensure `certifi` and `httpcore` are only imported if required. (#3377)
+* Treat `socks5h` as a valid proxy scheme. (#3178)
+* Cleanup `Request()` method signature in line with `client.request()` and `httpx.request()`. (#3378)
+* Bugfix: When passing `params={}`, always strictly update rather than merge with an existing querystring. (#3364)
+
 ## 0.27.2 (27th August, 2024)
 
 ### Fixed
@@ -590,7 +622,7 @@ See pull requests #1057, #1058.
 
 * Added dedicated exception class `httpx.HTTPStatusError` for `.raise_for_status()` exceptions. (Pull #1072)
 * Added `httpx.create_ssl_context()` helper function. (Pull #996)
-* Support for proxy exlcusions like `proxies={"https://www.example.com": None}`. (Pull #1099)
+* Support for proxy exclusions like `proxies={"https://www.example.com": None}`. (Pull #1099)
 * Support `QueryParams(None)` and `client.params = None`. (Pull #1060)
 
 ### Changed
@@ -818,7 +850,7 @@ We believe the API is now pretty much stable, and are aiming for a 1.0 release s
 
 ### Fixed
 
-- Fix issue with concurrent connection acquiry. (Pull #700)
+- Fix issue with concurrent connection acquisition. (Pull #700)
 - Fix write error on closing HTTP/2 connections. (Pull #699)
 
 ## 0.10.0 (December 29th, 2019)
@@ -1067,7 +1099,7 @@ importing modules within the package.
 
 ## 0.6.7 (July 8, 2019)
 
-- Check for connection aliveness on re-acquiry (Pull #111)
+- Check for connection aliveness on re-acquisition (Pull #111)
 
 ## 0.6.6 (July 3, 2019)
 

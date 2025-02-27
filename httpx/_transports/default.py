@@ -30,7 +30,10 @@ import contextlib
 import typing
 from types import TracebackType
 
-import httpcore
+if typing.TYPE_CHECKING:
+    import ssl  # pragma: no cover
+
+    import httpx  # pragma: no cover
 
 from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context
 from .._exceptions import (
@@ -50,7 +53,7 @@ from .._exceptions import (
     WriteTimeout,
 )
 from .._models import Request, Response
-from .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream, VerifyTypes
+from .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream
 from .._urls import URL
 from .base import AsyncBaseTransport, BaseTransport
 
@@ -65,9 +68,35 @@ SOCKET_OPTION = typing.Union[
 
 __all__ = ["AsyncHTTPTransport", "HTTPTransport"]
 
+HTTPCORE_EXC_MAP: dict[type[Exception], type[httpx.HTTPError]] = {}
+
+
+def _load_httpcore_exceptions() -> dict[type[Exception], type[httpx.HTTPError]]:
+    import httpcore
+
+    return {
+        httpcore.TimeoutException: TimeoutException,
+        httpcore.ConnectTimeout: ConnectTimeout,
+        httpcore.ReadTimeout: ReadTimeout,
+        httpcore.WriteTimeout: WriteTimeout,
+        httpcore.PoolTimeout: PoolTimeout,
+        httpcore.NetworkError: NetworkError,
+        httpcore.ConnectError: ConnectError,
+        httpcore.ReadError: ReadError,
+        httpcore.WriteError: WriteError,
+        httpcore.ProxyError: ProxyError,
+        httpcore.UnsupportedProtocol: UnsupportedProtocol,
+        httpcore.ProtocolError: ProtocolError,
+        httpcore.LocalProtocolError: LocalProtocolError,
+        httpcore.RemoteProtocolError: RemoteProtocolError,
+    }
+
 
 @contextlib.contextmanager
 def map_httpcore_exceptions() -> typing.Iterator[None]:
+    global HTTPCORE_EXC_MAP
+    if len(HTTPCORE_EXC_MAP) == 0:
+        HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
     try:
         yield
     except Exception as exc:
@@ -89,24 +118,6 @@ def map_httpcore_exceptions() -> typing.Iterator[None]:
         raise mapped_exc(message) from exc
 
 
-HTTPCORE_EXC_MAP = {
-    httpcore.TimeoutException: TimeoutException,
-    httpcore.ConnectTimeout: ConnectTimeout,
-    httpcore.ReadTimeout: ReadTimeout,
-    httpcore.WriteTimeout: WriteTimeout,
-    httpcore.PoolTimeout: PoolTimeout,
-    httpcore.NetworkError: NetworkError,
-    httpcore.ConnectError: ConnectError,
-    httpcore.ReadError: ReadError,
-    httpcore.WriteError: WriteError,
-    httpcore.ProxyError: ProxyError,
-    httpcore.UnsupportedProtocol: UnsupportedProtocol,
-    httpcore.ProtocolError: ProtocolError,
-    httpcore.LocalProtocolError: LocalProtocolError,
-    httpcore.RemoteProtocolError: RemoteProtocolError,
-}
-
-
 class ResponseStream(SyncByteStream):
     def __init__(self, httpcore_stream: typing.Iterable[bytes]) -> None:
         self._httpcore_stream = httpcore_stream
@@ -124,20 +135,22 @@ class ResponseStream(SyncByteStream):
 class HTTPTransport(BaseTransport):
     def __init__(
         self,
-        verify: VerifyTypes = True,
+        verify: ssl.SSLContext | str | bool = True,
         cert: CertTypes | None = None,
+        trust_env: bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
         proxy: ProxyTypes | None = None,
         uds: str | None = None,
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
+        import httpcore
+
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
+        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
         if proxy is None:
             self._pool = httpcore.ConnectionPool(
@@ -171,7 +184,7 @@ class HTTPTransport(BaseTransport):
                 http2=http2,
                 socket_options=socket_options,
             )
-        elif proxy.url.scheme == "socks5":
+        elif proxy.url.scheme in ("socks5", "socks5h"):
             try:
                 import socksio  # noqa
             except ImportError:  # pragma: no cover
@@ -197,7 +210,7 @@ class HTTPTransport(BaseTransport):
             )
         else:  # pragma: no cover
             raise ValueError(
-                "Proxy protocol must be either 'http', 'https', or 'socks5',"
+                "Proxy protocol must be either 'http', 'https', 'socks5', or 'socks5h',"
                 f" but got {proxy.url.scheme!r}."
             )
 
@@ -219,6 +232,7 @@ class HTTPTransport(BaseTransport):
         request: Request,
     ) -> Response:
         assert isinstance(request.stream, SyncByteStream)
+        import httpcore
 
         req = httpcore.Request(
             method=request.method,
@@ -265,20 +279,22 @@ class AsyncResponseStream(AsyncByteStream):
 class AsyncHTTPTransport(AsyncBaseTransport):
     def __init__(
         self,
-        verify: VerifyTypes = True,
+        verify: ssl.SSLContext | str | bool = True,
         cert: CertTypes | None = None,
+        trust_env: bool = True,
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
-        trust_env: bool = True,
         proxy: ProxyTypes | None = None,
         uds: str | None = None,
         local_address: str | None = None,
         retries: int = 0,
         socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> None:
-        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
+        import httpcore
+
         proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy
+        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)
 
         if proxy is None:
             self._pool = httpcore.AsyncConnectionPool(
@@ -312,7 +328,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
                 http2=http2,
                 socket_options=socket_options,
             )
-        elif proxy.url.scheme == "socks5":
+        elif proxy.url.scheme in ("socks5", "socks5h"):
             try:
                 import socksio  # noqa
             except ImportError:  # pragma: no cover
@@ -338,7 +354,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
             )
         else:  # pragma: no cover
             raise ValueError(
-                "Proxy protocol must be either 'http', 'https', or 'socks5',"
+                "Proxy protocol must be either 'http', 'https', 'socks5', or 'socks5h',"
                 " but got {proxy.url.scheme!r}."
             )
 
@@ -360,6 +376,7 @@ class AsyncHTTPTransport(AsyncBaseTransport):
         request: Request,
     ) -> Response:
         assert isinstance(request.stream, AsyncByteStream)
+        import httpcore
 
         req = httpcore.Request(
             method=request.method,

@@ -25,6 +25,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
@@ -32,7 +33,6 @@ dependencies = [
     "httpcore==1.*",
     "anyio",
     "idna",
-    "sniffio",
 ]
 dynamic = ["readme", "version"]
 
@@ -129,5 +129,5 @@ markers = [
 ]
 
 [tool.coverage.run]
-omit = ["venv/*", "httpx/_compat.py"]
+omit = ["venv/*"]
 include = ["httpx/*", "tests/*"]
