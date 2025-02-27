@@ -9,10 +9,10 @@ import netrc
 import os
 import sys
 import typing
-from threading import Lock
 from urllib.request import parse_keqv_list
 
 import pytest
+from threading import Lock
 
 import httpx
 
@@ -148,6 +148,7 @@ class Auth(httpx.Auth):
         yield request
 
 
+
 def test_basic_auth() -> None:
     url = "https://example.org/"
     auth = ("user", "password123")
@@ -160,6 +161,7 @@ def test_basic_auth() -> None:
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
+
 def test_basic_auth_with_stream() -> None:
     """
     See: https://github.com/encode/httpx/pull/1312
@@ -168,12 +170,15 @@ def test_basic_auth_with_stream() -> None:
     auth = ("user", "password123")
     app = App()
 
-    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+    with httpx.Client(
+        transport=httpx.MockTransport(app), auth=auth
+    ) as client:
         with client.stream("GET", url) as response:
             response.read()
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
+
 
 
 def test_basic_auth_in_url() -> None:
@@ -187,16 +192,20 @@ def test_basic_auth_in_url() -> None:
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
 
 
+
 def test_basic_auth_on_session() -> None:
     url = "https://example.org/"
     auth = ("user", "password123")
     app = App()
 
-    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+    with httpx.Client(
+        transport=httpx.MockTransport(app), auth=auth
+    ) as client:
         response = client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
+
 
 
 def test_custom_auth() -> None:
@@ -214,6 +223,7 @@ def test_custom_auth() -> None:
     assert response.json() == {"auth": "Token 123"}
 
 
+
 def test_netrc_auth_credentials_exist() -> None:
     """
     When netrc auth is being used and a request is made to a host that is
@@ -224,13 +234,16 @@ def test_netrc_auth_credentials_exist() -> None:
     app = App()
     auth = httpx.NetRCAuth(netrc_file)
 
-    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+    with httpx.Client(
+        transport=httpx.MockTransport(app), auth=auth
+    ) as client:
         response = client.get(url)
 
     assert response.status_code == 200
     assert response.json() == {
         "auth": "Basic ZXhhbXBsZS11c2VybmFtZTpleGFtcGxlLXBhc3N3b3Jk"
     }
+
 
 
 def test_netrc_auth_credentials_do_not_exist() -> None:
@@ -243,7 +256,9 @@ def test_netrc_auth_credentials_do_not_exist() -> None:
     app = App()
     auth = httpx.NetRCAuth(netrc_file)
 
-    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+    with httpx.Client(
+        transport=httpx.MockTransport(app), auth=auth
+    ) as client:
         response = client.get(url)
 
     assert response.status_code == 200
@@ -254,6 +269,7 @@ def test_netrc_auth_credentials_do_not_exist() -> None:
     sys.version_info >= (3, 11),
     reason="netrc files without a password are valid from Python >= 3.11",
 )
+
 def test_netrc_auth_nopassword_parse_error() -> None:  # pragma: no cover
     """
     Python has different netrc parsing behaviours with different versions.
@@ -265,16 +281,20 @@ def test_netrc_auth_nopassword_parse_error() -> None:  # pragma: no cover
         httpx.NetRCAuth(netrc_file)
 
 
+
 def test_auth_disable_per_request() -> None:
     url = "https://example.org/"
     auth = ("user", "password123")
     app = App()
 
-    with httpx.Client(transport=httpx.MockTransport(app), auth=auth) as client:
+    with httpx.Client(
+        transport=httpx.MockTransport(app), auth=auth
+    ) as client:
         response = client.get(url, auth=None)
 
     assert response.status_code == 200
     assert response.json() == {"auth": None}
+
 
 
 def test_auth_hidden_url() -> None:
@@ -282,6 +302,7 @@ def test_auth_hidden_url() -> None:
     expected = "URL('http://example-username:[secure]@example.org/')"
     assert url == httpx.URL(url)
     assert expected == repr(httpx.URL(url))
+
 
 
 def test_auth_hidden_header() -> None:
@@ -293,6 +314,7 @@ def test_auth_hidden_header() -> None:
         response = client.get(url, auth=auth)
 
     assert "'authorization': '[secure]'" in str(response.request.headers)
+
 
 
 def test_auth_property() -> None:
@@ -308,6 +330,7 @@ def test_auth_property() -> None:
         response = client.get(url)
         assert response.status_code == 200
         assert response.json() == {"auth": "Basic dXNlcjpwYXNzd29yZDEyMw=="}
+
 
 
 def test_auth_invalid_type() -> None:
@@ -327,6 +350,7 @@ def test_auth_invalid_type() -> None:
             client.auth = "not a tuple, not a callable"  # type: ignore
 
 
+
 def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -338,6 +362,7 @@ def test_digest_auth_returns_no_auth_if_no_digest_header_in_response() -> None:
     assert response.status_code == 200
     assert response.json() == {"auth": None}
     assert len(response.history) == 0
+
 
 
 def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
@@ -354,6 +379,7 @@ def test_digest_auth_returns_no_auth_if_alternate_auth_scheme() -> None:
         assert len(response.history) == 0
 
 
+
 def test_digest_auth_200_response_including_digest_auth_header() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -366,6 +392,7 @@ def test_digest_auth_200_response_including_digest_auth_header() -> None:
     assert response.status_code == 200
     assert response.json() == {"auth": None}
     assert len(response.history) == 0
+
 
 
 def test_digest_auth_401_response_without_digest_auth_header() -> None:
@@ -394,6 +421,7 @@ def test_digest_auth_401_response_without_digest_auth_header() -> None:
         ("SHA-512-SESS", 64, 128),
     ],
 )
+
 def test_digest_auth(
     algorithm: str, expected_hash_length: int, expected_response_length: int
 ) -> None:
@@ -424,6 +452,7 @@ def test_digest_auth(
     assert digest_data["qop"] == "auth"
     assert digest_data["nc"] == "00000001"
     assert len(digest_data["cnonce"]) == 16 + 2
+
 
 
 def test_digest_auth_no_specified_qop() -> None:
@@ -457,6 +486,7 @@ def test_digest_auth_no_specified_qop() -> None:
 
 
 @pytest.mark.parametrize("qop", ("auth, auth-int", "auth,auth-int", "unknown,auth"))
+
 def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -469,6 +499,7 @@ def test_digest_auth_qop_including_spaces_and_auth_returns_auth(qop: str) -> Non
     assert len(response.history) == 1
 
 
+
 def test_digest_auth_qop_auth_int_not_implemented() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -477,6 +508,7 @@ def test_digest_auth_qop_auth_int_not_implemented() -> None:
     with httpx.Client(transport=httpx.MockTransport(app)) as client:
         with pytest.raises(NotImplementedError):
             client.get(url, auth=auth)
+
 
 
 def test_digest_auth_qop_must_be_auth_or_auth_int() -> None:
@@ -489,6 +521,7 @@ def test_digest_auth_qop_must_be_auth_or_auth_int() -> None:
             client.get(url, auth=auth)
 
 
+
 def test_digest_auth_incorrect_credentials() -> None:
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -499,6 +532,7 @@ def test_digest_auth_incorrect_credentials() -> None:
 
     assert response.status_code == 401
     assert len(response.history) == 1
+
 
 
 def test_digest_auth_reuses_challenge() -> None:
@@ -515,6 +549,7 @@ def test_digest_auth_reuses_challenge() -> None:
 
         assert len(response_1.history) == 1
         assert len(response_2.history) == 0
+
 
 
 def test_digest_auth_resets_nonce_count_after_401() -> None:
@@ -563,6 +598,7 @@ def test_digest_auth_resets_nonce_count_after_401() -> None:
         'Digest realm="httpx@example.org", qop="auth,au',  # malformed fields list
     ],
 )
+
 def test_digest_auth_raises_protocol_error_on_malformed_header(
     auth_header: str,
 ) -> None:
@@ -573,6 +609,7 @@ def test_digest_auth_raises_protocol_error_on_malformed_header(
     with httpx.Client(transport=httpx.MockTransport(app)) as client:
         with pytest.raises(httpx.ProtocolError):
             client.get(url, auth=auth)
+
 
 
 def test_auth_history() -> None:
@@ -609,6 +646,7 @@ class ConsumeBodyTransport(httpx.MockTransport):
         return self.handler(request)  # type: ignore[return-value]
 
 
+
 def test_digest_auth_unavailable_streaming_body():
     url = "https://example.org/"
     auth = httpx.DigestAuth(username="user", password="password123")
@@ -620,6 +658,7 @@ def test_digest_auth_unavailable_streaming_body():
     with httpx.Client(transport=ConsumeBodyTransport(app)) as client:
         with pytest.raises(httpx.StreamConsumed):
             client.post(url, content=streaming_body(), auth=auth)
+
 
 
 def test_auth_reads_response_body() -> None:
@@ -636,6 +675,7 @@ def test_auth_reads_response_body() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"auth": '{"auth":"xyz"}'}
+
 
 
 def test_auth() -> None:

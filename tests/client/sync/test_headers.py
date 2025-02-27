@@ -20,6 +20,7 @@ def echo_repeated_headers_items(request: httpx.Request) -> httpx.Response:
     return httpx.Response(200, json=data)
 
 
+
 def test_client_header():
     """
     Set a header in the Client.
@@ -45,6 +46,7 @@ def test_client_header():
         }
 
 
+
 def test_header_merge():
     url = "http://example.org/echo_headers"
     client_headers = {"User-Agent": "python-myclient/0.2.1"}
@@ -67,6 +69,7 @@ def test_header_merge():
         }
 
 
+
 def test_header_merge_conflicting_headers():
     url = "http://example.org/echo_headers"
     client_headers = {"X-Auth-Token": "FooBar"}
@@ -87,6 +90,7 @@ def test_header_merge_conflicting_headers():
                 "x-auth-token": "BazToken",
             }
         }
+
 
 
 def test_header_update():
@@ -122,12 +126,15 @@ def test_header_update():
         }
 
 
+
 def test_header_repeated_items():
     url = "http://example.org/echo_headers"
     with httpx.Client(
         transport=httpx.MockTransport(echo_repeated_headers_items)
     ) as client:
-        response = client.get(url, headers=[("x-header", "1"), ("x-header", "2,3")])
+        response = client.get(
+            url, headers=[("x-header", "1"), ("x-header", "2,3")]
+        )
 
         assert response.status_code == 200
 
@@ -139,18 +146,22 @@ def test_header_repeated_items():
         ]
 
 
+
 def test_header_repeated_multi_items():
     url = "http://example.org/echo_headers"
     with httpx.Client(
         transport=httpx.MockTransport(echo_repeated_headers_multi_items)
     ) as client:
-        response = client.get(url, headers=[("x-header", "1"), ("x-header", "2,3")])
+        response = client.get(
+            url, headers=[("x-header", "1"), ("x-header", "2,3")]
+        )
 
         assert response.status_code == 200
 
         echoed_headers = response.json()["headers"]
         assert ["x-header", "1"] in echoed_headers
         assert ["x-header", "2,3"] in echoed_headers
+
 
 
 def test_remove_default_header():
@@ -175,10 +186,12 @@ def test_remove_default_header():
         }
 
 
+
 def test_header_does_not_exist():
     headers = httpx.Headers({"foo": "bar"})
     with pytest.raises(KeyError):
         del headers["baz"]
+
 
 
 def test_header_with_incorrect_value():
@@ -187,6 +200,7 @@ def test_header_with_incorrect_value():
         match=f"Header value must be str or bytes, not {type(None)}",
     ):
         httpx.Headers({"foo": None})  # type: ignore
+
 
 
 def test_host_with_auth_and_port_in_url():
@@ -213,6 +227,7 @@ def test_host_with_auth_and_port_in_url():
         }
 
 
+
 def test_host_with_non_default_port_in_url():
     """
     If the URL includes a non-default port, then it should be included in
@@ -236,9 +251,11 @@ def test_host_with_non_default_port_in_url():
         }
 
 
+
 def test_request_auto_headers():
     request = httpx.Request("GET", "https://www.example.org/")
     assert "host" in request.headers
+
 
 
 def test_same_origin():
@@ -251,6 +268,7 @@ def test_same_origin():
     assert headers["Host"] == request.url.netloc.decode("ascii")
 
 
+
 def test_not_same_origin():
     origin = httpx.URL("https://example.com")
     request = httpx.Request("GET", "HTTP://EXAMPLE.COM:80")
@@ -259,6 +277,7 @@ def test_not_same_origin():
         headers = client._redirect_headers(request, origin, "GET")
 
         assert headers["Host"] == origin.netloc.decode("ascii")
+
 
 
 def test_is_https_redirect():
@@ -273,6 +292,7 @@ def test_is_https_redirect():
         assert "Authorization" in headers
 
 
+
 def test_is_not_https_redirect():
     url = httpx.URL("https://www.example.com")
     request = httpx.Request(
@@ -283,6 +303,7 @@ def test_is_not_https_redirect():
         headers = client._redirect_headers(request, url, "GET")
 
         assert "Authorization" not in headers
+
 
 
 def test_is_not_https_redirect_if_not_default_ports():

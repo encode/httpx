@@ -1,4 +1,7 @@
+import pytest
+
 import httpx
+
 
 
 def test_client_base_url():
@@ -8,11 +11,13 @@ def test_client_base_url():
         assert client.base_url == "https://www.example.org/"
 
 
+
 def test_client_base_url_without_trailing_slash():
     with httpx.Client() as client:
         client.base_url = "https://www.example.org/path"  # type: ignore
         assert isinstance(client.base_url, httpx.URL)
         assert client.base_url == "https://www.example.org/path/"
+
 
 
 def test_client_base_url_with_trailing_slash():
@@ -22,11 +27,13 @@ def test_client_base_url_with_trailing_slash():
     assert client.base_url == "https://www.example.org/path/"
 
 
+
 def test_client_headers():
     with httpx.Client() as client:
         client.headers = {"a": "b"}  # type: ignore
         assert isinstance(client.headers, httpx.Headers)
         assert client.headers["A"] == "b"
+
 
 
 def test_client_cookies():
@@ -36,6 +43,7 @@ def test_client_cookies():
         mycookies = list(client.cookies.jar)
         assert len(mycookies) == 1
         assert mycookies[0].name == "a" and mycookies[0].value == "b"
+
 
 
 def test_client_timeout():
@@ -50,6 +58,7 @@ def test_client_timeout():
         assert client.timeout.pool == expected_timeout
 
 
+
 def test_client_event_hooks():
     def on_request(request):
         pass  # pragma: no cover
@@ -57,6 +66,7 @@ def test_client_event_hooks():
     with httpx.Client() as client:
         client.event_hooks = {"request": [on_request]}
         assert client.event_hooks == {"request": [on_request], "response": []}
+
 
 
 def test_client_trust_env():

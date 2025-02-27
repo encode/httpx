@@ -8,6 +8,7 @@ import pytest
 import httpx
 
 
+
 def test_get(server):
     url = server.url
     with httpx.Client(http2=True) as client:
@@ -28,10 +29,12 @@ def test_get(server):
         pytest.param("http://", id="no-host"),
     ],
 )
+
 def test_get_invalid_url(server, url):
     with httpx.Client() as client:
         with pytest.raises((httpx.UnsupportedProtocol, httpx.LocalProtocolError)):
             client.get(url)
+
 
 
 def test_build_request(server):
@@ -48,6 +51,7 @@ def test_build_request(server):
     assert response.json()["Custom-header"] == "value"
 
 
+
 def test_post(server):
     url = server.url
     with httpx.Client() as client:
@@ -55,11 +59,13 @@ def test_post(server):
     assert response.status_code == 200
 
 
+
 def test_post_json(server):
     url = server.url
     with httpx.Client() as client:
         response = client.post(url, json={"text": "Hello, world!"})
     assert response.status_code == 200
+
 
 
 def test_stream_response(server):
@@ -72,6 +78,7 @@ def test_stream_response(server):
     assert response.content == b"Hello, world!"
 
 
+
 def test_access_content_stream_response(server):
     with httpx.Client() as client:
         with client.stream("GET", server.url) as response:
@@ -82,6 +89,7 @@ def test_access_content_stream_response(server):
         response.content  # noqa: B018
 
 
+
 def test_stream_request(server):
     def hello_world() -> typing.Iterator[bytes]:
         yield b"Hello, "
@@ -90,6 +98,7 @@ def test_stream_request(server):
     with httpx.Client() as client:
         response = client.post(server.url, content=hello_world())
     assert response.status_code == 200
+
 
 
 def test_raise_for_status(server):
@@ -107,11 +116,13 @@ def test_raise_for_status(server):
                 assert response.raise_for_status() is response
 
 
+
 def test_options(server):
     with httpx.Client() as client:
         response = client.options(server.url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
+
 
 
 def test_head(server):
@@ -121,10 +132,12 @@ def test_head(server):
     assert response.text == ""
 
 
+
 def test_put(server):
     with httpx.Client() as client:
         response = client.put(server.url, content=b"Hello, world!")
     assert response.status_code == 200
+
 
 
 def test_patch(server):
@@ -133,11 +146,13 @@ def test_patch(server):
     assert response.status_code == 200
 
 
+
 def test_delete(server):
     with httpx.Client() as client:
         response = client.delete(server.url)
     assert response.status_code == 200
     assert response.text == "Hello, world!"
+
 
 
 def test_100_continue(server):
@@ -151,6 +166,7 @@ def test_100_continue(server):
 
     assert response.status_code == 200
     assert response.content == content
+
 
 
 def test_context_managed_transport():
@@ -184,6 +200,7 @@ def test_context_managed_transport():
     ]
 
 
+
 def test_context_managed_transport_and_mount():
     class Transport(httpx.BaseTransport):
         def __init__(self, name: str) -> None:
@@ -207,7 +224,9 @@ def test_context_managed_transport_and_mount():
 
     transport = Transport(name="transport")
     mounted = Transport(name="mounted")
-    with httpx.Client(transport=transport, mounts={"http://www.example.org": mounted}):
+    with httpx.Client(
+        transport=transport, mounts={"http://www.example.org": mounted}
+    ):
         pass
 
     assert transport.events == [
@@ -224,6 +243,7 @@ def test_context_managed_transport_and_mount():
 
 def hello_world(request):
     return httpx.Response(200, text="Hello, world!")
+
 
 
 def test_client_closed_state_using_implicit_open():
@@ -246,6 +266,7 @@ def test_client_closed_state_using_implicit_open():
             pass  # pragma: no cover
 
 
+
 def test_client_closed_state_using_with_block():
     with httpx.Client(transport=httpx.MockTransport(hello_world)) as client:
         assert not client.is_closed
@@ -266,6 +287,7 @@ def mounted(request: httpx.Request) -> httpx.Response:
     return httpx.Response(200, json=data)
 
 
+
 def test_mounted_transport():
     transport = httpx.MockTransport(unmounted)
     mounts = {"custom://": httpx.MockTransport(mounted)}
@@ -280,6 +302,7 @@ def test_mounted_transport():
         assert response.json() == {"app": "mounted"}
 
 
+
 def test_mock_transport():
     def hello_world(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, text="Hello, world!")
@@ -290,6 +313,7 @@ def test_mock_transport():
         response = client.get("https://www.example.com")
         assert response.status_code == 200
         assert response.text == "Hello, world!"
+
 
 
 def test_cancellation_during_stream():
@@ -329,6 +353,7 @@ def test_cancellation_during_stream():
         with pytest.raises(KeyboardInterrupt):
             client.get("https://www.example.com")
         assert stream_was_closed
+
 
 
 def test_server_extensions(server):

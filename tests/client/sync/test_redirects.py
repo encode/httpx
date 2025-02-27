@@ -113,6 +113,7 @@ def redirects(request: httpx.Request) -> httpx.Response:
     return httpx.Response(200, html="<html><body>Hello, world!</body></html>")
 
 
+
 def test_redirect_301():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         response = client.post(
@@ -121,6 +122,7 @@ def test_redirect_301():
         assert response.status_code == httpx.codes.OK
         assert response.url == "https://example.org/"
         assert len(response.history) == 1
+
 
 
 def test_redirect_302():
@@ -133,12 +135,16 @@ def test_redirect_302():
         assert len(response.history) == 1
 
 
+
 def test_redirect_303():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
-        response = client.get("https://example.org/redirect_303", follow_redirects=True)
+        response = client.get(
+            "https://example.org/redirect_303", follow_redirects=True
+        )
         assert response.status_code == httpx.codes.OK
         assert response.url == "https://example.org/"
         assert len(response.history) == 1
+
 
 
 def test_next_request():
@@ -153,6 +159,7 @@ def test_next_request():
         assert response.status_code == httpx.codes.OK
         assert response.url == "https://example.org/"
         assert response.next_request is None
+
 
 
 def test_head_redirect():
@@ -170,6 +177,7 @@ def test_head_redirect():
         assert response.text == ""
 
 
+
 def test_relative_redirect():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         response = client.get(
@@ -178,6 +186,7 @@ def test_relative_redirect():
         assert response.status_code == httpx.codes.OK
         assert response.url == "https://example.org/"
         assert len(response.history) == 1
+
 
 
 def test_malformed_redirect():
@@ -191,6 +200,7 @@ def test_malformed_redirect():
         assert len(response.history) == 1
 
 
+
 def test_no_scheme_redirect():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         response = client.get(
@@ -201,6 +211,7 @@ def test_no_scheme_redirect():
         assert len(response.history) == 1
 
 
+
 def test_fragment_redirect():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         response = client.get(
@@ -209,6 +220,7 @@ def test_fragment_redirect():
         assert response.status_code == httpx.codes.OK
         assert response.url == "https://example.org/#fragment"
         assert len(response.history) == 1
+
 
 
 def test_multiple_redirects():
@@ -229,6 +241,7 @@ def test_multiple_redirects():
         assert len(response.history[1].history) == 1
 
 
+
 def test_too_many_redirects():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         with pytest.raises(httpx.TooManyRedirects):
@@ -237,10 +250,12 @@ def test_too_many_redirects():
             )
 
 
+
 def test_redirect_loop():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         with pytest.raises(httpx.TooManyRedirects):
             client.get("https://example.org/redirect_loop", follow_redirects=True)
+
 
 
 def test_cross_domain_redirect_with_auth_header():
@@ -252,6 +267,7 @@ def test_cross_domain_redirect_with_auth_header():
         assert "authorization" not in response.json()["headers"]
 
 
+
 def test_cross_domain_https_redirect_with_auth_header():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         url = "http://example.com/cross_domain"
@@ -261,12 +277,14 @@ def test_cross_domain_https_redirect_with_auth_header():
         assert "authorization" not in response.json()["headers"]
 
 
+
 def test_cross_domain_redirect_with_auth():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         url = "https://example.com/cross_domain"
         response = client.get(url, auth=("user", "pass"), follow_redirects=True)
         assert response.url == "https://example.org/cross_domain_target"
         assert "authorization" not in response.json()["headers"]
+
 
 
 def test_same_domain_redirect():
@@ -278,6 +296,7 @@ def test_same_domain_redirect():
         assert response.json()["headers"]["authorization"] == "abc"
 
 
+
 def test_same_domain_https_redirect_with_auth_header():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         url = "http://example.org/cross_domain"
@@ -285,6 +304,7 @@ def test_same_domain_https_redirect_with_auth_header():
         response = client.get(url, headers=headers, follow_redirects=True)
         assert response.url == "https://example.org/cross_domain_target"
         assert response.json()["headers"]["authorization"] == "abc"
+
 
 
 def test_body_redirect():
@@ -300,6 +320,7 @@ def test_body_redirect():
         assert "content-length" in response.json()["headers"]
 
 
+
 def test_no_body_redirect():
     """
     A 303 redirect should remove the request body.
@@ -311,6 +332,7 @@ def test_no_body_redirect():
         assert response.url == "https://example.org/redirect_body_target"
         assert response.json()["body"] == ""
         assert "content-length" not in response.json()["headers"]
+
 
 
 def test_can_stream_if_no_redirect():
@@ -330,6 +352,7 @@ class ConsumeBodyTransport(httpx.MockTransport):
         return self.handler(request)  # type: ignore[return-value]
 
 
+
 def test_cannot_redirect_streaming_body():
     with httpx.Client(transport=ConsumeBodyTransport(redirects)) as client:
         url = "https://example.org/redirect_body"
@@ -341,11 +364,13 @@ def test_cannot_redirect_streaming_body():
             client.post(url, content=streaming_body(), follow_redirects=True)
 
 
+
 def test_cross_subdomain_redirect():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         url = "https://example.com/cross_subdomain"
         response = client.get(url, follow_redirects=True)
         assert response.url == "https://www.example.org/cross_subdomain"
+
 
 
 def cookie_sessions(request: httpx.Request) -> httpx.Response:
@@ -381,6 +406,7 @@ def cookie_sessions(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code, headers=headers)
 
 
+
 def test_redirect_cookie_behavior():
     with httpx.Client(
         transport=httpx.MockTransport(cookie_sessions), follow_redirects=True
@@ -411,6 +437,7 @@ def test_redirect_cookie_behavior():
         assert response.text == "Not logged in"
 
 
+
 def test_redirect_custom_scheme():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         with pytest.raises(httpx.UnsupportedProtocol) as e:
@@ -420,7 +447,10 @@ def test_redirect_custom_scheme():
         assert str(e.value) == "Scheme 'market' not supported."
 
 
+
 def test_invalid_redirect():
     with httpx.Client(transport=httpx.MockTransport(redirects)) as client:
         with pytest.raises(httpx.RemoteProtocolError):
-            client.get("http://example.org/invalid_redirect", follow_redirects=True)
+            client.get(
+                "http://example.org/invalid_redirect", follow_redirects=True
+            )

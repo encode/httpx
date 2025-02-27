@@ -15,6 +15,7 @@ def get_and_set_cookies(request: httpx.Request) -> httpx.Response:
         raise NotImplementedError()  # pragma: no cover
 
 
+
 def test_set_cookie() -> None:
     """
     Send a request including a cookie.
@@ -31,6 +32,7 @@ def test_set_cookie() -> None:
         assert response.json() == {"cookies": "example-name=example-value"}
 
 
+
 def test_set_per_request_cookie_is_deprecated() -> None:
     """
     Sending a request including a per-request cookie is deprecated.
@@ -38,12 +40,15 @@ def test_set_per_request_cookie_is_deprecated() -> None:
     url = "http://example.org/echo_cookies"
     cookies = {"example-name": "example-value"}
 
-    with httpx.Client(transport=httpx.MockTransport(get_and_set_cookies)) as client:
+    with httpx.Client(
+        transport=httpx.MockTransport(get_and_set_cookies)
+    ) as client:
         with pytest.warns(DeprecationWarning):
             response = client.get(url, cookies=cookies)
 
         assert response.status_code == 200
         assert response.json() == {"cookies": "example-name=example-value"}
+
 
 
 def test_set_cookie_with_cookiejar() -> None:
@@ -83,6 +88,7 @@ def test_set_cookie_with_cookiejar() -> None:
         assert response.json() == {"cookies": "example-name=example-value"}
 
 
+
 def test_setting_client_cookies_to_cookiejar() -> None:
     """
     Send a request including a cookie, using a `CookieJar` instance.
@@ -120,6 +126,7 @@ def test_setting_client_cookies_to_cookiejar() -> None:
         assert response.json() == {"cookies": "example-name=example-value"}
 
 
+
 def test_set_cookie_with_cookies_model() -> None:
     """
     Send a request including a cookie, using a `Cookies` instance.
@@ -129,7 +136,9 @@ def test_set_cookie_with_cookies_model() -> None:
     cookies = httpx.Cookies()
     cookies["example-name"] = "example-value"
 
-    with httpx.Client(transport=httpx.MockTransport(get_and_set_cookies)) as client:
+    with httpx.Client(
+        transport=httpx.MockTransport(get_and_set_cookies)
+    ) as client:
         client.cookies = cookies
         response = client.get(url)
 
@@ -137,10 +146,13 @@ def test_set_cookie_with_cookies_model() -> None:
         assert response.json() == {"cookies": "example-name=example-value"}
 
 
+
 def test_get_cookie() -> None:
     url = "http://example.org/set_cookie"
 
-    with httpx.Client(transport=httpx.MockTransport(get_and_set_cookies)) as client:
+    with httpx.Client(
+        transport=httpx.MockTransport(get_and_set_cookies)
+    ) as client:
         response = client.get(url)
 
         assert response.status_code == 200
@@ -148,11 +160,14 @@ def test_get_cookie() -> None:
         assert client.cookies["example-name"] == "example-value"
 
 
+
 def test_cookie_persistence() -> None:
     """
     Ensure that Client instances persist cookies between requests.
     """
-    with httpx.Client(transport=httpx.MockTransport(get_and_set_cookies)) as client:
+    with httpx.Client(
+        transport=httpx.MockTransport(get_and_set_cookies)
+    ) as client:
         response = client.get("http://example.org/echo_cookies")
         assert response.status_code == 200
         assert response.json() == {"cookies": None}

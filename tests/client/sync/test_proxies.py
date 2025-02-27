@@ -13,6 +13,7 @@ def url_to_origin(url: str) -> httpcore.URL:
     return httpcore.URL(scheme=u.raw_scheme, host=u.raw_host, port=u.port, target="/")
 
 
+
 def test_socks_proxy():
     url = httpx.URL("http://www.example.com")
 
@@ -80,8 +81,11 @@ PROXY_URL = "http://[::1]"
         ),
     ],
 )
+
 def test_transport_for_request(url, proxies, expected):
-    mounts = {key: httpx.HTTPTransport(proxy=value) for key, value in proxies.items()}
+    mounts = {
+        key: httpx.HTTPTransport(proxy=value) for key, value in proxies.items()
+    }
     with httpx.Client(mounts=mounts) as client:
         transport = client._transport_for_url(httpx.URL(url))
 
@@ -93,6 +97,7 @@ def test_transport_for_request(url, proxies, expected):
             assert transport._pool._proxy_url == url_to_origin(expected)
 
 
+
 @pytest.mark.network
 def test_proxy_close():
     try:
@@ -101,6 +106,7 @@ def test_proxy_close():
         client.get("http://example.com")
     finally:
         client.close()
+
 
 
 def test_unsupported_proxy_scheme():
@@ -205,6 +211,7 @@ def test_unsupported_proxy_scheme():
         ),
     ],
 )
+
 def test_proxies_environ(monkeypatch, url, env, expected):
     for name, value in env.items():
         monkeypatch.setenv(name, value)
@@ -229,14 +236,18 @@ def test_proxies_environ(monkeypatch, url, env, expected):
         ({"all://": "http://127.0.0.1"}, True),
     ],
 )
+
 def test_for_deprecated_proxy_params(proxies, is_valid):
-    mounts = {key: httpx.HTTPTransport(proxy=value) for key, value in proxies.items()}
+    mounts = {
+        key: httpx.HTTPTransport(proxy=value) for key, value in proxies.items()
+    }
 
     if not is_valid:
         with pytest.raises(ValueError):
             httpx.Client(mounts=mounts)
     else:
         httpx.Client(mounts=mounts)
+
 
 
 def test_proxy_with_mounts():

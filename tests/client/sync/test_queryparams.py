@@ -1,3 +1,5 @@
+import pytest
+
 import httpx
 
 
@@ -5,10 +7,12 @@ def hello_world(request: httpx.Request) -> httpx.Response:
     return httpx.Response(200, text="Hello, world")
 
 
+
 def test_client_queryparams():
     client = httpx.Client(params={"a": "b"})
     assert isinstance(client.params, httpx.QueryParams)
     assert client.params["a"] == "b"
+
 
 
 def test_client_queryparams_string():
@@ -20,6 +24,7 @@ def test_client_queryparams_string():
         client.params = "a=b"  # type: ignore
         assert isinstance(client.params, httpx.QueryParams)
         assert client.params["a"] == "b"
+
 
 
 def test_client_queryparams_echo():

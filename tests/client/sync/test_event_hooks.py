@@ -1,3 +1,5 @@
+import pytest
+
 import httpx
 
 
@@ -9,6 +11,7 @@ def app(request: httpx.Request) -> httpx.Response:
         return httpx.Response(status_code, headers={"server": "testserver"})
 
     return httpx.Response(200, headers={"server": "testserver"})
+
 
 
 def test_event_hooks():
@@ -46,6 +49,7 @@ def test_event_hooks():
     ]
 
 
+
 def test_event_hooks_raising_exception():
     def raise_on_4xx_5xx(response):
         response.raise_for_status()
@@ -59,6 +63,7 @@ def test_event_hooks_raising_exception():
             http.get("http://127.0.0.1:8000/status/400")
         except httpx.HTTPStatusError as exc:
             assert exc.response.is_closed
+
 
 
 def test_event_hooks_with_redirect():
