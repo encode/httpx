@@ -591,7 +591,10 @@ def test_url_copywith_authority_subcomponents():
     }
     url = httpx.URL("https://example.org")
     new = url.copy_with(**copy_with_kwargs)
-    assert str(new) == "https://username:password@example.net:444"
+    assert str(new) == "https://example.net:444"
+    assert new.username == "username"
+    assert new.password == "password"
+    assert new.userinfo == b"username:password"
 
 
 def test_url_copywith_netloc():
@@ -610,7 +613,7 @@ def test_url_copywith_userinfo_subcomponents():
     }
     url = httpx.URL("https://example.org")
     new = url.copy_with(**copy_with_kwargs)
-    assert str(new) == "https://tom%40example.org:abc123%40%20%@example.org"
+    assert str(new) == "https://example.org"
     assert new.username == "tom@example.org"
     assert new.password == "abc123@ %"
     assert new.userinfo == b"tom%40example.org:abc123%40%20%"

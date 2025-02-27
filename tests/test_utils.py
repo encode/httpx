@@ -65,6 +65,26 @@ def test_logging_request(server, caplog):
     ]
 
 
+def test_logging_request_with_auth(server, caplog):
+    caplog.set_level(logging.INFO)
+    with httpx.Client() as client:
+        credentials = {
+            "username": "user",
+            "password": "abc123%",
+        }
+        url = server.url.copy_with(**credentials)
+        response = client.get(url)
+        assert response.status_code == 200
+
+    assert caplog.record_tuples == [
+        (
+            "httpx",
+            logging.INFO,
+            'HTTP Request: GET http://127.0.0.1:8000/ "HTTP/1.1 200 OK"',
+        )
+    ]
+
+
 def test_logging_redirect_chain(server, caplog):
     caplog.set_level(logging.INFO)
     with httpx.Client(follow_redirects=True) as client:
