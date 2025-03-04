@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## 0.28.2 (...)
 
-* Update package classifiers.
+* Update package classifiers. (#3460)
   
 ## 0.28.1 (6th December, 2024)
 
