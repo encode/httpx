@@ -11,19 +11,29 @@ from ._transports import *
 from ._types import *
 from ._urls import *
 
-try:
-    from ._main import main
-except ImportError:  # pragma: no cover
 
-    def main() -> None:  # type: ignore
-        import sys
+# import the _main module lazily so that we only incur the extra import time
+# for the CLI dependencies (click, rich, etc.) when intending to run the CLI
+# and not on every import of httpx
+def __getattr__(name: str):  # type: ignore[no-untyped-def]
+    if name == "main":
+        try:
+            from ._main import main
+        except ImportError:  # pragma: no cover
 
-        print(
-            "The httpx command line client could not run because the required "
-            "dependencies were not installed.\nMake sure you've installed "
-            "everything with: pip install 'httpx[cli]'"
-        )
-        sys.exit(1)
+            def main() -> None:  # type: ignore
+                import sys
+
+                print(
+                    "The httpx command line client could not run because the required "
+                    "dependencies were not installed.\nMake sure you've installed "
+                    "everything with: pip install 'httpx[cli]'"
+                )
+                sys.exit(1)
+
+        return main
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = [
@@ -59,7 +69,6 @@ __all__ = [
     "InvalidURL",
     "Limits",
     "LocalProtocolError",
-    "main",
     "MockTransport",
     "NetRCAuth",
     "NetworkError",
