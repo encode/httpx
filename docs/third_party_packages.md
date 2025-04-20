@@ -4,30 +4,6 @@ As HTTPX usage grows, there is an expanding community of developers building too
 
 ## Plugins
 
-### httpx-ws
-
-[GitHub](https://github.com/frankie567/httpx-ws) - [Documentation](https://frankie567.github.io/httpx-ws/)
-
-WebSocket support for HTTPX.
-
-### httpx-socks
-
-[GitHub](https://github.com/romis2012/httpx-socks)
-
-Proxy (HTTP, SOCKS) transports for httpx.
-
-### httpdbg
-
-[GitHub](https://github.com/cle-b/httpdbg) - [Documentation](https://httpdbg.readthedocs.io/)
-
-A tool for Python developers to easily debug the HTTP(S) client requests in a Python program.
-
-### Hishel
-
-[GitHub](https://github.com/karpetrosyan/hishel) - [Documentation](https://hishel.com/)
-
-An elegant HTTP Cache implementation for HTTPX and HTTP Core.
-
 ### Authlib
 
 [GitHub](https://github.com/lepture/authlib) - [Documentation](https://docs.authlib.org/en/latest/)
@@ -40,11 +16,53 @@ The ultimate Python library in building OAuth and OpenID Connect clients and ser
 
 An asynchronous GitHub API library. Includes [HTTPX support](https://gidgethub.readthedocs.io/en/latest/httpx.html).
 
+### Hishel
+
+[GitHub](https://github.com/karpetrosyan/hishel) - [Documentation](https://hishel.com/)
+
+An elegant HTTP Cache implementation for HTTPX and HTTP Core.
+
+### httpdbg
+
+[GitHub](https://github.com/cle-b/httpdbg) - [Documentation](https://httpdbg.readthedocs.io/)
+
+A tool for Python developers to easily debug the HTTP(S) client requests in a Python program.
+
 ### HTTPX-Auth
 
 [GitHub](https://github.com/Colin-b/httpx_auth) - [Documentation](https://colin-b.github.io/httpx_auth/)
 
 Provides authentication classes to be used with HTTPX [authentication parameter](advanced/authentication.md#customizing-authentication).
+
+### httpx-caching
+
+[Github](https://github.com/johtso/httpx-caching)
+
+This package adds caching functionality to HTTPX
+
+### httpx-socks
+
+[GitHub](https://github.com/romis2012/httpx-socks)
+
+Proxy (HTTP, SOCKS) transports for httpx.
+
+### httpx-sse
+
+[GitHub](https://github.com/florimondmanca/httpx-sse)
+
+Allows consuming Server-Sent Events (SSE) with HTTPX.
+
+### httpx-retries
+
+[GitHub](https://github.com/will-ockmore/httpx-retries) - [Documentation](https://will-ockmore.github.io/httpx-retries/)
+
+A retry layer for HTTPX.
+
+### httpx-ws
+
+[GitHub](https://github.com/frankie567/httpx-ws) - [Documentation](https://frankie567.github.io/httpx-ws/)
+
+WebSocket support for HTTPX.
 
 ### pytest-HTTPX
 
@@ -58,6 +76,12 @@ Provides `httpx_mock` [pytest](https://docs.pytest.org/en/latest/) fixture to mo
 
 A utility for mocking out the Python HTTPX library.
 
+### robox
+
+[Github](https://github.com/danclaudiupop/robox)
+
+A library for scraping the web built on top of HTTPX.
+
 ### rpc.py
 
 [Github](https://github.com/abersheeran/rpc.py) - [Documentation](https://github.com/abersheeran/rpc.py#rpcpy)
@@ -69,24 +93,6 @@ An fast and powerful RPC framework based on ASGI/WSGI. Use HTTPX as the client o
 [GitHub](https://github.com/kevin1024/vcrpy) - [Documentation](https://vcrpy.readthedocs.io/)
 
 A utility for record and repeat an http request.
-
-### httpx-caching
-
-[Github](https://github.com/johtso/httpx-caching)
-
-This package adds caching functionality to HTTPX
-
-### httpx-sse
-
-[GitHub](https://github.com/florimondmanca/httpx-sse)
-
-Allows consuming Server-Sent Events (SSE) with HTTPX.
-
-### robox
-
-[Github](https://github.com/danclaudiupop/robox)
-
-A library for scraping the web built on top of HTTPX.
 
 ## Gists
 
