@@ -40,7 +40,7 @@ Now, let's get started:
 <Response [200 OK]>
 >>> r.status_code
 200
->>> r.headers['content-type']
+>>> r.content_type
 'text/html; charset=UTF-8'
 >>> r.text
 '<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'

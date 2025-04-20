@@ -492,7 +492,7 @@ def test_ensure_ascii_false_with_french_characters():
     assert (
         "ça va" in response.text
     ), "ensure_ascii=False should preserve French accented characters"
-    assert response.headers["Content-Type"] == "application/json"
+    assert response.content_type == "application/json"
 
 
 def test_separators_for_compact_json():
@@ -501,7 +501,7 @@ def test_separators_for_compact_json():
     assert (
         response.text == '{"clé":"valeur","liste":[1,2,3]}'
     ), "separators=(',', ':') should produce a compact representation"
-    assert response.headers["Content-Type"] == "application/json"
+    assert response.content_type == "application/json"
 
 
 def test_allow_nan_false():

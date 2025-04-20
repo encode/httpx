@@ -101,7 +101,7 @@ def print_help() -> None:
 
 
 def get_lexer_for_response(response: Response) -> str:
-    content_type = response.headers.get("Content-Type")
+    content_type = response.content_type
     if content_type is not None:
         mime_type, _, _ = content_type.partition(";")
         try:

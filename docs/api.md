@@ -61,6 +61,7 @@
 * `.content` - **bytes**
 * `.text` - **str**
 * `.encoding` - **str**
+* `.content_type` - **Optional[str]**
 * `.is_redirect` - **bool**
 * `.request` - **Request**
 * `.next_request` - **Optional[Request]**

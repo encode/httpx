@@ -690,11 +690,10 @@ class Response:
         """
         Return the encoding, as specified by the Content-Type header.
         """
-        content_type = self.headers.get("Content-Type")
-        if content_type is None:
+        if self.content_type is None:
             return None
 
-        return _parse_content_type_charset(content_type)
+        return _parse_content_type_charset(self.content_type)
 
     def _get_content_decoder(self) -> ContentDecoder:
         """
@@ -1074,6 +1073,14 @@ class Response:
             self.is_closed = True
             with request_context(request=self._request):
                 await self.stream.aclose()
+
+    @property
+    def content_type(self) -> str | None:
+        """
+        Return the Content-Type header.
+        """
+        result = self.headers.get("Content-Type")
+        return str(result) if result else None
 
 
 class Cookies(typing.MutableMapping[str, str]):
