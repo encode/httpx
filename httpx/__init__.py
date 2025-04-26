@@ -102,4 +102,9 @@ __all__ = [
 __locals = locals()
 for __name in __all__:
     if not __name.startswith("__"):
-        setattr(__locals[__name], "__module__", "httpx")  # noqa
+        try:
+            setattr(__locals[__name], "__module__", "httpx")  # noqa
+        except AttributeError:
+            # typing.Union instances are immutable in Python 3.14+,
+            # so don't fail if writing to "__module__" fails
+            continue
