@@ -58,13 +58,13 @@ Provides `httpx_mock` [pytest](https://docs.pytest.org/en/latest/) fixture to mo
 
 [GitHub](https://github.com/lundberg/respx) - [Documentation](https://lundberg.github.io/respx/)
 
-A utility for mocking out the python HTTPX library.
+A utility for mocking out HTTPX.
 
 ### rpc.py
 
 [Github](https://github.com/abersheeran/rpc.py) - [Documentation](https://github.com/abersheeran/rpc.py#rpcpy)
 
-An fast and powerful RPC framework based on ASGI/WSGI. Use HTTPX as the client of the RPC service.
+A fast and powerful RPC framework based on ASGI/WSGI. Use HTTPX as the client of the RPC service.
 
 ## Libraries with HTTPX support
 
