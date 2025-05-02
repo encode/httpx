@@ -76,12 +76,6 @@ Provides `httpx_mock` [pytest](https://docs.pytest.org/en/latest/) fixture to mo
 
 A utility for mocking out the Python HTTPX library.
 
-### robox
-
-[Github](https://github.com/danclaudiupop/robox)
-
-A library for scraping the web built on top of HTTPX.
-
 ### rpc.py
 
 [Github](https://github.com/abersheeran/rpc.py) - [Documentation](https://github.com/abersheeran/rpc.py#rpcpy)
