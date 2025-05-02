@@ -1092,9 +1092,7 @@ class Cookies(typing.MutableMapping[str, str]):
             for key, value in cookies:
                 self.set(key, value)
         elif isinstance(cookies, Cookies):
-            self.jar = CookieJar()
-            for cookie in cookies.jar:
-                self.jar.set_cookie(cookie)
+            self.jar = cookies.jar
         else:
             self.jar = cookies
 

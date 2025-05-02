@@ -1,4 +1,5 @@
 import http
+from http.cookiejar import CookieJar, DefaultCookiePolicy
 
 import pytest
 
@@ -96,3 +97,14 @@ def test_cookies_repr():
         "<Cookies[<Cookie foo=bar for http://blah.com />,"
         " <Cookie fizz=buzz for http://hello.com />]>"
     )
+
+def test_cookies_policy():
+    jar = CookieJar()
+    jar.set_policy(
+        DefaultCookiePolicy(
+            strict_domain=True,
+        )
+    )
+    cookies = httpx.Cookies(jar)
+    new_cookies = httpx.Cookies(cookies)
+    assert new_cookies.jar._policy.strict_domain is True
