@@ -90,7 +90,7 @@ A tool for Python developers to easily debug the HTTP(S) client requests in a Py
 
 [GitHub](https://github.com/kevin1024/vcrpy) - [Documentation](https://vcrpy.readthedocs.io/)
 
-A utility for record and repeat an http request.
+Record and repeat requests.
 
 ## Gists
 
