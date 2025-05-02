@@ -2,31 +2,15 @@
 
 As HTTPX usage grows, there is an expanding community of developers building tools and libraries that integrate with HTTPX, or depend on HTTPX. Here are some of them.
 
+<!-- NOTE: Entries are alphabetised. -->
+
 ## Plugins
-
-### Authlib
-
-[GitHub](https://github.com/lepture/authlib) - [Documentation](https://docs.authlib.org/en/latest/)
-
-The ultimate Python library in building OAuth and OpenID Connect clients and servers. Includes an [OAuth HTTPX client](https://docs.authlib.org/en/latest/client/httpx.html).
-
-### Gidgethub
-
-[GitHub](https://github.com/brettcannon/gidgethub) - [Documentation](https://gidgethub.readthedocs.io/en/latest/index.html)
-
-An asynchronous GitHub API library. Includes [HTTPX support](https://gidgethub.readthedocs.io/en/latest/httpx.html).
 
 ### Hishel
 
 [GitHub](https://github.com/karpetrosyan/hishel) - [Documentation](https://hishel.com/)
 
 An elegant HTTP Cache implementation for HTTPX and HTTP Core.
-
-### httpdbg
-
-[GitHub](https://github.com/cle-b/httpdbg) - [Documentation](https://httpdbg.readthedocs.io/)
-
-A tool for Python developers to easily debug the HTTP(S) client requests in a Python program.
 
 ### HTTPX-Auth
 
@@ -82,6 +66,26 @@ A utility for mocking out the Python HTTPX library.
 
 An fast and powerful RPC framework based on ASGI/WSGI. Use HTTPX as the client of the RPC service.
 
+## Libraries with HTTPX support
+
+### Authlib
+
+[GitHub](https://github.com/lepture/authlib) - [Documentation](https://docs.authlib.org/en/latest/)
+
+A python library for building OAuth and OpenID Connect clients and servers. Includes an [OAuth HTTPX client](https://docs.authlib.org/en/latest/client/httpx.html).
+
+### Gidgethub
+
+[GitHub](https://github.com/brettcannon/gidgethub) - [Documentation](https://gidgethub.readthedocs.io/en/latest/index.html)
+
+An asynchronous GitHub API library. Includes [HTTPX support](https://gidgethub.readthedocs.io/en/latest/httpx.html).
+
+### httpdbg
+
+[GitHub](https://github.com/cle-b/httpdbg) - [Documentation](https://httpdbg.readthedocs.io/)
+
+A tool for Python developers to easily debug the HTTP(S) client requests in a Python program.
+
 ### VCR.py
 
 [GitHub](https://github.com/kevin1024/vcrpy) - [Documentation](https://vcrpy.readthedocs.io/)
@@ -89,8 +93,6 @@ An fast and powerful RPC framework based on ASGI/WSGI. Use HTTPX as the client o
 A utility for record and repeat an http request.
 
 ## Gists
-
-<!-- NOTE: this list is in alphabetical order. -->
 
 ### urllib3-transport
 
