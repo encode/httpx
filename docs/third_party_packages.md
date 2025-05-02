@@ -58,7 +58,7 @@ Provides `httpx_mock` [pytest](https://docs.pytest.org/en/latest/) fixture to mo
 
 [GitHub](https://github.com/lundberg/respx) - [Documentation](https://lundberg.github.io/respx/)
 
-A utility for mocking out the Python HTTPX library.
+A utility for mocking out the python HTTPX library.
 
 ### rpc.py
 
@@ -84,7 +84,7 @@ An asynchronous GitHub API library. Includes [HTTPX support](https://gidgethub.r
 
 [GitHub](https://github.com/cle-b/httpdbg) - [Documentation](https://httpdbg.readthedocs.io/)
 
-A tool for Python developers to easily debug the HTTP(S) client requests in a Python program.
+A tool for python developers to easily debug the HTTP(S) client requests in a python program.
 
 ### VCR.py
 
