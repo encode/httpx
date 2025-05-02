@@ -16,7 +16,7 @@ An elegant HTTP Cache implementation for HTTPX and HTTP Core.
 
 [GitHub](https://github.com/Colin-b/httpx_auth) - [Documentation](https://colin-b.github.io/httpx_auth/)
 
-Provides authentication classes to be used with HTTPX [authentication parameter](advanced/authentication.md#customizing-authentication).
+Provides authentication classes to be used with HTTPX's [authentication parameter](advanced/authentication.md#customizing-authentication).
 
 ### httpx-caching
 
@@ -52,7 +52,7 @@ WebSocket support for HTTPX.
 
 [GitHub](https://github.com/Colin-b/pytest_httpx) - [Documentation](https://colin-b.github.io/pytest_httpx/)
 
-Provides `httpx_mock` [pytest](https://docs.pytest.org/en/latest/) fixture to mock HTTPX within test cases.
+Provides a [pytest](https://docs.pytest.org/en/latest/) fixture to mock HTTPX within test cases.
 
 ### RESPX
 
