@@ -291,3 +291,26 @@ def test_is_not_https_redirect_if_not_default_ports():
     headers = client._redirect_headers(request, url, "GET")
 
     assert "Authorization" not in headers
+
+
+def test_utf8_header():
+    """
+    Set a header in the Client.
+    """
+    url = "http://example.org/echo_headers"
+    headers = {"Example-Header": "заголовок"}
+
+    client = httpx.Client(transport=httpx.MockTransport(echo_headers), headers=headers)
+    response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "example-header": "заголовок",
+            "host": "example.org",
+            "user-agent": f"python-httpx/{httpx.__version__}",
+        }
+    }

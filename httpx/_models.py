@@ -272,7 +272,7 @@ class Headers(typing.MutableMapping[str, str]):
         return split_values
 
     def update(self, headers: HeaderTypes | None = None) -> None:  # type: ignore
-        headers = Headers(headers)
+        headers = Headers(headers, encoding=self.encoding)
         for key in headers.keys():
             if key in self:
                 self.pop(key)

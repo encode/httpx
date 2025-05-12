@@ -207,7 +207,7 @@ class BaseClient:
 
         self._auth = self._build_auth(auth)
         self._params = QueryParams(params)
-        self.headers = Headers(headers)
+        self.headers = Headers(headers, encoding=default_encoding)
         self._cookies = Cookies(cookies)
         self._timeout = Timeout(timeout)
         self.follow_redirects = follow_redirects
