@@ -791,7 +791,7 @@ class Response:
             and "Location" in self.headers
         )
 
-    def raise_for_status(self) -> Response:
+    def raise_for_status(self, reason: str | None = None) -> Response:
         """
         Raise the `HTTPStatusError` if one occurred.
         """
@@ -807,13 +807,13 @@ class Response:
 
         if self.has_redirect_location:
             message = (
-                "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
+                "{error_type} '{0.status_code} {0.reason_phrase}{extra_reason}' for url '{0.url}'\n"
                 "Redirect location: '{0.headers[location]}'\n"
                 "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{0.status_code}"
             )
         else:
             message = (
-                "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
+                "{error_type} '{0.status_code} {0.reason_phrase}{extra_reason}' for url '{0.url}'\n"
                 "For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/{0.status_code}"
             )
 
@@ -825,7 +825,8 @@ class Response:
             5: "Server error",
         }
         error_type = error_types.get(status_class, "Invalid status code")
-        message = message.format(self, error_type=error_type)
+        extra_reason = f' {reason}' if reason  else ''
+        message = message.format(self, error_type=error_type, extra_reason=extra_reason)
         raise HTTPStatusError(message, request=request, response=self)
 
     def json(self, **kwargs: typing.Any) -> typing.Any:
