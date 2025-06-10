@@ -29,7 +29,7 @@ from ._exceptions import (
 from ._models import Cookies, Headers, Request, Response
 from ._status_codes import codes
 from ._transports.base import AsyncBaseTransport, BaseTransport
-from ._transports.default import AsyncHTTPTransport, HTTPTransport
+from ._transports.default import SOCKET_OPTION, AsyncHTTPTransport, HTTPTransport
 from ._types import (
     AsyncByteStream,
     AuthTypes,
@@ -653,6 +653,7 @@ class Client(BaseClient):
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
+        socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
@@ -693,6 +694,7 @@ class Client(BaseClient):
             http2=http2,
             limits=limits,
             transport=transport,
+            socket_options=socket_options,
         )
         self._mounts: dict[URLPattern, BaseTransport | None] = {
             URLPattern(key): None
@@ -705,6 +707,7 @@ class Client(BaseClient):
                 http1=http1,
                 http2=http2,
                 limits=limits,
+                socket_options=socket_options,
             )
             for key, proxy in proxy_map.items()
         }
@@ -723,6 +726,7 @@ class Client(BaseClient):
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
+        socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
         transport: BaseTransport | None = None,
     ) -> BaseTransport:
         if transport is not None:
@@ -735,6 +739,7 @@ class Client(BaseClient):
             http1=http1,
             http2=http2,
             limits=limits,
+            socket_options=socket_options,
         )
 
     def _init_proxy_transport(
@@ -746,6 +751,7 @@ class Client(BaseClient):
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
+        socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> BaseTransport:
         return HTTPTransport(
             verify=verify,
@@ -755,6 +761,7 @@ class Client(BaseClient):
             http2=http2,
             limits=limits,
             proxy=proxy,
+            socket_options=socket_options,
         )
 
     def _transport_for_url(self, url: URL) -> BaseTransport:
@@ -1366,6 +1373,7 @@ class AsyncClient(BaseClient):
         timeout: TimeoutTypes = DEFAULT_TIMEOUT_CONFIG,
         follow_redirects: bool = False,
         limits: Limits = DEFAULT_LIMITS,
+        socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
         max_redirects: int = DEFAULT_MAX_REDIRECTS,
         event_hooks: None | (typing.Mapping[str, list[EventHook]]) = None,
         base_url: URL | str = "",
@@ -1407,6 +1415,7 @@ class AsyncClient(BaseClient):
             http2=http2,
             limits=limits,
             transport=transport,
+            socket_options=socket_options,
         )
 
         self._mounts: dict[URLPattern, AsyncBaseTransport | None] = {
@@ -1420,6 +1429,7 @@ class AsyncClient(BaseClient):
                 http1=http1,
                 http2=http2,
                 limits=limits,
+                socket_options=socket_options,
             )
             for key, proxy in proxy_map.items()
         }
@@ -1437,6 +1447,7 @@ class AsyncClient(BaseClient):
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
+        socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
         transport: AsyncBaseTransport | None = None,
     ) -> AsyncBaseTransport:
         if transport is not None:
@@ -1449,6 +1460,7 @@ class AsyncClient(BaseClient):
             http1=http1,
             http2=http2,
             limits=limits,
+            socket_options=socket_options,
         )
 
     def _init_proxy_transport(
@@ -1460,6 +1472,7 @@ class AsyncClient(BaseClient):
         http1: bool = True,
         http2: bool = False,
         limits: Limits = DEFAULT_LIMITS,
+        socket_options: typing.Iterable[SOCKET_OPTION] | None = None,
     ) -> AsyncBaseTransport:
         return AsyncHTTPTransport(
             verify=verify,
@@ -1469,6 +1482,7 @@ class AsyncClient(BaseClient):
             http2=http2,
             limits=limits,
             proxy=proxy,
+            socket_options=socket_options,
         )
 
     def _transport_for_url(self, url: URL) -> AsyncBaseTransport:
