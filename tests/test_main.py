@@ -1,9 +1,8 @@
 import os
 import typing
 
-from click.testing import CliRunner
-
 import httpx
+from click.testing import CliRunner
 
 
 def splitlines(output: str) -> typing.Iterable[str]:

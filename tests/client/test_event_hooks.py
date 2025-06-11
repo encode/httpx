@@ -1,6 +1,5 @@
-import pytest
-
 import httpx
+import pytest
 
 
 def app(request: httpx.Request) -> httpx.Response:

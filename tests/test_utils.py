@@ -3,9 +3,8 @@ import logging
 import os
 import random
 
-import pytest
-
 import httpx
+import pytest
 from httpx._utils import URLPattern, get_environment_proxies
 
 

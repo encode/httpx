@@ -5,7 +5,6 @@
 import json
 
 import pytest
-
 from httpx._urlparse import urlparse
 
 # URL test cases from...

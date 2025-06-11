@@ -1,6 +1,5 @@
-import pytest
-
 import httpx
+import pytest
 
 # Tests for `httpx.URL` instantiation and property accessors.
 

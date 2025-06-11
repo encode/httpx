@@ -4,9 +4,8 @@ import typing
 from datetime import timedelta
 
 import chardet
-import pytest
-
 import httpx
+import pytest
 
 
 def autodetect(content):

@@ -4,9 +4,8 @@ import io
 import tempfile
 import typing
 
-import pytest
-
 import httpx
+import pytest
 
 
 def echo_request_content(request: httpx.Request) -> httpx.Response:

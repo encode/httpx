@@ -3,9 +3,8 @@ import pickle
 import typing
 
 import chardet
-import pytest
-
 import httpx
+import pytest
 
 
 class StreamingBody:

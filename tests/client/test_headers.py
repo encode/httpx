@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-import pytest
-
 import httpx
+import pytest
 
 
 def echo_headers(request: httpx.Request) -> httpx.Response:

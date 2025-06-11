@@ -1,8 +1,7 @@
 from http.cookiejar import Cookie, CookieJar
 
-import pytest
-
 import httpx
+import pytest
 
 
 def get_and_set_cookies(request: httpx.Request) -> httpx.Response:

@@ -13,9 +13,8 @@ import typing
 from urllib.request import parse_keqv_list
 
 import anyio
-import pytest
-
 import httpx
+import pytest
 
 from ..common import FIXTURES_DIR
 

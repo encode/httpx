@@ -1,8 +1,7 @@
 import typing
 
-import pytest
-
 import httpx
+import pytest
 
 
 def redirects(request: httpx.Request) -> httpx.Response:

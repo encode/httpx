@@ -1,8 +1,7 @@
 import json
 
-import pytest
-
 import httpx
+import pytest
 
 
 async def hello_world(scope, receive, send):

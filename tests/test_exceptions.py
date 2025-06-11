@@ -3,9 +3,8 @@ from __future__ import annotations
 import typing
 
 import httpcore
-import pytest
-
 import httpx
+import pytest
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from conftest import TestServer

@@ -3,9 +3,8 @@ from __future__ import annotations
 import typing
 from datetime import timedelta
 
-import pytest
-
 import httpx
+import pytest
 
 
 @pytest.mark.anyio

@@ -5,6 +5,7 @@ import threading
 import time
 import typing
 
+import httpx
 import pytest
 import trustme
 from cryptography.hazmat.backends import default_backend
@@ -17,7 +18,6 @@ from cryptography.hazmat.primitives.serialization import (
 from uvicorn.config import Config
 from uvicorn.server import Server
 
-import httpx
 from tests.concurrency import sleep
 
 ENVIRONMENT_VARIABLES = {

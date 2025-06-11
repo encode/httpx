@@ -1,8 +1,7 @@
 import http
 
-import pytest
-
 import httpx
+import pytest
 
 
 def test_cookies():

@@ -6,9 +6,8 @@ import wsgiref.validate
 from functools import partial
 from io import StringIO
 
-import pytest
-
 import httpx
+import pytest
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment

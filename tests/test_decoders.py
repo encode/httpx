@@ -5,10 +5,9 @@ import typing
 import zlib
 
 import chardet
+import httpx
 import pytest
 import zstandard as zstd
-
-import httpx
 
 
 def test_deflate():

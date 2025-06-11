@@ -3,9 +3,8 @@ import typing
 from pathlib import Path
 
 import certifi
-import pytest
-
 import httpx
+import pytest
 
 
 def test_load_ssl_config():

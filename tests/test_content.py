@@ -1,9 +1,8 @@
 import io
 import typing
 
-import pytest
-
 import httpx
+import pytest
 
 method = "POST"
 url = "https://www.example.com"
