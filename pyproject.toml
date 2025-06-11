@@ -1,15 +1,13 @@
 [build-system]
-requires = ["hatchling", "hatch-fancy-pypi-readme"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1,<2", "hatch-fancy-pypi-readme"]
+build-backend = "maturin"
 
 [project]
 name = "httpx"
 description = "The next generation HTTP client."
 license = "BSD-3-Clause"
 requires-python = ">=3.8"
-authors = [
-    { name = "Tom Christie", email = "tom@tomchristie.com" },
-]
+authors = [{ name = "Tom Christie", email = "tom@tomchristie.com" }]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Web Environment",
@@ -28,12 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
 ]
-dependencies = [
-    "certifi",
-    "httpcore==1.*",
-    "anyio",
-    "idna",
-]
+dependencies = ["certifi", "httpcore==1.*", "anyio", "idna"]
 dynamic = ["readme", "version"]
 
 [project.optional-dependencies]
@@ -41,20 +34,10 @@ brotli = [
     "brotli; platform_python_implementation == 'CPython'",
     "brotlicffi; platform_python_implementation != 'CPython'",
 ]
-cli = [
-    "click==8.*",
-    "pygments==2.*",
-    "rich>=10,<14",
-]
-http2 = [
-    "h2>=3,<5",
-]
-socks = [
-    "socksio==1.*",
-]
-zstd = [
-  "zstandard>=0.18.0",
-]
+cli = ["click==8.*", "pygments==2.*", "rich>=10,<14"]
+http2 = ["h2>=3,<5"]
+socks = ["socksio==1.*"]
+zstd = ["zstandard>=0.18.0"]
 
 [project.scripts]
 httpx = "httpx:main"
@@ -65,16 +48,17 @@ Documentation = "https://www.python-httpx.org"
 Homepage = "https://github.com/encode/httpx"
 Source = "https://github.com/encode/httpx"
 
+[tool.maturin]
+python-source = "python"
+module-name = "httpx._httpx"
+bindings = 'pyo3'
+features = ["pyo3/extension-module"]
+
 [tool.hatch.version]
 path = "httpx/__version__.py"
 
 [tool.hatch.build.targets.sdist]
-include = [
-    "/httpx",
-    "/CHANGELOG.md",
-    "/README.md",
-    "/tests",
-]
+include = ["/httpx", "/CHANGELOG.md", "/README.md", "/tests"]
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
 content-type = "text/markdown"
@@ -118,14 +102,14 @@ check_untyped_defs = true
 [tool.pytest.ini_options]
 addopts = "-rxXs"
 filterwarnings = [
-  "error",
-  "ignore: You seem to already have a custom sys.excepthook handler installed. I'll skip installing Trio's custom handler, but this means MultiErrors will not show full tracebacks.:RuntimeWarning",
-  # See: https://github.com/agronholm/anyio/issues/508
-  "ignore: trio.MultiError is deprecated since Trio 0.22.0:trio.TrioDeprecationWarning"
+    "error",
+    "ignore: You seem to already have a custom sys.excepthook handler installed. I'll skip installing Trio's custom handler, but this means MultiErrors will not show full tracebacks.:RuntimeWarning",
+    # See: https://github.com/agronholm/anyio/issues/508
+    "ignore: trio.MultiError is deprecated since Trio 0.22.0:trio.TrioDeprecationWarning",
 ]
 markers = [
-  "copied_from(source, changes=None): mark test as copied from somewhere else, along with a description of changes made to accodomate e.g. our test setup",
-  "network: marks tests which require network connection. Used in 3rd-party build environments that have network disabled."
+    "copied_from(source, changes=None): mark test as copied from somewhere else, along with a description of changes made to accodomate e.g. our test setup",
+    "network: marks tests which require network connection. Used in 3rd-party build environments that have network disabled.",
 ]
 
 [tool.coverage.run]
