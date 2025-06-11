@@ -114,4 +114,4 @@ markers = [
 
 [tool.coverage.run]
 omit = ["venv/*"]
-include = ["httpx/*", "tests/*"]
+include = ["python/httpx/*", "tests/*"]
