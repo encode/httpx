@@ -25,6 +25,7 @@ import typing
 import idna
 
 from ._exceptions import InvalidURL
+from ._httpx import normalize_path
 
 MAX_URL_LENGTH = 65536
 
@@ -444,35 +445,35 @@ def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:
             raise InvalidURL("Relative URLs cannot have a path starting with ':'")
 
 
-def normalize_path(path: str) -> str:
-    """
-    Drop "." and ".." segments from a URL path.
+# def normalize_path(path: str) -> str:
+#     """
+#     Drop "." and ".." segments from a URL path.
 
-    For example:
+#     For example:
 
-        normalize_path("/path/./to/somewhere/..") == "/path/to"
-    """
-    # Fast return when no '.' characters in the path.
-    if "." not in path:
-        return path
+#         normalize_path("/path/./to/somewhere/..") == "/path/to"
+#     """
+#     # Fast return when no '.' characters in the path.
+#     if "." not in path:
+#         return path
 
-    components = path.split("/")
+#     components = path.split("/")
 
-    # Fast return when no '.' or '..' components in the path.
-    if "." not in components and ".." not in components:
-        return path
+#     # Fast return when no '.' or '..' components in the path.
+#     if "." not in components and ".." not in components:
+#         return path
 
-    # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
-    output: list[str] = []
-    for component in components:
-        if component == ".":
-            pass
-        elif component == "..":
-            if output and output != [""]:
-                output.pop()
-        else:
-            output.append(component)
-    return "/".join(output)
+#     # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
+#     output: list[str] = []
+#     for component in components:
+#         if component == ".":
+#             pass
+#         elif component == "..":
+#             if output and output != [""]:
+#                 output.pop()
+#         else:
+#             output.append(component)
+#     return "/".join(output)
 
 
 def PERCENT(string: str) -> str:

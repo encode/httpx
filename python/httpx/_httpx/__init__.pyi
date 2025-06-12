@@ -150,3 +150,12 @@ class QueryParams(typing.Mapping[str, str]):
     def __repr__(self) -> str:...
     def update(self, params: QueryParamTypes | None = None) -> None:...
     def __setitem__(self, key: str, value: str) -> None:...
+
+def normalize_path(path: str) -> str:
+    """
+    Drop "." and ".." segments from a URL path.
+
+    For example:
+
+        normalize_path("/path/./to/somewhere/..") == "/path/to"
+    """
