@@ -8,6 +8,7 @@ name = "httpx"
 crate-type = ["cdylib"]
 
 [dependencies]
+indexmap = "2.9.0"
 pyo3 = { version = "0.24.0", features = [
     "extension-module",
     "generate-import-lib",
