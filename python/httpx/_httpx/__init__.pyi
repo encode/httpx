@@ -11,6 +11,7 @@ QueryParamTypes = typing.Union[
 ]
 
 
+@typing.final
 class QueryParams(typing.Mapping[str, str]):
     def __init__(self, *args: QueryParamTypes | None, **kwargs: typing.Any) -> None:...
     def keys(self) -> typing.KeysView[str]:
