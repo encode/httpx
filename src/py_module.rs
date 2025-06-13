@@ -4,7 +4,7 @@ use pyo3::prelude::*;
 mod _httpx {
     #[pymodule_export]
     use crate::{
-        urlparse::{encode_percent, normalize_path},
+        urlparse::{percent_encoded, normalize_path},
         urls::QueryParams,
     };
 }

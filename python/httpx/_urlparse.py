@@ -25,7 +25,7 @@ import typing
 import idna
 
 from ._exceptions import InvalidURL
-from ._httpx import encode_percent as percent_encoded, normalize_path
+from ._httpx import normalize_path, percent_encoded
 
 MAX_URL_LENGTH = 65536
 

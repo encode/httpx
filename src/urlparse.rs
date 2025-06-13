@@ -28,7 +28,7 @@ const UNRESERVED_CHARS: &[u8] =
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
 
 #[pyfunction]
-pub fn encode_percent(string: &str, safe: &str) -> String {
+pub fn percent_encoded(string: &str, safe: &str) -> String {
     let safe = safe.as_bytes();
     string
         .bytes()
