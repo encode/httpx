@@ -25,7 +25,7 @@ import typing
 import idna
 
 from ._exceptions import InvalidURL
-from ._httpx import normalize_path, encode_percent as percent_encoded
+from ._httpx import encode_percent as percent_encoded, normalize_path
 
 MAX_URL_LENGTH = 65536
 
@@ -443,25 +443,6 @@ def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:
         # in which case the first path segment cannot contain a colon (":") character.
         if path.startswith(":"):
             raise InvalidURL("Relative URLs cannot have a path starting with ':'")
-
-
-# def PERCENT(string: str) -> str:
-#     return "".join([f"%{byte:02X}" for byte in string.encode("utf-8")])
-
-
-# def percent_encoded(string: str, safe: str) -> str:
-#     """
-#     Use percent-encoding to quote a string.
-#     """
-#     NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe
-
-#     # Fast path for strings that don't need escaping.
-#     if not string.rstrip(NON_ESCAPED_CHARS):
-#         return string
-
-#     return "".join(
-#         [char if char in NON_ESCAPED_CHARS else PERCENT(char) for char in string]
-#     )
 
 
 def quote(string: str, safe: str) -> str:
