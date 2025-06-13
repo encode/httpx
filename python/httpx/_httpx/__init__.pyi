@@ -10,6 +10,7 @@ QueryParamTypes = typing.Union[
     bytes,
 ]
 
+
 class QueryParams(typing.Mapping[str, str]):
     def __init__(self, *args: QueryParamTypes | None, **kwargs: typing.Any) -> None:...
     def keys(self) -> typing.KeysView[str]:
@@ -151,6 +152,7 @@ class QueryParams(typing.Mapping[str, str]):
     def update(self, params: QueryParamTypes | None = None) -> None:...
     def __setitem__(self, key: str, value: str) -> None:...
 
+
 def normalize_path(path: str) -> str:
     """
     Drop "." and ".." segments from a URL path.
@@ -159,3 +161,6 @@ def normalize_path(path: str) -> str:
 
         normalize_path("/path/./to/somewhere/..") == "/path/to"
     """
+
+
+def encode_percent(string: str, safe: str) -> str:...
