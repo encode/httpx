@@ -12,6 +12,12 @@ from ._urlparse import urlparse
 __all__ = ["URL", "QueryParams"]
 
 
+if not typing.TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    Mapping.register(QueryParams)
+
+
 class URL:
     """
     url = httpx.URL("HTTPS://jo%40email.com:a%20secret@müller.de:1234/pa%20th?search=ab#anchorlink")

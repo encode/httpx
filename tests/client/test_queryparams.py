@@ -1,8 +1,17 @@
+import typing
+
 import httpx
 
 
 def hello_world(request: httpx.Request) -> httpx.Response:
     return httpx.Response(200, text="Hello, world")
+
+
+def test_queryparams_isinstance_of_mapping():
+    client = httpx.Client(params={"a": "b"})
+    assert isinstance(client.params, httpx.QueryParams)
+    assert isinstance(client.params, typing.Mapping)
+    assert client.params["a"] == "b"
 
 
 def test_client_queryparams():
