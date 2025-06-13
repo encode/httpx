@@ -23,3 +23,21 @@ pub fn normalize_path(path: &str) -> String {
 
     normalized_components.join("/")
 }
+
+const UNRESERVED_CHARS: &[u8] =
+    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+
+#[pyfunction]
+pub fn encode_percent(string: &str, safe: &str) -> String {
+    let safe = safe.as_bytes();
+    string
+        .bytes()
+        .map(|b| {
+            if UNRESERVED_CHARS.contains(&b) || safe.contains(&b) {
+                (b as char).to_string()
+            } else {
+                format!("%{:02X}", b)
+            }
+        })
+        .collect::<String>()
+}
