@@ -211,8 +211,9 @@ impl QueryParams {
         }
     }
 
-    pub fn __repr__(&self) -> String {
-        format!("QueryParams('{}')", self)
+    pub fn __repr__(slf: &Bound<'_, Self>) -> PyResult<String> {
+        let class_name = slf.get_type().qualname()?;
+        Ok(format!("{}('{}')", class_name, slf))
     }
 
     #[allow(unused_variables)]
