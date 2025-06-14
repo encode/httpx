@@ -24,8 +24,7 @@ pub fn normalize_path(path: &str) -> String {
     normalized_components.join("/")
 }
 
-const UNRESERVED_CHARS: &[u8] =
-    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+const UNRESERVED_CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
 
 pub fn percent_encoded(string: &str, safe: &str) -> String {
     let safe = safe.as_bytes();
