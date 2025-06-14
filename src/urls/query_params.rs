@@ -24,9 +24,7 @@ fn primitive_value_to_str(value: &Bound<'_, PyAny>) -> PyResult<String> {
 fn urlencode(s: &str) -> String {
     s.bytes()
         .map(|b| match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                (b as char).to_string()
-            }
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => (b as char).to_string(),
             b' ' => "+".to_string(),
             _ => format!("%{:02X}", b),
         })
@@ -34,7 +32,7 @@ fn urlencode(s: &str) -> String {
 }
 
 #[pyclass(str)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq)]
 pub struct QueryParams {
     params: IndexMap<String, Vec<String>>,
 }
@@ -96,12 +94,7 @@ impl QueryParams {
     }
 
     #[pyo3(signature = (key, default=None))]
-    pub fn get(
-        &self,
-        py: Python<'_>,
-        key: String,
-        default: Option<Bound<'_, PyAny>>,
-    ) -> PyResult<Option<Py<PyAny>>> {
+    pub fn get(&self, py: Python<'_>, key: String, default: Option<Bound<'_, PyAny>>) -> PyResult<Option<Py<PyAny>>> {
         match self.params.get(&key) {
             Some(values) => match values.first() {
                 Some(value) => {
@@ -185,9 +178,7 @@ impl QueryParams {
     }
 
     pub fn __iter__(&self) -> QueryParamsKeysIterator {
-        QueryParamsKeysIterator {
-            params: self.keys(),
-        }
+        QueryParamsKeysIterator { params: self.keys() }
     }
 
     pub fn __len__(&self) -> usize {
@@ -219,7 +210,9 @@ impl QueryParams {
     #[allow(unused_variables)]
     #[pyo3(signature = (params = None))]
     pub fn update(&self, params: Option<&Bound<'_, PyAny>>) -> PyResult<Self> {
-        Err(PyRuntimeError::new_err("QueryParams are immutable since 0.18.0.  Use `q = q.merge(...)` to create an updated copy."))
+        Err(PyRuntimeError::new_err(
+            "QueryParams are immutable since 0.18.0.  Use `q = q.merge(...)` to create an updated copy.",
+        ))
     }
 
     #[allow(unused_variables)]
@@ -285,7 +278,7 @@ impl QueryParams {
         Ok(QueryParams { params })
     }
 
-    fn from_pyany(obj: &Bound<'_, PyAny>) -> PyResult<Self> {
+    pub fn from_pyany(obj: &Bound<'_, PyAny>) -> PyResult<Self> {
         if obj.is_none() {
             Ok(QueryParams {
                 params: IndexMap::new(),
@@ -310,6 +303,16 @@ impl QueryParams {
         } else {
             QueryParams::from_pydict(obj.downcast::<PyDict>()?)
         }
+    }
+}
+
+impl PartialEq for QueryParams {
+    fn eq(&self, other: &Self) -> bool {
+        let mut this = self.multi_items().clone();
+        let mut other = other.multi_items().clone();
+        this.sort();
+        other.sort();
+        this == other
     }
 }
 
