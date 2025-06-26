@@ -1,5 +1,6 @@
 import io
 import typing
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -64,20 +65,10 @@ async def test_bytesio_content():
 
 @pytest.mark.anyio
 async def test_async_bytesio_content():
-    class AsyncBytesIO:
-        def __init__(self, content: bytes) -> None:
-            self._idx = 0
-            self._content = content
+    async def fixed_stream(content: bytes) -> AsyncGenerator[bytes]:
+        yield content
 
-        async def aread(self, chunk_size: int) -> bytes:
-            chunk = self._content[self._idx : self._idx + chunk_size]
-            self._idx = self._idx + chunk_size
-            return chunk
-
-        async def __aiter__(self):
-            yield self._content  # pragma: no cover
-
-    request = httpx.Request(method, url, content=AsyncBytesIO(b"Hello, world!"))
+    request = httpx.Request(method, url, content=fixed_stream(b"Hello, world!"))
     assert not isinstance(request.stream, typing.Iterable)
     assert isinstance(request.stream, typing.AsyncIterable)
 

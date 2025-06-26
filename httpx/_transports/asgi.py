@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing
+from collections.abc import AsyncGenerator
 
 from .._models import Request, Response
 from .._types import AsyncByteStream
@@ -56,7 +57,7 @@ class ASGIResponseStream(AsyncByteStream):
     def __init__(self, body: list[bytes]) -> None:
         self._body = body
 
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
+    async def __aiter__(self) -> AsyncGenerator[bytes]:
         yield b"".join(self._body)
 
 

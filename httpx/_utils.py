@@ -4,12 +4,17 @@ import ipaddress
 import os
 import re
 import typing
+from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
+from contextlib import asynccontextmanager
+from inspect import isasyncgen
 from urllib.request import getproxies
 
 from ._types import PrimitiveData
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from ._urls import URL
+
+T = typing.TypeVar("T")
 
 
 def primitive_value_to_str(value: PrimitiveData) -> str:
@@ -240,3 +245,19 @@ def is_ipv6_hostname(hostname: str) -> bool:
     except Exception:
         return False
     return True
+
+
+@asynccontextmanager
+async def safe_async_iterate(
+    iterable_or_iterator: AsyncIterable[T] | AsyncIterator[T], /
+) -> AsyncGenerator[AsyncIterator[T]]:
+    iterator = (
+        iterable_or_iterator
+        if isinstance(iterable_or_iterator, AsyncIterator)
+        else iterable_or_iterator.__aiter__()
+    )
+    try:
+        yield iterator
+    finally:
+        if isasyncgen(iterator):
+            await iterator.aclose()

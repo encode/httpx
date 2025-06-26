@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import warnings
+from collections.abc import AsyncGenerator
 from json import dumps as json_dumps
 from typing import (
     Any,
@@ -10,6 +11,7 @@ from typing import (
     Iterable,
     Iterator,
     Mapping,
+    NoReturn,
 )
 from urllib.parse import urlencode
 
@@ -23,7 +25,7 @@ from ._types import (
     ResponseContent,
     SyncByteStream,
 )
-from ._utils import peek_filelike_length, primitive_value_to_str
+from ._utils import peek_filelike_length, primitive_value_to_str, safe_async_iterate
 
 __all__ = ["ByteStream"]
 
@@ -35,7 +37,7 @@ class ByteStream(AsyncByteStream, SyncByteStream):
     def __iter__(self) -> Iterator[bytes]:
         yield self._stream
 
-    async def __aiter__(self) -> AsyncIterator[bytes]:
+    async def __aiter__(self) -> AsyncGenerator[bytes]:
         yield self._stream
 
 
@@ -85,8 +87,9 @@ class AsyncIteratorByteStream(AsyncByteStream):
                 chunk = await self._stream.aread(self.CHUNK_SIZE)
         else:
             # Otherwise iterate.
-            async for part in self._stream:
-                yield part
+            async with safe_async_iterate(self._stream) as iterator:
+                async for part in iterator:
+                    yield part
 
 
 class UnattachedStream(AsyncByteStream, SyncByteStream):
@@ -99,9 +102,8 @@ class UnattachedStream(AsyncByteStream, SyncByteStream):
     def __iter__(self) -> Iterator[bytes]:
         raise StreamClosed()
 
-    async def __aiter__(self) -> AsyncIterator[bytes]:
+    def __aiter__(self) -> NoReturn:
         raise StreamClosed()
-        yield b""  # pragma: no cover
 
 
 def encode_content(

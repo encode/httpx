@@ -6,6 +6,7 @@ import logging
 import time
 import typing
 import warnings
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager, contextmanager
 from types import TracebackType
 
@@ -46,7 +47,7 @@ from ._types import (
     TimeoutTypes,
 )
 from ._urls import URL, QueryParams
-from ._utils import URLPattern, get_environment_proxies
+from ._utils import URLPattern, get_environment_proxies, safe_async_iterate
 
 if typing.TYPE_CHECKING:
     import ssl  # pragma: no cover
@@ -172,9 +173,10 @@ class BoundAsyncStream(AsyncByteStream):
         self._response = response
         self._start = start
 
-    async def __aiter__(self) -> typing.AsyncIterator[bytes]:
-        async for chunk in self._stream:
-            yield chunk
+    async def __aiter__(self) -> AsyncGenerator[bytes]:
+        async with safe_async_iterate(self._stream) as iterator:
+            async for chunk in iterator:
+                yield chunk
 
     async def aclose(self) -> None:
         elapsed = time.perf_counter() - self._start
