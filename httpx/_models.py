@@ -485,7 +485,9 @@ class Request:
         """
         if not hasattr(self, "_content"):
             assert isinstance(self.stream, typing.AsyncIterable)
-            self._content = b"".join([part async for part in self.stream])
+            async with safe_async_iterate(self.stream) as iterator:
+                self._content = b"".join([part async for part in iterator])
+
             if not isinstance(self.stream, ByteStream):
                 # If a streaming request has been read entirely into memory, then
                 # we can replace the stream with a raw bytes implementation,
@@ -976,7 +978,8 @@ class Response:
         Read and return the response content.
         """
         if not hasattr(self, "_content"):
-            self._content = b"".join([part async for part in self.aiter_bytes()])
+            async with safe_async_iterate(self.aiter_bytes()) as iterator:
+                self._content = b"".join([part async for part in iterator])
         return self._content
 
     async def aiter_bytes(self, chunk_size: int | None = None) -> AsyncGenerator[bytes]:
