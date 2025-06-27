@@ -98,6 +98,7 @@ def test_cookies_repr():
         " <Cookie fizz=buzz for http://hello.com />]>"
     )
 
+
 def test_cookies_policy():
     jar = CookieJar()
     jar.set_policy(
