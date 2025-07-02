@@ -1,6 +1,5 @@
 import io
 import typing
-from collections.abc import AsyncGenerator
 
 import pytest
 
