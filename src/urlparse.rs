@@ -52,7 +52,7 @@ pub fn quote(string: &str, safe: &str) -> String {
     let mut start = 0;
     let mut i = 0;
     while i < s.len() {
-        if i + 2 < s.len() && s[i] == b'%' && is_percent_encoded(&s[i..i + 3]) {
+        if s[i] == b'%' && i + 2 < s.len() && is_percent_encoded(&s[i..i + 3]) {
             if start < i {
                 result.push_str(&percent_encoded(&string[start..i], safe));
             }
@@ -69,4 +69,20 @@ pub fn quote(string: &str, safe: &str) -> String {
     }
 
     result
+}
+
+pub(crate) trait PercentEncoded {
+    fn percent_encoded(&self, safe: &str) -> String;
+}
+
+impl PercentEncoded for String {
+    fn percent_encoded(&self, safe: &str) -> String {
+        quote(self, safe)
+    }
+}
+
+impl PercentEncoded for &str {
+    fn percent_encoded(&self, safe: &str) -> String {
+        quote(self, safe)
+    }
 }
