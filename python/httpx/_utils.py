@@ -88,10 +88,6 @@ def to_bytes_or_str(value: str, match_type_of: typing.AnyStr) -> typing.AnyStr:
     return value if isinstance(match_type_of, str) else value.encode()
 
 
-def unquote(value: str) -> str:
-    return value[1:-1] if value[0] == value[-1] == '"' else value
-
-
 def peek_filelike_length(stream: typing.Any) -> int | None:
     """
     Given a file-like stream object, return its length in number of bytes

@@ -9,8 +9,9 @@ from base64 import b64encode
 from urllib.request import parse_http_list
 
 from ._exceptions import ProtocolError
+from ._httpx import unquote
 from ._models import Cookies, Request, Response
-from ._utils import to_bytes, to_str, unquote
+from ._utils import to_bytes, to_str
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from hashlib import _Hash
