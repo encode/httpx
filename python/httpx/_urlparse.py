@@ -267,14 +267,10 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
 
             # If a component includes any ASCII control characters including \t, \r, \n,
             # then treat it as invalid.
-            if any(char.isascii() and not char.isprintable() for char in value):
-                char = next(
-                    char for char in value if char.isascii() and not char.isprintable()
-                )
-                idx = value.find(char)
+            if (idx := find_ascii_non_printable(value)) is not None:
                 error = (
                     f"Invalid non-printable ASCII character in URL {key} component, "
-                    f"{char!r} at position {idx}."
+                    f"{value[idx]!r} at position {idx}."
                 )
                 raise InvalidURL(error)
 
