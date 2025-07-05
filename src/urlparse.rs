@@ -71,6 +71,12 @@ pub fn quote(string: &str, safe: &str) -> String {
     result
 }
 
+#[pyfunction]
+pub fn find_ascii_non_printable(s: &str) -> Option<usize> {
+    s.chars()
+        .position(|c| c.is_ascii() && !c.is_ascii_graphic() && c != ' ')
+}
+
 pub(crate) trait PercentEncoded {
     fn percent_encoded(&self, safe: &str) -> String;
 }
