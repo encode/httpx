@@ -25,7 +25,7 @@ import typing
 import idna
 
 from ._exceptions import InvalidURL
-from ._httpx import normalize_path, quote
+from ._httpx import find_ascii_non_printable, normalize_path, quote
 
 MAX_URL_LENGTH = 65536
 
@@ -221,12 +221,8 @@ def urlparse(url: str = "", **kwargs: str | None) -> ParseResult:
 
     # If a URL includes any ASCII control characters including \t, \r, \n,
     # then treat it as invalid.
-    if any(char.isascii() and not char.isprintable() for char in url):
-        char = next(char for char in url if char.isascii() and not char.isprintable())
-        idx = url.find(char)
-        error = (
-            f"Invalid non-printable ASCII character in URL, {char!r} at position {idx}."
-        )
+    if (idx := find_ascii_non_printable(url)) is not None:
+        error = f"Invalid non-printable ASCII character in URL, {url[idx]!r} at position {idx}."
         raise InvalidURL(error)
 
     # Some keyword arguments require special handling.
