@@ -5,7 +5,7 @@ mod _httpx {
     #[pymodule_export]
     use crate::{
         models::utils::unquote,
-        urlparse::{normalize_path, quote},
+        urlparse::{find_ascii_non_printable, normalize_path, quote},
         urls::QueryParams,
     };
 }
