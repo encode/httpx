@@ -25,7 +25,7 @@ import typing
 import idna
 
 from ._exceptions import InvalidURL
-from ._httpx import find_ascii_non_printable, normalize_path, quote
+from ._httpx import find_ascii_non_printable, normalize_path, quote, validate_path
 
 MAX_URL_LENGTH = 65536
 
@@ -413,28 +413,3 @@ def normalize_port(port: str | int | None, scheme: str) -> int | None:
     if port_as_int == default_port:
         return None
     return port_as_int
-
-
-def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:
-    """
-    Path validation rules that depend on if the URL contains
-    a scheme or authority component.
-
-    See https://datatracker.ietf.org/doc/html/rfc3986.html#section-3.3
-    """
-    if has_authority:
-        # If a URI contains an authority component, then the path component
-        # must either be empty or begin with a slash ("/") character."
-        if path and not path.startswith("/"):
-            raise InvalidURL("For absolute URLs, path must be empty or begin with '/'")
-
-    if not has_scheme and not has_authority:
-        # If a URI does not contain an authority component, then the path cannot begin
-        # with two slash characters ("//").
-        if path.startswith("//"):
-            raise InvalidURL("Relative URLs cannot have a path starting with '//'")
-
-        # In addition, a URI reference (Section 4.1) may be a relative-path reference,
-        # in which case the first path segment cannot contain a colon (":") character.
-        if path.startswith(":"):
-            raise InvalidURL("Relative URLs cannot have a path starting with ':'")

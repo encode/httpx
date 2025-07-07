@@ -175,7 +175,28 @@ def quote(string: str, safe: str) -> str:
 
 def unquote(value: str) -> str: ...
 def find_ascii_non_printable(s: str) -> typing.Optional[int]: ...
-def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None: ...
+def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:
+    """
+    Path validation rules that depend on if the URL contains
+    a scheme or authority component.
+
+    See https://datatracker.ietf.org/doc/html/rfc3986.html#section-3.3
+
+    ---
+
+    If a URI contains an authority component, then the path component
+    must either be empty or begin with a slash ("/") character."
+
+    ---
+
+    If a URI does not contain an authority component, then the path cannot begin
+    with two slash characters ("//").
+
+    ---
+
+    In addition, a URI reference (Section 4.1) may be a relative-path reference,
+    in which case the first path segment cannot contain a colon (":") character.
+    """
 
 class InvalidURL(Exception):
     def __init__(self, message: str) -> None: ...

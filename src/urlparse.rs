@@ -1,5 +1,7 @@
 use pyo3::prelude::*;
 
+use crate::err::InvalidUrl;
+
 #[pyfunction]
 pub fn normalize_path(path: &str) -> String {
     if !path.contains(".") {
@@ -91,4 +93,22 @@ impl PercentEncoded for &str {
     fn percent_encoded(&self, safe: &str) -> String {
         quote(self, safe)
     }
+}
+
+#[pyfunction]
+pub fn validate_path(path: &str, has_scheme: bool, has_authority: bool) -> PyResult<()> {
+    if has_authority && !path.is_empty() && !path.starts_with('/') {
+        return Err(InvalidUrl::new("For absolute URLs, path must be empty or begin with '/'").into());
+    }
+
+    if !has_scheme && !has_authority {
+        if path.starts_with("//") {
+            return Err(InvalidUrl::new("Relative URLs cannot have a path starting with '//'").into());
+        }
+        if path.starts_with(':') {
+            return Err(InvalidUrl::new("Relative URLs cannot have a path starting with ':'").into());
+        }
+    }
+
+    Ok(())
 }
