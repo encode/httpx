@@ -9,7 +9,9 @@ crate-type = ["cdylib"]
 
 [dependencies]
 indexmap = "2.9.0"
+num-bigint = "0.4.6"
 pyo3 = { version = "0.24.0", features = [
     "extension-module",
     "generate-import-lib",
+    "num-bigint"
 ] }
