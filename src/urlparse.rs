@@ -1,4 +1,5 @@
-use pyo3::prelude::*;
+use num_bigint::BigInt;
+use pyo3::{prelude::*, types::PyString};
 
 use crate::err::InvalidUrl;
 
@@ -111,4 +112,40 @@ pub fn validate_path(path: &str, has_scheme: bool, has_authority: bool) -> PyRes
     }
 
     Ok(())
+}
+
+#[pyfunction]
+pub fn normalize_port(port: &Bound<'_, PyAny>, scheme: &str) -> PyResult<Option<BigInt>> {
+    if port.is_none() {
+        return Ok(None);
+    }
+
+    let port = if port.is_instance_of::<PyString>() {
+        let port_str = port.extract::<String>()?;
+        if port_str.is_empty() {
+            return Ok(None);
+        }
+        match port_str.parse::<BigInt>() {
+            Ok(p) => p,
+            Err(_) => return Err(InvalidUrl::new(&format!("Invalid port: '{}'", port_str)).into()),
+        }
+    } else {
+        match port.extract::<BigInt>() {
+            Ok(p) => p,
+            Err(_) => return Err(InvalidUrl::new(&format!("Invalid port: {}", port.repr()?)).into()),
+        }
+    };
+
+    if let Some(default_port) = match scheme {
+        "https" | "wss" => Some(BigInt::from(443)),
+        "http" | "ws" => Some(BigInt::from(80)),
+        "ftp" => Some(BigInt::from(21)),
+        _ => None,
+    } {
+        if port == default_port {
+            return Ok(None);
+        }
+    }
+
+    Ok(Some(port))
 }
