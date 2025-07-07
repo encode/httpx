@@ -175,3 +175,16 @@ def quote(string: str, safe: str) -> str:
 
 def unquote(value: str) -> str: ...
 def find_ascii_non_printable(s: str) -> typing.Optional[int]: ...
+def validate_path(path: str, has_scheme: bool, has_authority: bool) -> None: ...
+
+class InvalidURL(Exception):
+    def __init__(self, message: str) -> None: ...
+
+class CookieConflict(Exception):
+    """
+    Attempted to lookup a cookie by name, but multiple cookies existed.
+
+    Can occur when calling `response.cookies.get(...)`.
+    """
+
+    def __init__(self, message: str) -> None: ...
