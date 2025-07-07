@@ -36,6 +36,8 @@ from __future__ import annotations
 import contextlib
 import typing
 
+from ._httpx import InvalidURL
+
 if typing.TYPE_CHECKING:
     from ._models import Request, Response  # pragma: no cover
 
@@ -266,15 +268,6 @@ class HTTPStatusError(HTTPError):
         super().__init__(message)
         self.request = request
         self.response = response
-
-
-class InvalidURL(Exception):
-    """
-    URL is improperly formed or cannot be parsed.
-    """
-
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
 
 
 class CookieConflict(Exception):
