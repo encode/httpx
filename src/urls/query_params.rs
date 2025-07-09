@@ -1,7 +1,4 @@
-use std::{
-    fmt::Display,
-    hash::{DefaultHasher, Hash, Hasher},
-};
+use std::hash::{DefaultHasher, Hash, Hasher};
 
 use indexmap::IndexMap;
 use pyo3::{
@@ -24,7 +21,9 @@ fn primitive_value_to_str(value: &Bound<'_, PyAny>) -> PyResult<String> {
 fn urlencode(s: &str) -> String {
     s.bytes()
         .map(|b| match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => (b as char).to_string(),
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                (b as char).to_string()
+            }
             b' ' => "+".to_string(),
             _ => format!("%{:02X}", b),
         })
@@ -32,7 +31,7 @@ fn urlencode(s: &str) -> String {
 }
 
 #[pyclass]
-#[derive(Debug, Clone, Eq)]
+#[derive(Debug, Clone)]
 pub struct QueryParams {
     params: IndexMap<String, Vec<String>>,
 }
@@ -94,7 +93,12 @@ impl QueryParams {
     }
 
     #[pyo3(signature = (key, default=None))]
-    pub fn get(&self, py: Python<'_>, key: String, default: Option<Bound<'_, PyAny>>) -> PyResult<Option<Py<PyAny>>> {
+    pub fn get(
+        &self,
+        py: Python<'_>,
+        key: String,
+        default: Option<Bound<'_, PyAny>>,
+    ) -> PyResult<Option<Py<PyAny>>> {
         match self.params.get(&key) {
             Some(values) => match values.first() {
                 Some(value) => {
@@ -178,7 +182,9 @@ impl QueryParams {
     }
 
     pub fn __iter__(&self) -> QueryParamsKeysIterator {
-        QueryParamsKeysIterator { params: self.keys() }
+        QueryParamsKeysIterator {
+            params: self.keys(),
+        }
     }
 
     pub fn __len__(&self) -> usize {
@@ -202,17 +208,23 @@ impl QueryParams {
         }
     }
 
-    pub fn __repr__(slf: &Bound<'_, Self>) -> PyResult<String> {
-        let class_name = slf.get_type().qualname()?;
-        Ok(format!("{}('{}')", class_name, slf))
+    pub fn __str__(&self) -> String {
+        let multi_items = self.multi_items();
+        let mut result = Vec::with_capacity(multi_items.len());
+        for (key, value) in &self.multi_items() {
+            result.push(format!("{}={}", urlencode(key), urlencode(value)));
+        }
+        result.join("&")
+    }
+
+    pub fn __repr__(&self) -> String {
+        format!("QueryParams('{}')", self.__str__())
     }
 
     #[allow(unused_variables)]
     #[pyo3(signature = (params = None))]
     pub fn update(&self, params: Option<&Bound<'_, PyAny>>) -> PyResult<Self> {
-        Err(PyRuntimeError::new_err(
-            "QueryParams are immutable since 0.18.0.  Use `q = q.merge(...)` to create an updated copy.",
-        ))
+        Err(PyRuntimeError::new_err("QueryParams are immutable since 0.18.0.  Use `q = q.merge(...)` to create an updated copy."))
     }
 
     #[allow(unused_variables)]
@@ -224,7 +236,7 @@ impl QueryParams {
 
     pub fn __hash__(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        self.to_string().hash(&mut hasher);
+        self.__str__().hash(&mut hasher);
         hasher.finish()
     }
 }
@@ -278,7 +290,7 @@ impl QueryParams {
         Ok(QueryParams { params })
     }
 
-    pub fn from_pyany(obj: &Bound<'_, PyAny>) -> PyResult<Self> {
+    fn from_pyany(obj: &Bound<'_, PyAny>) -> PyResult<Self> {
         if obj.is_none() {
             Ok(QueryParams {
                 params: IndexMap::new(),
@@ -303,27 +315,6 @@ impl QueryParams {
         } else {
             QueryParams::from_pydict(obj.downcast::<PyDict>()?)
         }
-    }
-}
-
-impl PartialEq for QueryParams {
-    fn eq(&self, other: &Self) -> bool {
-        let mut this = self.multi_items().clone();
-        let mut other = other.multi_items().clone();
-        this.sort();
-        other.sort();
-        this == other
-    }
-}
-
-impl Display for QueryParams {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let multi_items = self.multi_items();
-        let mut result = Vec::with_capacity(multi_items.len());
-        for (key, value) in &self.multi_items() {
-            result.push(format!("{}={}", urlencode(key), urlencode(value)));
-        }
-        write!(f, "{}", result.join("&"))
     }
 }
 
