@@ -100,8 +100,9 @@ b'<!doctype html>\n<html>\n<head>\n<title>Example Domain</title>...'
 
 Any `gzip` and `deflate` HTTP response encodings will automatically
 be decoded for you. If `brotlipy` is installed, then the `brotli` response
-encoding will be supported. If `zstandard` is installed, then `zstd`
-response encodings will also be supported.
+encoding will be supported. The `zstd` response encoding is supported by
+default on Python 3.14 and later, and optionally available on earlier Python
+versions with `zstandard` installed.
 
 For example, to create an image from binary data returned by a request, you can use the following code:
 
