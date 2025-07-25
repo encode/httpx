@@ -6,7 +6,11 @@ import zlib
 
 import chardet
 import pytest
-import zstandard as zstd
+
+try:
+    from compression import zstd
+except ImportError:
+    import zstandard as zstd
 
 import httpx
 
