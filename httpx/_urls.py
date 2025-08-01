@@ -111,7 +111,8 @@ class URL:
                 # than `kwargs["query"] = ""`, so that generated URLs do not
                 # include an empty trailing "?".
                 #
-                # Merge new params with existing query parameters instead of replacing them.
+                # Merge new params with existing query parameters instead of
+                # replacing them.
                 params = kwargs.pop("params")
                 # Get existing query parameters from the URL
                 if isinstance(url, str):
@@ -123,7 +124,8 @@ class URL:
                     existing_params = QueryParams()
 
                 if isinstance(params, QueryParams):
-                    # If params is a QueryParams object, use it directly (for copy_* methods)
+                    # If params is a QueryParams object, use it directly
+                    # (for copy_* methods)
                     kwargs["query"] = None if not params else str(params)
                 elif params:
                     # Merge existing parameters with new params (dict, list, etc.)
