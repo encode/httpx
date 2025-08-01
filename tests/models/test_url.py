@@ -467,6 +467,21 @@ def test_url_invalid_type():
         httpx.URL(ExternalURLClass())  # type: ignore
 
 
+def test_url_invalid_type_with_params():
+    with pytest.raises(TypeError):
+        httpx.URL(123, params={"a": "b"})  # type: ignore
+
+
+def test_url_with_params_none():
+    # Test with existing query parameters
+    url = httpx.URL("https://example.com?existing=param", params=None)
+    assert "existing=param" in str(url)
+
+    # Test without existing query parameters
+    url = httpx.URL("https://example.com", params=None)
+    assert str(url) == "https://example.com"
+
+
 def test_url_with_invalid_component():
     with pytest.raises(TypeError) as exc:
         httpx.URL(scheme="https", host="www.example.com", incorrect="/")
