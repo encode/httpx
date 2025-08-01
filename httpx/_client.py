@@ -234,6 +234,8 @@ class BaseClient:
     def _enforce_trailing_slash(self, url: URL) -> URL:
         if url.raw_path.endswith(b"/"):
             return url
+        if url.query:
+            return url.copy_with()
         return url.copy_with(raw_path=url.raw_path + b"/")
 
     def _get_proxy_map(
