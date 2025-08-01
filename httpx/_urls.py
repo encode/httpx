@@ -110,8 +110,34 @@ class URL:
                 # Ensure that empty params use `kwargs["query"] = None` rather
                 # than `kwargs["query"] = ""`, so that generated URLs do not
                 # include an empty trailing "?".
+                #
+                # Merge new params with existing query parameters instead of replacing them.
                 params = kwargs.pop("params")
-                kwargs["query"] = None if not params else str(QueryParams(params))
+                # Get existing query parameters from the URL
+                if isinstance(url, str):
+                    parsed_url = urlparse(url)
+                    existing_params = QueryParams(parsed_url.query)
+                elif isinstance(url, URL):
+                    existing_params = url.params
+                else:
+                    existing_params = QueryParams()
+
+                if isinstance(params, QueryParams):
+                    # If params is a QueryParams object, use it directly (for copy_* methods)
+                    kwargs["query"] = None if not params else str(params)
+                elif params:
+                    # Merge existing parameters with new params (dict, list, etc.)
+                    merged_params = existing_params.merge(params)
+                    kwargs["query"] = None if not merged_params else str(merged_params)
+                elif isinstance(params, dict) and not params:
+                    # If params is an empty dict, keep existing query parameters
+                    kwargs["query"] = None if not existing_params else str(existing_params)
+                elif params is None:
+                    # If params is None, keep existing query parameters
+                    kwargs["query"] = None if not existing_params else str(existing_params)
+                else:
+                    # Fallback case
+                    kwargs["query"] = None if not params else str(params)
 
         if isinstance(url, str):
             self._uri_reference = urlparse(url, **kwargs)
