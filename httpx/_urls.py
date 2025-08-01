@@ -131,10 +131,14 @@ class URL:
                     kwargs["query"] = None if not merged_params else str(merged_params)
                 elif isinstance(params, dict) and not params:
                     # If params is an empty dict, keep existing query parameters
-                    kwargs["query"] = None if not existing_params else str(existing_params)
+                    kwargs["query"] = (
+                        None if not existing_params else str(existing_params)
+                    )
                 elif params is None:
                     # If params is None, keep existing query parameters
-                    kwargs["query"] = None if not existing_params else str(existing_params)
+                    kwargs["query"] = (
+                        None if not existing_params else str(existing_params)
+                    )
                 else:
                     # Fallback case
                     kwargs["query"] = None if not params else str(params)
@@ -405,7 +409,7 @@ class URL:
 
         if ":" in userinfo:
             # Mask any password component.
-            userinfo = f'{userinfo.split(":")[0]}:[secure]'
+            userinfo = f"{userinfo.split(':')[0]}:[secure]"
 
         authority = "".join(
             [
