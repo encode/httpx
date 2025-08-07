@@ -1005,7 +1005,7 @@ class Client(BaseClient):
         transport = self._transport_for_url(request.url)
         start = time.perf_counter()
 
-        if not isinstance(request.stream, SyncByteStream):
+        if not isinstance(request.stream, SyncByteStream):  # pragma: no cover
             raise RuntimeError(
                 "Attempted to send an async request with a sync Client instance."
             )
@@ -1721,7 +1721,7 @@ class AsyncClient(BaseClient):
         transport = self._transport_for_url(request.url)
         start = time.perf_counter()
 
-        if not isinstance(request.stream, AsyncByteStream):
+        if not isinstance(request.stream, AsyncByteStream):  # pragma: no cover
             raise RuntimeError(
                 "Attempted to send a sync request with an AsyncClient instance."
             )

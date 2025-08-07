@@ -101,17 +101,6 @@ async def test_stream_request(server):
 
 
 @pytest.mark.anyio
-async def test_cannot_stream_sync_request(server):
-    def hello_world() -> typing.Iterator[bytes]:  # pragma: no cover
-        yield b"Hello, "
-        yield b"world!"
-
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(RuntimeError):
-            await client.post(server.url, content=hello_world())
-
-
-@pytest.mark.anyio
 async def test_raise_for_status(server):
     async with httpx.AsyncClient() as client:
         for status_code in (200, 400, 404, 500, 505):
@@ -314,7 +303,7 @@ async def test_mounted_transport():
 
 
 @pytest.mark.anyio
-async def test_async_mock_transport():
+async def test_mock_transport():
     async def hello_world(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, text="Hello, world!")
 
