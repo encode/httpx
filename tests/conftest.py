@@ -7,6 +7,7 @@ import typing
 
 import pytest
 import trustme
+from blockbuster import blockbuster_ctx
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import (
     BestAvailableEncryption,
@@ -29,6 +30,13 @@ ENVIRONMENT_VARIABLES = {
     "NO_PROXY",
     "SSLKEYLOGFILE",
 }
+
+
+@pytest.fixture(autouse=True)
+def blockbuster():
+    with blockbuster_ctx() as bb:
+        bb.functions["os.stat"].can_block_in("/mimetypes.py", "init")
+        yield bb
 
 
 @pytest.fixture(scope="function", autouse=True)
