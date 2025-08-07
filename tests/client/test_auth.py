@@ -302,7 +302,7 @@ async def test_auth_disable_per_request() -> None:
 
 def test_auth_hidden_url() -> None:
     url = "http://example-username:example-password@example.org/"
-    expected = "URL('http://example-username:[secure]@example.org/')"
+    expected = "URL('http://example.org/')"
     assert url == httpx.URL(url)
     assert expected == repr(httpx.URL(url))
 

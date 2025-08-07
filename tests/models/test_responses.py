@@ -89,7 +89,8 @@ def test_response_json():
 
 
 def test_raise_for_status():
-    request = httpx.Request("GET", "https://example.org")
+    # The credentials here should be removed from all exception strings below
+    request = httpx.Request("GET", "https://user:password@example.org")
 
     # 2xx status codes are not an error.
     response = httpx.Response(200, request=request)
