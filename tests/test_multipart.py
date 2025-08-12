@@ -467,3 +467,52 @@ class TestHeaderParamHTML5Formatting:
         files = {"upload": (filename, b"<file content>")}
         request = httpx.Request("GET", "https://www.example.com", files=files)
         assert expected in request.read()
+
+
+def test_multipart_with_empty_list_data():
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
+    data: list[tuple[str, str]] = []
+    files = {"file": io.BytesIO(b"<file content>")}
+    response = client.post("http://127.0.0.1:8000/", data=data, files=files)
+    boundary = response.request.headers["Content-Type"].split("boundary=")[-1]
+    boundary_bytes = boundary.encode("ascii")
+
+    assert response.status_code == 200
+    assert response.content == b"".join(
+        [
+            b"--" + boundary_bytes + b"\r\n",
+            b'Content-Disposition: form-data; name="file"; filename="upload"\r\n',
+            b"Content-Type: application/octet-stream\r\n",
+            b"\r\n",
+            b"<file content>\r\n",
+            b"--" + boundary_bytes + b"--\r\n",
+        ]
+    )
+
+
+def test_multipart_with_invalid_list_data():
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
+    data: list[str] = ["not-a-tuple"]  # Invalid: not a 2-tuple
+    files = {"file": io.BytesIO(b"<file content>")}
+    with pytest.raises(TypeError):
+        client.post("http://127.0.0.1:8000/", data=data, files=files)  # type: ignore[arg-type]
+
+
+def test_multipart_with_tuple_list_data():
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
+    data: list[tuple[str, str]] = [("foo", "bar")]
+    files: dict[str, io.BytesIO] = {}
+    response = client.post("http://127.0.0.1:8000/", data=data, files=files)
+    assert response.status_code == 200
+    assert b"foo" in response.content
+    assert b"bar" in response.content
+
+
+def test_multipart_iter_fields_with_tuple_list():
+    client = httpx.Client(transport=httpx.MockTransport(echo_request_content))
+    data: list[tuple[str, str]] = [("key", "value")]
+    files: dict[str, io.BytesIO] = {"dummy": io.BytesIO(b"")}
+    response = client.post("http://127.0.0.1:8000/", data=data, files=files)
+    assert response.status_code == 200
+    assert b"key" in response.content
+    assert b"value" in response.content

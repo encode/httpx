@@ -206,12 +206,10 @@ def encode_request(
     """
     if data is not None and not isinstance(data, Mapping):
         # Check if this is a list of tuples (valid form data)
-        if (
-            isinstance(data, list)
-            and data
-            and all(isinstance(item, tuple) and len(item) == 2 for item in data)
+        if isinstance(data, list) and (
+            not data or all(isinstance(item, tuple) and len(item) == 2 for item in data)
         ):
-            # This is valid form data as a list of tuples
+            # This is valid form data as a list of tuples (including empty list)
             pass
         else:
             # We prefer to separate `content=<bytes|str|byte iterator|bytes aiterator>`
