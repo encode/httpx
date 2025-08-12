@@ -367,7 +367,9 @@ class BaseClient:
         if data is not None and isinstance(data, list):
             # Check if this looks like invalid JSON array (list of dicts/strings)
             # but allow valid multipart form data (list of 2-item tuples)
-            if data and all(isinstance(item, (dict, str, int, float, bool)) for item in data):
+            if data and all(
+                isinstance(item, (dict, str, int, float, bool)) for item in data
+            ):
                 raise TypeError(
                     "Invalid value for 'data'. To send a JSON array, use the 'json' parameter. "
                     "For form data, use a dictionary or a list of 2-item tuples."

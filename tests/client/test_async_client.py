@@ -411,5 +411,7 @@ async def test_async_build_request_with_valid_data_formats():
         # This is a valid use case and should not raise our TypeError.
         # We explicitly catch and ignore the DeprecationWarning that httpx raises in this specific case.
         with pytest.warns(DeprecationWarning):
-            request = client.build_request("POST", "https://example.com", data=[("a", "b")])
+            request = client.build_request(
+                "POST", "https://example.com", data=[("a", "b")]
+            )
         assert isinstance(request, httpx.Request)
