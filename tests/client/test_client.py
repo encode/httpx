@@ -460,3 +460,42 @@ def test_client_decode_text_using_explicit_encoding():
         assert response.reason_phrase == "OK"
         assert response.encoding == "ISO-8859-1"
         assert response.text == text
+
+
+INVALID_DATA_FORMATS_SYNC = [
+    pytest.param([{"a": "b"}], id="list-of-dicts"),
+    pytest.param(["a", "b", "c"], id="list-of-strings"),
+    pytest.param([1, 2, 3], id="list-of-integers"),
+]
+
+
+@pytest.mark.parametrize("invalid_data", INVALID_DATA_FORMATS_SYNC)
+def test_sync_build_request_with_invalid_data_list(invalid_data):
+    """
+    Verify that Client.build_request raises a helpful TypeError for invalid list formats.
+    """
+    client = httpx.Client()
+    expected_message = (
+        "Invalid value for 'data'. To send a JSON array, use the 'json' parameter. "
+        "For form data, use a dictionary or a list of 2-item tuples."
+    )
+    with pytest.raises(TypeError, match=expected_message):
+        client.build_request("POST", "https://example.com", data=invalid_data)
+
+
+def test_sync_build_request_with_valid_data_formats():
+    """
+    Verify that Client.build_request accepts valid data formats without raising our custom TypeError.
+    """
+    client = httpx.Client()
+
+    # Test with a dictionary
+    request = client.build_request("POST", "https://example.com", data={"a": "b"})
+    assert isinstance(request, httpx.Request)
+
+    # Test with a list of 2-item tuples (for multipart)
+    # This is a valid use case and should not raise our TypeError.
+    # We explicitly catch and ignore the DeprecationWarning that httpx raises in this specific case.
+    with pytest.warns(DeprecationWarning):
+        request = client.build_request("POST", "https://example.com", data=[("a", "b")])
+    assert isinstance(request, httpx.Request)

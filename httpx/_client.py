@@ -363,6 +363,16 @@ class BaseClient:
 
         [0]: /advanced/clients/#request-instances
         """
+        # Validate data parameter for better error messages
+        if data is not None and isinstance(data, list):
+            # Check if this looks like invalid JSON array (list of dicts/strings)
+            # but allow valid multipart form data (list of 2-item tuples)
+            if data and all(isinstance(item, (dict, str, int, float, bool)) for item in data):
+                raise TypeError(
+                    "Invalid value for 'data'. To send a JSON array, use the 'json' parameter. "
+                    "For form data, use a dictionary or a list of 2-item tuples."
+                )
+
         url = self._merge_url(url)
         headers = self._merge_headers(headers)
         cookies = self._merge_cookies(cookies)

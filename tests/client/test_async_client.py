@@ -373,3 +373,43 @@ async def test_server_extensions(server):
         response = await client.get(url)
     assert response.status_code == 200
     assert response.extensions["http_version"] == b"HTTP/1.1"
+
+
+INVALID_DATA_FORMATS_ASYNC = [
+    pytest.param([{"a": "b"}], id="list-of-dicts"),
+    pytest.param(["a", "b", "c"], id="list-of-strings"),
+    pytest.param([1, 2, 3], id="list-of-integers"),
+]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("invalid_data", INVALID_DATA_FORMATS_ASYNC)
+async def test_async_build_request_with_invalid_data_list(invalid_data):
+    """
+    Verify that AsyncClient.build_request raises a helpful TypeError for invalid list formats.
+    """
+    async with httpx.AsyncClient() as client:
+        expected_message = (
+            "Invalid value for 'data'. To send a JSON array, use the 'json' parameter. "
+            "For form data, use a dictionary or a list of 2-item tuples."
+        )
+        with pytest.raises(TypeError, match=expected_message):
+            client.build_request("POST", "https://example.com", data=invalid_data)
+
+
+@pytest.mark.anyio
+async def test_async_build_request_with_valid_data_formats():
+    """
+    Verify that AsyncClient.build_request accepts valid data formats without raising our custom TypeError.
+    """
+    async with httpx.AsyncClient() as client:
+        # Test with a dictionary
+        request = client.build_request("POST", "https://example.com", data={"a": "b"})
+        assert isinstance(request, httpx.Request)
+
+        # Test with a list of 2-item tuples (for multipart)
+        # This is a valid use case and should not raise our TypeError.
+        # We explicitly catch and ignore the DeprecationWarning that httpx raises in this specific case.
+        with pytest.warns(DeprecationWarning):
+            request = client.build_request("POST", "https://example.com", data=[("a", "b")])
+        assert isinstance(request, httpx.Request)
