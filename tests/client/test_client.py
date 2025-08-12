@@ -472,7 +472,8 @@ INVALID_DATA_FORMATS_SYNC = [
 @pytest.mark.parametrize("invalid_data", INVALID_DATA_FORMATS_SYNC)
 def test_sync_build_request_with_invalid_data_list(invalid_data):
     """
-    Verify that Client.build_request raises a helpful TypeError for invalid list formats.
+    Verify that Client.build_request raises a helpful TypeError for invalid list
+    formats.
     """
     client = httpx.Client()
     expected_message = (
@@ -485,7 +486,8 @@ def test_sync_build_request_with_invalid_data_list(invalid_data):
 
 def test_sync_build_request_with_valid_data_formats():
     """
-    Verify that Client.build_request accepts valid data formats without raising our custom TypeError.
+    Verify that Client.build_request accepts valid data formats without raising our
+    custom TypeError.
     """
     client = httpx.Client()
 
@@ -495,7 +497,5 @@ def test_sync_build_request_with_valid_data_formats():
 
     # Test with a list of 2-item tuples (for multipart)
     # This is a valid use case and should not raise our TypeError.
-    # We explicitly catch and ignore the DeprecationWarning that httpx raises in this specific case.
-    with pytest.warns(DeprecationWarning):
-        request = client.build_request("POST", "https://example.com", data=[("a", "b")])
+    request = client.build_request("POST", "https://example.com", data=[("a", "b")])
     assert isinstance(request, httpx.Request)

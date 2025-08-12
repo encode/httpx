@@ -69,7 +69,7 @@ RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseExtensions = Mapping[str, Any]
 
-RequestData = Mapping[str, Any]
+RequestData = Union[Mapping[str, Any], List[Tuple[str, Any]]]
 
 FileContent = Union[IO[bytes], bytes, str]
 FileTypes = Union[

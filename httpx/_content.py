@@ -137,11 +137,21 @@ def encode_urlencoded_data(
     data: RequestData,
 ) -> tuple[dict[str, str], ByteStream]:
     plain_data = []
-    for key, value in data.items():
-        if isinstance(value, (list, tuple)):
-            plain_data.extend([(key, primitive_value_to_str(item)) for item in value])
-        else:
+
+    if isinstance(data, list):
+        # Handle list of tuples case
+        for key, value in data:
             plain_data.append((key, primitive_value_to_str(value)))
+    else:
+        # Handle dictionary case
+        for key, value in data.items():
+            if isinstance(value, (list, tuple)):
+                plain_data.extend(
+                    [(key, primitive_value_to_str(item)) for item in value]
+                )
+            else:
+                plain_data.append((key, primitive_value_to_str(value)))
+
     body = urlencode(plain_data, doseq=True).encode("utf-8")
     content_length = str(len(body))
     content_type = "application/x-www-form-urlencoded"
@@ -195,16 +205,30 @@ def encode_request(
     returning a two-tuple of (<headers>, <stream>).
     """
     if data is not None and not isinstance(data, Mapping):
-        # We prefer to separate `content=<bytes|str|byte iterator|bytes aiterator>`
-        # for raw request content, and `data=<form data>` for url encoded or
-        # multipart form content.
-        #
-        # However for compat with requests, we *do* still support
-        # `data=<bytes...>` usages. We deal with that case here, treating it
-        # as if `content=<...>` had been supplied instead.
-        message = "Use 'content=<...>' to upload raw bytes/text content."
-        warnings.warn(message, DeprecationWarning, stacklevel=2)
-        return encode_content(data)
+        # Check if this is a list of tuples (valid form data)
+        if (
+            isinstance(data, list)
+            and data
+            and all(isinstance(item, tuple) and len(item) == 2 for item in data)
+        ):
+            # This is valid form data as a list of tuples
+            pass
+        else:
+            # We prefer to separate `content=<bytes|str|byte iterator|bytes aiterator>`
+            # for raw request content, and `data=<form data>` for url encoded or
+            # multipart form content.
+            #
+            # However for compat with requests, we *do* still support
+            # `data=<bytes...>` usages. We deal with that case here, treating it
+            # as if `content=<...>` had been supplied instead.
+            message = "Use 'content=<...>' to upload raw bytes/text content."
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            # At this point, data is not a list of tuples, so it's safe to pass to
+            # encode_content
+            from typing import cast
+
+            content_data = cast("RequestContent", data)
+            return encode_content(content_data)
 
     if content is not None:
         return encode_content(content)

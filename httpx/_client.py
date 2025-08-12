@@ -370,10 +370,12 @@ class BaseClient:
             if data and all(
                 isinstance(item, (dict, str, int, float, bool)) for item in data
             ):
-                raise TypeError(
-                    "Invalid value for 'data'. To send a JSON array, use the 'json' parameter. "
-                    "For form data, use a dictionary or a list of 2-item tuples."
+                message = (
+                    "Invalid value for 'data'. To send a JSON array, use the 'json' "
+                    "parameter. For form data, use a dictionary or a list of 2-item "
+                    "tuples."
                 )
+                raise TypeError(message)
 
         url = self._merge_url(url)
         headers = self._merge_headers(headers)

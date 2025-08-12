@@ -244,12 +244,16 @@ class MultipartStream(SyncByteStream, AsyncByteStream):
     def _iter_fields(
         self, data: RequestData, files: RequestFiles
     ) -> typing.Iterator[FileField | DataField]:
-        for name, value in data.items():
-            if isinstance(value, (tuple, list)):
-                for item in value:
-                    yield DataField(name=name, value=item)
-            else:
+        if isinstance(data, list):
+            for name, value in data:
                 yield DataField(name=name, value=value)
+        else:
+            for name, value in data.items():
+                if isinstance(value, (tuple, list)):
+                    for item in value:
+                        yield DataField(name=name, value=item)
+                else:
+                    yield DataField(name=name, value=value)
 
         file_items = files.items() if isinstance(files, typing.Mapping) else files
         for name, value in file_items:
