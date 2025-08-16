@@ -145,6 +145,14 @@ def test_raise_for_status():
     with pytest.raises(RuntimeError):
         response.raise_for_status()
 
+    # If follow_redirects is False, we should not raise a redirect error
+    request_with_follow_redirects_false = httpx.Request(
+        "GET", "https://example.org", extensions={"follow_redirects": False}
+    )
+    response = httpx.Response(303, request=request_with_follow_redirects_false)
+    response.next_request = httpx.Request("GET", "https://other.org")
+    assert response.raise_for_status() is response
+
 
 def test_response_repr():
     response = httpx.Response(

@@ -805,6 +805,10 @@ class Response:
         if self.is_success:
             return self
 
+        # If follow_redirects is False, we should not raise a redirect error
+        if self.next_request is not None:
+            return self
+
         if self.has_redirect_location:
             message = (
                 "{error_type} '{0.status_code} {0.reason_phrase}' for url '{0.url}'\n"
