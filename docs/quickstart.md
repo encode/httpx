@@ -305,6 +305,23 @@ The method returns the response instance, allowing you to use it inline. For exa
 >>> data = httpx.get('...').raise_for_status().json()
 ```
 
+### Controlling Redirect Behavior
+
+By default, `raise_for_status()` will raise an exception for redirect responses (3xx status codes). However, when you make a request with `follow_redirects=False`, the method automatically detects this and won't raise exceptions for redirect responses:
+
+```pycon
+# This will raise an exception for redirects (default behavior)
+response = httpx.get('https://httpbin.org/status/301')
+response.raise_for_status()  # Raises HTTPStatusError for 301 redirect
+
+# This will NOT raise an exception for redirects
+response = httpx.get('https://httpbin.org/status/301', follow_redirects=False)
+response.raise_for_status()  # No exception raised - treats redirect as successful
+```
+
+When `follow_redirects=False` is set on the request, HTTPX sets `response.next_request` for redirect responses, and `raise_for_status()` automatically detects this and treats redirects as successful responses.
+
+
 ## Response Headers
 
 The response headers are available as a dictionary-like interface.
