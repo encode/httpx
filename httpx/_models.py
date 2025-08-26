@@ -923,10 +923,10 @@ class Response:
             for chunk in chunker.flush():
                 yield chunk
 
-    def iter_lines(self) -> typing.Iterator[str]:
+    def iter_lines(self, chunk_size: int | None = None) -> typing.Iterator[str]:
         decoder = LineDecoder()
         with request_context(request=self._request):
-            for text in self.iter_text():
+            for text in self.iter_text(chunk_size=chunk_size):
                 for line in decoder.decode(text):
                     yield line
             for line in decoder.flush():
