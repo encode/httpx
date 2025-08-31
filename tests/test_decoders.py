@@ -4,9 +4,13 @@ import io
 import typing
 import zlib
 
+try:
+    from compression import zstd
+except ImportError:
+    from backports import zstd
+
 import chardet
 import pytest
-import zstandard as zstd
 
 import httpx
 

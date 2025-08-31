@@ -52,7 +52,7 @@ socks = [
     "socksio==1.*",
 ]
 zstd = [
-  "zstandard>=0.18.0",
+  "backports.zstd>=0.5.0; python_version < '3.14'",
 ]
 
 [project.scripts]

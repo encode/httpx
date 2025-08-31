@@ -25,12 +25,14 @@ except ImportError:  # pragma: no cover
     except ImportError:
         brotli = None
 
-
-# Zstandard support is optional
+# Zstandard support is optional on Python < 3.14
 try:
-    import zstandard
-except ImportError:  # pragma: no cover
-    zstandard = None  # type: ignore
+    from compression import zstd
+except ImportError:
+    try:
+        from backports import zstd
+    except ImportError:
+        zstd = None
 
 
 class ContentDecoder:
@@ -162,32 +164,35 @@ class ZStandardDecoder(ContentDecoder):
     """
     Handle 'zstd' RFC 8878 decoding.
 
-    Requires `pip install zstandard`.
+    Requires `pip install backports.zstd` on Python < 3.14.
     Can be installed as a dependency of httpx using `pip install httpx[zstd]`.
     """
 
     # inspired by the ZstdDecoder implementation in urllib3
     def __init__(self) -> None:
-        if zstandard is None:  # pragma: no cover
+        if zstd is None:  # pragma: no cover
             raise ImportError(
                 "Using 'ZStandardDecoder', ..."
                 "Make sure to install httpx using `pip install httpx[zstd]`."
             ) from None
 
-        self.decompressor = zstandard.ZstdDecompressor().decompressobj()
+        self.decompressor = zstd
+        self.decompressor.eof = None
+        self.decompressor.flush = lambda: None
+        self.decompressor.unused_data = None
         self.seen_data = False
 
     def decode(self, data: bytes) -> bytes:
-        assert zstandard is not None
+        assert zstd is not None
         self.seen_data = True
         output = io.BytesIO()
         try:
             output.write(self.decompressor.decompress(data))
             while self.decompressor.eof and self.decompressor.unused_data:
                 unused_data = self.decompressor.unused_data
-                self.decompressor = zstandard.ZstdDecompressor().decompressobj()
+                self.decompressor = zstd
                 output.write(self.decompressor.decompress(unused_data))
-        except zstandard.ZstdError as exc:
+        except zstd.ZstdError as exc:
             raise DecodingError(str(exc)) from exc
         return output.getvalue()
 
@@ -389,5 +394,5 @@ SUPPORTED_DECODERS = {
 
 if brotli is None:
     SUPPORTED_DECODERS.pop("br")  # pragma: no cover
-if zstandard is None:
+if zstd is None:
     SUPPORTED_DECODERS.pop("zstd")  # pragma: no cover
