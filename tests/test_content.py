@@ -253,6 +253,47 @@ async def test_urlencoded_list():
 
 
 @pytest.mark.anyio
+async def test_utf8_content():
+    request = httpx.Request(method, url, content="Hello\ud83d\udca4, world!")
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
+
+    sync_content = b"".join(list(request.stream))
+    async_content = b"".join([part async for part in request.stream])
+    assert request.headers == {"Host": "www.example.com", "Content-Length": "13"}
+    assert sync_content == b"Hello, world!"
+    assert async_content == b"Hello, world!"
+
+    # Support 'data' for compat with requests.
+    with pytest.warns(DeprecationWarning):
+        request = httpx.Request(method, url, data="Hello\ud83d\udca4, world!")  # type: ignore
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
+
+    sync_content = b"".join(list(request.stream))
+    async_content = b"".join([part async for part in request.stream])
+
+    assert request.headers == {"Host": "www.example.com", "Content-Length": "13"}
+    assert sync_content == b"Hello, world!"
+    assert async_content == b"Hello, world!"
+
+    request = httpx.Request(method, url, json={"Hello\ud83d\udca4": "world!\ud83d\udca4"})
+    assert isinstance(request.stream, typing.Iterable)
+    assert isinstance(request.stream, typing.AsyncIterable)
+
+    sync_content = b"".join(list(request.stream))
+    async_content = b"".join([part async for part in request.stream])
+
+    assert request.headers == {
+        "Host": "www.example.com",
+        "Content-Length": "18",
+        "Content-Type": "application/json",
+    }
+    assert sync_content == b'{"Hello":"world!"}'
+    assert async_content == b'{"Hello":"world!"}'
+
+
+@pytest.mark.anyio
 async def test_multipart_files_content():
     files = {"file": io.BytesIO(b"<file content>")}
     headers = {"Content-Type": "multipart/form-data; boundary=+++"}
