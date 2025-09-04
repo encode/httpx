@@ -108,7 +108,7 @@ def encode_content(
     content: str | bytes | Iterable[bytes] | AsyncIterable[bytes],
 ) -> tuple[dict[str, str], SyncByteStream | AsyncByteStream]:
     if isinstance(content, (bytes, str)):
-        body = content.encode("utf-8") if isinstance(content, str) else content
+        body = content.encode("utf-8", errors="ignore") if isinstance(content, str) else content
         content_length = len(body)
         headers = {"Content-Length": str(content_length)} if body else {}
         return headers, ByteStream(body)
@@ -142,7 +142,7 @@ def encode_urlencoded_data(
             plain_data.extend([(key, primitive_value_to_str(item)) for item in value])
         else:
             plain_data.append((key, primitive_value_to_str(value)))
-    body = urlencode(plain_data, doseq=True).encode("utf-8")
+    body = urlencode(plain_data, doseq=True).encode("utf-8", errors="ignore")
     content_length = str(len(body))
     content_type = "application/x-www-form-urlencoded"
     headers = {"Content-Length": content_length, "Content-Type": content_type}
@@ -158,7 +158,7 @@ def encode_multipart_data(
 
 
 def encode_text(text: str) -> tuple[dict[str, str], ByteStream]:
-    body = text.encode("utf-8")
+    body = text.encode("utf-8", errors="ignore")
     content_length = str(len(body))
     content_type = "text/plain; charset=utf-8"
     headers = {"Content-Length": content_length, "Content-Type": content_type}
@@ -166,7 +166,7 @@ def encode_text(text: str) -> tuple[dict[str, str], ByteStream]:
 
 
 def encode_html(html: str) -> tuple[dict[str, str], ByteStream]:
-    body = html.encode("utf-8")
+    body = html.encode("utf-8", errors="ignore")
     content_length = str(len(body))
     content_type = "text/html; charset=utf-8"
     headers = {"Content-Length": content_length, "Content-Type": content_type}
@@ -176,7 +176,7 @@ def encode_html(html: str) -> tuple[dict[str, str], ByteStream]:
 def encode_json(json: Any) -> tuple[dict[str, str], ByteStream]:
     body = json_dumps(
         json, ensure_ascii=False, separators=(",", ":"), allow_nan=False
-    ).encode("utf-8")
+    ).encode("utf-8", errors="ignore")
     content_length = str(len(body))
     content_type = "application/json"
     headers = {"Content-Length": content_length, "Content-Type": content_type}
