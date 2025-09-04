@@ -33,6 +33,8 @@ def create_ssl_context(
     if verify is True:
         if trust_env and os.environ.get("SSL_CERT_FILE"):  # pragma: nocover
             ctx = ssl.create_default_context(cafile=os.environ["SSL_CERT_FILE"])
+        elif trust_env and os.environ.get("HTTPX_CA_BUNDLE"):  # pragma: nocover
+            ctx = ssl.create_default_context(cafile=os.environ["HTTPX_CA_BUNDLE"])
         elif trust_env and os.environ.get("SSL_CERT_DIR"):  # pragma: nocover
             ctx = ssl.create_default_context(capath=os.environ["SSL_CERT_DIR"])
         else:

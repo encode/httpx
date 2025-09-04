@@ -69,21 +69,11 @@ ctx.load_cert_chain(certfile="path/to/client.pem")  # Optionally also keyfile or
 client = httpx.Client(verify=ctx)
 ```
 
-### Working with `SSL_CERT_FILE` and `SSL_CERT_DIR`
+### Providing CA from environment
 
-Unlike `requests`, the `httpx` package does not automatically pull in [the environment variables `SSL_CERT_FILE` or `SSL_CERT_DIR`](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set_default_verify_paths.html). If you want to use these they need to be enabled explicitly.
+`httpx` package automatically pulls in [the environment variables `SSL_CERT_FILE` or `SSL_CERT_DIR`](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set_default_verify_paths.html) untill trust_env is `True`.
 
-For example...
-
-```python
-# Use `SSL_CERT_FILE` or `SSL_CERT_DIR` if configured.
-# Otherwise default to certifi.
-ctx = ssl.create_default_context(
-    cafile=os.environ.get("SSL_CERT_FILE", certifi.where()),
-    capath=os.environ.get("SSL_CERT_DIR"),
-)
-client = httpx.Client(verify=ctx)
-```
+Alternatively you can use `HTTPX_CA_BUNDLE` env which acts as `SSL_CERT_FILE`.
 
 ### Making HTTPS requests to a local server
 
