@@ -130,7 +130,7 @@ class FileField:
         # This large tuple based API largely mirror's requests' API
         # It would be good to think of better APIs for this that we could
         # include in httpx 2.0 since variable length tuples(especially of 4 elements)
-        # are quite unwieldly
+        # are quite unwieldy
         if isinstance(value, tuple):
             if len(value) == 2:
                 # neither the 3rd parameter (content_type) nor the 4th (headers)

@@ -29,7 +29,7 @@ import certifi
 import httpx
 import ssl
 
-# This SSL context is equivelent to the default `verify=True`.
+# This SSL context is equivalent to the default `verify=True`.
 ctx = ssl.create_default_context(cafile=certifi.where())
 client = httpx.Client(verify=ctx)
 ```
@@ -46,7 +46,7 @@ ctx = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 client = httpx.Client(verify=ctx)
 ```
 
-Loding an alternative certificate verification store using [the standard SSL context API](https://docs.python.org/3/library/ssl.html)...
+Loading an alternative certificate verification store using [the standard SSL context API](https://docs.python.org/3/library/ssl.html)...
 
 ```python
 import httpx
