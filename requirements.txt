@@ -10,7 +10,7 @@ chardet==5.2.0
 
 # Documentation
 mkdocs==1.6.1
-mkautodoc==0.2.0
+mkdocstrings[python]==0.30.0
 mkdocs-material==9.5.47
 
 # Packaging

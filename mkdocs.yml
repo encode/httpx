@@ -3,59 +3,69 @@ site_description: A next-generation HTTP client for Python.
 site_url: https://www.python-httpx.org/
 
 theme:
-    name: 'material'
-    custom_dir: 'docs/overrides'
-    palette:
-      - scheme: 'default'
-        media: '(prefers-color-scheme: light)'
-        toggle:
-          icon: 'material/lightbulb'
-          name: "Switch to dark mode"
-      - scheme: 'slate'
-        media: '(prefers-color-scheme: dark)'
-        primary: 'blue'
-        toggle:
-          icon: 'material/lightbulb-outline'
-          name: 'Switch to light mode'
+  name: 'material'
+  custom_dir: 'docs/overrides'
+  palette:
+    - scheme: 'default'
+      media: '(prefers-color-scheme: light)'
+      toggle:
+        icon: 'material/lightbulb'
+        name: 'Switch to dark mode'
+    - scheme: 'slate'
+      media: '(prefers-color-scheme: dark)'
+      primary: 'blue'
+      toggle:
+        icon: 'material/lightbulb-outline'
+        name: 'Switch to light mode'
 
 repo_name: encode/httpx
 repo_url: https://github.com/encode/httpx/
-edit_uri: ""
+edit_uri: ''
 
 nav:
-    - Introduction: 'index.md'
-    - QuickStart: 'quickstart.md'
-    - Advanced:
-        - Clients: 'advanced/clients.md'
-        - Authentication: 'advanced/authentication.md'
-        - SSL: 'advanced/ssl.md'
-        - Proxies: 'advanced/proxies.md'
-        - Timeouts: 'advanced/timeouts.md'
-        - Resource Limits: 'advanced/resource-limits.md'
-        - Event Hooks: 'advanced/event-hooks.md'
-        - Transports: 'advanced/transports.md'
-        - Text Encodings: 'advanced/text-encodings.md'
-        - Extensions: 'advanced/extensions.md'
-    - Guides:
-        - Async Support: 'async.md'
-        - HTTP/2 Support: 'http2.md'
-        - Logging: 'logging.md'
-        - Requests Compatibility: 'compatibility.md'
-        - Troubleshooting: 'troubleshooting.md'
-    - API Reference:
-        - Developer Interface: 'api.md'
-        - Exceptions: 'exceptions.md'
-        - Environment Variables: 'environment_variables.md'
-    - Community:
-        - Third Party Packages: 'third_party_packages.md'
-        - Contributing: 'contributing.md'
-        - Code of Conduct: 'code_of_conduct.md'
+  - Introduction: 'index.md'
+  - QuickStart: 'quickstart.md'
+  - Advanced:
+      - Clients: 'advanced/clients.md'
+      - Authentication: 'advanced/authentication.md'
+      - SSL: 'advanced/ssl.md'
+      - Proxies: 'advanced/proxies.md'
+      - Timeouts: 'advanced/timeouts.md'
+      - Resource Limits: 'advanced/resource-limits.md'
+      - Event Hooks: 'advanced/event-hooks.md'
+      - Transports: 'advanced/transports.md'
+      - Text Encodings: 'advanced/text-encodings.md'
+      - Extensions: 'advanced/extensions.md'
+  - Guides:
+      - Async Support: 'async.md'
+      - HTTP/2 Support: 'http2.md'
+      - Logging: 'logging.md'
+      - Requests Compatibility: 'compatibility.md'
+      - Troubleshooting: 'troubleshooting.md'
+  - API Reference:
+      - Developer Interface: 'api.md'
+      - Exceptions: 'exceptions.md'
+      - Environment Variables: 'environment_variables.md'
+  - Community:
+      - Third Party Packages: 'third_party_packages.md'
+      - Contributing: 'contributing.md'
+      - Code of Conduct: 'code_of_conduct.md'
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            merge_init_into_class: true
+            show_root_heading: true
+            heading_level: 3
+          inventories:
+            - https://docs.python.org/3/objects.inv
 
 markdown_extensions:
   - admonition
   - codehilite:
       css_class: highlight
-  - mkautodoc
 
 extra_css:
-    - css/custom.css
+  - css/custom.css

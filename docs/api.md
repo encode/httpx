@@ -9,43 +9,68 @@
     long-lived connections.
 
 ::: httpx.request
-    :docstring:
 
 ::: httpx.get
-    :docstring:
 
 ::: httpx.options
-    :docstring:
 
 ::: httpx.head
-    :docstring:
 
 ::: httpx.post
-    :docstring:
 
 ::: httpx.put
-    :docstring:
 
 ::: httpx.patch
-    :docstring:
 
 ::: httpx.delete
-    :docstring:
 
 ::: httpx.stream
-    :docstring:
 
 ## `Client`
 
 ::: httpx.Client
-    :docstring:
-    :members: headers cookies params auth request get head options post put patch delete stream build_request send close
+    options:
+      inherited_members: true
+      members:
+      - headers
+      - cookies
+      - params
+      - auth 
+      - request
+      - get
+      - head
+      - options
+      - post
+      - put
+      - patch
+      - delete
+      - stream
+      - build_request
+      - send
+      - close
 
 ## `AsyncClient`
 
 ::: httpx.AsyncClient
-    :docstring:
-    :members: headers cookies params auth request get head options post put patch delete stream build_request send aclose
+    inherited_members: true
+    options:
+      members:
+      - headers
+      - cookies
+      - params
+      - auth
+      - request
+      - get
+      - head
+      - options
+      - post
+      - put
+      - patch
+      - delete
+      - stream
+      - build_request
+      - send
+      - aclose
 
 
 ## `Response`

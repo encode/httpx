@@ -8,3 +8,11 @@ div.autodoc-members {
   padding-left: 20px;
   margin-bottom: 15px;
 }
+
+.doc-class-bases {
+  display: none;
+}
+
+div[data-md-type="toc"] .md-nav__item > .md-nav {
+  display: none;
+}
