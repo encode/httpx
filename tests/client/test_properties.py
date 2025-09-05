@@ -3,35 +3,35 @@ import httpx
 
 def test_client_base_url():
     client = httpx.Client()
-    client.base_url = "https://www.example.org/"  # type: ignore
+    client.base_url = "https://www.example.org/"
     assert isinstance(client.base_url, httpx.URL)
     assert client.base_url == "https://www.example.org/"
 
 
 def test_client_base_url_without_trailing_slash():
     client = httpx.Client()
-    client.base_url = "https://www.example.org/path"  # type: ignore
+    client.base_url = "https://www.example.org/path"
     assert isinstance(client.base_url, httpx.URL)
     assert client.base_url == "https://www.example.org/path/"
 
 
 def test_client_base_url_with_trailing_slash():
     client = httpx.Client()
-    client.base_url = "https://www.example.org/path/"  # type: ignore
+    client.base_url = "https://www.example.org/path/"
     assert isinstance(client.base_url, httpx.URL)
     assert client.base_url == "https://www.example.org/path/"
 
 
 def test_client_headers():
     client = httpx.Client()
-    client.headers = {"a": "b"}  # type: ignore
+    client.headers = {"a": "b"}
     assert isinstance(client.headers, httpx.Headers)
     assert client.headers["A"] == "b"
 
 
 def test_client_cookies():
     client = httpx.Client()
-    client.cookies = {"a": "b"}  # type: ignore
+    client.cookies = {"a": "b"}
     assert isinstance(client.cookies, httpx.Cookies)
     mycookies = list(client.cookies.jar)
     assert len(mycookies) == 1
@@ -42,7 +42,7 @@ def test_client_timeout():
     expected_timeout = 12.0
     client = httpx.Client()
 
-    client.timeout = expected_timeout  # type: ignore
+    client.timeout = expected_timeout
 
     assert isinstance(client.timeout, httpx.Timeout)
     assert client.timeout.connect == expected_timeout
