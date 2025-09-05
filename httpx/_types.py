@@ -65,7 +65,7 @@ AuthTypes = Union[
     "Auth",
 ]
 
-RequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+RequestContent = Union[str, bytes, bytearray, Iterable[bytes], AsyncIterable[bytes]]
 ResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 ResponseExtensions = Mapping[str, Any]
 
