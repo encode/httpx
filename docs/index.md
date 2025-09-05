@@ -119,7 +119,7 @@ As well as these optional installs:
 * `rich` - Rich terminal support. *(Optional, with `httpx[cli]`)*
 * `click` - Command line client support. *(Optional, with `httpx[cli]`)*
 * `brotli` or `brotlicffi` - Decoding for "brotli" compressed responses. *(Optional, with `httpx[brotli]`)*
-* `zstandard` - Decoding for "zstd" compressed responses. *(Optional, with `httpx[zstd]`)*
+* `zstandard` - Decoding for "zstd" compressed responses before Python 3.14. *(Optional, with `httpx[zstd]`)*
 
 A huge amount of credit is due to `requests` for the API layout that
 much of this work follows, as well as to `urllib3` for plenty of design
