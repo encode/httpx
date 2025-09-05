@@ -71,19 +71,7 @@ client = httpx.Client(verify=ctx)
 
 ### Working with `SSL_CERT_FILE` and `SSL_CERT_DIR`
 
-Unlike `requests`, the `httpx` package does not automatically pull in [the environment variables `SSL_CERT_FILE` or `SSL_CERT_DIR`](https://www.openssl.org/docs/manmaster/man3/SSL_CTX_set_default_verify_paths.html). If you want to use these they need to be enabled explicitly.
-
-For example...
-
-```python
-# Use `SSL_CERT_FILE` or `SSL_CERT_DIR` if configured.
-# Otherwise default to certifi.
-ctx = ssl.create_default_context(
-    cafile=os.environ.get("SSL_CERT_FILE", certifi.where()),
-    capath=os.environ.get("SSL_CERT_DIR"),
-)
-client = httpx.Client(verify=ctx)
-```
+`httpx` does respect the `SSL_CERT_FILE` and `SSL_CERT_DIR` environment variables by default. For details, refer to [the section on the environment variables page](../environment_variables.md#ssl_cert_file).
 
 ### Making HTTPS requests to a local server
 
