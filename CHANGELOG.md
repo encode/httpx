@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [UNRELEASED]
 
+### Fixed
+
+* Explicitly close all async generators to ensure predictable behavior
+
 ### Removed
 
 * Drop support for Python 3.8
