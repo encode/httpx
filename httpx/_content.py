@@ -61,7 +61,11 @@ class IteratorByteStream(SyncByteStream):
         else:
             # Otherwise iterate.
             for part in self._stream:
-                yield part
+                # For bytes types, should use yield to send data in
+                # chunks. Sending a very large part at once will
+                # result in extremely slow transmission.
+                for i in range(0, len(part), self.CHUNK_SIZE):
+                    yield part[i : i + self.CHUNK_SIZE]
 
 
 class AsyncIteratorByteStream(AsyncByteStream):
