@@ -51,3 +51,9 @@ python -c "import httpx; httpx.get('http://example.com')"
 python -c "import httpx; httpx.get('http://127.0.0.1:5000/my-api')"
 python -c "import httpx; httpx.get('https://www.python-httpx.org')"
 ```
+
+
+## TLS
+
+### `HTTPX_CA_BUNDLE`
+Overrides default `certifi` trust store
